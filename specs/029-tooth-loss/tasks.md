@@ -8,9 +8,9 @@ Implementation starts after this spec, plan and tasks are reviewed.
   `TABLES` is written from it in T003
 - [x] T001a #377 Spec, plan and research follow how Open Dental records diagnoses (the practice's own lists,
   changing over time) and treatment plans (one planned procedure, many editable copies)
-- [ ] T002 [US1] Failing tests: `test_open_dental.py` (seed, unchanged datasets, sources, no truth in the
+- [x] T002 [US1] Failing tests: `test_open_dental.py` (seed, unchanged datasets, sources, no truth in the
   extract, rates recovered)
-- [ ] T003 [US1] `open_dental.py` generator, own random stream; writes the extract and `tooth_loss_truth.csv`;
+- [x] T003 [US1] `open_dental.py` generator, own random stream; writes the extract and `tooth_loss_truth.csv`;
   two diagnosis lists with an adoption date and lag; planned extractions with their plan copies
 - [x] T004 [US1] `<layer>_opendental_perio` schemas and the landing volume in `schemas.py` and
   `unity_catalog.yml`; failing schema and bundle tests first (`fact_tooth_loss_prediction` goes in `gold_model.py`
