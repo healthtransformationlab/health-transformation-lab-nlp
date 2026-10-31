@@ -18,8 +18,8 @@ Implementation starts after this spec, plan and tasks are reviewed.
 
 ## US2 #370: one silver row per patient and tooth
 
-- [ ] T005 [US2] Failing tests: statuses on hand-built extracts, nothing dated after the loss
-- [ ] T006 [US2] `tooth_loss.tooth_table` and `planned_extraction` (plan copies counted once); base-R twin and
+- [x] T005 [US2] Failing tests: statuses on hand-built extracts, nothing dated after the loss
+- [x] T006 [US2] `tooth_loss.tooth_table` and `planned_extraction` (plan copies counted once); base-R twin and
   parity inputs
 - [ ] T006a [US2] Failing tests, then the bronze-to-silver data-quality checks after Kookal et al. 2024
   (completeness, accuracy, consistency; FR-009), with planted faults the generator records

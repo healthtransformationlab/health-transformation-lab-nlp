@@ -491,7 +491,7 @@ One per SNOMED code (a licensed list; an extract may hold only the codes it uses
 
 ### `patient_tooth`
 
-One per patient and tooth (1–32): how it was lost, and what was charted before. tooth_loss.tooth_table; overwrite per run.
+One per patient and tooth (1–32): how it was lost, and what was charted before. tooth_loss.tooth_table; overwrite per run, logged in load_log.
 
 | Key | Column | Type | Description |
 |---|---|---|---|
@@ -509,17 +509,17 @@ One per patient and tooth (1–32): how it was lost, and what was charted before
 |  | `last_mobility_code` | string | own mobility grade 0–3 |
 |  | `neighbour_max_cal_mm` | double | worst CAL on the teeth either side |
 |  | `mouth_cal5_site_pct` | double | sites with CAL ≥ 5 mm at the first exam, 0–100 |
+|  | `mouth_max_pd_mm` | double | deepest probing in the mouth at the first exam |
+|  | `mouth_bop_pct` | double | sites bleeding in the mouth at the first exam, 0–100 |
 |  | `teeth_missing_at_entry_count` | bigint | teeth already missing at the first exam |
 |  | `tooth_type_code` | string | incisor · canine · premolar · molar, upper or lower |
+|  | `age_at_first_exam_num` | bigint | whole years from patient.birthdate to the first exam |
 |  | `is_smoker` | boolean | patient.smokingsnomed |
 |  | `is_diabetic` | boolean | a disease row with E10–E11 |
-|  | `run_id` | string | Databricks job run id |
-|  | `run_ts` | timestamp | when the job wrote the row |
-|  | `git_commit_sha` | string | commit the job was deployed from |
 
 ### `planned_extraction`
 
-One per planned extraction in procedurelog, however many plan copies carry it. tooth_loss.planned_extraction; overwrite per run.
+One per planned extraction in procedurelog, however many plan copies carry it. tooth_loss.planned_extraction; overwrite per run, logged in load_log.
 
 | Key | Column | Type | Description |
 |---|---|---|---|
@@ -532,9 +532,6 @@ One per planned extraction in procedurelog, however many plan copies carry it. t
 |  | `last_plan_date` | date | latest plan date |
 |  | `is_completed` | boolean | procstatus became 2 |
 |  | `complete_date` | date | datecomplete, when completed |
-|  | `run_id` | string | Databricks job run id |
-|  | `run_ts` | timestamp | when the job wrote the row |
-|  | `git_commit_sha` | string | commit the job was deployed from |
 
 ### `tooth_loss_dq_check`
 

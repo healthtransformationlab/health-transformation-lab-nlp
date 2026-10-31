@@ -171,7 +171,7 @@ def test_the_load_job_generates_and_loads_bronze_and_silver():
     assert "opendental_perio_data" in p["landing_dir"]
     nb = (ROOT / "databricks" / "notebooks" / "12_load_open_dental.py").read_text()
     for call in ("open_dental.write(", "open_dental.clean(", 'mode: str = "overwrite"', 'mode="append"',
-                 "open_dental.load_log("):
+                 "open_dental.load_log(", "tooth_loss.tooth_table(clean)", "tooth_loss.planned_extraction(clean)"):
         assert call in nb, call
     # the Open Dental tables hold Open Dental's columns only; the batch key goes in load_log (AGENTS.md: every row
     # still traces to its run, through the one load_log row per run and table)

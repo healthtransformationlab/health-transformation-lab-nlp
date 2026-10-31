@@ -319,13 +319,13 @@ erDiagram
         string last_mobility_code "own mobility grade 0–3"
         double neighbour_max_cal_mm "worst CAL on the teeth either side"
         double mouth_cal5_site_pct "sites with CAL ≥ 5 mm at the first exam, 0–100"
+        double mouth_max_pd_mm "deepest probing in the mouth at the first exam"
+        double mouth_bop_pct "sites bleeding in the mouth at the first exam, 0–100"
         bigint teeth_missing_at_entry_count "teeth already missing at the first exam"
         string tooth_type_code "incisor · canine · premolar · molar, upper or lower"
+        bigint age_at_first_exam_num "whole years from patient.birthdate to the first exam"
         boolean is_smoker "patient.smokingsnomed"
         boolean is_diabetic "a disease row with E10–E11"
-        string run_id "Databricks job run id"
-        timestamp run_ts "when the job wrote the row"
-        string git_commit_sha "commit the job was deployed from"
     }
     planned_extraction {
         bigint procedure_id PK, FK "procedurelog.procnum"
@@ -337,9 +337,6 @@ erDiagram
         date last_plan_date "latest plan date"
         boolean is_completed "procstatus became 2"
         date complete_date "datecomplete, when completed"
-        string run_id "Databricks job run id"
-        timestamp run_ts "when the job wrote the row"
-        string git_commit_sha "commit the job was deployed from"
     }
     tooth_loss_dq_check {
         string check_name PK "e.g. proctp_code_differs, dx_item_from_retired_list"
