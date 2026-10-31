@@ -25,7 +25,7 @@ SOURCES = {"notes": "Chart note", "exam_form": "Exam form", "proc_codes_complete
 
 @traced
 def never_cdc_share(xt: pd.DataFrame) -> float:
-    """Share of 2017 stage I mouths that CDC/AAP calls 'none' (it needs CAL of 3 mm or more on two teeth)."""
+    """Share of 2017 stage I visits that CDC/AAP calls 'none' (it needs CAL of 3 mm or more on two teeth)."""
     row = xt.loc["periodontitis_stage_1"]
     return row["none"] / row.sum()
 
@@ -79,9 +79,12 @@ def markdown() -> str:
         ("| **ACES** ([action item B8](action_items.md)) | Research on chart data: the 2017 system from charts "
         "alone, with published variants for stage III vs IV | as 2017 | the chart only | `aces.py` |"),
         "",
-        "### Where they disagree, on the same synthetic mouths",
+        "### Where they disagree, on the same synthetic visits",
         "",
-        "2017 AAP/EFP (rows) against 2012 CDC/AAP (columns), from `data/sites/aap_vs_cdc.csv`:",
+        (f"Every one of the {int(cdc.to_numpy().sum()):,} synthetic visits with a gum chart, out of the full synthetic "
+         "set, classified both ways. This is a larger set than the 240 review charts the methods are scored on, "
+         "because the definitions need only the chart. 2017 AAP/EFP (rows) against 2012 CDC/AAP (columns), from "
+         "`data/sites/aap_vs_cdc.csv`:"),
         "",
         "| 2017 ↓ / CDC/AAP → | none | mild | moderate | severe |",
         "|---|---:|---:|---:|---:|",
@@ -93,10 +96,10 @@ def markdown() -> str:
                        f"{int(r['severe']):,} |")
     out += [
         "",
-        (f"- **Stage I never meets CDC/AAP:** {never_cdc_share(cdc):.0%} of stage I mouths are \"none\" under "
+        (f"- **Stage I never meets CDC/AAP:** {never_cdc_share(cdc):.0%} of stage I visits are \"none\" under "
         "CDC/AAP, because it needs attachment loss of 3 mm or more on two teeth. So 2017 counts more people as having "
         "gum disease, and prevalence from the two can't be compared directly ([action item B6](action_items.md))."),
-        (f"- **ACES agrees with the 2017 worksheet on {aces_same:,} of {n_aces:,} mouths** "
+        (f"- **ACES agrees with the 2017 worksheet on {aces_same:,} of {n_aces:,} charted visits** "
         f"(`data/sites/aap_vs_aces.csv`). It moves some stage III to II, and some stage IV to III when teeth are lost "
         "but enough opposing pairs remain."),
         "",

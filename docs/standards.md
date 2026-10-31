@@ -18,9 +18,9 @@ Finding gum disease in dental records (phenotyping) means making three choices, 
 | **2012 CDC/AAP** (Eke et al., [references](references.md) item 35) | Counting it in populations (NHANES) | none, mild, moderate, severe | attachment loss and pocket depth between teeth, on different teeth; no bleeding | `sites.cdc_aap` |
 | **ACES** ([action item B8](action_items.md)) | Research on chart data: the 2017 system from charts alone, with published variants for stage III vs IV | as 2017 | the chart only | `aces.py` |
 
-### Where they disagree, on the same synthetic mouths
+### Where they disagree, on the same synthetic visits
 
-2017 AAP/EFP (rows) against 2012 CDC/AAP (columns), from `data/sites/aap_vs_cdc.csv`:
+Every one of the 3,437 synthetic visits with a gum chart, out of the full synthetic set, classified both ways. This is a larger set than the 240 review charts the methods are scored on, because the definitions need only the chart. 2017 AAP/EFP (rows) against 2012 CDC/AAP (columns), from `data/sites/aap_vs_cdc.csv`:
 
 | 2017 ↓ / CDC/AAP → | none | mild | moderate | severe |
 |---|---:|---:|---:|---:|
@@ -31,8 +31,8 @@ Finding gum disease in dental records (phenotyping) means making three choices, 
 | Stage III | 16 | 4 | 155 | 152 |
 | Stage IV | 0 | 0 | 27 | 57 |
 
-- **Stage I never meets CDC/AAP:** 100% of stage I mouths are "none" under CDC/AAP, because it needs attachment loss of 3 mm or more on two teeth. So 2017 counts more people as having gum disease, and prevalence from the two can't be compared directly ([action item B6](action_items.md)).
-- **ACES agrees with the 2017 worksheet on 3,210 of 3,437 mouths** (`data/sites/aap_vs_aces.csv`). It moves some stage III to II, and some stage IV to III when teeth are lost but enough opposing pairs remain.
+- **Stage I never meets CDC/AAP:** 100% of stage I visits are "none" under CDC/AAP, because it needs attachment loss of 3 mm or more on two teeth. So 2017 counts more people as having gum disease, and prevalence from the two can't be compared directly ([action item B6](action_items.md)).
+- **ACES agrees with the 2017 worksheet on 3,210 of 3,437 charted visits** (`data/sites/aap_vs_aces.csv`). It moves some stage III to II, and some stage IV to III when teeth are lost but enough opposing pairs remain.
 
 ## 2. The sources
 
