@@ -503,3 +503,16 @@ def clean(tables: dict[str, pd.DataFrame]) -> dict[str, pd.DataFrame]:
                 v = v.mask(margin, 100 - v)
             pm[c] = v.mask(v == -1)
     return out
+
+
+@traced
+def load_log(written: dict[str, dict[str, pd.DataFrame]], run_id: str, run_ts: pd.Timestamp, git_commit_sha: str,
+             seed: int, n_patients: int) -> pd.DataFrame:
+    """One row per table a load wrote ({schema: {table: DataFrame}}), with the run's batch key. The Open Dental tables
+    keep Open Dental's columns only, so this is where each row's run is recorded: every table is overwritten per run,
+    so all its rows belong to the run logged last for it."""
+    rows = [{"schema_name": schema, "table_name": name, "row_count": len(df), "seed_num": seed,
+             "patient_count": n_patients, "run_id": run_id, "run_ts": run_ts, "git_commit_sha": git_commit_sha}
+            for schema, tables in written.items() for name, df in tables.items()]
+    return pd.DataFrame(rows, columns=["schema_name", "table_name", "row_count", "seed_num", "patient_count",
+                                       "run_id", "run_ts", "git_commit_sha"])

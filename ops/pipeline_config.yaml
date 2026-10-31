@@ -111,7 +111,7 @@ pipelines:
     retry_interval_seconds: 0
     runbook_name: default
     data_label_code: synthetic
-    output_names: [bronze_opendental_perio.patient, bronze_opendental_perio.procedurelog, silver_opendental_perio.periomeasure, silver_opendental_perio.tooth_loss_truth]
+    output_names: [bronze_opendental_perio.patient, bronze_opendental_perio.procedurelog, silver_opendental_perio.periomeasure, silver_opendental_perio.tooth_loss_truth, silver_opendental_perio.load_log]
   kaggle_medgemma:
     owner_name: repo owner
     sla_seconds: 604800

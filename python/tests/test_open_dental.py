@@ -170,8 +170,12 @@ def test_the_load_job_generates_and_loads_bronze_and_silver():
     assert p["od_catalog"] == "${resources.schemas.opendental_perio_bronze.catalog_name}"
     assert "opendental_perio_data" in p["landing_dir"]
     nb = (ROOT / "databricks" / "notebooks" / "12_load_open_dental.py").read_text()
-    for call in ("open_dental.write(", "open_dental.clean(", 'mode("overwrite")', "run_id", "git_commit_sha"):
+    for call in ("open_dental.write(", "open_dental.clean(", 'mode: str = "overwrite"', 'mode="append"',
+                 "open_dental.load_log("):
         assert call in nb, call
+    # the Open Dental tables hold Open Dental's columns only; the batch key goes in load_log (AGENTS.md: every row
+    # still traces to its run, through the one load_log row per run and table)
+    assert ".assign(run_id" not in nb and "saveAsTable" in nb
     assert "answer_key" in nb                  # the truth lands in its own folder, read only by the evaluation
 
 
@@ -179,3 +183,14 @@ def test_the_deploy_loads_the_extract_once_it_is_missing():
     deploy = (ROOT / ".github" / "workflows" / "deploy.yml").read_text()
     assert "bundle run -t \"$TARGET\" --no-wait open_dental_load" in deploy
     assert "bronze_opendental_perio.patient" in deploy
+
+
+def test_the_load_log_records_each_table_written_with_its_batch_key():
+    tables, truth = od.build(od.Params(n_patients=5), seed=1)
+    log = od.load_log({"bronze_opendental_perio": tables, "silver_opendental_perio": {"tooth_loss_truth": truth}},
+                      run_id="123", run_ts=pd.Timestamp("2026-10-31"), git_commit_sha="abc", seed=1, n_patients=5)
+    assert list(log.columns) == ["schema_name", "table_name", "row_count", "seed_num", "patient_count",
+                                 "run_id", "run_ts", "git_commit_sha"]
+    assert len(log) == len(tables) + 1
+    row = log[log["table_name"] == "procedurelog"].iloc[0]
+    assert row["row_count"] == len(tables["procedurelog"]) and row["run_id"] == "123"

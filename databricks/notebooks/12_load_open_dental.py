@@ -8,8 +8,9 @@
 # MAGIC   (`open_dental.clean`: -1 is null, gingival margins of 100+ are negative), and the answer key
 # MAGIC   `tooth_loss_truth`, which only the evaluation reads.
 # MAGIC
-# MAGIC Every table is overwritten per run (idempotent) and every row carries `run_id`, `run_ts` and
-# MAGIC `git_commit_sha`. The same seed gives the same rows. Synthetic data only. Serverless CPU is enough.
+# MAGIC Every table is overwritten per run (idempotent) and keeps Open Dental's columns only. Each run appends one
+# MAGIC row per table written to `silver_opendental_perio.load_log`, with `run_id`, `run_ts` and `git_commit_sha`.
+# MAGIC The same seed gives the same rows. Synthetic data only. Serverless CPU is enough.
 
 # COMMAND ----------
 
@@ -63,17 +64,24 @@ print(counts)
 run_ts = pd.Timestamp.now(tz="UTC").tz_localize(None)
 
 
-def save(df: pd.DataFrame, schema: str, name: str) -> None:
-    """Overwrite the table with this run's rows, each with its batch key."""
-    df = df.assign(run_id=run_id, run_ts=run_ts, git_commit_sha=git_commit)
+def save(df: pd.DataFrame, schema: str, name: str, mode: str = "overwrite") -> None:
+    """Write the table as it is: Open Dental's columns only. Its run is recorded in load_log."""
     sdf = spark.createDataFrame(df.astype({c: "string" for c in df.columns if df[c].dtype == object}))  # noqa: F821
-    sdf.write.mode("overwrite").option("overwriteSchema", "true").saveAsTable(f"{catalog}.{schema}.{name}")
+    sdf.write.mode(mode).option("overwriteSchema", "true").saveAsTable(f"{catalog}.{schema}.{name}")
     print(f"{catalog}.{schema}.{name}: {len(df):,} rows")
 
 
 tables, truth = open_dental.build(params, seed)
+silver_tables = {**open_dental.clean(tables), "tooth_loss_truth": truth}
 for name, df in tables.items():
     save(df, bronze, name)
-for name, df in open_dental.clean(tables).items():
+for name, df in silver_tables.items():
     save(df, silver, name)
-save(truth, silver, "tooth_loss_truth")
+
+# COMMAND ----------
+
+# The batch key (AGENTS.md "Failures, retries and reruns"): one row per table written, appended per run. Every table
+# above is overwritten whole, so all its rows belong to the run logged last for it.
+log = open_dental.load_log({bronze: tables, silver: silver_tables}, run_id=run_id, run_ts=run_ts,
+                           git_commit_sha=git_commit, seed=seed, n_patients=params.n_patients)
+save(log, silver, "load_log", mode="append")

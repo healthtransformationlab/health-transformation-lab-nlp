@@ -269,8 +269,9 @@ relationship joins declared columns; every OMOP column names its source; the gen
   twins, checked by `r/tests/test_parity.R`. Model fitting stays Python only.
 - **FR-006** Metrics (AUC, Brier, sensitivity, specificity, calibration bins) get base-R twins too. If spec
   023's `class_metrics` has landed, the binary case reuses it.
-- **FR-007** Writes are idempotent (overwrite by run, or delete-then-append by `run_id`). Every row carries
-  `run_id`, `run_ts` and `git_commit_sha`.
+- **FR-007** Writes are idempotent (overwrite by run, or delete-then-append by `run_id`). The Open Dental tables
+  keep Open Dental's columns only; each run appends one row per table written to `silver_opendental_perio.load_log`
+  with `run_id`, `run_ts` and `git_commit_sha`, and the derived tables carry them on every row.
 - **FR-008** No OMOP mapping, no note text, no language models anywhere in this bench.
 - **FR-010** Two training label sets, each with its own fitted models:
   - **completed:** extractions with `ProcStatus` 2 and a mapped diagnosis;
