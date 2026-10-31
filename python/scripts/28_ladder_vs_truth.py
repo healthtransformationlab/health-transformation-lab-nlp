@@ -9,6 +9,7 @@ Writes data/datasets/ladder/:
                         stage IV recall, unsafe and S2 rates, calibration error
   ladder_preds.csv      the predictions scored (R recomputes the point estimates from these)
   ladder_proba.csv      class probabilities, long (method, visit_id, p_<status>)
+  ladder_by_stageable.csv  per method: n and accuracy on charts that can and can't be staged (spec 030)
 The truth is the generator's: these are synthetic-data results, not clinical performance.
 """
 
@@ -48,5 +49,8 @@ table.sort_values("accuracy", ascending=False).to_csv(out / "ladder_vs_truth.csv
 pd.DataFrame(preds).assign(truth=truth).rename_axis("visit_id").reset_index().to_csv(out / "ladder_preds.csv", index=False)
 pd.concat([p.assign(method=m) for m, p in proba.items()]).rename_axis("visit_id").reset_index().to_csv(
     out / "ladder_proba.csv", index=False)
+# spec 030: the same scores on charts that can be staged (a probing chart or a radiograph) and on those that can't
+split = ladder_eval.by_difficulty(truth, preds, ladder_eval.stageable(key)).rename(columns={"difficulty": "stageable_code"})
+split.to_csv(out / "ladder_by_stageable.csv", index=False)
 print(table.sort_values("accuracy", ascending=False).round(3).to_string(index=False))
 print("wrote", out, "(synthetic truth; not clinical performance)")

@@ -502,3 +502,23 @@ def test_summary_and_results_page_links_resolve_from_where_they_live(summary, md
     for text, home in ((summary, rr.SUMMARY_DOC), (md, rr.RESULTS_DOC)):
         for link in re.findall(r"\]\(([^)#:]+)(?:#[^)]*)?\)", text):
             assert (home.parent / link).exists(), (home.name, link)
+
+
+# ---------- spec 030 (#387): what a synthetic score means ----------
+def test_rule_sharing_methods_are_marked_and_scoring_is_explained(md, summary):
+    from health_transformation_lab_nlp import ladder_eval
+    rows = _rows(_section(md, rr.PHENOTYPE_TITLE))
+    marked = [r for r in rows if _cell(r, 4).endswith(rr.RULES_MARK)]       # the Approach column
+    assert marked and all(ladder_eval.uses_answer_key_rules(re.search(r"`([^`]+)`", _cell(r, 2)).group(1))
+                          for r in marked)
+    unmarked = [r for r in rows if not _cell(r, 4).endswith(rr.RULES_MARK)]
+    assert not any(ladder_eval.uses_answer_key_rules(re.search(r"`([^`]+)`", _cell(r, 2)).group(1)) for r in unmarked)
+    assert "same 2017 rules that made the answer key" in md
+    assert "(scoring.md)" in md and "(../scoring.md)" in summary
+
+
+def test_the_scoring_page_says_what_a_synthetic_score_is_and_isnt():
+    page = (REPO_ROOT / "docs" / "scoring.md").read_text()
+    for phrase in ("agreement with the synthetic answer key", "not accuracy", "cannot_determine",
+                   "agreement_vs_humans", "ladder_by_stageable.csv", "not_stageable"):
+        assert phrase in page, phrase

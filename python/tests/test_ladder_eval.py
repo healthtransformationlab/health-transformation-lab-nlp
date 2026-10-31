@@ -73,3 +73,35 @@ def test_missing_charts_counts_unscored_review_charts():
     truth = pd.Series(["healthy"] * 4, index=[1, 2, 3, 4])
     assert ladder_eval.missing_charts(pd.Series(["healthy"] * 4, index=[1, 2, 3, 4]), truth) == 0
     assert ladder_eval.missing_charts(pd.Series(["healthy", None], index=[1, 2]), truth) == 3   # a --limit run
+
+
+# ---------- spec 030 (#387): what a synthetic score means ----------
+def test_a_chart_without_a_probing_chart_or_radiograph_cant_be_staged():
+    key = pd.DataFrame({"probing_chart": ["healthy", "unknown", "unknown", "periodontitis_stage_2"],
+                        "rad_present": [0.0, 1.0, 0.0, None]}, index=[1, 2, 3, 4])
+    assert list(ladder_eval.stageable(key)) == ["stageable", "stageable", "not_stageable", "stageable"]
+
+
+def test_methods_that_use_the_answer_keys_rules_are_named():
+    for m in ("note_rules", "rules_baseline", "modernbert-base+cw+s2+rules4", "algorithm_v0", "algorithm_design",
+              "probing_chart", "radiograph_ai"):
+        assert ladder_eval.uses_answer_key_rules(m), m
+    for m in ("modernbert-base+cw+s2", "tfidf_logreg", "medgemma-1.5-4b-it", "exam_form", "proc_dx_planned"):
+        assert not ladder_eval.uses_answer_key_rules(m), m
+
+
+def test_scores_split_by_stageable_charts():
+    truth = pd.Series(["healthy", S4, S4, "gingivitis"], index=[1, 2, 3, 4])
+    level = pd.Series(["stageable", "stageable", "not_stageable", "not_stageable"], index=[1, 2, 3, 4])
+    got = ladder_eval.by_difficulty(truth, {"m": pd.Series(["healthy", "healthy", S4, "healthy"], index=[1, 2, 3, 4])},
+                                    level)
+    assert got.set_index("difficulty").loc["stageable", "accuracy"] == 0.5
+    assert got.set_index("difficulty").loc["not_stageable", "n"] == 2
+
+
+def test_the_ladder_script_writes_the_stageable_split():
+    from health_transformation_lab_nlp.paths import REPO_ROOT
+    src = (REPO_ROOT / "python" / "scripts" / "28_ladder_vs_truth.py").read_text()
+    assert "ladder_by_stageable.csv" in src and "ladder_eval.stageable(" in src
+    parity = (REPO_ROOT / "r" / "tests" / "test_parity.R").read_text()
+    assert "ladder_by_stageable.csv" in parity
