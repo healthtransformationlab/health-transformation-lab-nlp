@@ -217,6 +217,197 @@ standard code. Standard codes, when present, are in `DiagnosticCode` (ICD-9 or I
 | `Phone` | string |  |
 | `Fax` | string |  |
 
+## Further tables of a research extract (#381)
+Checked in the same source (`24_3`, `d804c19`) on 2026-10-31. Only Open Dental's own columns are listed. An extract
+may add its own (a research ID in place of `PatNum`, days since the first visit, insurance types copied from the
+insurance tables, age); those aren't Open Dental's and stay out. Open Dental's `language` table holds the
+software's screen translations, not patient languages, so it isn't here.
+
+### `provider`
+*(Provider.cs)*
+
+| Column | Type | Meaning |
+|---|---|---|
+| `ProvNum` | bigint | primary key |
+| `Suffix` | string | credentials, e.g. DDS, RDH |
+| `Specialty` | bigint | FK to `definition.DefNum` (category ProviderSpecialties) |
+| `IsSecondary` | bool | a hygienist or other secondary provider |
+| `IsNotPerson` | bool | a billing entity or placeholder, not a person |
+| `CustomID` | string | a practice's own provider ID |
+
+### `appointment`
+*(Appointment.cs)*
+
+| Column | Type | Meaning |
+|---|---|---|
+| `AptNum` | bigint | primary key |
+| `PatNum` | bigint | FK to `patient` |
+| `ProvNum` | bigint | FK to `provider`: the dentist |
+| `ProvHyg` | bigint | FK to `provider`: the hygienist |
+| `AptDateTime` | datetime | when it is scheduled |
+| `Pattern` | string | its length, as a time pattern |
+| `ClinicNum` | bigint | FK to `clinic` |
+| `IsHygiene` | bool | a hygiene appointment |
+| `ProcDescript` | string | the procedures booked, as text |
+
+### `medication`
+*(Medication.cs)*
+
+| Column | Type | Meaning |
+|---|---|---|
+| `MedicationNum` | bigint | primary key |
+| `MedName` | string | name |
+| `GenericNum` | bigint | FK to `medication`: its generic |
+| `Notes` | string | free text |
+| `RxCui` | bigint | RxNorm concept |
+
+### `medicationpat`
+*(MedicationPat.cs)*
+
+| Column | Type | Meaning |
+|---|---|---|
+| `MedicationPatNum` | bigint | primary key |
+| `PatNum` | bigint | FK to `patient` |
+| `MedicationNum` | bigint | FK to `medication` |
+| `PatNote` | string | free text about this patient's use; would hold PHI |
+| `DateStart` | date | may be empty |
+| `DateStop` | date | may be empty |
+| `ProvNum` | bigint | FK to `provider`: prescriber |
+| `IsCpoe` | bool | prescribed here (computerised order entry) |
+
+### `allergy`
+*(Allergy.cs)*
+
+| Column | Type | Meaning |
+|---|---|---|
+| `AllergyNum` | bigint | primary key |
+| `AllergyDefNum` | bigint | FK to `allergydef` |
+| `PatNum` | bigint | FK to `patient` |
+| `Reaction` | string | free text; would hold PHI |
+| `StatusIsActive` | bool | still active |
+
+### `allergydef`
+*(AllergyDef.cs)*
+
+| Column | Type | Meaning |
+|---|---|---|
+| `AllergyDefNum` | bigint | primary key |
+| `Description` | string | the allergen |
+| `IsHidden` | bool | hidden from the list |
+| `SnomedType` | enum SnomedAllergy | kind of allergy |
+| `MedicationNum` | bigint | FK to `medication`, for a drug allergy |
+| `UniiCode` | string | the substance's UNII code, for a non-drug allergy |
+
+### `sheet`
+*(Sheet.cs)*
+
+| Column | Type | Meaning |
+|---|---|---|
+| `SheetNum` | bigint | primary key: one filled-in form, e.g. an exam form |
+| `SheetType` | enum SheetTypeEnum | kind of form |
+| `PatNum` | bigint | FK to `patient` |
+| `DateTimeSheet` | datetime | when it was filled in |
+| `Description` | string | the form's name |
+| `ClinicNum` | bigint | FK to `clinic` |
+
+### `sheetfield`
+*(SheetField.cs)*
+
+| Column | Type | Meaning |
+|---|---|---|
+| `SheetFieldNum` | bigint | primary key: one answer on a form |
+| `SheetNum` | bigint | FK to `sheet` |
+| `FieldName` | string | the field |
+| `FieldValue` | string | the answer; free text can hold PHI |
+| `RadioButtonGroup` | string | which question a radio answer belongs to |
+| `ReportableName` | string | a stable name for reporting |
+
+### `vitalsign`
+*(Vitalsign.cs)*
+
+| Column | Type | Meaning |
+|---|---|---|
+| `VitalsignNum` | bigint | primary key |
+| `PatNum` | bigint | FK to `patient` |
+| `BpSystolic` | int | systolic blood pressure |
+| `BpDiastolic` | int | diastolic blood pressure |
+| `Pulse` | int | pulse |
+| `DateTaken` | date |  |
+
+### `patientrace`
+*(PatientRace.cs)*
+
+| Column | Type | Meaning |
+|---|---|---|
+| `PatientRaceNum` | bigint | primary key; a patient can have several |
+| `PatNum` | bigint | FK to `patient` |
+| `CdcrecCode` | string | race or ethnicity code (CDC Race and Ethnicity) |
+
+### `cdcrec`
+*(Cdcrec.cs)*
+
+| Column | Type | Meaning |
+|---|---|---|
+| `CdcrecNum` | bigint | primary key |
+| `CdcrecCode` | string | the code |
+| `HeirarchicalCode` | string | its place in the hierarchy (Open Dental's spelling) |
+| `Description` | string |  |
+
+### `site`
+*(Site.cs)*
+
+| Column | Type | Meaning |
+|---|---|---|
+| `SiteNum` | bigint | primary key: a place of care outside the office (school, nursing home) |
+| `Description` | string |  |
+| `Note` | string | free text |
+| `Zip` | string | postcode |
+| `PlaceService` | enum PlaceOfService | kind of place |
+
+### `procnote`
+*(ProcNote.cs)*
+
+| Column | Type | Meaning |
+|---|---|---|
+| `ProcNoteNum` | bigint | primary key |
+| `PatNum` | bigint | FK to `patient` |
+| `ProcNum` | bigint | FK to `procedurelog` |
+| `EntryDateTime` | datetime | when written |
+| `Note` | string | the clinical note; would hold PHI |
+
+### `ehrmeasureevent`
+*(EhrMeasureEvent.cs)*
+
+| Column | Type | Meaning |
+|---|---|---|
+| `EhrMeasureEventNum` | bigint | primary key |
+| `DateTEvent` | datetime |  |
+| `EventType` | enum EhrMeasureEventType | e.g. a tobacco use assessment |
+| `PatNum` | bigint | FK to `patient` |
+| `MoreInfo` | string | free text; would hold PHI |
+| `CodeValueResult` | string | the result, e.g. a SNOMED smoking status |
+| `DateStartTobacco` | date | when tobacco use began, if known |
+| `TobaccoCessationDesire` | byte | 0–10 |
+
+### `patfield`
+*(PatField.cs)*
+
+| Column | Type | Meaning |
+|---|---|---|
+| `PatFieldNum` | bigint | primary key |
+| `PatNum` | bigint | FK to `patient` |
+| `FieldName` | string | a practice-defined patient field, e.g. research consent |
+| `FieldValue` | string | its value |
+
+### `snomed`
+*(Snomed.cs)*
+
+| Column | Type | Meaning |
+|---|---|---|
+| `SnomedNum` | bigint | primary key |
+| `SnomedCode` | string | the code |
+| `Description` | string |  |
+
 ## Treatment plans: one planned procedure, many copies (added for #377)
 
 From the same classes:

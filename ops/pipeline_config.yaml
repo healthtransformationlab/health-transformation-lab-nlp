@@ -102,6 +102,16 @@ pipelines:
     runbook_name: default
     data_label_code: synthetic
     output_names: [gold_perio_bench.fact_prediction, gold_perio_bench.result_file]
+  open_dental_load:
+    owner_name: repo owner
+    sla_seconds: 2592000         # on demand: after a deploy finds no bronze tables, or a generator change
+    schedule_text: on demand (deploy starts it when bronze_opendental_perio is empty)
+    expectation_names: [conformance]
+    retry_max_count: 0
+    retry_interval_seconds: 0
+    runbook_name: default
+    data_label_code: synthetic
+    output_names: [bronze_opendental_perio.patient, bronze_opendental_perio.procedurelog, silver_opendental_perio.periomeasure, silver_opendental_perio.tooth_loss_truth, silver_opendental_perio.load_log]
   kaggle_medgemma:
     owner_name: repo owner
     sla_seconds: 604800

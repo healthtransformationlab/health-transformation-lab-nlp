@@ -13,6 +13,25 @@ erDiagram
     patient ||--o{ toothinitial : "patnum"
     patient ||--o{ disease : "patnum"
     diseasedef ||--o{ disease : "diseasedefnum"
+    patient ||--o{ appointment : "patnum"
+    provider ||--o{ appointment : "provnum"
+    clinic |o--o{ appointment : "clinicnum"
+    provider ||--o{ procedurelog : "provnum"
+    patient ||--o{ medicationpat : "patnum"
+    medication ||--o{ medicationpat : "medicationnum"
+    patient ||--o{ allergy : "patnum"
+    allergydef ||--o{ allergy : "allergydefnum"
+    medication |o--o{ allergydef : "medicationnum"
+    patient ||--o{ sheet : "patnum"
+    sheet ||--o{ sheetfield : "sheetnum"
+    patient ||--o{ vitalsign : "patnum"
+    patient ||--o{ patientrace : "patnum"
+    cdcrec ||--o{ patientrace : "cdcreccode"
+    site |o--o{ patient : "sitenum"
+    procedurelog ||--o{ procnote : "procnum"
+    patient ||--o{ ehrmeasureevent : "patnum"
+    snomed |o..o{ ehrmeasureevent : "codevalueresult = snomedcode"
+    patient ||--o{ patfield : "patnum"
     patient ||--o{ patient_tooth : "patnum = patient_id"
     procedurelog ||--o| planned_extraction : "procnum = procedure_id (procstatus 1)"
     planned_extraction }o..o| patient_tooth : "labels planned teeth"
@@ -163,6 +182,127 @@ erDiagram
         string snomedcode "SNOMED code"
         string icd9code "ICD-9 code"
         boolean ishidden "hidden from the list"
+    }
+    provider {
+        bigint provnum PK "provider key"
+        string suffix "credentials, e.g. DDS, RDH"
+        bigint specialty FK "specialty (definition)"
+        boolean issecondary "a hygienist or other secondary provider"
+        boolean isnotperson "a billing entity or placeholder"
+        string customid "a practice's own provider ID"
+    }
+    appointment {
+        bigint aptnum PK "appointment key"
+        bigint patnum FK "patient"
+        bigint provnum FK "dentist"
+        bigint provhyg FK "hygienist"
+        timestamp aptdatetime "when scheduled"
+        string pattern "length, as a time pattern"
+        bigint clinicnum FK "office"
+        boolean ishygiene "a hygiene appointment"
+        string procdescript "procedures booked, as text"
+    }
+    medication {
+        bigint medicationnum PK "medication key"
+        string medname "name"
+        bigint genericnum FK "its generic (medication)"
+        string notes "free text"
+        bigint rxcui "RxNorm concept"
+    }
+    medicationpat {
+        bigint medicationpatnum PK "key"
+        bigint patnum FK "patient"
+        bigint medicationnum FK "medication"
+        string patnote "free text about this patient's use"
+        date datestart "may be empty"
+        date datestop "may be empty"
+        bigint provnum FK "prescriber"
+        boolean iscpoe "prescribed here"
+    }
+    allergy {
+        bigint allergynum PK "key"
+        bigint allergydefnum FK "the allergen"
+        bigint patnum FK "patient"
+        string reaction "free text"
+        boolean statusisactive "still active"
+    }
+    allergydef {
+        bigint allergydefnum PK "key"
+        string description "the allergen"
+        boolean ishidden "hidden from the list"
+        int snomedtype "kind of allergy (SnomedAllergy)"
+        bigint medicationnum FK "the drug, for a drug allergy"
+        string uniicode "UNII code, for a non-drug allergy"
+    }
+    sheet {
+        bigint sheetnum PK "form key"
+        int sheettype "kind of form (SheetTypeEnum)"
+        bigint patnum FK "patient"
+        timestamp datetimesheet "when filled in"
+        string description "the form's name"
+        bigint clinicnum FK "office"
+    }
+    sheetfield {
+        bigint sheetfieldnum PK "key"
+        bigint sheetnum FK "the form"
+        string fieldname "the field"
+        string fieldvalue "the answer"
+        string radiobuttongroup "the question a radio answer belongs to"
+        string reportablename "a stable name for reporting"
+    }
+    vitalsign {
+        bigint vitalsignnum PK "key"
+        bigint patnum FK "patient"
+        int bpsystolic "systolic blood pressure"
+        int bpdiastolic "diastolic blood pressure"
+        int pulse "pulse"
+        date datetaken "date taken"
+    }
+    patientrace {
+        bigint patientracenum PK "key"
+        bigint patnum FK "patient"
+        string cdcreccode FK "race or ethnicity code (cdcrec)"
+    }
+    cdcrec {
+        bigint cdcrecnum PK "key"
+        string cdcreccode "the code"
+        string heirarchicalcode "its place in the hierarchy (Open Dental's spelling)"
+        string description "name"
+    }
+    site {
+        bigint sitenum PK "site key"
+        string description "name"
+        string note "free text"
+        string zip "postcode"
+        int placeservice "kind of place (PlaceOfService)"
+    }
+    procnote {
+        bigint procnotenum PK "key"
+        bigint patnum FK "patient"
+        bigint procnum FK "the procedure"
+        timestamp entrydatetime "when written"
+        string note "the clinical note"
+    }
+    ehrmeasureevent {
+        bigint ehrmeasureeventnum PK "key"
+        timestamp datetevent "when"
+        int eventtype "kind of event (EhrMeasureEventType)"
+        bigint patnum FK "patient"
+        string moreinfo "free text"
+        string codevalueresult FK "the result, e.g. a SNOMED smoking status"
+        date datestarttobacco "when tobacco use began, if known"
+        int tobaccocessationdesire "0–10"
+    }
+    patfield {
+        bigint patfieldnum PK "key"
+        bigint patnum FK "patient"
+        string fieldname "the field"
+        string fieldvalue "its value"
+    }
+    snomed {
+        bigint snomednum PK "key"
+        string snomedcode "the code"
+        string description "name"
     }
     patient_tooth {
         bigint patient_id PK, FK "patient.patnum"

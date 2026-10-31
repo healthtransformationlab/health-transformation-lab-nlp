@@ -37,7 +37,12 @@ def _research_columns(table):
 def test_open_dental_tables_are_the_ones_spec_029_researched():
     source = [n for n, t in OD.TABLES.items() if t.area == "source"]
     assert set(source) == {"patient", "clinic", "procedurelog", "procedurecode", "treatplan", "proctp", "definition",
-                           "perioexam", "periomeasure", "toothinitial", "disease", "diseasedef"}
+                           "perioexam", "periomeasure", "toothinitial", "disease", "diseasedef",
+                           # #381: the rest of a typical research extract
+                           "provider", "appointment", "medication", "medicationpat", "allergy", "allergydef", "sheet",
+                           "sheetfield", "vitalsign", "patientrace", "cdcrec", "site", "procnote", "ehrmeasureevent",
+                           "patfield", "snomed"}
+    assert "language" not in OD.TABLES          # Open Dental's language table is screen translations
     for name in source:
         allowed = _research_columns(name)
         for c in OD.TABLES[name].columns:
@@ -105,6 +110,8 @@ def test_a_column_profile_gives_nulls_distinct_and_value_counts():
     assert prof.column_profile(skewed).endswith("top results:\n  7=6 (21%);\n  8=4 (14%);\n  0=1 (4%)")
     dates = pd.Series(pd.to_datetime(["2016-03-01", "2019-07-02", None, "2024-01-05"]))
     assert prof.column_profile(dates) == "null=1 (25%);\nn_distinct=3;\nfirst=2016;\nlast=2024"
+    blanks = pd.Series(["", " ", "x", None])          # Open Dental stores blank text, not NULL: count it as null
+    assert prof.column_profile(blanks) == "null=3 (75%);\nn_distinct=1;\nx=1 (25%)"
     tables = prof.profile({"t": pd.DataFrame({"a": [1, None], "b": ["x", "y"]})})
     assert tables["t"]["rows"] == 2 and tables["t"]["columns"]["a"].startswith("null=1 (50%)")
 
@@ -137,23 +144,22 @@ def test_the_dictionary_shows_counts_or_says_they_are_not_measured():
 
 def test_the_open_dental_areas_sit_in_the_reference_layout():
     # the owner's reference data dictionary for an Open Dental extract (its layout only; nothing else is used):
-    # left Patient Health; centre-left Patient over Initial Odontogram; centre-right Misc Definitions over Location;
+    # left Medication + Allergy over Socio-Demographic over Patient Health; centre-left Provider over Research
+    # Authorization over Patient over Initial Odontogram; centre-right Appointment over Misc Definitions over Location;
     # right Perio Charting over Treatment Planning over Procedures; spec 029's own areas in a fifth column
     cols = {}
     for title, c, tables in OD.GROUPS:
         cols.setdefault(c, []).append(title)
-    assert cols[0] == ["Patient Health"]
-    assert cols[1] == ["Patient", "Initial Odontogram"]
-    assert cols[2] == ["Misc Definitions", "Location"]
+    assert cols[0] == ["Medication + Allergy", "Socio-Demographic", "Patient Health"]
+    assert cols[1] == ["Provider", "Research Authorization", "Patient", "Initial Odontogram"]
+    assert cols[2] == ["Appointment", "Misc Definitions", "Location"]
     assert cols[3] == ["Perio Charting", "Treatment Planning", "Procedures"]
     assert cols[4] == ["Tooth loss (spec 029)", "Data quality", "Answer key (evaluation only)"]
     tables = {title: t for title, _, t in OD.GROUPS}
     assert tables["Treatment Planning"] == ["proctp", "treatplan"]
-    assert tables["Patient Health"] == ["diseasedef", "disease"]
-    assert tables["Procedures"] == ["procedurelog", "procedurecode"]
+    assert tables["Patient Health"][:2] == ["diseasedef", "disease"]
+    assert tables["Procedures"][:2] == ["procedurelog", "procedurecode"] and "procnote" in tables["Procedures"]
+    assert tables["Location"] == ["clinic", "site"]
     assert tables["Perio Charting"] == ["perioexam", "periomeasure"]
-    # and vertically: Patient Health at the bottom, the centre columns in the middle, Procedures' column full height
-    assert OD.COLUMN_ALIGN == {0: "bottom", 1: "middle", 2: "middle"}
-    dic = _load("dictionary_erd")
-    tops = dic.group_tops(OD, {})
-    assert tops["Patient Health"] > tops["Perio Charting"] and tops["Patient"] > tops["Perio Charting"]
+    # every column now fills from the top, as in the reference
+    assert not getattr(OD, "COLUMN_ALIGN", {})

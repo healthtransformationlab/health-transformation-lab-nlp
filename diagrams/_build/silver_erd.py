@@ -1,7 +1,7 @@
 """opendental_silver_model.py and omop_silver_model.py -> their ERDs, drawn by gold_erd.py's writer (spec 029, #379).
 Writes   ../silver/source/{opendental,omop}_silver_{entity,full}.{mmd,drawio}
          ../silver/source/{opendental,omop}_silver_dictionary.drawio   the data-dictionary format (dictionary_erd.py),
-             profiled from data/datasets/open_dental/*.csv once spec 029's generator (T003) writes them
+             profiled from the seeded synthetic extract the load job writes (open_dental.py, spec 029)
          ../silver/data_model.md   both models as Mermaid (GitHub renders them) and every column
 Run: python3 silver_erd.py   (then render: render.md)
 """
@@ -13,7 +13,6 @@ import omop_silver_model
 import opendental_silver_model
 
 OUT = Path(__file__).resolve().parent.parent / "silver"
-EXTRACT = Path(__file__).resolve().parents[2] / "data" / "datasets" / "open_dental"   # spec 029 T003's output
 SRC = OUT / "source"
 MODELS = [("opendental_silver", opendental_silver_model), ("omop_silver", omop_silver_model)]
 TITLES = {
@@ -31,21 +30,15 @@ TITLES = {
 
 
 def extract_stats():
-    """Profile the synthetic Open Dental extract when it exists (lowercased names, as silver); else None, and the
-    dictionary says its counts aren't measured yet."""
-    if not EXTRACT.is_dir():
-        return None
-    import pandas as pd
+    """Profile the silver tables the load job writes: the seeded synthetic extract (open_dental.build with the job's
+    seed and size), cleaned as silver (open_dental.clean), and its answer key. The derived tooth-loss tables don't
+    exist yet, so the dictionary says they aren't measured."""
+    from health_transformation_lab_nlp import open_dental
 
     import table_profile
-    frames = {}
-    for f in sorted(EXTRACT.glob("*.csv")):
-        df = pd.read_csv(f)
-        df.columns = [c.lower() for c in df.columns]
-        for c in df.columns:
-            if "date" in c:
-                df[c] = pd.to_datetime(df[c], errors="coerce")
-        frames[f.stem.lower()] = df
+    tables, truth = open_dental.build(open_dental.Params(), seed=42)
+    frames = open_dental.clean(tables)
+    frames["tooth_loss_truth"] = truth
     return table_profile.profile(frames)
 
 

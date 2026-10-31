@@ -8,9 +8,9 @@ Implementation starts after this spec, plan and tasks are reviewed.
   `TABLES` is written from it in T003
 - [x] T001a #377 Spec, plan and research follow how Open Dental records diagnoses (the practice's own lists,
   changing over time) and treatment plans (one planned procedure, many editable copies)
-- [ ] T002 [US1] Failing tests: `test_open_dental.py` (seed, unchanged datasets, sources, no truth in the
+- [x] T002 [US1] Failing tests: `test_open_dental.py` (seed, unchanged datasets, sources, no truth in the
   extract, rates recovered)
-- [ ] T003 [US1] `open_dental.py` generator, own random stream; writes the extract and `tooth_loss_truth.csv`;
+- [x] T003 [US1] `open_dental.py` generator, own random stream; writes the extract and `tooth_loss_truth.csv`;
   two diagnosis lists with an adoption date and lag; planned extractions with their plan copies
 - [x] T004 [US1] `<layer>_opendental_perio` schemas and the landing volume in `schemas.py` and
   `unity_catalog.yml`; failing schema and bundle tests first (`fact_tooth_loss_prediction` goes in `gold_model.py`
@@ -23,7 +23,9 @@ Implementation starts after this spec, plan and tasks are reviewed.
   parity inputs
 - [ ] T006a [US2] Failing tests, then the bronze-to-silver data-quality checks after Kookal et al. 2024
   (completeness, accuracy, consistency; FR-009), with planted faults the generator records
-- [ ] T007 [US2] Load job: bronze as is, silver tooth table, idempotent, batch keys
+- [x] T007 [US2] Load job `open_dental_load` (`12_load_open_dental.py`): generates the extract into the landing
+  volume, bronze as generated, silver cleaned (`open_dental.clean`) plus the answer key; overwrite per run, batch
+  keys; deploy starts it when bronze is empty. The silver tooth table joins it with T006
 
 ## US3 #371: the model, checked against the hidden truth
 
@@ -41,3 +43,9 @@ Implementation starts after this spec, plan and tasks are reviewed.
 - [x] T013 [US4] A third format, the data dictionary (`dictionary_erd.py`, `table_profile.py`): subject areas, fact
   and dimension tables, row counts, each column's nulls, distinct and top values, PHI and open questions marked;
   it fills in once T003 writes the extract
+
+## US5 #381: the rest of a typical research extract
+
+- [x] T014 [US5] The 16 further Open Dental tables in research.md (checked in the source), the silver model and the
+  three ERDs, in the reference's subject areas; free text marked PHI
+- [x] T015 [US5] The generator (T003) and the load job (T007) write them too
