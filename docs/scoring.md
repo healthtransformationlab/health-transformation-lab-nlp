@@ -2,7 +2,8 @@
 
 PerioBench scores methods that find gum disease in dental records (phenotyping): each one reads a record and
 answers with a periodontal status, healthy to periodontitis stage 4, under the 2017 AAP/EFP classification. This page
-covers what a score means on synthetic records, and how real records would be scored. Spec 030 (#387).
+covers what a score means on synthetic records, and how real records would be scored. Spec 030 (#387). The definitions,
+sources and reading orders side by side: [standards.md](standards.md).
 
 ## On synthetic records: agreement with the synthetic answer key, not accuracy
 
