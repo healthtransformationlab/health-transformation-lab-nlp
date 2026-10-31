@@ -1,0 +1,37 @@
+erDiagram
+    clinic |o--o{ patient : "clinicnum"
+    clinic |o--o{ procedurelog : "clinicnum"
+    patient ||--o{ procedurelog : "patnum"
+    procedurecode ||--o{ procedurelog : "codenum"
+    definition |o--o{ procedurelog : "dx = defnum (diagnosis list)"
+    patient ||--o{ treatplan : "patnum"
+    treatplan ||--o{ proctp : "treatplannum"
+    procedurelog ||--o{ proctp : "procnumorig: one procedure, many copies"
+    definition |o..o{ proctp : "dx text = itemname (name, not a key)"
+    patient ||--o{ perioexam : "patnum"
+    perioexam ||--o{ periomeasure : "perioexamnum"
+    patient ||--o{ toothinitial : "patnum"
+    patient ||--o{ disease : "patnum"
+    diseasedef ||--o{ disease : "diseasedefnum"
+    patient ||--o{ patient_tooth : "patnum = patient_id"
+    procedurelog ||--o| planned_extraction : "procnum = procedure_id (procstatus 1)"
+    planned_extraction }o..o| patient_tooth : "labels planned teeth"
+    periomeasure }o..o| patient_tooth : "measures before the loss"
+    patient_tooth ||..o| tooth_loss_truth : "scored against (evaluation only)"
+    proctp }o..o{ tooth_loss_dq_check : "copies checked against the original"
+    patient
+    clinic
+    procedurelog
+    procedurecode
+    treatplan
+    proctp
+    definition
+    perioexam
+    periomeasure
+    toothinitial
+    disease
+    diseasedef
+    patient_tooth
+    planned_extraction
+    tooth_loss_dq_check
+    tooth_loss_truth

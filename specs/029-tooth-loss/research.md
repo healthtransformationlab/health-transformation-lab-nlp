@@ -11,7 +11,8 @@ Each class names its database table and documents every column. The table name c
 opendental.com, which publishes the same schema as documentation, is not reachable from the build container, so
 the source was used instead.
 
-Only the names, types and meanings below are recorded here, in our own words. No source code is copied. Only
+Only the names, types and meanings below are recorded here, in our own words. Columns added for #379 (the
+data-dictionary ERD) were checked in the same source on 2026-10-31. No source code is copied. Only
 the columns spec 029 needs are listed; each table has more.
 
 ## Tables and columns
@@ -29,6 +30,15 @@ the columns spec 029 needs are listed; each table has more.
 | `PriProv` | bigint | FK to `provider`; the primary provider |
 | `DateFirstVisit` | date | set automatically |
 | `SmokingSnoMed` | string | the most recent smoking status, as a SNOMED code |
+| `Zip` | string | postcode; a real extract keeps at most the first 3 digits |
+| `Guarantor` | bigint | FK to `patient`: the head of household |
+| `MedUrgNote` | string | free-text medical alert; would hold PHI |
+| `Premed` | bool | needs premedication before appointments |
+| `Language` | string | primary language, as a code |
+| `AdmitDate` | date | hospital admission date; can precede the first visit |
+| `SiteNum` | bigint | FK to `site`, a place of care such as a school or nursing home; 0 when none |
+| `ResponsParty` | bigint | FK to `patient`: who is responsible for finances |
+| `DateTimeDeceased` | datetime | date of death; would hold PHI |
 
 ### `procedurelog`
 *(Procedure.cs; table name set by `CrudTable`)*
@@ -52,6 +62,14 @@ the columns spec 029 needs are listed; each table has more.
 | `ProvNum` | bigint | FK to `provider` |
 | `ClinicNum` | bigint | FK to `clinic` |
 | `AptNum` | bigint | FK to `appointment` |
+| `ProcFee` | double | fee |
+| `ToothRange` | string | teeth of a multi-tooth procedure, comma-separated |
+| `Priority` | bigint | FK to `definition.DefNum`: the treatment priority |
+| `PlaceService` | enum PlaceOfService | where it was done (office, school, nursing facility, mobile unit, ...) |
+| `Prosthesis` | char | blank no, I initial, R replacement |
+| `MedicalCode` | string | optional medical procedure code |
+| `UnitQty` | int | units billed, 1 by default |
+| `SiteNum` | bigint | FK to `site` |
 
 ### `procedurecode`
 *(ProcedureCode.cs)*
@@ -63,6 +81,11 @@ the columns spec 029 needs are listed; each table has more.
 | `Descript`, `AbbrDesc` | string | description, abbreviation |
 | `TreatArea` | enum TreatmentArea | tooth, surface, quadrant, arch, mouth |
 | `DiagnosticCodes` | string | up to 4 default ICD-10 codes, comma-separated |
+| `ProcCat` | bigint | FK to `definition.DefNum`: the procedure category |
+| `IsProsth` | bool | crown, bridge, denture or partial |
+| `IsHygiene` | bool | a hygiene procedure |
+| `MedicalCode` | string | a matching medical code, optional |
+| `IsRadiology` | bool | a radiology procedure |
 
 ### `treatplan`
 *(TreatPlan.cs)*
@@ -73,6 +96,7 @@ the columns spec 029 needs are listed; each table has more.
 | `PatNum` | bigint | FK to `patient` |
 | `DateTP` | date | date of the plan |
 | `TPStatus` | enum TreatPlanStatus | 0 Saved, 1 Active, 2 Inactive |
+| `Signature` | string | the signature captured when the plan was signed; empty when unsigned; would hold PHI |
 
 ### `proctp`
 *(ProcTP.cs: a planned procedure, copied into a saved plan)*
@@ -85,8 +109,16 @@ the columns spec 029 needs are listed; each table has more.
 | `ProcNumOrig` | bigint | FK to `procedurelog`, to compare with the original |
 | `ToothNumTP` | string | display text of the tooth number |
 | `ProcCode` | string | display text, not a key |
+| `Descript` | string | the procedure's description as text saved with the plan; can be edited (#379) |
 | `Dx` | string | the diagnosis *text* at the time the plan was saved (not a key) |
 | `Prognosis` | string | the prognosis text |
+| `ItemOrder` | int | its order within the plan, fixed when the plan is saved |
+| `Priority` | bigint | FK to `definition.DefNum`: the treatment priority |
+| `Surf` | string | surfaces, quadrant or arch, as text |
+| `ProcAbbr` | string | the code's abbreviation, as text; editable |
+| `ProvNum` | bigint | FK to `provider` |
+| `DateTP` | date | the date it was planned |
+| `ClinicNum` | bigint | FK to `clinic` |
 
 ### `perioexam`
 *(PerioExam.cs)*
@@ -128,6 +160,7 @@ The source says three things the plan has to follow:
 | `PatNum` | bigint | FK to `patient` |
 | `ToothNum` | string | 1–32 or A–Z |
 | `InitialType` | enum ToothInitialType | 0 Missing, 1 Hidden, 2 Primary, then shifts, rotations and drawings |
+| `Movement` | float | shift in mm, or rotation or tipping in degrees |
 
 A tooth recorded missing with no procedure is `InitialType` 0. It carries no reason and no date.
 
@@ -140,6 +173,8 @@ A tooth recorded missing with no procedure is `InitialType` 0. It carries no rea
 | `Category` | enum DefCat | which list the item belongs to. `Diagnosis`, `Prognosis` and `TxPriorities` are the ones spec 029 reads |
 | `ItemName` | string | the item's text, e.g. a diagnosis name |
 | `ItemValue` | string | extra information, used differently by each category |
+| `ItemOrder` | int | its place in the list, from 0 |
+| `IsHidden` | bool | hidden from the list; old items stay, with their keys |
 
 The diagnosis on a procedure (`procedurelog.Dx`) is therefore an item in the practice's **own** list, not a
 standard code. Standard codes, when present, are in `DiagnosticCode` (ICD-9 or ICD-10, per `IcdVersion`).
@@ -154,6 +189,7 @@ standard code. Standard codes, when present, are in `DiagnosticCode` (ICD-9 or I
 | `DiseaseDefNum` | bigint | FK to `diseasedef` |
 | `ProbStatus` | enum ProblemStatus | 0 Active, 1 Resolved, 2 Inactive |
 | `DateStart`, `DateStop` | date | may be empty when unknown |
+| `PatNote` | string | free-text note on the problem; would hold PHI |
 
 ### `diseasedef`
 *(DiseaseDef.cs: the list of problems)*
@@ -163,6 +199,7 @@ standard code. Standard codes, when present, are in `DiagnosticCode` (ICD-9 or I
 | `DiseaseDefNum` | bigint | primary key |
 | `DiseaseName` | string | |
 | `Icd10Code`, `ICD9Code`, `SnomedCode` | string | standard codes for the problem, e.g. diabetes |
+| `IsHidden` | bool | hidden from the list |
 
 ### `clinic`
 *(Clinic.cs)*
@@ -171,6 +208,14 @@ standard code. Standard codes, when present, are in `DiagnosticCode` (ICD-9 or I
 |---|---|---|
 | `ClinicNum` | bigint | primary key; used by patient, procedurelog and others |
 | `Description` | string | |
+| `Abbr` | string | short name |
+| `Address` | string |  |
+| `Address2` | string |  |
+| `City` | string |  |
+| `State` | string |  |
+| `Zip` | string |  |
+| `Phone` | string |  |
+| `Fax` | string |  |
 
 ## Treatment plans: one planned procedure, many copies (added for #377)
 

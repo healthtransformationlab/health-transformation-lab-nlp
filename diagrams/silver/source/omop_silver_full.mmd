@@ -1,0 +1,105 @@
+erDiagram
+    care_site |o--o{ person : "care_site_id"
+    care_site |o--o{ visit_occurrence : "care_site_id"
+    person ||--o{ visit_occurrence : "person_id"
+    person ||--o{ procedure_occurrence : "person_id"
+    person ||--o{ condition_occurrence : "person_id"
+    person ||--o{ measurement : "person_id"
+    person ||--o{ observation : "person_id"
+    person ||--o{ site : "person_id"
+    visit_occurrence |o--o{ procedure_occurrence : "visit_occurrence_id"
+    visit_occurrence |o--o{ condition_occurrence : "visit_occurrence_id"
+    visit_occurrence |o--o{ measurement : "visit_occurrence_id"
+    site ||--o{ site_event : "site_id"
+    procedure_occurrence ||..o{ site_event : "event_id (one of three tables)"
+    condition_occurrence ||..o{ site_event : "event_id"
+    measurement ||..o{ site_event : "event_id"
+    concept ||--o{ procedure_occurrence : "procedure_concept_id"
+    concept ||--o{ condition_occurrence : "condition_concept_id"
+    concept ||--o{ measurement : "measurement_concept_id"
+    concept ||--o{ site : "site_concept_id"
+    care_site {
+        bigint care_site_id PK "← clinic.clinicnum"
+        string care_site_name "← clinic.description"
+    }
+    person {
+        bigint person_id PK "← patient.patnum"
+        int gender_concept_id FK "← patient.gender, mapped to a Gender concept"
+        int year_of_birth "← year of patient.birthdate"
+        timestamp birth_datetime "← patient.birthdate"
+        bigint care_site_id FK "← patient.clinicnum"
+        string person_source_value "← patient.patnum"
+    }
+    visit_occurrence {
+        bigint visit_occurrence_id PK "← built from patnum and the procedure or exam date"
+        bigint person_id FK "← patient.patnum"
+        int visit_concept_id FK "not from Open Dental: outpatient visit"
+        date visit_start_date "← procedurelog.procdate or perioexam.examdate"
+        bigint care_site_id FK "← procedurelog.clinicnum"
+    }
+    procedure_occurrence {
+        bigint procedure_occurrence_id PK "← procedurelog.procnum (procstatus 2 only)"
+        bigint person_id FK "← procedurelog.patnum"
+        int procedure_concept_id FK "← procedurecode.proccode, as a CDT concept"
+        date procedure_date "← procedurelog.datecomplete"
+        int procedure_type_concept_id "not from Open Dental: EHR record"
+        bigint visit_occurrence_id FK "← patnum and procedure date"
+        string procedure_source_value "← procedurecode.proccode"
+    }
+    condition_occurrence {
+        bigint condition_occurrence_id PK "← built from procnum or diseasenum"
+        bigint person_id FK "← patnum"
+        int condition_concept_id FK "← definition.itemname via a local map (0 when an item has no standard concept); disease: diseasedef.icd10code"
+        date condition_start_date "← procedurelog.datecomplete, or disease.datestart (may be empty)"
+        int condition_type_concept_id "not from Open Dental: EHR record"
+        bigint visit_occurrence_id FK "← patnum and date"
+        string condition_source_value "← definition.itemname (practice list), or diseasedef.icd10code"
+    }
+    measurement {
+        bigint measurement_id PK "← built from periomeasurenum and site"
+        bigint person_id FK "← perioexam.patnum"
+        int measurement_concept_id FK "← periomeasure.sequencetype, as a local concept (omop/vocab/local_concepts.csv)"
+        date measurement_date "← perioexam.examdate"
+        double value_as_number "← mbvalue … dlvalue, decoded (-1 → null, 100+ → negative)"
+        int unit_concept_id "not from Open Dental: millimetre"
+        bigint visit_occurrence_id FK "← patnum and exam date"
+        string measurement_source_value "← sequencetype and site name"
+    }
+    observation {
+        bigint observation_id PK "← built from patnum, or toothinitialnum"
+        bigint person_id FK "← patnum"
+        int observation_concept_id FK "← patient.smokingsnomed (SNOMED), or a local 'tooth missing' concept"
+        date observation_date "← patient.datefirstvisit: toothinitial has no date, so one is assumed"
+        string observation_source_value "← smokingsnomed, or toothinitial.toothnum"
+    }
+    site {
+        bigint site_id PK "← built from patnum and tooth number"
+        bigint person_id FK "← patnum"
+        int site_concept_id FK "← tooth number, as a SNOMED tooth concept"
+        string site_source_value "← procedurelog.toothnum, periomeasure.inttooth, toothinitial.toothnum"
+        date site_start_date "not from Open Dental: eruption is never recorded"
+        date site_end_date "← the extraction's procedurelog.datecomplete; null when missing at entry"
+        int site_type_concept_id "not from Open Dental: EHR record"
+    }
+    site_event {
+        bigint site_event_id PK "← built"
+        bigint site_id FK "← the tooth"
+        bigint event_id "← procedure_occurrence_id, condition_occurrence_id or measurement_id"
+        int event_field_concept_id "not from Open Dental: which table event_id is in"
+        int site_event_type_concept_id "not from Open Dental: EHR record"
+    }
+    concept {
+        int concept_id PK "concept key"
+        string concept_code "the code in its vocabulary"
+        string vocabulary_id "CDT · SNOMED · ICD10CM · DENTAL_LOCAL"
+        string domain_id "Procedure · Condition · Measurement · Observation · Spec Anatomic Site"
+        string concept_name "name"
+    }
+    not_mapped {
+        — planned_procedures "procstatus 1: the CDM records what happened; planned extractions, spec 029's second label set, have no home"
+        — plan_copies "proctp and treatplan: alternatives per exam and repeats at later exams"
+        — edited_plan_text "proctp code, tooth and diagnosis text that differs from the original"
+        — diagnosis_list_in_use "which practice list an item came from, and when the 2017 list replaced the older one"
+        — missing_tooth_dates "toothinitial has no date or reason; the observation date above is assumed"
+        — prognosis "procedurelog.prognosis has no standard concept"
+    }

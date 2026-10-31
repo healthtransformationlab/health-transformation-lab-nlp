@@ -177,6 +177,24 @@ alternative `stage4_rule`.
 4. **Given** the two label sets, **Then** both models are scored on the same held-out teeth and the same
    missing-at-entry teeth, so what the planned extractions add (or cost) is measured.
 
+### User Story 4 - ERDs of the Open Dental silver tables and an OMOP alternative (Priority: P2) #379
+
+Draw.io ERDs, generated from declarations like the gold ERDs (`diagrams/silver/`):
+- **Open Dental silver:** the cleaned Open Dental tables with their own names, the derived tables and the answer
+  key, with the source's quirks drawn as lines (`procedurelog.dx` a key into `definition`; `proctp` copies back to
+  `procedurelog` by `procnumorig`; `proctp.dx` matched by name, not a key);
+- **Data dictionary:** the same tables grouped in subject areas, fact and dimension headers, each table's row
+  count and grain, and each column's nulls, distinct and top values from the data, with PHI columns and open
+  questions marked;
+- **OMOP silver (not built):** the same data in OMOP CDM 5.4 and the dental extension, each column naming its Open
+  Dental source, and a list of what the CDM can't hold.
+
+**Why this priority**: it is how the source shape is learned, and how keeping silver in Open Dental's shape is
+weighed against a common model.
+
+**Independent Test**: every Open Dental column in the declaration is in [research.md](research.md); every
+relationship joins declared columns; every OMOP column names its source; the generated files are current.
+
 ### Edge Cases
 
 - **Third molars:** they are often missing for other reasons (the synthetic mouths already treat them so), so
