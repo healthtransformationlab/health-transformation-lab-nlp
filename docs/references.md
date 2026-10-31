@@ -195,6 +195,17 @@ Everything this repo relies on, and what it's used for.
     abstract's best result, 67/85/84, matches neither experiment 1 row of Table 2 (66/86/84, 66/86/86).
     Published figures only: the paper's data is real patient data and never comes into this repo.
 
+59. **Collins GS, Moons KGM, Dhiman P, et al.** *TRIPOD+AI statement: updated guidance for reporting clinical
+    prediction models that use regression or machine learning methods.* BMJ 2024;385:e078378.
+    doi:10.1136/bmj-2023-078378. → The reporting checklist the tooth-loss analysis plan follows
+    ([analysis_plan.md](../specs/029-tooth-loss/analysis_plan.md)) and [evaluation_checklist.md](evaluation_checklist.md).
+60. **Benchimol EI, Smeeth L, Guttmann A, et al.** *The REporting of studies Conducted using Observational
+    Routinely-collected health Data (RECORD) statement.* PLoS Med 2015;12(10):e1001885.
+    doi:10.1371/journal.pmed.1001885. → Reporting for studies on routinely collected records, alongside TRIPOD+AI.
+61. **Riley RD, Ensor J, Snell KIE, et al.** *Calculating the sample size required for developing a clinical
+    prediction model.* BMJ 2020;368:m441. doi:10.1136/bmj.m441. → The minimum sample size check in the analysis
+    plan (section 6).
+
 ## De-identification
 
 37. **U.S. Department of Health and Human Services.** *Guidance regarding methods for de-identification of
