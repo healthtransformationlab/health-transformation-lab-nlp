@@ -13,6 +13,25 @@ erDiagram
     patient ||--o{ toothinitial : "patnum"
     patient ||--o{ disease : "patnum"
     diseasedef ||--o{ disease : "diseasedefnum"
+    patient ||--o{ appointment : "patnum"
+    provider ||--o{ appointment : "provnum"
+    clinic |o--o{ appointment : "clinicnum"
+    provider ||--o{ procedurelog : "provnum"
+    patient ||--o{ medicationpat : "patnum"
+    medication ||--o{ medicationpat : "medicationnum"
+    patient ||--o{ allergy : "patnum"
+    allergydef ||--o{ allergy : "allergydefnum"
+    medication |o--o{ allergydef : "medicationnum"
+    patient ||--o{ sheet : "patnum"
+    sheet ||--o{ sheetfield : "sheetnum"
+    patient ||--o{ vitalsign : "patnum"
+    patient ||--o{ patientrace : "patnum"
+    cdcrec ||--o{ patientrace : "cdcreccode"
+    site |o--o{ patient : "sitenum"
+    procedurelog ||--o{ procnote : "procnum"
+    patient ||--o{ ehrmeasureevent : "patnum"
+    snomed |o..o{ ehrmeasureevent : "codevalueresult = snomedcode"
+    patient ||--o{ patfield : "patnum"
     patient ||--o{ patient_tooth : "patnum = patient_id"
     procedurelog ||--o| planned_extraction : "procnum = procedure_id (procstatus 1)"
     planned_extraction }o..o| patient_tooth : "labels planned teeth"
@@ -31,6 +50,22 @@ erDiagram
     toothinitial
     disease
     diseasedef
+    provider
+    appointment
+    medication
+    medicationpat
+    allergy
+    allergydef
+    sheet
+    sheetfield
+    vitalsign
+    patientrace
+    cdcrec
+    site
+    procnote
+    ehrmeasureevent
+    patfield
+    snomed
     patient_tooth
     planned_extraction
     tooth_loss_dq_check

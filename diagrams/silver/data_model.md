@@ -24,6 +24,25 @@ erDiagram
     patient ||--o{ toothinitial : "patnum"
     patient ||--o{ disease : "patnum"
     diseasedef ||--o{ disease : "diseasedefnum"
+    patient ||--o{ appointment : "patnum"
+    provider ||--o{ appointment : "provnum"
+    clinic |o--o{ appointment : "clinicnum"
+    provider ||--o{ procedurelog : "provnum"
+    patient ||--o{ medicationpat : "patnum"
+    medication ||--o{ medicationpat : "medicationnum"
+    patient ||--o{ allergy : "patnum"
+    allergydef ||--o{ allergy : "allergydefnum"
+    medication |o--o{ allergydef : "medicationnum"
+    patient ||--o{ sheet : "patnum"
+    sheet ||--o{ sheetfield : "sheetnum"
+    patient ||--o{ vitalsign : "patnum"
+    patient ||--o{ patientrace : "patnum"
+    cdcrec ||--o{ patientrace : "cdcreccode"
+    site |o--o{ patient : "sitenum"
+    procedurelog ||--o{ procnote : "procnum"
+    patient ||--o{ ehrmeasureevent : "patnum"
+    snomed |o..o{ ehrmeasureevent : "codevalueresult = snomedcode"
+    patient ||--o{ patfield : "patnum"
     patient ||--o{ patient_tooth : "patnum = patient_id"
     procedurelog ||--o| planned_extraction : "procnum = procedure_id (procstatus 1)"
     planned_extraction }o..o| patient_tooth : "labels planned teeth"
@@ -42,6 +61,22 @@ erDiagram
     toothinitial
     disease
     diseasedef
+    provider
+    appointment
+    medication
+    medicationpat
+    allergy
+    allergydef
+    sheet
+    sheetfield
+    vitalsign
+    patientrace
+    cdcrec
+    site
+    procnote
+    ehrmeasureevent
+    patfield
+    snomed
     patient_tooth
     planned_extraction
     tooth_loss_dq_check
@@ -252,6 +287,207 @@ One per problem in the list. tooth_loss_load: overwrite per run.
 |  | `snomedcode` | string | SNOMED code |
 |  | `icd9code` | string | ICD-9 code |
 |  | `ishidden` | boolean | hidden from the list |
+
+### `provider`
+
+One per provider (dentist, hygienist, or a billing entity). tooth_loss_load: overwrite per run.
+
+| Key | Column | Type | Description |
+|---|---|---|---|
+| PK | `provnum` | bigint | provider key |
+|  | `suffix` | string | credentials, e.g. DDS, RDH |
+| FK | `specialty` | bigint | specialty (definition) |
+|  | `issecondary` | boolean | a hygienist or other secondary provider |
+|  | `isnotperson` | boolean | a billing entity or placeholder |
+|  | `customid` | string | a practice's own provider ID |
+
+### `appointment`
+
+One per scheduled visit. tooth_loss_load: overwrite per run.
+
+| Key | Column | Type | Description |
+|---|---|---|---|
+| PK | `aptnum` | bigint | appointment key |
+| FK | `patnum` | bigint | patient |
+| FK | `provnum` | bigint | dentist |
+| FK | `provhyg` | bigint | hygienist |
+|  | `aptdatetime` | timestamp | when scheduled |
+|  | `pattern` | string | length, as a time pattern |
+| FK | `clinicnum` | bigint | office |
+|  | `ishygiene` | boolean | a hygiene appointment |
+|  | `procdescript` | string | procedures booked, as text |
+
+### `medication`
+
+One per medication, generics and brands both. tooth_loss_load: overwrite per run.
+
+| Key | Column | Type | Description |
+|---|---|---|---|
+| PK | `medicationnum` | bigint | medication key |
+|  | `medname` | string | name |
+| FK | `genericnum` | bigint | its generic (medication) |
+|  | `notes` | string | free text |
+|  | `rxcui` | bigint | RxNorm concept |
+
+### `medicationpat`
+
+One per medication a patient takes, for a period. tooth_loss_load: overwrite per run.
+
+| Key | Column | Type | Description |
+|---|---|---|---|
+| PK | `medicationpatnum` | bigint | key |
+| FK | `patnum` | bigint | patient |
+| FK | `medicationnum` | bigint | medication |
+|  | `patnote` | string | free text about this patient's use |
+|  | `datestart` | date | may be empty |
+|  | `datestop` | date | may be empty |
+| FK | `provnum` | bigint | prescriber |
+|  | `iscpoe` | boolean | prescribed here |
+
+### `allergy`
+
+One per allergy a patient has. tooth_loss_load: overwrite per run.
+
+| Key | Column | Type | Description |
+|---|---|---|---|
+| PK | `allergynum` | bigint | key |
+| FK | `allergydefnum` | bigint | the allergen |
+| FK | `patnum` | bigint | patient |
+|  | `reaction` | string | free text |
+|  | `statusisactive` | boolean | still active |
+
+### `allergydef`
+
+One per allergen: a drug (medicationnum) or another substance (uniicode). tooth_loss_load: overwrite per run.
+
+| Key | Column | Type | Description |
+|---|---|---|---|
+| PK | `allergydefnum` | bigint | key |
+|  | `description` | string | the allergen |
+|  | `ishidden` | boolean | hidden from the list |
+|  | `snomedtype` | int | kind of allergy (SnomedAllergy) |
+| FK | `medicationnum` | bigint | the drug, for a drug allergy |
+|  | `uniicode` | string | UNII code, for a non-drug allergy |
+
+### `sheet`
+
+One per filled-in form, e.g. an exam form. tooth_loss_load: overwrite per run.
+
+| Key | Column | Type | Description |
+|---|---|---|---|
+| PK | `sheetnum` | bigint | form key |
+|  | `sheettype` | int | kind of form (SheetTypeEnum) |
+| FK | `patnum` | bigint | patient |
+|  | `datetimesheet` | timestamp | when filled in |
+|  | `description` | string | the form's name |
+| FK | `clinicnum` | bigint | office |
+
+### `sheetfield`
+
+One per answer on a form. tooth_loss_load: overwrite per run.
+
+| Key | Column | Type | Description |
+|---|---|---|---|
+| PK | `sheetfieldnum` | bigint | key |
+| FK | `sheetnum` | bigint | the form |
+|  | `fieldname` | string | the field |
+|  | `fieldvalue` | string | the answer |
+|  | `radiobuttongroup` | string | the question a radio answer belongs to |
+|  | `reportablename` | string | a stable name for reporting |
+
+### `vitalsign`
+
+One per vitals reading. tooth_loss_load: overwrite per run.
+
+| Key | Column | Type | Description |
+|---|---|---|---|
+| PK | `vitalsignnum` | bigint | key |
+| FK | `patnum` | bigint | patient |
+|  | `bpsystolic` | int | systolic blood pressure |
+|  | `bpdiastolic` | int | diastolic blood pressure |
+|  | `pulse` | int | pulse |
+|  | `datetaken` | date | date taken |
+
+### `patientrace`
+
+One per patient and race or ethnicity code (a patient can have several). tooth_loss_load: overwrite per run.
+
+| Key | Column | Type | Description |
+|---|---|---|---|
+| PK | `patientracenum` | bigint | key |
+| FK | `patnum` | bigint | patient |
+| FK | `cdcreccode` | string | race or ethnicity code (cdcrec) |
+
+### `cdcrec`
+
+One per CDC race and ethnicity code, in a hierarchy. tooth_loss_load: overwrite per run.
+
+| Key | Column | Type | Description |
+|---|---|---|---|
+| PK | `cdcrecnum` | bigint | key |
+|  | `cdcreccode` | string | the code |
+|  | `heirarchicalcode` | string | its place in the hierarchy (Open Dental's spelling) |
+|  | `description` | string | name |
+
+### `site`
+
+One per place of care outside the office (school, nursing home). tooth_loss_load: overwrite per run.
+
+| Key | Column | Type | Description |
+|---|---|---|---|
+| PK | `sitenum` | bigint | site key |
+|  | `description` | string | name |
+|  | `note` | string | free text |
+|  | `zip` | string | postcode |
+|  | `placeservice` | int | kind of place (PlaceOfService) |
+
+### `procnote`
+
+One per note on a procedure; not every procedure has one. tooth_loss_load: overwrite per run.
+
+| Key | Column | Type | Description |
+|---|---|---|---|
+| PK | `procnotenum` | bigint | key |
+| FK | `patnum` | bigint | patient |
+| FK | `procnum` | bigint | the procedure |
+|  | `entrydatetime` | timestamp | when written |
+|  | `note` | string | the clinical note |
+
+### `ehrmeasureevent`
+
+One per measure event, e.g. a tobacco use assessment. tooth_loss_load: overwrite per run.
+
+| Key | Column | Type | Description |
+|---|---|---|---|
+| PK | `ehrmeasureeventnum` | bigint | key |
+|  | `datetevent` | timestamp | when |
+|  | `eventtype` | int | kind of event (EhrMeasureEventType) |
+| FK | `patnum` | bigint | patient |
+|  | `moreinfo` | string | free text |
+| FK | `codevalueresult` | string | the result, e.g. a SNOMED smoking status |
+|  | `datestarttobacco` | date | when tobacco use began, if known |
+|  | `tobaccocessationdesire` | int | 0–10 |
+
+### `patfield`
+
+One per practice-defined patient field, e.g. research consent. tooth_loss_load: overwrite per run.
+
+| Key | Column | Type | Description |
+|---|---|---|---|
+| PK | `patfieldnum` | bigint | key |
+| FK | `patnum` | bigint | patient |
+|  | `fieldname` | string | the field |
+|  | `fieldvalue` | string | its value |
+
+### `snomed`
+
+One per SNOMED code (a licensed list; an extract may hold only the codes it uses). tooth_loss_load: overwrite per run.
+
+| Key | Column | Type | Description |
+|---|---|---|---|
+| PK | `snomednum` | bigint | key |
+|  | `snomedcode` | string | the code |
+|  | `description` | string | name |
 
 ### `patient_tooth`
 
