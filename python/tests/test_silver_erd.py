@@ -110,6 +110,8 @@ def test_a_column_profile_gives_nulls_distinct_and_value_counts():
     assert prof.column_profile(skewed).endswith("top results:\n  7=6 (21%);\n  8=4 (14%);\n  0=1 (4%)")
     dates = pd.Series(pd.to_datetime(["2016-03-01", "2019-07-02", None, "2024-01-05"]))
     assert prof.column_profile(dates) == "null=1 (25%);\nn_distinct=3;\nfirst=2016;\nlast=2024"
+    blanks = pd.Series(["", " ", "x", None])          # Open Dental stores blank text, not NULL: count it as null
+    assert prof.column_profile(blanks) == "null=3 (75%);\nn_distinct=1;\nx=1 (25%)"
     tables = prof.profile({"t": pd.DataFrame({"a": [1, None], "b": ["x", "y"]})})
     assert tables["t"]["rows"] == 2 and tables["t"]["columns"]["a"].startswith("null=1 (50%)")
 

@@ -181,6 +181,30 @@ resources:
               out_dir: /Volumes/${resources.volumes.perio_bench_data.catalog_name}/${resources.volumes.perio_bench_data.schema_name}/${resources.volumes.perio_bench_data.name}/nhanes
               telemetry: ${var.telemetry_exporter}
 
+    # Spec 029 (T007; #369, #370, #381): the seeded synthetic Open Dental extract, generated into the landing volume
+    # and loaded to bronze (as generated) and silver (cleaned, plus the evaluation-only answer key). Every table is
+    # overwritten per run. deploy.yml starts it when the bronze tables don't exist yet; run it by hand after a
+    # generator change. Serverless CPU.
+    open_dental_load:
+      name: Load Open Dental
+      tags:
+        project: health-transformation-lab-nlp
+        data: synthetic
+        git_commit: ${bundle.git.commit}   # the commit this job was deployed from
+      tasks:
+        - task_key: load
+          notebook_task:
+            notebook_path: ../notebooks/12_load_open_dental.py
+            base_parameters:
+              git_commit: ${bundle.git.commit}   # shown on every run
+              run_id: "{{job.run_id}}"
+              od_catalog: ${resources.schemas.opendental_perio_bronze.catalog_name}
+              bronze_schema: ${resources.schemas.opendental_perio_bronze.name}
+              silver_schema: ${resources.schemas.opendental_perio_silver.name}
+              landing_dir: /Volumes/${resources.volumes.opendental_perio_data.catalog_name}/${resources.volumes.opendental_perio_data.schema_name}/${resources.volumes.opendental_perio_data.name}
+              seed: "42"
+              n_patients: "2000"
+
     # Spec 016: every committed model result (Kaggle runs collected into a PR, laptop runs) into the gold
     # tables, next to what the Databricks jobs write. deploy.yml starts it after every deploy; loading again
     # adds nothing. Serverless CPU.

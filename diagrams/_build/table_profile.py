@@ -12,6 +12,8 @@ def _pct(n, total):
 
 
 def column_profile(s: pd.Series) -> str:
+    if s.dtype == object or pd.api.types.is_string_dtype(s):
+        s = s.mask(s.astype("string").str.strip() == "")    # Open Dental stores blank text, not NULL: count it as null
     total, nulls = len(s), int(s.isna().sum())
     present = s.dropna()
     distinct = int(present.nunique())
