@@ -77,3 +77,33 @@ def test_clinics_far_from_the_rest_are_flagged():
 def test_the_open_dental_profile_stays_as_the_last_section(d):
     names = {r["metric"] for r in d["sections"]["open_dental"]}
     assert {"charted_visit_office_share", "partial_chart_share", "unread_tooth_share"} <= names
+
+
+# ---------- the Perio DQ Monitor layout (#401): every clinic and scale, for the page's filters ----------
+def test_the_monitor_has_every_clinic_and_scale(d, t):
+    m = d["sections"]["monitor"]
+    clinics = {"All", *t["fact_visit_evidence"]["clinic"].astype(str).unique()}
+    assert {(c["clinic"], c["scale"]) for c in m} == {(c, s) for c in clinics
+                                                       for s in ("all_visits", "complete_cases", "reference_set")}
+
+
+def test_the_all_visits_slice_matches_the_tiles(d):
+    m = next(c for c in d["sections"]["monitor"] if c["clinic"] == "All" and c["scale"] == "all_visits")
+    assert m["completeness_pct"] == d["sections"]["tiles"]["completeness_pct"]
+    assert m["accuracy_pct"] == d["sections"]["tiles"]["accuracy_pct"]
+    assert m["visit_count"] == d["sections"]["tiles"]["visit_count"]
+
+
+def test_the_funnel_only_narrows(d):
+    for c in d["sections"]["monitor"]:
+        n = [s["visit_count"] for s in c["funnel"]]
+        assert n == sorted(n, reverse=True), (c["clinic"], c["scale"])
+
+
+def test_the_truth_table_on_a_hand_case():
+    v = pd.DataFrame({"exam_form": ["periodontitis_stage_2", "healthy", "periodontitis_stage_3", "unknown"],
+                      "truth_status": ["periodontitis_stage_2", "periodontitis_stage_1", "gingivitis", "healthy"]})
+    r = dq_site.truth_row(v, "exam_form")
+    assert r["answered_count"] == 3 and r["agree_pct"] == round(100 / 3, 1)
+    assert r["sensitivity_pct"] == 50.0 and r["specificity_pct"] == 0.0     # perio yes/no among answered
+    assert r["ppv_pct"] == 50.0 and r["npv_pct"] == 0.0

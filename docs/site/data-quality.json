@@ -2624,6 +2624,3491 @@
    "caught_pct": 33.3,
    "false_flag_pct": 0.23
   },
+  "monitor": [
+   {
+    "clinic": "All",
+    "scale": "all_visits",
+    "visit_count": 4343,
+    "completeness_pct": 46.4,
+    "accuracy_pct": 95.1,
+    "accuracy_design_pct": 74.5,
+    "missing": [
+     {
+      "source": "notes",
+      "label": "Chart note",
+      "missing_pct": 0.0
+     },
+     {
+      "source": "exam_form",
+      "label": "Exam form",
+      "missing_pct": 16.0
+     },
+     {
+      "source": "proc_dx_completed",
+      "label": "Diagnosis codes, done",
+      "missing_pct": 29.5
+     },
+     {
+      "source": "proc_dx_planned",
+      "label": "Diagnosis codes, planned",
+      "missing_pct": 29.5
+     },
+     {
+      "source": "probing_chart",
+      "label": "Gum measurements",
+      "missing_pct": 20.9
+     }
+    ],
+    "funnel": [
+     {
+      "label": "Visits",
+      "visit_count": 4343
+     },
+     {
+      "label": "+ an exam form with a status",
+      "visit_count": 3648
+     },
+     {
+      "label": "+ a diagnosis code",
+      "visit_count": 2570
+     },
+     {
+      "label": "+ a gum chart",
+      "visit_count": 2015
+     },
+     {
+      "label": "+ a chart note with a status",
+      "visit_count": 2015
+     }
+    ],
+    "truth": [
+     {
+      "source": "exam_form",
+      "label": "Exam form",
+      "answered_count": 3648,
+      "agree_pct": 75.1,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 87.5,
+      "ppv_pct": 89.3,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "proc_dx_completed",
+      "label": "Diagnosis codes, done",
+      "answered_count": 3061,
+      "agree_pct": 69.0,
+      "sensitivity_pct": 79.5,
+      "specificity_pct": 89.6,
+      "ppv_pct": 89.2,
+      "npv_pct": 80.2
+     },
+     {
+      "source": "proc_dx_planned",
+      "label": "Diagnosis codes, planned",
+      "answered_count": 3061,
+      "agree_pct": 77.4,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 92.1,
+      "ppv_pct": 93.1,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "notes",
+      "label": "Chart note",
+      "answered_count": 4343,
+      "agree_pct": 78.9,
+      "sensitivity_pct": 95.1,
+      "specificity_pct": 90.9,
+      "ppv_pct": 91.6,
+      "npv_pct": 94.7
+     },
+     {
+      "source": "probing_chart",
+      "label": "Gum measurements",
+      "answered_count": 3437,
+      "agree_pct": 99.2,
+      "sensitivity_pct": 99.3,
+      "specificity_pct": 99.8,
+      "ppv_pct": 99.8,
+      "npv_pct": 99.2
+     },
+     {
+      "source": "algorithm_v0",
+      "label": "Rules, measurements first",
+      "answered_count": 4343,
+      "agree_pct": 95.1,
+      "sensitivity_pct": 98.6,
+      "specificity_pct": 98.0,
+      "ppv_pct": 98.1,
+      "npv_pct": 98.6
+     },
+     {
+      "source": "algorithm_design",
+      "label": "Rules, exam form first",
+      "answered_count": 4343,
+      "agree_pct": 74.5,
+      "sensitivity_pct": 97.3,
+      "specificity_pct": 87.8,
+      "ppv_pct": 89.2,
+      "npv_pct": 96.8
+     }
+    ]
+   },
+   {
+    "clinic": "All",
+    "scale": "complete_cases",
+    "visit_count": 2657,
+    "completeness_pct": 69.9,
+    "accuracy_pct": 99.2,
+    "accuracy_design_pct": 74.6,
+    "missing": [
+     {
+      "source": "notes",
+      "label": "Chart note",
+      "missing_pct": 0.0
+     },
+     {
+      "source": "exam_form",
+      "label": "Exam form",
+      "missing_pct": 0.0
+     },
+     {
+      "source": "proc_dx_completed",
+      "label": "Diagnosis codes, done",
+      "missing_pct": 30.1
+     },
+     {
+      "source": "proc_dx_planned",
+      "label": "Diagnosis codes, planned",
+      "missing_pct": 30.1
+     },
+     {
+      "source": "probing_chart",
+      "label": "Gum measurements",
+      "missing_pct": 0.0
+     }
+    ],
+    "funnel": [
+     {
+      "label": "Visits",
+      "visit_count": 2657
+     },
+     {
+      "label": "+ an exam form with a status",
+      "visit_count": 2657
+     },
+     {
+      "label": "+ a diagnosis code",
+      "visit_count": 1856
+     },
+     {
+      "label": "+ a gum chart",
+      "visit_count": 1856
+     },
+     {
+      "label": "+ a chart note with a status",
+      "visit_count": 1856
+     }
+    ],
+    "truth": [
+     {
+      "source": "exam_form",
+      "label": "Exam form",
+      "answered_count": 2657,
+      "agree_pct": 74.6,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 87.9,
+      "ppv_pct": 88.1,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "proc_dx_completed",
+      "label": "Diagnosis codes, done",
+      "answered_count": 1856,
+      "agree_pct": 69.3,
+      "sensitivity_pct": 79.5,
+      "specificity_pct": 90.1,
+      "ppv_pct": 88.0,
+      "npv_pct": 82.7
+     },
+     {
+      "source": "proc_dx_planned",
+      "label": "Diagnosis codes, planned",
+      "answered_count": 1856,
+      "agree_pct": 77.4,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 92.1,
+      "ppv_pct": 92.0,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "notes",
+      "label": "Chart note",
+      "answered_count": 2657,
+      "agree_pct": 79.0,
+      "sensitivity_pct": 96.2,
+      "specificity_pct": 90.9,
+      "ppv_pct": 90.5,
+      "npv_pct": 96.4
+     },
+     {
+      "source": "probing_chart",
+      "label": "Gum measurements",
+      "answered_count": 2657,
+      "agree_pct": 99.2,
+      "sensitivity_pct": 99.4,
+      "specificity_pct": 99.8,
+      "ppv_pct": 99.8,
+      "npv_pct": 99.4
+     },
+     {
+      "source": "algorithm_v0",
+      "label": "Rules, measurements first",
+      "answered_count": 2657,
+      "agree_pct": 99.2,
+      "sensitivity_pct": 99.4,
+      "specificity_pct": 99.8,
+      "ppv_pct": 99.8,
+      "npv_pct": 99.4
+     },
+     {
+      "source": "algorithm_design",
+      "label": "Rules, exam form first",
+      "answered_count": 2657,
+      "agree_pct": 74.6,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 87.9,
+      "ppv_pct": 88.1,
+      "npv_pct": 100.0
+     }
+    ]
+   },
+   {
+    "clinic": "All",
+    "scale": "reference_set",
+    "visit_count": 240,
+    "completeness_pct": 45.8,
+    "accuracy_pct": 97.5,
+    "accuracy_design_pct": 72.1,
+    "missing": [
+     {
+      "source": "notes",
+      "label": "Chart note",
+      "missing_pct": 0.0
+     },
+     {
+      "source": "exam_form",
+      "label": "Exam form",
+      "missing_pct": 13.8
+     },
+     {
+      "source": "proc_dx_completed",
+      "label": "Diagnosis codes, done",
+      "missing_pct": 30.4
+     },
+     {
+      "source": "proc_dx_planned",
+      "label": "Diagnosis codes, planned",
+      "missing_pct": 30.4
+     },
+     {
+      "source": "probing_chart",
+      "label": "Gum measurements",
+      "missing_pct": 18.8
+     }
+    ],
+    "funnel": [
+     {
+      "label": "Visits",
+      "visit_count": 240
+     },
+     {
+      "label": "+ an exam form with a status",
+      "visit_count": 207
+     },
+     {
+      "label": "+ a diagnosis code",
+      "visit_count": 140
+     },
+     {
+      "label": "+ a gum chart",
+      "visit_count": 110
+     },
+     {
+      "label": "+ a chart note with a status",
+      "visit_count": 110
+     }
+    ],
+    "truth": [
+     {
+      "source": "exam_form",
+      "label": "Exam form",
+      "answered_count": 207,
+      "agree_pct": 72.0,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 85.9,
+      "ppv_pct": 93.2,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "proc_dx_completed",
+      "label": "Diagnosis codes, done",
+      "answered_count": 167,
+      "agree_pct": 64.7,
+      "sensitivity_pct": 84.8,
+      "specificity_pct": 88.7,
+      "ppv_pct": 92.7,
+      "npv_pct": 77.5
+     },
+     {
+      "source": "proc_dx_planned",
+      "label": "Diagnosis codes, planned",
+      "answered_count": 167,
+      "agree_pct": 71.9,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 85.5,
+      "ppv_pct": 92.1,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "notes",
+      "label": "Chart note",
+      "answered_count": 240,
+      "agree_pct": 78.8,
+      "sensitivity_pct": 94.9,
+      "specificity_pct": 88.1,
+      "ppv_pct": 93.7,
+      "npv_pct": 90.2
+     },
+     {
+      "source": "probing_chart",
+      "label": "Gum measurements",
+      "answered_count": 195,
+      "agree_pct": 99.0,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 100.0,
+      "ppv_pct": 100.0,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "algorithm_v0",
+      "label": "Rules, measurements first",
+      "answered_count": 240,
+      "agree_pct": 97.5,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 100.0,
+      "ppv_pct": 100.0,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "algorithm_design",
+      "label": "Rules, exam form first",
+      "answered_count": 240,
+      "agree_pct": 72.1,
+      "sensitivity_pct": 98.7,
+      "specificity_pct": 85.7,
+      "ppv_pct": 92.8,
+      "npv_pct": 97.3
+     }
+    ]
+   },
+   {
+    "clinic": "1",
+    "scale": "all_visits",
+    "visit_count": 398,
+    "completeness_pct": 49.2,
+    "accuracy_pct": 95.7,
+    "accuracy_design_pct": 78.9,
+    "missing": [
+     {
+      "source": "notes",
+      "label": "Chart note",
+      "missing_pct": 0.0
+     },
+     {
+      "source": "exam_form",
+      "label": "Exam form",
+      "missing_pct": 16.3
+     },
+     {
+      "source": "proc_dx_completed",
+      "label": "Diagnosis codes, done",
+      "missing_pct": 30.9
+     },
+     {
+      "source": "proc_dx_planned",
+      "label": "Diagnosis codes, planned",
+      "missing_pct": 30.9
+     },
+     {
+      "source": "probing_chart",
+      "label": "Gum measurements",
+      "missing_pct": 12.8
+     }
+    ],
+    "funnel": [
+     {
+      "label": "Visits",
+      "visit_count": 398
+     },
+     {
+      "label": "+ an exam form with a status",
+      "visit_count": 333
+     },
+     {
+      "label": "+ a diagnosis code",
+      "visit_count": 229
+     },
+     {
+      "label": "+ a gum chart",
+      "visit_count": 196
+     },
+     {
+      "label": "+ a chart note with a status",
+      "visit_count": 196
+     }
+    ],
+    "truth": [
+     {
+      "source": "exam_form",
+      "label": "Exam form",
+      "answered_count": 333,
+      "agree_pct": 79.3,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 88.8,
+      "ppv_pct": 90.6,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "proc_dx_completed",
+      "label": "Diagnosis codes, done",
+      "answered_count": 275,
+      "agree_pct": 72.0,
+      "sensitivity_pct": 78.7,
+      "specificity_pct": 90.3,
+      "ppv_pct": 89.5,
+      "npv_pct": 80.1
+     },
+     {
+      "source": "proc_dx_planned",
+      "label": "Diagnosis codes, planned",
+      "answered_count": 275,
+      "agree_pct": 77.5,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 91.8,
+      "ppv_pct": 92.8,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "notes",
+      "label": "Chart note",
+      "answered_count": 398,
+      "agree_pct": 76.4,
+      "sensitivity_pct": 94.3,
+      "specificity_pct": 88.9,
+      "ppv_pct": 90.4,
+      "npv_pct": 93.3
+     },
+     {
+      "source": "probing_chart",
+      "label": "Gum measurements",
+      "answered_count": 347,
+      "agree_pct": 98.8,
+      "sensitivity_pct": 98.9,
+      "specificity_pct": 100.0,
+      "ppv_pct": 100.0,
+      "npv_pct": 98.8
+     },
+     {
+      "source": "algorithm_v0",
+      "label": "Rules, measurements first",
+      "answered_count": 398,
+      "agree_pct": 95.7,
+      "sensitivity_pct": 98.6,
+      "specificity_pct": 97.4,
+      "ppv_pct": 97.6,
+      "npv_pct": 98.4
+     },
+     {
+      "source": "algorithm_design",
+      "label": "Rules, exam form first",
+      "answered_count": 398,
+      "agree_pct": 78.9,
+      "sensitivity_pct": 97.6,
+      "specificity_pct": 89.4,
+      "ppv_pct": 91.1,
+      "npv_pct": 97.1
+     }
+    ]
+   },
+   {
+    "clinic": "1",
+    "scale": "complete_cases",
+    "visit_count": 267,
+    "completeness_pct": 68.5,
+    "accuracy_pct": 98.5,
+    "accuracy_design_pct": 78.3,
+    "missing": [
+     {
+      "source": "notes",
+      "label": "Chart note",
+      "missing_pct": 0.0
+     },
+     {
+      "source": "exam_form",
+      "label": "Exam form",
+      "missing_pct": 0.0
+     },
+     {
+      "source": "proc_dx_completed",
+      "label": "Diagnosis codes, done",
+      "missing_pct": 31.5
+     },
+     {
+      "source": "proc_dx_planned",
+      "label": "Diagnosis codes, planned",
+      "missing_pct": 31.5
+     },
+     {
+      "source": "probing_chart",
+      "label": "Gum measurements",
+      "missing_pct": 0.0
+     }
+    ],
+    "funnel": [
+     {
+      "label": "Visits",
+      "visit_count": 267
+     },
+     {
+      "label": "+ an exam form with a status",
+      "visit_count": 267
+     },
+     {
+      "label": "+ a diagnosis code",
+      "visit_count": 183
+     },
+     {
+      "label": "+ a gum chart",
+      "visit_count": 183
+     },
+     {
+      "label": "+ a chart note with a status",
+      "visit_count": 183
+     }
+    ],
+    "truth": [
+     {
+      "source": "exam_form",
+      "label": "Exam form",
+      "answered_count": 267,
+      "agree_pct": 78.3,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 90.0,
+      "ppv_pct": 90.1,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "proc_dx_completed",
+      "label": "Diagnosis codes, done",
+      "answered_count": 183,
+      "agree_pct": 69.4,
+      "sensitivity_pct": 74.1,
+      "specificity_pct": 89.8,
+      "ppv_pct": 86.3,
+      "npv_pct": 80.0
+     },
+     {
+      "source": "proc_dx_planned",
+      "label": "Diagnosis codes, planned",
+      "answered_count": 183,
+      "agree_pct": 76.0,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 92.9,
+      "ppv_pct": 92.4,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "notes",
+      "label": "Chart note",
+      "answered_count": 267,
+      "agree_pct": 80.1,
+      "sensitivity_pct": 96.9,
+      "specificity_pct": 91.4,
+      "ppv_pct": 91.1,
+      "npv_pct": 97.0
+     },
+     {
+      "source": "probing_chart",
+      "label": "Gum measurements",
+      "answered_count": 267,
+      "agree_pct": 98.5,
+      "sensitivity_pct": 98.4,
+      "specificity_pct": 100.0,
+      "ppv_pct": 100.0,
+      "npv_pct": 98.6
+     },
+     {
+      "source": "algorithm_v0",
+      "label": "Rules, measurements first",
+      "answered_count": 267,
+      "agree_pct": 98.5,
+      "sensitivity_pct": 98.4,
+      "specificity_pct": 100.0,
+      "ppv_pct": 100.0,
+      "npv_pct": 98.6
+     },
+     {
+      "source": "algorithm_design",
+      "label": "Rules, exam form first",
+      "answered_count": 267,
+      "agree_pct": 78.3,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 90.0,
+      "ppv_pct": 90.1,
+      "npv_pct": 100.0
+     }
+    ]
+   },
+   {
+    "clinic": "1",
+    "scale": "reference_set",
+    "visit_count": 21,
+    "completeness_pct": 52.4,
+    "accuracy_pct": 100.0,
+    "accuracy_design_pct": 81.0,
+    "missing": [
+     {
+      "source": "notes",
+      "label": "Chart note",
+      "missing_pct": 0.0
+     },
+     {
+      "source": "exam_form",
+      "label": "Exam form",
+      "missing_pct": 14.3
+     },
+     {
+      "source": "proc_dx_completed",
+      "label": "Diagnosis codes, done",
+      "missing_pct": 33.3
+     },
+     {
+      "source": "proc_dx_planned",
+      "label": "Diagnosis codes, planned",
+      "missing_pct": 33.3
+     },
+     {
+      "source": "probing_chart",
+      "label": "Gum measurements",
+      "missing_pct": 4.8
+     }
+    ],
+    "funnel": [
+     {
+      "label": "Visits",
+      "visit_count": 21
+     },
+     {
+      "label": "+ an exam form with a status",
+      "visit_count": 18
+     },
+     {
+      "label": "+ a diagnosis code",
+      "visit_count": 12
+     },
+     {
+      "label": "+ a gum chart",
+      "visit_count": 11
+     },
+     {
+      "label": "+ a chart note with a status",
+      "visit_count": 11
+     }
+    ],
+    "truth": [
+     {
+      "source": "exam_form",
+      "label": "Exam form",
+      "answered_count": 18,
+      "agree_pct": 77.8,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 100.0,
+      "ppv_pct": 100.0,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "proc_dx_completed",
+      "label": "Diagnosis codes, done",
+      "answered_count": 14,
+      "agree_pct": 57.1,
+      "sensitivity_pct": 85.7,
+      "specificity_pct": 100.0,
+      "ppv_pct": 100.0,
+      "npv_pct": 87.5
+     },
+     {
+      "source": "proc_dx_planned",
+      "label": "Diagnosis codes, planned",
+      "answered_count": 14,
+      "agree_pct": 50.0,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 85.7,
+      "ppv_pct": 87.5,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "notes",
+      "label": "Chart note",
+      "answered_count": 21,
+      "agree_pct": 85.7,
+      "sensitivity_pct": 91.7,
+      "specificity_pct": 100.0,
+      "ppv_pct": 100.0,
+      "npv_pct": 90.0
+     },
+     {
+      "source": "probing_chart",
+      "label": "Gum measurements",
+      "answered_count": 20,
+      "agree_pct": 100.0,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 100.0,
+      "ppv_pct": 100.0,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "algorithm_v0",
+      "label": "Rules, measurements first",
+      "answered_count": 21,
+      "agree_pct": 100.0,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 100.0,
+      "ppv_pct": 100.0,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "algorithm_design",
+      "label": "Rules, exam form first",
+      "answered_count": 21,
+      "agree_pct": 81.0,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 100.0,
+      "ppv_pct": 100.0,
+      "npv_pct": 100.0
+     }
+    ]
+   },
+   {
+    "clinic": "2",
+    "scale": "all_visits",
+    "visit_count": 519,
+    "completeness_pct": 43.9,
+    "accuracy_pct": 96.3,
+    "accuracy_design_pct": 75.3,
+    "missing": [
+     {
+      "source": "notes",
+      "label": "Chart note",
+      "missing_pct": 0.0
+     },
+     {
+      "source": "exam_form",
+      "label": "Exam form",
+      "missing_pct": 16.2
+     },
+     {
+      "source": "proc_dx_completed",
+      "label": "Diagnosis codes, done",
+      "missing_pct": 30.3
+     },
+     {
+      "source": "proc_dx_planned",
+      "label": "Diagnosis codes, planned",
+      "missing_pct": 30.3
+     },
+     {
+      "source": "probing_chart",
+      "label": "Gum measurements",
+      "missing_pct": 21.8
+     }
+    ],
+    "funnel": [
+     {
+      "label": "Visits",
+      "visit_count": 519
+     },
+     {
+      "label": "+ an exam form with a status",
+      "visit_count": 435
+     },
+     {
+      "label": "+ a diagnosis code",
+      "visit_count": 298
+     },
+     {
+      "label": "+ a gum chart",
+      "visit_count": 228
+     },
+     {
+      "label": "+ a chart note with a status",
+      "visit_count": 228
+     }
+    ],
+    "truth": [
+     {
+      "source": "exam_form",
+      "label": "Exam form",
+      "answered_count": 435,
+      "agree_pct": 75.4,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 88.2,
+      "ppv_pct": 88.5,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "proc_dx_completed",
+      "label": "Diagnosis codes, done",
+      "answered_count": 362,
+      "agree_pct": 68.0,
+      "sensitivity_pct": 77.3,
+      "specificity_pct": 90.3,
+      "ppv_pct": 88.3,
+      "npv_pct": 80.8
+     },
+     {
+      "source": "proc_dx_planned",
+      "label": "Diagnosis codes, planned",
+      "answered_count": 362,
+      "agree_pct": 77.3,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 94.6,
+      "ppv_pct": 94.6,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "notes",
+      "label": "Chart note",
+      "answered_count": 519,
+      "agree_pct": 83.4,
+      "sensitivity_pct": 94.6,
+      "specificity_pct": 92.8,
+      "ppv_pct": 91.9,
+      "npv_pct": 95.2
+     },
+     {
+      "source": "probing_chart",
+      "label": "Gum measurements",
+      "answered_count": 406,
+      "agree_pct": 100.0,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 100.0,
+      "ppv_pct": 100.0,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "algorithm_v0",
+      "label": "Rules, measurements first",
+      "answered_count": 519,
+      "agree_pct": 96.3,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 98.9,
+      "ppv_pct": 98.8,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "algorithm_design",
+      "label": "Rules, exam form first",
+      "answered_count": 519,
+      "agree_pct": 75.3,
+      "sensitivity_pct": 97.5,
+      "specificity_pct": 89.2,
+      "ppv_pct": 88.7,
+      "npv_pct": 97.6
+     }
+    ]
+   },
+   {
+    "clinic": "2",
+    "scale": "complete_cases",
+    "visit_count": 306,
+    "completeness_pct": 67.6,
+    "accuracy_pct": 100.0,
+    "accuracy_design_pct": 75.8,
+    "missing": [
+     {
+      "source": "notes",
+      "label": "Chart note",
+      "missing_pct": 0.0
+     },
+     {
+      "source": "exam_form",
+      "label": "Exam form",
+      "missing_pct": 0.0
+     },
+     {
+      "source": "proc_dx_completed",
+      "label": "Diagnosis codes, done",
+      "missing_pct": 32.4
+     },
+     {
+      "source": "proc_dx_planned",
+      "label": "Diagnosis codes, planned",
+      "missing_pct": 32.4
+     },
+     {
+      "source": "probing_chart",
+      "label": "Gum measurements",
+      "missing_pct": 0.0
+     }
+    ],
+    "funnel": [
+     {
+      "label": "Visits",
+      "visit_count": 306
+     },
+     {
+      "label": "+ an exam form with a status",
+      "visit_count": 306
+     },
+     {
+      "label": "+ a diagnosis code",
+      "visit_count": 207
+     },
+     {
+      "label": "+ a gum chart",
+      "visit_count": 207
+     },
+     {
+      "label": "+ a chart note with a status",
+      "visit_count": 207
+     }
+    ],
+    "truth": [
+     {
+      "source": "exam_form",
+      "label": "Exam form",
+      "answered_count": 306,
+      "agree_pct": 75.8,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 88.6,
+      "ppv_pct": 86.8,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "proc_dx_completed",
+      "label": "Diagnosis codes, done",
+      "answered_count": 207,
+      "agree_pct": 69.1,
+      "sensitivity_pct": 76.6,
+      "specificity_pct": 91.2,
+      "ppv_pct": 87.8,
+      "npv_pct": 82.4
+     },
+     {
+      "source": "proc_dx_planned",
+      "label": "Diagnosis codes, planned",
+      "answered_count": 207,
+      "agree_pct": 76.8,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 93.8,
+      "ppv_pct": 93.1,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "notes",
+      "label": "Chart note",
+      "answered_count": 306,
+      "agree_pct": 83.3,
+      "sensitivity_pct": 96.2,
+      "specificity_pct": 92.6,
+      "ppv_pct": 90.6,
+      "npv_pct": 97.0
+     },
+     {
+      "source": "probing_chart",
+      "label": "Gum measurements",
+      "answered_count": 306,
+      "agree_pct": 100.0,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 100.0,
+      "ppv_pct": 100.0,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "algorithm_v0",
+      "label": "Rules, measurements first",
+      "answered_count": 306,
+      "agree_pct": 100.0,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 100.0,
+      "ppv_pct": 100.0,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "algorithm_design",
+      "label": "Rules, exam form first",
+      "answered_count": 306,
+      "agree_pct": 75.8,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 88.6,
+      "ppv_pct": 86.8,
+      "npv_pct": 100.0
+     }
+    ]
+   },
+   {
+    "clinic": "2",
+    "scale": "reference_set",
+    "visit_count": 24,
+    "completeness_pct": 54.2,
+    "accuracy_pct": 91.7,
+    "accuracy_design_pct": 83.3,
+    "missing": [
+     {
+      "source": "notes",
+      "label": "Chart note",
+      "missing_pct": 0.0
+     },
+     {
+      "source": "exam_form",
+      "label": "Exam form",
+      "missing_pct": 8.3
+     },
+     {
+      "source": "proc_dx_completed",
+      "label": "Diagnosis codes, done",
+      "missing_pct": 29.2
+     },
+     {
+      "source": "proc_dx_planned",
+      "label": "Diagnosis codes, planned",
+      "missing_pct": 29.2
+     },
+     {
+      "source": "probing_chart",
+      "label": "Gum measurements",
+      "missing_pct": 25.0
+     }
+    ],
+    "funnel": [
+     {
+      "label": "Visits",
+      "visit_count": 24
+     },
+     {
+      "label": "+ an exam form with a status",
+      "visit_count": 22
+     },
+     {
+      "label": "+ a diagnosis code",
+      "visit_count": 15
+     },
+     {
+      "label": "+ a gum chart",
+      "visit_count": 13
+     },
+     {
+      "label": "+ a chart note with a status",
+      "visit_count": 13
+     }
+    ],
+    "truth": [
+     {
+      "source": "exam_form",
+      "label": "Exam form",
+      "answered_count": 22,
+      "agree_pct": 86.4,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 80.0,
+      "ppv_pct": 94.4,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "proc_dx_completed",
+      "label": "Diagnosis codes, done",
+      "answered_count": 17,
+      "agree_pct": 58.8,
+      "sensitivity_pct": 83.3,
+      "specificity_pct": 80.0,
+      "ppv_pct": 90.9,
+      "npv_pct": 66.7
+     },
+     {
+      "source": "proc_dx_planned",
+      "label": "Diagnosis codes, planned",
+      "answered_count": 17,
+      "agree_pct": 70.6,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 60.0,
+      "ppv_pct": 85.7,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "notes",
+      "label": "Chart note",
+      "answered_count": 24,
+      "agree_pct": 70.8,
+      "sensitivity_pct": 94.4,
+      "specificity_pct": 100.0,
+      "ppv_pct": 100.0,
+      "npv_pct": 85.7
+     },
+     {
+      "source": "probing_chart",
+      "label": "Gum measurements",
+      "answered_count": 18,
+      "agree_pct": 100.0,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 100.0,
+      "ppv_pct": 100.0,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "algorithm_v0",
+      "label": "Rules, measurements first",
+      "answered_count": 24,
+      "agree_pct": 91.7,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 100.0,
+      "ppv_pct": 100.0,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "algorithm_design",
+      "label": "Rules, exam form first",
+      "answered_count": 24,
+      "agree_pct": 83.3,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 83.3,
+      "ppv_pct": 94.7,
+      "npv_pct": 100.0
+     }
+    ]
+   },
+   {
+    "clinic": "3",
+    "scale": "all_visits",
+    "visit_count": 393,
+    "completeness_pct": 43.5,
+    "accuracy_pct": 94.9,
+    "accuracy_design_pct": 75.1,
+    "missing": [
+     {
+      "source": "notes",
+      "label": "Chart note",
+      "missing_pct": 0.0
+     },
+     {
+      "source": "exam_form",
+      "label": "Exam form",
+      "missing_pct": 14.0
+     },
+     {
+      "source": "proc_dx_completed",
+      "label": "Diagnosis codes, done",
+      "missing_pct": 28.5
+     },
+     {
+      "source": "proc_dx_planned",
+      "label": "Diagnosis codes, planned",
+      "missing_pct": 28.5
+     },
+     {
+      "source": "probing_chart",
+      "label": "Gum measurements",
+      "missing_pct": 25.4
+     }
+    ],
+    "funnel": [
+     {
+      "label": "Visits",
+      "visit_count": 393
+     },
+     {
+      "label": "+ an exam form with a status",
+      "visit_count": 338
+     },
+     {
+      "label": "+ a diagnosis code",
+      "visit_count": 238
+     },
+     {
+      "label": "+ a gum chart",
+      "visit_count": 171
+     },
+     {
+      "label": "+ a chart note with a status",
+      "visit_count": 171
+     }
+    ],
+    "truth": [
+     {
+      "source": "exam_form",
+      "label": "Exam form",
+      "answered_count": 338,
+      "agree_pct": 76.0,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 90.0,
+      "ppv_pct": 89.8,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "proc_dx_completed",
+      "label": "Diagnosis codes, done",
+      "answered_count": 281,
+      "agree_pct": 68.3,
+      "sensitivity_pct": 79.6,
+      "specificity_pct": 90.3,
+      "ppv_pct": 88.6,
+      "npv_pct": 82.3
+     },
+     {
+      "source": "proc_dx_planned",
+      "label": "Diagnosis codes, planned",
+      "answered_count": 281,
+      "agree_pct": 77.6,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 95.8,
+      "ppv_pct": 95.8,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "notes",
+      "label": "Chart note",
+      "answered_count": 393,
+      "agree_pct": 79.1,
+      "sensitivity_pct": 94.1,
+      "specificity_pct": 90.7,
+      "ppv_pct": 90.3,
+      "npv_pct": 94.4
+     },
+     {
+      "source": "probing_chart",
+      "label": "Gum measurements",
+      "answered_count": 293,
+      "agree_pct": 98.6,
+      "sensitivity_pct": 98.6,
+      "specificity_pct": 98.7,
+      "ppv_pct": 98.6,
+      "npv_pct": 98.7
+     },
+     {
+      "source": "algorithm_v0",
+      "label": "Rules, measurements first",
+      "answered_count": 393,
+      "agree_pct": 94.9,
+      "sensitivity_pct": 96.8,
+      "specificity_pct": 98.0,
+      "ppv_pct": 97.8,
+      "npv_pct": 97.1
+     },
+     {
+      "source": "algorithm_design",
+      "label": "Rules, exam form first",
+      "answered_count": 393,
+      "agree_pct": 75.1,
+      "sensitivity_pct": 95.7,
+      "specificity_pct": 90.7,
+      "ppv_pct": 90.5,
+      "npv_pct": 95.9
+     }
+    ]
+   },
+   {
+    "clinic": "3",
+    "scale": "complete_cases",
+    "visit_count": 233,
+    "completeness_pct": 68.7,
+    "accuracy_pct": 99.1,
+    "accuracy_design_pct": 76.8,
+    "missing": [
+     {
+      "source": "notes",
+      "label": "Chart note",
+      "missing_pct": 0.0
+     },
+     {
+      "source": "exam_form",
+      "label": "Exam form",
+      "missing_pct": 0.0
+     },
+     {
+      "source": "proc_dx_completed",
+      "label": "Diagnosis codes, done",
+      "missing_pct": 31.3
+     },
+     {
+      "source": "proc_dx_planned",
+      "label": "Diagnosis codes, planned",
+      "missing_pct": 31.3
+     },
+     {
+      "source": "probing_chart",
+      "label": "Gum measurements",
+      "missing_pct": 0.0
+     }
+    ],
+    "funnel": [
+     {
+      "label": "Visits",
+      "visit_count": 233
+     },
+     {
+      "label": "+ an exam form with a status",
+      "visit_count": 233
+     },
+     {
+      "label": "+ a diagnosis code",
+      "visit_count": 160
+     },
+     {
+      "label": "+ a gum chart",
+      "visit_count": 160
+     },
+     {
+      "label": "+ a chart note with a status",
+      "visit_count": 160
+     }
+    ],
+    "truth": [
+     {
+      "source": "exam_form",
+      "label": "Exam form",
+      "answered_count": 233,
+      "agree_pct": 76.8,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 90.2,
+      "ppv_pct": 88.5,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "proc_dx_completed",
+      "label": "Diagnosis codes, done",
+      "answered_count": 160,
+      "agree_pct": 66.2,
+      "sensitivity_pct": 76.1,
+      "specificity_pct": 90.3,
+      "ppv_pct": 85.0,
+      "npv_pct": 84.0
+     },
+     {
+      "source": "proc_dx_planned",
+      "label": "Diagnosis codes, planned",
+      "answered_count": 160,
+      "agree_pct": 79.4,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 95.7,
+      "ppv_pct": 94.4,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "notes",
+      "label": "Chart note",
+      "answered_count": 233,
+      "agree_pct": 80.3,
+      "sensitivity_pct": 98.0,
+      "specificity_pct": 88.7,
+      "ppv_pct": 86.7,
+      "npv_pct": 98.3
+     },
+     {
+      "source": "probing_chart",
+      "label": "Gum measurements",
+      "answered_count": 233,
+      "agree_pct": 99.1,
+      "sensitivity_pct": 99.0,
+      "specificity_pct": 99.2,
+      "ppv_pct": 99.0,
+      "npv_pct": 99.2
+     },
+     {
+      "source": "algorithm_v0",
+      "label": "Rules, measurements first",
+      "answered_count": 233,
+      "agree_pct": 99.1,
+      "sensitivity_pct": 99.0,
+      "specificity_pct": 99.2,
+      "ppv_pct": 99.0,
+      "npv_pct": 99.2
+     },
+     {
+      "source": "algorithm_design",
+      "label": "Rules, exam form first",
+      "answered_count": 233,
+      "agree_pct": 76.8,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 90.2,
+      "ppv_pct": 88.5,
+      "npv_pct": 100.0
+     }
+    ]
+   },
+   {
+    "clinic": "3",
+    "scale": "reference_set",
+    "visit_count": 22,
+    "completeness_pct": 31.8,
+    "accuracy_pct": 100.0,
+    "accuracy_design_pct": 77.3,
+    "missing": [
+     {
+      "source": "notes",
+      "label": "Chart note",
+      "missing_pct": 0.0
+     },
+     {
+      "source": "exam_form",
+      "label": "Exam form",
+      "missing_pct": 13.6
+     },
+     {
+      "source": "proc_dx_completed",
+      "label": "Diagnosis codes, done",
+      "missing_pct": 40.9
+     },
+     {
+      "source": "proc_dx_planned",
+      "label": "Diagnosis codes, planned",
+      "missing_pct": 40.9
+     },
+     {
+      "source": "probing_chart",
+      "label": "Gum measurements",
+      "missing_pct": 22.7
+     }
+    ],
+    "funnel": [
+     {
+      "label": "Visits",
+      "visit_count": 22
+     },
+     {
+      "label": "+ an exam form with a status",
+      "visit_count": 19
+     },
+     {
+      "label": "+ a diagnosis code",
+      "visit_count": 11
+     },
+     {
+      "label": "+ a gum chart",
+      "visit_count": 7
+     },
+     {
+      "label": "+ a chart note with a status",
+      "visit_count": 7
+     }
+    ],
+    "truth": [
+     {
+      "source": "exam_form",
+      "label": "Exam form",
+      "answered_count": 19,
+      "agree_pct": 84.2,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 80.0,
+      "ppv_pct": 93.3,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "proc_dx_completed",
+      "label": "Diagnosis codes, done",
+      "answered_count": 13,
+      "agree_pct": 53.8,
+      "sensitivity_pct": 81.8,
+      "specificity_pct": 100.0,
+      "ppv_pct": 100.0,
+      "npv_pct": 50.0
+     },
+     {
+      "source": "proc_dx_planned",
+      "label": "Diagnosis codes, planned",
+      "answered_count": 13,
+      "agree_pct": 53.8,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 50.0,
+      "ppv_pct": 91.7,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "notes",
+      "label": "Chart note",
+      "answered_count": 22,
+      "agree_pct": 68.2,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 60.0,
+      "ppv_pct": 89.5,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "probing_chart",
+      "label": "Gum measurements",
+      "answered_count": 17,
+      "agree_pct": 100.0,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 100.0,
+      "ppv_pct": 100.0,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "algorithm_v0",
+      "label": "Rules, measurements first",
+      "answered_count": 22,
+      "agree_pct": 100.0,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 100.0,
+      "ppv_pct": 100.0,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "algorithm_design",
+      "label": "Rules, exam form first",
+      "answered_count": 22,
+      "agree_pct": 77.3,
+      "sensitivity_pct": 94.1,
+      "specificity_pct": 80.0,
+      "ppv_pct": 94.1,
+      "npv_pct": 80.0
+     }
+    ]
+   },
+   {
+    "clinic": "4",
+    "scale": "all_visits",
+    "visit_count": 761,
+    "completeness_pct": 45.1,
+    "accuracy_pct": 95.3,
+    "accuracy_design_pct": 74.1,
+    "missing": [
+     {
+      "source": "notes",
+      "label": "Chart note",
+      "missing_pct": 0.0
+     },
+     {
+      "source": "exam_form",
+      "label": "Exam form",
+      "missing_pct": 18.0
+     },
+     {
+      "source": "proc_dx_completed",
+      "label": "Diagnosis codes, done",
+      "missing_pct": 31.3
+     },
+     {
+      "source": "proc_dx_planned",
+      "label": "Diagnosis codes, planned",
+      "missing_pct": 31.3
+     },
+     {
+      "source": "probing_chart",
+      "label": "Gum measurements",
+      "missing_pct": 20.8
+     }
+    ],
+    "funnel": [
+     {
+      "label": "Visits",
+      "visit_count": 761
+     },
+     {
+      "label": "+ an exam form with a status",
+      "visit_count": 624
+     },
+     {
+      "label": "+ a diagnosis code",
+      "visit_count": 434
+     },
+     {
+      "label": "+ a gum chart",
+      "visit_count": 343
+     },
+     {
+      "label": "+ a chart note with a status",
+      "visit_count": 343
+     }
+    ],
+    "truth": [
+     {
+      "source": "exam_form",
+      "label": "Exam form",
+      "answered_count": 624,
+      "agree_pct": 74.4,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 88.2,
+      "ppv_pct": 87.1,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "proc_dx_completed",
+      "label": "Diagnosis codes, done",
+      "answered_count": 523,
+      "agree_pct": 71.1,
+      "sensitivity_pct": 84.5,
+      "specificity_pct": 86.0,
+      "ppv_pct": 84.1,
+      "npv_pct": 86.3
+     },
+     {
+      "source": "proc_dx_planned",
+      "label": "Diagnosis codes, planned",
+      "answered_count": 523,
+      "agree_pct": 76.7,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 91.0,
+      "ppv_pct": 90.7,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "notes",
+      "label": "Chart note",
+      "answered_count": 761,
+      "agree_pct": 78.6,
+      "sensitivity_pct": 95.0,
+      "specificity_pct": 90.1,
+      "ppv_pct": 88.4,
+      "npv_pct": 95.7
+     },
+     {
+      "source": "probing_chart",
+      "label": "Gum measurements",
+      "answered_count": 603,
+      "agree_pct": 99.3,
+      "sensitivity_pct": 98.9,
+      "specificity_pct": 99.7,
+      "ppv_pct": 99.6,
+      "npv_pct": 99.1
+     },
+     {
+      "source": "algorithm_v0",
+      "label": "Rules, measurements first",
+      "answered_count": 761,
+      "agree_pct": 95.3,
+      "sensitivity_pct": 98.8,
+      "specificity_pct": 98.3,
+      "ppv_pct": 97.9,
+      "npv_pct": 99.0
+     },
+     {
+      "source": "algorithm_design",
+      "label": "Rules, exam form first",
+      "answered_count": 761,
+      "agree_pct": 74.1,
+      "sensitivity_pct": 97.0,
+      "specificity_pct": 87.5,
+      "ppv_pct": 86.1,
+      "npv_pct": 97.4
+     }
+    ]
+   },
+   {
+    "clinic": "4",
+    "scale": "complete_cases",
+    "visit_count": 447,
+    "completeness_pct": 69.6,
+    "accuracy_pct": 99.3,
+    "accuracy_design_pct": 73.4,
+    "missing": [
+     {
+      "source": "notes",
+      "label": "Chart note",
+      "missing_pct": 0.0
+     },
+     {
+      "source": "exam_form",
+      "label": "Exam form",
+      "missing_pct": 0.0
+     },
+     {
+      "source": "proc_dx_completed",
+      "label": "Diagnosis codes, done",
+      "missing_pct": 30.4
+     },
+     {
+      "source": "proc_dx_planned",
+      "label": "Diagnosis codes, planned",
+      "missing_pct": 30.4
+     },
+     {
+      "source": "probing_chart",
+      "label": "Gum measurements",
+      "missing_pct": 0.0
+     }
+    ],
+    "funnel": [
+     {
+      "label": "Visits",
+      "visit_count": 447
+     },
+     {
+      "label": "+ an exam form with a status",
+      "visit_count": 447
+     },
+     {
+      "label": "+ a diagnosis code",
+      "visit_count": 311
+     },
+     {
+      "label": "+ a gum chart",
+      "visit_count": 311
+     },
+     {
+      "label": "+ a chart note with a status",
+      "visit_count": 311
+     }
+    ],
+    "truth": [
+     {
+      "source": "exam_form",
+      "label": "Exam form",
+      "answered_count": 447,
+      "agree_pct": 73.4,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 87.0,
+      "ppv_pct": 83.5,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "proc_dx_completed",
+      "label": "Diagnosis codes, done",
+      "answered_count": 311,
+      "agree_pct": 73.0,
+      "sensitivity_pct": 84.3,
+      "specificity_pct": 87.0,
+      "ppv_pct": 81.7,
+      "npv_pct": 88.9
+     },
+     {
+      "source": "proc_dx_planned",
+      "label": "Diagnosis codes, planned",
+      "answered_count": 311,
+      "agree_pct": 77.5,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 91.3,
+      "ppv_pct": 88.8,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "notes",
+      "label": "Chart note",
+      "answered_count": 447,
+      "agree_pct": 77.6,
+      "sensitivity_pct": 95.5,
+      "specificity_pct": 88.9,
+      "ppv_pct": 84.9,
+      "npv_pct": 96.8
+     },
+     {
+      "source": "probing_chart",
+      "label": "Gum measurements",
+      "answered_count": 447,
+      "agree_pct": 99.3,
+      "sensitivity_pct": 98.9,
+      "specificity_pct": 99.6,
+      "ppv_pct": 99.4,
+      "npv_pct": 99.3
+     },
+     {
+      "source": "algorithm_v0",
+      "label": "Rules, measurements first",
+      "answered_count": 447,
+      "agree_pct": 99.3,
+      "sensitivity_pct": 98.9,
+      "specificity_pct": 99.6,
+      "ppv_pct": 99.4,
+      "npv_pct": 99.3
+     },
+     {
+      "source": "algorithm_design",
+      "label": "Rules, exam form first",
+      "answered_count": 447,
+      "agree_pct": 73.4,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 87.0,
+      "ppv_pct": 83.5,
+      "npv_pct": 100.0
+     }
+    ]
+   },
+   {
+    "clinic": "4",
+    "scale": "reference_set",
+    "visit_count": 38,
+    "completeness_pct": 44.7,
+    "accuracy_pct": 97.4,
+    "accuracy_design_pct": 63.2,
+    "missing": [
+     {
+      "source": "notes",
+      "label": "Chart note",
+      "missing_pct": 0.0
+     },
+     {
+      "source": "exam_form",
+      "label": "Exam form",
+      "missing_pct": 10.5
+     },
+     {
+      "source": "proc_dx_completed",
+      "label": "Diagnosis codes, done",
+      "missing_pct": 42.1
+     },
+     {
+      "source": "proc_dx_planned",
+      "label": "Diagnosis codes, planned",
+      "missing_pct": 42.1
+     },
+     {
+      "source": "probing_chart",
+      "label": "Gum measurements",
+      "missing_pct": 15.8
+     }
+    ],
+    "funnel": [
+     {
+      "label": "Visits",
+      "visit_count": 38
+     },
+     {
+      "label": "+ an exam form with a status",
+      "visit_count": 34
+     },
+     {
+      "label": "+ a diagnosis code",
+      "visit_count": 19
+     },
+     {
+      "label": "+ a gum chart",
+      "visit_count": 17
+     },
+     {
+      "label": "+ a chart note with a status",
+      "visit_count": 17
+     }
+    ],
+    "truth": [
+     {
+      "source": "exam_form",
+      "label": "Exam form",
+      "answered_count": 34,
+      "agree_pct": 58.8,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 90.9,
+      "ppv_pct": 95.8,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "proc_dx_completed",
+      "label": "Diagnosis codes, done",
+      "answered_count": 22,
+      "agree_pct": 81.8,
+      "sensitivity_pct": 93.3,
+      "specificity_pct": 100.0,
+      "ppv_pct": 100.0,
+      "npv_pct": 87.5
+     },
+     {
+      "source": "proc_dx_planned",
+      "label": "Diagnosis codes, planned",
+      "answered_count": 22,
+      "agree_pct": 86.4,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 100.0,
+      "ppv_pct": 100.0,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "notes",
+      "label": "Chart note",
+      "answered_count": 38,
+      "agree_pct": 78.9,
+      "sensitivity_pct": 80.8,
+      "specificity_pct": 91.7,
+      "ppv_pct": 95.5,
+      "npv_pct": 68.8
+     },
+     {
+      "source": "probing_chart",
+      "label": "Gum measurements",
+      "answered_count": 32,
+      "agree_pct": 100.0,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 100.0,
+      "ppv_pct": 100.0,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "algorithm_v0",
+      "label": "Rules, measurements first",
+      "answered_count": 38,
+      "agree_pct": 97.4,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 100.0,
+      "ppv_pct": 100.0,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "algorithm_design",
+      "label": "Rules, exam form first",
+      "answered_count": 38,
+      "agree_pct": 63.2,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 91.7,
+      "ppv_pct": 96.3,
+      "npv_pct": 100.0
+     }
+    ]
+   },
+   {
+    "clinic": "5",
+    "scale": "all_visits",
+    "visit_count": 511,
+    "completeness_pct": 50.7,
+    "accuracy_pct": 94.9,
+    "accuracy_design_pct": 74.6,
+    "missing": [
+     {
+      "source": "notes",
+      "label": "Chart note",
+      "missing_pct": 0.0
+     },
+     {
+      "source": "exam_form",
+      "label": "Exam form",
+      "missing_pct": 13.5
+     },
+     {
+      "source": "proc_dx_completed",
+      "label": "Diagnosis codes, done",
+      "missing_pct": 27.8
+     },
+     {
+      "source": "proc_dx_planned",
+      "label": "Diagnosis codes, planned",
+      "missing_pct": 27.8
+     },
+     {
+      "source": "probing_chart",
+      "label": "Gum measurements",
+      "missing_pct": 20.7
+     }
+    ],
+    "funnel": [
+     {
+      "label": "Visits",
+      "visit_count": 511
+     },
+     {
+      "label": "+ an exam form with a status",
+      "visit_count": 442
+     },
+     {
+      "label": "+ a diagnosis code",
+      "visit_count": 320
+     },
+     {
+      "label": "+ a gum chart",
+      "visit_count": 259
+     },
+     {
+      "label": "+ a chart note with a status",
+      "visit_count": 259
+     }
+    ],
+    "truth": [
+     {
+      "source": "exam_form",
+      "label": "Exam form",
+      "answered_count": 442,
+      "agree_pct": 73.8,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 84.1,
+      "ppv_pct": 85.7,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "proc_dx_completed",
+      "label": "Diagnosis codes, done",
+      "answered_count": 369,
+      "agree_pct": 70.5,
+      "sensitivity_pct": 78.3,
+      "specificity_pct": 95.1,
+      "ppv_pct": 94.1,
+      "npv_pct": 81.5
+     },
+     {
+      "source": "proc_dx_planned",
+      "label": "Diagnosis codes, planned",
+      "answered_count": 369,
+      "agree_pct": 73.4,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 91.4,
+      "ppv_pct": 92.0,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "notes",
+      "label": "Chart note",
+      "answered_count": 511,
+      "agree_pct": 79.1,
+      "sensitivity_pct": 92.8,
+      "specificity_pct": 90.4,
+      "ppv_pct": 90.3,
+      "npv_pct": 92.9
+     },
+     {
+      "source": "probing_chart",
+      "label": "Gum measurements",
+      "answered_count": 405,
+      "agree_pct": 99.0,
+      "sensitivity_pct": 99.5,
+      "specificity_pct": 100.0,
+      "ppv_pct": 100.0,
+      "npv_pct": 99.5
+     },
+     {
+      "source": "algorithm_v0",
+      "label": "Rules, measurements first",
+      "answered_count": 511,
+      "agree_pct": 94.9,
+      "sensitivity_pct": 98.8,
+      "specificity_pct": 99.2,
+      "ppv_pct": 99.2,
+      "npv_pct": 98.9
+     },
+     {
+      "source": "algorithm_design",
+      "label": "Rules, exam form first",
+      "answered_count": 511,
+      "agree_pct": 74.6,
+      "sensitivity_pct": 99.2,
+      "specificity_pct": 85.8,
+      "ppv_pct": 87.0,
+      "npv_pct": 99.1
+     }
+    ]
+   },
+   {
+    "clinic": "5",
+    "scale": "complete_cases",
+    "visit_count": 324,
+    "completeness_pct": 73.8,
+    "accuracy_pct": 99.1,
+    "accuracy_design_pct": 71.6,
+    "missing": [
+     {
+      "source": "notes",
+      "label": "Chart note",
+      "missing_pct": 0.0
+     },
+     {
+      "source": "exam_form",
+      "label": "Exam form",
+      "missing_pct": 0.0
+     },
+     {
+      "source": "proc_dx_completed",
+      "label": "Diagnosis codes, done",
+      "missing_pct": 26.2
+     },
+     {
+      "source": "proc_dx_planned",
+      "label": "Diagnosis codes, planned",
+      "missing_pct": 26.2
+     },
+     {
+      "source": "probing_chart",
+      "label": "Gum measurements",
+      "missing_pct": 0.0
+     }
+    ],
+    "funnel": [
+     {
+      "label": "Visits",
+      "visit_count": 324
+     },
+     {
+      "label": "+ an exam form with a status",
+      "visit_count": 324
+     },
+     {
+      "label": "+ a diagnosis code",
+      "visit_count": 239
+     },
+     {
+      "label": "+ a gum chart",
+      "visit_count": 239
+     },
+     {
+      "label": "+ a chart note with a status",
+      "visit_count": 239
+     }
+    ],
+    "truth": [
+     {
+      "source": "exam_form",
+      "label": "Exam form",
+      "answered_count": 324,
+      "agree_pct": 71.6,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 84.2,
+      "ppv_pct": 82.8,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "proc_dx_completed",
+      "label": "Diagnosis codes, done",
+      "answered_count": 239,
+      "agree_pct": 70.7,
+      "sensitivity_pct": 79.0,
+      "specificity_pct": 94.0,
+      "ppv_pct": 91.2,
+      "npv_pct": 85.1
+     },
+     {
+      "source": "proc_dx_planned",
+      "label": "Diagnosis codes, planned",
+      "answered_count": 239,
+      "agree_pct": 72.8,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 91.8,
+      "ppv_pct": 90.5,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "notes",
+      "label": "Chart note",
+      "answered_count": 324,
+      "agree_pct": 78.7,
+      "sensitivity_pct": 92.9,
+      "specificity_pct": 89.1,
+      "ppv_pct": 86.7,
+      "npv_pct": 94.3
+     },
+     {
+      "source": "probing_chart",
+      "label": "Gum measurements",
+      "answered_count": 324,
+      "agree_pct": 99.1,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 100.0,
+      "ppv_pct": 100.0,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "algorithm_v0",
+      "label": "Rules, measurements first",
+      "answered_count": 324,
+      "agree_pct": 99.1,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 100.0,
+      "ppv_pct": 100.0,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "algorithm_design",
+      "label": "Rules, exam form first",
+      "answered_count": 324,
+      "agree_pct": 71.6,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 84.2,
+      "ppv_pct": 82.8,
+      "npv_pct": 100.0
+     }
+    ]
+   },
+   {
+    "clinic": "5",
+    "scale": "reference_set",
+    "visit_count": 27,
+    "completeness_pct": 40.7,
+    "accuracy_pct": 100.0,
+    "accuracy_design_pct": 66.7,
+    "missing": [
+     {
+      "source": "notes",
+      "label": "Chart note",
+      "missing_pct": 0.0
+     },
+     {
+      "source": "exam_form",
+      "label": "Exam form",
+      "missing_pct": 22.2
+     },
+     {
+      "source": "proc_dx_completed",
+      "label": "Diagnosis codes, done",
+      "missing_pct": 25.9
+     },
+     {
+      "source": "proc_dx_planned",
+      "label": "Diagnosis codes, planned",
+      "missing_pct": 25.9
+     },
+     {
+      "source": "probing_chart",
+      "label": "Gum measurements",
+      "missing_pct": 14.8
+     }
+    ],
+    "funnel": [
+     {
+      "label": "Visits",
+      "visit_count": 27
+     },
+     {
+      "label": "+ an exam form with a status",
+      "visit_count": 21
+     },
+     {
+      "label": "+ a diagnosis code",
+      "visit_count": 14
+     },
+     {
+      "label": "+ a gum chart",
+      "visit_count": 11
+     },
+     {
+      "label": "+ a chart note with a status",
+      "visit_count": 11
+     }
+    ],
+    "truth": [
+     {
+      "source": "exam_form",
+      "label": "Exam form",
+      "answered_count": 21,
+      "agree_pct": 66.7,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 80.0,
+      "ppv_pct": 94.1,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "proc_dx_completed",
+      "label": "Diagnosis codes, done",
+      "answered_count": 20,
+      "agree_pct": 60.0,
+      "sensitivity_pct": 76.9,
+      "specificity_pct": 100.0,
+      "ppv_pct": 100.0,
+      "npv_pct": 70.0
+     },
+     {
+      "source": "proc_dx_planned",
+      "label": "Diagnosis codes, planned",
+      "answered_count": 20,
+      "agree_pct": 70.0,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 85.7,
+      "ppv_pct": 92.9,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "notes",
+      "label": "Chart note",
+      "answered_count": 27,
+      "agree_pct": 85.2,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 77.8,
+      "ppv_pct": 90.0,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "probing_chart",
+      "label": "Gum measurements",
+      "answered_count": 23,
+      "agree_pct": 100.0,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 100.0,
+      "ppv_pct": 100.0,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "algorithm_v0",
+      "label": "Rules, measurements first",
+      "answered_count": 27,
+      "agree_pct": 100.0,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 100.0,
+      "ppv_pct": 100.0,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "algorithm_design",
+      "label": "Rules, exam form first",
+      "answered_count": 27,
+      "agree_pct": 66.7,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 88.9,
+      "ppv_pct": 94.7,
+      "npv_pct": 100.0
+     }
+    ]
+   },
+   {
+    "clinic": "6",
+    "scale": "all_visits",
+    "visit_count": 406,
+    "completeness_pct": 56.7,
+    "accuracy_pct": 97.5,
+    "accuracy_design_pct": 72.7,
+    "missing": [
+     {
+      "source": "notes",
+      "label": "Chart note",
+      "missing_pct": 0.0
+     },
+     {
+      "source": "exam_form",
+      "label": "Exam form",
+      "missing_pct": 13.8
+     },
+     {
+      "source": "proc_dx_completed",
+      "label": "Diagnosis codes, done",
+      "missing_pct": 25.4
+     },
+     {
+      "source": "proc_dx_planned",
+      "label": "Diagnosis codes, planned",
+      "missing_pct": 25.4
+     },
+     {
+      "source": "probing_chart",
+      "label": "Gum measurements",
+      "missing_pct": 9.6
+     }
+    ],
+    "funnel": [
+     {
+      "label": "Visits",
+      "visit_count": 406
+     },
+     {
+      "label": "+ an exam form with a status",
+      "visit_count": 350
+     },
+     {
+      "label": "+ a diagnosis code",
+      "visit_count": 258
+     },
+     {
+      "label": "+ a gum chart",
+      "visit_count": 230
+     },
+     {
+      "label": "+ a chart note with a status",
+      "visit_count": 230
+     }
+    ],
+    "truth": [
+     {
+      "source": "exam_form",
+      "label": "Exam form",
+      "answered_count": 350,
+      "agree_pct": 72.9,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 86.0,
+      "ppv_pct": 89.8,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "proc_dx_completed",
+      "label": "Diagnosis codes, done",
+      "answered_count": 303,
+      "agree_pct": 67.3,
+      "sensitivity_pct": 77.5,
+      "specificity_pct": 91.0,
+      "ppv_pct": 91.6,
+      "npv_pct": 76.2
+     },
+     {
+      "source": "proc_dx_planned",
+      "label": "Diagnosis codes, planned",
+      "answered_count": 303,
+      "agree_pct": 76.6,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 87.3,
+      "ppv_pct": 90.9,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "notes",
+      "label": "Chart note",
+      "answered_count": 406,
+      "agree_pct": 78.1,
+      "sensitivity_pct": 97.3,
+      "specificity_pct": 93.4,
+      "ppv_pct": 94.8,
+      "npv_pct": 96.6
+     },
+     {
+      "source": "probing_chart",
+      "label": "Gum measurements",
+      "answered_count": 367,
+      "agree_pct": 99.7,
+      "sensitivity_pct": 99.5,
+      "specificity_pct": 100.0,
+      "ppv_pct": 100.0,
+      "npv_pct": 99.4
+     },
+     {
+      "source": "algorithm_v0",
+      "label": "Rules, measurements first",
+      "answered_count": 406,
+      "agree_pct": 97.5,
+      "sensitivity_pct": 99.6,
+      "specificity_pct": 98.9,
+      "ppv_pct": 99.1,
+      "npv_pct": 99.5
+     },
+     {
+      "source": "algorithm_design",
+      "label": "Rules, exam form first",
+      "answered_count": 406,
+      "agree_pct": 72.7,
+      "sensitivity_pct": 98.7,
+      "specificity_pct": 86.9,
+      "ppv_pct": 90.2,
+      "npv_pct": 98.1
+     }
+    ]
+   },
+   {
+    "clinic": "6",
+    "scale": "complete_cases",
+    "visit_count": 300,
+    "completeness_pct": 72.3,
+    "accuracy_pct": 99.7,
+    "accuracy_design_pct": 72.0,
+    "missing": [
+     {
+      "source": "notes",
+      "label": "Chart note",
+      "missing_pct": 0.0
+     },
+     {
+      "source": "exam_form",
+      "label": "Exam form",
+      "missing_pct": 0.0
+     },
+     {
+      "source": "proc_dx_completed",
+      "label": "Diagnosis codes, done",
+      "missing_pct": 27.7
+     },
+     {
+      "source": "proc_dx_planned",
+      "label": "Diagnosis codes, planned",
+      "missing_pct": 27.7
+     },
+     {
+      "source": "probing_chart",
+      "label": "Gum measurements",
+      "missing_pct": 0.0
+     }
+    ],
+    "funnel": [
+     {
+      "label": "Visits",
+      "visit_count": 300
+     },
+     {
+      "label": "+ an exam form with a status",
+      "visit_count": 300
+     },
+     {
+      "label": "+ a diagnosis code",
+      "visit_count": 217
+     },
+     {
+      "label": "+ a gum chart",
+      "visit_count": 217
+     },
+     {
+      "label": "+ a chart note with a status",
+      "visit_count": 217
+     }
+    ],
+    "truth": [
+     {
+      "source": "exam_form",
+      "label": "Exam form",
+      "answered_count": 300,
+      "agree_pct": 72.0,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 85.7,
+      "ppv_pct": 88.9,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "proc_dx_completed",
+      "label": "Diagnosis codes, done",
+      "answered_count": 217,
+      "agree_pct": 65.9,
+      "sensitivity_pct": 75.8,
+      "specificity_pct": 90.7,
+      "ppv_pct": 91.0,
+      "npv_pct": 75.2
+     },
+     {
+      "source": "proc_dx_planned",
+      "label": "Diagnosis codes, planned",
+      "answered_count": 217,
+      "agree_pct": 75.6,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 89.7,
+      "ppv_pct": 92.3,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "notes",
+      "label": "Chart note",
+      "answered_count": 300,
+      "agree_pct": 76.0,
+      "sensitivity_pct": 96.9,
+      "specificity_pct": 93.6,
+      "ppv_pct": 94.5,
+      "npv_pct": 96.3
+     },
+     {
+      "source": "probing_chart",
+      "label": "Gum measurements",
+      "answered_count": 300,
+      "agree_pct": 99.7,
+      "sensitivity_pct": 99.4,
+      "specificity_pct": 100.0,
+      "ppv_pct": 100.0,
+      "npv_pct": 99.3
+     },
+     {
+      "source": "algorithm_v0",
+      "label": "Rules, measurements first",
+      "answered_count": 300,
+      "agree_pct": 99.7,
+      "sensitivity_pct": 99.4,
+      "specificity_pct": 100.0,
+      "ppv_pct": 100.0,
+      "npv_pct": 99.3
+     },
+     {
+      "source": "algorithm_design",
+      "label": "Rules, exam form first",
+      "answered_count": 300,
+      "agree_pct": 72.0,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 85.7,
+      "ppv_pct": 88.9,
+      "npv_pct": 100.0
+     }
+    ]
+   },
+   {
+    "clinic": "6",
+    "scale": "reference_set",
+    "visit_count": 29,
+    "completeness_pct": 55.2,
+    "accuracy_pct": 100.0,
+    "accuracy_design_pct": 79.3,
+    "missing": [
+     {
+      "source": "notes",
+      "label": "Chart note",
+      "missing_pct": 0.0
+     },
+     {
+      "source": "exam_form",
+      "label": "Exam form",
+      "missing_pct": 17.2
+     },
+     {
+      "source": "proc_dx_completed",
+      "label": "Diagnosis codes, done",
+      "missing_pct": 24.1
+     },
+     {
+      "source": "proc_dx_planned",
+      "label": "Diagnosis codes, planned",
+      "missing_pct": 24.1
+     },
+     {
+      "source": "probing_chart",
+      "label": "Gum measurements",
+      "missing_pct": 17.2
+     }
+    ],
+    "funnel": [
+     {
+      "label": "Visits",
+      "visit_count": 29
+     },
+     {
+      "label": "+ an exam form with a status",
+      "visit_count": 24
+     },
+     {
+      "label": "+ a diagnosis code",
+      "visit_count": 19
+     },
+     {
+      "label": "+ a gum chart",
+      "visit_count": 16
+     },
+     {
+      "label": "+ a chart note with a status",
+      "visit_count": 16
+     }
+    ],
+    "truth": [
+     {
+      "source": "exam_form",
+      "label": "Exam form",
+      "answered_count": 24,
+      "agree_pct": 79.2,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 90.0,
+      "ppv_pct": 93.3,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "proc_dx_completed",
+      "label": "Diagnosis codes, done",
+      "answered_count": 22,
+      "agree_pct": 68.2,
+      "sensitivity_pct": 78.6,
+      "specificity_pct": 100.0,
+      "ppv_pct": 100.0,
+      "npv_pct": 72.7
+     },
+     {
+      "source": "proc_dx_planned",
+      "label": "Diagnosis codes, planned",
+      "answered_count": 22,
+      "agree_pct": 68.2,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 75.0,
+      "ppv_pct": 87.5,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "notes",
+      "label": "Chart note",
+      "answered_count": 29,
+      "agree_pct": 82.8,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 90.9,
+      "ppv_pct": 94.7,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "probing_chart",
+      "label": "Gum measurements",
+      "answered_count": 24,
+      "agree_pct": 100.0,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 100.0,
+      "ppv_pct": 100.0,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "algorithm_v0",
+      "label": "Rules, measurements first",
+      "answered_count": 29,
+      "agree_pct": 100.0,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 100.0,
+      "ppv_pct": 100.0,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "algorithm_design",
+      "label": "Rules, exam form first",
+      "answered_count": 29,
+      "agree_pct": 79.3,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 90.9,
+      "ppv_pct": 94.7,
+      "npv_pct": 100.0
+     }
+    ]
+   },
+   {
+    "clinic": "7",
+    "scale": "all_visits",
+    "visit_count": 609,
+    "completeness_pct": 50.1,
+    "accuracy_pct": 94.6,
+    "accuracy_design_pct": 73.4,
+    "missing": [
+     {
+      "source": "notes",
+      "label": "Chart note",
+      "missing_pct": 0.0
+     },
+     {
+      "source": "exam_form",
+      "label": "Exam form",
+      "missing_pct": 16.7
+     },
+     {
+      "source": "proc_dx_completed",
+      "label": "Diagnosis codes, done",
+      "missing_pct": 30.4
+     },
+     {
+      "source": "proc_dx_planned",
+      "label": "Diagnosis codes, planned",
+      "missing_pct": 30.4
+     },
+     {
+      "source": "probing_chart",
+      "label": "Gum measurements",
+      "missing_pct": 14.8
+     }
+    ],
+    "funnel": [
+     {
+      "label": "Visits",
+      "visit_count": 609
+     },
+     {
+      "label": "+ an exam form with a status",
+      "visit_count": 507
+     },
+     {
+      "label": "+ a diagnosis code",
+      "visit_count": 354
+     },
+     {
+      "label": "+ a gum chart",
+      "visit_count": 305
+     },
+     {
+      "label": "+ a chart note with a status",
+      "visit_count": 305
+     }
+    ],
+    "truth": [
+     {
+      "source": "exam_form",
+      "label": "Exam form",
+      "answered_count": 507,
+      "agree_pct": 75.5,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 89.0,
+      "ppv_pct": 91.2,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "proc_dx_completed",
+      "label": "Diagnosis codes, done",
+      "answered_count": 424,
+      "agree_pct": 66.3,
+      "sensitivity_pct": 76.8,
+      "specificity_pct": 87.8,
+      "ppv_pct": 87.9,
+      "npv_pct": 76.4
+     },
+     {
+      "source": "proc_dx_planned",
+      "label": "Diagnosis codes, planned",
+      "answered_count": 424,
+      "agree_pct": 82.1,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 94.4,
+      "ppv_pct": 95.4,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "notes",
+      "label": "Chart note",
+      "answered_count": 609,
+      "agree_pct": 77.3,
+      "sensitivity_pct": 93.9,
+      "specificity_pct": 91.1,
+      "ppv_pct": 92.5,
+      "npv_pct": 92.8
+     },
+     {
+      "source": "probing_chart",
+      "label": "Gum measurements",
+      "answered_count": 519,
+      "agree_pct": 98.7,
+      "sensitivity_pct": 99.3,
+      "specificity_pct": 99.6,
+      "ppv_pct": 99.6,
+      "npv_pct": 99.2
+     },
+     {
+      "source": "algorithm_v0",
+      "label": "Rules, measurements first",
+      "answered_count": 609,
+      "agree_pct": 94.6,
+      "sensitivity_pct": 97.9,
+      "specificity_pct": 97.9,
+      "ppv_pct": 98.2,
+      "npv_pct": 97.5
+     },
+     {
+      "source": "algorithm_design",
+      "label": "Rules, exam form first",
+      "answered_count": 609,
+      "agree_pct": 73.4,
+      "sensitivity_pct": 95.1,
+      "specificity_pct": 88.3,
+      "ppv_pct": 90.4,
+      "npv_pct": 93.9
+     }
+    ]
+   },
+   {
+    "clinic": "7",
+    "scale": "complete_cases",
+    "visit_count": 395,
+    "completeness_pct": 69.6,
+    "accuracy_pct": 98.5,
+    "accuracy_design_pct": 74.9,
+    "missing": [
+     {
+      "source": "notes",
+      "label": "Chart note",
+      "missing_pct": 0.0
+     },
+     {
+      "source": "exam_form",
+      "label": "Exam form",
+      "missing_pct": 0.0
+     },
+     {
+      "source": "proc_dx_completed",
+      "label": "Diagnosis codes, done",
+      "missing_pct": 30.4
+     },
+     {
+      "source": "proc_dx_planned",
+      "label": "Diagnosis codes, planned",
+      "missing_pct": 30.4
+     },
+     {
+      "source": "probing_chart",
+      "label": "Gum measurements",
+      "missing_pct": 0.0
+     }
+    ],
+    "funnel": [
+     {
+      "label": "Visits",
+      "visit_count": 395
+     },
+     {
+      "label": "+ an exam form with a status",
+      "visit_count": 395
+     },
+     {
+      "label": "+ a diagnosis code",
+      "visit_count": 275
+     },
+     {
+      "label": "+ a gum chart",
+      "visit_count": 275
+     },
+     {
+      "label": "+ a chart note with a status",
+      "visit_count": 275
+     }
+    ],
+    "truth": [
+     {
+      "source": "exam_form",
+      "label": "Exam form",
+      "answered_count": 395,
+      "agree_pct": 74.9,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 88.8,
+      "ppv_pct": 90.0,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "proc_dx_completed",
+      "label": "Diagnosis codes, done",
+      "answered_count": 275,
+      "agree_pct": 67.6,
+      "sensitivity_pct": 79.7,
+      "specificity_pct": 89.8,
+      "ppv_pct": 88.7,
+      "npv_pct": 81.5
+     },
+     {
+      "source": "proc_dx_planned",
+      "label": "Diagnosis codes, planned",
+      "answered_count": 275,
+      "agree_pct": 80.7,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 92.0,
+      "ppv_pct": 92.6,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "notes",
+      "label": "Chart note",
+      "answered_count": 395,
+      "agree_pct": 77.5,
+      "sensitivity_pct": 94.9,
+      "specificity_pct": 91.9,
+      "ppv_pct": 92.2,
+      "npv_pct": 94.8
+     },
+     {
+      "source": "probing_chart",
+      "label": "Gum measurements",
+      "answered_count": 395,
+      "agree_pct": 98.5,
+      "sensitivity_pct": 99.5,
+      "specificity_pct": 99.5,
+      "ppv_pct": 99.5,
+      "npv_pct": 99.5
+     },
+     {
+      "source": "algorithm_v0",
+      "label": "Rules, measurements first",
+      "answered_count": 395,
+      "agree_pct": 98.5,
+      "sensitivity_pct": 99.5,
+      "specificity_pct": 99.5,
+      "ppv_pct": 99.5,
+      "npv_pct": 99.5
+     },
+     {
+      "source": "algorithm_design",
+      "label": "Rules, exam form first",
+      "answered_count": 395,
+      "agree_pct": 74.9,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 88.8,
+      "ppv_pct": 90.0,
+      "npv_pct": 100.0
+     }
+    ]
+   },
+   {
+    "clinic": "7",
+    "scale": "reference_set",
+    "visit_count": 34,
+    "completeness_pct": 61.8,
+    "accuracy_pct": 94.1,
+    "accuracy_design_pct": 79.4,
+    "missing": [
+     {
+      "source": "notes",
+      "label": "Chart note",
+      "missing_pct": 0.0
+     },
+     {
+      "source": "exam_form",
+      "label": "Exam form",
+      "missing_pct": 11.8
+     },
+     {
+      "source": "proc_dx_completed",
+      "label": "Diagnosis codes, done",
+      "missing_pct": 26.5
+     },
+     {
+      "source": "proc_dx_planned",
+      "label": "Diagnosis codes, planned",
+      "missing_pct": 26.5
+     },
+     {
+      "source": "probing_chart",
+      "label": "Gum measurements",
+      "missing_pct": 5.9
+     }
+    ],
+    "funnel": [
+     {
+      "label": "Visits",
+      "visit_count": 34
+     },
+     {
+      "label": "+ an exam form with a status",
+      "visit_count": 30
+     },
+     {
+      "label": "+ a diagnosis code",
+      "visit_count": 22
+     },
+     {
+      "label": "+ a gum chart",
+      "visit_count": 21
+     },
+     {
+      "label": "+ a chart note with a status",
+      "visit_count": 21
+     }
+    ],
+    "truth": [
+     {
+      "source": "exam_form",
+      "label": "Exam form",
+      "answered_count": 30,
+      "agree_pct": 80.0,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 83.3,
+      "ppv_pct": 90.0,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "proc_dx_completed",
+      "label": "Diagnosis codes, done",
+      "answered_count": 25,
+      "agree_pct": 56.0,
+      "sensitivity_pct": 92.3,
+      "specificity_pct": 66.7,
+      "ppv_pct": 75.0,
+      "npv_pct": 88.9
+     },
+     {
+      "source": "proc_dx_planned",
+      "label": "Diagnosis codes, planned",
+      "answered_count": 25,
+      "agree_pct": 76.0,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 91.7,
+      "ppv_pct": 92.9,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "notes",
+      "label": "Chart note",
+      "answered_count": 34,
+      "agree_pct": 76.5,
+      "sensitivity_pct": 95.0,
+      "specificity_pct": 92.9,
+      "ppv_pct": 95.0,
+      "npv_pct": 92.9
+     },
+     {
+      "source": "probing_chart",
+      "label": "Gum measurements",
+      "answered_count": 32,
+      "agree_pct": 93.8,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 100.0,
+      "ppv_pct": 100.0,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "algorithm_v0",
+      "label": "Rules, measurements first",
+      "answered_count": 34,
+      "agree_pct": 94.1,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 100.0,
+      "ppv_pct": 100.0,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "algorithm_design",
+      "label": "Rules, exam form first",
+      "answered_count": 34,
+      "agree_pct": 79.4,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 78.6,
+      "ppv_pct": 87.0,
+      "npv_pct": 100.0
+     }
+    ]
+   },
+   {
+    "clinic": "8",
+    "scale": "all_visits",
+    "visit_count": 746,
+    "completeness_pct": 37.9,
+    "accuracy_pct": 93.2,
+    "accuracy_design_pct": 73.6,
+    "missing": [
+     {
+      "source": "notes",
+      "label": "Chart note",
+      "missing_pct": 0.0
+     },
+     {
+      "source": "exam_form",
+      "label": "Exam form",
+      "missing_pct": 17.0
+     },
+     {
+      "source": "proc_dx_completed",
+      "label": "Diagnosis codes, done",
+      "missing_pct": 29.8
+     },
+     {
+      "source": "proc_dx_planned",
+      "label": "Diagnosis codes, planned",
+      "missing_pct": 29.8
+     },
+     {
+      "source": "probing_chart",
+      "label": "Gum measurements",
+      "missing_pct": 33.4
+     }
+    ],
+    "funnel": [
+     {
+      "label": "Visits",
+      "visit_count": 746
+     },
+     {
+      "label": "+ an exam form with a status",
+      "visit_count": 619
+     },
+     {
+      "label": "+ a diagnosis code",
+      "visit_count": 439
+     },
+     {
+      "label": "+ a gum chart",
+      "visit_count": 283
+     },
+     {
+      "label": "+ a chart note with a status",
+      "visit_count": 283
+     }
+    ],
+    "truth": [
+     {
+      "source": "exam_form",
+      "label": "Exam form",
+      "answered_count": 619,
+      "agree_pct": 75.0,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 85.7,
+      "ppv_pct": 91.1,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "proc_dx_completed",
+      "label": "Diagnosis codes, done",
+      "answered_count": 524,
+      "agree_pct": 68.7,
+      "sensitivity_pct": 81.2,
+      "specificity_pct": 88.9,
+      "ppv_pct": 91.2,
+      "npv_pct": 76.8
+     },
+     {
+      "source": "proc_dx_planned",
+      "label": "Diagnosis codes, planned",
+      "answered_count": 524,
+      "agree_pct": 77.5,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 90.3,
+      "ppv_pct": 93.6,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "notes",
+      "label": "Chart note",
+      "answered_count": 746,
+      "agree_pct": 79.1,
+      "sensitivity_pct": 97.3,
+      "specificity_pct": 90.5,
+      "ppv_pct": 93.7,
+      "npv_pct": 95.8
+     },
+     {
+      "source": "probing_chart",
+      "label": "Gum measurements",
+      "answered_count": 497,
+      "agree_pct": 99.6,
+      "sensitivity_pct": 99.3,
+      "specificity_pct": 100.0,
+      "ppv_pct": 100.0,
+      "npv_pct": 99.0
+     },
+     {
+      "source": "algorithm_v0",
+      "label": "Rules, measurements first",
+      "answered_count": 746,
+      "agree_pct": 93.2,
+      "sensitivity_pct": 98.6,
+      "specificity_pct": 95.4,
+      "ppv_pct": 96.9,
+      "npv_pct": 98.0
+     },
+     {
+      "source": "algorithm_design",
+      "label": "Rules, exam form first",
+      "answered_count": 746,
+      "agree_pct": 73.6,
+      "sensitivity_pct": 97.5,
+      "specificity_pct": 85.5,
+      "ppv_pct": 90.7,
+      "npv_pct": 95.9
+     }
+    ]
+   },
+   {
+    "clinic": "8",
+    "scale": "complete_cases",
+    "visit_count": 385,
+    "completeness_pct": 68.6,
+    "accuracy_pct": 99.7,
+    "accuracy_design_pct": 75.6,
+    "missing": [
+     {
+      "source": "notes",
+      "label": "Chart note",
+      "missing_pct": 0.0
+     },
+     {
+      "source": "exam_form",
+      "label": "Exam form",
+      "missing_pct": 0.0
+     },
+     {
+      "source": "proc_dx_completed",
+      "label": "Diagnosis codes, done",
+      "missing_pct": 31.4
+     },
+     {
+      "source": "proc_dx_planned",
+      "label": "Diagnosis codes, planned",
+      "missing_pct": 31.4
+     },
+     {
+      "source": "probing_chart",
+      "label": "Gum measurements",
+      "missing_pct": 0.0
+     }
+    ],
+    "funnel": [
+     {
+      "label": "Visits",
+      "visit_count": 385
+     },
+     {
+      "label": "+ an exam form with a status",
+      "visit_count": 385
+     },
+     {
+      "label": "+ a diagnosis code",
+      "visit_count": 264
+     },
+     {
+      "label": "+ a gum chart",
+      "visit_count": 264
+     },
+     {
+      "label": "+ a chart note with a status",
+      "visit_count": 264
+     }
+    ],
+    "truth": [
+     {
+      "source": "exam_form",
+      "label": "Exam form",
+      "answered_count": 385,
+      "agree_pct": 75.6,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 90.1,
+      "ppv_pct": 93.3,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "proc_dx_completed",
+      "label": "Diagnosis codes, done",
+      "answered_count": 264,
+      "agree_pct": 70.5,
+      "sensitivity_pct": 84.8,
+      "specificity_pct": 89.4,
+      "ppv_pct": 91.4,
+      "npv_pct": 81.5
+     },
+     {
+      "source": "proc_dx_planned",
+      "label": "Diagnosis codes, planned",
+      "answered_count": 264,
+      "agree_pct": 79.9,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 90.3,
+      "ppv_pct": 93.2,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "notes",
+      "label": "Chart note",
+      "answered_count": 385,
+      "agree_pct": 79.7,
+      "sensitivity_pct": 98.2,
+      "specificity_pct": 92.6,
+      "ppv_pct": 94.8,
+      "npv_pct": 97.4
+     },
+     {
+      "source": "probing_chart",
+      "label": "Gum measurements",
+      "answered_count": 385,
+      "agree_pct": 99.7,
+      "sensitivity_pct": 99.6,
+      "specificity_pct": 100.0,
+      "ppv_pct": 100.0,
+      "npv_pct": 99.4
+     },
+     {
+      "source": "algorithm_v0",
+      "label": "Rules, measurements first",
+      "answered_count": 385,
+      "agree_pct": 99.7,
+      "sensitivity_pct": 99.6,
+      "specificity_pct": 100.0,
+      "ppv_pct": 100.0,
+      "npv_pct": 99.4
+     },
+     {
+      "source": "algorithm_design",
+      "label": "Rules, exam form first",
+      "answered_count": 385,
+      "agree_pct": 75.6,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 90.1,
+      "ppv_pct": 93.3,
+      "npv_pct": 100.0
+     }
+    ]
+   },
+   {
+    "clinic": "8",
+    "scale": "reference_set",
+    "visit_count": 45,
+    "completeness_pct": 31.1,
+    "accuracy_pct": 97.8,
+    "accuracy_design_pct": 60.0,
+    "missing": [
+     {
+      "source": "notes",
+      "label": "Chart note",
+      "missing_pct": 0.0
+     },
+     {
+      "source": "exam_form",
+      "label": "Exam form",
+      "missing_pct": 13.3
+     },
+     {
+      "source": "proc_dx_completed",
+      "label": "Diagnosis codes, done",
+      "missing_pct": 24.4
+     },
+     {
+      "source": "proc_dx_planned",
+      "label": "Diagnosis codes, planned",
+      "missing_pct": 24.4
+     },
+     {
+      "source": "probing_chart",
+      "label": "Gum measurements",
+      "missing_pct": 35.6
+     }
+    ],
+    "funnel": [
+     {
+      "label": "Visits",
+      "visit_count": 45
+     },
+     {
+      "label": "+ an exam form with a status",
+      "visit_count": 39
+     },
+     {
+      "label": "+ a diagnosis code",
+      "visit_count": 28
+     },
+     {
+      "label": "+ a gum chart",
+      "visit_count": 14
+     },
+     {
+      "label": "+ a chart note with a status",
+      "visit_count": 14
+     }
+    ],
+    "truth": [
+     {
+      "source": "exam_form",
+      "label": "Exam form",
+      "answered_count": 39,
+      "agree_pct": 59.0,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 80.0,
+      "ppv_pct": 88.9,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "proc_dx_completed",
+      "label": "Diagnosis codes, done",
+      "answered_count": 34,
+      "agree_pct": 70.6,
+      "sensitivity_pct": 85.0,
+      "specificity_pct": 85.7,
+      "ppv_pct": 89.5,
+      "npv_pct": 80.0
+     },
+     {
+      "source": "proc_dx_planned",
+      "label": "Diagnosis codes, planned",
+      "answered_count": 34,
+      "agree_pct": 79.4,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 92.9,
+      "ppv_pct": 95.2,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "notes",
+      "label": "Chart note",
+      "answered_count": 45,
+      "agree_pct": 80.0,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 83.3,
+      "ppv_pct": 90.0,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "probing_chart",
+      "label": "Gum measurements",
+      "answered_count": 29,
+      "agree_pct": 100.0,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 100.0,
+      "ppv_pct": 100.0,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "algorithm_v0",
+      "label": "Rules, measurements first",
+      "answered_count": 45,
+      "agree_pct": 97.8,
+      "sensitivity_pct": 100.0,
+      "specificity_pct": 100.0,
+      "ppv_pct": 100.0,
+      "npv_pct": 100.0
+     },
+     {
+      "source": "algorithm_design",
+      "label": "Rules, exam form first",
+      "answered_count": 45,
+      "agree_pct": 60.0,
+      "sensitivity_pct": 96.3,
+      "specificity_pct": 77.8,
+      "ppv_pct": 86.7,
+      "npv_pct": 93.3
+     }
+    ]
+   }
+  ],
   "open_dental": [
    {
     "metric": "charted_visit_office_share",

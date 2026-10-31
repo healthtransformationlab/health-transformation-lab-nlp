@@ -17,6 +17,7 @@ from __future__ import annotations
 import pandas as pd
 
 from . import grader_tables, open_dental
+from .completeness import complete_cases
 from .paths import DATASETS_DIR, REPO_ROOT
 from .telemetry import traced
 
@@ -68,6 +69,55 @@ def _accuracy(v: pd.DataFrame) -> list[dict]:
                          "agree_pct": _pct((g.loc[ans, col] == g.loc[ans, "truth_status"]).mean()) if ans.any()
                          else None})
     return rows
+
+
+PERIO = ("periodontitis_stage_1", "periodontitis_stage_2", "periodontitis_stage_3", "periodontitis_stage_4")
+FUNNEL = [("exam_form", "+ an exam form with a status"), ("proc_dx_completed", "+ a diagnosis code"),
+          ("probing_chart", "+ a gum chart"), ("notes", "+ a chart note with a status")]
+
+
+@traced
+def truth_row(v: pd.DataFrame, col: str) -> dict:
+    """One source against the truth, where it answers: exact status agreement, and periodontitis yes/no
+    sensitivity, specificity, PPV and NPV."""
+    a = v[v[col] != "unknown"]
+    p, t = a[col].isin(PERIO), a["truth_status"].isin(PERIO)
+    tp, fp, fn, tn = int((p & t).sum()), int((p & ~t).sum()), int((~p & t).sum()), int((~p & ~t).sum())
+
+    def r(x, y):
+        return round(100 * x / y, 1) if y else None
+    return {"source": col, "label": SOURCES.get(col, col), "answered_count": len(a),
+            "agree_pct": r(int((a[col] == a["truth_status"]).sum()), len(a)),
+            "sensitivity_pct": r(tp, tp + fn), "specificity_pct": r(tn, tn + fp),
+            "ppv_pct": r(tp, tp + fp), "npv_pct": r(tn, tn + fn)}
+
+
+def _monitor(v: pd.DataFrame, complete_ids: set) -> list[dict]:
+    """Every clinic (and All) by every scale, for the page's filters."""
+    scales = {"all_visits": lambda x: x, "complete_cases": lambda x: x[x["visit_id"].isin(complete_ids)],
+              "reference_set": lambda x: x[x["in_review"].astype(bool)]}
+    groups = [("All", v), *sorted(v.groupby(v["clinic"].astype(str)), key=lambda x: int(x[0]))]
+    out = []
+    for clinic, g in groups:
+        for scale, pick in scales.items():
+            x = pick(g)
+            n = len(x)
+            complete = ((x["exam_form"] != "unknown") & (x["proc_dx_completed"] != "unknown")
+                        & (x["probing_chart"] != "unknown"))
+            steps, keep = [{"label": "Visits", "visit_count": n}], pd.Series(True, index=x.index)
+            for col, label in FUNNEL:
+                keep &= x[col] != "unknown"
+                steps.append({"label": label, "visit_count": int(keep.sum())})
+            out.append({"clinic": clinic, "scale": scale, "visit_count": int(n),
+                        "completeness_pct": _pct(complete.mean()) if n else None,
+                        "accuracy_pct": _pct((x["algorithm_v0"] == x["truth_status"]).mean()) if n else None,
+                        "accuracy_design_pct": _pct((x["algorithm_design"] == x["truth_status"]).mean()) if n else None,
+                        "missing": [{"source": c, "label": SOURCES[c], "missing_pct": _pct((x[c] == "unknown").mean())}
+                                    for c in ("notes", "exam_form", "proc_dx_completed", "proc_dx_planned",
+                                              "probing_chart")] if n else [],
+                        "funnel": steps,
+                        "truth": [truth_row(x, c) for c in SOURCES] if n else []})
+    return out
 
 
 @traced
@@ -123,6 +173,7 @@ def build() -> dict:
         "injected": {"injected_count": int(inj["injected_errors"]),
                      "caught_count": round(float(inj["caught_share"]) * int(inj["injected_errors"])),
                      "caught_pct": _pct(inj["caught_share"]), "false_flag_pct": _pct(inj["flag_rate_without_error"], 2)},
+        "monitor": _monitor(v, set(complete_cases(pd.read_csv(DATASETS_DIR / "visits_structured.csv"))["visit_id"])),
         "open_dental": [{"metric": r.metric_name, "label": MESS.get(r.metric_name, r.metric_name),
                          "pct": _pct(r.value_ratio), "numerator": int(r.numerator_count),
                          "denominator": int(r.denominator_count)} for r in prof.itertuples()],
