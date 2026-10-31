@@ -482,3 +482,24 @@ def write(out_dir: Path, truth_dir: Path, p: Params | None = None, seed: int = 4
         df.to_csv(out_dir / f"{name}.csv", index=False)
     truth.to_csv(truth_dir / "tooth_loss_truth.csv", index=False)
     return {name: len(df) for name, df in tables.items()}
+
+
+SITE_VALUES = ["mbvalue", "bvalue", "dbvalue", "mlvalue", "lvalue", "dlvalue"]
+
+
+@traced
+def clean(tables: dict[str, pd.DataFrame]) -> dict[str, pd.DataFrame]:
+    """Silver (spec 029 FR-004): the same tables with the same names and layout, read the way Open Dental means them.
+    In periomeasure, -1 (not measured) becomes null, and a gingival margin of 100 or more (above the
+    cementoenamel junction) becomes 100 - value, a negative number. Every other table is copied as it is; dates and
+    types are already enforced by build."""
+    out = {name: df.copy() for name, df in tables.items()}
+    if "periomeasure" in out:
+        pm = out["periomeasure"]
+        for c in [*SITE_VALUES, "toothvalue"]:
+            v = pm[c].astype("Int64")
+            if c in SITE_VALUES:
+                margin = (pm["sequencetype"] == SEQ_MARGIN) & (v >= 100)
+                v = v.mask(margin, 100 - v)
+            pm[c] = v.mask(v == -1)
+    return out

@@ -104,6 +104,17 @@ jobs:
         env: {DATABRICKS_BUNDLE_ENGINE: direct}
         # Only file versions it hasn't loaded yet; follow it from the Run URL in the log.
         run: databricks bundle run -t "$TARGET" --no-wait load_results
+      - name: Load the synthetic Open Dental extract when it isn't there yet (spec 029, #369)
+        if: env.DATABRICKS_CLIENT_SECRET != ''
+        env: {DATABRICKS_BUNDLE_ENGINE: direct}
+        # Regenerating it every deploy would spend compute for the same seeded rows, so only when bronze has no
+        # patient table; after a generator change, run "Load Open Dental" by hand.
+        run: |
+          if databricks tables get health_transformation_lab.bronze_opendental_perio.patient >/dev/null 2>&1; then
+            echo "Open Dental extract already loaded"
+          else
+            databricks bundle run -t "$TARGET" --no-wait open_dental_load
+          fi
       - name: Genie spaces, once the tables they read exist (spec 019, issue #155)
         if: env.DATABRICKS_CLIENT_SECRET != ''
         env: {DATABRICKS_BUNDLE_ENGINE: direct}

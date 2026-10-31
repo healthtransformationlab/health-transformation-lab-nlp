@@ -23,7 +23,9 @@ Implementation starts after this spec, plan and tasks are reviewed.
   parity inputs
 - [ ] T006a [US2] Failing tests, then the bronze-to-silver data-quality checks after Kookal et al. 2024
   (completeness, accuracy, consistency; FR-009), with planted faults the generator records
-- [ ] T007 [US2] Load job: bronze as is, silver tooth table, idempotent, batch keys
+- [x] T007 [US2] Load job `open_dental_load` (`12_load_open_dental.py`): generates the extract into the landing
+  volume, bronze as generated, silver cleaned (`open_dental.clean`) plus the answer key; overwrite per run, batch
+  keys; deploy starts it when bronze is empty. The silver tooth table joins it with T006
 
 ## US3 #371: the model, checked against the hidden truth
 
@@ -46,4 +48,4 @@ Implementation starts after this spec, plan and tasks are reviewed.
 
 - [x] T014 [US5] The 16 further Open Dental tables in research.md (checked in the source), the silver model and the
   three ERDs, in the reference's subject areas; free text marked PHI
-- [ ] T015 [US5] The generator (T003) and the load job (T007) write them too
+- [x] T015 [US5] The generator (T003) and the load job (T007) write them too

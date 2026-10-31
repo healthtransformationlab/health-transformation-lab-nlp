@@ -137,3 +137,45 @@ def test_write_puts_the_truth_apart(tmp_path):
     od.write(out, key, od.Params(n_patients=10), seed=1)
     assert {p.stem for p in out.glob("*.csv")} == set(od.TABLES)
     assert [p.name for p in key.iterdir()] == ["tooth_loss_truth.csv"]
+
+
+# ---------- T007: silver cleaning and the load job (#370, #381) ----------
+def test_silver_cleans_to_open_dentals_conventions():
+    pm = pd.DataFrame({"periomeasurenum": [1, 2, 3, 4], "perioexamnum": [1, 1, 1, 1],
+                       "sequencetype": [od.SEQ_MARGIN, od.SEQ_MARGIN, od.SEQ_PROBING, od.SEQ_MOBILITY],
+                       "inttooth": [3, 3, 3, 3], "toothvalue": [-1, -1, -1, 2],
+                       "mbvalue": [105, 2, 4, -1], "bvalue": [-1, 100, 3, -1], "dbvalue": [1, 1, 1, -1],
+                       "mlvalue": [1, 1, 1, -1], "lvalue": [1, 1, 1, -1], "dlvalue": [1, 1, 1, -1]})
+    silver = od.clean({"periomeasure": pm, "patient": pd.DataFrame({"patnum": [1]})})
+    s = silver["periomeasure"]
+    assert s.loc[0, "mbvalue"] == -5 and s.loc[1, "bvalue"] == 0      # gingival margins of 100+ are negative
+    assert s.loc[2, "mbvalue"] == 4                                     # probing depths are left alone
+    assert pd.isna(s.loc[0, "bvalue"]) and pd.isna(s.loc[3, "mbvalue"])  # -1: not measured
+    assert pd.isna(s.loc[0, "toothvalue"]) and s.loc[3, "toothvalue"] == 2
+    assert list(s.columns) == list(pm.columns)                          # same names and layout as bronze
+    assert silver["patient"].equals(pd.DataFrame({"patnum": [1]}))
+
+
+def _bundle():
+    import yaml
+    return yaml.safe_load((ROOT / "databricks" / "resources" / "jobs.yml").read_text())["resources"]["jobs"]
+
+
+def test_the_load_job_generates_and_loads_bronze_and_silver():
+    job = _bundle()["open_dental_load"]
+    assert job["name"] == "Load Open Dental" and job["tags"]["data"] == "synthetic"
+    p = job["tasks"][0]["notebook_task"]["base_parameters"]
+    assert p["bronze_schema"] == "${resources.schemas.opendental_perio_bronze.name}"
+    assert p["silver_schema"] == "${resources.schemas.opendental_perio_silver.name}"
+    assert p["od_catalog"] == "${resources.schemas.opendental_perio_bronze.catalog_name}"
+    assert "opendental_perio_data" in p["landing_dir"]
+    nb = (ROOT / "databricks" / "notebooks" / "12_load_open_dental.py").read_text()
+    for call in ("open_dental.write(", "open_dental.clean(", 'mode("overwrite")', "run_id", "git_commit_sha"):
+        assert call in nb, call
+    assert "answer_key" in nb                  # the truth lands in its own folder, read only by the evaluation
+
+
+def test_the_deploy_loads_the_extract_once_it_is_missing():
+    deploy = (ROOT / ".github" / "workflows" / "deploy.yml").read_text()
+    assert "bundle run -t \"$TARGET\" --no-wait open_dental_load" in deploy
+    assert "bronze_opendental_perio.patient" in deploy
