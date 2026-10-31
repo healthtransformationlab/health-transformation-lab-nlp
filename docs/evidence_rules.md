@@ -169,8 +169,10 @@ placeholder (spec 003), not taken from a published algorithm.
 
 The study design's starting order, after Patel et al., *Methods Inf Med* 2022
 ([references](references.md), item 4): exam form → diagnosis codes (done, then planned) → chart note →
-gum measurements. The exact order, and counting diagnosis codes on planned procedures with completed ones,
-are not yet checked against the paper ([action item A2](action_items.md)). No X-ray floor. It scores lower (72 vs 98 correct per 100 charts): about 85% of
+gum measurements. Checked against the paper ([action item A2](action_items.md), #389): the paper uses three
+sources in this order (the clinician's recorded diagnosis, then the notes, then the charting), each only
+filling gaps. It has no procedure diagnosis codes and says nothing about planned procedures, so that step is
+this repo's addition. It never tested whether the order is the most accurate. No X-ray floor. It scores lower (72 vs 98 correct per 100 charts): about 85% of
 visits have an exam form, so the form decides most charts, and its checkbox is often stale.
 
 ## Stage 4 rule (`+rules4`)

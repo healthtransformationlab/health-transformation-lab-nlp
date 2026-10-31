@@ -22,9 +22,15 @@ Everything this repo relies on, and what it's used for.
 4. **Patel JS, Brandon R, Tellez M, Albandar JM, Rao R, Krois J, Wu H.**
    *Developing Automated Computer Algorithms to Phenotype Periodontal Disease
    Diagnoses in Electronic Dental Records.* Methods of Information in Medicine, 2022.
-   → Prior work on rule-based phenotyping from EDR data. The exam-form-first order of
-   `algorithm_design` (`phenotype.py`, `docs/evidence_rules.md`) follows it; not yet checked against the
-   full text (action item A2). `algorithm_v0` (gum measurements first) is this repo's own, not from it.
+   [PMC9788909](https://pmc.ncbi.nlm.nih.gov/articles/PMC9788909), doi:10.1055/s-0042-1757880 (open access).
+   → Rule-based phenotyping from EDR data at one dental school (27,138 patients). Three sources fill gaps in a
+   fixed order: the clinician's diagnosis recorded in the diagnosis section, then diagnoses found in clinical
+   notes (NLP), then diagnoses computed from periodontal charting (most recent visit, complete and approved
+   charts only). A later source is used only when the earlier ones are missing; there is no rule for when they
+   disagree. The order itself was not tested against expert review; only the charting algorithm (two experts,
+   200 charts) and the note extractor (400 notes) were. `algorithm_design` (`phenotype.py`) follows this order, with differences
+   listed in action item A2 (checked 2026-10-31, #389). `algorithm_v0` (gum measurements first) is this repo's
+   own, not from it.
 5. **Patel JS, Rao R, Tellez M, Albandar M, Joachim K, Wu H.** *Natural Language
    Processing Applications to Extract Periodontal Disease and Medical History
    Information from Electronic Dental Records.* ICMHI, 2022.
