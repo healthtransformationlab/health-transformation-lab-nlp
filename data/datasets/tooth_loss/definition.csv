@@ -1,0 +1,28 @@
+defnum,category,itemname
+1,16,"Periodontal disease, advanced"
+2,16,"Periodontal disease, moderate"
+3,16,"Caries, non-restorable"
+4,16,Fractured tooth
+5,16,Orthodontic extraction
+6,16,Other
+7,16,"Periodontitis, stage III"
+8,16,"Periodontitis, stage IV"
+9,16,"Caries, non-restorable (2017 list)"
+10,16,Fracture (2017 list)
+11,16,Orthodontic (2017 list)
+12,16,Other (2017 list)
+13,30,Good
+14,30,Fair
+15,30,Questionable
+16,30,Poor
+17,30,Hopeless
+18,20,1
+19,20,2
+20,20,3
+21,11,Exams
+22,11,Cleanings
+23,11,Periodontics
+24,11,Oral Surgery
+25,35,General
+26,35,Hygienist
+27,35,Periodontist

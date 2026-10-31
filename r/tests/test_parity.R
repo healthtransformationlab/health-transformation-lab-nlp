@@ -467,3 +467,25 @@ if (file.exists(cm) && file.exists(cs)) {
   stopifnot(same_flags, nrow(m) == nrow(py_s), nrow(r_s) == nrow(py_s), d < 1e-9)
   cat("parity OK (spec 026)\n")
 } else cat("record mismatches: skipped (run 45_case_profiles.py)\n")
+
+# Spec 029: tooth statuses and plan-copy counts (R 16_spec029.R vs scripts/47_tooth_table.py).
+td <- "data/datasets/tooth_loss"
+if (file.exists(file.path(td, "patient_tooth.csv"))) {
+  source("r/R/16_spec029.R")
+  rd <- function(n) read.csv(file.path(td, paste0(n, ".csv")), stringsAsFactors = FALSE)
+  pl <- rd("procedurelog"); pc <- rd("procedurecode"); defs <- rd("definition"); ti <- rd("toothinitial")
+  r_t <- tooth_status_029(pl, pc, defs, ti, rd("patient")$patnum)
+  py_t <- rd("patient_tooth")
+  m <- merge(r_t, py_t, by = c("patient_id", "tooth_num"), suffixes = c(".r", ".p"))
+  bad_t <- sum(m$tooth_status_code.r != m$tooth_status_code.p | m$label_source_code.r != m$label_source_code.p)
+  r_p <- planned_extraction_029(pl, pc, defs, rd("proctp"))
+  py_p <- rd("planned_extraction")
+  mp <- merge(r_p, py_p, by = "procedure_id", suffixes = c(".r", ".p"))
+  bad_p <- sum(mp$plan_copy_count.r != mp$plan_copy_count.p |
+               mp$is_completed.r != as.logical(mp$is_completed.p))
+  cat(sprintf("tooth statuses: %d teeth, %d differ; planned extractions: %d, %d differ\n",
+              nrow(m), bad_t, nrow(mp), bad_p))
+  stopifnot(nrow(m) == nrow(py_t), nrow(r_t) == nrow(py_t), bad_t == 0,
+            nrow(mp) == nrow(py_p), nrow(r_p) == nrow(py_p), bad_p == 0)
+  cat("parity OK (spec 029)\n")
+} else cat("tooth statuses: skipped (run 47_tooth_table.py)\n")

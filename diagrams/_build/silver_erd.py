@@ -31,13 +31,15 @@ TITLES = {
 
 def extract_stats():
     """Profile the silver tables the load job writes: the seeded synthetic extract (open_dental.build with the job's
-    seed and size), cleaned as silver (open_dental.clean), and its answer key. The derived tooth-loss tables don't
-    exist yet, so the dictionary says they aren't measured."""
-    from health_transformation_lab_nlp import open_dental
+    seed and size), cleaned as silver (open_dental.clean), the tooth tables derived from it (tooth_loss) and its answer
+    key. The data-quality table doesn't exist yet, so the dictionary says it isn't measured."""
+    from health_transformation_lab_nlp import open_dental, tooth_loss
 
     import table_profile
     tables, truth = open_dental.build(open_dental.Params(), seed=42)
     frames = open_dental.clean(tables)
+    frames["patient_tooth"] = tooth_loss.tooth_table(frames)
+    frames["planned_extraction"] = tooth_loss.planned_extraction(frames)
     frames["tooth_loss_truth"] = truth
     return table_profile.profile(frames)
 

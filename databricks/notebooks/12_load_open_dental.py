@@ -5,8 +5,9 @@
 # MAGIC Generates the seeded synthetic extract (`open_dental.write`) into the landing volume, then loads it:
 # MAGIC - **bronze** (`bronze_opendental_perio`): every Open Dental table as generated, one table each;
 # MAGIC - **silver** (`silver_opendental_perio`): the same tables read the way Open Dental means them
-# MAGIC   (`open_dental.clean`: -1 is null, gingival margins of 100+ are negative), and the answer key
-# MAGIC   `tooth_loss_truth`, which only the evaluation reads.
+# MAGIC   (`open_dental.clean`: -1 is null, gingival margins of 100+ are negative), the tooth tables derived from
+# MAGIC   them (`tooth_loss.tooth_table` → `patient_tooth`, `tooth_loss.planned_extraction` → `planned_extraction`),
+# MAGIC   and the answer key `tooth_loss_truth`, which only the evaluation reads.
 # MAGIC
 # MAGIC Every table is overwritten per run (idempotent) and keeps Open Dental's columns only. Each run appends one
 # MAGIC row per table written to `silver_opendental_perio.load_log`, with `run_id`, `run_ts` and `git_commit_sha`.
@@ -27,7 +28,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from health_transformation_lab_nlp import open_dental
+from health_transformation_lab_nlp import open_dental, tooth_loss
 from health_transformation_lab_nlp import tracking as _tracking
 
 dbutils.widgets.text("git_commit", "")  # noqa: F821  set by the job: the commit it was deployed from
@@ -72,7 +73,10 @@ def save(df: pd.DataFrame, schema: str, name: str, mode: str = "overwrite") -> N
 
 
 tables, truth = open_dental.build(params, seed)
-silver_tables = {**open_dental.clean(tables), "tooth_loss_truth": truth}
+clean = open_dental.clean(tables)
+# the derived tooth tables (spec 029 US2): one row per patient and tooth, and one per planned extraction
+silver_tables = {**clean, "patient_tooth": tooth_loss.tooth_table(clean),
+                 "planned_extraction": tooth_loss.planned_extraction(clean), "tooth_loss_truth": truth}
 for name, df in tables.items():
     save(df, bronze, name)
 for name, df in silver_tables.items():

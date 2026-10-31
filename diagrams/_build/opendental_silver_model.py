@@ -283,7 +283,7 @@ TABLES = {
         C("description", "string", "name"),
     ]),
     # ---------- derived by spec 029 ----------
-    "patient_tooth": Table("derived", "One per patient and tooth (1–32): how it was lost, and what was charted before", "tooth_loss.tooth_table; overwrite per run", [
+    "patient_tooth": Table("derived", "One per patient and tooth (1–32): how it was lost, and what was charted before", "tooth_loss.tooth_table; overwrite per run, logged in load_log", [
         C("patient_id", "bigint", "patient.patnum", "PK,FK"),
         C("tooth_num", "bigint", "universal tooth number 1–32", "PK"),
         C("tooth_status_code", "string", "present · extracted_perio · extracted_other · extracted_no_dx · missing_at_entry · planned_perio · planned_other"),
@@ -298,12 +298,15 @@ TABLES = {
         C("last_mobility_code", "string", "own mobility grade 0–3"),
         C("neighbour_max_cal_mm", "double", "worst CAL on the teeth either side"),
         C("mouth_cal5_site_pct", "double", "sites with CAL ≥ 5 mm at the first exam, 0–100"),
+        C("mouth_max_pd_mm", "double", "deepest probing in the mouth at the first exam"),
+        C("mouth_bop_pct", "double", "sites bleeding in the mouth at the first exam, 0–100"),
         C("teeth_missing_at_entry_count", "bigint", "teeth already missing at the first exam"),
         C("tooth_type_code", "string", "incisor · canine · premolar · molar, upper or lower"),
+        C("age_at_first_exam_num", "bigint", "whole years from patient.birthdate to the first exam"),
         C("is_smoker", "boolean", "patient.smokingsnomed"),
         C("is_diabetic", "boolean", "a disease row with E10–E11"),
-        *RUN]),
-    "planned_extraction": Table("derived", "One per planned extraction in procedurelog, however many plan copies carry it", "tooth_loss.planned_extraction; overwrite per run", [
+    ]),
+    "planned_extraction": Table("derived", "One per planned extraction in procedurelog, however many plan copies carry it", "tooth_loss.planned_extraction; overwrite per run, logged in load_log", [
         C("procedure_id", "bigint", "procedurelog.procnum", "PK,FK"),
         C("patient_id", "bigint", "patient.patnum", "FK"),
         C("tooth_num", "bigint", "tooth 1–32"),
@@ -313,7 +316,7 @@ TABLES = {
         C("last_plan_date", "date", "latest plan date"),
         C("is_completed", "boolean", "procstatus became 2"),
         C("complete_date", "date", "datecomplete, when completed"),
-        *RUN]),
+    ]),
     "tooth_loss_dq_check": Table("dq", "One per data-quality check and run (Kookal et al. 2024, plus plan-copy checks)", "tooth_loss_dq; delete-then-append by run_id", [
         C("check_name", "string", "e.g. proctp_code_differs, dx_item_from_retired_list", "PK"),
         C("run_id", "string", "Databricks job run id", "PK"),

@@ -16,6 +16,7 @@ python scripts/29_medgemma_vs_bert.py --simulated --n-boot 200   # needs committ
 python scripts/19_prevalence.py
 python scripts/20_data_quality.py
 python scripts/45_case_profiles.py      # spec 026: record-mismatch rules and scores (read by the R parity test)
+python scripts/47_tooth_table.py        # spec 029: tooth statuses on a seeded synthetic Open Dental extract
 python scripts/22_build_sites.py
 python scripts/14_benchmark_cost.py --simulate-missing
 python scripts/15_judge.py --backend simulated --simulated-review
