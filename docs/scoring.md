@@ -50,6 +50,21 @@ Two things make the gap bigger, and the leaderboard now shows both:
   against anything. Each method's score on `stageable` and `not_stageable` records is in
   `data/datasets/ladder/ladder_by_stageable.csv`. R recomputes it in `r/tests/test_parity.R`.
 
+## Do the scores hold on other test sets?
+
+The 240 review charts are one draw (seed 42). `49_seed_stability.py` rebuilds the synthetic study with five seeds
+(42, 1, 2, 3, 4) and rescores every method that needs no GPU. The seed-42 scores match the leaderboard exactly. Across
+seeds, from `data/datasets/ladder/seed_stability_summary.csv`, out of 100 charts:
+- rules, gum measurements first: 92–98;
+- word counts plus X-ray: 77–81;
+- keyword rules: 75–79;
+- rules, exam form first: 72–79.
+
+The order of methods holds, but any single score can move by a few points, so differences of a few points between
+methods aren't meaningful on one draw. The note-reading models that need a GPU aren't repeated, and the
+bootstrap intervals on the leaderboard stand in for them. Scores by age band and by clinic, for every method, are in
+`ladder_by_age.csv` and `ladder_by_clinic.csv`, in the same folder; R recomputes both (spec 030 US2, #397).
+
 ## On real records: the acceptance test, against specialists
 
 On real records nobody knows the true status. The recorded diagnosis code isn't it: it's often missing, or doesn't

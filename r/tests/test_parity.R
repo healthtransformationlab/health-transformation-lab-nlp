@@ -177,6 +177,40 @@ if (file.exists(sf)) {
   stopifnot(nrow(m) == nrow(ps), all(m$n.r == m$n.p), d < 1e-9)
 } else cat("ladder by stageable: skipped (run python/scripts/28_ladder_vs_truth.py first)\n")
 
+# 9e. Spec 030 US2: the same accuracy by age band and by clinic (R by_difficulty == Python):
+#     ladder_by_age.csv, ladder_by_clinic.csv.
+for (grp in c("age", "clinic")) {
+  gf <- sprintf("data/datasets/ladder/ladder_by_%s.csv", grp)
+  if (!file.exists(gf)) { cat(sprintf("ladder by %s: skipped (run 28_ladder_vs_truth.py)\n", grp)); next }
+  source("r/R/10_ladder.R")
+  lp <- read.csv("data/datasets/ladder/ladder_preds.csv", stringsAsFactors = FALSE, check.names = FALSE)
+  rk <- read.csv("data/datasets/answer_key/review_key.csv", stringsAsFactors = FALSE)
+  k <- rk[match(lp$visit_id, rk$visit_id), ]
+  lv <- if (grp == "age") ifelse(k$age < 35, "under_35", ifelse(k$age < 65, "35_64", "65_plus")) else as.character(k$clinic_id)
+  rs <- by_difficulty(lp, lv)
+  ps <- read.csv(gf, stringsAsFactors = FALSE, colClasses = setNames("character", paste0(grp, "_code")))
+  m <- merge(rs, ps, by.x = c("method", "difficulty"), by.y = c("method", paste0(grp, "_code")), suffixes = c(".r", ".p"))
+  d <- max(abs(m$accuracy.r - m$accuracy.p), na.rm = TRUE)
+  cat(sprintf("ladder by %s: %d rows, n equal %s, max |R - Python| = %.2e\n", grp, nrow(m), all(m$n.r == m$n.p), d))
+  stopifnot(nrow(m) == nrow(ps), all(m$n.r == m$n.p), d < 1e-9)
+}
+
+# 9f. Spec 030 US2: each method's spread over seeds (R summary of seed_stability.csv == Python).
+sf2 <- "data/datasets/ladder/seed_stability_summary.csv"
+if (file.exists(sf2)) {
+  st <- read.csv("data/datasets/ladder/seed_stability.csv", stringsAsFactors = FALSE)
+  rs <- do.call(rbind, lapply(split(st, st$method), function(x) data.frame(method = x$method[1],
+    seed_count = nrow(x), mean_accuracy = mean(x$accuracy), sd_accuracy = if (nrow(x) > 1) sd(x$accuracy) else NA,
+    min_accuracy = min(x$accuracy), max_accuracy = max(x$accuracy))))
+  ps <- read.csv(sf2, stringsAsFactors = FALSE)
+  m <- merge(rs, ps, by = "method", suffixes = c(".r", ".p"))
+  cols <- c("mean_accuracy", "sd_accuracy", "min_accuracy", "max_accuracy")
+  d <- max(sapply(cols, function(k) max(abs(m[[paste0(k, ".r")]] - m[[paste0(k, ".p")]]), na.rm = TRUE)))
+  cat(sprintf("seed stability: %d methods, max |R - Python| = %.2e\n", nrow(m), d))
+  stopifnot(nrow(m) == nrow(ps), all(m$seed_count.r == m$seed_count.p), d < 1e-9)
+  cat("parity OK (spec 030 US2)\n")
+} else cat("seed stability: skipped (run python/scripts/49_seed_stability.py)\n")
+
 # 9d. MedGemma vs BERT (spec 004 T018): same point estimates and per-difficulty accuracy.
 # Uses the real runs if present, else the simulated dry run (placeholder reader, not a result).
 for (pfx in c("", "simulated_")) {

@@ -10,6 +10,7 @@ Writes data/datasets/ladder/:
   ladder_preds.csv      the predictions scored (R recomputes the point estimates from these)
   ladder_proba.csv      class probabilities, long (method, visit_id, p_<status>)
   ladder_by_stageable.csv  per method: n and accuracy on charts that can and can't be staged (spec 030)
+  ladder_by_age.csv, ladder_by_clinic.csv  the same by age band and by clinic (spec 030 US2)
 The truth is the generator's: these are synthetic-data results, not clinical performance.
 """
 
@@ -52,5 +53,9 @@ pd.concat([p.assign(method=m) for m, p in proba.items()]).rename_axis("visit_id"
 # spec 030: the same scores on charts that can be staged (a probing chart or a radiograph) and on those that can't
 split = ladder_eval.by_difficulty(truth, preds, ladder_eval.stageable(key)).rename(columns={"difficulty": "stageable_code"})
 split.to_csv(out / "ladder_by_stageable.csv", index=False)
+# spec 030 US2: the same scores by age band and by clinic
+for name, level in (("age", ladder_eval.age_band(key["age"])), ("clinic", key["clinic_id"].astype(str))):
+    ladder_eval.by_difficulty(truth, preds, level).rename(columns={"difficulty": f"{name}_code"}).to_csv(
+        out / f"ladder_by_{name}.csv", index=False)
 print(table.sort_values("accuracy", ascending=False).round(3).to_string(index=False))
 print("wrote", out, "(synthetic truth; not clinical performance)")

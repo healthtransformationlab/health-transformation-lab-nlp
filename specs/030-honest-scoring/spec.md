@@ -42,6 +42,25 @@ leaderboard row carries the flag, and the page exists and is linked from the lea
 3. **Given** the leaderboard (`docs/results.md`), **Then** every method that uses the answer key's rules is marked,
    and the page explaining scoring is linked from its header.
 
+### User Story 2 - Scores by subgroup, and whether they hold on other test sets (Priority: P2) #397
+
+The evaluation checklist ([docs/evaluation_checklist.md](../../docs/evaluation_checklist.md), items 6 and 10) asks
+for two things a defensible result needs, both doable on synthetic data:
+- **Subgroups:** each method's score by age band (under 35, 35–64, 65 and over) and by clinic.
+- **Stability:** the 240 review charts are one draw (seed 42). Rebuild the study with seeds 42, 1, 2, 3 and 4, rescore
+  every method that needs no GPU, and report each one's mean, standard deviation, minimum and maximum.
+
+**Independent Test**: the subgroup splits match a hand count on a small case, and R recomputes them; the stability
+summary is recomputed by R from the per-seed file; the seed-42 row matches the committed answer key's scores.
+
+**Acceptance Scenarios**:
+
+1. **Given** the ladder predictions, **When** `28_ladder_vs_truth.py` runs, **Then** `ladder_by_age.csv` and
+   `ladder_by_clinic.csv` give n and accuracy per method and group, and R gets the same numbers.
+2. **Given** the five seeds, **When** `49_seed_stability.py` runs, **Then** `seed_stability.csv` has one row per
+   method and seed. `seed_stability_summary.csv` has each method's mean, SD, minimum and maximum, and R gets the
+   same summary.
+
 ### Edge Cases
 
 - A method that answers `cannot_determine` or nothing on a chart counts as wrong against the truth, as now. The
@@ -71,6 +90,7 @@ leaderboard row carries the flag, and the page exists and is linked from the lea
 - **SC-001** No synthetic score is called "accuracy" on the website or the scoring page without saying it is
   agreement with the synthetic answer key.
 - **SC-002** R parity covers the stageable split.
+- **SC-003** R parity covers the age and clinic splits and the stability summary.
 
 ## Out of scope
 
