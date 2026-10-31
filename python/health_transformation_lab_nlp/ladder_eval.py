@@ -109,3 +109,18 @@ def stageable(key: pd.DataFrame) -> pd.Series:
 def uses_answer_key_rules(method: str) -> bool:
     """True for a method that uses the answer key's own rules (ANSWER_KEY_RULES, or a '+rules4' hybrid)."""
     return method.endswith("+rules4") or method.split("+")[0] in ANSWER_KEY_RULES
+
+
+# ---------- spec 030 US2 (#397): subgroups and stability ----------
+@traced
+def age_band(age: pd.Series) -> pd.Series:
+    """'under_35', '35_64' or '65_plus', for the subgroup split."""
+    return pd.Series(np.where(age < 35, "under_35", np.where(age < 65, "35_64", "65_plus")), index=age.index)
+
+
+@traced
+def seed_spread(long: pd.DataFrame) -> pd.DataFrame:
+    """Each method's accuracy over seeds (long: method, seed, accuracy): seed count, mean, SD (n - 1), min, max."""
+    g = long.groupby("method")["accuracy"]
+    return pd.DataFrame({"seed_count": g.size(), "mean_accuracy": g.mean(), "sd_accuracy": g.std(ddof=1),
+                         "min_accuracy": g.min(), "max_accuracy": g.max()}).reset_index()
