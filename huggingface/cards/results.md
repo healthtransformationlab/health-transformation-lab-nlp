@@ -33,7 +33,9 @@ The same results are on Kaggle:
 The `raw/` folder holds the original files, as on Kaggle, including one `ai_predictions_<model>.csv` per model.
 
 **Everything here is synthetic**: measurements on synthetic notes, scored against the generator's truth, not
-clinical performance. This is a personal learning project, **not affiliated** with any employer, institution or
+clinical performance. A score here is agreement with the synthetic answer key, which the repo's own 2017 rules made, so
+methods that use those rules (marked † on the leaderboard) start with an advantage, and 13 of the 240 notes can't be
+staged at all. How scoring works, and how real records would be scored: [docs/scoring.md](https://github.com/healthtransformationlab/health-transformation-lab-nlp/blob/main/docs/scoring.md). This is a personal learning project, **not affiliated** with any employer, institution or
 company. The results are exercises, not findings: not evidence about any model, product or population, and
 **not for clinical use**. Simulated dry-run outputs are left out. Cost columns are **illustrative** placeholder
 rates, not quotes.

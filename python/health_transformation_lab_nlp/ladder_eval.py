@@ -87,3 +87,25 @@ def by_difficulty(truth: pd.Series, preds: dict, level: pd.Series) -> pd.DataFra
         rows += [{"method": m, "difficulty": lev, "n": int((lv == lev).sum()), "accuracy": ok[lv == lev].mean()}
                  for lev in sorted(set(lv))]
     return pd.DataFrame(rows)
+
+
+# ---------- spec 030 (#387): what a synthetic score means ----------
+# Methods that turn measurements into a status with labels.py: the same 2017 rules that made the answer key, so on
+# synthetic charts they start with an advantage real records won't give them.
+ANSWER_KEY_RULES = ("note_rules", "rules_baseline", "algorithm_v0", "algorithm_design", "probing_chart",
+                    "radiograph_ai")
+
+
+@traced
+def stageable(key: pd.DataFrame) -> pd.Series:
+    """'stageable' when the chart has a probing chart or a radiograph (staging needs attachment or bone loss), else
+    'not_stageable': there, a status can only come from what the note or codes say."""
+    chart = key["probing_chart"].fillna("unknown").astype(str) != "unknown"
+    xray = pd.to_numeric(key["rad_present"], errors="coerce").fillna(0) == 1
+    return pd.Series(["stageable" if ok else "not_stageable" for ok in (chart | xray)], index=key.index)
+
+
+@traced
+def uses_answer_key_rules(method: str) -> bool:
+    """True for a method that uses the answer key's own rules (ANSWER_KEY_RULES, or a '+rules4' hybrid)."""
+    return method.endswith("+rules4") or method.split("+")[0] in ANSWER_KEY_RULES

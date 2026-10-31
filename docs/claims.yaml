@@ -182,7 +182,7 @@ edr:
     - value: "72%"
       kind: measured
       file: docs/results.md
-      match: "`algorithm_design` | whole record | rules, study-design order: exam form, diagnosis codes, note, chart | **72.1**"
+      match: "`algorithm_design` | whole record | rules, study-design order: exam form, diagnosis codes, note, chart † | **72.1**"
       covers: synthetic charts right with the study design's source order (72.1%)
     - value: "173"
       kind: derived

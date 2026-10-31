@@ -26,12 +26,13 @@ time, and hard to link to diabetes care. A tool that reads the whole record and 
 it in the record; agreement with gum specialists reviewing the same record is how that is checked, not the goal.
 It runs end to end on **synthetic** records:
 
-- the whole record, combined by rules that read the gum measurements first: **234 of 240** charts right;
+- the whole record, by rules that read the gum measurements first: **234 of 240** (flattering: the key uses the same rules);
 - the free-text note alone, read by a small trained model with a stage 4 rule: **219 of 240**;
 - a bigger medical AI used as is, with the same rule: **185 of 240**.
 
-Scored against the generator's truth on synthetic charts, not clinical performance. Read in a different order,
-the same evidence gets 173: the order is one of the findings.
+Synthetic charts, scored against the generator's answer key: agreement with it, not accuracy on real patients ([how
+scoring works](docs/scoring.md)). **Order matters:** when the measurements, exam form, codes and note disagree, rules must
+pick one to believe first. Measurements first gives 234; exam form first (the study design's order) gives 173.
 
 | For | Go to |
 |---|---|

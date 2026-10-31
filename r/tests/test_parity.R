@@ -159,6 +159,24 @@ if (file.exists("data/datasets/ladder/ladder_vs_truth.csv")) {
   stopifnot(nrow(m) == nrow(py), d < 1e-9, same_na)
 } else cat("ladder vs truth: skipped (run python/scripts/28_ladder_vs_truth.py first)\n")
 
+# 9c'. Spec 030: the same accuracy on charts that can and can't be staged (R by_difficulty == Python).
+sf <- "data/datasets/ladder/ladder_by_stageable.csv"
+if (file.exists(sf)) {
+  source("r/R/10_ladder.R")
+  lp <- read.csv("data/datasets/ladder/ladder_preds.csv", stringsAsFactors = FALSE, check.names = FALSE)
+  rk <- read.csv("data/datasets/answer_key/review_key.csv", stringsAsFactors = FALSE)
+  rad <- suppressWarnings(as.numeric(rk$rad_present))
+  ok <- (!is.na(rk$probing_chart) & rk$probing_chart != "unknown") | (!is.na(rad) & rad == 1)
+  lv <- ifelse(ok, "stageable", "not_stageable")[match(lp$visit_id, rk$visit_id)]
+  rs <- by_difficulty(lp, lv)
+  ps <- read.csv(sf, stringsAsFactors = FALSE)
+  m <- merge(rs, ps, by.x = c("method", "difficulty"), by.y = c("method", "stageable_code"), suffixes = c(".r", ".p"))
+  d <- max(abs(m$accuracy.r - m$accuracy.p), na.rm = TRUE)
+  cat(sprintf("ladder by stageable: %d rows, n equal %s, max |R - Python| = %.2e\n", nrow(m),
+              all(m$n.r == m$n.p), d))
+  stopifnot(nrow(m) == nrow(ps), all(m$n.r == m$n.p), d < 1e-9)
+} else cat("ladder by stageable: skipped (run python/scripts/28_ladder_vs_truth.py first)\n")
+
 # 9d. MedGemma vs BERT (spec 004 T018): same point estimates and per-difficulty accuracy.
 # Uses the real runs if present, else the simulated dry run (placeholder reader, not a result).
 for (pfx in c("", "simulated_")) {
