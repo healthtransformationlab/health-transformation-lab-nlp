@@ -5,6 +5,22 @@ answers with a periodontal status, healthy to periodontitis stage 4, under the 2
 covers what a score means on synthetic records, and how real records would be scored. Spec 030 (#387). The definitions,
 sources and reading orders side by side: [standards.md](standards.md).
 
+## Which records each number counts
+
+The synthetic data has 1,200 patients and 4,343 visits. Different results count different parts of it, so two
+numbers that look like they conflict usually count different records:
+
+| Set | Records | What it counts | Used for |
+|---|---:|---|---|
+| All synthetic visits | 4,343 | every visit of every patient (`visits_structured.csv`) | the study data as a whole |
+| Training notes | 3,484 | every visit of 960 patients | training the note-reading models (BERT and others) |
+| Review charts (test set) | 240 | one visit each of the other 240 patients, held out, with the answer key (`review_key.csv`) | **every method's score**: 234 vs 173, BERT, MedGemma, the leaderboard |
+| Charted visits | 3,437 | the visits, of all 4,343, that have a gum chart | comparing the definitions (2017, CDC/AAP, ACES) and how often the record's parts agree ([standards.md](standards.md)) |
+| Open Dental extract | 2,000 patients | a separate synthetic set in Open Dental's table format (spec 029) | the tooth-loss model, one row per tooth |
+
+No patient is in both the training notes and the review charts. The other 619 visits of the 240 held-out patients
+aren't used for training either, so a model never sees a held-out patient.
+
 ## On synthetic records: agreement with the synthetic answer key, not accuracy
 
 The generator decides each synthetic patient's gum measurements first. It applies the repo's own 2017 rules
