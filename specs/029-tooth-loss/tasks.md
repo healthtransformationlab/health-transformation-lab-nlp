@@ -29,6 +29,8 @@ Implementation starts after this spec, plan and tasks are reviewed.
 
 ## US3 #371: the model, checked against the hidden truth
 
+- [x] T007a [US3] Pre-specified analysis plan, TRIPOD+AI order ([analysis_plan.md](analysis_plan.md), #395); T008–T010
+  follow it, and any change is logged there
 - [ ] T008 [US3] Failing tests: feature sets, grouped stratified split, metrics, expected-count stage rule
 - [ ] T009 [US3] Logistic regression and XGBoost on both label sets (completed; completed and planned); scores,
   calibration and stage recount; R twins for metrics and the stage rule
