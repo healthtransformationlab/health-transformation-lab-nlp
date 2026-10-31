@@ -1,0 +1,578 @@
+{
+ "title": "Data quality of a synthetic dental record",
+ "is_synthetic": true,
+ "note": "Synthetic data: every record was generated, with mistakes added on purpose. The numbers show what the checks find, not how good any real practice's records are.",
+ "sources": [
+  "data/datasets/data_quality/",
+  "data/datasets/visits_structured.csv",
+  "open_dental.realism_profile (seed 42, default settings)"
+ ],
+ "visit_count": 4343,
+ "patient_count": 1200,
+ "checks": [
+  {
+   "check": "conformance:probing_depth_range",
+   "label": "Pocket depths in a possible range",
+   "category": "conformance",
+   "n_checked": 3437,
+   "n_fail": 0,
+   "fail_pct": 0.0,
+   "status": "PASS"
+  },
+  {
+   "check": "conformance:cal_range",
+   "label": "Attachment loss in a possible range",
+   "category": "conformance",
+   "n_checked": 3437,
+   "n_fail": 0,
+   "fail_pct": 0.0,
+   "status": "PASS"
+  },
+  {
+   "check": "conformance:bop_range",
+   "label": "Bleeding share between 0 and 100%",
+   "category": "conformance",
+   "n_checked": 3437,
+   "n_fail": 0,
+   "fail_pct": 0.0,
+   "status": "PASS"
+  },
+  {
+   "check": "conformance:rbl_range",
+   "label": "X-ray bone loss between 0 and 100%",
+   "category": "conformance",
+   "n_checked": 3437,
+   "n_fail": 0,
+   "fail_pct": 0.0,
+   "status": "PASS"
+  },
+  {
+   "check": "conformance:teeth_lost_range",
+   "label": "Teeth lost between 0 and 32",
+   "category": "conformance",
+   "n_checked": 3437,
+   "n_fail": 0,
+   "fail_pct": 0.0,
+   "status": "PASS"
+  },
+  {
+   "check": "conformance:visit_not_future",
+   "label": "No visit dated in the future",
+   "category": "conformance",
+   "n_checked": 4343,
+   "n_fail": 0,
+   "fail_pct": 0.0,
+   "status": "PASS"
+  },
+  {
+   "check": "completeness:notes",
+   "label": "Visit has a clinical note",
+   "category": "completeness",
+   "n_checked": 4343,
+   "n_fail": 0,
+   "fail_pct": 0.0,
+   "status": "REPORT"
+  },
+  {
+   "check": "completeness:exam_form",
+   "label": "Visit has an exam form",
+   "category": "completeness",
+   "n_checked": 4343,
+   "n_fail": 695,
+   "fail_pct": 16.0,
+   "status": "REPORT"
+  },
+  {
+   "check": "completeness:proc_dx_completed",
+   "label": "Visit has a diagnosis code",
+   "category": "completeness",
+   "n_checked": 4343,
+   "n_fail": 1282,
+   "fail_pct": 29.5,
+   "status": "REPORT"
+  },
+  {
+   "check": "completeness:probing_chart",
+   "label": "Visit has a gum chart",
+   "category": "completeness",
+   "n_checked": 4343,
+   "n_fail": 906,
+   "fail_pct": 20.9,
+   "status": "REPORT"
+  },
+  {
+   "check": "plausibility:age_range",
+   "label": "Age in a possible range",
+   "category": "plausibility",
+   "n_checked": 4343,
+   "n_fail": 0,
+   "fail_pct": 0.0,
+   "status": "PASS"
+  },
+  {
+   "check": "plausibility:temporal_cal_drop",
+   "label": "Attachment loss never shrinks",
+   "category": "plausibility",
+   "n_checked": 3143,
+   "n_fail": 7,
+   "fail_pct": 0.2,
+   "status": "PASS"
+  },
+  {
+   "check": "plausibility:temporal_rbl_drop",
+   "label": "X-ray bone loss never shrinks",
+   "category": "plausibility",
+   "n_checked": 3143,
+   "n_fail": 15,
+   "fail_pct": 0.5,
+   "status": "PASS"
+  },
+  {
+   "check": "plausibility:temporal_teeth_regained",
+   "label": "Lost teeth never come back",
+   "category": "plausibility",
+   "n_checked": 3143,
+   "n_fail": 1,
+   "fail_pct": 0.0,
+   "status": "PASS"
+  },
+  {
+   "check": "plausibility:temporal_perio_resolved",
+   "label": "Periodontitis never goes away",
+   "category": "plausibility",
+   "n_checked": 3143,
+   "n_fail": 14,
+   "fail_pct": 0.4,
+   "status": "PASS"
+  },
+  {
+   "check": "plausibility:temporal_stage_drop",
+   "label": "Stage never goes down",
+   "category": "plausibility",
+   "n_checked": 3143,
+   "n_fail": 19,
+   "fail_pct": 0.6,
+   "status": "PASS"
+  }
+ ],
+ "completeness": [
+  {
+   "part": "notes",
+   "label": "Clinical note",
+   "n_rows": 4343,
+   "missing_pct": 0.0
+  },
+  {
+   "part": "exam_form",
+   "label": "Exam form",
+   "n_rows": 4343,
+   "missing_pct": 16.0
+  },
+  {
+   "part": "proc_dx_planned",
+   "label": "Diagnosis codes",
+   "n_rows": 4343,
+   "missing_pct": 29.5
+  },
+  {
+   "part": "probing_chart",
+   "label": "Gum chart (probing)",
+   "n_rows": 4343,
+   "missing_pct": 20.9
+  }
+ ],
+ "by_clinic": [
+  {
+   "check": "completeness:notes",
+   "label": "Visit has a clinical note",
+   "clinic": "1",
+   "n_checked": 398,
+   "missing_pct": 0.0,
+   "is_outlier": false
+  },
+  {
+   "check": "completeness:notes",
+   "label": "Visit has a clinical note",
+   "clinic": "2",
+   "n_checked": 519,
+   "missing_pct": 0.0,
+   "is_outlier": false
+  },
+  {
+   "check": "completeness:notes",
+   "label": "Visit has a clinical note",
+   "clinic": "3",
+   "n_checked": 393,
+   "missing_pct": 0.0,
+   "is_outlier": false
+  },
+  {
+   "check": "completeness:notes",
+   "label": "Visit has a clinical note",
+   "clinic": "4",
+   "n_checked": 761,
+   "missing_pct": 0.0,
+   "is_outlier": false
+  },
+  {
+   "check": "completeness:notes",
+   "label": "Visit has a clinical note",
+   "clinic": "5",
+   "n_checked": 511,
+   "missing_pct": 0.0,
+   "is_outlier": false
+  },
+  {
+   "check": "completeness:notes",
+   "label": "Visit has a clinical note",
+   "clinic": "6",
+   "n_checked": 406,
+   "missing_pct": 0.0,
+   "is_outlier": false
+  },
+  {
+   "check": "completeness:notes",
+   "label": "Visit has a clinical note",
+   "clinic": "7",
+   "n_checked": 609,
+   "missing_pct": 0.0,
+   "is_outlier": false
+  },
+  {
+   "check": "completeness:notes",
+   "label": "Visit has a clinical note",
+   "clinic": "8",
+   "n_checked": 746,
+   "missing_pct": 0.0,
+   "is_outlier": false
+  },
+  {
+   "check": "completeness:exam_form",
+   "label": "Visit has an exam form",
+   "clinic": "1",
+   "n_checked": 398,
+   "missing_pct": 16.3,
+   "is_outlier": false
+  },
+  {
+   "check": "completeness:exam_form",
+   "label": "Visit has an exam form",
+   "clinic": "2",
+   "n_checked": 519,
+   "missing_pct": 16.2,
+   "is_outlier": false
+  },
+  {
+   "check": "completeness:exam_form",
+   "label": "Visit has an exam form",
+   "clinic": "3",
+   "n_checked": 393,
+   "missing_pct": 14.0,
+   "is_outlier": false
+  },
+  {
+   "check": "completeness:exam_form",
+   "label": "Visit has an exam form",
+   "clinic": "4",
+   "n_checked": 761,
+   "missing_pct": 18.0,
+   "is_outlier": false
+  },
+  {
+   "check": "completeness:exam_form",
+   "label": "Visit has an exam form",
+   "clinic": "5",
+   "n_checked": 511,
+   "missing_pct": 13.5,
+   "is_outlier": false
+  },
+  {
+   "check": "completeness:exam_form",
+   "label": "Visit has an exam form",
+   "clinic": "6",
+   "n_checked": 406,
+   "missing_pct": 13.8,
+   "is_outlier": false
+  },
+  {
+   "check": "completeness:exam_form",
+   "label": "Visit has an exam form",
+   "clinic": "7",
+   "n_checked": 609,
+   "missing_pct": 16.7,
+   "is_outlier": false
+  },
+  {
+   "check": "completeness:exam_form",
+   "label": "Visit has an exam form",
+   "clinic": "8",
+   "n_checked": 746,
+   "missing_pct": 17.0,
+   "is_outlier": false
+  },
+  {
+   "check": "completeness:proc_dx_completed",
+   "label": "Visit has a diagnosis code",
+   "clinic": "1",
+   "n_checked": 398,
+   "missing_pct": 30.9,
+   "is_outlier": false
+  },
+  {
+   "check": "completeness:proc_dx_completed",
+   "label": "Visit has a diagnosis code",
+   "clinic": "2",
+   "n_checked": 519,
+   "missing_pct": 30.3,
+   "is_outlier": false
+  },
+  {
+   "check": "completeness:proc_dx_completed",
+   "label": "Visit has a diagnosis code",
+   "clinic": "3",
+   "n_checked": 393,
+   "missing_pct": 28.5,
+   "is_outlier": false
+  },
+  {
+   "check": "completeness:proc_dx_completed",
+   "label": "Visit has a diagnosis code",
+   "clinic": "4",
+   "n_checked": 761,
+   "missing_pct": 31.3,
+   "is_outlier": false
+  },
+  {
+   "check": "completeness:proc_dx_completed",
+   "label": "Visit has a diagnosis code",
+   "clinic": "5",
+   "n_checked": 511,
+   "missing_pct": 27.8,
+   "is_outlier": false
+  },
+  {
+   "check": "completeness:proc_dx_completed",
+   "label": "Visit has a diagnosis code",
+   "clinic": "6",
+   "n_checked": 406,
+   "missing_pct": 25.4,
+   "is_outlier": false
+  },
+  {
+   "check": "completeness:proc_dx_completed",
+   "label": "Visit has a diagnosis code",
+   "clinic": "7",
+   "n_checked": 609,
+   "missing_pct": 30.4,
+   "is_outlier": false
+  },
+  {
+   "check": "completeness:proc_dx_completed",
+   "label": "Visit has a diagnosis code",
+   "clinic": "8",
+   "n_checked": 746,
+   "missing_pct": 29.8,
+   "is_outlier": false
+  },
+  {
+   "check": "completeness:probing_chart",
+   "label": "Visit has a gum chart",
+   "clinic": "1",
+   "n_checked": 398,
+   "missing_pct": 12.8,
+   "is_outlier": false
+  },
+  {
+   "check": "completeness:probing_chart",
+   "label": "Visit has a gum chart",
+   "clinic": "2",
+   "n_checked": 519,
+   "missing_pct": 21.8,
+   "is_outlier": false
+  },
+  {
+   "check": "completeness:probing_chart",
+   "label": "Visit has a gum chart",
+   "clinic": "3",
+   "n_checked": 393,
+   "missing_pct": 25.4,
+   "is_outlier": false
+  },
+  {
+   "check": "completeness:probing_chart",
+   "label": "Visit has a gum chart",
+   "clinic": "4",
+   "n_checked": 761,
+   "missing_pct": 20.8,
+   "is_outlier": false
+  },
+  {
+   "check": "completeness:probing_chart",
+   "label": "Visit has a gum chart",
+   "clinic": "5",
+   "n_checked": 511,
+   "missing_pct": 20.7,
+   "is_outlier": false
+  },
+  {
+   "check": "completeness:probing_chart",
+   "label": "Visit has a gum chart",
+   "clinic": "6",
+   "n_checked": 406,
+   "missing_pct": 9.6,
+   "is_outlier": false
+  },
+  {
+   "check": "completeness:probing_chart",
+   "label": "Visit has a gum chart",
+   "clinic": "7",
+   "n_checked": 609,
+   "missing_pct": 14.8,
+   "is_outlier": false
+  },
+  {
+   "check": "completeness:probing_chart",
+   "label": "Visit has a gum chart",
+   "clinic": "8",
+   "n_checked": 746,
+   "missing_pct": 33.4,
+   "is_outlier": false
+  }
+ ],
+ "temporal": [
+  {
+   "method": "algorithm_design",
+   "label": "Rules, exam form first",
+   "n_later_visits": 3143,
+   "perio_resolved_pct": 10.9,
+   "stage_drop_pct": 23.6
+  },
+  {
+   "method": "algorithm_v0",
+   "label": "Rules, gum measurements first",
+   "n_later_visits": 3143,
+   "perio_resolved_pct": 3.0,
+   "stage_drop_pct": 6.6
+  },
+  {
+   "method": "notes",
+   "label": "Clinical note (keyword rules)",
+   "n_later_visits": 3143,
+   "perio_resolved_pct": 9.9,
+   "stage_drop_pct": 20.0
+  },
+  {
+   "method": "probing_chart",
+   "label": "Gum chart alone",
+   "n_later_visits": 3143,
+   "perio_resolved_pct": 0.4,
+   "stage_drop_pct": 0.6
+  },
+  {
+   "method": "exam_form",
+   "label": "Exam form alone",
+   "n_later_visits": 3143,
+   "perio_resolved_pct": 7.3,
+   "stage_drop_pct": 17.1
+  },
+  {
+   "method": "proc_dx_completed",
+   "label": "Diagnosis codes alone",
+   "n_later_visits": 3143,
+   "perio_resolved_pct": 10.6,
+   "stage_drop_pct": 15.2
+  }
+ ],
+ "injected": {
+  "injected_count": 45,
+  "caught_count": 15,
+  "caught_pct": 33.3,
+  "false_flag_pct": 0.23
+ },
+ "open_dental": [
+  {
+   "metric": "charted_visit_office_share",
+   "label": "Office visits with a perio chart",
+   "pct": 75.4,
+   "numerator": 6936,
+   "denominator": 9202
+  },
+  {
+   "metric": "charted_visit_site_share",
+   "label": "Mobile and nursing-home visits with a perio chart",
+   "pct": 30.3,
+   "numerator": 219,
+   "denominator": 722
+  },
+  {
+   "metric": "partial_chart_share",
+   "label": "Charts covering only some teeth",
+   "pct": 19.7,
+   "numerator": 1412,
+   "denominator": 7155
+  },
+  {
+   "metric": "buccal_only_chart_share",
+   "label": "Charts with cheek-side readings only",
+   "pct": 10.4,
+   "numerator": 747,
+   "denominator": 7155
+  },
+  {
+   "metric": "uniform_chart_share",
+   "label": "Charts with one depth everywhere",
+   "pct": 3.6,
+   "numerator": 260,
+   "denominator": 7155
+  },
+  {
+   "metric": "no_margin_chart_share",
+   "label": "Charts without gum-margin readings (no attachment loss)",
+   "pct": 24.7,
+   "numerator": 1769,
+   "denominator": 7155
+  },
+  {
+   "metric": "no_bleeding_chart_share",
+   "label": "Charts without bleeding",
+   "pct": 14.5,
+   "numerator": 1036,
+   "denominator": 7155
+  },
+  {
+   "metric": "copied_chart_share",
+   "label": "Charts copied from the last visit",
+   "pct": 5.7,
+   "numerator": 300,
+   "denominator": 5218
+  },
+  {
+   "metric": "out_of_range_site_share",
+   "label": "Pocket readings over 15 mm",
+   "pct": 0.2,
+   "numerator": 2251,
+   "denominator": 1097451
+  },
+  {
+   "metric": "charted_after_loss_chart_share",
+   "label": "Charts that include an extracted tooth",
+   "pct": 0.3,
+   "numerator": 24,
+   "denominator": 7155
+  },
+  {
+   "metric": "radiograph_visit_share",
+   "label": "Visits with an X-ray",
+   "pct": 40.4,
+   "numerator": 4007,
+   "denominator": 9924
+  },
+  {
+   "metric": "unread_tooth_share",
+   "label": "Teeth on an X-ray with no bone-loss reading",
+   "pct": 14.9,
+   "numerator": 12148,
+   "denominator": 81266
+  }
+ ]
+}
