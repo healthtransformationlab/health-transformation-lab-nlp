@@ -41,3 +41,9 @@ Implementation starts after this spec, plan and tasks are reviewed.
 - [x] T013 [US4] A third format, the data dictionary (`dictionary_erd.py`, `table_profile.py`): subject areas, fact
   and dimension tables, row counts, each column's nulls, distinct and top values, PHI and open questions marked;
   it fills in once T003 writes the extract
+
+## US5 #381: the rest of a typical research extract
+
+- [x] T014 [US5] The 16 further Open Dental tables in research.md (checked in the source), the silver model and the
+  three ERDs, in the reference's subject areas; free text marked PHI
+- [ ] T015 [US5] The generator (T003) and the load job (T007) write them too

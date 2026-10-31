@@ -56,7 +56,10 @@ column names, lowercased:
 - perio exams and their measures;
 - teeth recorded missing at the first exam;
 - the diagnosis definitions;
-- medical problems.
+- medical problems;
+- and the rest of a typical research extract (#381): providers, appointments, medications, allergies, exam
+  forms and their answers, vitals, race and ethnicity, places of care, procedure notes, tobacco assessments,
+  practice-defined patient fields and the SNOMED codes they use.
 
 The CSV files land in the `data` volume of `landing_opendental_perio`, and are loaded as is, one table per
 Open Dental table, into `bronze_opendental_perio`.
@@ -219,7 +222,11 @@ relationship joins declared columns; every OMOP column names its source; the gen
 - **FR-001** `python/health_transformation_lab_nlp/open_dental.py` declares the extract's tables and columns once
   (`TABLES`), each with its Open Dental source:
   `patient`, `procedurelog`, `procedurecode`, `treatplan`, `proctp`, `perioexam`, `periomeasure`, `toothinitial`,
-  `definition`, `disease`, `diseasedef`.
+  `definition`, `disease`, `diseasedef`, `clinic`; and (#381) `provider`, `appointment`, `medication`,
+  `medicationpat`, `allergy`, `allergydef`, `sheet`, `sheetfield`, `vitalsign`, `patientrace`, `cdcrec`, `site`,
+  `procnote`, `ehrmeasureevent`, `patfield`, `snomed`. Only Open Dental's own columns: an extract's research ID,
+  day counts, copied insurance types and age stay out, and so does Open Dental's `language` table (screen
+  translations).
   - Only the columns this spec needs are included.
   - Names are checked against Open Dental's published schema documentation before implementation (T001).
   - Extractions use public CDT procedure codes (D7140, D7210).
