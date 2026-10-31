@@ -9,6 +9,8 @@ The worked examples are checked against the code by `python/tests/test_evidence_
 this page and the code can't drift apart. All examples are synthetic.
 
 Where each rule comes from (published or designed here) and how each scores: [algorithms.md](algorithms.md).
+The definitions (2017 AAP/EFP, 2012 CDC/AAP, ACES), sources and orders side by side, and where they disagree:
+[standards.md](standards.md).
 
 | Evidence type (README name) | What it is | Best it can do | Code |
 |---|---|---|---|
