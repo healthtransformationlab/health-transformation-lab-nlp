@@ -1,578 +1,2714 @@
 {
- "title": "Data quality of a synthetic dental record",
+ "title": "EHR DQ grader: is this dental record fit for finding gum disease?",
  "is_synthetic": true,
- "note": "Synthetic data: every record was generated, with mistakes added on purpose. The numbers show what the checks find, not how good any real practice's records are.",
+ "note": "Synthetic data from the study's generator, scored against its own truth: not clinical performance, and not how good any real practice's records are.",
+ "design": "dashboards.dq_grader (spec 019): Zozus completeness, accuracy, consistency; Kahn temporal plausibility; Liaw reliability",
  "sources": [
-  "data/datasets/data_quality/",
-  "data/datasets/visits_structured.csv",
+  "grader_tables.dq_tables(data/datasets/)",
   "open_dental.realism_profile (seed 42, default settings)"
  ],
- "visit_count": 4343,
- "patient_count": 1200,
- "checks": [
-  {
-   "check": "conformance:probing_depth_range",
-   "label": "Pocket depths in a possible range",
-   "category": "conformance",
-   "n_checked": 3437,
-   "n_fail": 0,
-   "fail_pct": 0.0,
-   "status": "PASS"
-  },
-  {
-   "check": "conformance:cal_range",
-   "label": "Attachment loss in a possible range",
-   "category": "conformance",
-   "n_checked": 3437,
-   "n_fail": 0,
-   "fail_pct": 0.0,
-   "status": "PASS"
-  },
-  {
-   "check": "conformance:bop_range",
-   "label": "Bleeding share between 0 and 100%",
-   "category": "conformance",
-   "n_checked": 3437,
-   "n_fail": 0,
-   "fail_pct": 0.0,
-   "status": "PASS"
-  },
-  {
-   "check": "conformance:rbl_range",
-   "label": "X-ray bone loss between 0 and 100%",
-   "category": "conformance",
-   "n_checked": 3437,
-   "n_fail": 0,
-   "fail_pct": 0.0,
-   "status": "PASS"
-  },
-  {
-   "check": "conformance:teeth_lost_range",
-   "label": "Teeth lost between 0 and 32",
-   "category": "conformance",
-   "n_checked": 3437,
-   "n_fail": 0,
-   "fail_pct": 0.0,
-   "status": "PASS"
-  },
-  {
-   "check": "conformance:visit_not_future",
-   "label": "No visit dated in the future",
-   "category": "conformance",
-   "n_checked": 4343,
-   "n_fail": 0,
-   "fail_pct": 0.0,
-   "status": "PASS"
-  },
-  {
-   "check": "completeness:notes",
-   "label": "Visit has a clinical note",
-   "category": "completeness",
-   "n_checked": 4343,
-   "n_fail": 0,
-   "fail_pct": 0.0,
-   "status": "REPORT"
-  },
-  {
-   "check": "completeness:exam_form",
-   "label": "Visit has an exam form",
-   "category": "completeness",
-   "n_checked": 4343,
-   "n_fail": 695,
-   "fail_pct": 16.0,
-   "status": "REPORT"
-  },
-  {
-   "check": "completeness:proc_dx_completed",
-   "label": "Visit has a diagnosis code",
-   "category": "completeness",
-   "n_checked": 4343,
-   "n_fail": 1282,
-   "fail_pct": 29.5,
-   "status": "REPORT"
-  },
-  {
-   "check": "completeness:probing_chart",
-   "label": "Visit has a gum chart",
-   "category": "completeness",
-   "n_checked": 4343,
-   "n_fail": 906,
-   "fail_pct": 20.9,
-   "status": "REPORT"
-  },
-  {
-   "check": "plausibility:age_range",
-   "label": "Age in a possible range",
-   "category": "plausibility",
-   "n_checked": 4343,
-   "n_fail": 0,
-   "fail_pct": 0.0,
-   "status": "PASS"
-  },
-  {
-   "check": "plausibility:temporal_cal_drop",
-   "label": "Attachment loss never shrinks",
-   "category": "plausibility",
-   "n_checked": 3143,
-   "n_fail": 7,
-   "fail_pct": 0.2,
-   "status": "PASS"
-  },
-  {
-   "check": "plausibility:temporal_rbl_drop",
-   "label": "X-ray bone loss never shrinks",
-   "category": "plausibility",
-   "n_checked": 3143,
-   "n_fail": 15,
-   "fail_pct": 0.5,
-   "status": "PASS"
-  },
-  {
-   "check": "plausibility:temporal_teeth_regained",
-   "label": "Lost teeth never come back",
-   "category": "plausibility",
-   "n_checked": 3143,
-   "n_fail": 1,
-   "fail_pct": 0.0,
-   "status": "PASS"
-  },
-  {
-   "check": "plausibility:temporal_perio_resolved",
-   "label": "Periodontitis never goes away",
-   "category": "plausibility",
-   "n_checked": 3143,
-   "n_fail": 14,
-   "fail_pct": 0.4,
-   "status": "PASS"
-  },
-  {
-   "check": "plausibility:temporal_stage_drop",
-   "label": "Stage never goes down",
-   "category": "plausibility",
-   "n_checked": 3143,
-   "n_fail": 19,
-   "fail_pct": 0.6,
-   "status": "PASS"
-  }
- ],
- "completeness": [
-  {
-   "part": "notes",
-   "label": "Clinical note",
-   "n_rows": 4343,
-   "missing_pct": 0.0
-  },
-  {
-   "part": "exam_form",
-   "label": "Exam form",
-   "n_rows": 4343,
-   "missing_pct": 16.0
-  },
-  {
-   "part": "proc_dx_planned",
-   "label": "Diagnosis codes",
-   "n_rows": 4343,
-   "missing_pct": 29.5
-  },
-  {
-   "part": "probing_chart",
-   "label": "Gum chart (probing)",
-   "n_rows": 4343,
-   "missing_pct": 20.9
-  }
- ],
- "by_clinic": [
-  {
-   "check": "completeness:notes",
-   "label": "Visit has a clinical note",
-   "clinic": "1",
-   "n_checked": 398,
-   "missing_pct": 0.0,
-   "is_outlier": false
-  },
-  {
-   "check": "completeness:notes",
-   "label": "Visit has a clinical note",
-   "clinic": "2",
-   "n_checked": 519,
-   "missing_pct": 0.0,
-   "is_outlier": false
-  },
-  {
-   "check": "completeness:notes",
-   "label": "Visit has a clinical note",
-   "clinic": "3",
-   "n_checked": 393,
-   "missing_pct": 0.0,
-   "is_outlier": false
-  },
-  {
-   "check": "completeness:notes",
-   "label": "Visit has a clinical note",
-   "clinic": "4",
-   "n_checked": 761,
-   "missing_pct": 0.0,
-   "is_outlier": false
-  },
-  {
-   "check": "completeness:notes",
-   "label": "Visit has a clinical note",
-   "clinic": "5",
-   "n_checked": 511,
-   "missing_pct": 0.0,
-   "is_outlier": false
-  },
-  {
-   "check": "completeness:notes",
-   "label": "Visit has a clinical note",
-   "clinic": "6",
-   "n_checked": 406,
-   "missing_pct": 0.0,
-   "is_outlier": false
-  },
-  {
-   "check": "completeness:notes",
-   "label": "Visit has a clinical note",
-   "clinic": "7",
-   "n_checked": 609,
-   "missing_pct": 0.0,
-   "is_outlier": false
-  },
-  {
-   "check": "completeness:notes",
-   "label": "Visit has a clinical note",
-   "clinic": "8",
-   "n_checked": 746,
-   "missing_pct": 0.0,
-   "is_outlier": false
-  },
-  {
-   "check": "completeness:exam_form",
-   "label": "Visit has an exam form",
-   "clinic": "1",
-   "n_checked": 398,
-   "missing_pct": 16.3,
-   "is_outlier": false
-  },
-  {
-   "check": "completeness:exam_form",
-   "label": "Visit has an exam form",
-   "clinic": "2",
-   "n_checked": 519,
-   "missing_pct": 16.2,
-   "is_outlier": false
-  },
-  {
-   "check": "completeness:exam_form",
-   "label": "Visit has an exam form",
-   "clinic": "3",
-   "n_checked": 393,
-   "missing_pct": 14.0,
-   "is_outlier": false
-  },
-  {
-   "check": "completeness:exam_form",
-   "label": "Visit has an exam form",
-   "clinic": "4",
-   "n_checked": 761,
-   "missing_pct": 18.0,
-   "is_outlier": false
-  },
-  {
-   "check": "completeness:exam_form",
-   "label": "Visit has an exam form",
-   "clinic": "5",
-   "n_checked": 511,
-   "missing_pct": 13.5,
-   "is_outlier": false
-  },
-  {
-   "check": "completeness:exam_form",
-   "label": "Visit has an exam form",
-   "clinic": "6",
-   "n_checked": 406,
-   "missing_pct": 13.8,
-   "is_outlier": false
-  },
-  {
-   "check": "completeness:exam_form",
-   "label": "Visit has an exam form",
-   "clinic": "7",
-   "n_checked": 609,
-   "missing_pct": 16.7,
-   "is_outlier": false
-  },
-  {
-   "check": "completeness:exam_form",
-   "label": "Visit has an exam form",
-   "clinic": "8",
-   "n_checked": 746,
-   "missing_pct": 17.0,
-   "is_outlier": false
-  },
-  {
-   "check": "completeness:proc_dx_completed",
-   "label": "Visit has a diagnosis code",
-   "clinic": "1",
-   "n_checked": 398,
-   "missing_pct": 30.9,
-   "is_outlier": false
-  },
-  {
-   "check": "completeness:proc_dx_completed",
-   "label": "Visit has a diagnosis code",
-   "clinic": "2",
-   "n_checked": 519,
-   "missing_pct": 30.3,
-   "is_outlier": false
-  },
-  {
-   "check": "completeness:proc_dx_completed",
-   "label": "Visit has a diagnosis code",
-   "clinic": "3",
-   "n_checked": 393,
-   "missing_pct": 28.5,
-   "is_outlier": false
-  },
-  {
-   "check": "completeness:proc_dx_completed",
-   "label": "Visit has a diagnosis code",
-   "clinic": "4",
-   "n_checked": 761,
-   "missing_pct": 31.3,
-   "is_outlier": false
-  },
-  {
-   "check": "completeness:proc_dx_completed",
-   "label": "Visit has a diagnosis code",
-   "clinic": "5",
-   "n_checked": 511,
-   "missing_pct": 27.8,
-   "is_outlier": false
-  },
-  {
-   "check": "completeness:proc_dx_completed",
-   "label": "Visit has a diagnosis code",
-   "clinic": "6",
-   "n_checked": 406,
-   "missing_pct": 25.4,
-   "is_outlier": false
-  },
-  {
-   "check": "completeness:proc_dx_completed",
-   "label": "Visit has a diagnosis code",
-   "clinic": "7",
-   "n_checked": 609,
-   "missing_pct": 30.4,
-   "is_outlier": false
-  },
-  {
-   "check": "completeness:proc_dx_completed",
-   "label": "Visit has a diagnosis code",
-   "clinic": "8",
-   "n_checked": 746,
-   "missing_pct": 29.8,
-   "is_outlier": false
-  },
-  {
-   "check": "completeness:probing_chart",
-   "label": "Visit has a gum chart",
-   "clinic": "1",
-   "n_checked": 398,
-   "missing_pct": 12.8,
-   "is_outlier": false
-  },
-  {
-   "check": "completeness:probing_chart",
-   "label": "Visit has a gum chart",
-   "clinic": "2",
-   "n_checked": 519,
-   "missing_pct": 21.8,
-   "is_outlier": false
-  },
-  {
-   "check": "completeness:probing_chart",
-   "label": "Visit has a gum chart",
-   "clinic": "3",
-   "n_checked": 393,
-   "missing_pct": 25.4,
-   "is_outlier": false
-  },
-  {
-   "check": "completeness:probing_chart",
-   "label": "Visit has a gum chart",
-   "clinic": "4",
-   "n_checked": 761,
-   "missing_pct": 20.8,
-   "is_outlier": false
-  },
-  {
-   "check": "completeness:probing_chart",
-   "label": "Visit has a gum chart",
-   "clinic": "5",
-   "n_checked": 511,
-   "missing_pct": 20.7,
-   "is_outlier": false
-  },
-  {
-   "check": "completeness:probing_chart",
-   "label": "Visit has a gum chart",
-   "clinic": "6",
-   "n_checked": 406,
-   "missing_pct": 9.6,
-   "is_outlier": false
-  },
-  {
-   "check": "completeness:probing_chart",
-   "label": "Visit has a gum chart",
-   "clinic": "7",
-   "n_checked": 609,
-   "missing_pct": 14.8,
-   "is_outlier": false
-  },
-  {
-   "check": "completeness:probing_chart",
-   "label": "Visit has a gum chart",
-   "clinic": "8",
-   "n_checked": 746,
-   "missing_pct": 33.4,
-   "is_outlier": false
-  }
- ],
- "temporal": [
-  {
-   "method": "algorithm_design",
-   "label": "Rules, exam form first",
-   "n_later_visits": 3143,
-   "perio_resolved_pct": 10.9,
-   "stage_drop_pct": 23.6
-  },
-  {
-   "method": "algorithm_v0",
-   "label": "Rules, gum measurements first",
-   "n_later_visits": 3143,
-   "perio_resolved_pct": 3.0,
-   "stage_drop_pct": 6.6
-  },
-  {
-   "method": "notes",
-   "label": "Clinical note (keyword rules)",
-   "n_later_visits": 3143,
-   "perio_resolved_pct": 9.9,
-   "stage_drop_pct": 20.0
-  },
-  {
-   "method": "probing_chart",
-   "label": "Gum chart alone",
-   "n_later_visits": 3143,
-   "perio_resolved_pct": 0.4,
-   "stage_drop_pct": 0.6
-  },
-  {
-   "method": "exam_form",
-   "label": "Exam form alone",
-   "n_later_visits": 3143,
-   "perio_resolved_pct": 7.3,
-   "stage_drop_pct": 17.1
-  },
-  {
-   "method": "proc_dx_completed",
-   "label": "Diagnosis codes alone",
-   "n_later_visits": 3143,
-   "perio_resolved_pct": 10.6,
-   "stage_drop_pct": 15.2
-  }
- ],
- "injected": {
-  "injected_count": 45,
-  "caught_count": 15,
-  "caught_pct": 33.3,
-  "false_flag_pct": 0.23
- },
- "open_dental": [
-  {
-   "metric": "charted_visit_office_share",
-   "label": "Office visits with a perio chart",
-   "pct": 75.4,
-   "numerator": 6936,
-   "denominator": 9202
-  },
-  {
-   "metric": "charted_visit_site_share",
-   "label": "Mobile and nursing-home visits with a perio chart",
-   "pct": 30.3,
-   "numerator": 219,
-   "denominator": 722
-  },
-  {
-   "metric": "partial_chart_share",
-   "label": "Charts covering only some teeth",
-   "pct": 19.7,
-   "numerator": 1412,
-   "denominator": 7155
-  },
-  {
-   "metric": "buccal_only_chart_share",
-   "label": "Charts with cheek-side readings only",
-   "pct": 10.4,
-   "numerator": 747,
-   "denominator": 7155
-  },
-  {
-   "metric": "uniform_chart_share",
-   "label": "Charts with one depth everywhere",
-   "pct": 3.6,
-   "numerator": 260,
-   "denominator": 7155
-  },
-  {
-   "metric": "no_margin_chart_share",
-   "label": "Charts without gum-margin readings (no attachment loss)",
-   "pct": 24.7,
-   "numerator": 1769,
-   "denominator": 7155
-  },
-  {
-   "metric": "no_bleeding_chart_share",
-   "label": "Charts without bleeding",
-   "pct": 14.5,
-   "numerator": 1036,
-   "denominator": 7155
-  },
-  {
-   "metric": "copied_chart_share",
-   "label": "Charts copied from the last visit",
-   "pct": 5.7,
-   "numerator": 300,
-   "denominator": 5218
-  },
-  {
-   "metric": "out_of_range_site_share",
-   "label": "Pocket readings over 15 mm",
-   "pct": 0.2,
-   "numerator": 2251,
-   "denominator": 1097451
-  },
-  {
-   "metric": "charted_after_loss_chart_share",
-   "label": "Charts that include an extracted tooth",
-   "pct": 0.3,
-   "numerator": 24,
-   "denominator": 7155
-  },
-  {
-   "metric": "radiograph_visit_share",
-   "label": "Visits with an X-ray",
-   "pct": 40.4,
-   "numerator": 4007,
-   "denominator": 9924
-  },
-  {
-   "metric": "unread_tooth_share",
-   "label": "Teeth on an X-ray with no bone-loss reading",
-   "pct": 14.9,
-   "numerator": 12148,
-   "denominator": 81266
-  }
- ]
+ "sections": {
+  "tiles": {
+   "completeness_pct": 46.4,
+   "accuracy_pct": 95.1,
+   "accuracy_design_pct": 74.5,
+   "consistency_pts": 14.5,
+   "implausible_pct": 13.7,
+   "visit_count": 4343,
+   "clinic_count": 8,
+   "reliability_text": "Not assessed: needs real reviewers to label charts. Simulated reviewers are a dry run."
+  },
+  "missingness": [
+   {
+    "column": "proc_dx_planned",
+    "label": "Diagnosis codes, planned",
+    "missing_pct": 29.5,
+    "missing_count": 1282,
+    "row_count": 4343
+   },
+   {
+    "column": "rec_max_probing_depth_mm",
+    "label": "Pocket depth",
+    "missing_pct": 20.9,
+    "missing_count": 906,
+    "row_count": 4343
+   },
+   {
+    "column": "probing_chart",
+    "label": "Gum measurements",
+    "missing_pct": 20.9,
+    "missing_count": 906,
+    "row_count": 4343
+   },
+   {
+    "column": "rec_bop_pct",
+    "label": "Bleeding",
+    "missing_pct": 20.9,
+    "missing_count": 906,
+    "row_count": 4343
+   },
+   {
+    "column": "rec_max_cal_mm",
+    "label": "Attachment loss",
+    "missing_pct": 20.9,
+    "missing_count": 906,
+    "row_count": 4343
+   },
+   {
+    "column": "rec_teeth_lost_perio",
+    "label": "Teeth lost to gum disease",
+    "missing_pct": 20.9,
+    "missing_count": 906,
+    "row_count": 4343
+   },
+   {
+    "column": "exam_form",
+    "label": "Exam form",
+    "missing_pct": 16.0,
+    "missing_count": 695,
+    "row_count": 4343
+   },
+   {
+    "column": "algorithm_design",
+    "label": "Rules, exam form first",
+    "missing_pct": 0.0,
+    "missing_count": 0,
+    "row_count": 4343
+   },
+   {
+    "column": "notes",
+    "label": "Chart note",
+    "missing_pct": 0.0,
+    "missing_count": 0,
+    "row_count": 4343
+   }
+  ],
+  "checks": [
+   {
+    "clinic": "All",
+    "category": "conformance",
+    "check": "conformance:probing_depth_range",
+    "checked_count": 3437,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "All",
+    "category": "conformance",
+    "check": "conformance:cal_range",
+    "checked_count": 3437,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "All",
+    "category": "conformance",
+    "check": "conformance:bop_range",
+    "checked_count": 3437,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "All",
+    "category": "conformance",
+    "check": "conformance:rbl_range",
+    "checked_count": 3437,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "All",
+    "category": "conformance",
+    "check": "conformance:teeth_lost_range",
+    "checked_count": 3437,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "All",
+    "category": "conformance",
+    "check": "conformance:visit_not_future",
+    "checked_count": 4343,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "All",
+    "category": "completeness",
+    "check": "completeness:notes",
+    "checked_count": 4343,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "REPORT"
+   },
+   {
+    "clinic": "All",
+    "category": "completeness",
+    "check": "completeness:exam_form",
+    "checked_count": 4343,
+    "failed_count": 695,
+    "pass_pct": 84.0,
+    "status": "REPORT"
+   },
+   {
+    "clinic": "All",
+    "category": "completeness",
+    "check": "completeness:proc_dx_completed",
+    "checked_count": 4343,
+    "failed_count": 1282,
+    "pass_pct": 70.48,
+    "status": "REPORT"
+   },
+   {
+    "clinic": "All",
+    "category": "completeness",
+    "check": "completeness:probing_chart",
+    "checked_count": 4343,
+    "failed_count": 906,
+    "pass_pct": 79.14,
+    "status": "REPORT"
+   },
+   {
+    "clinic": "All",
+    "category": "plausibility",
+    "check": "plausibility:age_range",
+    "checked_count": 4343,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "All",
+    "category": "plausibility",
+    "check": "plausibility:temporal_cal_drop",
+    "checked_count": 3143,
+    "failed_count": 7,
+    "pass_pct": 99.78,
+    "status": "PASS"
+   },
+   {
+    "clinic": "All",
+    "category": "plausibility",
+    "check": "plausibility:temporal_rbl_drop",
+    "checked_count": 3143,
+    "failed_count": 15,
+    "pass_pct": 99.52,
+    "status": "PASS"
+   },
+   {
+    "clinic": "All",
+    "category": "plausibility",
+    "check": "plausibility:temporal_teeth_regained",
+    "checked_count": 3143,
+    "failed_count": 1,
+    "pass_pct": 99.97,
+    "status": "PASS"
+   },
+   {
+    "clinic": "All",
+    "category": "plausibility",
+    "check": "plausibility:temporal_perio_resolved",
+    "checked_count": 3143,
+    "failed_count": 14,
+    "pass_pct": 99.55,
+    "status": "PASS"
+   },
+   {
+    "clinic": "All",
+    "category": "plausibility",
+    "check": "plausibility:temporal_stage_drop",
+    "checked_count": 3143,
+    "failed_count": 19,
+    "pass_pct": 99.4,
+    "status": "PASS"
+   },
+   {
+    "clinic": "1",
+    "category": "conformance",
+    "check": "conformance:probing_depth_range",
+    "checked_count": 347,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "1",
+    "category": "conformance",
+    "check": "conformance:cal_range",
+    "checked_count": 347,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "1",
+    "category": "conformance",
+    "check": "conformance:bop_range",
+    "checked_count": 347,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "1",
+    "category": "conformance",
+    "check": "conformance:rbl_range",
+    "checked_count": 347,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "1",
+    "category": "conformance",
+    "check": "conformance:teeth_lost_range",
+    "checked_count": 347,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "1",
+    "category": "conformance",
+    "check": "conformance:visit_not_future",
+    "checked_count": 398,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "1",
+    "category": "completeness",
+    "check": "completeness:notes",
+    "checked_count": 398,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "REPORT"
+   },
+   {
+    "clinic": "1",
+    "category": "completeness",
+    "check": "completeness:exam_form",
+    "checked_count": 398,
+    "failed_count": 65,
+    "pass_pct": 83.67,
+    "status": "REPORT"
+   },
+   {
+    "clinic": "1",
+    "category": "completeness",
+    "check": "completeness:proc_dx_completed",
+    "checked_count": 398,
+    "failed_count": 123,
+    "pass_pct": 69.1,
+    "status": "REPORT"
+   },
+   {
+    "clinic": "1",
+    "category": "completeness",
+    "check": "completeness:probing_chart",
+    "checked_count": 398,
+    "failed_count": 51,
+    "pass_pct": 87.19,
+    "status": "REPORT"
+   },
+   {
+    "clinic": "1",
+    "category": "plausibility",
+    "check": "plausibility:age_range",
+    "checked_count": 398,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "1",
+    "category": "plausibility",
+    "check": "plausibility:temporal_cal_drop",
+    "checked_count": 281,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "1",
+    "category": "plausibility",
+    "check": "plausibility:temporal_rbl_drop",
+    "checked_count": 281,
+    "failed_count": 2,
+    "pass_pct": 99.29,
+    "status": "PASS"
+   },
+   {
+    "clinic": "1",
+    "category": "plausibility",
+    "check": "plausibility:temporal_teeth_regained",
+    "checked_count": 281,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "1",
+    "category": "plausibility",
+    "check": "plausibility:temporal_perio_resolved",
+    "checked_count": 281,
+    "failed_count": 2,
+    "pass_pct": 99.29,
+    "status": "PASS"
+   },
+   {
+    "clinic": "1",
+    "category": "plausibility",
+    "check": "plausibility:temporal_stage_drop",
+    "checked_count": 281,
+    "failed_count": 3,
+    "pass_pct": 98.93,
+    "status": "PASS"
+   },
+   {
+    "clinic": "2",
+    "category": "conformance",
+    "check": "conformance:probing_depth_range",
+    "checked_count": 406,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "2",
+    "category": "conformance",
+    "check": "conformance:cal_range",
+    "checked_count": 406,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "2",
+    "category": "conformance",
+    "check": "conformance:bop_range",
+    "checked_count": 406,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "2",
+    "category": "conformance",
+    "check": "conformance:rbl_range",
+    "checked_count": 406,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "2",
+    "category": "conformance",
+    "check": "conformance:teeth_lost_range",
+    "checked_count": 406,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "2",
+    "category": "conformance",
+    "check": "conformance:visit_not_future",
+    "checked_count": 519,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "2",
+    "category": "completeness",
+    "check": "completeness:notes",
+    "checked_count": 519,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "REPORT"
+   },
+   {
+    "clinic": "2",
+    "category": "completeness",
+    "check": "completeness:exam_form",
+    "checked_count": 519,
+    "failed_count": 84,
+    "pass_pct": 83.82,
+    "status": "REPORT"
+   },
+   {
+    "clinic": "2",
+    "category": "completeness",
+    "check": "completeness:proc_dx_completed",
+    "checked_count": 519,
+    "failed_count": 157,
+    "pass_pct": 69.75,
+    "status": "REPORT"
+   },
+   {
+    "clinic": "2",
+    "category": "completeness",
+    "check": "completeness:probing_chart",
+    "checked_count": 519,
+    "failed_count": 113,
+    "pass_pct": 78.23,
+    "status": "REPORT"
+   },
+   {
+    "clinic": "2",
+    "category": "plausibility",
+    "check": "plausibility:age_range",
+    "checked_count": 519,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "2",
+    "category": "plausibility",
+    "check": "plausibility:temporal_cal_drop",
+    "checked_count": 380,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "2",
+    "category": "plausibility",
+    "check": "plausibility:temporal_rbl_drop",
+    "checked_count": 380,
+    "failed_count": 1,
+    "pass_pct": 99.74,
+    "status": "PASS"
+   },
+   {
+    "clinic": "2",
+    "category": "plausibility",
+    "check": "plausibility:temporal_teeth_regained",
+    "checked_count": 380,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "2",
+    "category": "plausibility",
+    "check": "plausibility:temporal_perio_resolved",
+    "checked_count": 380,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "2",
+    "category": "plausibility",
+    "check": "plausibility:temporal_stage_drop",
+    "checked_count": 380,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "3",
+    "category": "conformance",
+    "check": "conformance:probing_depth_range",
+    "checked_count": 293,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "3",
+    "category": "conformance",
+    "check": "conformance:cal_range",
+    "checked_count": 293,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "3",
+    "category": "conformance",
+    "check": "conformance:bop_range",
+    "checked_count": 293,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "3",
+    "category": "conformance",
+    "check": "conformance:rbl_range",
+    "checked_count": 293,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "3",
+    "category": "conformance",
+    "check": "conformance:teeth_lost_range",
+    "checked_count": 293,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "3",
+    "category": "conformance",
+    "check": "conformance:visit_not_future",
+    "checked_count": 393,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "3",
+    "category": "completeness",
+    "check": "completeness:notes",
+    "checked_count": 393,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "REPORT"
+   },
+   {
+    "clinic": "3",
+    "category": "completeness",
+    "check": "completeness:exam_form",
+    "checked_count": 393,
+    "failed_count": 55,
+    "pass_pct": 86.01,
+    "status": "REPORT"
+   },
+   {
+    "clinic": "3",
+    "category": "completeness",
+    "check": "completeness:proc_dx_completed",
+    "checked_count": 393,
+    "failed_count": 112,
+    "pass_pct": 71.5,
+    "status": "REPORT"
+   },
+   {
+    "clinic": "3",
+    "category": "completeness",
+    "check": "completeness:probing_chart",
+    "checked_count": 393,
+    "failed_count": 100,
+    "pass_pct": 74.55,
+    "status": "REPORT"
+   },
+   {
+    "clinic": "3",
+    "category": "plausibility",
+    "check": "plausibility:age_range",
+    "checked_count": 393,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "3",
+    "category": "plausibility",
+    "check": "plausibility:temporal_cal_drop",
+    "checked_count": 283,
+    "failed_count": 2,
+    "pass_pct": 99.29,
+    "status": "PASS"
+   },
+   {
+    "clinic": "3",
+    "category": "plausibility",
+    "check": "plausibility:temporal_rbl_drop",
+    "checked_count": 283,
+    "failed_count": 3,
+    "pass_pct": 98.94,
+    "status": "PASS"
+   },
+   {
+    "clinic": "3",
+    "category": "plausibility",
+    "check": "plausibility:temporal_teeth_regained",
+    "checked_count": 283,
+    "failed_count": 1,
+    "pass_pct": 99.65,
+    "status": "PASS"
+   },
+   {
+    "clinic": "3",
+    "category": "plausibility",
+    "check": "plausibility:temporal_perio_resolved",
+    "checked_count": 283,
+    "failed_count": 2,
+    "pass_pct": 99.29,
+    "status": "PASS"
+   },
+   {
+    "clinic": "3",
+    "category": "plausibility",
+    "check": "plausibility:temporal_stage_drop",
+    "checked_count": 283,
+    "failed_count": 2,
+    "pass_pct": 99.29,
+    "status": "PASS"
+   },
+   {
+    "clinic": "4",
+    "category": "conformance",
+    "check": "conformance:probing_depth_range",
+    "checked_count": 603,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "4",
+    "category": "conformance",
+    "check": "conformance:cal_range",
+    "checked_count": 603,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "4",
+    "category": "conformance",
+    "check": "conformance:bop_range",
+    "checked_count": 603,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "4",
+    "category": "conformance",
+    "check": "conformance:rbl_range",
+    "checked_count": 603,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "4",
+    "category": "conformance",
+    "check": "conformance:teeth_lost_range",
+    "checked_count": 603,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "4",
+    "category": "conformance",
+    "check": "conformance:visit_not_future",
+    "checked_count": 761,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "4",
+    "category": "completeness",
+    "check": "completeness:notes",
+    "checked_count": 761,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "REPORT"
+   },
+   {
+    "clinic": "4",
+    "category": "completeness",
+    "check": "completeness:exam_form",
+    "checked_count": 761,
+    "failed_count": 137,
+    "pass_pct": 82.0,
+    "status": "REPORT"
+   },
+   {
+    "clinic": "4",
+    "category": "completeness",
+    "check": "completeness:proc_dx_completed",
+    "checked_count": 761,
+    "failed_count": 238,
+    "pass_pct": 68.73,
+    "status": "REPORT"
+   },
+   {
+    "clinic": "4",
+    "category": "completeness",
+    "check": "completeness:probing_chart",
+    "checked_count": 761,
+    "failed_count": 158,
+    "pass_pct": 79.24,
+    "status": "REPORT"
+   },
+   {
+    "clinic": "4",
+    "category": "plausibility",
+    "check": "plausibility:age_range",
+    "checked_count": 761,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "4",
+    "category": "plausibility",
+    "check": "plausibility:temporal_cal_drop",
+    "checked_count": 558,
+    "failed_count": 1,
+    "pass_pct": 99.82,
+    "status": "PASS"
+   },
+   {
+    "clinic": "4",
+    "category": "plausibility",
+    "check": "plausibility:temporal_rbl_drop",
+    "checked_count": 558,
+    "failed_count": 1,
+    "pass_pct": 99.82,
+    "status": "PASS"
+   },
+   {
+    "clinic": "4",
+    "category": "plausibility",
+    "check": "plausibility:temporal_teeth_regained",
+    "checked_count": 558,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "4",
+    "category": "plausibility",
+    "check": "plausibility:temporal_perio_resolved",
+    "checked_count": 558,
+    "failed_count": 3,
+    "pass_pct": 99.46,
+    "status": "PASS"
+   },
+   {
+    "clinic": "4",
+    "category": "plausibility",
+    "check": "plausibility:temporal_stage_drop",
+    "checked_count": 558,
+    "failed_count": 3,
+    "pass_pct": 99.46,
+    "status": "PASS"
+   },
+   {
+    "clinic": "5",
+    "category": "conformance",
+    "check": "conformance:probing_depth_range",
+    "checked_count": 405,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "5",
+    "category": "conformance",
+    "check": "conformance:cal_range",
+    "checked_count": 405,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "5",
+    "category": "conformance",
+    "check": "conformance:bop_range",
+    "checked_count": 405,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "5",
+    "category": "conformance",
+    "check": "conformance:rbl_range",
+    "checked_count": 405,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "5",
+    "category": "conformance",
+    "check": "conformance:teeth_lost_range",
+    "checked_count": 405,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "5",
+    "category": "conformance",
+    "check": "conformance:visit_not_future",
+    "checked_count": 511,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "5",
+    "category": "completeness",
+    "check": "completeness:notes",
+    "checked_count": 511,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "REPORT"
+   },
+   {
+    "clinic": "5",
+    "category": "completeness",
+    "check": "completeness:exam_form",
+    "checked_count": 511,
+    "failed_count": 69,
+    "pass_pct": 86.5,
+    "status": "REPORT"
+   },
+   {
+    "clinic": "5",
+    "category": "completeness",
+    "check": "completeness:proc_dx_completed",
+    "checked_count": 511,
+    "failed_count": 142,
+    "pass_pct": 72.21,
+    "status": "REPORT"
+   },
+   {
+    "clinic": "5",
+    "category": "completeness",
+    "check": "completeness:probing_chart",
+    "checked_count": 511,
+    "failed_count": 106,
+    "pass_pct": 79.26,
+    "status": "REPORT"
+   },
+   {
+    "clinic": "5",
+    "category": "plausibility",
+    "check": "plausibility:age_range",
+    "checked_count": 511,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "5",
+    "category": "plausibility",
+    "check": "plausibility:temporal_cal_drop",
+    "checked_count": 366,
+    "failed_count": 1,
+    "pass_pct": 99.73,
+    "status": "PASS"
+   },
+   {
+    "clinic": "5",
+    "category": "plausibility",
+    "check": "plausibility:temporal_rbl_drop",
+    "checked_count": 366,
+    "failed_count": 2,
+    "pass_pct": 99.45,
+    "status": "PASS"
+   },
+   {
+    "clinic": "5",
+    "category": "plausibility",
+    "check": "plausibility:temporal_teeth_regained",
+    "checked_count": 366,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "5",
+    "category": "plausibility",
+    "check": "plausibility:temporal_perio_resolved",
+    "checked_count": 366,
+    "failed_count": 1,
+    "pass_pct": 99.73,
+    "status": "PASS"
+   },
+   {
+    "clinic": "5",
+    "category": "plausibility",
+    "check": "plausibility:temporal_stage_drop",
+    "checked_count": 366,
+    "failed_count": 3,
+    "pass_pct": 99.18,
+    "status": "PASS"
+   },
+   {
+    "clinic": "6",
+    "category": "conformance",
+    "check": "conformance:probing_depth_range",
+    "checked_count": 367,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "6",
+    "category": "conformance",
+    "check": "conformance:cal_range",
+    "checked_count": 367,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "6",
+    "category": "conformance",
+    "check": "conformance:bop_range",
+    "checked_count": 367,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "6",
+    "category": "conformance",
+    "check": "conformance:rbl_range",
+    "checked_count": 367,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "6",
+    "category": "conformance",
+    "check": "conformance:teeth_lost_range",
+    "checked_count": 367,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "6",
+    "category": "conformance",
+    "check": "conformance:visit_not_future",
+    "checked_count": 406,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "6",
+    "category": "completeness",
+    "check": "completeness:notes",
+    "checked_count": 406,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "REPORT"
+   },
+   {
+    "clinic": "6",
+    "category": "completeness",
+    "check": "completeness:exam_form",
+    "checked_count": 406,
+    "failed_count": 56,
+    "pass_pct": 86.21,
+    "status": "REPORT"
+   },
+   {
+    "clinic": "6",
+    "category": "completeness",
+    "check": "completeness:proc_dx_completed",
+    "checked_count": 406,
+    "failed_count": 103,
+    "pass_pct": 74.63,
+    "status": "REPORT"
+   },
+   {
+    "clinic": "6",
+    "category": "completeness",
+    "check": "completeness:probing_chart",
+    "checked_count": 406,
+    "failed_count": 39,
+    "pass_pct": 90.39,
+    "status": "REPORT"
+   },
+   {
+    "clinic": "6",
+    "category": "plausibility",
+    "check": "plausibility:age_range",
+    "checked_count": 406,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "6",
+    "category": "plausibility",
+    "check": "plausibility:temporal_cal_drop",
+    "checked_count": 288,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "6",
+    "category": "plausibility",
+    "check": "plausibility:temporal_rbl_drop",
+    "checked_count": 288,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "6",
+    "category": "plausibility",
+    "check": "plausibility:temporal_teeth_regained",
+    "checked_count": 288,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "6",
+    "category": "plausibility",
+    "check": "plausibility:temporal_perio_resolved",
+    "checked_count": 288,
+    "failed_count": 1,
+    "pass_pct": 99.65,
+    "status": "PASS"
+   },
+   {
+    "clinic": "6",
+    "category": "plausibility",
+    "check": "plausibility:temporal_stage_drop",
+    "checked_count": 288,
+    "failed_count": 1,
+    "pass_pct": 99.65,
+    "status": "PASS"
+   },
+   {
+    "clinic": "7",
+    "category": "conformance",
+    "check": "conformance:probing_depth_range",
+    "checked_count": 519,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "7",
+    "category": "conformance",
+    "check": "conformance:cal_range",
+    "checked_count": 519,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "7",
+    "category": "conformance",
+    "check": "conformance:bop_range",
+    "checked_count": 519,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "7",
+    "category": "conformance",
+    "check": "conformance:rbl_range",
+    "checked_count": 519,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "7",
+    "category": "conformance",
+    "check": "conformance:teeth_lost_range",
+    "checked_count": 519,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "7",
+    "category": "conformance",
+    "check": "conformance:visit_not_future",
+    "checked_count": 609,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "7",
+    "category": "completeness",
+    "check": "completeness:notes",
+    "checked_count": 609,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "REPORT"
+   },
+   {
+    "clinic": "7",
+    "category": "completeness",
+    "check": "completeness:exam_form",
+    "checked_count": 609,
+    "failed_count": 102,
+    "pass_pct": 83.25,
+    "status": "REPORT"
+   },
+   {
+    "clinic": "7",
+    "category": "completeness",
+    "check": "completeness:proc_dx_completed",
+    "checked_count": 609,
+    "failed_count": 185,
+    "pass_pct": 69.62,
+    "status": "REPORT"
+   },
+   {
+    "clinic": "7",
+    "category": "completeness",
+    "check": "completeness:probing_chart",
+    "checked_count": 609,
+    "failed_count": 90,
+    "pass_pct": 85.22,
+    "status": "REPORT"
+   },
+   {
+    "clinic": "7",
+    "category": "plausibility",
+    "check": "plausibility:age_range",
+    "checked_count": 609,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "7",
+    "category": "plausibility",
+    "check": "plausibility:temporal_cal_drop",
+    "checked_count": 444,
+    "failed_count": 1,
+    "pass_pct": 99.77,
+    "status": "PASS"
+   },
+   {
+    "clinic": "7",
+    "category": "plausibility",
+    "check": "plausibility:temporal_rbl_drop",
+    "checked_count": 444,
+    "failed_count": 3,
+    "pass_pct": 99.32,
+    "status": "PASS"
+   },
+   {
+    "clinic": "7",
+    "category": "plausibility",
+    "check": "plausibility:temporal_teeth_regained",
+    "checked_count": 444,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "7",
+    "category": "plausibility",
+    "check": "plausibility:temporal_perio_resolved",
+    "checked_count": 444,
+    "failed_count": 3,
+    "pass_pct": 99.32,
+    "status": "PASS"
+   },
+   {
+    "clinic": "7",
+    "category": "plausibility",
+    "check": "plausibility:temporal_stage_drop",
+    "checked_count": 444,
+    "failed_count": 5,
+    "pass_pct": 98.87,
+    "status": "PASS"
+   },
+   {
+    "clinic": "8",
+    "category": "conformance",
+    "check": "conformance:probing_depth_range",
+    "checked_count": 497,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "8",
+    "category": "conformance",
+    "check": "conformance:cal_range",
+    "checked_count": 497,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "8",
+    "category": "conformance",
+    "check": "conformance:bop_range",
+    "checked_count": 497,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "8",
+    "category": "conformance",
+    "check": "conformance:rbl_range",
+    "checked_count": 497,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "8",
+    "category": "conformance",
+    "check": "conformance:teeth_lost_range",
+    "checked_count": 497,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "8",
+    "category": "conformance",
+    "check": "conformance:visit_not_future",
+    "checked_count": 746,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "8",
+    "category": "completeness",
+    "check": "completeness:notes",
+    "checked_count": 746,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "REPORT"
+   },
+   {
+    "clinic": "8",
+    "category": "completeness",
+    "check": "completeness:exam_form",
+    "checked_count": 746,
+    "failed_count": 127,
+    "pass_pct": 82.98,
+    "status": "REPORT"
+   },
+   {
+    "clinic": "8",
+    "category": "completeness",
+    "check": "completeness:proc_dx_completed",
+    "checked_count": 746,
+    "failed_count": 222,
+    "pass_pct": 70.24,
+    "status": "REPORT"
+   },
+   {
+    "clinic": "8",
+    "category": "completeness",
+    "check": "completeness:probing_chart",
+    "checked_count": 746,
+    "failed_count": 249,
+    "pass_pct": 66.62,
+    "status": "REPORT"
+   },
+   {
+    "clinic": "8",
+    "category": "plausibility",
+    "check": "plausibility:age_range",
+    "checked_count": 746,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "8",
+    "category": "plausibility",
+    "check": "plausibility:temporal_cal_drop",
+    "checked_count": 543,
+    "failed_count": 2,
+    "pass_pct": 99.63,
+    "status": "PASS"
+   },
+   {
+    "clinic": "8",
+    "category": "plausibility",
+    "check": "plausibility:temporal_rbl_drop",
+    "checked_count": 543,
+    "failed_count": 3,
+    "pass_pct": 99.45,
+    "status": "PASS"
+   },
+   {
+    "clinic": "8",
+    "category": "plausibility",
+    "check": "plausibility:temporal_teeth_regained",
+    "checked_count": 543,
+    "failed_count": 0,
+    "pass_pct": 100.0,
+    "status": "PASS"
+   },
+   {
+    "clinic": "8",
+    "category": "plausibility",
+    "check": "plausibility:temporal_perio_resolved",
+    "checked_count": 543,
+    "failed_count": 2,
+    "pass_pct": 99.63,
+    "status": "PASS"
+   },
+   {
+    "clinic": "8",
+    "category": "plausibility",
+    "check": "plausibility:temporal_stage_drop",
+    "checked_count": 543,
+    "failed_count": 2,
+    "pass_pct": 99.63,
+    "status": "PASS"
+   }
+  ],
+  "accuracy": [
+   {
+    "clinic": "All",
+    "source": "exam_form",
+    "label": "Exam form",
+    "visit_count": 4343,
+    "answered_pct": 84.0,
+    "agree_pct": 75.1
+   },
+   {
+    "clinic": "All",
+    "source": "proc_dx_completed",
+    "label": "Diagnosis codes, done",
+    "visit_count": 4343,
+    "answered_pct": 70.5,
+    "agree_pct": 69.0
+   },
+   {
+    "clinic": "All",
+    "source": "proc_dx_planned",
+    "label": "Diagnosis codes, planned",
+    "visit_count": 4343,
+    "answered_pct": 70.5,
+    "agree_pct": 77.4
+   },
+   {
+    "clinic": "All",
+    "source": "notes",
+    "label": "Chart note",
+    "visit_count": 4343,
+    "answered_pct": 100.0,
+    "agree_pct": 78.9
+   },
+   {
+    "clinic": "All",
+    "source": "probing_chart",
+    "label": "Gum measurements",
+    "visit_count": 4343,
+    "answered_pct": 79.1,
+    "agree_pct": 99.2
+   },
+   {
+    "clinic": "All",
+    "source": "algorithm_v0",
+    "label": "Rules, measurements first",
+    "visit_count": 4343,
+    "answered_pct": 100.0,
+    "agree_pct": 95.1
+   },
+   {
+    "clinic": "All",
+    "source": "algorithm_design",
+    "label": "Rules, exam form first",
+    "visit_count": 4343,
+    "answered_pct": 100.0,
+    "agree_pct": 74.5
+   },
+   {
+    "clinic": "1",
+    "source": "exam_form",
+    "label": "Exam form",
+    "visit_count": 398,
+    "answered_pct": 83.7,
+    "agree_pct": 79.3
+   },
+   {
+    "clinic": "1",
+    "source": "proc_dx_completed",
+    "label": "Diagnosis codes, done",
+    "visit_count": 398,
+    "answered_pct": 69.1,
+    "agree_pct": 72.0
+   },
+   {
+    "clinic": "1",
+    "source": "proc_dx_planned",
+    "label": "Diagnosis codes, planned",
+    "visit_count": 398,
+    "answered_pct": 69.1,
+    "agree_pct": 77.5
+   },
+   {
+    "clinic": "1",
+    "source": "notes",
+    "label": "Chart note",
+    "visit_count": 398,
+    "answered_pct": 100.0,
+    "agree_pct": 76.4
+   },
+   {
+    "clinic": "1",
+    "source": "probing_chart",
+    "label": "Gum measurements",
+    "visit_count": 398,
+    "answered_pct": 87.2,
+    "agree_pct": 98.8
+   },
+   {
+    "clinic": "1",
+    "source": "algorithm_v0",
+    "label": "Rules, measurements first",
+    "visit_count": 398,
+    "answered_pct": 100.0,
+    "agree_pct": 95.7
+   },
+   {
+    "clinic": "1",
+    "source": "algorithm_design",
+    "label": "Rules, exam form first",
+    "visit_count": 398,
+    "answered_pct": 100.0,
+    "agree_pct": 78.9
+   },
+   {
+    "clinic": "2",
+    "source": "exam_form",
+    "label": "Exam form",
+    "visit_count": 519,
+    "answered_pct": 83.8,
+    "agree_pct": 75.4
+   },
+   {
+    "clinic": "2",
+    "source": "proc_dx_completed",
+    "label": "Diagnosis codes, done",
+    "visit_count": 519,
+    "answered_pct": 69.7,
+    "agree_pct": 68.0
+   },
+   {
+    "clinic": "2",
+    "source": "proc_dx_planned",
+    "label": "Diagnosis codes, planned",
+    "visit_count": 519,
+    "answered_pct": 69.7,
+    "agree_pct": 77.3
+   },
+   {
+    "clinic": "2",
+    "source": "notes",
+    "label": "Chart note",
+    "visit_count": 519,
+    "answered_pct": 100.0,
+    "agree_pct": 83.4
+   },
+   {
+    "clinic": "2",
+    "source": "probing_chart",
+    "label": "Gum measurements",
+    "visit_count": 519,
+    "answered_pct": 78.2,
+    "agree_pct": 100.0
+   },
+   {
+    "clinic": "2",
+    "source": "algorithm_v0",
+    "label": "Rules, measurements first",
+    "visit_count": 519,
+    "answered_pct": 100.0,
+    "agree_pct": 96.3
+   },
+   {
+    "clinic": "2",
+    "source": "algorithm_design",
+    "label": "Rules, exam form first",
+    "visit_count": 519,
+    "answered_pct": 100.0,
+    "agree_pct": 75.3
+   },
+   {
+    "clinic": "3",
+    "source": "exam_form",
+    "label": "Exam form",
+    "visit_count": 393,
+    "answered_pct": 86.0,
+    "agree_pct": 76.0
+   },
+   {
+    "clinic": "3",
+    "source": "proc_dx_completed",
+    "label": "Diagnosis codes, done",
+    "visit_count": 393,
+    "answered_pct": 71.5,
+    "agree_pct": 68.3
+   },
+   {
+    "clinic": "3",
+    "source": "proc_dx_planned",
+    "label": "Diagnosis codes, planned",
+    "visit_count": 393,
+    "answered_pct": 71.5,
+    "agree_pct": 77.6
+   },
+   {
+    "clinic": "3",
+    "source": "notes",
+    "label": "Chart note",
+    "visit_count": 393,
+    "answered_pct": 100.0,
+    "agree_pct": 79.1
+   },
+   {
+    "clinic": "3",
+    "source": "probing_chart",
+    "label": "Gum measurements",
+    "visit_count": 393,
+    "answered_pct": 74.6,
+    "agree_pct": 98.6
+   },
+   {
+    "clinic": "3",
+    "source": "algorithm_v0",
+    "label": "Rules, measurements first",
+    "visit_count": 393,
+    "answered_pct": 100.0,
+    "agree_pct": 94.9
+   },
+   {
+    "clinic": "3",
+    "source": "algorithm_design",
+    "label": "Rules, exam form first",
+    "visit_count": 393,
+    "answered_pct": 100.0,
+    "agree_pct": 75.1
+   },
+   {
+    "clinic": "4",
+    "source": "exam_form",
+    "label": "Exam form",
+    "visit_count": 761,
+    "answered_pct": 82.0,
+    "agree_pct": 74.4
+   },
+   {
+    "clinic": "4",
+    "source": "proc_dx_completed",
+    "label": "Diagnosis codes, done",
+    "visit_count": 761,
+    "answered_pct": 68.7,
+    "agree_pct": 71.1
+   },
+   {
+    "clinic": "4",
+    "source": "proc_dx_planned",
+    "label": "Diagnosis codes, planned",
+    "visit_count": 761,
+    "answered_pct": 68.7,
+    "agree_pct": 76.7
+   },
+   {
+    "clinic": "4",
+    "source": "notes",
+    "label": "Chart note",
+    "visit_count": 761,
+    "answered_pct": 100.0,
+    "agree_pct": 78.6
+   },
+   {
+    "clinic": "4",
+    "source": "probing_chart",
+    "label": "Gum measurements",
+    "visit_count": 761,
+    "answered_pct": 79.2,
+    "agree_pct": 99.3
+   },
+   {
+    "clinic": "4",
+    "source": "algorithm_v0",
+    "label": "Rules, measurements first",
+    "visit_count": 761,
+    "answered_pct": 100.0,
+    "agree_pct": 95.3
+   },
+   {
+    "clinic": "4",
+    "source": "algorithm_design",
+    "label": "Rules, exam form first",
+    "visit_count": 761,
+    "answered_pct": 100.0,
+    "agree_pct": 74.1
+   },
+   {
+    "clinic": "5",
+    "source": "exam_form",
+    "label": "Exam form",
+    "visit_count": 511,
+    "answered_pct": 86.5,
+    "agree_pct": 73.8
+   },
+   {
+    "clinic": "5",
+    "source": "proc_dx_completed",
+    "label": "Diagnosis codes, done",
+    "visit_count": 511,
+    "answered_pct": 72.2,
+    "agree_pct": 70.5
+   },
+   {
+    "clinic": "5",
+    "source": "proc_dx_planned",
+    "label": "Diagnosis codes, planned",
+    "visit_count": 511,
+    "answered_pct": 72.2,
+    "agree_pct": 73.4
+   },
+   {
+    "clinic": "5",
+    "source": "notes",
+    "label": "Chart note",
+    "visit_count": 511,
+    "answered_pct": 100.0,
+    "agree_pct": 79.1
+   },
+   {
+    "clinic": "5",
+    "source": "probing_chart",
+    "label": "Gum measurements",
+    "visit_count": 511,
+    "answered_pct": 79.3,
+    "agree_pct": 99.0
+   },
+   {
+    "clinic": "5",
+    "source": "algorithm_v0",
+    "label": "Rules, measurements first",
+    "visit_count": 511,
+    "answered_pct": 100.0,
+    "agree_pct": 94.9
+   },
+   {
+    "clinic": "5",
+    "source": "algorithm_design",
+    "label": "Rules, exam form first",
+    "visit_count": 511,
+    "answered_pct": 100.0,
+    "agree_pct": 74.6
+   },
+   {
+    "clinic": "6",
+    "source": "exam_form",
+    "label": "Exam form",
+    "visit_count": 406,
+    "answered_pct": 86.2,
+    "agree_pct": 72.9
+   },
+   {
+    "clinic": "6",
+    "source": "proc_dx_completed",
+    "label": "Diagnosis codes, done",
+    "visit_count": 406,
+    "answered_pct": 74.6,
+    "agree_pct": 67.3
+   },
+   {
+    "clinic": "6",
+    "source": "proc_dx_planned",
+    "label": "Diagnosis codes, planned",
+    "visit_count": 406,
+    "answered_pct": 74.6,
+    "agree_pct": 76.6
+   },
+   {
+    "clinic": "6",
+    "source": "notes",
+    "label": "Chart note",
+    "visit_count": 406,
+    "answered_pct": 100.0,
+    "agree_pct": 78.1
+   },
+   {
+    "clinic": "6",
+    "source": "probing_chart",
+    "label": "Gum measurements",
+    "visit_count": 406,
+    "answered_pct": 90.4,
+    "agree_pct": 99.7
+   },
+   {
+    "clinic": "6",
+    "source": "algorithm_v0",
+    "label": "Rules, measurements first",
+    "visit_count": 406,
+    "answered_pct": 100.0,
+    "agree_pct": 97.5
+   },
+   {
+    "clinic": "6",
+    "source": "algorithm_design",
+    "label": "Rules, exam form first",
+    "visit_count": 406,
+    "answered_pct": 100.0,
+    "agree_pct": 72.7
+   },
+   {
+    "clinic": "7",
+    "source": "exam_form",
+    "label": "Exam form",
+    "visit_count": 609,
+    "answered_pct": 83.3,
+    "agree_pct": 75.5
+   },
+   {
+    "clinic": "7",
+    "source": "proc_dx_completed",
+    "label": "Diagnosis codes, done",
+    "visit_count": 609,
+    "answered_pct": 69.6,
+    "agree_pct": 66.3
+   },
+   {
+    "clinic": "7",
+    "source": "proc_dx_planned",
+    "label": "Diagnosis codes, planned",
+    "visit_count": 609,
+    "answered_pct": 69.6,
+    "agree_pct": 82.1
+   },
+   {
+    "clinic": "7",
+    "source": "notes",
+    "label": "Chart note",
+    "visit_count": 609,
+    "answered_pct": 100.0,
+    "agree_pct": 77.3
+   },
+   {
+    "clinic": "7",
+    "source": "probing_chart",
+    "label": "Gum measurements",
+    "visit_count": 609,
+    "answered_pct": 85.2,
+    "agree_pct": 98.7
+   },
+   {
+    "clinic": "7",
+    "source": "algorithm_v0",
+    "label": "Rules, measurements first",
+    "visit_count": 609,
+    "answered_pct": 100.0,
+    "agree_pct": 94.6
+   },
+   {
+    "clinic": "7",
+    "source": "algorithm_design",
+    "label": "Rules, exam form first",
+    "visit_count": 609,
+    "answered_pct": 100.0,
+    "agree_pct": 73.4
+   },
+   {
+    "clinic": "8",
+    "source": "exam_form",
+    "label": "Exam form",
+    "visit_count": 746,
+    "answered_pct": 83.0,
+    "agree_pct": 75.0
+   },
+   {
+    "clinic": "8",
+    "source": "proc_dx_completed",
+    "label": "Diagnosis codes, done",
+    "visit_count": 746,
+    "answered_pct": 70.2,
+    "agree_pct": 68.7
+   },
+   {
+    "clinic": "8",
+    "source": "proc_dx_planned",
+    "label": "Diagnosis codes, planned",
+    "visit_count": 746,
+    "answered_pct": 70.2,
+    "agree_pct": 77.5
+   },
+   {
+    "clinic": "8",
+    "source": "notes",
+    "label": "Chart note",
+    "visit_count": 746,
+    "answered_pct": 100.0,
+    "agree_pct": 79.1
+   },
+   {
+    "clinic": "8",
+    "source": "probing_chart",
+    "label": "Gum measurements",
+    "visit_count": 746,
+    "answered_pct": 66.6,
+    "agree_pct": 99.6
+   },
+   {
+    "clinic": "8",
+    "source": "algorithm_v0",
+    "label": "Rules, measurements first",
+    "visit_count": 746,
+    "answered_pct": 100.0,
+    "agree_pct": 93.2
+   },
+   {
+    "clinic": "8",
+    "source": "algorithm_design",
+    "label": "Rules, exam form first",
+    "visit_count": 746,
+    "answered_pct": 100.0,
+    "agree_pct": 73.6
+   }
+  ],
+  "concordance": [
+   {
+    "method_a": "notes",
+    "method_b": "exam_form",
+    "label_a": "Chart note",
+    "label_b": "Exam form",
+    "agree_pct": 62.8,
+    "kappa": 0.53,
+    "visit_count": 3648
+   },
+   {
+    "method_a": "notes",
+    "method_b": "proc_codes_completed",
+    "label_a": "Chart note",
+    "label_b": "Procedure codes, done",
+    "agree_pct": 60.7,
+    "kappa": 0.49,
+    "visit_count": 3604
+   },
+   {
+    "method_a": "notes",
+    "method_b": "proc_codes_planned",
+    "label_a": "Chart note",
+    "label_b": "Procedure codes, planned",
+    "agree_pct": 59.9,
+    "kappa": 0.49,
+    "visit_count": 4016
+   },
+   {
+    "method_a": "notes",
+    "method_b": "proc_dx_completed",
+    "label_a": "Chart note",
+    "label_b": "Diagnosis codes, done",
+    "agree_pct": 57.8,
+    "kappa": 0.47,
+    "visit_count": 3061
+   },
+   {
+    "method_a": "notes",
+    "method_b": "proc_dx_planned",
+    "label_a": "Chart note",
+    "label_b": "Diagnosis codes, planned",
+    "agree_pct": 62.8,
+    "kappa": 0.53,
+    "visit_count": 3061
+   },
+   {
+    "method_a": "notes",
+    "method_b": "probing_chart",
+    "label_a": "Chart note",
+    "label_b": "Gum measurements",
+    "agree_pct": 78.1,
+    "kappa": 0.72,
+    "visit_count": 3437
+   },
+   {
+    "method_a": "notes",
+    "method_b": "radiograph_ai",
+    "label_a": "Chart note",
+    "label_b": "X-ray AI reading",
+    "agree_pct": 57.3,
+    "kappa": 0.29,
+    "visit_count": 933
+   },
+   {
+    "method_a": "exam_form",
+    "method_b": "proc_codes_completed",
+    "label_a": "Exam form",
+    "label_b": "Procedure codes, done",
+    "agree_pct": 56.7,
+    "kappa": 0.45,
+    "visit_count": 3039
+   },
+   {
+    "method_a": "exam_form",
+    "method_b": "proc_codes_planned",
+    "label_a": "Exam form",
+    "label_b": "Procedure codes, planned",
+    "agree_pct": 56.8,
+    "kappa": 0.45,
+    "visit_count": 3375
+   },
+   {
+    "method_a": "exam_form",
+    "method_b": "proc_dx_completed",
+    "label_a": "Exam form",
+    "label_b": "Diagnosis codes, done",
+    "agree_pct": 56.9,
+    "kappa": 0.46,
+    "visit_count": 2570
+   },
+   {
+    "method_a": "exam_form",
+    "method_b": "proc_dx_planned",
+    "label_a": "Exam form",
+    "label_b": "Diagnosis codes, planned",
+    "agree_pct": 64.1,
+    "kappa": 0.55,
+    "visit_count": 2570
+   },
+   {
+    "method_a": "exam_form",
+    "method_b": "probing_chart",
+    "label_a": "Exam form",
+    "label_b": "Gum measurements",
+    "agree_pct": 74.5,
+    "kappa": 0.68,
+    "visit_count": 2867
+   },
+   {
+    "method_a": "exam_form",
+    "method_b": "radiograph_ai",
+    "label_a": "Exam form",
+    "label_b": "X-ray AI reading",
+    "agree_pct": 62.7,
+    "kappa": 0.34,
+    "visit_count": 780
+   },
+   {
+    "method_a": "proc_codes_completed",
+    "method_b": "proc_codes_planned",
+    "label_a": "Procedure codes, done",
+    "label_b": "Procedure codes, planned",
+    "agree_pct": 100.0,
+    "kappa": 1.0,
+    "visit_count": 3604
+   },
+   {
+    "method_a": "proc_codes_completed",
+    "method_b": "proc_dx_completed",
+    "label_a": "Procedure codes, done",
+    "label_b": "Diagnosis codes, done",
+    "agree_pct": 61.4,
+    "kappa": 0.5,
+    "visit_count": 2536
+   },
+   {
+    "method_a": "proc_codes_completed",
+    "method_b": "proc_dx_planned",
+    "label_a": "Procedure codes, done",
+    "label_b": "Diagnosis codes, planned",
+    "agree_pct": 60.6,
+    "kappa": 0.49,
+    "visit_count": 2536
+   },
+   {
+    "method_a": "proc_codes_completed",
+    "method_b": "probing_chart",
+    "label_a": "Procedure codes, done",
+    "label_b": "Gum measurements",
+    "agree_pct": 70.6,
+    "kappa": 0.61,
+    "visit_count": 2856
+   },
+   {
+    "method_a": "proc_codes_completed",
+    "method_b": "radiograph_ai",
+    "label_a": "Procedure codes, done",
+    "label_b": "X-ray AI reading",
+    "agree_pct": 60.6,
+    "kappa": 0.2,
+    "visit_count": 714
+   },
+   {
+    "method_a": "proc_codes_planned",
+    "method_b": "proc_dx_completed",
+    "label_a": "Procedure codes, planned",
+    "label_b": "Diagnosis codes, done",
+    "agree_pct": 55.2,
+    "kappa": 0.43,
+    "visit_count": 2820
+   },
+   {
+    "method_a": "proc_codes_planned",
+    "method_b": "proc_dx_planned",
+    "label_a": "Procedure codes, planned",
+    "label_b": "Diagnosis codes, planned",
+    "agree_pct": 60.5,
+    "kappa": 0.5,
+    "visit_count": 2820
+   },
+   {
+    "method_a": "proc_codes_planned",
+    "method_b": "probing_chart",
+    "label_a": "Procedure codes, planned",
+    "label_b": "Gum measurements",
+    "agree_pct": 70.2,
+    "kappa": 0.61,
+    "visit_count": 3183
+   },
+   {
+    "method_a": "proc_codes_planned",
+    "method_b": "radiograph_ai",
+    "label_a": "Procedure codes, planned",
+    "label_b": "X-ray AI reading",
+    "agree_pct": 61.8,
+    "kappa": 0.21,
+    "visit_count": 912
+   },
+   {
+    "method_a": "proc_dx_completed",
+    "method_b": "proc_dx_planned",
+    "label_a": "Diagnosis codes, done",
+    "label_b": "Diagnosis codes, planned",
+    "agree_pct": 60.7,
+    "kappa": 0.5,
+    "visit_count": 3061
+   },
+   {
+    "method_a": "proc_dx_completed",
+    "method_b": "probing_chart",
+    "label_a": "Diagnosis codes, done",
+    "label_b": "Gum measurements",
+    "agree_pct": 68.8,
+    "kappa": 0.61,
+    "visit_count": 2429
+   },
+   {
+    "method_a": "proc_dx_completed",
+    "method_b": "radiograph_ai",
+    "label_a": "Diagnosis codes, done",
+    "label_b": "X-ray AI reading",
+    "agree_pct": 53.5,
+    "kappa": 0.27,
+    "visit_count": 677
+   },
+   {
+    "method_a": "proc_dx_planned",
+    "method_b": "probing_chart",
+    "label_a": "Diagnosis codes, planned",
+    "label_b": "Gum measurements",
+    "agree_pct": 76.7,
+    "kappa": 0.71,
+    "visit_count": 2429
+   },
+   {
+    "method_a": "proc_dx_planned",
+    "method_b": "radiograph_ai",
+    "label_a": "Diagnosis codes, planned",
+    "label_b": "X-ray AI reading",
+    "agree_pct": 66.2,
+    "kappa": 0.39,
+    "visit_count": 677
+   },
+   {
+    "method_a": "probing_chart",
+    "method_b": "radiograph_ai",
+    "label_a": "Gum measurements",
+    "label_b": "X-ray AI reading",
+    "agree_pct": 68.9,
+    "kappa": 0.45,
+    "visit_count": 749
+   }
+  ],
+  "prevalence_clinic": [
+   {
+    "clinic": "1",
+    "people_count": 117,
+    "periodontitis_pct": 55.6,
+    "ci_low_pct": 46.5,
+    "ci_high_pct": 64.2,
+    "is_outlier": false
+   },
+   {
+    "clinic": "2",
+    "people_count": 139,
+    "periodontitis_pct": 51.8,
+    "ci_low_pct": 43.6,
+    "ci_high_pct": 59.9,
+    "is_outlier": false
+   },
+   {
+    "clinic": "3",
+    "people_count": 110,
+    "periodontitis_pct": 50.0,
+    "ci_low_pct": 40.8,
+    "ci_high_pct": 59.2,
+    "is_outlier": false
+   },
+   {
+    "clinic": "4",
+    "people_count": 203,
+    "periodontitis_pct": 50.7,
+    "ci_low_pct": 43.9,
+    "ci_high_pct": 57.5,
+    "is_outlier": false
+   },
+   {
+    "clinic": "5",
+    "people_count": 145,
+    "periodontitis_pct": 55.2,
+    "ci_low_pct": 47.0,
+    "ci_high_pct": 63.0,
+    "is_outlier": false
+   },
+   {
+    "clinic": "6",
+    "people_count": 118,
+    "periodontitis_pct": 60.2,
+    "ci_low_pct": 51.2,
+    "ci_high_pct": 68.5,
+    "is_outlier": false
+   },
+   {
+    "clinic": "7",
+    "people_count": 165,
+    "periodontitis_pct": 59.4,
+    "ci_low_pct": 51.8,
+    "ci_high_pct": 66.6,
+    "is_outlier": false
+   },
+   {
+    "clinic": "8",
+    "people_count": 203,
+    "periodontitis_pct": 64.5,
+    "ci_low_pct": 57.7,
+    "ci_high_pct": 70.8,
+    "is_outlier": false
+   }
+  ],
+  "prevalence_scale": [
+   {
+    "method": "algorithm_design",
+    "label": "Rules, exam form first",
+    "scale": "all_visits",
+    "visit_count": 4343,
+    "periodontitis_pct": 55.7,
+    "stage3_4_pct": 11.6
+   },
+   {
+    "method": "algorithm_design",
+    "label": "Rules, exam form first",
+    "scale": "complete_cases",
+    "visit_count": 2657,
+    "periodontitis_pct": 53.6,
+    "stage3_4_pct": 12.8
+   },
+   {
+    "method": "algorithm_design",
+    "label": "Rules, exam form first",
+    "scale": "reference_set",
+    "visit_count": 240,
+    "periodontitis_pct": 69.2,
+    "stage3_4_pct": 27.5
+   },
+   {
+    "method": "notes",
+    "label": "Chart note",
+    "scale": "all_visits",
+    "visit_count": 4343,
+    "periodontitis_pct": 53.0,
+    "stage3_4_pct": 12.4
+   },
+   {
+    "method": "notes",
+    "label": "Chart note",
+    "scale": "complete_cases",
+    "visit_count": 2657,
+    "periodontitis_pct": 50.2,
+    "stage3_4_pct": 13.4
+   },
+   {
+    "method": "notes",
+    "label": "Chart note",
+    "scale": "reference_set",
+    "visit_count": 240,
+    "periodontitis_pct": 65.8,
+    "stage3_4_pct": 30.4
+   },
+   {
+    "method": "exam_form",
+    "label": "Exam form",
+    "scale": "all_visits",
+    "visit_count": 3648,
+    "periodontitis_pct": 57.2,
+    "stage3_4_pct": 12.2
+   },
+   {
+    "method": "exam_form",
+    "label": "Exam form",
+    "scale": "complete_cases",
+    "visit_count": 2657,
+    "periodontitis_pct": 53.6,
+    "stage3_4_pct": 12.8
+   },
+   {
+    "method": "exam_form",
+    "label": "Exam form",
+    "scale": "reference_set",
+    "visit_count": 207,
+    "periodontitis_pct": 70.5,
+    "stage3_4_pct": 29.5
+   },
+   {
+    "method": "proc_dx_planned",
+    "label": "Diagnosis codes, planned",
+    "scale": "all_visits",
+    "visit_count": 3061,
+    "periodontitis_pct": 55.7,
+    "stage3_4_pct": 12.2
+   },
+   {
+    "method": "proc_dx_planned",
+    "label": "Diagnosis codes, planned",
+    "scale": "complete_cases",
+    "visit_count": 1856,
+    "periodontitis_pct": 51.9,
+    "stage3_4_pct": 13.5
+   },
+   {
+    "method": "proc_dx_planned",
+    "label": "Diagnosis codes, planned",
+    "scale": "reference_set",
+    "visit_count": 167,
+    "periodontitis_pct": 68.3,
+    "stage3_4_pct": 27.5
+   },
+   {
+    "method": "probing_chart",
+    "label": "Gum measurements",
+    "scale": "all_visits",
+    "visit_count": 3437,
+    "periodontitis_pct": 50.9,
+    "stage3_4_pct": 12.0
+   },
+   {
+    "method": "probing_chart",
+    "label": "Gum measurements",
+    "scale": "complete_cases",
+    "visit_count": 2657,
+    "periodontitis_pct": 47.1,
+    "stage3_4_pct": 13.3
+   },
+   {
+    "method": "probing_chart",
+    "label": "Gum measurements",
+    "scale": "reference_set",
+    "visit_count": 195,
+    "periodontitis_pct": 64.1,
+    "stage3_4_pct": 27.2
+   }
+  ],
+  "transitions": [
+   {
+    "from_status": "healthy_gingivitis",
+    "to_status": "healthy_gingivitis",
+    "from_label": "Healthy or gingivitis",
+    "to_label": "Healthy or gingivitis",
+    "pair_count": 615,
+    "row_pct": 83.7,
+    "direction": "same"
+   },
+   {
+    "from_status": "healthy_gingivitis",
+    "to_status": "periodontitis_stage_1",
+    "from_label": "Healthy or gingivitis",
+    "to_label": "Stage I",
+    "pair_count": 110,
+    "row_pct": 15.0,
+    "direction": "worse"
+   },
+   {
+    "from_status": "healthy_gingivitis",
+    "to_status": "periodontitis_stage_2",
+    "from_label": "Healthy or gingivitis",
+    "to_label": "Stage II",
+    "pair_count": 6,
+    "row_pct": 0.8,
+    "direction": "worse"
+   },
+   {
+    "from_status": "healthy_gingivitis",
+    "to_status": "periodontitis_stage_3",
+    "from_label": "Healthy or gingivitis",
+    "to_label": "Stage III",
+    "pair_count": 3,
+    "row_pct": 0.4,
+    "direction": "worse"
+   },
+   {
+    "from_status": "healthy_gingivitis",
+    "to_status": "periodontitis_stage_4",
+    "from_label": "Healthy or gingivitis",
+    "to_label": "Stage IV",
+    "pair_count": 1,
+    "row_pct": 0.1,
+    "direction": "worse"
+   },
+   {
+    "from_status": "periodontitis_stage_1",
+    "to_status": "healthy_gingivitis",
+    "from_label": "Stage I",
+    "to_label": "Healthy or gingivitis",
+    "pair_count": 87,
+    "row_pct": 34.5,
+    "direction": "better"
+   },
+   {
+    "from_status": "periodontitis_stage_1",
+    "to_status": "periodontitis_stage_1",
+    "from_label": "Stage I",
+    "to_label": "Stage I",
+    "pair_count": 98,
+    "row_pct": 38.9,
+    "direction": "same"
+   },
+   {
+    "from_status": "periodontitis_stage_1",
+    "to_status": "periodontitis_stage_2",
+    "from_label": "Stage I",
+    "to_label": "Stage II",
+    "pair_count": 57,
+    "row_pct": 22.6,
+    "direction": "worse"
+   },
+   {
+    "from_status": "periodontitis_stage_1",
+    "to_status": "periodontitis_stage_3",
+    "from_label": "Stage I",
+    "to_label": "Stage III",
+    "pair_count": 10,
+    "row_pct": 4.0,
+    "direction": "worse"
+   },
+   {
+    "from_status": "periodontitis_stage_1",
+    "to_status": "periodontitis_stage_4",
+    "from_label": "Stage I",
+    "to_label": "Stage IV",
+    "pair_count": 0,
+    "row_pct": 0.0,
+    "direction": "worse"
+   },
+   {
+    "from_status": "periodontitis_stage_2",
+    "to_status": "healthy_gingivitis",
+    "from_label": "Stage II",
+    "to_label": "Healthy or gingivitis",
+    "pair_count": 3,
+    "row_pct": 2.1,
+    "direction": "better"
+   },
+   {
+    "from_status": "periodontitis_stage_2",
+    "to_status": "periodontitis_stage_1",
+    "from_label": "Stage II",
+    "to_label": "Stage I",
+    "pair_count": 34,
+    "row_pct": 23.8,
+    "direction": "better"
+   },
+   {
+    "from_status": "periodontitis_stage_2",
+    "to_status": "periodontitis_stage_2",
+    "from_label": "Stage II",
+    "to_label": "Stage II",
+    "pair_count": 75,
+    "row_pct": 52.4,
+    "direction": "same"
+   },
+   {
+    "from_status": "periodontitis_stage_2",
+    "to_status": "periodontitis_stage_3",
+    "from_label": "Stage II",
+    "to_label": "Stage III",
+    "pair_count": 31,
+    "row_pct": 21.7,
+    "direction": "worse"
+   },
+   {
+    "from_status": "periodontitis_stage_2",
+    "to_status": "periodontitis_stage_4",
+    "from_label": "Stage II",
+    "to_label": "Stage IV",
+    "pair_count": 0,
+    "row_pct": 0.0,
+    "direction": "worse"
+   },
+   {
+    "from_status": "periodontitis_stage_3",
+    "to_status": "healthy_gingivitis",
+    "from_label": "Stage III",
+    "to_label": "Healthy or gingivitis",
+    "pair_count": 2,
+    "row_pct": 2.3,
+    "direction": "better"
+   },
+   {
+    "from_status": "periodontitis_stage_3",
+    "to_status": "periodontitis_stage_1",
+    "from_label": "Stage III",
+    "to_label": "Stage I",
+    "pair_count": 1,
+    "row_pct": 1.2,
+    "direction": "better"
+   },
+   {
+    "from_status": "periodontitis_stage_3",
+    "to_status": "periodontitis_stage_2",
+    "from_label": "Stage III",
+    "to_label": "Stage II",
+    "pair_count": 35,
+    "row_pct": 40.7,
+    "direction": "better"
+   },
+   {
+    "from_status": "periodontitis_stage_3",
+    "to_status": "periodontitis_stage_3",
+    "from_label": "Stage III",
+    "to_label": "Stage III",
+    "pair_count": 41,
+    "row_pct": 47.7,
+    "direction": "same"
+   },
+   {
+    "from_status": "periodontitis_stage_3",
+    "to_status": "periodontitis_stage_4",
+    "from_label": "Stage III",
+    "to_label": "Stage IV",
+    "pair_count": 7,
+    "row_pct": 8.1,
+    "direction": "worse"
+   },
+   {
+    "from_status": "periodontitis_stage_4",
+    "to_status": "healthy_gingivitis",
+    "from_label": "Stage IV",
+    "to_label": "Healthy or gingivitis",
+    "pair_count": 0,
+    "row_pct": 0.0,
+    "direction": "better"
+   },
+   {
+    "from_status": "periodontitis_stage_4",
+    "to_status": "periodontitis_stage_1",
+    "from_label": "Stage IV",
+    "to_label": "Stage I",
+    "pair_count": 0,
+    "row_pct": 0.0,
+    "direction": "better"
+   },
+   {
+    "from_status": "periodontitis_stage_4",
+    "to_status": "periodontitis_stage_2",
+    "from_label": "Stage IV",
+    "to_label": "Stage II",
+    "pair_count": 0,
+    "row_pct": 0.0,
+    "direction": "better"
+   },
+   {
+    "from_status": "periodontitis_stage_4",
+    "to_status": "periodontitis_stage_3",
+    "from_label": "Stage IV",
+    "to_label": "Stage III",
+    "pair_count": 6,
+    "row_pct": 42.9,
+    "direction": "better"
+   },
+   {
+    "from_status": "periodontitis_stage_4",
+    "to_status": "periodontitis_stage_4",
+    "from_label": "Stage IV",
+    "to_label": "Stage IV",
+    "pair_count": 8,
+    "row_pct": 57.1,
+    "direction": "same"
+   }
+  ],
+  "temporal": [
+   {
+    "method": "probing_chart",
+    "label": "Gum measurements",
+    "pair_count": 861,
+    "improved_pct": 0.5,
+    "same_pct": 92.6,
+    "worse_pct": 7.0,
+    "resolved_pct": 0.4,
+    "stage_drop_pct": 0.6
+   },
+   {
+    "method": "algorithm_v0",
+    "label": "Rules, measurements first",
+    "pair_count": 1230,
+    "improved_pct": 3.0,
+    "same_pct": 88.0,
+    "worse_pct": 8.9,
+    "resolved_pct": 3.0,
+    "stage_drop_pct": 6.6
+   },
+   {
+    "method": "notes",
+    "label": "Chart note",
+    "pair_count": 1230,
+    "improved_pct": 10.2,
+    "same_pct": 74.1,
+    "worse_pct": 15.7,
+    "resolved_pct": 9.9,
+    "stage_drop_pct": 20.0
+   },
+   {
+    "method": "exam_form",
+    "label": "Exam form",
+    "pair_count": 935,
+    "improved_pct": 12.7,
+    "same_pct": 68.0,
+    "worse_pct": 19.3,
+    "resolved_pct": 7.3,
+    "stage_drop_pct": 17.1
+   },
+   {
+    "method": "algorithm_design",
+    "label": "Rules, exam form first",
+    "pair_count": 1230,
+    "improved_pct": 13.7,
+    "same_pct": 68.0,
+    "worse_pct": 18.3,
+    "resolved_pct": 10.9,
+    "stage_drop_pct": 23.6
+   },
+   {
+    "method": "proc_dx_completed",
+    "label": "Diagnosis codes, done",
+    "pair_count": 681,
+    "improved_pct": 14.7,
+    "same_pct": 68.9,
+    "worse_pct": 16.4,
+    "resolved_pct": 10.6,
+    "stage_drop_pct": 15.2
+   }
+  ],
+  "injected": {
+   "injected_count": 45,
+   "caught_count": 15,
+   "caught_pct": 33.3,
+   "false_flag_pct": 0.23
+  },
+  "open_dental": [
+   {
+    "metric": "charted_visit_office_share",
+    "label": "Office visits with a perio chart",
+    "pct": 75.4,
+    "numerator": 6936,
+    "denominator": 9202
+   },
+   {
+    "metric": "charted_visit_site_share",
+    "label": "Mobile and nursing-home visits with a perio chart",
+    "pct": 30.3,
+    "numerator": 219,
+    "denominator": 722
+   },
+   {
+    "metric": "partial_chart_share",
+    "label": "Charts covering only some teeth",
+    "pct": 19.7,
+    "numerator": 1412,
+    "denominator": 7155
+   },
+   {
+    "metric": "buccal_only_chart_share",
+    "label": "Charts with cheek-side readings only",
+    "pct": 10.4,
+    "numerator": 747,
+    "denominator": 7155
+   },
+   {
+    "metric": "uniform_chart_share",
+    "label": "Charts with one depth everywhere",
+    "pct": 3.6,
+    "numerator": 260,
+    "denominator": 7155
+   },
+   {
+    "metric": "no_margin_chart_share",
+    "label": "Charts without gum-margin readings (no attachment loss)",
+    "pct": 24.7,
+    "numerator": 1769,
+    "denominator": 7155
+   },
+   {
+    "metric": "no_bleeding_chart_share",
+    "label": "Charts without bleeding",
+    "pct": 14.5,
+    "numerator": 1036,
+    "denominator": 7155
+   },
+   {
+    "metric": "copied_chart_share",
+    "label": "Charts copied from the last visit",
+    "pct": 5.7,
+    "numerator": 300,
+    "denominator": 5218
+   },
+   {
+    "metric": "out_of_range_site_share",
+    "label": "Pocket readings over 15 mm",
+    "pct": 0.2,
+    "numerator": 2251,
+    "denominator": 1097451
+   },
+   {
+    "metric": "charted_after_loss_chart_share",
+    "label": "Charts that include an extracted tooth",
+    "pct": 0.3,
+    "numerator": 24,
+    "denominator": 7155
+   },
+   {
+    "metric": "radiograph_visit_share",
+    "label": "Visits with an X-ray",
+    "pct": 40.4,
+    "numerator": 4007,
+    "denominator": 9924
+   },
+   {
+    "metric": "unread_tooth_share",
+    "label": "Teeth on an X-ray with no bone-loss reading",
+    "pct": 14.9,
+    "numerator": 12148,
+    "denominator": 81266
+   }
+  ]
+ }
 }
