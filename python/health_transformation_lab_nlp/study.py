@@ -30,7 +30,15 @@ from .labels import PerioChart, Status, extent_of, grade_of, label_chart
 from .medical_record import medical_records, people_from_visits
 from .note_reader import read_note
 from .periodx import visits_table as periodx_visits_table
-from .phenotype import RULES_DESIGN, RULES_V0, agreement_matrix, coverage, phenotype, phenotype_v0
+from .phenotype import (
+    RULES_DESIGN,
+    RULES_V0,
+    agreement_matrix,
+    coverage,
+    phenotype,
+    phenotype_v0,
+    with_absent_code,
+)
 from .phi import fake_person, fake_provider
 from .radiograph import FEATURES as RAD_FEATURES
 from .radiograph import features as rad_features
@@ -173,11 +181,14 @@ def apply_deid(df: pd.DataFrame, engine: str = "regex") -> tuple[pd.DataFrame, p
 
 
 @traced
-def read_methods(df: pd.DataFrame) -> pd.DataFrame:
+def read_methods(df: pd.DataFrame, absent_code: str = "no_answer") -> pd.DataFrame:
+    """Every method's reading per visit, and the phenotypes built from them. `absent_code` (spec 032 US3,
+    phenotype.ABSENT_CODE_RULES) is how the diagnosis-code source reads a visit with no gum-disease code."""
     df = df.copy()
     df["notes"] = [read_note(t) for t in df["note_text"]]
     for col, reader in READERS.items():
         df[col] = [reader(v) for v in df[col + "_raw"]]
+    df = with_absent_code(df, absent_code)
     # The chart is the measured evidence, when it was done (Patel 2020: ~80% charted;
     # here it varies by clinic). Read from the RECORDED chart, which carries the
     # injected charting errors, and staged from that visit's chart alone.

@@ -19,7 +19,7 @@ import itertools
 import numpy as np
 import pandas as pd
 
-from .sources import UNKNOWN
+from .sources import UNKNOWN, read_proc_dx
 from .telemetry import traced
 
 METHODS = ["notes", "exam_form", "proc_codes_completed", "proc_codes_planned",
@@ -59,6 +59,56 @@ PATEL2022_ORDER = ["dx_code", "notes", "probing_chart"]
 PATEL2022_ROW = "patel2022:" + ">".join(PATEL2022_ORDER)   # its row in scripts/18_phenotype_order.py
 PATEL2022_SECTIONS = {"M1": ["proc_dx_completed", "proc_dx_planned"], "M2": ["periodx_note_label"],
                       "M3": ["periodx_chart_label"]}
+
+
+# Spec 032 US3: how the diagnosis-code source (proc_dx_completed, proc_dx_planned) reads a visit with no gum-disease
+# code (ICD-10-CM K05). "no_answer" (the default, as before): the code alone says nothing, so the visit has no answer
+# from this source. "healthy_or_gingivitis": a visit with a treatment plan but no gum-disease code counts as healthy or
+# gingivitis; a visit with no plan stays no answer. The code list can't tell healthy from gingivitis, so the status
+# written is "healthy", one of the six statuses, standing for healthy or gingivitis (the five-level grouping merges
+# them; read_proc_codes reads a prophy alone the same way).
+ABSENT_CODE_RULES = ("no_answer", "healthy_or_gingivitis")
+ABSENT_CODE_STATUS = "healthy"
+DX_CODE_METHODS = ("proc_dx_completed", "proc_dx_planned")
+GUM_DISEASE_CODE_PREFIX = "K05"
+PLAN_COLUMN = "proc_codes_planned_raw"     # the CDT codes on the visit's treatment plan
+
+
+def _text(v) -> str:
+    return v.strip() if isinstance(v, str) else ""
+
+
+def _check_absent_code(absent_code: str) -> None:
+    if absent_code not in ABSENT_CODE_RULES:
+        raise ValueError(f"unknown absent_code {absent_code!r}; one of {ABSENT_CODE_RULES}")
+
+
+@traced
+def read_dx_code(dx: str | None, plan: str | None, absent_code: str = "no_answer") -> str:
+    """One visit's diagnosis code as a status under the absent-code rule (ABSENT_CODE_RULES). A code that reads as
+    a status is read as before; a gum-disease code that can't be read stays no answer under either rule."""
+    _check_absent_code(absent_code)
+    code = _text(dx)
+    reading = read_proc_dx(code)
+    if absent_code == "no_answer" or reading != UNKNOWN or code.startswith(GUM_DISEASE_CODE_PREFIX):
+        return reading
+    return ABSENT_CODE_STATUS if _text(plan) not in ("", "(none)") else UNKNOWN
+
+
+@traced
+def with_absent_code(df: pd.DataFrame, absent_code: str = "no_answer") -> pd.DataFrame:
+    """The visits with proc_dx_completed and proc_dx_planned re-read from their raw codes under the absent-code
+    rule. The default returns the frame itself, unchanged. Needs the raw columns (`<method>_raw`, PLAN_COLUMN)."""
+    _check_absent_code(absent_code)
+    if absent_code == "no_answer":
+        return df
+    missing = [c for c in (*(m + "_raw" for m in DX_CODE_METHODS), PLAN_COLUMN) if c not in df]
+    if missing:
+        raise ValueError(f"absent_code={absent_code!r} needs the raw columns {missing}")
+    out = df.copy()
+    for m in DX_CODE_METHODS:
+        out[m] = [read_dx_code(d, p, absent_code) for d, p in zip(df[m + "_raw"], df[PLAN_COLUMN])]
+    return out
 
 
 @traced
