@@ -106,7 +106,7 @@ def test_snapshot_is_one_commit_with_the_base_files_and_no_history(tmp_path):
     x = tmp_path / "x"
     with tarfile.open(out) as t:
         t.extractall(x, filter="data")
-    repo = x / "workspace"
+    repo = x
     assert (repo / "f.txt").read_text() == "v1\n"
     assert _git(repo, "rev-parse", "--abbrev-ref", "HEAD").strip() == "main"
     assert _git(repo, "rev-list", "--count", "--all").strip() == "1"
@@ -136,7 +136,7 @@ def test_snapshot_redacts_the_organisation_name_and_keeps_every_other_file(tmp_p
     x = tmp_path / "x"
     with tarfile.open(tmp_path / "s.tgz") as t:
         t.extractall(x, filter="data")
-    repo = x / "workspace"
+    repo = x
     assert (repo / "g.md").read_text() == "from [org] and care questions\n"
     assert (repo / "f.txt").read_text() == "v2\n" and (repo / "h.bin").read_bytes() == b"\x00\x01binary"
     assert tg.files_naming_org(repo, "HEAD") == []
@@ -171,7 +171,7 @@ def test_one_definition_of_the_name_finds_it_however_it_is_written(tmp_path):
     x = tmp_path / "x"
     with tarfile.open(tmp_path / "s.tgz") as t:
         t.extractall(x, filter="data")
-    repo = x / "workspace"
+    repo = x
     assert (repo / "crlf.md").read_bytes() == b"a\r\n[org]\r\nb\r\n"            # line endings kept
     assert (repo / "latin1.txt").read_bytes() == "caf\xe9 [org]\n".encode("latin-1")   # other bytes kept
     assert (repo / "ok.md").read_bytes() == b"care questions\n" and (repo / "bin.dat").read_bytes() == files["bin.dat"]
@@ -188,7 +188,7 @@ def test_snapshot_keeps_file_modes_and_reproduces_its_commit(tmp_path):
     x = tmp_path / "x"
     with tarfile.open(tmp_path / "a.tgz") as t:
         t.extractall(x, filter="data")
-    assert "100755" in _git(x / "workspace", "ls-tree", "HEAD", "run.sh")
+    assert "100755" in _git(x, "ls-tree", "HEAD", "run.sh")
 
 
 def test_a_failed_snapshot_leaves_no_work_folder(tmp_path, monkeypatch):
@@ -197,3 +197,14 @@ def test_a_failed_snapshot_leaves_no_work_folder(tmp_path, monkeypatch):
     with pytest.raises(RuntimeError):
         tg.snapshot(src, head, tmp_path / "s.tgz", work_dir=tmp_path / "w")
     assert not (tmp_path / "w" / "workspace").exists() and not (tmp_path / "s.tgz").exists()
+
+
+def test_snapshot_has_the_files_and_git_at_the_archive_root_like_the_competition(tmp_path):
+    """The harness unpacks each snapshot straight into /workspace (#452), so no wrapping folder."""
+    from health_transformation_lab_nlp import competition_check as cc
+    src, base = _three_commits(tmp_path)
+    tg.snapshot(src, base, tmp_path / "s.tgz", work_dir=tmp_path / "w")
+    layout = cc.snapshot_layout(tmp_path / "s.tgz")
+    assert layout["root_folder"] is None and layout["git_dir"] == ".git"
+    with tarfile.open(tmp_path / "s.tgz") as t:
+        assert "f.txt" in {m.name for m in t.getmembers()}

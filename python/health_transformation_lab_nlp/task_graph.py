@@ -9,7 +9,8 @@
 
 The dataset's format comes from gemma-developer-agent `docs/dataset-format.md` (read from the competition's Data
 tab); no competition graph file has been compared here, so the node-id form (`pkg.module.Class.method`, not the
-starter notebook's `<repo>;...`) and the tgz layout (one `workspace/` folder) are unverified.
+starter notebook's `<repo>;...`) is unverified; the tgz layout (files and `.git` at the root) matches the
+competition's (checked by #449's workflow, #452).
 """
 
 from __future__ import annotations
@@ -188,15 +189,16 @@ def _blobs(cwd: Path, rev: str) -> dict[str, str]:
 
 
 @traced
-def snapshot(repo: Path, base_commit: str, out_tgz: Path, work_dir: Path, arcname: str = "workspace") -> dict:
+def snapshot(repo: Path, base_commit: str, out_tgz: Path, work_dir: Path) -> dict:
     """The files at `base_commit` as one commit in a fresh repo on `main`, packed as a `.tgz` with one
-    `<arcname>/` folder. No history: earlier commit messages and files stay behind. Text files that name the
+    repository's files and `.git` at the archive root, as the competition's are: the harness unpacks each one
+    straight into /workspace (#452). No history: earlier commit messages and files stay behind. Text files that name the
     organisation CLAUDE.md forbids have the name replaced with `[org]`, as the statements and hints are, byte for
     byte elsewhere (line endings and non-UTF-8 bytes kept); every other file is the base's, mode and content
     (checked), and the redacted paths are returned (#435). The commit's author, date (the base's committer date)
     and message ("Snapshot of <base_commit>") are fixed, so a rebuild gives the same head SHA; it differs from
     `base_commit`, which is why the head is returned. The work folder is removed whatever happens."""
-    dest = work_dir / arcname
+    dest = work_dir / "workspace"
     if dest.exists():
         shutil.rmtree(dest)
     try:
@@ -227,7 +229,8 @@ def snapshot(repo: Path, base_commit: str, out_tgz: Path, work_dir: Path, arcnam
         _git(dest, "gc", "-q", "--prune=now")
         out_tgz.parent.mkdir(parents=True, exist_ok=True)
         with tarfile.open(out_tgz, "w:gz") as t:
-            t.add(dest, arcname=arcname)
+            for child in sorted(dest.iterdir()):   # files at the root, no wrapping folder (#452)
+                t.add(child, arcname=child.name)
     except BaseException:
         out_tgz.unlink(missing_ok=True)
         raise
