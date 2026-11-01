@@ -204,7 +204,7 @@ def test_the_scorecard_waits_for_the_migration_so_it_never_pays_for_calls_it_has
     assert "gold_names.migration_plan(" in nb and "run Load results first" in nb
 
 
-# spec 027 (#233): the Benchmark job's tables and the GPU encoders' predictions under the gold names
+# spec 031 (#233): the Benchmark job's tables and the GPU encoders' predictions under the gold names
 
 def _study_frame():
     from health_transformation_lab_nlp.build import CHART_FIELDS
@@ -257,6 +257,45 @@ def test_the_study_and_gpu_jobs_pass_their_run_id():
 def test_the_migration_turns_text_timestamps_into_timestamps():
     nb = (ROOT / "databricks/notebooks/11_migrate_gold_names.py").read_text()
     assert 'endswith("_ts")' in nb and "to_timestamp" in nb
+
+
+def test_the_benchmark_metric_merge_key_names_one_row_per_model_fit_metric_and_class():
+    import sys
+    sys.path.insert(0, str(ROOT / "eval"))
+    from score import score
+    res = score(["healthy", "gingivitis", "healthy"], ["healthy", "healthy", "gingivitis"], None, model_id="m")
+    gold = gold_names.to_gold(res.assign(job_run_id="9", run_ts=pd.Timestamp("2026-10-28", tz="UTC"),
+                                         git_commit="abc"), "benchmark_metric")
+    assert not gold.duplicated(list(gold_names.MERGE_KEYS["benchmark_metric"])).any()
+    assert gold["metric_ratio"].dropna().between(0, 1).all()        # _ratio: every metric score() writes is 0 to 1
+
+
+def test_legacy_study_tables_are_carried_from_an_old_gold_schema():
+    plan = gold_names.legacy_plan({"labeled_notes": _cols("dim_study_note"),
+                                   "benchmark_results": _cols("benchmark_metric")}, {})
+    assert plan == [("copy", "labeled_notes", "dim_study_note"), ("copy", "benchmark_results", "benchmark_metric")]
+    plan = gold_names.legacy_plan({"labeled_notes": _cols("dim_study_note"),
+                                   "benchmark_results": _cols("benchmark_metric")},
+                                  {"dim_study_note": declared("dim_study_note"),
+                                   "benchmark_metric": declared("benchmark_metric")})
+    # the notes are rebuilt every run; every earlier benchmark run is kept
+    assert plan == [("stale", "labeled_notes", "dim_study_note"), ("merge", "benchmark_results", "benchmark_metric")]
+
+
+def test_no_pipeline_or_lineage_edge_names_a_retired_gold_table():
+    import yaml
+    retired = {f"gold_perio_bench.{t}" for t in [*gold_names.RENAMED, "encoder_gpu_predictions", "benchmark_result"]
+               if gold_names.RENAMED.get(t) != t}
+    config = yaml.safe_load((ROOT / "ops/pipeline_config.yaml").read_text())["pipelines"]
+    outputs = {o for p in config.values() for o in p["output_names"]}
+    edges = pd.read_csv(ROOT / "data/ops/lineage_edge.csv")
+    named = outputs | set(edges["upstream_name"]) | set(edges["downstream_name"])
+    assert not named & retired, sorted(named & retired)
+    gold = {n.split(".", 1)[1] for n in named if n.startswith("gold_perio_bench.")}
+    assert {"dim_study_note", "benchmark_metric"} <= gold
+    assert set(config["study_benchmark"]["output_names"]) >= {"gold_perio_bench.dim_study_note",
+                                                               "gold_perio_bench.benchmark_metric"}
+    assert "gold_perio_bench.fact_prediction" in config["encoder_gpu"]["output_names"]
 
 # issue #228: tables left in the old gold schemas (the old catalog before spec 021, the old schema before
 # spec 022; databricks.yml legacy_gold_schemas) are carried into the current schema.
