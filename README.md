@@ -28,7 +28,7 @@ It runs end to end on **synthetic** records:
 
 - the whole record, by rules that read the gum measurements first: **234 of 240** (flattering: the key uses the same rules);
 - the free-text note alone, read by a small trained model with a stage 4 rule: **219 of 240**;
-- a bigger medical AI used as is, with the same rule: **185 of 240**.
+- a bigger medical AI used as is, with the same rule: **196 of 240** (MedGemma 4B; the newer MedGemma 1.5 4B got 185).
 
 Synthetic charts, scored against the generator's answer key: agreement with it, not accuracy on real patients ([how
 scoring works](docs/scoring.md)). **Order matters:** when the measurements, exam form, codes and note disagree, rules must

@@ -45,6 +45,9 @@ stores the image, not a reading of it.
 
 - **Teeth:** third molars are left out by default. Only adults are included: the minimum age
   (`ModelParams.min_age`, `--min-age`) is 18 by default; no cut-off and 30 and over are sensitivity analyses.
+  A start date (`ModelParams.start_date`, `--start-date`, spec 032; none by default, so every year counts) keeps
+  the teeth lost on or after it, or first charted on or after it when the loss date isn't recorded.
+  `tooth_loss_model.exclusions` counts the teeth left out by each reason.
 - **Two label sets** (FR-010): completed extractions only, and completed plus planned extractions (one per planned
   procedure, however many plan copies; a tooth planned then extracted counts once, as completed).
 - **Two predictor sets:** *shared* (what every missing tooth has: tooth type, neighbours' worst CAL, the mouth at

@@ -79,9 +79,45 @@ def test_the_teeth_left_out_are_counted_by_reason_including_an_unknown_age():
     t = _teeth([(1, 1, "extracted_perio", 40), (1, 3, "extracted_perio", 15), (2, 3, "extracted_other", 40),
                 (3, 4, "missing_at_entry", None)])
     out = tm.exclusions(t, tm.ModelParams())
-    assert out == {"third_molar_count": 1, "under_min_age_count": 1, "unknown_age_count": 1, "eligible_count": 1}
+    assert out == {"third_molar_count": 1, "under_min_age_count": 1, "unknown_age_count": 1,
+                   "before_start_date_count": 0, "unknown_date_count": 0, "eligible_count": 1}
     assert tm.exclusions(t, tm.ModelParams(min_age=None))["unknown_age_count"] == 0
     assert out["eligible_count"] == len(tm.eligible(t, tm.ModelParams()))
+
+
+def test_a_start_date_leaves_out_teeth_lost_or_first_charted_before_it():
+    # spec 032 US2 (#441): the date is the loss date, or the first exam date when the loss date isn't recorded
+    t = _teeth([(1, 3, "extracted_perio", 40), (1, 4, "extracted_other", 40), (2, 3, "missing_at_entry", 40),
+                (3, 3, "missing_at_entry", 40), (4, 3, "missing_at_entry", 40)])
+    t["loss_date"] = pd.to_datetime(["2019-06-01", "2021-03-01", None, None, None])
+    t["first_exam_date"] = pd.to_datetime(["2018-01-01", "2018-01-01", "2019-12-31", "2020-01-01", None])
+    assert tm.ModelParams().start_date is None                 # default: every year
+    assert len(tm.eligible(t)) == 5
+    params = tm.ModelParams(start_date="2020-01-01")
+    kept = tm.eligible(t, params)
+    assert list(zip(kept["patient_id"], kept["tooth_num"])) == [(1, 4), (3, 3)]
+    out = tm.exclusions(t, params)
+    assert out["before_start_date_count"] == 2 and out["unknown_date_count"] == 1
+    assert out["eligible_count"] == 2 == len(kept)
+    assert tm.exclusions(t)["before_start_date_count"] == 0 and tm.exclusions(t)["unknown_date_count"] == 0
+
+
+def test_the_start_date_applies_after_the_age_cut_and_counts_each_tooth_once():
+    t = _teeth([(1, 3, "extracted_perio", 15), (2, 3, "extracted_other", 40)])
+    t["loss_date"] = pd.to_datetime(["2010-01-01", "2010-01-01"])
+    out = tm.exclusions(t, tm.ModelParams(start_date="2020-01-01"))
+    assert out["under_min_age_count"] == 1 and out["before_start_date_count"] == 1 and out["eligible_count"] == 0
+
+
+def test_a_run_with_a_start_date_reads_the_first_exam_date_from_the_extract():
+    tables, _, readings = od.build_with_readings(od.Params(n_patients=150), 3)
+    x = {**od.clean(tables), "radiograph_bone_level": readings}
+    teeth = tm.with_first_exam_date(tl.tooth_table(x), x)
+    exams = x["perioexam"]
+    first = pd.to_datetime(exams["examdate"]).groupby(pd.to_numeric(exams["patnum"])).min()
+    charted = teeth[teeth["patient_id"].isin(first.index)]
+    assert len(charted) > 0
+    assert (charted["first_exam_date"].to_numpy() == charted["patient_id"].map(first).to_numpy()).all()
 
 # ---------- the split (section 9)
 

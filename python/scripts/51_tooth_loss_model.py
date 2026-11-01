@@ -36,6 +36,7 @@ ap.add_argument("--stability-seeds", type=int, default=5, help="generator seeds 
 ap.add_argument("--n-boot", type=int, default=1000, help="bootstrap resamples of patients (main seed only)")
 ap.add_argument("--min-age", type=int, default=18, help="minimum age (analysis plan s. 3); 0 for no cut-off")
 ap.add_argument("--third-molars", action="store_true", help="include third molars (a sensitivity analysis)")
+ap.add_argument("--start-date", default=None, help="ISO date: leave out teeth lost (or first charted) before it")
 args = ap.parse_args()
 
 telemetry.setup()
@@ -46,10 +47,11 @@ for k in range(max(1, args.stability_seeds)):
     tables, truth, readings = open_dental.build_with_readings(open_dental.Params(n_patients=args.patients), gen_seed)
     x = {**open_dental.clean(tables), "radiograph_bone_level": readings}   # the reading is SIMULATED (#385)
     params = tlm.ModelParams(n_boot=args.n_boot if k == 0 else 0, min_age=args.min_age or None,
-                             include_third_molars=args.third_molars)
+                             include_third_molars=args.third_molars, start_date=args.start_date)
     out = tlm.run(x, truth, params, generator_seed=gen_seed)
     if k == 0:                     # who was left out, and why (a tooth with no recorded age, once a cut-off applies)
-        print(f"generator seed {gen_seed}: teeth {tlm.exclusions(tooth_loss.tooth_table(x), params)}")
+        teeth = tlm.with_first_exam_date(tooth_loss.tooth_table(x), x)
+        print(f"generator seed {gen_seed}: teeth {tlm.exclusions(teeth, params)}")
     keep = out if k == 0 else {n: out[n] for n in ("scores", "stage_recount")}   # stability: the spread only
     for name, df in keep.items():
         frames.setdefault(name, []).append(df)
