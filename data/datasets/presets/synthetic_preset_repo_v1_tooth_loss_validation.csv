@@ -1,0 +1,5 @@
+generator_seed,label_set,feature_set,split_unit,test_share,cv_folds,train_tooth_count,test_tooth_count,people_in_both_count,xgboost_params,cv_auc,preset_name,data_label
+42,completed,shared,person,0.3,,567,242,0,"{'max_depth': 3, 'n_estimators': 200, 'learning_rate': 0.05, 'subsample': 0.8}",,repo_v1,synthetic
+42,completed,own,person,0.3,,567,242,0,"{'max_depth': 3, 'n_estimators': 200, 'learning_rate': 0.05, 'subsample': 0.8}",,repo_v1,synthetic
+42,completed_planned,shared,person,0.3,,750,316,0,"{'max_depth': 3, 'n_estimators': 200, 'learning_rate': 0.05, 'subsample': 0.8}",,repo_v1,synthetic
+42,completed_planned,own,person,0.3,,750,316,0,"{'max_depth': 3, 'n_estimators': 200, 'learning_rate': 0.05, 'subsample': 0.8}",,repo_v1,synthetic

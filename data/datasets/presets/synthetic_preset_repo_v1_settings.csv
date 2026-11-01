@@ -1,0 +1,17 @@
+setting_name,repo_v1_value_text,preset_value_text,is_changed,preset_name,data_label
+grouping,six,six,False,repo_v1,synthetic
+also_reported_groupings,none,none,False,repo_v1,synthetic
+visit_min_age,none,none,False,repo_v1,synthetic
+visit_start_date,none,none,False,repo_v1,synthetic
+absent_code,no_answer,no_answer,False,repo_v1,synthetic
+stage4_rules,"recorded_only, every_missing, expected_perio_loss, truth, teeth_lt_20, pairs_lt_10","recorded_only, every_missing, expected_perio_loss, truth, teeth_lt_20, pairs_lt_10",False,repo_v1,synthetic
+tooth_loss_min_age,18,18,False,repo_v1,synthetic
+tooth_loss_start_date,none,none,False,repo_v1,synthetic
+tooth_loss_split_unit,person,person,False,repo_v1,synthetic
+tooth_loss_test_share,0.3,0.3,False,repo_v1,synthetic
+tooth_loss_cv_folds,none,none,False,repo_v1,synthetic
+classifier_split_unit,person,person,False,repo_v1,synthetic
+classifier_test_share,0.2,0.2,False,repo_v1,synthetic
+classifier_cv_folds,5,5,False,repo_v1,synthetic
+consistency_groups,"office, provider, sex, race, exam_year, age_band","office, provider, sex, race, exam_year, age_band",False,repo_v1,synthetic
+cal_icc,no,no,False,repo_v1,synthetic
