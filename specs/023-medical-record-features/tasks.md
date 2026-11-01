@@ -21,6 +21,6 @@ Implementation starts after this spec, plan and tasks are reviewed.
 
 ## US3 #200: per-class metrics, the same in R
 
-- [ ] T009 [US3] Failing tests: `class_metrics` on hand-worked cases
-- [ ] T010 [US3] `class_metrics` in Python; base-R twin in `r/R/13_spec023.R`; parity input and check
-- [ ] T011 Full test suite, `ruff`, R parity; review file for the implementation PR
+- [x] T009 [US3] Failing tests: `class_metrics` on hand-worked cases
+- [x] T010 [US3] `class_metrics` in Python; base-R twin in `r/R/13_spec023.R`; parity input and check
+- [x] T011 Full test suite, `ruff`, R parity; review file for the implementation PR

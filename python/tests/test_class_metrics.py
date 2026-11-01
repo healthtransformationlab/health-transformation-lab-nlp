@@ -2,12 +2,31 @@
 Hand-worked cases; no xgboost needed, so these run in CI. R parity: r/R/13_spec023.R, r/tests/test_parity.R."""
 
 import numpy as np
+import pandas as pd
 import pytest
 from sklearn.metrics import roc_auc_score
 
-from health_transformation_lab_nlp.classify_status import class_metrics
+from health_transformation_lab_nlp.classify_status import CLASS_NAMES, class_metrics
+from health_transformation_lab_nlp.paths import DATASETS_DIR
 
 NAMES = ["a", "b", "c"]
+
+
+def test_committed_results_match_class_metrics_on_the_committed_predictions():
+    d = DATASETS_DIR / "classify_status"
+    preds = pd.read_csv(d / "synthetic_medical_feature_sets_predictions.csv")
+    res = pd.read_csv(d / "synthetic_medical_feature_sets.csv")
+    names = CLASS_NAMES["four"]
+    for k, g in preds.groupby("feature_set"):
+        m = class_metrics(g["y"].to_numpy(), g[[f"p_{c}" for c in names]].to_numpy(), names)
+        r = res[res["feature_set"] == k].reset_index(drop=True)
+        assert list(r["class"]) == list(m["class"])
+        for col in ("n_test", "sensitivity", "specificity", "auc", "brier"):
+            assert np.allclose(r[col], m[col], atol=1e-6, equal_nan=True), (k, col)
+    parity = pd.read_csv(d / "synthetic_class_metrics_parity.csv")      # the R parity test's Python side
+    assert set(parity["feature_set"]) == {*preds["feature_set"], "cases"}
+    cases_mean = parity[(parity["feature_set"] == "cases") & (parity["class"] == "mean")]
+    assert cases_mean["classes_averaged"].item() == 3
 
 
 def _row(m, name):

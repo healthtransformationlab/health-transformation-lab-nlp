@@ -490,6 +490,34 @@ if (file.exists("data/sites/parity_sites.csv") && file.exists("data/sites/derive
 } else cat("ACES: skipped (run 22_build_sites.py)\n")
 cat("parity OK (spec 013)\n")
 
+# Spec 023: per-class sensitivity, specificity, AUC and Brier score (R 13_spec023.R vs classify_status.class_metrics,
+# written by scripts/44_medical_features.py --metrics-only) on the committed held-out predictions and seeded cases.
+cdir <- "data/datasets/classify_status"
+cp <- file.path(cdir, "synthetic_class_metrics_parity.csv")
+if (file.exists(cp)) {
+  source("r/R/13_spec023.R")
+  names_023 <- c("healthy", "I", "II", "III_IV")
+  pcols <- paste0("p_", names_023)
+  inp <- rbind(read.csv(file.path(cdir, "synthetic_medical_feature_sets_predictions.csv"), stringsAsFactors = FALSE),
+               read.csv(file.path(cdir, "synthetic_class_metrics_cases.csv"), stringsAsFactors = FALSE))
+  py <- read.csv(cp, stringsAsFactors = FALSE)
+  r <- do.call(rbind, lapply(unique(inp$feature_set), function(k) {
+    g <- inp[inp$feature_set == k, ]
+    cbind(feature_set = k, class_metrics_023(g$y, as.matrix(g[, pcols]), names_023), stringsAsFactors = FALSE)
+  }))
+  m <- merge(r, py, by = c("feature_set", "class"), suffixes = c(".r", ".p"))
+  num <- c("n_test", "sensitivity", "specificity", "auc", "brier", "classes_averaged")
+  gap_023 <- function(k) {
+    a <- m[[paste0(k, ".r")]]; b <- m[[paste0(k, ".p")]]
+    if (any(is.na(a) != is.na(b))) return(Inf)
+    if (all(is.na(a))) 0 else max(abs(a - b), na.rm = TRUE)
+  }
+  d <- max(sapply(num, gap_023))
+  cat(sprintf("class metrics: %d feature set x class rows, max |R - Python| = %.2e\n", nrow(m), d))
+  stopifnot(nrow(m) == nrow(py), nrow(r) == nrow(py), d < 1e-9)
+  cat("parity OK (spec 023)\n")
+} else cat("class metrics: skipped (run 44_medical_features.py --metrics-only)\n")
+
 # Spec 026: record-mismatch rules and their scores (R 15_spec026.R vs scripts/45_case_profiles.py).
 cm <- "data/datasets/case_profiles/record_mismatch.csv"
 cs <- "data/datasets/case_profiles/mismatch_rule_score.csv"

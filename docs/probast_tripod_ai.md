@@ -20,7 +20,7 @@ Status: ✅ applies and is met · 🟡 applies, partly met · ➖ doesn't apply 
 | Participants | Is the data source right for the question; are inclusions and exclusions appropriate? | ➖ No participants: a seeded generator (`study.py`, `medical_record.py`). The unit is a person's latest charted visit with a known status; uncharted visits are left out (nothing to read) |
 | Predictors | Defined and measured the same way for everyone; known at the time the model would be used? | ✅ Declared once (`classify_status.FEATURE_SETS`); every predictor is in the record at the visit. 🟡 ASA class follows from the medical conditions, so it carries medical signal into the dental set: the `dental_no_asa` run shows how much |
 | Outcome | Is the outcome defined without knowledge of the predictors? | 🟡 No, by design: the label (`algorithm_design`, or `truth_status`) is the 2017 AAP/EFP rules applied to the same chart the dental sets read. That is why dental features score so high; it is declared, not hidden |
-| Analysis | Enough events per predictor; missing data handled; overfitting and optimism dealt with; right metrics? | ✅ Split by person (70/30, stratified by class), tuning by grouped cross-validation inside the training people only, test set used once, one-vs-rest sensitivity, specificity and AUC per class. ✅ Missing HbA1c stays missing (trees route it), never imputed. 🟡 Calibration is not reported for this comparison. ➖ Events per predictor: the study size is a generator setting, not a constraint |
+| Analysis | Enough events per predictor; missing data handled; overfitting and optimism dealt with; right metrics? | ✅ Split by person (70/30, stratified by class), tuning by grouped cross-validation inside the training people only, test set used once, one-vs-rest sensitivity, specificity, AUC and Brier score per class. ✅ Missing HbA1c stays missing (trees route it), never imputed. 🟡 The Brier score covers calibration and discrimination together; no calibration curve is reported. ➖ Events per predictor: the study size is a generator setting, not a constraint |
 
 **Risk of bias, overall:** not assessable in PROBAST's sense: there is no target population to be biased about.
 **Applicability:** none to any real population.
@@ -39,7 +39,7 @@ Status: ✅ applies and is met · 🟡 applies, partly met · ➖ doesn't apply 
 | Analysis methods: model, tuning, split | ✅ XGBoost, grid by grouped 5-fold cross-validation, 70/30 split stratified by class and kept by person, the same split for every feature set |
 | Class imbalance | ✅ Class weighting is one of the tuned options |
 | Fairness and subgroups | ➖ No sex or other protected attributes are generated (spec 013 G11) |
-| Model output and performance measures | ✅ Per class and averaged: sensitivity, specificity, AUC (US3 adds the Brier score) |
+| Model output and performance measures | ✅ Per class and averaged: sensitivity, specificity, AUC and Brier score (`class_metrics`, with a base-R twin) |
 | Explainability | ✅ Mean \|SHAP\| per feature and feature set (`synthetic_medical_feature_sets_shap.csv`) |
 | Results | ✅ [code_walkthrough.md](code_walkthrough.md#dental-and-medical-record-features-spec-023), labelled synthetic; the paper's figures are cited beside them, never mixed in |
 | Limitations | ✅ The links between periodontitis and each condition are built in from published odds ratios, so the medical-only run measures the generator, not biology |

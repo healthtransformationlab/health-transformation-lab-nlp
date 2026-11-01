@@ -218,15 +218,39 @@ def split_stratified(f: pd.DataFrame, seed: int = 0, test_share: float = TEST_SH
     return f["person_id"].isin(test).to_numpy()
 
 
-def _one_vs_rest(yt: np.ndarray, proba: np.ndarray, names: list[str]) -> pd.DataFrame:
+def _auc_rank(pos: np.ndarray, score: np.ndarray) -> float:
+    """AUC by ranks (Mann-Whitney), ties given their average rank; missing when either side is empty."""
+    n1, n0 = int(pos.sum()), int((~pos).sum())
+    if n1 == 0 or n0 == 0:
+        return np.nan
+    r = pd.Series(score).rank(method="average").to_numpy()
+    return float((r[pos].sum() - n1 * (n1 + 1) / 2) / (n1 * n0))
+
+
+@traced
+def class_metrics(y: np.ndarray, proba: np.ndarray, names: list[str]) -> pd.DataFrame:
+    """Per class, one-vs-rest, as Table 2 of Patel et al. 2026 reports them (spec 023 US3; R twin
+    r/R/13_spec023.R, parity-tested to 1e-9):
+      - sensitivity and specificity of the arg-max class (the first class wins a tie, as numpy's argmax);
+      - AUC by ranks with ties averaged, missing (not zero) for a class absent from `y` or with no rest;
+      - Brier score: the mean over visits of (that class's probability - 1 if the visit is that class else 0)^2.
+    Then a `mean` row: each metric averaged over the classes present in `y` (`classes_averaged` says how many);
+    its `n_test` is the number of visits."""
+    y, proba = np.asarray(y), np.asarray(proba, dtype=float)
     pred = proba.argmax(axis=1)
     rows = []
     for k, name in enumerate(names):
-        pos, hit = yt == k, pred == k
+        pos, hit = y == k, pred == k
         rows.append({"class": name, "n_test": int(pos.sum()),
                      "sensitivity": (hit & pos).sum() / pos.sum() if pos.any() else np.nan,
                      "specificity": (~hit & ~pos).sum() / (~pos).sum() if (~pos).any() else np.nan,
-                     "auc": roc_auc_score(pos, proba[:, k]) if 0 < pos.sum() < len(pos) else np.nan})
+                     "auc": _auc_rank(pos, proba[:, k]),
+                     "brier": float(np.mean((proba[:, k] - pos) ** 2)),
+                     "classes_averaged": np.nan})
+    m = pd.DataFrame(rows)
+    present = m["n_test"] > 0
+    mean = {c: m.loc[present, c].mean() for c in ("sensitivity", "specificity", "auc", "brier")}   # skips NaN
+    rows.append({"class": "mean", "n_test": len(y), **mean, "classes_averaged": int(present.sum())})
     return pd.DataFrame(rows)
 
 
@@ -248,7 +272,7 @@ def compare_feature_sets(people: pd.DataFrame, seed: int = 0, grid: dict | None 
         params = {k: v for k, v in best.items() if k not in ("cv_macro_f1", "cv_folds_used")}
         model = _fit(params, X[~te], y[~te], n_class, seed)
         proba = model.predict_proba(X[te])
-        metrics.append(_one_vs_rest(y[te], proba, names).assign(feature_set=name))
+        metrics.append(class_metrics(y[te], proba, names).assign(feature_set=name))
         preds.append(pd.DataFrame(proba, columns=[f"p_{c}" for c in names])
                      .assign(feature_set=name, visit_id=people.loc[te, "visit_id"].to_numpy(), y=y[te]))
         phi = shap_values(model, X[te])
@@ -258,7 +282,7 @@ def compare_feature_sets(people: pd.DataFrame, seed: int = 0, grid: dict | None 
     m = pd.concat(metrics, ignore_index=True)
     m["features"] = m["feature_set"].map({k: " ".join(v) for k, v in FEATURE_SETS.items()})
     m = m.assign(n_train=int((~te).sum()), seed=seed, is_synthetic=True)
-    m = m[["feature_set", "class", "n_test", "sensitivity", "specificity", "auc", "n_train", "features", "seed",
-           "is_synthetic"]]
+    m = m[["feature_set", "class", "n_test", "sensitivity", "specificity", "auc", "brier", "classes_averaged",
+           "n_train", "features", "seed", "is_synthetic"]]
     p = pd.concat(preds, ignore_index=True)[["feature_set", "visit_id", "y", *[f"p_{c}" for c in names]]]
     return {"metrics": m, "predictions": p, "shap_importance": pd.concat(imps, ignore_index=True)}
