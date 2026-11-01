@@ -4,10 +4,10 @@ Implementation starts after this spec, plan and tasks are reviewed.
 
 ## US1 #201: PerioDx Diagnoser
 
-- [ ] T001 [US1] Read Fig. 2 arrow by arrow; record each reading as a named constant or parameter, with the
+- [x] T001 [US1] Read Fig. 2 arrow by arrow; record each reading as a named constant or parameter, with the
   figure cited
-- [ ] T002 [US1] Failing tests: one chart per branch, grade not assessable, bone-loss categories
-- [ ] T003 [US1] `periodx.diagnose`; R twin `r/R/14_spec024.R`; parity inputs and check
+- [x] T002 [US1] Failing tests: one chart per branch, grade not assessable, bone-loss categories
+- [x] T003 [US1] `periodx.chart_status` (named for what it does, not `diagnose`: AGENTS.md "Words"); R twin `r/R/14_spec024.R`; parity inputs and check
 
 ## US2 #202: PerioDx Extractor
 

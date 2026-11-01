@@ -563,6 +563,32 @@ if (file.exists(file.path(td, "patient_tooth.csv"))) {
   cat("parity OK (spec 029)\n")
 } else cat("tooth statuses: skipped (run 47_tooth_table.py)\n")
 
+# Spec 024 US1: the PerioDx Diagnoser (Patel et al. 2022, Fig. 2), R 14_spec024.R vs periodx.chart_status on seeded
+# chart inputs with gaps, and on the repo's summary chart read as the figure's inputs. Labels compared exactly.
+pc <- "data/labels/periodx_chart_cases.csv"
+ps <- "data/labels/periodx_summary_cases.csv"
+if (file.exists(pc) && file.exists(ps)) {
+  source("r/R/14_spec024.R")
+  same_024 <- function(r, py, cols) {
+    py[is.na(py)] <- ""; r[is.na(r)] <- ""
+    sum(sapply(cols, function(k) sum(as.character(r[[k]]) != as.character(py[[k]]))))
+  }
+  cols_024 <- c("status", "stage", "extent", "grade", "label", "partial")
+  g <- read.csv(pc, stringsAsFactors = FALSE, na.strings = "")
+  r_g <- chart_status_024(g)
+  bad_g <- same_024(r_g, g[cols_024], cols_024)
+  s <- read.csv(ps, stringsAsFactors = FALSE, na.strings = "")
+  sc <- summary_chart_024(s$max_pd_mm, s$bop_pct, s$max_cal_mm, s$rbl_pct, s$teeth_lost_perio, s$pct_teeth_involved)
+  d_pct <- max(abs(sc$pct_teeth_involved - s$chart_pct_teeth_involved), na.rm = TRUE)
+  same_na <- all(is.na(sc$pct_teeth_involved) == is.na(s$chart_pct_teeth_involved))
+  bad_counts <- same_024(sc, s, c("interproximal_cal_teeth", "cal5_adjacent_teeth", "pd5_adjacent_teeth"))
+  sc$age <- 55; sc$cigarettes_per_day <- 0; sc$diabetes <- FALSE; sc$hba1c <- NA
+  bad_s <- same_024(chart_status_024(sc), s[cols_024], cols_024)
+  cat(sprintf("PerioDx Diagnoser: %d chart cases, %d values differ; %d summary charts, %d inputs and %d values differ, extent share max |R - Python| = %.2e\n",
+              nrow(g), bad_g, nrow(s), bad_counts, bad_s, d_pct))
+  stopifnot(bad_g == 0, bad_counts == 0, bad_s == 0, same_na, d_pct < 1e-9)
+  cat("parity OK (spec 024 US1)\n")
+} else cat("PerioDx Diagnoser: skipped (run python/scripts/export_rules_predictions.py)\n")
 # Spec 029 US3: the tooth-loss model's metrics and the stage IV counting rules (R 16_spec029.R vs
 # tooth_loss_model.py / labels.py, from scripts/51_tooth_loss_model.py's outputs). Model fitting is Python only.
 rt <- "data/results"
