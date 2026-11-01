@@ -175,7 +175,7 @@ gum measurements. This order is this repo's own. It is not the order in Patel et
 ([action item A2](action_items.md); #389, #204): the paper uses three sources, the structured diagnosis section (the clinician's recorded
 diagnosis), then clinical notes, then periodontal charting, each only filling gaps. It has no exam-form or
 PSR step, no diagnosis codes attached to done or planned procedures, and it never validated the order against
-expert review. The paper's own order is `algorithm_patel2022` (spec 024). No X-ray floor. It scores lower
+expert review. The paper's own order will be `algorithm_patel2022` (spec 024, not built yet). No X-ray floor. It scores lower
 (72 vs 98 correct per 100 charts): about 85% of visits have an exam form, so the form decides most charts,
 and its checkbox is often stale.
 

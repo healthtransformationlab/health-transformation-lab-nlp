@@ -34,7 +34,7 @@ Everything this repo relies on, and what it's used for.
    evaluation form is read only as note text (M2) and for bone loss in the charting rules (M3). The order
    itself was not validated against expert review; only the Diagnoser (two experts, 200 charts) and the
    Extractor (400 notes) were.
-   **What uses it here.** `algorithm_patel2022` (spec 024) is the paper's order. `algorithm_design`
+   **What uses it here.** `algorithm_patel2022` (spec 024, not built yet) will run the paper's order. `algorithm_design`
    (`phenotype.py`, exam form → diagnosis codes → note → gum measurements) is this repo's own: putting the
    exam form first, and diagnosis codes attached to done or planned procedures standing in for the
    diagnosis section, are not from the paper (action item A2; checked against the full text, #389, #204).

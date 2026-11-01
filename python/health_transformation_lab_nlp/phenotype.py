@@ -40,9 +40,9 @@ RULES_V0 = {
 }
 # Spec 005: the study design's starting order for the integrated phenotype. The order is this repo's own:
 # Patel et al. 2022 (Methods Inf Med; docs/references.md item 4) uses the structured diagnosis section, then
-# notes, then charting, with no exam-form or PSR step; its order is algorithm_patel2022 (spec 024; action
-# item A2, checked against the full text). Not assumed final: scripts/18_phenotype_order.py scores every ordering of the four
-# groups so the order can change if another evidence type proves more accurate.
+# notes, then charting, with no exam-form or PSR step; its order will be algorithm_patel2022 (spec 024, not built
+# yet; action item A2, checked against the full text). Not assumed final: scripts/18_phenotype_order.py scores every
+# ordering of the four groups so the order can change if another evidence type proves more accurate.
 DESIGN_GROUPS = {
     "exam_form": ["exam_form"],
     "dx_code": ["proc_dx_completed", "proc_dx_planned"],

@@ -111,7 +111,7 @@ code → note NLP → periodontal chart) as `algorithm_design`, and the earlier 
 radiograph as a lower bound) as `algorithm_v0`. Neither is the order in Patel et al., *Methods Inf Med* 2022
 ([references](references.md), item 4; checked against the full text, action item A2): the structured
 diagnosis section, then clinical notes, then periodontal charting, with no exam-form or PSR step. That order
-is `algorithm_patel2022` (spec 024).
+will be `algorithm_patel2022` (spec 024, not built yet).
 
 - Code: `phenotype.RULES_DESIGN`, `RULES_V0`, `phenotype()`.
 - Output: `algorithm_design`, `algorithm_v0` columns. Differences: [action_items.md](action_items.md) A2–A6.
