@@ -9,7 +9,12 @@ from health_transformation_lab_nlp.labelstudio import parse_export
 from health_transformation_lab_nlp.note_reader import read_note, read_stated_dx
 from health_transformation_lab_nlp.reliability import consensus, fleiss_kappa, weighted_kappa
 from health_transformation_lab_nlp.sources import read_proc_codes, read_proc_dx
-from health_transformation_lab_nlp.study import build_study, generate_visits, visit_exclusions, visits_in_study
+from health_transformation_lab_nlp.study import (
+    build_study,
+    generate_visits,
+    visit_exclusions,
+    visits_in_study,
+)
 
 
 def test_deid_removes_every_injected_phi_value():
