@@ -29,6 +29,7 @@ from .deid import deidentify, leak_check, residual_scan, score_deid
 from .labels import PerioChart, Status, extent_of, grade_of, label_chart
 from .medical_record import medical_records, people_from_visits
 from .note_reader import read_note
+from .periodx import visits_table as periodx_visits_table
 from .phenotype import RULES_DESIGN, RULES_V0, agreement_matrix, coverage, phenotype, phenotype_v0
 from .phi import fake_person, fake_provider
 from .radiograph import FEATURES as RAD_FEATURES
@@ -259,7 +260,10 @@ def build_study(out_dir: Path, raw_dir: Path, n_people: int = 1200, review_n: in
         "max_cal_mm", "rbl_pct", "teeth_lost_perio"]].to_csv(out_dir / "answer_key" / "visits_truth.csv", index=False)
     clinic_profiles(seed).to_csv(out_dir / "answer_key" / "clinic_profiles.csv", index=False)
     medical.to_csv(out_dir / "medical_record.csv", index=False)
-    methods = ["notes", *READERS, "probing_chart", "radiograph_ai"]
+    # Spec 024 (FR-010): the PerioDx readings and the Patel et al. 2022 stepwise phenotype, statuses only (no note
+    # text), in their own file so every file above stays byte-identical.
+    periodx_visits_table(df).to_csv(out_dir / "periodx_visits.csv", index=False)
+    methods =["notes", *READERS, "probing_chart", "radiograph_ai"]
     agree = pd.concat([agreement_matrix(df, methods, "status").assign(level="status"),
                        agreement_matrix(df, methods, "perio").assign(level="perio")])
     agree.to_csv(out_dir / "method_agreement.csv", index=False)

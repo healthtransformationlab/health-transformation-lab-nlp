@@ -57,6 +57,37 @@ def test_parse_failures_are_flagged(raw, why):
     assert not out["gate_ok"] and why in out["error"]
 
 
+# #134: the committed MedGemma 4B v1 run lost 3 of its 14 fallbacks to a quote that differed from the note
+# only in capitals (the note's dx line in upper case, the quote in lower). The words are in the note, so the
+# gate passes them; a changed word (respelled, shortened, a typo corrected) still fails.
+CAPS_NOTE = "perio charting done: BOP 20%, CAL up to 2mm.\nD:LOCALIZED PERIODONTITIS, STAGE 1 GRADE A\ntx: srp\n"
+
+
+@pytest.mark.parametrize("quote", [
+    "localized periodontitis, stage 1 grade A",      # case only
+    "Localized  Periodontitis,\tSTAGE 1 grade a",    # case and whitespace
+    "BOP 20%,\nCAL up to 2mm",                       # a line break where the note has a space
+])
+def test_gate_accepts_case_and_whitespace_differences(quote):
+    from health_transformation_lab_nlp.llm_reader import parse_answer
+    raw = json.dumps({"status": "periodontitis_stage_1", "grade": "A", "extent": "localized", "quote": quote})
+    out = parse_answer(raw, CAPS_NOTE)
+    assert out["gate_ok"] and out["error"] == "" and out["quote"] == quote.strip()
+
+
+@pytest.mark.parametrize("quote", [
+    "Localised periodontitis, stage 1 grade A",       # respelled
+    "Local periodontitis, stage 1 grade A",           # shortened
+    "localized periodontitis stage 1 grade A",        # punctuation dropped
+    "BOP 20%, CAL up to 3mm",                         # a number changed
+])
+def test_gate_still_rejects_changed_words(quote):
+    from health_transformation_lab_nlp.llm_reader import parse_answer
+    raw = json.dumps({"status": "periodontitis_stage_1", "grade": "A", "extent": "localized", "quote": quote})
+    out = parse_answer(raw, CAPS_NOTE)
+    assert not out["gate_ok"] and out["error"] == "quote not in note"
+
+
 def test_parse_skips_medgemma_thought_block():
     # MedGemma 1.5 may think first: <unused94>thought ... <unused95> then the answer.
     from health_transformation_lab_nlp.llm_reader import parse_answer

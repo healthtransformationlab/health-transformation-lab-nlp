@@ -19,7 +19,7 @@ Each takes the first part of the record, in a fixed order, that gives an answer.
 |---|---|---|---|---|
 | `algorithm_v0` | whole record | Gum measurements → note → diagnosis codes → exam form → procedure codes; the X-ray reading is a floor when the measurements didn't decide | this repo's own placeholder (spec 003); not from a published algorithm | 97.5 (95.4–99.2) |
 | `algorithm_design` | whole record | Exam form → diagnosis codes → note → gum measurements | The study design's starting order (spec 005). Its diagnosis codes → note → charting part follows Patel et al. 2022 [[4]](#sources); putting the exam form first does not: the paper never uses an exam form (corrected throughout by spec 024) | 72.1 (66.2–77.5) |
-| `algorithm_patel2022` | whole record | Diagnosis section (M1) → the PerioDx Extractor on notes (M2) → the PerioDx Diagnoser on the chart (M3), as published | Patel et al. 2022 [[4]](#sources), spec 024 ([#208](https://github.com/healthtransformationlab/health-transformation-lab-nlp/pull/208)) | not built yet |
+| `algorithm_patel2022` | whole record | Diagnosis codes, done then planned, standing in for the diagnosis section (M1) → the PerioDx Extractor on the note (M2) → the PerioDx Diagnoser on the gum measurements (M3); no exam form ([periodx.md](periodx.md)) | Patel et al. 2022 [[4]](#sources), spec 024; the codes standing in for the diagnosis section, and the summary chart read as tooth counts, are this repo's own | 67.5 (61.3–73.3) |
 
 The same rules read in other orders: `scripts/18_phenotype_order.py` scores all 24 orders of the four evidence
 groups against **simulated** reviewers (`data/review/simulated_reliability_5cat/phenotype_orders.csv`). That is a

@@ -75,3 +75,26 @@ def prevalence_by_scale(v: pd.DataFrame, status_col: str) -> pd.DataFrame:
                      "periodontitis": float(known.isin(PERIO).mean()) if n else float("nan"),
                      "stage3_4": float(known.isin(PERIO[2:]).mean()) if n else float("nan")})
     return pd.DataFrame(rows)
+
+
+@traced
+def section_completeness(v: pd.DataFrame, sections: dict[str, list[str]], merged: str, decided_by: str) -> pd.DataFrame:
+    """Completeness per section before merging, and of the merged result, as Patel et al. 2022 Fig. 1 reports it
+    (spec 024 FR-005). sections: name -> columns read in order (a value in any counts). One row per section, then
+    'merged': n_visits, n_with_value / pct_with_value (before merging), n_decided / pct_decided (the visits that
+    section decides once merged)."""
+    n = len(v)
+
+    def pct(k):
+        return 100.0 * k / n if n else float("nan")
+
+    rows = []
+    for name, cols in sections.items():
+        has = ~pd.concat([_missing(v[c]) for c in cols], axis=1).all(axis=1)
+        k, d = int(has.sum()), int((v[decided_by] == name).sum())
+        rows.append({"section": name, "n_visits": n, "n_with_value": k, "pct_with_value": pct(k),
+                     "n_decided": d, "pct_decided": pct(d)})
+    k = int((~_missing(v[merged])).sum())
+    rows.append({"section": "merged", "n_visits": n, "n_with_value": k, "pct_with_value": pct(k),
+                 "n_decided": k, "pct_decided": pct(k)})
+    return pd.DataFrame(rows)

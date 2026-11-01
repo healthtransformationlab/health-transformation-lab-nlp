@@ -13,14 +13,14 @@ Implementation starts after this spec, plan and tasks are reviewed.
 
 ## US2 #199: dental-only, dental+medical and medical-only
 
-- [ ] T005 [US2] Failing tests: `four` scheme, the four feature sets (incl. `dental_no_asa`), stratified split grouped by person
-- [ ] T006 [US2] `classify_status.py`: `FEATURE_SETS`, `four`, `split_stratified`, `compare_feature_sets`
-- [ ] T007 [US2] `scripts/44_medical_features.py`, writes `synthetic_medical_feature_sets.csv`
-- [ ] T008 [US2] Docs: results labelled synthetic, the paper's Table 2 averages cited beside them; PROBAST /
+- [x] T005 [US2] Failing tests: `four` scheme, the four feature sets (incl. `dental_no_asa`), stratified split grouped by person
+- [x] T006 [US2] `classify_status.py`: `FEATURE_SETS`, `four`, `split_stratified`, `compare_feature_sets`
+- [x] T007 [US2] `scripts/44_medical_features.py`, writes `synthetic_medical_feature_sets.csv`
+- [x] T008 [US2] Docs: results labelled synthetic, the paper's Table 2 averages cited beside them; PROBAST /
   TRIPOD-AI page
 
 ## US3 #200: per-class metrics, the same in R
 
-- [ ] T009 [US3] Failing tests: `class_metrics` on hand-worked cases
-- [ ] T010 [US3] `class_metrics` in Python; base-R twin in `r/R/13_spec023.R`; parity input and check
-- [ ] T011 Full test suite, `ruff`, R parity; review file for the implementation PR
+- [x] T009 [US3] Failing tests: `class_metrics` on hand-worked cases
+- [x] T010 [US3] `class_metrics` in Python; base-R twin in `r/R/13_spec023.R`; parity input and check
+- [x] T011 Full test suite, `ruff`, R parity; review file for the implementation PR

@@ -175,9 +175,23 @@ gum measurements. This order is this repo's own. It is not the order in Patel et
 ([action item A2](action_items.md); #389, #204): the paper uses three sources, the structured diagnosis section (the clinician's recorded
 diagnosis), then clinical notes, then periodontal charting, each only filling gaps. It has no exam-form or
 PSR step, no diagnosis codes attached to done or planned procedures, and it never validated the order against
-expert review. The paper's own order will be `algorithm_patel2022` (spec 024, not built yet). No X-ray floor. It scores lower
+expert review. The paper's own order is `algorithm_patel2022` (spec 024, below). No X-ray floor. It scores lower
 (72 vs 98 correct per 100 charts): about 85% of visits have an exam form, so the form decides most charts,
 and its checkbox is often stale.
+
+### Rules, Patel et al. 2022 order (`algorithm_patel2022`)
+
+The paper's own order, run with the paper's own readers (spec 024; details and every reading in
+[periodx.md](periodx.md)):
+
+1. Diagnosis codes, done then planned. These stand in for the paper's structured diagnosis section, which is
+   this repo's choice.
+2. The PerioDx Extractor's keyword reading of the chart note.
+3. The PerioDx Diagnoser's Fig. 2 rules on the gum measurements.
+
+The first that gives one of the six statuses decides. There is no exam form and no X-ray floor. The note and chart
+readers are the paper's, not this repo's `notes` and `probing_chart` readers, so the outcome can differ from
+`algorithm_design` even where the order agrees. The per-visit readings are in `data/datasets/periodx_visits.csv`.
 
 ## Stage 4 rule (`+rules4`)
 

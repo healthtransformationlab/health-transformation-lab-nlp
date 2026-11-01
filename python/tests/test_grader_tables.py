@@ -15,7 +15,7 @@ DQ = {
     "dq_source_concordance": {"method_a", "method_b", "n", "pct_agree", "kappa"},
     "fact_visit_evidence": {"visit_id", "person_id", "clinic", "visit_date", "visit_seq", "truth_status", "notes",
                   "exam_form", "proc_dx_completed", "proc_dx_planned", "probing_chart", "algorithm_v0",
-                  "algorithm_design"},
+                  "algorithm_design", "algorithm_patel2022"},
     "dq_injected_error": {"injected_errors", "caught_share", "flag_rate_without_error"},
     # spec 026 US1
     "fact_case_profile_item": {"visit_id", "category", "category_order", "item", "item_order", "value", "unit"},

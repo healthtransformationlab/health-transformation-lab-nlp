@@ -66,13 +66,14 @@ Numbers are per 100 charts. What the columns mean:
 | 32–44 | `tfidf_logreg` | chart note | TF-IDF + logistic regression | **77.1** (71.7–82.5) | 2.9 | 1.7 | 18.3 | 0.0 | 19.2 | 97% | 92% | 96% | 95% | 0% | 87 / 65 / 63 |
 | 23–43 | [`medgemma-1.5-4b-it+rules4`](https://huggingface.co/google/medgemma-1.5-4b-it) | chart note | zero-shot LLM, + rules for stage IV † | **77.1** (71.2–82.5) | 3.3 | 4.2 | 15.4 | 0.0 | 9.6 | 94% | 90% | 95% | 88% | 97% | 100 / 100 / 19 |
 | 26–44 | [`medgemma-1.5-4b-it`](https://huggingface.co/google/medgemma-1.5-4b-it) | chart note | zero-shot LLM | **75.8** (70.0–80.8) | 3.3 | 4.2 | 16.7 | 0.0 | 10.8 | 94% | 90% | 95% | 88% | 86% | 100 / 97 / 16 |
-| 36–44 | `algorithm_design` | whole record | rules, study-design order: exam form, diagnosis codes, note, chart † | **72.1** (66.2–77.5) | 5.0 | 0.8 | 22.1 | 0.0 | 15.0 | 99% | 86% | 93% | 97% | 66% | 70 / 81 / 74 |
-| 45 | `exam_form` | exam form | status field as entered | **62.1** (56.7–68.3) | 4.2 | 0.0 | 20.0 | 13.8 | 15.0 | 87% | 88% | 93% | 79% | 62% | 62 / 71 / 57 |
-| 46–48 | `proc_codes_planned` | procedure codes, planned | CDT code mapped to status | **50.8** (44.6–57.5) | 0.0 | 0.0 | 42.9 | 6.2 | 27.6 | 90% | 100% | 100% | 85% | 0% | 54 / 39 / 50 |
-| 46–49 | `proc_dx_planned` | diagnosis codes, planned procedures | ICD-10 code mapped to status | **50.0** (43.3–56.7) | 3.8 | 0.0 | 15.8 | 30.4 | 18.6 | 67% | 89% | 92% | 60% | 0% | 48 / 48 / 56 |
-| 47–49 | `proc_codes_completed` | procedure codes, completed | CDT code mapped to status | **47.1** (40.8–53.3) | 0.0 | 0.0 | 37.5 | 15.4 | 25.6 | 76% | 100% | 100% | 69% | 0% | 50 / 35 / 47 |
-| 47–49 | `proc_dx_completed` | diagnosis codes, completed procedures | ICD-10 code mapped to status | **45.0** (39.2–50.8) | 2.9 | 6.7 | 15.0 | 30.4 | 26.9 | 57% | 92% | 93% | 53% | 0% | 44 / 29 / 54 |
-| 50 | `radiograph_ai` | radiograph AI | bone-loss reading mapped to stage † | **17.5** (12.9–22.5) | 0.0 | 0.0 | 14.2 | 68.3 | 31.6 | 49% | 100% | 100% | 51% | 0% | 15 / 23 / 21 |
+| 36–45 | `algorithm_design` | whole record | rules, study-design order: exam form, diagnosis codes, note, chart † | **72.1** (66.2–77.5) | 5.0 | 0.8 | 22.1 | 0.0 | 15.0 | 99% | 86% | 93% | 97% | 66% | 70 / 81 / 74 |
+| 44–46 | `algorithm_patel2022` | whole record | rules, order of Patel et al. 2022: diagnosis codes, PerioDx note reading, PerioDx chart rules (spec 024) | **67.5** (61.3–73.3) | 3.8 | 8.3 | 19.2 | 1.2 | 22.8 | 87% | 89% | 94% | 79% | 31% | 76 / 45 / 60 |
+| 45–46 | `exam_form` | exam form | status field as entered | **62.1** (56.7–68.3) | 4.2 | 0.0 | 20.0 | 13.8 | 15.0 | 87% | 88% | 93% | 79% | 62% | 62 / 71 / 57 |
+| 47–49 | `proc_codes_planned` | procedure codes, planned | CDT code mapped to status | **50.8** (44.6–57.5) | 0.0 | 0.0 | 42.9 | 6.2 | 27.6 | 90% | 100% | 100% | 85% | 0% | 54 / 39 / 50 |
+| 47–50 | `proc_dx_planned` | diagnosis codes, planned procedures | ICD-10 code mapped to status | **50.0** (43.3–56.7) | 3.8 | 0.0 | 15.8 | 30.4 | 18.6 | 67% | 89% | 92% | 60% | 0% | 48 / 48 / 56 |
+| 48–50 | `proc_codes_completed` | procedure codes, completed | CDT code mapped to status | **47.1** (40.8–53.3) | 0.0 | 0.0 | 37.5 | 15.4 | 25.6 | 76% | 100% | 100% | 69% | 0% | 50 / 35 / 47 |
+| 48–50 | `proc_dx_completed` | diagnosis codes, completed procedures | ICD-10 code mapped to status | **45.0** (39.2–50.8) | 2.9 | 6.7 | 15.0 | 30.4 | 26.9 | 57% | 92% | 93% | 53% | 0% | 44 / 29 / 54 |
+| 51 | `radiograph_ai` | radiograph AI | bone-loss reading mapped to stage † | **17.5** (12.9–22.5) | 0.0 | 0.0 | 14.2 | 68.3 | 31.6 | 49% | 100% | 100% | 51% | 0% | 15 / 23 / 21 |
 
 **Not run yet:** [`gatortron-base`](https://huggingface.co/UFNLP/gatortron-base) (ran on CPU but diverged and called every chart healthy, so it wasn't kept, to rerun on a GPU at a lower learning rate, spec 002 task T017); [`sapbert`](https://huggingface.co/cambridgeltl/SapBERT-from-PubMedBERT-fulltext) (not a periodontal status classifier, and no scorer for its own task yet); [`gte-moderncolbert`](https://huggingface.co/lightonai/GTE-ModernColBERT-v1) (not a periodontal status classifier, and no scorer for its own task yet); [`medgemma-27b-text-it`](https://huggingface.co/google/medgemma-27b-text-it) (needs a GPU). MedGemma few-shot and LoRA runs are not done yet (LoRA needs a GPU).
 

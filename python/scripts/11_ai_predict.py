@@ -119,7 +119,7 @@ if is_llm:
         print(f"*** SIMULATED READER: dry run, not a MedGemma result (agreement with truth {acc:.1%}) ***")
 
 # ---- MLflow (docs/mlops.md): params, prediction file, optional Unity Catalog registration
-from health_transformation_lab_nlp.tracking import track  # noqa: E402
+from health_transformation_lab_nlp.tracking import track
 
 with track("11_ai_predict", a.rung, simulated=bool(prefix),
            params={"rung": a.rung, "label": a.label, "n_train": len(train), "n_review": len(review), **{
@@ -129,6 +129,16 @@ with track("11_ai_predict", a.rung, simulated=bool(prefix),
         d = model.details
         run.log_metrics({"gate_pass": d["gate_ok"].mean(), "fallback": d["fallback"].mean(),
                          "input_tokens_mean": d["input_tokens"].mean(), "output_tokens_mean": d["output_tokens"].mean()})
+        ref_file = DATASETS_DIR / "answer_key" / "reference_answers.csv"   # spec 004 US6: accuracy per field
+        if ref_file.exists():
+            from health_transformation_lab_nlp.reference_answers import (
+                field_accuracy,
+                field_metrics,
+            )
+            try:
+                run.log_metrics(field_metrics(field_accuracy(d, pd.read_csv(ref_file, keep_default_na=False))))
+            except ValueError as e:                                          # a --limit run: not every note read
+                print(f"per-field accuracy not logged: {e}")
     if a.register:
         from health_transformation_lab_nlp.model_registry import log_and_register
         v = log_and_register(model, a.rung, a.register, train.head(3), simulated=bool(prefix))

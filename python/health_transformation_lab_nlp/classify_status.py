@@ -45,9 +45,31 @@ SCHEMES = {
                "periodontitis_stage_3": 3, "periodontitis_stage_4": 4},
     "3level": {"healthy": 0, "gingivitis": 0, "periodontitis_stage_1": 1, "periodontitis_stage_2": 1,
                "periodontitis_stage_3": 2, "periodontitis_stage_4": 2},
+    # Spec 023: Patel et al. 2026's 4 classes. The paper has no gingivitis class; here it counts as healthy (not
+    # periodontitis), as in 3level (spec 023 FR-004).
+    "four": {"healthy": 0, "gingivitis": 0, "periodontitis_stage_1": 1, "periodontitis_stage_2": 2,
+             "periodontitis_stage_3": 3, "periodontitis_stage_4": 3},
 }
 CLASS_NAMES = {"5level": ["healthy_gingivitis", "stage_1", "stage_2", "stage_3", "stage_4"],
-               "3level": ["healthy_gingivitis", "stage_1_2", "stage_3_4"]}
+               "3level": ["healthy_gingivitis", "stage_1_2", "stage_3_4"],
+               "four": ["healthy", "I", "II", "III_IV"]}
+# Spec 023 feature sets, after Patel et al. 2026 experiments 1 and 5. Dental: the spec 013 features (chart, age,
+# smoking, diabetes, HbA1c, prior treatment) plus ASA class, which the paper counts as a dental-record factor.
+# ASA carries medical signal (medical_record.asa_class follows from the conditions), so dental_no_asa shows how
+# much. Medical: the synthetic medical record (medical_record.py) plus age; there is no sex column (spec 013 G11).
+# The dental sets use the chart the label is computed from: declared, as it is the point of a dental-record model.
+MEDICAL_FEATURES = ["is_diabetes", "hba1c", "is_hypertension", "is_ckd", "is_cvd", "is_copd", "systolic_bp_mmhg",
+                    "diastolic_bp_mmhg", "age"]
+FEATURE_SETS = {
+    "dental": [*FEATURES, "asa_class_num"],
+    "dental_no_asa": list(FEATURES),
+    # is_diabetes is the same fact as the dental set's `diabetes` (both HbA1c >= 6.5), so it isn't added twice
+    "dental_medical": [*FEATURES, "asa_class_num",
+                       *[c for c in MEDICAL_FEATURES if c not in FEATURES and c != "is_diabetes"]],
+    "medical": MEDICAL_FEATURES,
+}
+ASA_NUM = {"I": 1, "II": 2, "III": 3, "IV": 4}
+TEST_SHARE_023 = 0.3   # Patel et al. 2026: 70/30, stratified; the 80/20 split stays the default for 5level/3level
 GRID = {"max_depth": [3, 5], "learning_rate": [0.05, 0.2], "reg_lambda": [1.0, 10.0], "min_child_weight": [1, 5],
         "class_weight": [None, "balanced"]}
 N_TREES = 200
@@ -160,3 +182,107 @@ def train_eval(f: pd.DataFrame, scheme: str, seed: int = 0, grid: dict | None = 
     return {"summary": summary, "metrics": metrics, "shap_importance": imp, "shap_test": per, "model": model,
             "X_test": Xt, "test_predictions": pd.DataFrame({"visit_id": f.loc[te, "visit_id"].to_numpy(),
                                                             "y": yt, "pred": pred})}
+
+
+# ---- Spec 023: dental-only, dental+medical and medical-only (Patel et al. 2026, experiments 1 and 5)
+
+@traced
+def person_features(visits: pd.DataFrame, record: pd.DataFrame, outcome: str, scheme: str = "four") -> pd.DataFrame:
+    """One row per person: their latest charted visit with a known status (Patel et al. 2026's unit is the
+    patient), its dental features, the person's synthetic medical record, and the class index `y`."""
+    f = features(visits, outcome, scheme)
+    dates = visits.set_index("visit_id")["visit_date"]
+    f = f.assign(_date=f["visit_id"].map(dates)).sort_values(["person_id", "_date"]).groupby("person_id").tail(1)
+    f = f.drop(columns="_date").merge(record, on="person_id", how="inner", validate="one_to_one")
+    f["asa_class_num"] = f["asa_class_code"].map(ASA_NUM)
+    cols = list(dict.fromkeys(c for fs in FEATURE_SETS.values() for c in fs))
+    f[cols] = f[cols].astype(float)                 # hba1c stays NaN when not measured: trees route it
+    return f[["visit_id", "person_id", *cols, "y"]].sort_values("person_id").reset_index(drop=True)
+
+
+@traced
+def split_stratified(f: pd.DataFrame, seed: int = 0, test_share: float = TEST_SHARE_023) -> np.ndarray:
+    """True for held-out rows. People are stratified by their highest class; within each class a random
+    `test_share` of them (rounded) is held out, so no person is in both parts, and with one row per person each
+    class's test count is within one visit of proportional. A class with fewer than 2 people fails: it can't be
+    in both parts, and running unstratified would hide that (spec 023 edge cases)."""
+    per_person = f.groupby("person_id")["y"].max()
+    rng = np.random.default_rng(seed)
+    test = []
+    for k, people in per_person.groupby(per_person):
+        if len(people) < 2:
+            raise ValueError(f"class {k} has {len(people)} person: too few to stratify into train and test")
+        ids = np.sort(people.index.to_numpy())
+        n = min(max(round(len(ids) * test_share), 1), len(ids) - 1)
+        test.extend(rng.choice(ids, size=n, replace=False))
+    return f["person_id"].isin(test).to_numpy()
+
+
+def _auc_rank(pos: np.ndarray, score: np.ndarray) -> float:
+    """AUC by ranks (Mann-Whitney), ties given their average rank; missing when either side is empty."""
+    n1, n0 = int(pos.sum()), int((~pos).sum())
+    if n1 == 0 or n0 == 0:
+        return np.nan
+    r = pd.Series(score).rank(method="average").to_numpy()
+    return float((r[pos].sum() - n1 * (n1 + 1) / 2) / (n1 * n0))
+
+
+@traced
+def class_metrics(y: np.ndarray, proba: np.ndarray, names: list[str]) -> pd.DataFrame:
+    """Per class, one-vs-rest, as Table 2 of Patel et al. 2026 reports them (spec 023 US3; R twin
+    r/R/13_spec023.R, parity-tested to 1e-9):
+      - sensitivity and specificity of the arg-max class (the first class wins a tie, as numpy's argmax);
+      - AUC by ranks with ties averaged, missing (not zero) for a class absent from `y` or with no rest;
+      - Brier score: the mean over visits of (that class's probability - 1 if the visit is that class else 0)^2.
+    Then a `mean` row: each metric averaged over the classes present in `y` (`classes_averaged` says how many);
+    its `n_test` is the number of visits."""
+    y, proba = np.asarray(y), np.asarray(proba, dtype=float)
+    pred = proba.argmax(axis=1)
+    rows = []
+    for k, name in enumerate(names):
+        pos, hit = y == k, pred == k
+        rows.append({"class": name, "n_test": int(pos.sum()),
+                     "sensitivity": (hit & pos).sum() / pos.sum() if pos.any() else np.nan,
+                     "specificity": (~hit & ~pos).sum() / (~pos).sum() if (~pos).any() else np.nan,
+                     "auc": _auc_rank(pos, proba[:, k]),
+                     "brier": float(np.mean((proba[:, k] - pos) ** 2)),
+                     "classes_averaged": np.nan})
+    m = pd.DataFrame(rows)
+    present = m["n_test"] > 0
+    mean = {c: m.loc[present, c].mean() for c in ("sensitivity", "specificity", "auc", "brier")}   # skips NaN
+    rows.append({"class": "mean", "n_test": len(y), **mean, "classes_averaged": int(present.sum())})
+    return pd.DataFrame(rows)
+
+
+@traced
+def compare_feature_sets(people: pd.DataFrame, seed: int = 0, grid: dict | None = None, folds: int = 5,
+                         scheme: str = "four") -> dict:
+    """Train and test each of FEATURE_SETS on the same stratified 70/30 split of `people` (person_features).
+    Returns, per feature set and class, the metrics (`metrics`); the held-out class probabilities
+    (`predictions`); and mean |SHAP| per feature (`shap_importance`). SYNTHETIC: nothing about real patients."""
+    names = CLASS_NAMES[scheme]
+    n_class = len(names)
+    te = split_stratified(people, seed)
+    y = people["y"].to_numpy()
+    groups = people.loc[~te, "person_id"].to_numpy()
+    metrics, preds, imps = [], [], []
+    for name, cols in FEATURE_SETS.items():
+        X = people[cols]
+        best = tune(X[~te], y[~te], groups, n_class, seed, grid, folds)
+        params = {k: v for k, v in best.items() if k not in ("cv_macro_f1", "cv_folds_used")}
+        model = _fit(params, X[~te], y[~te], n_class, seed)
+        proba = model.predict_proba(X[te])
+        metrics.append(class_metrics(y[te], proba, names).assign(feature_set=name))
+        preds.append(pd.DataFrame(proba, columns=[f"p_{c}" for c in names])
+                     .assign(feature_set=name, visit_id=people.loc[te, "visit_id"].to_numpy(), y=y[te]))
+        phi = shap_values(model, X[te])
+        imps.append(pd.DataFrame({"feature_set": name, "feature": cols,
+                                  "mean_abs_shap": np.abs(phi[:, :, :-1]).mean(axis=(0, 1))})
+                    .sort_values("mean_abs_shap", ascending=False))
+    m = pd.concat(metrics, ignore_index=True)
+    m["features"] = m["feature_set"].map({k: " ".join(v) for k, v in FEATURE_SETS.items()})
+    m = m.assign(n_train=int((~te).sum()), seed=seed, is_synthetic=True)
+    m = m[["feature_set", "class", "n_test", "sensitivity", "specificity", "auc", "brier", "classes_averaged",
+           "n_train", "features", "seed", "is_synthetic"]]
+    p = pd.concat(preds, ignore_index=True)[["feature_set", "visit_id", "y", *[f"p_{c}" for c in names]]]
+    return {"metrics": m, "predictions": p, "shap_importance": pd.concat(imps, ignore_index=True)}
