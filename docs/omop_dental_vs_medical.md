@@ -54,9 +54,9 @@ al., OHDSI 2025).
 
 ## Sources
 
-- Koski R, et al. *Identifying Oral Health Concepts in OMOP-CDM Datasets.*
-  OHDSI Symposium 2025. [PDF](https://www.ohdsi.org/wp-content/uploads/2025/10/111-koski-robert_Identifying_Oral_Health_Concepts-Robert-Koski.pdf)
-- OHDSI Dentistry Workgroup. *Mapping Dental Use Cases to the OMOP-CDM.* OHDSI 2023.
+- Koski R, et al. *Identifying Oral Health Concepts from Previously "OMOP-ified" Data.*
+  OHDSI 2025 Global Collaborator Showcase, poster 111. [PDF](https://www.ohdsi.org/wp-content/uploads/2025/10/111-koski-robert_Identifying_Oral_Health_Concepts-Robert-Koski.pdf)
+- Koski R, Chandrasekharan G, Duncan WD (OHDSI Dentistry Workgroup). *Mapping Dental Use Cases to the OMOP-CDM.* OHDSI 2023.
   [PDF](https://ohdsi.org/wp-content/uploads/2023/10/39-Koski-OHDSIreport-Robert-Koski.pdf)
 - OHDSI Forums. *Guidance on mapping deprecated CDT/HCPCS dental procedure codes
   to OMOP standard concepts.* [Thread](https://forums.ohdsi.org/t/guidance-on-mapping-deprecated-cdt-hcpcs-dental-procedure-codes-to-omop-standard-concepts/25709)
