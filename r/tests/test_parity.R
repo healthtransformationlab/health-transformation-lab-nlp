@@ -797,9 +797,9 @@ if (file.exists(file.path(rt, "synthetic_tooth_loss_eval_rows.csv"))) {
     if (!all(ok) || !ok_cal) bad <- c(bad, paste(k, paste(names(r)[!ok], collapse = ",")))
   }
   # the stage rule: expected count and stage IV under each rule, per patient
-  ps <- rr("patient_stage"); pr <- rr("predictions")
-  ps <- ps[ps$generator_seed == seed0, ]
-  pr <- pr[pr$feature_set == "shared" & pr$tooth_status_code %in% c("missing_at_entry", "extracted_no_dx"), ]
+  # every unlabelled missing tooth the recount counts, inside the model's teeth or not (#468 review)
+  ps <- rr("patient_stage"); pr <- rr("stage_probabilities")
+  ps <- ps[ps$generator_seed == seed0, ]; pr <- pr[pr$generator_seed == seed0, ]
   bad_stage <- 0
   for (grp in split(ps, paste(ps$label_set, ps$model))) {
     p <- pr[pr$label_set == grp$label_set[1] & pr$model == grp$model[1], ]

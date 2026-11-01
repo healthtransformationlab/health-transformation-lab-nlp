@@ -92,9 +92,13 @@ Generator seed 42, shared predictors, AUC (95% CI):
 | missing at the first exam (3,594 teeth, 1,452 patients) | 0.91 (0.89-0.93) | 0.89 (0.86-0.91) | 0.93 (0.92-0.95) | 0.94 (0.92-0.95) |
 | extractions without a diagnosis (84 teeth) | 0.99 (0.97-1.00) | 1.00 (0.99-1.00) | 0.97 (0.92-1.00) | 1.00 (0.99-1.00) |
 
-Across the 5 generator seeds the held-out AUC of the shared models ranges from 0.72 to 0.88. Stage IV, all 1,131
-patients at stage III-IV by worst CAL: 127 by every missing tooth, 25 by fewer than 20 teeth, 92 by fewer than 10
-occluding pairs, 45 by the synthetic truth. The detailed tables below are the run before spec 032 US8 (every year,
+Across the 5 generator seeds the held-out AUC of the shared models ranges from 0.72 to 0.88. The start date and the
+minimum age choose the teeth that train and score the model, not how many teeth a patient has lost: the stage recount
+still counts every missing tooth but third molars (`tooth_loss_model.stage_teeth`), and the fitted model gives the
+unlabelled ones outside its own teeth a probability too. So stage IV, all 2,411 patients at stage III-IV by worst
+CAL, is as before: 273 by every missing tooth, 46 by fewer than 20 teeth, 181 by fewer than 10 occluding pairs, 97 by
+the synthetic truth; by the expected count (shared predictors) 33 / 36 (completed, logistic / XGBoost) and 83 / 94
+(completed + planned), against 21 / 27 and 85 / 84 before, as the model itself changed. The detailed tables below are the run before spec 032 US8 (every year,
 70/30, fixed XGBoost settings: `--start-date "" --test-share 0.3 --cv-folds 0`, the `repo_v1` preset); they are kept
 because they describe the whole extract.
 

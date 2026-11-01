@@ -412,3 +412,8 @@ def test_a_run_with_a_start_date_counts_every_lost_tooth_in_the_stage_recount():
     assert (one["unlabelled_tooth_count"].reindex(unlabelled.index) == unlabelled).all()
     assert len(tm.eligible(tm.with_first_exam_date(teeth, x), params)) < len(teeth)   # the model's set is smaller
     assert one["unlabelled_prob_sum"].gt(0).any()                # the model gives every unlabelled tooth a probability
+    sp = out["stage_probabilities"]                              # what the R twin reads for the recount
+    sp = sp[(sp["label_set"] == "completed") & (sp["model"] == tm.MODELS[0])]
+    assert len(sp) == unlabelled.sum()
+    assert sp.groupby("patient_id")["probability"].sum().reindex(one.index, fill_value=0.0).to_numpy() == \
+        pytest.approx(one["unlabelled_prob_sum"].to_numpy())

@@ -58,7 +58,13 @@ Not yet read on the PR head at the time of writing. Locally: full `pytest -q tes
 ### 🔴 Blocking (Critical)
 None.
 ### 🟡 Should fix (Important, non-blocking)
-None open. Two found during the work and fixed in the PR: the R prevalence parity read every visit while Python now
+- **Fixed (coordinator review): the stage recount counted only the model's teeth.** `tooth_loss_model.run` passed the
+  teeth left after the minimum age and start date to `patient_stage`, so stage IV by every missing tooth fell 273 to
+  127. `stage_teeth` now keeps every non-third-molar tooth for the recount, the fitted model gives the unlabelled ones
+  outside its own teeth a probability (written as `stage_probabilities`, which the R twin reads), and a test first
+  showed five losses before the start date still make stage IV. Back to 273 / 46 / 181 / 97; R parity spec 029 0 differ.
+
+None other open. Two found during the work and fixed in the PR: the R prevalence parity read every visit while Python now
 counts the filtered, re-read ones (fixed: `export_rules_predictions.py` writes the scored visits for R); and the
 simulated judge scorecard mixed grouped answers with six-status judge statuses (fixed in both languages; the
 committed real judge run, which needs the LLM endpoint to redo, still checks at six statuses).

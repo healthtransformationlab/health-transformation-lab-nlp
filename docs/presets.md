@@ -69,7 +69,8 @@ The start dates are synthetic stand-ins for "the date a newer classification was
 | status classifier, 5level: accuracy / macro F1 | 0.797 / 0.746 | 0.795 / 0.751 | 0.768 / 0.716 |
 | status classifier, 3level: accuracy / macro F1 | 0.881 / 0.864 | 0.882 / 0.868 | 0.867 / 0.846 |
 | status classifier: people in both the training and the test part | 0 | 0 | 405 |
-| stage IV, all patients at stage III-IV: every missing tooth / fewer than 20 teeth / fewer than 10 pairs / truth | 273 / 46 / 181 / 97 | 127 / 25 / 92 / 45 | 127 / 25 / 92 / 45 |
+| stage IV, all patients at stage III-IV: every missing tooth / fewer than 20 teeth / fewer than 10 pairs / truth | 273 / 46 / 181 / 97 | 273 / 46 / 181 / 97 | 273 / 46 / 181 / 97 |
+| stage IV by the expected count, completed + planned, logistic / XGBoost | 85 / 84 | 83 / 94 | 84 / 100 |
 | CAL reliability: ICC for the same site charted again (SEM) | not run | 0.683 (0.82 mm) | 0.683 (0.82 mm) |
 
 How to read it:
@@ -124,7 +125,8 @@ Headline numbers before and after (SYNTHETIC: agreement with the generator's ans
 | prevalence from the done-treatment diagnosis codes alone | 46.4% of 1,131 answered | 32.0% of 1,119 answered |
 | status classifier, 5level / 3level accuracy | 0.797 / 0.881 | 0.795 / 0.882 |
 | tooth loss, held-out extractions: AUC logistic / XGBoost (shared, completed) | 0.84 / 0.86 (242 teeth) | 0.81 / 0.82 (91 teeth) |
-| tooth loss: stage IV by every missing tooth / fewer than 20 teeth / fewer than 10 pairs / truth | 273 / 46 / 181 / 97 | 127 / 25 / 92 / 45 |
+| tooth loss: stage IV by every missing tooth / fewer than 20 teeth / fewer than 10 pairs / truth | 273 / 46 / 181 / 97 | 273 / 46 / 181 / 97 (the start date chooses the model's teeth, not the teeth counted) |
+| tooth loss: stage IV by the expected count, completed + planned, logistic / XGBoost | 85 / 84 | 83 / 94 |
 | data-quality page: chart consistency split by | six group types | the same plus insurance type (and the four insurance tables are checked) |
 | data-quality page: CAL reliability | not reported | ICC per probing error (SIMULATED variance components) |
 
