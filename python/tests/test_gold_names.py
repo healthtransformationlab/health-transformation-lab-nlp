@@ -259,3 +259,33 @@ def test_the_migration_notebook_carries_the_legacy_schemas_and_checks_every_key_
     assert stale.index("continue") < stale.index("drops.append")   # a stale table, never checked, gets no DROP
     jobs = (ROOT / "databricks/resources/jobs.yml").read_text()
     assert "legacy_gold_schemas: ${var.legacy_gold_schemas}" in jobs
+
+
+# issue #248: a key column missing from one or both sides (run_id on fact_llm_call, in neither the legacy nor the
+# current table) counts as null on that side; its type comes from the side that has it, or is string.
+
+def test_a_key_column_only_the_legacy_side_has_takes_its_type():
+    types = gold_names.merge_key_types(("visit_id", "run_id"), {"visit_id": "bigint", "run_id": "string"},
+                                       {"visit_id": "bigint"})
+    assert types == {"visit_id": "bigint", "run_id": "string"}
+
+
+def test_a_key_column_only_the_current_side_has_takes_its_type():
+    types = gold_names.merge_key_types(("visit_id", "run_ts"), {"visit_id": "bigint"},
+                                       {"visit_id": "bigint", "run_ts": "timestamp"})
+    assert types == {"visit_id": "bigint", "run_ts": "timestamp"}
+
+
+def test_a_key_column_neither_side_has_is_a_string_null_not_an_error():
+    cols = {"source_code": "string", "method_name": "string", "file_sha256": "string", "visit_id": "bigint"}
+    types = gold_names.merge_key_types(gold_names.MERGE_KEYS["fact_llm_call"], cols, dict(cols))
+    assert types["run_id"] == "string"
+    assert list(types) == list(gold_names.MERGE_KEYS["fact_llm_call"])
+
+
+def test_the_migration_notebook_stands_in_nulls_on_both_sides_and_writes_only_the_legacy_columns():
+    nb = (ROOT / "databricks/notebooks/11_migrate_gold_names.py").read_text()
+    assert "src.schema[k]" not in nb                   # the legacy side may lack the key too (issue #248)
+    assert "gold_names.merge_key_types(" in nb
+    merge = nb[nb.index("def merge_missing"):nb.index("def not_carried")]
+    assert ".select(*src.columns)" in merge            # a stand-in key column is never written
