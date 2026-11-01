@@ -142,6 +142,14 @@ TABLES |= {
                            "key_points_covered": "covered_key_point_count", "score": "score_ratio",
                            "harm": "harm_code", "cost_usd": "cost_usd", "judge": "judge_model_name",
                            "run_id": "run_id", "simulated": "is_simulated", **_DQ_PROV},
+    # spec 029 US3: the tooth-loss model's answers (health_transformation_lab.gold_opendental_perio), synthetic only
+    "fact_tooth_loss_prediction": {"patient_id": "patient_id", "tooth_num": "tooth_num",
+                                   "tooth_status_code": "tooth_status_code", "label_set": "label_set_code",
+                                   "feature_set": "feature_set_code", "model": "model_name", "split": "split_code",
+                                   "probability": "perio_loss_probability_ratio", "threshold": "threshold_ratio",
+                                   "predicted_perio": "is_predicted_perio_loss", "generator_seed": "generator_seed_num",
+                                   "synthetic": "is_synthetic", "run_id": "run_id", "run_ts": "run_ts",
+                                   "git_commit": "git_commit_sha"},
 }
 
 # spec 031: the Benchmark job's tables (01_run_benchmark.py). score()'s own run_id is one model fit (model_run_id);

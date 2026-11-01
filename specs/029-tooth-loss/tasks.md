@@ -32,11 +32,12 @@ Implementation starts after this spec, plan and tasks are reviewed.
 
 - [x] T007a [US3] Pre-specified analysis plan, TRIPOD+AI order ([analysis_plan.md](analysis_plan.md), #395); T008–T010
   follow it, and any change is logged there
-- [ ] T008 [US3] Failing tests: feature sets, grouped stratified split, metrics, expected-count stage rule
-- [ ] T009 [US3] Logistic regression and XGBoost on both label sets (completed; completed and planned); scores,
-  calibration and stage recount; R twins for metrics and the stage rule
-- [ ] T010 [US3] `docs/tooth_loss.md`, results labelled synthetic; gold `fact_tooth_loss_prediction`
-- [ ] T011 Full test suite, `ruff`, R parity; review file for each implementation PR
+- [x] T008 [US3] Failing tests: feature sets, grouped stratified split, metrics, expected-count stage rule
+- [x] T009 [US3] Logistic regression and XGBoost on both label sets (completed; completed and planned); scores,
+  calibration and stage recount; R twins for metrics and the stage rule. Built as `tooth_loss_model.py` (kept apart
+  from the tooth table) and `scripts/51_tooth_loss_model.py` (45 was taken); the Load Open Dental job writes gold
+- [x] T010 [US3] `docs/tooth_loss.md`, results labelled synthetic; gold `fact_tooth_loss_prediction`
+- [x] T011 Full test suite, `ruff`, R parity; review file for each implementation PR
 
 ## US4 #379: ERDs of the Open Dental silver tables and an OMOP alternative
 

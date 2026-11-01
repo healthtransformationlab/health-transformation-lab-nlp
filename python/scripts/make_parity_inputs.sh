@@ -15,9 +15,10 @@ python scripts/11_ai_predict.py --rung medgemma-1.5-4b-it --backend simulated
 python scripts/29_medgemma_vs_bert.py --simulated --n-boot 200   # needs committed encoder predictions
 python scripts/19_prevalence.py
 python scripts/20_data_quality.py
-python scripts/51_patel2022.py          # spec 024: Patel et al. 2022 completeness and confusion scores (read by the R parity test)
+python scripts/52_patel2022.py          # spec 024: Patel et al. 2022 completeness and confusion scores (read by the R parity test)
 python scripts/45_case_profiles.py      # spec 026: record-mismatch rules and scores (read by the R parity test)
 python scripts/47_tooth_table.py        # spec 029: tooth statuses on a seeded synthetic Open Dental extract
+python scripts/51_tooth_loss_model.py --patients 2000 --stability-seeds 1 --n-boot 50   # spec 029 US3: model metrics, stage rule
 python scripts/22_build_sites.py
 python scripts/14_benchmark_cost.py --simulate-missing
 python scripts/15_judge.py --backend simulated --simulated-review

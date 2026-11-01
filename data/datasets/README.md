@@ -15,7 +15,7 @@ the counts and de-id recall for this build.
 | `deid_report.csv` | Per note: PHI characters, removed, over-redacted, leaked values. |
 | `ai_predictions_*.csv` | One file per AI model, predictions on the review charts. |
 | `periodx_visits.csv` | Spec 024: per visit, the PerioDx Extractor's reading of the note and the PerioDx Diagnoser's reading of the chart (Patel et al. 2022), and `algorithm_patel2022`, the paper's stepwise order, with the section that decided it. Statuses only, no note text, all synthetic. Kept apart from `visits_structured.csv`, so that file stays as it was ([periodx.md](../../docs/periodx.md)). |
-| `periodx/confusion_scores.csv`, `data_quality/completeness_patel2022.csv` | Spec 024: confusion counts, precision, recall and F1 per status for the Diagnoser, the Extractor and the phenotype on the review charts; completeness per section before and after merging (`scripts/51_patel2022.py`). Synthetic, against the generator's truth. |
+| `periodx/confusion_scores.csv`, `data_quality/completeness_patel2022.csv` | Spec 024: confusion counts, precision, recall and F1 per status for the Diagnoser, the Extractor and the phenotype on the review charts; completeness per section before and after merging (`scripts/52_patel2022.py`). Synthetic, against the generator's truth. |
 | `medical_record.csv` | **Synthetic** medical record, one row per person (spec 023): diabetes (the visits' HbA1c ≥ 6.5), hypertension, chronic kidney disease, cardiovascular disease, COPD, blood pressure, ASA class, and `is_synthetic`. Join on `person_id`; HbA1c stays in `visits_structured.csv`. |
 
 ## The medical record (`medical_record.csv`, spec 023)

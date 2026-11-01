@@ -600,7 +600,7 @@ if (file.exists(pc) && file.exists(ps)) {
 
 # Spec 024 US3: the Diagnoser on every visit, the stepwise phenotype (codes, then the Extractor's reading of the
 # note, then the chart), completeness per section and the confusion scores, R 14_spec024.R vs periodx_visits.csv
-# and scripts/51_patel2022.py. The Extractor is NLP, so R reads its labels from Python's table (plan item 6).
+# and scripts/52_patel2022.py. The Extractor is NLP, so R reads its labels from Python's table (plan item 6).
 pvf <- "data/datasets/periodx_visits.csv"
 pcf <- "data/datasets/periodx/confusion_scores.csv"
 pkf <- "data/datasets/data_quality/completeness_patel2022.csv"
@@ -645,4 +645,73 @@ if (file.exists(pvf) && file.exists(pcf) && file.exists(pkf)) {
               nrow(v), bad_chart, bad_merge, nrow(mk), dk, nrow(mc), dc))
   stopifnot(bad_chart == 0, bad_merge == 0, nrow(mk) == nrow(py_k), dk < 1e-9, nrow(mc) == nrow(py_c), dc < 1e-9)
   cat("parity OK (spec 024 US3)\n")
-} else cat("PerioDx visits: skipped (run 10_build_study.py and 51_patel2022.py)\n")
+} else cat("PerioDx visits: skipped (run 10_build_study.py and 52_patel2022.py)\n")
+# Spec 029 US3: the tooth-loss model's metrics and the stage IV counting rules (R 16_spec029.R vs
+# tooth_loss_model.py / labels.py, from scripts/51_tooth_loss_model.py's outputs). Model fitting is Python only.
+rt <- "data/results"
+if (file.exists(file.path(rt, "synthetic_tooth_loss_eval_rows.csv"))) {
+  source("r/R/16_spec029.R")
+  rr <- function(n) read.csv(file.path(rt, paste0("synthetic_tooth_loss_", n, ".csv")), stringsAsFactors = FALSE)
+  ev <- rr("eval_rows"); sc <- rr("scores"); cb <- rr("calibration")
+  seed0 <- min(ev$generator_seed)
+  sc <- sc[sc$generator_seed == seed0, ]; cb <- cb[cb$generator_seed == seed0, ]
+  key <- function(d) paste(d$label_set, d$feature_set, d$model, d$eval_set, sep = "|")
+  ev$k <- key(ev); sc$k <- key(sc); cb$k <- key(cb)
+  near <- function(a, b) (is.na(a) & is.na(b)) | (!is.na(a) & !is.na(b) & abs(a - b) < 1e-9)
+  bad <- character(0); n_checked <- 0
+  for (k in unique(ev$k[ev$eval_set != "train"])) {
+    g <- ev[ev$k == k, ]; s <- sc[sc$k == k, ]
+    get <- function(metric, tname = "") {
+      v <- s$value[s$metric == metric & (if (tname == "") is.na(s$threshold_name) | s$threshold_name == ""
+                                         else s$threshold_name == tname)]
+      if (length(v) == 1) v else NA_real_
+    }
+    sl <- calibration_slope_029(g$y, g$p)
+    r <- c(auc = auc_029(g$y, g$p), brier = brier_029(g$y, g$p),
+           calibration_intercept = calibration_intercept_029(g$y, g$p), calibration_slope = sl[2])
+    py <- c(auc = get("auc"), brier = get("brier"), calibration_intercept = get("calibration_intercept"),
+            calibration_slope = get("calibration_slope"))
+    for (tn in unique(s$threshold_name[!is.na(s$threshold_name) & s$threshold_name != ""])) {
+      th <- s$threshold[s$threshold_name == tn][1]
+      cl <- classification_029(g$y, g$p, th)
+      for (m in c("sensitivity", "specificity", "ppv", "npv")) {
+        r[paste(m, tn)] <- cl[[m]]; py[paste(m, tn)] <- get(m, tn)
+      }
+      if (tn == "youden_train") {                       # the threshold itself, chosen on the training teeth
+        tr <- ev[ev$k == paste(g$label_set[1], g$feature_set[1], g$model[1], "train", sep = "|"), ]
+        r["youden"] <- youden_threshold_029(tr$y, tr$p); py["youden"] <- th
+      }
+    }
+    ct <- calibration_table_029(g$y, g$p); pc <- cb[cb$k == k, ]
+    pc <- pc[order(pc$bin_num), ]
+    ok <- near(r, py[names(r)])
+    ok_cal <- all(ct$tooth_count == pc$tooth_count) && all(near(ct$mean_predicted_ratio, pc$mean_predicted_ratio)) &&
+      all(near(ct$observed_ratio, pc$observed_ratio))
+    n_checked <- n_checked + length(r) + 1
+    if (!all(ok) || !ok_cal) bad <- c(bad, paste(k, paste(names(r)[!ok], collapse = ",")))
+  }
+  # the stage rule: expected count and stage IV under each rule, per patient
+  ps <- rr("patient_stage"); pr <- rr("predictions")
+  ps <- ps[ps$generator_seed == seed0, ]
+  pr <- pr[pr$feature_set == "shared" & pr$tooth_status_code %in% c("missing_at_entry", "extracted_no_dx"), ]
+  bad_stage <- 0
+  for (grp in split(ps, paste(ps$label_set, ps$model))) {
+    p <- pr[pr$label_set == grp$label_set[1] & pr$model == grp$model[1], ]
+    sums <- tapply(p$probability, p$patient_id, function(v) v, simplify = FALSE)
+    for (i in seq_len(nrow(grp))) {
+      probs <- sums[[as.character(grp$patient_id[i])]]
+      if (is.null(probs)) probs <- numeric(0)
+      e <- expected_perio_loss_029(grp$recorded_perio_count[i], probs)
+      iv <- sapply(STAGE4_COUNT_RULES_029, function(rule) stage4_rule_029(rule, grp$recorded_perio_count[i],
+                   grp$missing_count[i], probs, grp$true_perio_count[i]))
+      py_iv <- as.logical(unlist(grp[i, paste0("is_stage4_", STAGE4_COUNT_RULES_029)]))
+      at_edge <- abs(e - 5) < 1e-9                       # summation order may differ at exactly five teeth
+      if (abs(e - grp$expected_perio_loss[i]) >= 1e-9 || (!at_edge && any(iv != py_iv))) bad_stage <- bad_stage + 1
+    }
+  }
+  cat(sprintf("tooth-loss metrics: %d sets of teeth, %d values checked, %d sets differ; stage rule: %d patient rows, %d differ\n",
+              length(unique(ev$k[ev$eval_set != "train"])), n_checked, length(bad), nrow(ps), bad_stage))
+  if (length(bad)) print(bad)
+  stopifnot(length(bad) == 0, bad_stage == 0, nrow(ps) > 0)
+  cat("parity OK (spec 029 US3)\n")
+} else cat("tooth-loss model: skipped (run 51_tooth_loss_model.py)\n")

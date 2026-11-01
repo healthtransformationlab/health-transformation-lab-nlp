@@ -1,6 +1,6 @@
 """Score the Patel et al. 2022 phenotype (spec 024 US3) beside the paper's own tables.
 
-    python scripts/51_patel2022.py
+    python scripts/52_patel2022.py
 
 Reads data/datasets/periodx_visits.csv (written by 10_build_study.py) and writes:
 

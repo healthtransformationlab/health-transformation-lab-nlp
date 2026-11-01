@@ -136,7 +136,7 @@ selected.
 - `data/datasets/periodx_visits.csv`: every visit's Extractor and Diagnoser readings, the phenotype and its
   deciding section. Statuses only, no note text. It is written by `10_build_study.py` next to the study data, so
   every existing dataset stays byte-identical (FR-010).
-- `scripts/51_patel2022.py` writes completeness per section (`data_quality/completeness_patel2022.csv`) and the
+- `scripts/52_patel2022.py` writes completeness per section (`data_quality/completeness_patel2022.csv`) and the
   confusion scores (`periodx/confusion_scores.csv`).
 - The method also appears in the leaderboard ([results.md](results.md)), the reliability scripts, the DQ
   grader's `fact_visit_evidence` (`rules_patel2022_status_code`) and its dashboard.

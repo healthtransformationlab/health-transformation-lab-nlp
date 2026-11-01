@@ -51,6 +51,7 @@ erDiagram
     dq_mismatch_rule
     dim_grader_question
     fact_grader_answer
+    fact_tooth_loss_prediction
     dim_study_note
     benchmark_metric
 ```
@@ -418,6 +419,23 @@ erDiagram
         string file_sha256 "SHA-256 of those files together: the version"
         string git_commit_sha "commit the job was deployed from"
         timestamp loaded_ts "when Load results wrote it"
+    }
+    fact_tooth_loss_prediction {
+        bigint patient_id PK "Open Dental PatNum (synthetic)"
+        bigint tooth_num PK "universal tooth number 1-32"
+        string tooth_status_code "how the tooth left the record (silver patient_tooth)"
+        string label_set_code PK "completed · completed_planned (FR-010)"
+        string feature_set_code PK "shared (applied model) · own (with the tooth's own measures)"
+        string model_name PK "logistic · xgboost"
+        string split_code "train · test (held-out patients) · applied (no recorded reason)"
+        double perio_loss_probability_ratio "P(lost to periodontitis), 0 to 1"
+        double threshold_ratio "the fixed threshold, 0.5"
+        boolean is_predicted_perio_loss "probability at or above the threshold"
+        bigint generator_seed_num "seed of the synthetic extract"
+        boolean is_synthetic "always true: synthetic data only"
+        string run_id PK "Databricks job run id: the batch key"
+        timestamp run_ts "when the job ran"
+        string git_commit_sha "commit the job was deployed from"
     }
     dim_study_note {
         bigint note_id PK "OMOP note_id (= visit_occurrence_id)"
@@ -913,6 +931,28 @@ One per (question, model, with or without the agent, run). Written by: Load resu
 |  | `file_sha256` | string | SHA-256 of those files together: the version |
 |  | `git_commit_sha` | string | commit the job was deployed from |
 |  | `loaded_ts` | timestamp | when Load results wrote it |
+
+### `fact_tooth_loss_prediction`
+
+Schema gold_opendental_perio. One per (synthetic patient, missing or labelled tooth, label set, feature set, model, run): P(the tooth was lost to periodontitis). Written by: Load Open Dental (12_load_open_dental.py): delete-then-append by run_id.
+
+| Key | Column | Type | Description |
+|---|---|---|---|
+| PK | `patient_id` | bigint | Open Dental PatNum (synthetic) |
+| PK | `tooth_num` | bigint | universal tooth number 1-32 |
+|  | `tooth_status_code` | string | how the tooth left the record (silver patient_tooth) |
+| PK | `label_set_code` | string | completed · completed_planned (FR-010) |
+| PK | `feature_set_code` | string | shared (applied model) · own (with the tooth's own measures) |
+| PK | `model_name` | string | logistic · xgboost |
+|  | `split_code` | string | train · test (held-out patients) · applied (no recorded reason) |
+|  | `perio_loss_probability_ratio` | double | P(lost to periodontitis), 0 to 1 |
+|  | `threshold_ratio` | double | the fixed threshold, 0.5 |
+|  | `is_predicted_perio_loss` | boolean | probability at or above the threshold |
+|  | `generator_seed_num` | bigint | seed of the synthetic extract |
+|  | `is_synthetic` | boolean | always true: synthetic data only |
+| PK | `run_id` | string | Databricks job run id: the batch key |
+|  | `run_ts` | timestamp | when the job ran |
+|  | `git_commit_sha` | string | commit the job was deployed from |
 
 ### `dim_study_note`
 
