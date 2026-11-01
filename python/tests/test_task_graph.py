@@ -86,26 +86,59 @@ def _git(cwd, *args):
                            *args], cwd=cwd, check=True, capture_output=True, text=True).stdout
 
 
-def test_snapshot_is_the_history_up_to_base_on_main_and_nothing_after(tmp_path):
+def _three_commits(tmp_path, middle_message="second message"):
     src = tmp_path / "src"
     src.mkdir()
     _git(src, "init", "-q", "-b", "trunk")
-    for i in range(3):
+    for i, msg in enumerate(["first message", middle_message, "third message"]):
         (src / "f.txt").write_text(f"v{i}\n")
         _git(src, "add", ".")
-        _git(src, "commit", "-q", "-m", f"c{i}")
-    base = _git(src, "rev-list", "--reverse", "HEAD").split()[1]
+        _git(src, "commit", "-q", "-m", msg)
+    return src, _git(src, "rev-list", "--reverse", "HEAD").split()[1]
+
+
+def test_snapshot_is_one_commit_with_the_base_files_and_no_history(tmp_path):
+    src, base = _three_commits(tmp_path, middle_message="secret history line")
     out = tmp_path / "snap.tgz"
     info = tg.snapshot(src, base, out, work_dir=tmp_path / "work")
-    assert out.exists() and info["commit_count"] == 2
-    assert info["snapshot_head_sha"] == base                     # unsigned commits keep their SHAs
-    assert info["tree_sha"] == _git(src, "rev-parse", f"{base}^{{tree}}").strip()
-    assert _git(src, "for-each-ref").count("refs/tasksnap/") == 0  # the temporary ref is removed
+    assert out.exists() and info["commit_count"] == 1
+    assert info["tree_sha"] == _git(src, "rev-parse", f"{base}^{{tree}}").strip()   # the base's files exactly
     x = tmp_path / "x"
     with tarfile.open(out) as t:
         t.extractall(x, filter="data")
     repo = x / "workspace"
     assert (repo / "f.txt").read_text() == "v1\n"
     assert _git(repo, "rev-parse", "--abbrev-ref", "HEAD").strip() == "main"
-    assert _git(repo, "rev-list", "--count", "--all").strip() == "2"
+    assert _git(repo, "rev-list", "--count", "--all").strip() == "1"
+    log = _git(repo, "log", "--all", "--format=%B")
+    assert "secret history line" not in log and "first message" not in log   # no history message comes along
+    assert base in log                                               # the message names the base it was cut from
     assert _git(repo, "status", "--porcelain") == ""
+
+
+def test_snapshot_is_reproducible(tmp_path):
+    src, base = _three_commits(tmp_path)
+    a = tg.snapshot(src, base, tmp_path / "a.tgz", work_dir=tmp_path / "wa")
+    b = tg.snapshot(src, base, tmp_path / "b.tgz", work_dir=tmp_path / "wb")
+    assert a["snapshot_head_sha"] == b["snapshot_head_sha"]          # fixed author, date and message
+
+
+def test_snapshot_redacts_the_organisation_name_and_keeps_every_other_file(tmp_path):
+    src, base = _three_commits(tmp_path)
+    (src / "g.md").write_text("from " + "Care" + "Quest" + " and care questions\n")
+    (src / "h.bin").write_bytes(b"\x00\x01binary")
+    _git(src, "add", ".")
+    _git(src, "commit", "-q", "-m", "c3")
+    head = _git(src, "rev-parse", "HEAD").strip()
+    assert tg.files_naming_org(src, head) == ["g.md"] and tg.files_naming_org(src, base) == []
+    info = tg.snapshot(src, head, tmp_path / "s.tgz", work_dir=tmp_path / "w")
+    assert info["redacted_paths"] == "g.md"
+    x = tmp_path / "x"
+    with tarfile.open(tmp_path / "s.tgz") as t:
+        t.extractall(x, filter="data")
+    repo = x / "workspace"
+    assert (repo / "g.md").read_text() == "from [org] and care questions\n"
+    assert (repo / "f.txt").read_text() == "v2\n" and (repo / "h.bin").read_bytes() == b"\x00\x01binary"
+    assert tg.files_naming_org(repo, "HEAD") == []
+    clean = tg.snapshot(src, base, tmp_path / "c.tgz", work_dir=tmp_path / "w2")
+    assert clean["redacted_paths"] == "" and clean["tree_sha"] == _git(src, "rev-parse", f"{base}^{{tree}}").strip()

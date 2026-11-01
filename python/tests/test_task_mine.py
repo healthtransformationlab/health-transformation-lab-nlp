@@ -180,3 +180,18 @@ def test_the_committed_sample_has_the_competition_fields_and_no_organisation_nam
     rows = [json.loads(line) for line in sample.read_text().splitlines() if line.strip()]
     assert rows and all(list(r) == list(tm.TASK_FIELDS) for r in rows)
     assert all(tm.redact(json.dumps(r)) == json.dumps(r) for r in rows)
+
+
+ORG_NAME = "Care" + "Quest"   # built from parts, as in test_no_org_references.py
+
+
+def test_a_task_naming_the_organisation_in_its_code_is_excluded_with_the_reason():
+    clean = {"patch": "+x = 1\n", "test_patch": "+assert x == 1\n"}
+    assert tm.org_exclusion_reason(clean) is None
+    in_patch = {"patch": f"+# from {ORG_NAME}\n", "test_patch": "+assert True\n"}
+    in_tests = {"patch": "+x = 1\n", "test_patch": f"+assert '{ORG_NAME.lower()}' not in s\n"}
+    for row, where in ((in_patch, "patch"), (in_tests, "test_patch")):
+        reason = tm.org_exclusion_reason(row)
+        assert reason and where in reason and "CLAUDE.md" in reason
+        assert ORG_NAME.lower() not in reason.lower()       # the reason itself never names it
+    assert tm.names_org(f"see {ORG_NAME} Institute") and not tm.names_org("care questions")

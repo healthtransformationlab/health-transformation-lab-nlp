@@ -47,6 +47,24 @@ def redact(text: str | None) -> str:
 
 
 @traced
+def names_org(text: str | None) -> bool:
+    """True when the text names the organisation CLAUDE.md forbids."""
+    return bool(_ORG.search(text or ""))
+
+
+@traced
+def org_exclusion_reason(row: dict) -> str | None:
+    """Why a task can't be published because of the organisation name, or None. The statement and hints are
+    redacted, and so are the snapshot's files (task_graph.snapshot); a patch can't be without breaking it, so a
+    task whose patch or test patch names the organisation is left out (CLAUDE.md, #435). The reason never repeats
+    the name."""
+    for field in ("patch", "test_patch"):
+        if names_org(row.get(field)):
+            return f"{field} names the organisation CLAUDE.md forbids; a patch can't be redacted (#435)"
+    return None
+
+
+@traced
 def issue_from_branch(branch: str) -> int | None:
     m = BRANCH_ISSUE.match(branch or "")
     return int(m.group(1)) if m else None
