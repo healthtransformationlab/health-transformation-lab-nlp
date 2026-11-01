@@ -14,9 +14,10 @@ statement and hints come from the tier's source (issue, PR, or commit and spec s
 A candidate whose fix lives only in files the grader strips, or that has no code or no python/tests change in
 that range, is listed in tasks_excluded.csv instead.
 
-NOT DONE HERE (T007): the two gates (fail-to-pass, pass-to-pass) need the competition's evaluator
-(`swegemma eval --skip-agent-patch`), which ships only in the competition's Kaggle wheelhouse. Until the gates
-run, every row in tasks.jsonl is an ungated candidate, not a verified task.
+NOT DONE HERE (T007): the two gates (fail-to-pass, pass) run in scripts/57_gate_tasks.py, our own check that
+follows the competition harness's documented verification (its evaluator, swegemma, isn't distributed: #449,
+#453); results in data/tasks/task_gates.csv. Rows here stay ungated candidates; this script doesn't drop the
+ones that fail the gate.
 
 Needs the full history (`git fetch --unshallow origin`) and the GitHub REST API for issue and PR text (public
 repo: works unauthenticated, 60 requests an hour; this script makes about five).
@@ -233,7 +234,7 @@ def main() -> int:
           + ", ".join(f"tier {t} {n}" for t, n in counts.items()) + f"); {len(excluded)} excluded -> "
           f"{EXCLUDED.relative_to(REPO_ROOT)} (organisation name: {sum('#435' in e['reason_text'] for e in excluded)});"
           f" sample {len(sample)} -> {SAMPLE.relative_to(REPO_ROOT)}")
-    print("gates NOT run (T007): needs `swegemma eval --skip-agent-patch`; rows are candidates, not verified tasks")
+    print("gates NOT run here (T007): run scripts/57_gate_tasks.py; rows are candidates until then")
     if a.graphs:
         write_graphs(rows)
     if a.snapshots:
