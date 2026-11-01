@@ -366,7 +366,8 @@ TABLES = {
             *DQ_PROV]),
     # spec 029 US3 (#371): in health_transformation_lab.gold_opendental_perio, not gold_perio_bench
     "fact_tooth_loss_prediction": Table(
-        "tooth", "One per (synthetic patient, missing or labelled tooth, label set, feature set, model, run): "
+        "tooth", "Schema gold_opendental_perio. One per (synthetic patient, missing or labelled tooth, label set, "
+        "feature set, model, run): "
         "P(the tooth was lost to periodontitis)",
         "Load Open Dental (12_load_open_dental.py): delete-then-append by run_id", [
             C("patient_id", "bigint", "Open Dental PatNum (synthetic)", "PK"),

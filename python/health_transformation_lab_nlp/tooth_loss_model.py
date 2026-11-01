@@ -71,10 +71,13 @@ class ModelParams:
     threshold: float = 0.5
 
 
+DEFAULT = ModelParams()
+
+
 # ---------- who, the label sets and the predictors
 
 @traced
-def eligible(teeth: pd.DataFrame, params: ModelParams = ModelParams()) -> pd.DataFrame:
+def eligible(teeth: pd.DataFrame, params: ModelParams = DEFAULT) -> pd.DataFrame:
     """The teeth in the analysis: third molars out unless included; at least `min_age` when one is set."""
     t = teeth if params.include_third_molars else teeth[~teeth["tooth_num"].isin(THIRD_MOLARS)]
     if params.min_age is not None:
@@ -141,6 +144,7 @@ class _Logistic:
             Z[f"{g}_missing"] = X[[c for c in X.columns if _predictor(c) == g]].isna().any(axis=1).astype(float)
         return Z.to_numpy(float)
 
+    @traced
     def fit(self, X: pd.DataFrame, y: np.ndarray) -> _Logistic:
         from sklearn.linear_model import LogisticRegression
         from sklearn.preprocessing import StandardScaler
@@ -151,6 +155,7 @@ class _Logistic:
         self.model = LogisticRegression(C=LOGISTIC_C, max_iter=5000).fit(self.scaler.transform(Z), y)
         return self
 
+    @traced
     def predict(self, X: pd.DataFrame) -> np.ndarray:
         return self.model.predict_proba(self.scaler.transform(self._z(X)))[:, 1].astype(float)
 
@@ -161,10 +166,12 @@ class _XGBoost:
         self.model = XGBClassifier(objective="binary:logistic", tree_method="hist", random_state=seed, n_jobs=1,
                                    eval_metric="logloss", **XGB_PARAMS)
 
+    @traced
     def fit(self, X: pd.DataFrame, y: np.ndarray) -> _XGBoost:
         self.model.fit(X.to_numpy(float), y)
         return self
 
+    @traced
     def predict(self, X: pd.DataFrame) -> np.ndarray:
         return self.model.predict_proba(X.to_numpy(float))[:, 1].astype(float)
 
@@ -405,7 +412,7 @@ def _age_at_loss(teeth: pd.DataFrame, x: dict[str, pd.DataFrame]) -> pd.Series:
 
 
 @traced
-def run(x: dict[str, pd.DataFrame], truth: pd.DataFrame, params: ModelParams = ModelParams(),
+def run(x: dict[str, pd.DataFrame], truth: pd.DataFrame, params: ModelParams = DEFAULT,
         generator_seed: int = 42) -> dict[str, pd.DataFrame]:
     """Fit and score every model on both label sets (module docstring). Returns frames: scores, calibration,
     stage_recount, patient_stage, predictions, missing, eval_rows. Every row is labelled synthetic."""
@@ -431,7 +438,7 @@ def run(x: dict[str, pd.DataFrame], truth: pd.DataFrame, params: ModelParams = M
         y = eval_y[ev][m].to_numpy(float)
         pts = el.loc[m, "patient_id"].to_numpy()
         base = {**tag, "label_set": ls, "feature_set": fs, "model": model, "eval_set": ev,
-                "tooth_count": int(m.sum()), "patient_count": int(len(np.unique(pts)))}
+                "tooth_count": int(m.sum()), "patient_count": len(np.unique(pts))}
         for r in _score(y, p[m.to_numpy()], pts, thresholds, params.n_boot if boot else 0, params.seed):
             scores.append({**base, **r})
         cals.append(_calibration_table(y, p[m.to_numpy()]).assign(**{k: base[k] for k in (

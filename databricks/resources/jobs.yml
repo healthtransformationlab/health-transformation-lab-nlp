@@ -201,6 +201,7 @@ resources:
               od_catalog: ${resources.schemas.opendental_perio_bronze.catalog_name}
               bronze_schema: ${resources.schemas.opendental_perio_bronze.name}
               silver_schema: ${resources.schemas.opendental_perio_silver.name}
+              gold_schema: ${resources.schemas.opendental_perio_gold.name}   # spec 029 US3: fact_tooth_loss_prediction
               landing_dir: /Volumes/${resources.volumes.opendental_perio_data.catalog_name}/${resources.volumes.opendental_perio_data.schema_name}/${resources.volumes.opendental_perio_data.name}
               seed: "42"
               n_patients: "2000"
