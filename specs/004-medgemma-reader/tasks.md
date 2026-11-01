@@ -34,5 +34,5 @@
 
 ## Phase 5: Per-field accuracy (#130, #132)
 - [x] T021 [US5] Reference answers per reader field (status, grade, extent) from the generator's truth:
-  `reference_answers.py`, `51_reference_answers.py`, `answer_key/reference_answers.csv`; test first (#130).
+  `reference_answers.py`, `53_reference_answers.py`, `answer_key/reference_answers.csv`; test first (#130).
   The reader returns no pocket depths or bleeding, so there is nothing to score them against.

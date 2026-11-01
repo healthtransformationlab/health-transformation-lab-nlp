@@ -85,7 +85,7 @@ suppresses it (it otherwise used up the 300 new tokens before the JSON) and
 | Compare with BERT | `python scripts/29_medgemma_vs_bert.py [--bert modernbert-base]`: each MedGemma run minus the encoder, paired bootstrap CI, stage IV recall, by difficulty, fallback rate; R twin in `10_ladder.R`. Notebook 03 runs it after the reader (set `limit` 0, `lora_train` > 0 for the fine-tuned version) |
 
 **Reference answers per field (#130).** The reader returns three fields: status, grade and extent. Their
-correct answers per review visit are in `data/datasets/answer_key/reference_answers.csv` (`51_reference_answers.py`),
+correct answers per review visit are in `data/datasets/answer_key/reference_answers.csv` (`53_reference_answers.py`),
 taken from the generator's truth: the synthetic generator decides each visit's status, grade and extent before it
 writes the note, so no reviewer had to fill them in. Grade and extent are `NA` unless the truth is periodontitis.
 Where the note states something else (a copied-forward or miscoded record), the reference keeps the truth and

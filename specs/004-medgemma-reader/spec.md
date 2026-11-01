@@ -55,7 +55,7 @@ As the data scientist, I want the correct answer for every field the reader retu
 every review visit, so each field can be scored. The synthetic generator already decides these before writing
 the note, so the reference comes from its truth (no manual review, no anchoring on the model's answers).
 
-**Independent Test**: `51_reference_answers.py` writes `answer_key/reference_answers.csv`; a test checks one row
+**Independent Test**: `53_reference_answers.py` writes `answer_key/reference_answers.csv`; a test checks one row
 per review visit, grade and extent `NA` unless periodontitis, and that the committed file matches the answer key.
 
 1. **Given** the answer key, **Then** the table has one row per `visit_id` and one column per reader field, with its source on every row.
@@ -78,7 +78,7 @@ per review visit, grade and extent `NA` unless periodontitis, and that the commi
 - **FR-006**: `17_medgemma_lora.py` + `llm_reader.sft_records`.
 - **FR-007**: Databricks notebook running the reader on Free Edition serverless GPU.
 - **FR-008**: R parity unaffected: predictions are CSV in the existing format.
-- **FR-009**: `reference_answers.py` + `51_reference_answers.py`: reference answers per reader field from the generator's truth (US5).
+- **FR-009**: `reference_answers.py` + `53_reference_answers.py`: reference answers per reader field from the generator's truth (US5).
 
 ## Success Criteria
 
