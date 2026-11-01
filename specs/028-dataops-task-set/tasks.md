@@ -11,9 +11,9 @@
 - [x] T004 `--backfill-issues`: label `backfilled`, title key continues the count, closed on creation with a comment; 67 issues (#278-#344); manifest updated
 
 ## US3 - `tasks.jsonl` rows with `patch`, `test_patch` and the two gates #354
-- [ ] T005 Failing tests: split a diff into `patch` (non-test) and `test_patch` (`python/tests/`); statement from issue / PR / commit by tier; `created_at`; `base_commit` = the PR's merge base with `main` (PR review #358, should-fix 1), recorded in the manifest
-- [ ] T006 `scripts/47_build_tasks.py` writes `data/tasks/tasks.jsonl`; excludes fixes only in grader-stripped files
-- [ ] T007 Gates with the competition's evaluator (`swegemma eval --skip-agent-patch`, then with `patch`); drop and list failures
+- [x] T005 Failing tests: split a diff into `patch` (non-test) and `test_patch` (`python/tests/`); statement from issue / PR / commit by tier; `created_at`; `base_commit` = the PR's merge base with `main` (PR review #358, should-fix 1), recorded in the manifest (`base_commit_source_code`: 130 `merge_base`, 67 `parent`)
+- [x] T006 `scripts/51_build_tasks.py` (47 was taken) writes `data/tasks/tasks.jsonl` (git-ignored, 62 MB: 116 ungated rows, 49 A, 45 B, 22 C), `tasks_excluded.csv` (0 rows: the manifest already drops fixes only in grader-stripped files) and a 3-row committed `tasks_sample.jsonl`; one row's patch still names the organisation (statements are redacted; the patch is not), so it is kept out of the sample and must be handled before publishing
+- [ ] T007 Gates with the competition's evaluator (`swegemma eval --skip-agent-patch`, then with `patch`); drop and list failures. Blocked (Nov 1, 2026): `swegemma` is not on PyPI; it ships only in the competition's Kaggle wheelhouse, which a cloud session can't download without a Kaggle token
 
 ## US4 - Snapshots, graphs, embeddings, wheels #355
 - [ ] T008 Snapshots by `git fast-export` to `base_commit` → fresh repo on `main` → `.tgz`

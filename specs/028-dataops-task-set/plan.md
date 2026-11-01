@@ -19,7 +19,8 @@ with the competition's own evaluator.
 | Tiering, candidate rule, ids, backfill-issue text | `python/health_transformation_lab_nlp/task_mine.py` |
 | Manifest and issue backfill (REST + git) | `python/scripts/46_mine_tasks.py` |
 | The manifest (committed; re-runnable, keeps issue numbers) | `data/tasks/task_manifest.csv` |
-| `tasks.jsonl` builder, snapshots, graphs, embeddings, gates (US3-US4) | `python/scripts/47_build_tasks.py` (planned) |
+| `tasks.jsonl` builder, snapshots, graphs, embeddings, gates (US3-US4); 47 was taken by spec 029 | `python/scripts/51_build_tasks.py` |
+| `tasks.jsonl` (git-ignored, ~62 MB of patches), the excluded list and a 3-row sample (committed) | `data/tasks/` |
 | Publish as a Kaggle dataset (US5) | `.github/workflows/kaggle-publish.yml` (spec 025 pattern) |
 
 Squash merges appear as single-parent commits on `main` whose subject ends `(#n)`; merge commits name the
