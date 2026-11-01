@@ -259,6 +259,9 @@ def group_consistency(tables: dict[str, pd.DataFrame], group_types: tuple = GROU
     born = pd.to_datetime(q["patnum"].map(dict(zip(pat["patnum"], pat["birthdate"]))), errors="coerce")
     q["age_band"] = ((q["examdate"] - born).dt.days / 365.25).map(_age_band)
     if "insurance_type" in group_types:
+        missing = [t for t in od.INSURANCE_TABLES if t not in tables]
+        if missing:
+            raise ValueError(f"the insurance_type group type needs the insurance tables; missing {missing}")
         kind = od.insurance_type(tables)
         q["insurance_type"] = q["patnum"].map(dict(zip(kind.index, kind)))
     q["no_margin_chart"] = ~q["has_margin"]

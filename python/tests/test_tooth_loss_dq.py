@@ -92,6 +92,9 @@ def test_insurance_type_is_a_group_type_when_asked(clean):
     pd.testing.assert_frame_equal(default, g[g["group_type_code"] != "insurance_type"].reset_index(drop=True))
     with pytest.raises(ValueError, match="group type"):
         tooth_loss_dq.group_consistency(clean, group_types=("payer",))
+    without = {n: df for n, df in clean.items() if n != "patplan"}
+    with pytest.raises(ValueError, match="insurance tables"):
+        tooth_loss_dq.group_consistency(without, group_types=("insurance_type",))
 
 
 def test_charts_kept_worse_for_one_insurance_type_are_flagged():
