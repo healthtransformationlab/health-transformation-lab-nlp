@@ -61,3 +61,15 @@ Implementation starts after this spec, plan and tasks are reviewed.
   `radiograph_bone_level` reading; `realism_profile`; research.md, the silver model and the ERDs
 - [x] T017 [US6] Failing tests (`test_tooth_loss.py`), then `last_rbl_pct` and the last chart's quality in the tooth
   table; the load job writes `radiograph_bone_level`
+
+## US7 #429: teeth missing at the first visit have a realistic mix of reasons
+
+- [x] T018 [US7] Sources: published shares of reasons for extraction by age band, verified against each paper, in
+  [research.md](research.md) and `docs/references.md`
+- [x] T019 [US7] Failing tests (`test_open_dental.py`, `test_tooth_loss_model.py`): the share by age band, no link to
+  worst CAL, own stream, both classes in the missing-at-entry evaluation
+- [x] T020 [US7] `open_dental.py`: `ENTRY_PERIO_SHARE_BY_AGE`, `Params.entry_other_teeth_by_age` and
+  `entry_other_tooth_weights`, the draw on its own stream
+- [x] T021 [US7] Regenerate with the scripts (tooth table, model results, ERD dictionary, website JSON);
+  `docs/tooth_loss.md` with AUC and specificity on teeth missing at entry and the stage recount, labelled synthetic;
+  the analysis plan's change log; R parity and the full suite

@@ -270,3 +270,53 @@ def test_every_radiograph_has_its_procedure_and_readings_only_for_its_teeth(mess
     assert set(zip(readings["document_id"], readings["tooth_num"])) == on_image
     read = readings["bone_loss_pct"].dropna()
     assert read.between(0, 95).all() and len(read) > 0
+
+
+# ---------- US7 (#429): teeth missing at the first visit have a realistic mix of reasons ----------
+
+@pytest.fixture(scope="module")
+def large():
+    return od.build(od.Params(n_patients=6000), seed=13)     # heavy-tailed periodontal counts need many patients
+
+
+def test_the_periodontal_share_at_entry_follows_the_published_mix_by_age(large):
+    tables, truth = large
+    entry = od.entry_reasons(tables, truth)
+    assert list(entry.columns) == ["patient_id", "tooth_num", "age_band_num", "true_reason_code"]
+    assert not entry["tooth_num"].isin(od.THIRD_MOLARS).any()          # left out of the label, as in the model
+    assert set(entry["true_reason_code"]) == {"perio", "other"}
+    share = entry.assign(perio=entry["true_reason_code"].eq("perio")).groupby("age_band_num")["perio"].mean()
+    assert list(share.index) == [low for low, _ in od.ENTRY_PERIO_SHARE_BY_AGE]
+    for low, target in od.ENTRY_PERIO_SHARE_BY_AGE:
+        assert abs(share[low] - target) < 0.05, (low, share[low], target)
+    assert share[25] < share[35] < share[55]                           # periodontal losses rise with age
+
+
+def test_non_periodontal_losses_at_entry_dont_follow_attachment_loss(large):
+    from health_transformation_lab_nlp import tooth_loss_model as tm
+    tables, truth = large
+    entry = od.entry_reasons(tables, truth)
+    counts = entry.pivot_table(index="patient_id", columns="true_reason_code", values="tooth_num", aggfunc="size",
+                               fill_value=0)
+    pats = pd.DataFrame({"patient_id": tables["patient"]["patnum"].to_numpy(),
+                         "age_band_num": od.age_band(od.patient_age(tables)).to_numpy()})
+    df = pats.merge(counts, left_on="patient_id", right_index=True, how="left").fillna({"perio": 0, "other": 0})
+    df["worst_cal"] = df["patient_id"].map(tm.patient_worst_cal(od.clean(tables)))
+    df = df.dropna(subset=["worst_cal"])
+    cols = ["perio", "other", "worst_cal"]
+    resid = df[cols] - df.groupby("age_band_num")[cols].transform("mean")
+    # worst CAL in the record (messy charts included) against each count, within age bands
+    assert abs(resid["other"].corr(resid["worst_cal"])) < 0.05        # chosen by age and tooth type, not by CAL
+    assert resid["perio"].corr(resid["worst_cal"]) > 0.1               # periodontal losses do follow CAL
+
+
+def test_the_reasons_draw_on_their_own_stream():
+    p = od.Params(n_patients=60)
+    t1, truth1 = od.build(p, seed=21)
+    t2, truth2 = od.build(p, seed=21)
+    pd.testing.assert_frame_equal(truth1, truth2)
+    pd.testing.assert_frame_equal(t1["toothinitial"], t2["toothinitial"])
+    zero = tuple((low, 0.0) for low, _ in od.Params().entry_other_teeth_by_age)
+    t0, truth0 = od.build(od.Params(n_patients=60, entry_other_teeth_by_age=zero), seed=21)
+    assert set(od.entry_reasons(t0, truth0)["true_reason_code"]) == {"perio"}   # no rate: only periodontal again
+    assert (truth1["true_reason_code"] == "other").sum() > (truth0["true_reason_code"] == "other").sum()
