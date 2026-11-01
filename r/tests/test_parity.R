@@ -823,3 +823,18 @@ if (file.exists(file.path(rt, "synthetic_tooth_loss_eval_rows.csv"))) {
   stopifnot(length(bad) == 0, bad_stage == 0, nrow(ps) > 0)
   cat("parity OK (spec 029 US3)\n")
 } else cat("tooth-loss model: skipped (run 51_tooth_loss_model.py)\n")
+
+# Spec 032 US3: the diagnosis-code source under each absent-code rule (r/R/18_spec032.R).
+ac_file <- "data/labels/absent_code_cases.csv"
+if (file.exists(ac_file)) {
+  source("r/R/18_spec032.R")
+  ac <- read.csv(ac_file, stringsAsFactors = FALSE, colClasses = "character", na.strings = character(0))
+  r_ac <- character(nrow(ac))
+  for (rule in ABSENT_CODE_RULES_032) {
+    i <- ac$absent_code == rule
+    r_ac[i] <- read_dx_code_032(ac$dx_raw[i], ac$plan_raw[i], rule)
+  }
+  cat(sprintf("absent code:  %d / %d cases agree\n", sum(r_ac == ac$status), nrow(ac)))
+  stopifnot(nrow(ac) > 0, all(r_ac == ac$status), any(ac$status == ABSENT_CODE_STATUS_032 & ac$dx_raw == ""))
+  cat("parity OK (spec 032 US3)\n")
+} else cat("absent code: skipped (run python/scripts/export_rules_predictions.py)\n")
