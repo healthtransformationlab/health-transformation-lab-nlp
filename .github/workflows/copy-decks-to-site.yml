@@ -1,0 +1,82 @@
+# Copy the decks and their covers to the website (issue #374). The website repository,
+# healthtransformationlab/healthtransformationlab.github.io, serves docs/edr/deck.html as perio-bench/index.html and
+# docs/pitch/deck.html as oral-health-bench/index.html, with the covers in img/; its only change to a deck is the
+# icon links after <title> (.github/scripts/copy_decks_to_site.py). Runs on every push to main that touches a deck
+# or a cover, and by hand from the Actions tab. Commits to the site's main only when something changed, naming
+# the source commit.
+#
+# Setting: the repository secret SITE_PUSH_TOKEN, a fine-grained token for the website repository only, Contents
+# read and write, 90 days at most (ops/secrets_register.yaml). Missing, the wrong shape, or unable to push: the
+# run fails before any work, naming it.
+name: Copy the decks to the website
+on:
+  push:
+    branches: [main]
+    paths:
+      - docs/edr/deck.html
+      - docs/pitch/deck.html
+      - docs/img/edr_deck_cover.png
+      - docs/img/pitch_deck_cover.png
+      - .github/scripts/copy_decks_to_site.py
+      - .github/workflows/copy-decks-to-site.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: copy-decks-to-site
+  cancel-in-progress: false
+
+jobs:
+  copy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      SITE_REPO: healthtransformationlab/healthtransformationlab.github.io
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false   # this repo's token stays out of git; only SITE_PUSH_TOKEN talks to the site
+      - name: Check the site token (value stays masked)
+        env:
+          SITE_PUSH_TOKEN: ${{ secrets.SITE_PUSH_TOKEN }}
+        run: python3 .github/scripts/copy_decks_to_site.py check-token
+      - name: Clone the site and check the token can push to it
+        env:
+          SITE_PUSH_TOKEN: ${{ secrets.SITE_PUSH_TOKEN }}
+        run: |
+          # The token goes in an HTTP header from the environment, never into a URL or .git/config
+          auth=$(printf 'x-access-token:%s' "$SITE_PUSH_TOKEN" | base64 -w0)
+          echo "::add-mask::$auth"
+          export GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0="http.https://github.com/.extraheader" \
+                 GIT_CONFIG_VALUE_0="AUTHORIZATION: basic $auth"
+          git clone --quiet --depth 1 --branch main "https://github.com/$SITE_REPO.git" site || {
+            echo "::error::SITE_PUSH_TOKEN can't read $SITE_REPO: make a fine-grained token for that repository, Contents read and write, and replace the secret."
+            exit 1; }
+          # Asking for the push refs needs write access, so this fails on a read-only token without pushing anything
+          git -C site push --dry-run --quiet origin HEAD:main || {
+            echo "::error::SITE_PUSH_TOKEN can't push to $SITE_REPO: it needs Contents read and write on that repository."
+            exit 1; }
+          echo "SITE_PUSH_TOKEN can push to $SITE_REPO."
+      - name: Build the site's copies and commit them if anything changed
+        env:
+          SITE_PUSH_TOKEN: ${{ secrets.SITE_PUSH_TOKEN }}
+        run: |
+          auth=$(printf 'x-access-token:%s' "$SITE_PUSH_TOKEN" | base64 -w0)
+          echo "::add-mask::$auth"
+          export GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0="http.https://github.com/.extraheader" \
+                 GIT_CONFIG_VALUE_0="AUTHORIZATION: basic $auth"
+          python3 .github/scripts/copy_decks_to_site.py build --site site
+          cd site
+          git add -A perio-bench/index.html oral-health-bench/index.html img/edr_deck_cover.png img/pitch_deck_cover.png
+          if git diff --cached --quiet; then
+            echo "Nothing changed on the site."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit --quiet -m "Copy the decks from ${{ github.repository }}@${GITHUB_SHA::7}" \
+            -m "Built by .github/workflows/copy-decks-to-site.yml from ${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}"
+          git push --quiet origin HEAD:main
+          echo "Pushed: $(git rev-parse HEAD)"
