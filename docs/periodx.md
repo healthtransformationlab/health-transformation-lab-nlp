@@ -117,3 +117,63 @@ method needs no new dependency.
 
 **In the six labels:** health is healthy; gingivitis of any extent is gingivitis; periodontitis with a stage is
 that stage. Periodontitis with no stage, and no diagnosis, give no status.
+
+## The stepwise phenotype: `algorithm_patel2022`
+
+`phenotype.phenotype_patel2022` gives each visit the first available of three sections:
+
+- **M1:** the diagnosis codes, done then planned. These stand in for the paper's structured diagnosis section;
+  planned after done is this repo's choice, as in `algorithm_design`.
+- **M2:** the Extractor on the chart note.
+- **M3:** the Diagnoser on the gum measurements.
+
+A section is "available" when it gives one of the six statuses. There is no exam form, since the paper has none.
+The paper's order is its own constant (`PATEL2022_ORDER`), not one of the four design groups:
+`scripts/18_phenotype_order.py` keeps its 24 orderings and scores this one as an extra row that is never
+selected.
+
+**Outputs:**
+- `data/datasets/periodx_visits.csv`: every visit's Extractor and Diagnoser readings, the phenotype and its
+  deciding section. Statuses only, no note text. It is written by `10_build_study.py` next to the study data, so
+  every existing dataset stays byte-identical (FR-010).
+- `scripts/52_patel2022.py` writes completeness per section (`data_quality/completeness_patel2022.csv`) and the
+  confusion scores (`periodx/confusion_scores.csv`).
+- The method also appears in the leaderboard ([results.md](results.md)), the reliability scripts, the DQ
+  grader's `fact_visit_evidence` (`rules_patel2022_status_code`) and its dashboard.
+
+## Results beside the paper's own figures
+
+The left column is this repo's code on **synthetic** charts, scored against the generator's truth: an exercise,
+not clinical performance. The right column is the paper's own published figures, on **real records, one dental
+school**, cited by figure or table. They come from a different population, with different definitions, and are
+never computed here. Nothing on this page is a replication.
+
+| Measure | This repo: synthetic, 240 review charts | Patel et al. 2022: real records, one dental school |
+|---|---|---|
+| Section has a status (M1 / M2 / M3) | 69.6% / 75.4% / 81.2% | 36% / 18% / 80% as the text gives them (Fig. 1 swaps the first two) |
+| Merged phenotype has a status | 98.8% | 100% (Fig. 1) |
+| Visits decided by M1 / M2 / M3 | 69.6% / 23.3% / 5.8% | not reported in this form |
+| Diagnoser F1 | 0.56 pooled over six statuses, against the generator's truth | 97% against two experts on 200 charts (text) |
+| Extractor F1 | 0.66 pooled over six statuses | 95% as stated; its own 91% precision and 87% recall give 0.89 (text; Table 1) |
+| Phenotype, correct status | 67.5 per 100 charts (95% CI 61.3–73.3) | not validated against experts in the paper |
+
+On all 4,343 synthetic visits, the sections have a status on 70.5% / 73.6% / 79.1% of visits, and the merged
+phenotype on 98.2%.
+
+**What the synthetic numbers show (and don't):**
+- The Diagnoser finds almost no stage I (recall 0.02). The generator's stage I charts have pockets under 4 mm,
+  and Fig. 2 calls a chart periodontitis only with a PD ≥ 4 mm, so those charts land in "reduced periodontium"
+  (healthy or gingivitis). That is the figure working as drawn on charts drawn from the AAP worksheet, not a bug.
+- Of the 59 review notes with no status from the Extractor, 53 read as periodontitis with no stage. All of them
+  mention "bone loss" and name no stage the word list can read. Periodontitis with no stage has no status, so
+  the phenotype goes on to the chart. Turning negation on
+  makes no difference on these notes.
+- The diagnosis codes decide 70% of visits and are right on 65% of those. The note decides 23% (79% right) and the
+  chart 6% (71% right). So the codes, more than either PerioDx reader, set the phenotype's score.
+
+**The paper's own inconsistencies,** recorded and not resolved by guessing ([references](references.md), item 4):
+- Fig. 1 attaches the text's 36% and 18% to the other section.
+- The Extractor's stated F1 (95%) doesn't follow from its precision and recall.
+- Table 1 gives 112 actual positives but 224 true positives with 0 false negatives, and a prevalence of 0.59
+  where 224/400 = 0.56.
+- The HbA1c bands on Fig. 2 leave 5.0–5.7 unassigned.
