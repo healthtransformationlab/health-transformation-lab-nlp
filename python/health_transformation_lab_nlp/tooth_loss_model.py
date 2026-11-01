@@ -126,6 +126,15 @@ def eligible(teeth: pd.DataFrame, params: ModelParams = DEFAULT) -> pd.DataFrame
 
 
 @traced
+def stage_teeth(teeth: pd.DataFrame, params: ModelParams = DEFAULT) -> pd.DataFrame:
+    """The teeth whose loss counts toward stage III vs IV: every tooth in the table, third molars out unless included.
+    The minimum age and the start date choose the teeth that train and score the model (`eligible`; their labels come
+    from the newer code list), not how many teeth a patient has lost: a tooth lost before the start date still
+    counts."""
+    return teeth if params.include_third_molars else teeth[~teeth["tooth_num"].isin(THIRD_MOLARS)]
+
+
+@traced
 def exclusions(teeth: pd.DataFrame, params: ModelParams = DEFAULT) -> dict[str, int]:
     """How many teeth `eligible` leaves out, by reason, in the order it applies them (each tooth counted once, under
     the first reason), and how many it keeps."""
@@ -562,6 +571,10 @@ def run(x: dict[str, pd.DataFrame], truth: pd.DataFrame, params: ModelParams = D
     if params.start_date is not None:
         teeth = with_first_exam_date(teeth, x)
     el = eligible(teeth, params).reset_index(drop=True)
+    # every missing tooth counts toward the stage, the model's filters aside; the model gives the unlabelled ones
+    # outside `el` a probability too, so every rule counts the same teeth (they never train or score it)
+    st = stage_teeth(teeth, params).reset_index(drop=True)
+    X_stage = design_matrix(st, "shared")
     true = el.merge(truth, on=["patient_id", "tooth_num"], how="left")["true_reason_code"]
     if params.split_unit == "person":
         test_pats = split_patients(label_set(el, "completed_planned"), params.test_share, params.seed)
@@ -641,7 +654,8 @@ def run(x: dict[str, pd.DataFrame], truth: pd.DataFrame, params: ModelParams = D
                     "predicted_perio": p[rows] >= params.threshold, "generator_seed": generator_seed,
                     "synthetic": True}))
                 if fs == "shared":
-                    ps = patient_stage(el, pd.Series(p, index=el.index), truth, worst_cal, chart=teeth)
+                    ps = patient_stage(st, pd.Series(fitted.predict(X_stage), index=st.index), truth, worst_cal,
+                                       chart=teeth)
                     stage_parts.append(ps.assign(**tag, label_set=ls, model=model))
         rate = float(y_train.mean())
         for model, value in (("baseline_all_perio", 1.0), ("baseline_outcome_rate", rate),
