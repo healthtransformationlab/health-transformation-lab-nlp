@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import pandas as pd
 
-from . import grader_tables, open_dental
+from . import grader_tables, open_dental, tooth_loss_dq
 from .completeness import complete_cases
 from .paths import DATASETS_DIR, REPO_ROOT
 from .telemetry import traced
@@ -120,6 +120,23 @@ def _monitor(v: pd.DataFrame, complete_ids: set) -> list[dict]:
     return out
 
 
+# The study's 8 clinics are synthetic and numbered; these invented names make the page readable (no real practice)
+CLINIC_NAMES = {"1": "Maple Street", "2": "Riverside", "3": "Hillcrest", "4": "Lakeview", "5": "Westgate",
+                "6": "Oak Park", "7": "Southfield", "8": "Eastbrook"}
+
+
+def _group_label(gtype: str, name: str, tables: dict) -> str:
+    """An office's name and a provider's ID and role, from the extract's own clinic and provider tables."""
+    if gtype == "office":
+        c = tables["clinic"]
+        return dict(zip(c["clinicnum"].astype(str), c["description"])).get(name, f"Office {name}")
+    if gtype == "provider":
+        p = tables["provider"]
+        role = {str(k): f"{cid} ({suf})" if suf else cid for k, cid, suf in zip(p["provnum"], p["customid"], p["suffix"])}
+        return role.get(name, f"Provider {name}")
+    return name
+
+
 @traced
 def build() -> dict:
     """The page's data: one section per grader dataset, then the Open Dental profile."""
@@ -132,6 +149,7 @@ def build() -> dict:
     complete = (v["exam_form"] != "unknown") & (v["proc_dx_completed"] != "unknown") & (v["probing_chart"] != "unknown")
     tables, _, readings = open_dental.build_with_readings(open_dental.Params(), seed=42)
     prof = open_dental.realism_profile(tables, readings)
+    checks, groups = tooth_loss_dq.run_checks(tables), tooth_loss_dq.group_consistency(tables)
     inj = t["dq_injected_error"].iloc[0]
     sections = {
         "tiles": {"completeness_pct": _pct(complete.mean()),
@@ -154,7 +172,10 @@ def build() -> dict:
                          "label_b": METHODS.get(r.method_b, r.method_b), "agree_pct": round(float(r.pct_agree) * 100, 1),
                          "kappa": round(float(r.kappa), 2), "visit_count": int(r.n)}
                         for r in t["dq_source_concordance"].query("level == 'status'").itertuples()],
-        "prevalence_clinic": [{"clinic": r.group_name, "people_count": int(r.n),
+        "clinics": [{"clinic": c, "name": f"{CLINIC_NAMES.get(c, 'Clinic ' + c)} (synthetic)"}
+                    for c in sorted(clin["group_name"], key=int)],
+        "prevalence_clinic": [{"clinic": r.group_name, "name": f"{CLINIC_NAMES.get(r.group_name, 'Clinic ' + r.group_name)} "
+                               "(synthetic)", "people_count": int(r.n),
                                "periodontitis_pct": _pct(r.periodontitis), "ci_low_pct": _pct(r.periodontitis_ci_low),
                                "ci_high_pct": _pct(r.periodontitis_ci_high), "is_outlier": bool(r.is_outlier)}
                               for r in clin.itertuples()],
@@ -177,6 +198,17 @@ def build() -> dict:
         "open_dental": [{"metric": r.metric_name, "label": MESS.get(r.metric_name, r.metric_name),
                          "pct": _pct(r.value_ratio), "numerator": int(r.numerator_count),
                          "denominator": int(r.denominator_count)} for r in prof.itertuples()],
+        # spec 029 FR-009 (#370): the extract checks after Kookal et al. 2024, and whether the perio chart is kept as
+        # well for every group of patients
+        "extract_checks": [{"check": c.name, "domain": c.domain, "text": c.text, "checked_count": int(r.checked_count),
+                            "found_count": int(r.found_count), "found_pct": _pct(r.found_ratio, 2),
+                            "is_flagged": None if pd.isna(r.is_flagged) else bool(r.is_flagged)}
+                           for c, r in zip(tooth_loss_dq.CHECKS, checks.itertuples())],
+        "chart_by_group": [{"group_type": r.group_type_code, "group": r.group_name,
+                            "label": _group_label(r.group_type_code, r.group_name, tables), "metric": r.metric_name,
+                            "chart_count": int(r.chart_count), "pct": _pct(r.value_ratio),
+                            "rest_pct": None if pd.isna(r.rest_mean_ratio) else _pct(r.rest_mean_ratio),
+                            "is_flagged": bool(r.is_flagged)} for r in groups.itertuples()],
     }
     return {
         "title": "EHR DQ grader: is this dental record fit for finding gum disease?",
@@ -186,6 +218,7 @@ def build() -> dict:
         "design": "dashboards.dq_grader (spec 019): Zozus completeness, accuracy, consistency; Kahn temporal "
                   "plausibility; de Vet reliability",
         "sources": ["grader_tables.dq_tables(data/datasets/)",
-                    "open_dental.realism_profile (seed 42, default settings)"],
+                    "open_dental.realism_profile (seed 42, default settings)",
+                    "tooth_loss_dq.run_checks and group_consistency (the same extract)"],
         "sections": sections,
     }

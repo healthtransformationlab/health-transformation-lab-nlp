@@ -21,8 +21,9 @@ Implementation starts after this spec, plan and tasks are reviewed.
 - [x] T005 [US2] Failing tests: statuses on hand-built extracts, nothing dated after the loss
 - [x] T006 [US2] `tooth_loss.tooth_table` and `planned_extraction` (plan copies counted once); base-R twin and
   parity inputs
-- [ ] T006a [US2] Failing tests, then the bronze-to-silver data-quality checks after Kookal et al. 2024
-  (completeness, accuracy, consistency; FR-009), with planted faults the generator records
+- [x] T006a [US2] Failing tests, then the bronze-to-silver data-quality checks after Kookal et al. 2024
+  (completeness, accuracy, consistency; FR-009), with planted faults (`open_dental.plant_faults`), plus consistency
+  by group (`tooth_loss_dq.group_consistency`); the load job writes `tooth_loss_dq_check` and `tooth_loss_dq_group`
 - [x] T007 [US2] Load job `open_dental_load` (`12_load_open_dental.py`): generates the extract into the landing
   volume, bronze as generated, silver cleaned (`open_dental.clean`) plus the answer key; overwrite per run, batch
   keys; deploy starts it when bronze is empty. The silver tooth table joins it with T006

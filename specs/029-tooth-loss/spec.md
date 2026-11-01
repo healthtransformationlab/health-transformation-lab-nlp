@@ -329,10 +329,17 @@ uniform), so the model can learn when to trust which.
   - **list in use:** diagnosis items from the older list after the switch date, and from the newer list before
     it;
   - **consistency:** the null/unknown/missing share per office (clinic), against the mean of all offices, with
-    offices beyond 2 SD flagged.
+    offices beyond 2 SD flagged. With 4 offices one outlier can never sit 2 SD from a mean that includes it, so each
+    office is compared with the mean and SD of the others, and must also differ by 5 points or more;
+  - **consistency by group** (added for the study lead's question, provisional until he names his groups): for each
+    office, provider, sex, race, exam year and age band, the share of its perio charts with no gum-margin readings
+    (so no attachment loss) and the share incomplete in any way (partial, buccal only, no margin, no bleeding),
+    flagged the same way; groups under 30 charts are reported, never flagged. Results go to silver
+    `tooth_loss_dq_group`.
 
-  The synthetic generator plants a known number of each kind of fault, at named rates, so each check is tested
-  against what it should find. Results go to a silver `tooth_loss_dq_check` table (one row per check and run).
+  `open_dental.plant_faults` plants a known number of each kind of fault (`FAULTS`) on a generated extract, so
+  each check is tested against what it should find. It is applied in the tests only: the default extract, and every
+  result committed from it, keeps only the messiness of US6. Results go to a silver `tooth_loss_dq_check` table (one row per check and run).
 
 ### Key Entities
 

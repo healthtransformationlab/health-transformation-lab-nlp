@@ -726,3 +726,91 @@ def load_log(written: dict[str, dict[str, pd.DataFrame]], run_id: str, run_ts: p
             for schema, tables in written.items() for name, df in tables.items()]
     return pd.DataFrame(rows, columns=["schema_name", "table_name", "row_count", "seed_num", "patient_count",
                                        "run_id", "run_ts", "git_commit_sha"])
+
+
+# ---- planted faults for the data-quality checks (spec 029 FR-009, T006a): a known number of each, so each check is
+# tested against what it must find. Added after the build, never by default, so the extract and every committed
+# result from it are unchanged; real extracts bring their own.
+FAULT_OFFICE = 1                              # the office (clinicnum) given more missing values
+FAULTS = {"duplicate_row": 4, "duplicate_key": 2, "one_value_per_field": 2, "tooth_table_value_missing": 3,
+          "probing_out_of_range": 5, "mobility_out_of_range": 3, "tooth_number_out_of_range": 2,
+          "dates_out_of_order": 2, "procedure_code_not_cdt": 1, "diagnosis_not_in_lists": 3, "icd_not_valid": 2,
+          "plan_copy_without_original": 2, "plan_copy_differs": 3, "older_item_after_switch": 2,
+          "newer_item_before_switch": 2, "office_missing_share": 1}
+
+
+@traced
+def plant_faults(tables: dict[str, pd.DataFrame], seed: int = 0, switch_date: date = Params.list_switch_date
+                 ) -> tuple[dict[str, pd.DataFrame], dict[str, int]]:
+    """A copy of the extract with FAULTS planted, and {check name: how many were planted}. Each fault is placed where
+    it can't also trip another check (exam and scaling rows, not extractions, carry most of them)."""
+    rng = random.Random(seed)
+    t = {name: df.copy() for name, df in tables.items()}
+    pl, pc = t["procedurelog"], t["procedurecode"]
+    code = dict(zip(pc["proccode"], pc["codenum"]))
+    exams = pl.index[pl["codenum"].isin([code["D0120"], code["D0150"]])].tolist()
+    srp = pl.index[pl["codenum"] == code["D4341"]].tolist() if "D4341" in code else []
+    ext_done = pl.index[pl["codenum"].isin(extraction_codenums(t)) & (pl["procstatus"] == COMPLETE)
+                        & pl["datetp"].notna()].tolist()
+    pick = lambda pool, n: rng.sample(pool, n)
+    used = set()
+
+    def take(pool, n):
+        out = pick([i for i in pool if i not in used], n)
+        used.update(out)
+        return out
+
+    f = FAULTS
+    # completeness: a duplicate row (a new key, the rest the same), a duplicate key (same key, different content),
+    # two teeth in one field, a completed extraction with no completion date
+    dup_rows = take(exams, f["duplicate_row"])          # copied last, after every other edit
+    pat = t["patient"]
+    twin = pat.sample(f["duplicate_key"], random_state=seed).copy()
+    twin["zip"] = "09999"
+    t["patient"] = pd.concat([pat, twin], ignore_index=True)
+    pl.loc[take(exams, f["one_value_per_field"]), "toothnum"] = "3,4"
+    pl.loc[take(ext_done, f["tooth_table_value_missing"]), "datecomplete"] = None
+    # accuracy: out-of-range probing and mobility, a tooth 40, completion before the plan, a non-CDT code, a diagnosis
+    # item in neither list, a malformed ICD-10 code
+    pm = t["periomeasure"]
+    probe = pm.index[pm["sequencetype"] == SEQ_PROBING].tolist()
+    pm.loc[rng.sample(probe, f["probing_out_of_range"]), "bvalue"] = 25
+    mob = pm.index[pm["sequencetype"] == SEQ_MOBILITY].tolist()
+    pm.loc[rng.sample(mob, f["mobility_out_of_range"]), "toothvalue"] = 7
+    ti = t["toothinitial"]
+    ti.loc[rng.sample(ti.index.tolist(), f["tooth_number_out_of_range"]), "toothnum"] = "40"
+    late = take([i for i in ext_done if pd.notna(pl.at[i, "datecomplete"])], f["dates_out_of_order"])
+    pl.loc[late, "datecomplete"] = (pd.to_datetime(pl.loc[late, "datetp"]) - pd.Timedelta(days=30)).values
+    t["procedurecode"] = pd.concat([pc, pd.DataFrame([{**pc.iloc[0].to_dict(), "codenum": int(pc["codenum"].max()) + 1,
+                                                       "proccode": "XRAY1"},
+                                                      {**pc.iloc[0].to_dict(), "codenum": int(pc["codenum"].max()) + 2,
+                                                       "proccode": "D0120a"}])], ignore_index=True)
+    d = t["definition"]
+    bad = int(d["defnum"].max()) + 1
+    t["definition"] = pd.concat([d, pd.DataFrame([{"defnum": bad, "category": DEFCAT_DIAGNOSIS,
+                                                   "itemname": "Unlisted reason", "itemvalue": "UNL", "itemorder": 99,
+                                                   "ishidden": False}])], ignore_index=True)
+    pl.loc[take(srp, f["diagnosis_not_in_lists"]), "dx"] = bad
+    icd = take(exams, f["icd_not_valid"])
+    pl.loc[icd, "diagnosticcode"], pl.loc[icd, "icdversion"] = "BADCODE", 10
+    # plan copies: a copy whose original is gone, and copies edited after they were saved
+    tp = t["proctp"]
+    rows = rng.sample(tp.index.tolist(), f["plan_copy_without_original"] + f["plan_copy_differs"])
+    tp.loc[rows[:f["plan_copy_without_original"]], "procnumorig"] = 99_999_999
+    tp.loc[rows[f["plan_copy_without_original"]:], "dx"] = "See chart (edited)"
+    # list in use: an older-list item after the switch, a newer-list item before it (on scaling rows)
+    defs = t["definition"]
+    old_def = int(defs.loc[defs["itemname"] == OLDER_LIST[0][0], "defnum"].iloc[0])
+    new_def = int(defs.loc[defs["itemname"] == LIST_2017[0][0], "defnum"].iloc[0])
+    when = pd.to_datetime(pl["procdate"])
+    after = [i for i in srp if when[i] >= pd.Timestamp(switch_date)]
+    before = [i for i in srp if when[i] < pd.Timestamp(switch_date)]
+    pl.loc[take(after, f["older_item_after_switch"]), "dx"] = old_def
+    pl.loc[take(before, f["newer_item_before_switch"]), "dx"] = new_def
+    # consistency: one office leaves more fields blank
+    office = pl["clinicnum"] == FAULT_OFFICE
+    pl.loc[office, ["procfee", "provnum", "aptnum"]] = None
+    dup = pl.loc[dup_rows].copy()
+    dup["procnum"] = range(int(pl["procnum"].max()) + 1, int(pl["procnum"].max()) + 1 + len(dup))
+    t["procedurelog"] = pd.concat([pl, dup], ignore_index=True)
+    return t, dict(FAULTS)

@@ -68,7 +68,10 @@
    tables (FR-009). The generator plants faults at named rates (duplicate rows, out-of-range probing values, an
    invalid diagnosis item, a missing value, one office with more missing values, edited plan copies, plan copies
    with no original, older-list items after the switch) and records them, so the tests know what each check must
-   find. Results go to silver `tooth_loss_dq_check`.
+   find. Results go to silver `tooth_loss_dq_check`. Built (#370): faults are planted by `open_dental.plant_faults`
+   in the tests only, so the default extract is unchanged; offices are compared with the rest, not the mean of all
+   (4 offices); `group_consistency` adds the split by office, provider, sex, race, exam year and age band
+   (`tooth_loss_dq_group`).
 7. **Docs.** `docs/tooth_loss.md` is a plain page covering:
    - the question;
    - the extract's tables, with links to Open Dental's schema docs;

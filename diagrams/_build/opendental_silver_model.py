@@ -340,14 +340,28 @@ TABLES = {
         C("complete_date", "date", "datecomplete, when completed"),
     ]),
     "tooth_loss_dq_check": Table("dq", "One per data-quality check and run (Kookal et al. 2024, plus plan-copy checks)", "tooth_loss_dq; delete-then-append by run_id", [
-        C("check_name", "string", "e.g. proctp_code_differs, dx_item_from_retired_list", "PK"),
+        C("check_name", "string", "e.g. plan_copy_differs, older_item_after_switch", "PK"),
         C("run_id", "string", "Databricks job run id", "PK"),
         C("domain_code", "string", "completeness · accuracy · consistency · plan_copy · list_in_use"),
         C("check_num", "bigint", "check number after Kookal et al. 2024; null for checks added here"),
-        C("table_name", "string", "the Open Dental table checked"),
-        C("found_count", "bigint", "rows found"),
-        C("found_ratio", "double", "share of rows, 0–1"),
-        C("is_flagged", "boolean", "beyond its threshold"),
+        C("table_name", "string", "the Open Dental tables checked"),
+        C("checked_count", "bigint", "rows, cells or offices checked"),
+        C("found_count", "bigint", "found by the check"),
+        C("found_ratio", "double", "found / checked, 0–1"),
+        C("is_flagged", "boolean", "anything found; null for the missing-value share, which is reported"),
+        C("run_ts", "timestamp", "when the check ran"),
+        C("git_commit_sha", "string", "commit the job was deployed from"),
+    ]),
+    "tooth_loss_dq_group": Table("dq", "One per group, measure and run: is the perio chart kept as well for every group of patients?", "tooth_loss_dq.group_consistency; delete-then-append by run_id", [
+        C("group_type_code", "string", "office · provider · sex · race · exam_year · age_band", "PK"),
+        C("group_name", "string", "the group, e.g. office 2, female, 45–64", "PK"),
+        C("metric_name", "string", "no_margin_chart · incomplete_chart", "PK"),
+        C("run_id", "string", "Databricks job run id", "PK"),
+        C("chart_count", "bigint", "perio charts in the group"),
+        C("value_ratio", "double", "share of the group's charts, 0–1"),
+        C("rest_mean_ratio", "double", "mean of the other groups of its type"),
+        C("rest_sd_ratio", "double", "SD of the other groups"),
+        C("is_flagged", "boolean", "beyond 2 SD of the rest and 5+ points apart; 30+ charts"),
         C("run_ts", "timestamp", "when the check ran"),
         C("git_commit_sha", "string", "commit the job was deployed from"),
     ]),
@@ -404,6 +418,7 @@ RELATIONSHIPS = [
     R("patient_tooth", "tooth_loss_truth", ("patient_id", "tooth_num"), ("patient_id", "tooth_num"),
       "scored against (evaluation only)", "||..o|", derived=True),
     R("proctp", "tooth_loss_dq_check", (), (), "copies checked against the original", "}o..o{", derived=True),
+    R("perioexam", "tooth_loss_dq_group", (), (), "charts counted by group", "}o..o{", derived=True),
 ]
 
 AREAS = {   # fill, legend label
@@ -431,11 +446,12 @@ GROUPS = [
     ("Treatment Planning", 3, ["proctp", "treatplan"]),
     ("Procedures", 3, ["procedurelog", "procedurecode", "procnote", "document"]),
     ("Tooth loss (spec 029)", 4, ["patient_tooth", "planned_extraction", "radiograph_bone_level"]),
-    ("Data quality", 4, ["tooth_loss_dq_check"]),
+    ("Data quality", 4, ["tooth_loss_dq_check", "tooth_loss_dq_group"]),
     ("Answer key (evaluation only)", 4, ["tooth_loss_truth"]),
 ]
 KINDS = {t: "fact" for t in ("procedurelog", "treatplan", "proctp", "perioexam", "periomeasure", "toothinitial",
-                             "disease", "patient_tooth", "planned_extraction", "tooth_loss_dq_check", "tooth_loss_truth",
+                             "disease", "patient_tooth", "planned_extraction", "tooth_loss_dq_check", "tooth_loss_dq_group",
+                             "tooth_loss_truth",
                              "document", "radiograph_bone_level")}
 KINDS |= {t: "fact" for t in ("appointment", "medicationpat", "allergy", "sheet", "sheetfield", "vitalsign",
                               "patientrace", "procnote", "ehrmeasureevent", "patfield")}
