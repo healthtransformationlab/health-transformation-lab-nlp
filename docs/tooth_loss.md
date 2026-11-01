@@ -81,6 +81,23 @@ These options can also be run together as a named preset, beside today's default
 cd python && python scripts/51_tooth_loss_model.py --patients 6000 --stability-seeds 5 --n-boot 1000
 ```
 
+**Under the defaults since spec 032 US8** (#448; [presets](presets.md), `repo_v2`): teeth lost (or first charted)
+from 2018-01-01, an 80/20 split by patient and XGBoost tuned by 5-fold cross-validation. The start date leaves out
+88,744 of the 168,000 non-third-molar teeth (79,256 left), so every set is smaller and the intervals wider.
+Generator seed 42, shared predictors, AUC (95% CI):
+
+| Teeth scored | completed: logistic | completed: XGBoost | completed + planned: logistic | completed + planned: XGBoost |
+|---|---|---|---|---|
+| held-out extractions (91 teeth, 84 patients) | 0.81 (0.63-0.96) | 0.82 (0.69-0.94) | 0.74 (0.56-0.90) | 0.78 (0.63-0.91) |
+| missing at the first exam (3,594 teeth, 1,452 patients) | 0.91 (0.89-0.93) | 0.89 (0.86-0.91) | 0.93 (0.92-0.95) | 0.94 (0.92-0.95) |
+| extractions without a diagnosis (84 teeth) | 0.99 (0.97-1.00) | 1.00 (0.99-1.00) | 0.97 (0.92-1.00) | 1.00 (0.99-1.00) |
+
+Across the 5 generator seeds the held-out AUC of the shared models ranges from 0.72 to 0.88. Stage IV, all 1,131
+patients at stage III-IV by worst CAL: 127 by every missing tooth, 25 by fewer than 20 teeth, 92 by fewer than 10
+occluding pairs, 45 by the synthetic truth. The detailed tables below are the run before spec 032 US8 (every year,
+70/30, fixed XGBoost settings: `--start-date "" --test-share 0.3 --cv-folds 0`, the `repo_v1` preset); they are kept
+because they describe the whole extract.
+
 Synthetic extract of 6,000 patients, generator seed 42 (generator seeds 42-46 for the spread). Files in
 `data/results/synthetic_tooth_loss_*.csv` (not committed; the command rebuilds them).
 
