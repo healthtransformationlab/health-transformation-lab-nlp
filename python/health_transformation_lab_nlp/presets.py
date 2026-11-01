@@ -269,7 +269,7 @@ def _icc() -> pd.DataFrame:
 
 
 @traced
-def run_preset(name: str, n_people: int = 1200, n_patients: int = 2000, seed: int = 42, n_boot: int = 0,
+def run_preset(name: str, n_people: int = 1200, n_patients: int = 6000, seed: int = 42, n_boot: int = 0,
                path: Path = PRESETS_FILE) -> dict[str, pd.DataFrame]:
     """Every part under one preset, on synthetic data with fixed seeds: `n_people` for the visit-level study set
     (study.generate_visits) and `n_patients` for the Open Dental extract (one generator seed, `seed`). Returns one
