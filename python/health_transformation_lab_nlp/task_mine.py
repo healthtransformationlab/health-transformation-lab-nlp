@@ -7,6 +7,9 @@ Pure functions over what git and the GitHub REST API return; the script `46_mine
     tier C   a commit straight to main (no PR); the statement is its message and the spec story it names
 
 A candidate task changes non-test code and files under python/tests/ (the competition's mining rule).
+
+US3 (`55_build_tasks.py`): a candidate's diff splits into `patch` (everything outside python/tests/) and
+`test_patch` (python/tests/); the statement and hints come from the tier's source, redacted like the manifest.
 """
 
 from __future__ import annotations
@@ -29,7 +32,12 @@ PROTECTED = ("conftest.py", "pytest.ini", "pyproject.toml", "tox.ini", "setup.cf
 MANIFEST_COLUMNS = ["instance_id", "tier_code", "pr_number", "issue_number", "merge_commit_sha", "base_commit_sha",
                     "created_ts", "merged_ts", "branch_name", "title_text", "statement_source_code", "spec_number",
                     "changed_file_count", "is_code_changed", "is_tests_changed", "is_only_protected_fix",
-                    "is_candidate"]
+                    "is_candidate", "base_commit_source_code"]
+TEST_DIR = "python/tests/"
+# The competition's tasks.jsonl fields, in its order (gemma-developer-agent docs/dataset-format.md).
+TASK_FIELDS = ("instance_id", "repo", "base_commit", "problem_statement", "hints_text", "patch", "test_patch",
+               "created_at")
+STORY_REF = re.compile(r"\b(\d{3}) US(\d+)\b")
 
 
 @traced
@@ -117,9 +125,10 @@ def manifest_row(tier: str, pr: dict | None, commit: dict, files: list[str], iss
         source = "commit"
     return {"instance_id": instance_id(tier, number, issue_number, commit["sha"]), "tier_code": tier,
             "pr_number": number, "issue_number": issue_number, "merge_commit_sha": commit["sha"],
-            "base_commit_sha": commit["parent_sha"], "created_ts": created, "merged_ts": merged,
+            "base_commit_sha": commit.get("base_sha") or commit["parent_sha"], "created_ts": created, "merged_ts": merged,
             "branch_name": redact(branch), "title_text": redact(title), "statement_source_code": source,
-            "spec_number": spec_from_text(title, body, branch), **f}
+            "spec_number": spec_from_text(title, body, branch), **f,
+            "base_commit_source_code": commit.get("base_source") or "parent"}
 
 
 @traced
@@ -137,3 +146,115 @@ def backfill_issue(row: dict, body_text: str, kind: str = "CHORE") -> dict:
     return {"title_key": f"{spec} {kind}", "title_text": title, "labels": ["backfilled"],
             "body": head + f"**Source:** {ref} · merged {row.get('merged_ts')} · base `{row['base_commit_sha'][:7]}`"
                     f" · tier {row['tier_code']}\n\n---\n\n{body_text.strip()}\n"}
+
+
+# --- US3: tasks.jsonl rows -----------------------------------------------------------------------------------
+
+@traced
+def diff_range(sha: str, parents: list[str], merge_base: str | None) -> tuple[str, str, str]:
+    """`(base, head, source)` for a change on main. A squash or direct commit: its parent to itself. A merge
+    commit: the PR's merge base to the PR head (second parent), so `patch` + `test_patch` applied to
+    `base_commit` reproduce the PR's tree exactly (PR review #358, should-fix 1)."""
+    if len(parents) > 1 and merge_base:
+        return merge_base, parents[1], "merge_base"
+    return parents[0], sha, "parent"
+
+
+def _diff_path(header: str) -> str:
+    return header.rstrip("\n").rsplit(" b/", 1)[-1]
+
+
+@traced
+def split_diff(diff: str) -> dict:
+    """Split a unified diff into `patch` (files outside python/tests/) and `test_patch` (python/tests/), whole
+    file blocks in order; nothing is dropped, so the two together hold every hunk."""
+    blocks: list[str] = []
+    cur: list[str] = []
+    for line in diff.splitlines(keepends=True):
+        if line.startswith("diff --git ") and cur:
+            blocks.append("".join(cur))
+            cur = []
+        cur.append(line)
+    if cur:
+        blocks.append("".join(cur))
+    out: dict = {"patch": "", "test_patch": "", "patch_files": [], "test_files": []}
+    for b in blocks:
+        path = _diff_path(b.split("\n", 1)[0])
+        if path.startswith(TEST_DIR):
+            out["test_patch"] += b
+            out["test_files"].append(path)
+        else:
+            out["patch"] += b
+            out["patch_files"].append(path)
+    return out
+
+
+@traced
+def exclusion_reason(patch_files: list[str], test_files: list[str]) -> str | None:
+    """Why a candidate is not a task, or None. A fix only in files the grader strips (runner config, test
+    files) cannot be scored; a task also needs a non-test code change and a python/tests change."""
+    non_test = [p for p in patch_files if not is_test_path(p)]
+    stripped = all(p.rsplit("/", 1)[-1] in PROTECTED for p in non_test)
+    if patch_files and stripped:
+        return "fix only in grader-stripped files"
+    if not any(p.endswith(".py") for p in non_test):
+        return "no non-test code change"
+    if not test_files:
+        return "no python/tests change"
+    return None
+
+
+@traced
+def story_ref(text: str | None) -> tuple[str, int] | None:
+    """The spec user story a commit names (`028 US3`), or None."""
+    m = STORY_REF.search(text or "")
+    return (m.group(1), int(m.group(2))) if m else None
+
+
+@traced
+def story_section(spec_md: str, n: int) -> str:
+    """The `### US<n>` section of a spec.md, up to the next heading of level 3 or above; "" when absent."""
+    out: list[str] = []
+    for line in spec_md.splitlines():
+        if out:
+            if re.match(r"^#{1,3} ", line):
+                break
+            out.append(line)
+        elif re.match(rf"^### US{n}\b", line):
+            out.append(line)
+    return "\n".join(out).strip()
+
+
+def _titled(item: dict | None) -> str:
+    if not item:
+        return ""
+    return f"{(item.get('title') or '').strip()}\n\n{(item.get('body') or '').strip()}".strip()
+
+
+def _joined(*parts: str | None, sep: str = "\n\n---\n\n") -> str:
+    return sep.join(p.strip() for p in parts if p and p.strip())
+
+
+@traced
+def statement_and_hints(tier: str, issue: dict | None = None, pr: dict | None = None, review: str | None = None,
+                        commit: dict | None = None, story: str | None = None, plan: str | None = None,
+                        tasks: str | None = None) -> dict:
+    """`problem_statement`, `hints_text` and `created_at` from the tier's contemporaneous source (spec 028):
+    A the issue (hints: the PR and its review), B the PR (hints: the review), C the commit message and the spec
+    story it names (hints: the spec's plan and tasks). Quoted as written; the organisation name is redacted."""
+    if tier == "A" and issue:
+        stmt, hints, created = _titled(issue), _joined(_titled(pr), review), issue.get("created_at")
+    elif tier in ("A", "B") and pr:
+        stmt, hints, created = _titled(pr), _joined(review), pr.get("created_at")
+    else:
+        commit = commit or {}
+        stmt = _joined(commit.get("message"), story, sep="\n\n")
+        hints, created = _joined(plan, tasks), commit.get("committed_ts")
+    return {"problem_statement": redact(stmt), "hints_text": redact(hints), "created_at": created or ""}
+
+
+@traced
+def task_row(instance: str, repo: str, base_commit: str, text: dict, split: dict) -> dict:
+    """One tasks.jsonl row: exactly the competition's fields, in its order."""
+    values = {"instance_id": instance, "repo": repo, "base_commit": base_commit, **text, **split}
+    return {k: values.get(k, "") for k in TASK_FIELDS}

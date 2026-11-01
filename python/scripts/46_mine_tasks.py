@@ -62,7 +62,7 @@ def first_parent_commits() -> list[dict]:
             continue
         sha, parents, ts, subject, body = (rec.strip("\n").split("\x1f") + [""] * 5)[:5]
         plist = parents.split()
-        rows.append({"sha": sha, "parent_sha": plist[0] if plist else "", "is_merge": len(plist) > 1,
+        rows.append({"sha": sha, "parent_sha": plist[0] if plist else "", "parents": plist, "is_merge": len(plist) > 1,
                      "committed_ts": ts, "subject": subject, "body": body})
     return rows
 
@@ -84,7 +84,12 @@ def build_manifest() -> pd.DataFrame:
             tier, issue = tm.tier_for_pr(pr["head"]["ref"], pr.get("body"))
             if tier == "tool":
                 continue
-            files = changed_files(c["parent_sha"], c["sha"]) if c["parent_sha"] else []
+            files = []
+            if c["parent_sha"]:   # a merge commit's base is the PR's merge base (PR review #358, should-fix 1)
+                mb = git("merge-base", *c["parents"][:2]).strip() if c["is_merge"] else None
+                base, head, c["base_source"] = tm.diff_range(c["sha"], c["parents"], mb)
+                c["base_sha"] = base
+                files = changed_files(base, head)
             rows.append(tm.manifest_row(tier, pr, c, files, issue))
         elif not c["is_merge"] and c["parent_sha"]:
             files = changed_files(c["parent_sha"], c["sha"])
