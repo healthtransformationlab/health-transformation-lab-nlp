@@ -4,6 +4,10 @@
 aces.aces_all:
   level: call
   reason: 4 calls per parent, 4 in total, 373.986 ms per call
+aces.opposing_pair_count:
+  level: detail
+  reason: once per exam in aces, three times per patient in tooth_loss_model.patient_stage (spec 032 US4)
+  manual: true
 clinical_notes.render_clinical_note:
   level: detail
   reason: 4343 calls per parent, 4343 in total, 0.122 ms per call
@@ -79,7 +83,11 @@ labels.stage_by_rbl:
   reason: 1 calls per parent, 28 in total, 0.001 ms per call
 labels.stage4_rule:
   level: detail
-  reason: four times per patient in tooth_loss_model.patient_stage (spec 029)
+  reason: six times per patient in tooth_loss_model.patient_stage (spec 029; spec 032 US4)
+  manual: true
+labels.stage4_tooth_counts:
+  level: detail
+  reason: three times per patient in tooth_loss_model.patient_stage (spec 032 US4)
   manual: true
 ladder_eval.ladder_table:
   level: call

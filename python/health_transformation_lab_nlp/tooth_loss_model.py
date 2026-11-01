@@ -378,10 +378,18 @@ def patient_worst_cal(x: dict[str, pd.DataFrame]) -> pd.Series:
 
 
 @traced
-def patient_stage(teeth: pd.DataFrame, prob: pd.Series, truth: pd.DataFrame, worst_cal: pd.Series) -> pd.DataFrame:
-    """One row per patient: teeth lost to periodontitis counted four ways, and stage IV (>= 5) under each rule.
+def patient_stage(teeth: pd.DataFrame, prob: pd.Series, truth: pd.DataFrame, worst_cal: pd.Series,
+                  chart: pd.DataFrame | None = None) -> pd.DataFrame:
+    """One row per patient: teeth lost to periodontitis counted four ways, and stage IV (>= 5) under each rule; and
+    the teeth left, with the occluding pairs between them, for the teeth-left rules (spec 032 US4).
     prob: P(lost to periodontitis) per tooth (teeth's index), read for the unlabelled missing teeth only.
+    chart: the whole tooth table the teeth left are read from (default `teeth`): every tooth not missing, planned
+    extractions included, whoever the model leaves out; `present_tooth_text` lists them as charted, and the counts
+    leave out third molars (labels.stage4_tooth_counts).
     Patients with worst CAL >= 5 mm are the ones tooth loss moves between III and IV (`is_stage3_4`)."""
+    chart = teeth if chart is None else chart
+    left = chart.loc[~chart["tooth_status_code"].isin(MISSING_STATUSES), ["patient_id", "tooth_num"]]
+    left = left.astype("int64").sort_values(["patient_id", "tooth_num"]).groupby("patient_id")["tooth_num"].agg(list)
     t = teeth[["patient_id", "tooth_num", "tooth_status_code"]].assign(p=prob.reindex(teeth.index))
     t = t.merge(truth[["patient_id", "tooth_num", "true_reason_code"]], on=["patient_id", "tooth_num"], how="left")
     t["missing"] = t["tooth_status_code"].isin(MISSING_STATUSES)
@@ -396,8 +404,11 @@ def patient_stage(teeth: pd.DataFrame, prob: pd.Series, truth: pd.DataFrame, wor
                "unlabelled_tooth_count": len(probs), "unlabelled_prob_sum": float(sum(probs)),
                "expected_perio_loss": labels.expected_perio_loss(recorded, probs), "true_perio_count": true,
                "worst_cal_mm": float(worst_cal.get(pat, np.nan))}
+        present = left.get(pat, [])
+        row["teeth_present_count"], row["occluding_pair_count"] = labels.stage4_tooth_counts(present)
+        row["present_tooth_text"] = " ".join(str(n) for n in present)
         for rule in labels.STAGE4_COUNT_RULES:
-            row[f"is_stage4_{rule}"] = labels.stage4_rule(rule, recorded, missing, probs, true)
+            row[f"is_stage4_{rule}"] = labels.stage4_rule(rule, recorded, missing, probs, true, teeth_present=present)
         rows.append(row)
     out = pd.DataFrame(rows)
     out["is_stage3_4"] = out["worst_cal_mm"] >= STAGE3_4_CAL_MM
@@ -499,7 +510,7 @@ def run(x: dict[str, pd.DataFrame], truth: pd.DataFrame, params: ModelParams = D
                     "predicted_perio": p[rows] >= params.threshold, "generator_seed": generator_seed,
                     "synthetic": True}))
                 if fs == "shared":
-                    ps = patient_stage(el, pd.Series(p, index=el.index), truth, worst_cal)
+                    ps = patient_stage(el, pd.Series(p, index=el.index), truth, worst_cal, chart=teeth)
                     stage_parts.append(ps.assign(**tag, label_set=ls, model=model))
         rate = float(y_train.mean())
         for model, value in (("baseline_all_perio", 1.0), ("baseline_outcome_rate", rate),

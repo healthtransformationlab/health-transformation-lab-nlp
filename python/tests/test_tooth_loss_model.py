@@ -183,7 +183,42 @@ def test_stage4_rule_counts_teeth_by_each_rule_and_calls_iv_at_five():
     assert labels.stage4_rule("truth", **kw) is True
     with pytest.raises(ValueError, match="rule"):
         labels.stage4_rule("guess", **kw)
-    assert labels.STAGE4_COUNT_RULES == ("recorded_only", "every_missing", "expected_perio_loss", "truth")
+    assert labels.STAGE4_COUNT_RULES == ("recorded_only", "every_missing", "expected_perio_loss", "truth",
+                                         "teeth_lt_20", "pairs_lt_10")
+
+
+# spec 032 US4 (#443): stage IV also by fewer than 20 teeth, or fewer than 10 occluding pairs, left in the mouth
+
+FULL = [t for t in range(1, 33)]                                    # 28 teeth and 14 pairs once third molars go
+
+
+def test_stage4_tooth_counts_leave_out_third_molars_and_count_opposing_pairs():
+    assert labels.stage4_tooth_counts(FULL) == (28, 14)
+    assert labels.stage4_tooth_counts([]) == (0, 0)
+    # upper 3 opposes lower 30, upper 14 opposes lower 19; 1, 16, 17 and 32 never count
+    assert labels.stage4_tooth_counts([1, 3, 14, 16, 17, 19, 30, 32]) == (4, 2)
+    assert labels.stage4_tooth_counts([2, 3, 4, 5]) == (4, 0)                 # one arch: no pairs
+
+
+def test_stage4_rule_by_teeth_left_calls_iv_below_20_teeth_and_below_10_pairs():
+    kw = {"recorded_perio": 0, "missing": 0}
+    twenty = [t for t in range(2, 12)] + [33 - t for t in range(2, 12)]    # 20 teeth, 10 opposing pairs
+    assert labels.stage4_rule("teeth_lt_20", **kw, teeth_present=twenty) is False
+    assert labels.stage4_rule("pairs_lt_10", **kw, teeth_present=twenty) is False
+    nineteen = twenty[:-1]                                              # 19 teeth, 9 pairs
+    assert labels.stage4_rule("teeth_lt_20", **kw, teeth_present=nineteen) is True
+    assert labels.stage4_rule("pairs_lt_10", **kw, teeth_present=nineteen) is True
+    one_arch = [t for t in range(2, 16)] + [18, 19, 20, 21, 22, 23]     # 20 teeth, 6 pairs
+    assert labels.stage4_rule("teeth_lt_20", **kw, teeth_present=one_arch) is False
+    assert labels.stage4_rule("pairs_lt_10", **kw, teeth_present=one_arch) is True
+    assert labels.stage4_rule("teeth_lt_20", **kw, teeth_present=twenty + [1, 16]) is False   # molars 3rd aside
+    assert labels.stage4_rule("teeth_lt_20", **kw, teeth_present=nineteen + [1]) is True
+    for rule in ("teeth_lt_20", "pairs_lt_10"):
+        with pytest.raises(ValueError, match="teeth_present"):
+            labels.stage4_rule(rule, **kw)
+    # the counting rules ignore teeth_present, so existing callers are unchanged
+    assert labels.stage4_rule("every_missing", recorded_perio=0, missing=5, teeth_present=[]) is True
+    assert labels.stage4_rule("every_missing", 0, 5) is True
 
 
 def test_the_patient_stage_table_counts_each_rule_from_the_tooth_predictions():
@@ -202,6 +237,28 @@ def test_the_patient_stage_table_counts_each_rule_from_the_tooth_predictions():
     assert (one["is_stage4_recorded_only"], one["is_stage4_every_missing"], one["is_stage4_expected_perio_loss"],
             one["is_stage4_truth"]) == (False, True, False, True)
     assert bool(one["is_stage3_4"]) and not bool(s.loc[2, "is_stage3_4"])        # worst CAL >= 5 mm
+    # spec 032 US4: teeth left (present and planned teeth, third molars aside) and the pairs between them
+    assert one["teeth_present_count"] == 1 and one["occluding_pair_count"] == 0  # only tooth 9 (planned) is left
+    assert one["present_tooth_text"] == "9"
+    assert bool(one["is_stage4_teeth_lt_20"]) and bool(one["is_stage4_pairs_lt_10"])
+
+
+def test_the_patient_stage_table_counts_the_teeth_left_in_a_full_mouth():
+    rows = [(1, t, "present", 50) for t in range(1, 33)]
+    rows[2] = (1, 3, "missing_at_entry", 50)                            # tooth 3 gone: 27 teeth, 13 pairs
+    t = _teeth(rows)
+    truth = pd.DataFrame({"patient_id": [1], "tooth_num": [3], "true_reason_code": ["perio"]})
+    s = tm.patient_stage(t, pd.Series(0.5, index=t.index), truth, worst_cal=pd.Series({1: 6.0})).iloc[0]
+    assert (s["teeth_present_count"], s["occluding_pair_count"]) == (27, 13)
+    assert s["present_tooth_text"] == " ".join(str(n) for n in range(1, 33) if n != 3)   # as charted, molars too
+    assert not s["is_stage4_teeth_lt_20"] and not s["is_stage4_pairs_lt_10"]
+    # the model may leave teeth out (third molars, a minimum age); the teeth left are read from the whole chart
+    kept = t[~t["tooth_num"].isin(range(2, 12))]
+    s = tm.patient_stage(kept, pd.Series(0.5, index=kept.index), truth, worst_cal=pd.Series({1: 6.0})).iloc[0]
+    assert (s["teeth_present_count"], s["occluding_pair_count"]) == (18, 4)
+    s = tm.patient_stage(kept, pd.Series(0.5, index=kept.index), truth, worst_cal=pd.Series({1: 6.0}),
+                         chart=t).iloc[0]
+    assert (s["teeth_present_count"], s["occluding_pair_count"]) == (27, 13)
 
 
 # ---------- end to end on a small seeded synthetic extract
