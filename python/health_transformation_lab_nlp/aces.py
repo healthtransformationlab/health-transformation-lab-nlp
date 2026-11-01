@@ -74,10 +74,17 @@ def _non_adjacent(teeth) -> bool:
 
 
 @traced
+def opposing_pair_count(present) -> int:
+    """Opposing pairs among the present teeth (tooth numbers), third molars excluded: upper t opposes lower 33 - t.
+    Also read by labels.stage4_tooth_counts (spec 032 US4)."""
+    present = {int(t) for t in present}
+    return sum(1 for t in range(2, 16) if t in present and 33 - t in present)
+
+
+@traced
 def occluding_pairs(teeth: pd.DataFrame) -> int:
     """Opposing pairs of present natural teeth, third molars excluded: upper t opposes lower 33 - t."""
-    present = set(teeth.loc[teeth["present"].astype(bool), "tooth"])
-    return sum(1 for t in range(2, 16) if t in present and 33 - t in present)
+    return opposing_pair_count(teeth.loc[teeth["present"].astype(bool), "tooth"])
 
 
 @traced

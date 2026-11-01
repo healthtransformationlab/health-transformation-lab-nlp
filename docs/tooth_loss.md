@@ -156,6 +156,8 @@ intercept is near 0 (0.18 and 0.07).
 | expected, completed, XGBoost | 27 | 2,339 | 1 | 71 |
 | expected, completed + planned, logistic | 85 | 2,347 | 26 | 38 |
 | expected, completed + planned, XGBoost | 84 | 2,348 | 25 | 38 |
+| fewer than 20 teeth left (spec 032) | 46 | 2,336 | 12 | 63 |
+| fewer than 10 occluding pairs left (spec 032) | 181 | 2,241 | 127 | 43 |
 | the synthetic truth | 97 | 2,411 | 0 | 0 |
 
 "Every missing tooth" calls 273 patients stage IV, 176 of them wrongly: nearly three times the true number. The
@@ -163,6 +165,15 @@ expected count calls 21-85, with 1-26 wrongly and 38-77 missed; with planned ext
 truth, and recorded periodontal extractions alone find no stage IV patient by tooth loss. On this seed the
 completed-extraction models undercount (their probabilities run low on teeth missing at entry, above), so they miss
 more stage IV patients than before US8 (40-45 on the earlier seed 42 extract).
+
+The last two rules (spec 032 US4, #443) don't ask why teeth were lost: they call stage IV from the teeth left,
+fewer than 20 teeth or fewer than 10 occluding pairs (upper and lower teeth that meet), third molars left out as in
+`aces.py`, counted from the whole tooth table (`labels.stage4_rule`, rules `teeth_lt_20` and `pairs_lt_10`). Fewer
+than 20 teeth calls 46 stage IV (12 wrongly, 63 missed): it misses most true stage IV patients, who keep 20 or more
+teeth. Fewer than 10 pairs calls 181 (127 wrongly, 43 missed): a tooth lost for any reason can break a pair, so this
+rule overcounts like "every missing tooth", though less. Mean of the 5 generator seeds: fewer than 20
+teeth 38 called stage IV (10 wrongly, 65 missed), fewer than 10 pairs 169 (120 wrongly, 45 missed). Adding the two
+rules left every other number on this page unchanged.
 
 Stage recount, mean of the 5 generator seeds, before → after US8: "every missing tooth" 271 → 264 called stage IV
 (168 → 170 wrongly) against a truth of 102 → 94; expected count, completed, 56-61 → 50-53 (7-8 → 5 wrongly, 49-54 →
