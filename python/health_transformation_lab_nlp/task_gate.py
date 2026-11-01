@@ -119,7 +119,9 @@ def _env(workdir: Path) -> dict:
 @traced
 def run_tests(workdir: Path, targets: list[str], timeout: int = DEFAULT_TIMEOUT, python: str = sys.executable) -> dict:
     """One pytest run of the targets at the worktree root: exit code (None on timeout), JUnit totals, seconds."""
-    xml = Path(tempfile.mkstemp(suffix=".xml", prefix="gate_")[1])
+    fd, name = tempfile.mkstemp(suffix=".xml", prefix="gate_")
+    os.close(fd)   # pytest writes the file; keep no descriptor open across 230 runs
+    xml = Path(name)
     cmd = [python, "-m", "pytest", *targets, f"--junitxml={xml}", "-q", "-p", "no:cacheprovider"]
     start = time.monotonic()
     proc = subprocess.Popen(cmd, cwd=workdir, env=_env(workdir), stdout=subprocess.DEVNULL,
