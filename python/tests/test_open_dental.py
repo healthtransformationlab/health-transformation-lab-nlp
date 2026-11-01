@@ -176,7 +176,9 @@ def test_the_load_job_generates_and_loads_bronze_and_silver():
         assert call in nb, call
     # the Open Dental tables hold Open Dental's columns only; the batch key goes in load_log (AGENTS.md: every row
     # still traces to its run, through the one load_log row per run and table)
-    assert ".assign(run_id" not in nb and "saveAsTable" in nb
+    # (the data-quality tables, spec 029 FR-009, are not Open Dental's: they carry run_id on every row, as declared)
+    od_part = nb.split("# Data-quality checks on the bronze extract")[0]
+    assert ".assign(run_id" not in od_part and "saveAsTable" in nb
     assert "answer_key" in nb                  # the truth lands in its own folder, read only by the evaluation
 
 

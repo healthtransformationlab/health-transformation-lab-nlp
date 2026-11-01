@@ -8,7 +8,11 @@
 # MAGIC   (`open_dental.clean`: -1 is null, gingival margins of 100+ are negative), the tooth tables derived from
 # MAGIC   them (`tooth_loss.tooth_table` → `patient_tooth`, `tooth_loss.planned_extraction` → `planned_extraction`), the
 # MAGIC   SIMULATED radiograph reading `radiograph_bone_level` (Open Dental stores none),
-# MAGIC   and the answer key `tooth_loss_truth`, which only the evaluation reads.
+# MAGIC   and the answer key `tooth_loss_truth`, which only the evaluation reads;
+# MAGIC - **data-quality checks** (`tooth_loss_dq`, spec 029 FR-009 after Kookal et al. 2024): one row per check
+# MAGIC   (`tooth_loss_dq_check`) and one per group of patients and measure (`tooth_loss_dq_group`: is the perio chart
+# MAGIC   kept as well at every office, by every provider, for every sex, race, exam year and age band?). They run on
+# MAGIC   the bronze extract, report what they find and fix nothing; each run replaces its own rows (delete by run_id).
 # MAGIC
 # MAGIC Every table is overwritten per run (idempotent) and keeps Open Dental's columns only. Each run appends one
 # MAGIC row per table written to `silver_opendental_perio.load_log`, with `run_id`, `run_ts` and `git_commit_sha`.
@@ -28,8 +32,7 @@ import time
 from pathlib import Path
 
 import pandas as pd
-
-from health_transformation_lab_nlp import open_dental, tooth_loss
+from health_transformation_lab_nlp import open_dental, tooth_loss, tooth_loss_dq
 from health_transformation_lab_nlp import tracking as _tracking
 
 dbutils.widgets.text("git_commit", "")  # noqa: F821  set by the job: the commit it was deployed from
@@ -93,3 +96,18 @@ for name, df in silver_tables.items():
 log = open_dental.load_log({bronze: tables, silver: silver_tables}, run_id=run_id, run_ts=run_ts,
                            git_commit_sha=git_commit, seed=seed, n_patients=params.n_patients)
 save(log, silver, "load_log", mode="append")
+
+# COMMAND ----------
+
+# Data-quality checks on the bronze extract (spec 029 FR-009): counts only, flagged, never fixed. Each run deletes its
+# own rows then appends them (idempotent on retry; earlier runs are kept for the trend).
+checks = tooth_loss_dq.run_checks(tables, switch_date=params.list_switch_date)
+groups = tooth_loss_dq.group_consistency(tables)
+print(checks.to_string(index=False))
+print(groups[groups["is_flagged"]].to_string(index=False) or "no group flagged")
+for name, df in (("tooth_loss_dq_check", checks), ("tooth_loss_dq_group", groups)):
+    df = df.assign(run_id=run_id, run_ts=run_ts, git_commit_sha=git_commit)
+    full = f"{catalog}.{silver}.{name}"
+    if spark.catalog.tableExists(full):  # noqa: F821
+        spark.sql(f"DELETE FROM {full} WHERE run_id = '{run_id}'")  # noqa: F821
+    save(df, silver, name, mode="append")

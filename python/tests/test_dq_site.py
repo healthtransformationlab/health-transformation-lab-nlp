@@ -114,3 +114,17 @@ def test_reliability_is_credited_to_a_paper_that_defines_it(d):
     text = json.dumps(d) + json.dumps(dashboards.dq_grader())
     assert "Liaw" not in text
     assert "de Vet" in text
+
+
+# ---------- spec 029 FR-009 (#370): the extract checks and the chart kept as well for every group ----------
+def test_the_extract_checks_and_groups_are_the_modules_own(d):
+    from health_transformation_lab_nlp import open_dental, tooth_loss_dq
+    tables, _ = open_dental.build(open_dental.Params(), seed=42)
+    checks = tooth_loss_dq.run_checks(tables)
+    s = d["sections"]
+    assert [r["check"] for r in s["extract_checks"]] == list(checks["check_name"])
+    assert [r["found_count"] for r in s["extract_checks"]] == list(checks["found_count"])
+    groups = tooth_loss_dq.group_consistency(tables)
+    assert len(s["chart_by_group"]) == len(groups)
+    assert {r["group_type"] for r in s["chart_by_group"]} == set(groups["group_type_code"])
+    assert all(0 <= r["pct"] <= 100 for r in s["chart_by_group"])
