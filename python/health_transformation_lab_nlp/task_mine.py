@@ -8,7 +8,7 @@ Pure functions over what git and the GitHub REST API return; the script `46_mine
 
 A candidate task changes non-test code and files under python/tests/ (the competition's mining rule).
 
-US3 (`52_build_tasks.py`): a candidate's diff splits into `patch` (everything outside python/tests/) and
+US3 (`55_build_tasks.py`): a candidate's diff splits into `patch` (everything outside python/tests/) and
 `test_patch` (python/tests/); the statement and hints come from the tier's source, redacted like the manifest.
 """
 

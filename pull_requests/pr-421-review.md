@@ -30,7 +30,7 @@ here, so the PR correctly says `Refs #354` and leaves T007 open. Verdict: approv
 | python / postgres / r-parity / bundle | not read from this session (the GitHub API token was invalid); local run below |
 
 ## Secrets, PHI and Claims Scan
-- Secrets: clean. `52_build_tasks.py` reads `GH_TOKEN`/`GITHUB_TOKEN` only to send a header, and never prints or stores it. The matches for "token" in the diff are manifest titles from history.
+- Secrets: clean. `55_build_tasks.py` reads `GH_TOKEN`/`GITHUB_TOKEN` only to send a header, and never prints or stores it. The matches for "token" in the diff are manifest titles from history.
 - PHI / real data: clean. The sample holds this repo's own issue text and code diffs, with no notes or names.
 - Organisation claims: clean. The sample passes `test_no_org_references.py`, and a new test checks that the sample never names the organisation.
 
