@@ -73,6 +73,16 @@ def test_third_molars_are_left_out_by_default_and_the_minimum_age_is_a_parameter
     assert sorted(tm.eligible(t, tm.ModelParams(min_age=None))["tooth_num"]) == [3, 3]   # sensitivity: no cut-off
 
 
+
+def test_the_teeth_left_out_are_counted_by_reason_including_an_unknown_age():
+    # a tooth whose age isn't recorded is left out once a cut-off applies: say how many, so a real run reports it
+    t = _teeth([(1, 1, "extracted_perio", 40), (1, 3, "extracted_perio", 15), (2, 3, "extracted_other", 40),
+                (3, 4, "missing_at_entry", None)])
+    out = tm.exclusions(t, tm.ModelParams())
+    assert out == {"third_molar_count": 1, "under_min_age_count": 1, "unknown_age_count": 1, "eligible_count": 1}
+    assert tm.exclusions(t, tm.ModelParams(min_age=None))["unknown_age_count"] == 0
+    assert out["eligible_count"] == len(tm.eligible(t, tm.ModelParams()))
+
 # ---------- the split (section 9)
 
 def test_the_split_is_by_patient_stratified_and_seeded():

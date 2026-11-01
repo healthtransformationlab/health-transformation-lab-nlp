@@ -76,14 +76,32 @@ DEFAULT = ModelParams()
 
 # ---------- who, the label sets and the predictors
 
+def _age(t: pd.DataFrame) -> pd.Series:
+    return pd.to_numeric(t["age_at_loss_num"] if "age_at_loss_num" in t else t["age_at_first_exam_num"],
+                         errors="coerce")
+
+
 @traced
 def eligible(teeth: pd.DataFrame, params: ModelParams = DEFAULT) -> pd.DataFrame:
-    """The teeth in the analysis: third molars out unless included; at least `min_age` when one is set."""
+    """The teeth in the analysis: third molars out unless included; at least `min_age` when one is set (a tooth
+    whose age isn't recorded is then left out too: `exclusions` counts them)."""
     t = teeth if params.include_third_molars else teeth[~teeth["tooth_num"].isin(THIRD_MOLARS)]
     if params.min_age is not None:
-        age = t["age_at_loss_num"] if "age_at_loss_num" in t else t["age_at_first_exam_num"]
-        t = t[pd.to_numeric(age, errors="coerce") >= params.min_age]
+        t = t[_age(t) >= params.min_age]
     return t
+
+
+@traced
+def exclusions(teeth: pd.DataFrame, params: ModelParams = DEFAULT) -> dict[str, int]:
+    """How many teeth `eligible` leaves out, by reason, in the order it applies them, and how many it keeps."""
+    molar = pd.Series(False, index=teeth.index) if params.include_third_molars else \
+        teeth["tooth_num"].isin(THIRD_MOLARS)
+    age = _age(teeth)
+    cut = params.min_age is not None
+    unknown = ~molar & age.isna() & cut
+    young = ~molar & ~age.isna() & (age < params.min_age if cut else False)
+    return {"third_molar_count": int(molar.sum()), "under_min_age_count": int(young.sum()),
+            "unknown_age_count": int(unknown.sum()), "eligible_count": int((~molar & ~unknown & ~young).sum())}
 
 
 @traced

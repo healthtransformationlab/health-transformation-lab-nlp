@@ -25,7 +25,7 @@ import argparse
 
 import pandas as pd
 
-from health_transformation_lab_nlp import open_dental, telemetry
+from health_transformation_lab_nlp import open_dental, telemetry, tooth_loss
 from health_transformation_lab_nlp import tooth_loss_model as tlm
 from health_transformation_lab_nlp.paths import RESULTS_DIR
 
@@ -48,6 +48,8 @@ for k in range(max(1, args.stability_seeds)):
     params = tlm.ModelParams(n_boot=args.n_boot if k == 0 else 0, min_age=args.min_age or None,
                              include_third_molars=args.third_molars)
     out = tlm.run(x, truth, params, generator_seed=gen_seed)
+    if k == 0:                     # who was left out, and why (a tooth with no recorded age, once a cut-off applies)
+        print(f"generator seed {gen_seed}: teeth {tlm.exclusions(tooth_loss.tooth_table(x), params)}")
     keep = out if k == 0 else {n: out[n] for n in ("scores", "stage_recount")}   # stability: the spread only
     for name, df in keep.items():
         frames.setdefault(name, []).append(df)

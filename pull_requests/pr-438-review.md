@@ -16,8 +16,8 @@ verdict: approve
 - The analysis plan (s. 3, the planned sensitivity list and the change log) and `docs/tooth_loss.md` say the same.
 
 ## Scope of Change
-- Files changed: 6, including this review:
-  - `tooth_loss_model.py`, `51_tooth_loss_model.py`, `test_tooth_loss_model.py`;
+- Files changed: 7, including this review:
+  - `tooth_loss_model.py`, `51_tooth_loss_model.py`, `test_tooth_loss_model.py`, `12_load_open_dental.py`;
   - `specs/029-tooth-loss/analysis_plan.md`, `docs/tooth_loss.md`.
 
 ## Checks against the rubric
@@ -32,9 +32,10 @@ verdict: approve
 - **Wording, benchmark order:** unaffected.
 
 ## Findings
-- **Minor (no change):** a tooth whose age is unknown is dropped once a cut-off applies (`pd.to_numeric` coerces to
-  NaN). No synthetic tooth lacks an age. On real data, the count of teeth dropped for a missing age should be reported
-  with the run.
+- **Minor (fixed on the branch):** a tooth whose age is unknown is dropped once a cut-off applies (`pd.to_numeric`
+  coerces to NaN), silently. `tooth_loss_model.exclusions` now counts the teeth left out by reason (third molar, under
+  the minimum age, unknown age) and those kept; script 51 and the Load Open Dental notebook print it. No synthetic
+  tooth lacks an age (6,000 left out as third molars and none for age, on 1,500 patients).
 
 ## Verdict
 Approve.
