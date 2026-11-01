@@ -115,13 +115,23 @@ def run_rows(folder: Path, method: str, source: str, run_id: str, git_commit: st
              run_ts: pd.Timestamp) -> tuple[pd.DataFrame, pd.DataFrame]:
     """ai_predictions and llm_reader_runs rows for one run's ai_predictions_<method>.csv and
     llm_details_<method>.csv, each with its file's SHA-256 (the version) and the run's key."""
-    out = []
-    for kind in ("ai_predictions", "llm_details"):
-        path = Path(folder) / f"{kind}_{method}.csv"
-        out.append(pd.read_csv(path).assign(method=method, sha256=_sha256(path), source=source, run_id=run_id,
-                                            run_ts=run_ts, git_commit=git_commit))
-    preds, details = out
-    return preds[["method", "visit_id", "pred", "sha256", "source", "run_id", "run_ts", "git_commit"]], details
+    path = Path(folder) / f"llm_details_{method}.csv"
+    details = pd.read_csv(path).assign(method=method, sha256=_sha256(path), source=source, run_id=run_id,
+                                       run_ts=run_ts, git_commit=git_commit)
+    preds = run_prediction_rows(Path(folder) / f"ai_predictions_{method}.csv", method, source, run_id, git_commit,
+                                run_ts)
+    return preds, details
+
+
+@traced
+def run_prediction_rows(path: Path, method: str, source: str, run_id: str, git_commit: str,
+                        run_ts: pd.Timestamp) -> pd.DataFrame:
+    """fact_prediction rows (analysis names) for one job run's ai_predictions_<method>.csv: the file's SHA-256
+    (its version) and the run's key. The reader job (03) and the GPU encoder job (08, spec 031) write these."""
+    path = Path(path)
+    preds = pd.read_csv(path).assign(method=method, sha256=_sha256(path), source=source, run_id=run_id,
+                                     run_ts=run_ts, git_commit=git_commit)
+    return preds[["method", "visit_id", "pred", "sha256", "source", "run_id", "run_ts", "git_commit"]]
 
 
 @traced
