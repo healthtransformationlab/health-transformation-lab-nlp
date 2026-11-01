@@ -125,6 +125,7 @@ same as completed ones is an open decision for the study lead (action item A2).
 | Data quality: conformance, completeness, plausibility | `dq.py`, `scripts/20_data_quality.py` | `data_quality/` |
 | Prediction of progression, feature importance | `prediction.py`, `scripts/21_predict_progression.py` | `prediction/` |
 | Status from the recorded chart, explained with SHAP (spec 013 G10) | `classify_status.py`, `scripts/40_classify_status.py` | `classify_status/` |
+| Status from dental-only, dental+medical and medical-only features, SYNTHETIC (spec 023) | `classify_status.py`, `scripts/44_medical_features.py` | `classify_status/synthetic_medical_feature_sets*.csv` |
 
 Differences from the study design and open decisions: [action_items.md](action_items.md).
 
