@@ -25,14 +25,26 @@ Everything this repo relies on, and what it's used for.
    *Developing Automated Computer Algorithms to Phenotype Periodontal Disease
    Diagnoses in Electronic Dental Records.* Methods of Information in Medicine, 2022.
    [PMC9788909](https://pmc.ncbi.nlm.nih.gov/articles/PMC9788909), doi:10.1055/s-0042-1757880 (open access).
-   → Rule-based phenotyping from EDR data at one dental school (27,138 patients). Three sources fill gaps in a
-   fixed order: the clinician's diagnosis recorded in the diagnosis section, then diagnoses found in clinical
-   notes (NLP), then diagnoses computed from periodontal charting (most recent visit, complete and approved
-   charts only). A later source is used only when the earlier ones are missing; there is no rule for when they
-   disagree. The order itself was not tested against expert review; only the charting algorithm (two experts,
-   200 charts) and the note extractor (400 notes) were. `algorithm_design` (`phenotype.py`) follows this order, with differences
-   listed in action item A2 (checked 2026-10-31, #389). `algorithm_v0` (gum measurements first) is this repo's
-   own, not from it.
+   → Rule-based case finding from EDR data at one dental school (27,138 patients with at least one
+   comprehensive oral exam, 2017–2021). Three sources fill gaps in a fixed order: (M1) the clinician's
+   diagnosis in the structured diagnosis section, then (M2) diagnoses found in clinical notes by the PerioDx
+   Extractor (NLP), then (M3) diagnoses computed from periodontal charting by the PerioDx Diagnoser (most
+   recent visit, charts whose exam code is "complete" only). A later source is used only when the earlier ones
+   are missing; there is no rule for when they disagree. There is no exam-form or PSR step: the periodontal
+   evaluation form is read only as note text (M2) and for bone loss in the charting rules (M3). The order
+   itself was not validated against expert review; only the Diagnoser (two experts, 200 charts) and the
+   Extractor (400 notes) were.
+   **What uses it here.** `algorithm_patel2022` (spec 024) is the paper's order. `algorithm_design`
+   (`phenotype.py`, exam form → diagnosis codes → note → gum measurements) is this repo's own: putting the
+   exam form first, and diagnosis codes attached to done or planned procedures standing in for the
+   diagnosis section, are not from the paper (action item A2; checked against the full text, #389, #204).
+   `algorithm_v0` (gum measurements first) is this repo's own too.
+   **The paper's own inconsistencies** (recorded, not resolved by guessing): the share of the final cohort
+   decided by charting is given as both 46% and 51%; spec 024 also notes that Fig. 1 attaches the 36%
+   (diagnosis codes) and 18% (notes) figures to the other section. The Extractor is reported at 91% precision
+   and 87% recall, which makes F1 0.89, not the 95% stated. Table 1 gives recall 1.0 (0 false negatives),
+   224 true positives against 112 actual positives, and a prevalence of 0.59 where 224/400 = 0.56. The HbA1c
+   annotation bands ("normal < 5", "pre-diabetes 5.7–6.4") leave 5.0–5.7 unassigned.
 5. **Patel JS, Rao R, Brandon R, Iyer V, Albandar JM, Tellez M, Krois J, Wu H.** *Develop a Natural Language
    Processing Pipeline to Automate Extraction of Periodontal Disease Information from Electronic Dental Clinical
    Notes.* ICMHI 2022 (ACM), pp. 61–68. doi:10.1145/3545729.3545744.

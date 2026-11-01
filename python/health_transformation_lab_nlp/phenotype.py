@@ -38,9 +38,10 @@ RULES_V0 = {
                  "exam_form", "proc_codes_completed", "proc_codes_planned"],
     "radiograph_lower_bound": True,
 }
-# Spec 005: the study design's starting order for the integrated phenotype, after Patel et al. 2022
-# (Methods Inf Med; docs/references.md item 4), not yet checked against the paper (action item A2). Not
-# assumed final: scripts/18_phenotype_order.py scores every ordering of the four
+# Spec 005: the study design's starting order for the integrated phenotype. The order is this repo's own:
+# Patel et al. 2022 (Methods Inf Med; docs/references.md item 4) uses the structured diagnosis section, then
+# notes, then charting, with no exam-form or PSR step; its order is algorithm_patel2022 (spec 024; action
+# item A2, checked against the full text). Not assumed final: scripts/18_phenotype_order.py scores every ordering of the four
 # groups so the order can change if another evidence type proves more accurate.
 DESIGN_GROUPS = {
     "exam_form": ["exam_form"],
