@@ -706,8 +706,10 @@ def _insurance(r: _Rows, p: Params, rng: random.Random) -> None:
         if kind == "none":
             continue
         for ordinal in (1, 2) if kind == "private" and rng.random() < p.secondary_plan else (1,):
-            spouse = kind == "private" and rng.random() < p.spouse_subscriber
-            holder = rng.choice(patients)[0] if spouse else pat
+            spouse = kind == "private" and len(patients) > 1 and rng.random() < p.spouse_subscriber
+            holder = pat
+            while spouse and holder == pat:             # another patient holds the plan
+                holder = rng.choice(patients)[0]
             sub = r("inssub", plannum=rng.choice(plans[kind]), subscriber=holder,
                     dateeffective=first - timedelta(days=rng.randint(0, 3000)), dateterm=None, releaseinfo=True,
                     assignben=rng.random() < 0.9, subscriberid=f"SYN{rng.randint(10 ** 7, 10 ** 8 - 1)}")

@@ -120,6 +120,8 @@ def test_reliability_is_credited_to_a_paper_that_defines_it(d):
 def test_the_extract_checks_and_groups_are_the_modules_own(d):
     from health_transformation_lab_nlp import open_dental, tooth_loss_dq
     tables, _ = open_dental.build(open_dental.Params(), seed=42)
+    # the page leaves out the insurance tables until spec 032 US8 (#448) reruns every result
+    tables = {n: df for n, df in tables.items() if n not in open_dental.INSURANCE_TABLES}
     checks = tooth_loss_dq.run_checks(tables)
     s = d["sections"]
     assert [r["check"] for r in s["extract_checks"]] == list(checks["check_name"])

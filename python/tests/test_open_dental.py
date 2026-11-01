@@ -405,6 +405,10 @@ def test_the_extract_holds_open_dentals_insurance_tables(built):
     assert set(t["insplan"]["carriernum"]) <= set(t["carrier"]["carriernum"])
     assert (t["patplan"]["ordinal"] >= 1).all()                          # 1 primary, 2 secondary; 0 is not used
     assert not t["patplan"].duplicated(["patnum", "ordinal"]).any()
+    held = t["patplan"].merge(t["inssub"], on="inssubnum")
+    spouse = held["relationship"] == od.RELAT_SPOUSE
+    assert spouse.any() and (held.loc[spouse, "subscriber"] != held.loc[spouse, "patnum"]).all()
+    assert (held.loc[~spouse, "subscriber"] == held.loc[~spouse, "patnum"]).all()
     assert set(t["carrier"]["carriername"]) == set(od.CARRIER_INSURANCE_TYPE)
     assert set(od.CARRIER_INSURANCE_TYPE.values()) == {"private", "public"}
 
