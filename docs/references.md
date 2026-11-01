@@ -156,6 +156,35 @@ Everything this repo relies on, and what it's used for.
     `docs/graders.md`) and `reliability_cal.py`. The grader once credited this domain to Liaw et al. 2013
     (Int J Med Inform 82(1):10–24), a review whose most common data-quality dimensions are completeness,
     accuracy, correctness, consistency and timeliness, not reliability (#405).
+63. **Suzuki S, Sugihara N, Kamijo H, Morita M, Kawato T, Tsuneishi M, Kobayashi K, Hasuike Y, Sato T.** *Reasons
+    for tooth extractions in Japan: the second nationwide survey.* Int Dent J 2022;72(3):366–372.
+    [doi:10.1016/j.identj.2021.05.008](https://doi.org/10.1016/j.identj.2021.05.008), PMID 34193342, PMC9275201.
+    2,345 dentists recorded every permanent tooth extracted in one week of June 2018: 7,809 teeth, 6,398 patients aged
+    10–106. Table 2 gives teeth by reason (caries, periodontal disease, fracture, orthodontics, impacted, others), age
+    band and sex. → spec 029 US7 (#429): the periodontal share by age band among teeth missing at a synthetic
+    patient's first visit (`open_dental.ENTRY_PERIO_SHARE_BY_AGE`; counts and pooling in
+    `specs/029-tooth-loss/research.md`). Checked in the PMC full text.
+64. **Aida J, Ando Y, Akhter R, Aoyama H, Masui M, Morita M.** *Reasons for permanent tooth extractions in Japan.*
+    J Epidemiol 2006;16(5):214–219. [doi:10.2188/jea.16.214](https://doi.org/10.2188/jea.16.214), PMID 16951541,
+    PMC7683702. The first nationwide survey (9,115 teeth, February 2005): caries 32.7%, fracture 10.6%, periodontal
+    disease 41.8%; periodontal disease predominant over 45. → spec 029 US7: agrees with item 63 on the age pattern.
+65. **Murray H, Locker D, Kay EJ.** *Patterns of and reasons for tooth extractions in general dental practice in
+    Ontario, Canada.* Community Dent Oral Epidemiol 1996;24(3):196–200.
+    [doi:10.1111/j.1600-0528.1996.tb00841.x](https://doi.org/10.1111/j.1600-0528.1996.tb00841.x), PMID 8871019.
+    Periodontal disease 35.9% of teeth lost, caries 28.9%; periodontal above caries after 40. → spec 029 US7: a
+    North American source with the same age pattern.
+66. **McCaul LK, Jenkins WM, Kay EJ.** *The reasons for extraction of permanent teeth in Scotland: a 15-year
+    follow-up study.* Br Dent J 2001;190(12):658–662.
+    [doi:10.1038/sj.bdj.4801068](https://doi.org/10.1038/sj.bdj.4801068), PMID 11453155. Caries the commonest reason
+    in every age group over 20 in 1999. → spec 029 US7: the source that disagrees after 40 (research.md says why
+    item 63 is used).
+67. **Broers DLM, Dubois L, de Lange J, Su N, de Jongh A.** *Reasons for tooth removal in adults: a systematic
+    review.* Int Dent J 2022;72(1):52–57. [doi:10.1016/j.identj.2021.01.011](https://doi.org/10.1016/j.identj.2021.01.011),
+    PMID 33648772, PMC9275356. Three studies, 4,396 extractions: caries 36.0–55.3%, periodontitis 24.8–38.1%, and
+    trauma, periapical disease, orthodontics, other and patient request. → spec 029 US7: the range item 63 is
+    compared with. Chestnutt IG, Binnie VI, Taylor MM, J Dent 2000;28(4):295–297
+    ([doi:10.1016/s0300-5712(99)00069-x](https://doi.org/10.1016/s0300-5712(99)00069-x), PMID 10722904; Scotland
+    1994: caries 51%, periodontal disease 21%) is cited in research.md alongside it.
 
 58. **Open Dental Software.** *Open Dental* source code, `OpenDentBusiness/TableTypes` (one class per database
     table). [github.com/OpenDental/OpenDental](https://github.com/OpenDental/OpenDental), branch `24_3`, commit
