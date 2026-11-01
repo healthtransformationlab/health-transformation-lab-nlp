@@ -11,8 +11,9 @@ a diagnosis. Bootstrap intervals are computed for the main seed only. Writes to 
 
     synthetic_tooth_loss_scores.csv         one row per seed, label set, feature set, model, set of teeth, metric
     synthetic_tooth_loss_calibration.csv    ten bins per seed, label set, feature set, model and set of teeth
-    synthetic_tooth_loss_stage_recount.csv  patients called stage III and IV under each counting rule
-    synthetic_tooth_loss_patient_stage.csv  one row per patient: teeth lost to periodontitis counted four ways
+    synthetic_tooth_loss_stage_recount.csv  patients called stage III and IV under each rule (labels.STAGE4_COUNT_RULES)
+    synthetic_tooth_loss_patient_stage.csv  one row per patient: teeth lost to periodontitis counted four ways, the
+                                            teeth and occluding pairs left, and stage IV under each rule
     synthetic_tooth_loss_predictions.csv    one row per tooth and model (the gold fact_tooth_loss_prediction rows)
     synthetic_tooth_loss_missing.csv        share missing per predictor, by label set and split
     synthetic_tooth_loss_eval_rows.csv      outcome and probability per scored tooth (read by r/tests/test_parity.R)

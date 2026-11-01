@@ -21,8 +21,8 @@ only to score the teeth that have no recorded reason, never as a feature. Synthe
   teeth missing at entry and extractions without a diagnosis, scored against the synthetic answer key.
 - Measures (s. 10): AUC, Brier, calibration intercept and slope, a 10-bin calibration table, and sensitivity,
   specificity, PPV and NPV at 0.5 and at Youden's threshold chosen on the training predictions; 95% intervals from
-  bootstrap resamples of patients, not teeth. Stage III vs IV per patient under four counting rules
-  (labels.STAGE4_COUNT_RULES).
+  bootstrap resamples of patients, not teeth. Stage III vs IV per patient under four counting rules, and two rules
+  on the teeth left (fewer than 20 teeth, fewer than 10 occluding pairs; spec 032 US4) (labels.STAGE4_COUNT_RULES).
 
 Base-R twins of the metrics and the stage rule: r/R/16_spec029.R, checked by r/tests/test_parity.R.
 """
