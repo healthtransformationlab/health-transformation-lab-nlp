@@ -21,7 +21,7 @@ pipelines:
     retry_interval_seconds: 0
     runbook_name: default
     data_label_code: synthetic
-    output_names: [gold_perio_bench.fact_prediction, gold_perio_bench.benchmark_result]
+    output_names: [gold_perio_bench.fact_prediction, gold_perio_bench.dim_study_note, gold_perio_bench.benchmark_metric]
   load_lakebase:
     owner_name: repo owner
     sla_seconds: 604800
@@ -71,7 +71,7 @@ pipelines:
     retry_interval_seconds: 1800
     runbook_name: gpu
     data_label_code: synthetic
-    output_names: [gold_perio_bench.encoder_gpu_predictions]
+    output_names: [gold_perio_bench.fact_prediction]   # spec 031: replaced per job run and method
   deid_ai:
     owner_name: repo owner
     sla_seconds: 604800
