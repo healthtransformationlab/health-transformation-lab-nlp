@@ -62,6 +62,39 @@ class Status(str, Enum):
 
 LABELS: list[str] = [s.value for s in Status]
 
+# Spec 032 US1 (#440): scores and prevalence at a chosen status grouping. Each grouping lists its groups in order:
+# `six` the six statuses (the default everywhere), `five` healthy and gingivitis merged, `three` that merge plus
+# stage I-II as `mild` and stage III-IV as `severe`. Every grouping keeps the periodontitis yes/no line and the
+# stage III-IV line, so those two numbers are the same at each. R twin: r/R/labels.R.
+HEALTHY_OR_GINGIVITIS = "healthy_or_gingivitis"
+GROUPINGS: dict[str, tuple[str, ...]] = {
+    "six": tuple(LABELS),
+    "five": (HEALTHY_OR_GINGIVITIS, *LABELS[2:]),
+    "three": (HEALTHY_OR_GINGIVITIS, "mild", "severe"),
+}
+_HG = {"healthy": HEALTHY_OR_GINGIVITIS, "gingivitis": HEALTHY_OR_GINGIVITIS,
+       "healthy_gingivitis": HEALTHY_OR_GINGIVITIS}   # healthy_gingivitis: a source that can't tell them apart
+_GROUP_OF: dict[str, dict[str, str]] = {
+    "six": {},
+    "five": _HG,
+    "three": {**_HG, LABELS[2]: "mild", LABELS[3]: "mild", LABELS[4]: "severe", LABELS[5]: "severe"},
+}
+
+
+@traced
+def group_status(status, grouping: str = "six"):
+    """The group a status falls in under `grouping` (GROUPINGS). Anything that is not a status (no answer, None,
+    NaN, "unknown", a group name already) comes back unchanged, so grouping twice is the same as grouping once."""
+    if grouping not in GROUPINGS:
+        raise ValueError(f"unknown status grouping {grouping!r}; one of {tuple(GROUPINGS)}")
+    return _GROUP_OF[grouping].get(status, status) if isinstance(status, str) else status
+
+
+@traced
+def periodontitis_groups(grouping: str = "six") -> tuple[set[str], set[str]]:
+    """(groups that are periodontitis, groups that are stage III-IV) under `grouping`."""
+    return ({group_status(s, grouping) for s in LABELS[2:]}, {group_status(s, grouping) for s in LABELS[4:]})
+
 
 @dataclass(frozen=True)
 class PerioChart:
