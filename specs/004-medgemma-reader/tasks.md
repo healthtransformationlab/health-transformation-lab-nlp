@@ -36,3 +36,6 @@
 - [x] T021 [US5] Reference answers per reader field (status, grade, extent) from the generator's truth:
   `reference_answers.py`, `51_reference_answers.py`, `answer_key/reference_answers.csv`; test first (#130).
   The reader returns no pocket depths or bleeding, so there is nothing to score them against.
+- [x] T022 [US6] Accuracy per field (n, accuracy, 95% Wilson CI) for each committed MedGemma run:
+  `reference_answers.field_accuracy`, `52_medgemma_field_accuracy.py`, `ladder/medgemma_field_accuracy.csv`;
+  R twin `r/R/17_spec004.R` + parity check 9e; MLflow metrics from the script and from `11_ai_predict.py` (#132)

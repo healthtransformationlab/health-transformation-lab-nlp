@@ -62,6 +62,20 @@ per review visit, grade and extent `NA` unless periodontitis, and that the commi
 2. **Given** a note whose stated status differs from the truth, **Then** the reference keeps the truth and `note_stated_status` shows the note's.
 3. **Given** a field the reader doesn't return (pocket depths, bleeding), **Then** the table has no column for it.
 
+### User Story 6 - MedGemma accuracy per field (P1) #132
+
+As the data scientist, I want accuracy per field (status, grade, extent) with n and a 95% CI for each MedGemma
+run, so I can see which fields the reader gets right and which it doesn't.
+
+**Independent Test**: `52_medgemma_field_accuracy.py` writes `ladder/medgemma_field_accuracy.csv`; unit tests
+cover the scoring rules, the Wilson CI and the MLflow metric names; `r/tests/test_parity.R` recomputes the table
+in base R (1e-9).
+
+1. **Given** a complete run, **Then** status is scored on every visit from the rung's answer (after fallback), equal to its headline accuracy.
+2. **Given** a visit whose truth is not periodontitis, **Then** it is left out of grade and extent; **given** a fallback row, **Then** its grade and extent count as wrong.
+3. **Given** a partial (`--limit`) run, **Then** it is not scored.
+4. **Given** a reader run with MLflow on, **Then** `field_accuracy_<field>` and `field_n_<field>` are logged.
+
 ### Edge Cases
 
 - Model wraps JSON in prose or code fences: parse the first `{...}`.
@@ -79,6 +93,7 @@ per review visit, grade and extent `NA` unless periodontitis, and that the commi
 - **FR-007**: Databricks notebook running the reader on Free Edition serverless GPU.
 - **FR-008**: R parity unaffected: predictions are CSV in the existing format.
 - **FR-009**: `reference_answers.py` + `51_reference_answers.py`: reference answers per reader field from the generator's truth (US5).
+- **FR-010**: `reference_answers.field_accuracy` + `52_medgemma_field_accuracy.py`: per-field accuracy with a 95% Wilson CI per run, R twin `r/R/17_spec004.R`, logged to MLflow (US6).
 
 ## Success Criteria
 
