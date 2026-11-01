@@ -8,9 +8,10 @@
 # MAGIC diverged on CPU at the default learning rate (every chart called healthy), so `lr_overrides` reruns it
 # MAGIC lower.
 # MAGIC
-# MAGIC Predictions are copied to the landing volume (`encoder_gpu/`) and appended to the table
-# MAGIC `encoder_gpu_predictions` in the gold schema. To score them with the other models, copy the CSVs into
-# MAGIC `data/datasets/`, then run `python/scripts/28_ladder_vs_truth.py` and `35_readme_results.py`.
+# MAGIC Predictions are copied to the landing volume (`encoder_gpu/`) and written to `fact_prediction` in the gold
+# MAGIC schema with `source_code` databricks, replaced per job run and method so a retry adds nothing (spec 031), as
+# MAGIC the MedGemma reader does. To score them with the other models, copy the CSVs into `data/datasets/`, then run
+# MAGIC `python/scripts/28_ladder_vs_truth.py` and `35_readme_results.py`.
 # MAGIC
 # MAGIC No GPU free? The *Fine-tune the GPU encoders on a free Kaggle GPU* workflow does the same work on Kaggle
 # MAGIC (`kaggle/encoder_gpu.ipynb`, with this job's `encoder_gpu_rungs` and `encoder_gpu_lr`) and commits the results.
@@ -29,10 +30,13 @@ import os
 import shutil
 import sys
 import tempfile
+import time
 
 import pandas as pd
-from health_transformation_lab_nlp import runlog
+from health_transformation_lab_nlp import gold_names, runlog
+from health_transformation_lab_nlp.delta import replace_batch
 from health_transformation_lab_nlp.paths import DATASETS_DIR, REPO_ROOT
+from health_transformation_lab_nlp.results_store import run_prediction_rows
 from health_transformation_lab_nlp.rungs import output_tag
 
 dbutils.widgets.text("git_commit", "")  # noqa: F821  set by the job: the commit it was deployed from
@@ -46,6 +50,8 @@ dbutils.widgets.text("catalog", "health_transformation_lab")                    
 dbutils.widgets.text("schema", "gold_perio_bench")                # noqa: F821
 dbutils.widgets.text("landing_schema", "landing_perio_bench")     # noqa: F821
 dbutils.widgets.text("telemetry", "azure")                              # noqa: F821  spec 014
+dbutils.widgets.text("run_id", "")   # noqa: F821  the job run ({{job.run_id}}): the batch key, the same for every retry
+run_id = dbutils.widgets.get("run_id") or f"manual-{time.strftime('%Y%m%dT%H%M%S')}"  # noqa: F821
 from health_transformation_lab_nlp import telemetry, tracking  # noqa: E402
 telemetry.use_databricks_secret(dbutils, dbutils.widgets.get("telemetry"))  # noqa: F821  scripts inherit it
 tracking.pass_databricks_login()       # the scripts below log to MLflow with the notebook's login
@@ -76,10 +82,14 @@ for rung in rungs:
 
 # COMMAND ----------
 
-if done:
-    preds = pd.concat([pd.read_csv(p).assign(method=m) for m, p in done])
-    spark.createDataFrame(preds).write.mode("append").saveAsTable(  # noqa: F821
-        f"{w['catalog']}.{w['schema']}.encoder_gpu_predictions")
+run_ts = pd.Timestamp.now(tz="UTC")
+for method, path in done:
+    preds = run_prediction_rows(path, method, source="databricks", run_id=run_id,
+                                git_commit=dbutils.widgets.get("git_commit"), run_ts=run_ts)  # noqa: F821
+    key = {"source_code": "databricks", "run_id": run_id, "method_name": method}
+    n = replace_batch(spark, gold_names.to_gold(preds, "fact_prediction"),  # noqa: F821
+                      f"{w['catalog']}.{w['schema']}.fact_prediction", key)
+    print(f"fact_prediction: {n} rows for run {run_id}, {method}")
 print("done:", [m for m, _ in done], "| failed:", failed)
 if failed:
     raise RuntimeError(f"encoders that failed: {failed} (the others' predictions are saved)")

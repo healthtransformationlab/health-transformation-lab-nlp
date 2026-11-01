@@ -61,6 +61,9 @@ def renamed(old: str, new: str, where: str = ""):
             raise ValueError(f"{old}: {bad} hold values that aren't whole numbers; fix them before migrating")
         for c in counts:
             sdf = sdf.withColumn(c, F.col(c).cast("bigint"))
+    # an old table written from text (benchmark_results.timestamp, ISO 8601) gets a real timestamp (spec 031)
+    for c in [f.name for f in sdf.schema.fields if f.name.endswith("_ts") and f.dataType.typeName() == "string"]:
+        sdf = sdf.withColumn(c, F.to_timestamp(c))
     return sdf
 
 

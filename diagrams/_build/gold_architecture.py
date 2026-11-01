@@ -165,10 +165,10 @@ b = d.v("bronze_perio_bench<br><font style='font-size:10px'>no tables yet</font>
 s = d.v("silver_perio_bench<br><font style='font-size:10px'>no tables yet</font>", 536, 478, 150, 60, CYL + SILVER)
 g = d.v("<b>gold_perio_bench</b><font style='font-size:10px'><br>dim_result_file · fact_prediction · fact_llm_call<br>"
         "fact_chart_answer · fact_judge_call · judge_metric<br>judge_agreement · judge_cost · deid_score<br>"
-        "judge_queue · fact_corpus_judge_call</font>", 700, 462, 260, 92, CYL + GOLD)
+        "judge_queue · fact_corpus_judge_call<br>dim_study_note · benchmark_metric</font>", 700, 462, 260, 104, CYL + GOLD)
 d.e(b, s, ARROW); d.e(s, g, ARROW)
-d.v("Gold also gets, from jobs not run in this workspace yet: person · visit_occurrence · measurement · note · "
-    "labeled_notes · benchmark_results (study_benchmark) · encoder_gpu_predictions (encoder_gpu)", 1100, 586, 200, 84, NOTE + "align=left;")
+d.v("Gold also gets the OMOP tables person · visit_occurrence · measurement · note (study_benchmark), and the "
+    "GPU encoders' rows in fact_prediction (encoder_gpu)", 1100, 586, 200, 84, NOTE + "align=left;")
 kaggle, git, key_ = sources(d, True)
 d.e(kaggle, git, ARROW, "PR")
 d.e(git, ing, ARROW + "entryX=0;entryY=0.4;")

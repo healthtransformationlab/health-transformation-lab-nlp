@@ -308,3 +308,12 @@ def test_deploy_still_stops_on_any_other_destructive_plan(tmp_path):
 def test_deploy_still_stops_on_an_ordinary_failure(tmp_path):
     rc, calls = _deploy_step(tmp_path, "Error: cannot create job: permission denied")
     assert rc == 1 and calls == ['bundle deploy -t dev']
+
+def test_run_prediction_rows_keep_the_run_key_and_the_files_version(tmp_path):
+    # spec 031: the GPU encoder job writes its predictions to fact_prediction as the reader does
+    _preds(tmp_path / "ai_predictions_modernbert-large.csv", 3)
+    p = rs.run_prediction_rows(tmp_path / "ai_predictions_modernbert-large.csv", "modernbert-large",
+                               source="databricks", run_id="5", git_commit="abc", run_ts=pd.Timestamp("2026-10-28"))
+    assert list(p.columns) == ["method", "visit_id", "pred", "sha256", "source", "run_id", "run_ts", "git_commit"]
+    assert set(p.method) == {"modernbert-large"} and set(p.run_id) == {"5"} and len(p) == 3
+    assert p.sha256.str.fullmatch(r"[0-9a-f]{64}").all()

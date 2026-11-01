@@ -12,7 +12,7 @@ GOLD = {n: t for n, t in gm.TABLES.items() if t.area != "file"}
 TYPES = {"_id": {"bigint", "string"}, "_key": {"string"}, "_code": {"string"}, "_name": {"string"}, "_text": {"string"},
          "_date": {"date"}, "_ts": {"timestamp"}, "_count": {"bigint"}, "_ratio": {"double"}, "_pct": {"double"},
          "_rate": {"double"}, "_coef": {"double"}, "_seconds": {"double"}, "_usd": {"double"}, "_num": {"bigint"},
-         "_url": {"string"}, "_sha256": {"string"}, "_sha": {"string"}}
+         "_url": {"string"}, "_sha256": {"string"}, "_sha": {"string"}, "_mm": {"double"}}
 
 
 def kind(column):
