@@ -58,6 +58,10 @@ harm.unsafe_rates:
 labels.Status.is_periodontitis:
   level: detail
   reason: 16 calls per parent, 71259 in total, 0.001 ms per call
+labels.expected_perio_loss:
+  level: detail
+  reason: once per patient in tooth_loss_model.patient_stage (spec 029)
+  manual: true
 labels.extent_of:
   level: detail
   reason: 4343 calls per parent, 4343 in total, 0.002 ms per call
@@ -73,6 +77,10 @@ labels.stage_by_cal:
 labels.stage_by_rbl:
   level: detail
   reason: 1 calls per parent, 28 in total, 0.001 ms per call
+labels.stage4_rule:
+  level: detail
+  reason: four times per patient in tooth_loss_model.patient_stage (spec 029)
+  manual: true
 ladder_eval.ladder_table:
   level: call
   reason: 1 calls per parent, 2 in total, 91.496 ms per call
