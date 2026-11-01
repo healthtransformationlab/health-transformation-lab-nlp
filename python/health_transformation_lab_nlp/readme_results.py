@@ -312,7 +312,7 @@ def yes_no(truth: pd.Series, pred: pd.Series, score=None) -> dict:
 def breakdown(truth: pd.Series, pred: pd.Series) -> dict:
     """Share of charts in each box (they add to 1): correct; wrong about periodontitis
     yes/no, split by what the system said; incorrect stage (right about periodontitis,
-    wrong status otherwise: stage, or healthy vs gingivitis); no answer."""
+    wrong status group otherwise: the stage); no answer."""
     answered = pred.notna()
     perio_t = truth.str.startswith("periodontitis")
     perio_p = pred.fillna("").str.startswith("periodontitis")
@@ -341,11 +341,11 @@ def _bullets(terms) -> str:
 
 
 PHENOTYPE_TERMS = [
-    ("Correct", "the right status (healthy, gingivitis, or periodontitis stage 1–4)."),
+    ("Correct", "the right status group: healthy or gingivitis (one group since spec 032 US8), or periodontitis "
+                "stage 1–4."),
     ("Periodontitis incorrectly assigned", "said periodontitis, but the patient doesn't have it."),
     ("Periodontitis incorrectly ruled out", "the patient has periodontitis, but the method said they don't."),
-    ("Incorrect stage", "right that it is or isn't periodontitis, but the wrong stage (1 mild to 4 most severe), "
-                        "or healthy and gingivitis mixed up."),
+    ("Incorrect stage", "right that it is or isn't periodontitis, but the wrong stage (1 mild to 4 most severe)."),
     ("No answer (evidence not available)", "the method gave no status because what it reads wasn't in the record, "
                                            "e.g. no probing chart was taken."),
 ]

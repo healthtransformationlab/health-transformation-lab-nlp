@@ -49,7 +49,7 @@ The 2012 CDC/AAP surveillance definitions, behind national prevalence, are compu
 
 ### Phenotyping: periodontal status per chart
 
-Counted on the 240 review charts, by what is available to read:
+Counted on the 221 review charts, by what is available to read:
 
 1. **The whole dental record**
 2. **Only the chart note** (where structured data is missing): the best trained AI, simple keyword rules, and a medical AI used as is
@@ -59,28 +59,28 @@ How each part of the record (gum measurements, chart note, exam form, codes, X-r
 
 What the columns mean:
 
-- **Correct**: the right status (healthy, gingivitis, or periodontitis stage 1–4).
+- **Correct**: the right status group: healthy or gingivitis (one group since spec 032 US8), or periodontitis stage 1–4.
 - **Periodontitis incorrectly assigned**: said periodontitis, but the patient doesn't have it.
-- **Periodontitis correctly ruled out**: (in brackets) of the 84 charts without periodontitis, the share the method said don't have it. The standard name is specificity.
+- **Periodontitis correctly ruled out**: (in brackets) of the 75 charts without periodontitis, the share the method said don't have it. The standard name is specificity.
 - **Periodontitis incorrectly ruled out**: the patient has periodontitis, but the method said they don't.
-- **Periodontitis correctly assigned**: (in brackets) of the 156 charts with periodontitis, the share the method said have it. No answer counts against it. The standard name is sensitivity.
-- **Incorrect stage**: right that it is or isn't periodontitis, but the wrong stage (1 mild to 4 most severe), or healthy and gingivitis mixed up.
+- **Periodontitis correctly assigned**: (in brackets) of the 146 charts with periodontitis, the share the method said have it. No answer counts against it. The standard name is sensitivity.
+- **Incorrect stage**: right that it is or isn't periodontitis, but the wrong stage (1 mild to 4 most severe).
 - **No answer (evidence not available)**: the method gave no status because what it reads wasn't in the record, e.g. no probing chart was taken.
-- **Rank**: where it plausibly ranks among all 51 methods.
+- **Rank**: where it plausibly ranks among all 53 methods.
 - **Stage 4 rule**: keyword rules decide stage 4, which the trained AI rarely learned (few stage 4 notes to learn from).
 
-Each row adds up to the 240 charts: correct + periodontitis incorrectly assigned (out of the 84 without it) + incorrectly ruled out (out of the 156 with it) + incorrect stage + no answer.
+Each row adds up to the 221 charts: correct + periodontitis incorrectly assigned (out of the 75 without it) + incorrectly ruled out (out of the 146 with it) + incorrect stage + no answer.
 
 | Question | Method | Correct | Periodontitis incorrectly assigned | Periodontitis incorrectly ruled out | Incorrect stage | No answer | Rank |
 |---|---|---:|---:|---:|---:|---:|---|
-| 1. Whole record available | Rules, gum measurements first | 234 of 240 | 0 of 84 (100% correctly ruled out) | 0 of 156 (100% correctly assigned) | 6 of 240 | 0 of 240 | 1 |
-| 2. Only the note available | Trained AI (ModernBERT) + stage 4 rule | 219 of 240 | 4 of 84 (95% correctly ruled out) | 1 of 156 (99% correctly assigned) | 16 of 240 | 0 of 240 | 2–12 |
-|  | Medical AI, untrained (MedGemma 4B) + stage 4 rule | 196 of 240 | 10 of 84 (88% correctly ruled out) | 8 of 156 (95% correctly assigned) | 26 of 240 | 0 of 240 | 19–39 |
-|  | Keyword rules (simple baseline) | 189 of 240 | 10 of 84 (88% correctly ruled out) | 8 of 156 (95% correctly assigned) | 33 of 240 | 0 of 240 | 22–42 |
-| 3. One part of the record alone | Gum measurements (probing chart) | 193 of 240 | 0 of 84 (100% correctly ruled out) | 0 of 156 (80% correctly assigned) | 2 of 240 | 45 of 240 | 18–43 |
-|  | Exam form | 149 of 240 | 10 of 84 (88% correctly ruled out) | 0 of 156 (87% correctly assigned) | 48 of 240 | 33 of 240 | 45–46 |
+| 1. Whole record available | Rules, gum measurements first | 215 of 221 | 0 of 75 (100% correctly ruled out) | 0 of 146 (100% correctly assigned) | 6 of 221 | 0 of 221 | 1 |
+| 2. Only the note available | Trained AI (ModernBERT large) + stage 4 rule | 201 of 221 | 4 of 75 (95% correctly ruled out) | 2 of 146 (99% correctly assigned) | 14 of 221 | 0 of 221 | 2–11 |
+|  | Medical AI, untrained (MedGemma 4B) + stage 4 rule | 181 of 221 | 10 of 75 (87% correctly ruled out) | 7 of 146 (95% correctly assigned) | 23 of 221 | 0 of 221 | 20–42 |
+|  | Keyword rules (simple baseline) | 179 of 221 | 10 of 75 (87% correctly ruled out) | 7 of 146 (95% correctly assigned) | 25 of 221 | 0 of 221 | 21–44 |
+| 3. One part of the record alone | Gum measurements (probing chart) | 177 of 221 | 0 of 75 (100% correctly ruled out) | 0 of 146 (79% correctly assigned) | 2 of 221 | 42 of 221 | 20–45 |
+|  | Exam form | 141 of 221 | 8 of 75 (89% correctly ruled out) | 0 of 146 (87% correctly assigned) | 40 of 221 | 32 of 221 | 47–52 |
 
-All 51 methods, per 100 charts with a likely range for each number (95% confidence interval), unsafe errors, results by note difficulty, and the 4 models not run yet: [full phenotyping table](../results.md#phenotyping-periodontal-status-per-chart).
+All 53 methods, per 100 charts with a likely range for each number (95% confidence interval), unsafe errors, results by note difficulty, and the 3 models not run yet: [full phenotyping table](../results.md#phenotyping-periodontal-status-per-chart).
 
 **Can an AI check the answers?** On real notes there is no answer key, so we tested whether a general-purpose AI (a large language model) could stand in for one. It read each note and gave its own status, which matched the answer key on 83% of charts but only 53% of hard notes (they leave out what the answer key is built from). Asked whether a method's answer was right, it caught most mistakes of weak methods but only 26% of the best note model's, which are near-misses such as one stage off. So it can't replace the answer key yet. (These are LLM judgments, checked against the answer key.) Details: [judge results](../results.md#llm-judge-every-system-against-an-llms-reading); in Databricks, the *Scorecard* dashboard.
 

@@ -6,7 +6,8 @@
  "sources": [
   "grader_tables.dq_tables(data/datasets/)",
   "open_dental.realism_profile (seed 42, default settings)",
-  "tooth_loss_dq.run_checks and group_consistency (the same extract)"
+  "tooth_loss_dq.run_checks and group_consistency (the same extract)",
+  "reliability_cal (scripts/37_cal_reliability.py, SIMULATED variance components)"
  ],
  "sections": {
   "tiles": {
@@ -6243,7 +6244,7 @@
     "check": "columns_as_declared",
     "domain": "completeness",
     "text": "every declared column is present and none extra",
-    "checked_count": 218,
+    "checked_count": 251,
     "found_count": 0,
     "found_pct": 0.0,
     "is_flagged": false
@@ -6252,7 +6253,7 @@
     "check": "values_as_declared",
     "domain": "completeness",
     "text": "dates parse and coded fields hold declared values",
-    "checked_count": 791877,
+    "checked_count": 793617,
     "found_count": 0,
     "found_pct": 0.0,
     "is_flagged": false
@@ -6270,9 +6271,9 @@
     "check": "missing_value_share",
     "domain": "completeness",
     "text": "null, blank or unknown cells, as a share (reported)",
-    "checked_count": 8549419,
-    "found_count": 38760,
-    "found_pct": 0.45,
+    "checked_count": 8575633,
+    "found_count": 40500,
+    "found_pct": 0.47,
     "is_flagged": null
    },
    {
@@ -7131,6 +7132,108 @@
     "pct": 53.6,
     "rest_pct": 53.8,
     "is_flagged": false
+   },
+   {
+    "group_type": "insurance_type",
+    "group": "none",
+    "label": "none",
+    "metric": "no_margin_chart",
+    "chart_count": 1093,
+    "pct": 26.3,
+    "rest_pct": 25.2,
+    "is_flagged": false
+   },
+   {
+    "group_type": "insurance_type",
+    "group": "private",
+    "label": "private",
+    "metric": "no_margin_chart",
+    "chart_count": 3960,
+    "pct": 25.2,
+    "rest_pct": 25.7,
+    "is_flagged": false
+   },
+   {
+    "group_type": "insurance_type",
+    "group": "public",
+    "label": "public",
+    "metric": "no_margin_chart",
+    "chart_count": 1953,
+    "pct": 25.2,
+    "rest_pct": 25.7,
+    "is_flagged": false
+   },
+   {
+    "group_type": "insurance_type",
+    "group": "none",
+    "label": "none",
+    "metric": "incomplete_chart",
+    "chart_count": 1093,
+    "pct": 54.6,
+    "rest_pct": 53.7,
+    "is_flagged": false
+   },
+   {
+    "group_type": "insurance_type",
+    "group": "private",
+    "label": "private",
+    "metric": "incomplete_chart",
+    "chart_count": 3960,
+    "pct": 53.9,
+    "rest_pct": 54.1,
+    "is_flagged": false
+   },
+   {
+    "group_type": "insurance_type",
+    "group": "public",
+    "label": "public",
+    "metric": "incomplete_chart",
+    "chart_count": 1953,
+    "pct": 53.6,
+    "rest_pct": 54.3,
+    "is_flagged": false
+   }
+  ],
+  "cal_reliability": [
+   {
+    "probing_error_sd_mm": 0.0,
+    "icc_patient": 0.581,
+    "icc_tooth": 0.798,
+    "icc_site": 0.965,
+    "sem_mm": 0.23,
+    "stage_band_flip_pct": 5.0,
+    "patient_count": 100,
+    "is_simulated": true
+   },
+   {
+    "probing_error_sd_mm": 0.4,
+    "icc_patient": 0.53,
+    "icc_tooth": 0.729,
+    "icc_site": 0.866,
+    "sem_mm": 0.48,
+    "stage_band_flip_pct": 17.0,
+    "patient_count": 100,
+    "is_simulated": true
+   },
+   {
+    "probing_error_sd_mm": 0.8,
+    "icc_patient": 0.421,
+    "icc_tooth": 0.577,
+    "icc_site": 0.683,
+    "sem_mm": 0.82,
+    "stage_band_flip_pct": 23.5,
+    "patient_count": 100,
+    "is_simulated": true
+   },
+   {
+    "probing_error_sd_mm": 1.2,
+    "icc_patient": 0.305,
+    "icc_tooth": 0.421,
+    "icc_site": 0.501,
+    "sem_mm": 1.15,
+    "stage_band_flip_pct": 18.5,
+    "patient_count": 100,
+    "is_simulated": true
    }
   ]
  }
