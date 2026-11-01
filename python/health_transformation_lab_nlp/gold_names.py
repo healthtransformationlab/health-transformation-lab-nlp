@@ -10,6 +10,7 @@ is written from, and the gold name of each.
     migration_plan  what databricks/notebooks/11_migrate_gold_names.py does with each old table
     legacy_plan     the same for a table left in an old gold schema (issue #228)
     legacy_schemas  the legacy_gold_schemas setting, parsed and checked
+    merge_key_types the type of the null stand-in for a MERGE_KEYS column a side lacks (issue #248)
 """
 
 from __future__ import annotations
@@ -228,6 +229,15 @@ def legacy_plan(legacy: dict[str, list[str]], current: dict[str, list[str]]) -> 
         else:
             plan.append(("merge" if target in MERGE_KEYS else "stale", name, target))
     return plan
+
+
+@traced
+def merge_key_types(key, src: dict[str, str], current: dict[str, str]) -> dict[str, str]:
+    """For each key column (in key's order), the Spark type its null stand-in takes on a side that lacks it
+    (src, current: column -> type, as DataFrame.dtypes gives them): src's type, else current's, else string when
+    neither has it (run_id on fact_llm_call, issue #248). Nulls match nulls, so a column neither side has never
+    splits or duplicates rows."""
+    return {k: src.get(k) or current.get(k) or "string" for k in key}
 
 
 @traced
