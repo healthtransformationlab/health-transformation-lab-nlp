@@ -272,6 +272,41 @@ AUC and specificity reported.
    its AUC and specificity are numbers, labelled synthetic.
 5. **Given** the truth, **Then** the reason lives only in `tooth_loss_truth`; no extract column carries it.
 
+### US8 - Teeth lost for other reasons share risk factors with teeth lost to periodontitis (Priority: P2) #433
+
+Since US7, a synthetic tooth missing at entry for a reason other than periodontitis is drawn from the patient's age
+and the tooth's type only. Periodontal losses follow the chart, and the chart follows smoking and diabetes
+(`synthetic.draw_history`). So the two kinds of loss share no risk factor, and they fall in different patients: the
+model tells them apart on teeth missing at entry with an AUC of about 0.96, which is optimistic. In real records,
+smoking and diabetes raise the risk of tooth loss overall, and some of the same patients lose teeth to caries and
+to periodontitis.
+
+The non-periodontal rate now also depends on the patient's smoking and diabetes, by the published effect of each on
+tooth loss for reasons other than periodontitis ([research.md](research.md), "Shared risk factors"). The rate is
+rescaled so the mean in each age band, and so the periodontal share in each band, stays as US7 set it. Teeth are
+still chosen by tooth type, never by attachment loss.
+
+**Why this priority**: it makes the missing-at-entry scores less optimistic, but US7 already gave that set both
+classes; the published effects on non-periodontal loss are small, so the change is expected to be modest.
+
+**Independent Test**: on a large seeded extract, the age-standardised number of non-periodontal teeth missing at
+entry is higher in daily smokers and in patients with diabetes than in the rest; the age-band shares of US7 still
+hold; within an age band and risk group the count still doesn't follow worst CAL.
+
+**Acceptance Scenarios**:
+
+1. **Given** the default parameters and a large seeded extract, **When** the non-periodontal teeth missing at entry
+   are counted per patient and compared with the age band's mean, **Then** the ratio of observed to expected is
+   above 1 for daily smokers and for patients with diabetes, and below 1 for never-smokers without diabetes.
+2. **Given** the same extract, **Then** the periodontal share at entry in each age band is still within 0.05 of
+   `ENTRY_PERIO_SHARE_BY_AGE` (US7 scenario 1).
+3. **Given** the same extract, **Then** within an age band and risk group (smoking status, diabetes), the count of
+   non-periodontal teeth missing at entry is not correlated with worst CAL (|r| < 0.05).
+4. **Given** every risk factor set to 1, **Then** the rate ratio is 1 for every patient and the per-band means are
+   exactly `Params.entry_other_teeth_by_age`, as in US7.
+5. **Given** the same seed twice, **Then** the extract and the answer key are identical; the draws stay on
+   `f"{seed}:open_dental:entry_reason"`, and `sites.draw_mouth_columns` and the study datasets don't change.
+
 ### Edge Cases
 
 - **Third molars:** they are often missing for other reasons (the synthetic mouths already treat them so), so
@@ -391,6 +426,16 @@ AUC and specificity reported.
 
   `sites.draw_mouth_columns` is unchanged, so the study datasets don't change. The extract and everything built from
   it (tooth table, model results, ERD counts, website data-quality JSON) is regenerated.
+- **FR-012** (US8, #433) The non-periodontal rate at entry shares risk factors with periodontal loss:
+  - each patient's Poisson mean is the age band's mean (`Params.entry_other_teeth_by_age`) times a rate ratio for
+    smoking (`Params.entry_other_smoking_ratios`, by cigarettes a day) and for diabetes
+    (`Params.entry_other_diabetes_ratio`, HbA1c 6.5% or more), from the published effects in
+    [research.md](research.md), "Shared risk factors";
+  - the product is divided by its mean over the patients `synthetic.draw_risk` makes (a fixed number of draws on
+    its own stream), so the mean count in each age band, and with it the periodontal share of FR-011, is unchanged;
+  - everything else in FR-011 holds: the same stream, teeth chosen by tooth type and never by attachment loss, the
+    reason only in `tooth_loss_truth`, `sites.draw_mouth_columns` unchanged. The extract and everything built from
+    it is regenerated.
 
 ### Key Entities
 
@@ -416,6 +461,9 @@ AUC and specificity reported.
   reported at the default (messy) rates and with every mess rate at zero, so the cost of messy records is shown.
 - **SC-009** The model's AUC and specificity on teeth missing at entry are reported (both classes present), and the
   stage III/IV recount is shown with non-periodontal losses at entry, all labelled synthetic (US7).
+- **SC-010** The non-periodontal rate at entry rises with smoking and diabetes by the cited effects, the US7 age-band
+  shares still hold, and the missing-at-entry AUC and specificity and the stage III/IV recount are reported before
+  and after the change, labelled synthetic (US8).
 - **SC-007** Both label sets are scored on the same held-out and missing-at-entry teeth, and every planned
   extraction counts once however many plan copies carry it.
 
@@ -428,7 +476,8 @@ AUC and specificity reported.
 - The diagnosis lists, the adoption date and lag, and the planning rates are invented parameters with fixed
   defaults, not observations of any practice.
 - The synthetic mouths of spec 006 are the source of truth. Their loss process (`draw_mouth`) is reused, not
-  changed. US7 adds non-periodontal teeth missing at entry after it, in `open_dental.py` only.
+  changed. US7 adds non-periodontal teeth missing at entry after it, in `open_dental.py` only, and US8 makes their
+  rate depend on the patient's smoking and diabetes there too.
 
 ## Out of scope
 

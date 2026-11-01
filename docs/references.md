@@ -185,6 +185,35 @@ Everything this repo relies on, and what it's used for.
     compared with. Chestnutt IG, Binnie VI, Taylor MM, J Dent 2000;28(4):295–297
     ([doi:10.1016/s0300-5712(99)00069-x](https://doi.org/10.1016/s0300-5712(99)00069-x), PMID 10722904; Scotland
     1994: caries 51%, periodontal disease 21%) is cited in research.md alongside it.
+68. **Mai X, Wactawski-Wende J, Hovey KM, LaMonte MJ, Chen C, Tezal M, Genco RJ.** *Associations between smoking
+    and tooth loss according to the reason for tooth loss: the Buffalo OsteoPerio Study.* J Am Dent Assoc
+    2013;144(3):252–265. [doi:10.14219/jada.archive.2013.0112](https://doi.org/10.14219/jada.archive.2013.0112),
+    PMID 23449901, PMC3842224. 1,106 postmenopausal women; Table 3 gives adjusted ORs for tooth loss due to caries
+    (none to periodontal disease) and due to periodontal disease. Caries: packs a day < 1, 1.05 (0.72–1.55); 1 to
+    < 2, 1.38 (0.86–2.21); not significant. Periodontal: 2.24, 3.17 and 10.39. → spec 029 US8 (#433): the smoking
+    rate ratios for non-periodontal teeth missing at entry (`open_dental.Params.entry_other_smoking_ratios`;
+    `specs/029-tooth-loss/research.md`, "Shared risk factors"). Checked in the PMC full text.
+69. **Suzuki S, Sugihara N, Kamijo H, Morita M, Kawato T, Tsuneishi M, Kobayashi K, Hasuike Y, Sato T.**
+    *Self-reported diabetes mellitus and tooth extraction due to periodontal disease and dental caries in the
+    Japanese population.* Int J Environ Res Public Health 2021;18(17):9024.
+    [doi:10.3390/ijerph18179024](https://doi.org/10.3390/ijerph18179024), PMID 34501613, PMC8430558. The 2018
+    survey of item 63, patients over 40 (4,625 teeth): among extracted teeth, diabetes against none, adjusted OR
+    for caries 0.85 (0.68–1.06), for periodontal disease 1.23 (1.01–1.50) (Table 4). → spec 029 US8: why the
+    diabetes ratio for non-periodontal loss is an upper bound. Checked in the PMC full text.
+70. **Ahmadinia AR, Rahebi D, Mohammadi M, Ghelichi-Ghojogh M, Jafari A, Esmaielzadeh F, Rajabi A.** *Association
+    between type 2 diabetes (T2D) and tooth loss: a systematic review and meta-analysis.* BMC Endocr Disord
+    2022;22(1):100. [doi:10.1186/s12902-022-01012-8](https://doi.org/10.1186/s12902-022-01012-8), PMID 35418054,
+    PMC9006550. 22 studies: all-cause tooth loss, adjusted OR 1.20 (1.10–1.30). → spec 029 US8: the diabetes rate
+    ratio (`open_dental.Params.entry_other_diabetes_ratio`), applied to non-periodontal loss as an upper bound
+    (research.md says why). Weijdijk LPM et al., Int J Dent Hyg 2022;20(1):145–166
+    ([doi:10.1111/idh.12512](https://doi.org/10.1111/idh.12512), PMID 33973353; risk ratio 1.63, unadjusted) is
+    cited in research.md alongside it. Checked in the abstract.
+71. **Ojima M, Hanioka T, Tanaka K, Aoyama H.** *Cigarette smoking and tooth loss experience among young adults: a
+    national record linkage study.* BMC Public Health 2007;7:313.
+    [doi:10.1186/1471-2458-7-313](https://doi.org/10.1186/1471-2458-7-313), PMID 17976246, PMC2186324. 1,314
+    Japanese adults aged 20–39: current smoking and 1+ tooth lost, adjusted OR 2.21 (1.40–3.50) in men and 1.70
+    (1.13–2.55) in women; and decayed teeth 1.67 (1.28–2.20). → spec 029 US8: all-cause, recorded as the source
+    that points to a larger smoking effect in young adults than item 68 (research.md). Checked in the abstract.
 
 58. **Open Dental Software.** *Open Dental* source code, `OpenDentBusiness/TableTypes` (one class per database
     table). [github.com/OpenDental/OpenDental](https://github.com/OpenDental/OpenDental), branch `24_3`, commit

@@ -28,7 +28,9 @@ What the extract carries, as Open Dental records it:
 Why each tooth was lost (`tooth_loss_truth`) is returned apart from the extract and written to another folder: the
 evaluation reads it, the extract never carries it. Teeth missing at the first visit are lost to periodontitis (the
 spec 006 mouth) or to another reason (caries, fracture, orthodontic, failed treatment), added here by age band so the
-periodontal share among them follows a published mix (`ENTRY_PERIO_SHARE_BY_AGE`, spec 029 US7, #429).
+periodontal share among them follows a published mix (`ENTRY_PERIO_SHARE_BY_AGE`, spec 029 US7, #429). How many a
+patient has also rises with smoking and diabetes, by published effects on tooth loss for other reasons, rescaled so
+each age band's mean stays the same (`entry_other_mean`, US8, #433).
 """
 
 from __future__ import annotations
@@ -42,7 +44,7 @@ import pandas as pd
 
 from .labels import label_chart
 from .sites import MOLARS, SITES, THIRD_MOLARS, draw_mouth_columns
-from .synthetic import draw_history, draw_pct_teeth_involved, draw_risk
+from .synthetic import RiskFactors, draw_history, draw_pct_teeth_involved, draw_risk
 from .telemetry import traced
 
 TABLES = {
@@ -142,6 +144,7 @@ CDCREC = [("1002-5", "R1", "American Indian or Alaska Native"), ("2028-9", "R2",
 # third molars aside: Suzuki et al., Int Dent J 2022;72(3):366-372, Table 2, men and women pooled, impacted teeth left
 # out (specs/029-tooth-loss/research.md, "Why teeth are missing"; docs/references.md item 63)
 ENTRY_PERIO_SHARE_BY_AGE = ((25, 0.064), (35, 0.209), (45, 0.329), (55, 0.480), (65, 0.500), (75, 0.470))
+DIABETES_HBA1C = 6.5          # HbA1c (%) at which a synthetic patient has type 2 diabetes listed
 _TOOTH_KIND = {**{t: "incisor" for t in (7, 8, 9, 10, 23, 24, 25, 26)}, **{t: "canine" for t in (6, 11, 22, 27)},
                **{t: "premolar" for t in (4, 5, 12, 13, 20, 21, 28, 29)}, **{t: "molar" for t in MOLARS}}
 
@@ -191,6 +194,14 @@ class Params:
     entry_other_teeth_by_age: tuple = ((25, 3.61), (35, 0.96), (45, 0.54), (55, 0.33), (65, 0.28), (75, 0.35))
     # which teeth those are: a weight per tooth type (this repo's choice, not a cited figure; research.md)
     entry_other_tooth_weights: tuple = (("molar", 3.0), ("premolar", 2.0), ("canine", 1.0), ("incisor", 1.0))
+    # how much more often a smoker or a patient with diabetes has them (US8, #433; specs/029-tooth-loss/research.md,
+    # "Shared risk factors"). Smoking, by cigarettes a day (lower bound): Mai et al., J Am Dent Assoc 2013;144(3):
+    # 252-265, Table 3, adjusted ORs for tooth loss due to caries by packs a day (< 1: 1.05; 1 to < 2: 1.38)
+    entry_other_smoking_ratios: tuple = ((1, 1.05), (20, 1.38))
+    # diabetes (HbA1c >= DIABETES_HBA1C): Ahmadinia et al., BMC Endocr Disord 2022;22:100, all-cause tooth loss,
+    # adjusted OR; an upper bound for loss to other reasons (Suzuki et al. 2021 find none for caries)
+    entry_other_diabetes_ratio: float = 1.20
+    entry_other_norm_draws: int = 20000       # patients drawn to find the mean ratio that keeps each band's mean
 
 
 # every mess rate at zero: a complete chart at every visit, every radiograph read
@@ -241,13 +252,50 @@ def _poisson(mean: float, rng: random.Random) -> int:
     return k
 
 
-def _entry_other_teeth(age: int, chart, site_cols: dict, teeth: dict, p: Params, rng: random.Random) -> list[int]:
+@traced
+def entry_other_rate_ratio(risk: RiskFactors, p: Params | None = None) -> float:
+    """How much more often this patient has teeth missing at entry for a reason other than periodontitis (US8): the
+    smoking ratio for their cigarettes a day times the diabetes ratio if HbA1c >= DIABETES_HBA1C; 1 for neither."""
+    p = p or Params()
+    smoking = [ratio for low, ratio in p.entry_other_smoking_ratios if risk.cigarettes_per_day >= low]
+    diabetic = risk.hba1c is not None and risk.hba1c >= DIABETES_HBA1C
+    return (smoking[-1] if smoking else 1.0) * (p.entry_other_diabetes_ratio if diabetic else 1.0)
+
+
+_NORMS: dict[tuple, float] = {}
+
+
+@traced
+def entry_other_rate_norm(p: Params | None = None) -> float:
+    """The mean rate ratio over the patients `synthetic.draw_risk` makes: `entry_other_norm_draws` draws on a fixed
+    stream of its own (the same for every extract seed). Dividing by it keeps each age band's mean (US8)."""
+    p = p or Params()
+    key = (p.entry_other_smoking_ratios, p.entry_other_diabetes_ratio, p.entry_other_norm_draws)
+    if key not in _NORMS:
+        rng = random.Random("open_dental:entry_reason:norm")
+        ratios = [entry_other_rate_ratio(draw_risk(rng), p) for _ in range(p.entry_other_norm_draws)]
+        _NORMS[key] = sum(ratios) / len(ratios)
+    return _NORMS[key]
+
+
+@traced
+def entry_other_mean(age: int, risk: RiskFactors, p: Params | None = None) -> float:
+    """The Poisson mean of this patient's non-periodontal teeth missing at entry: the age band's mean
+    (`Params.entry_other_teeth_by_age`, US7) times the rate ratio over its mean (US8)."""
+    p = p or Params()
+    base = dict(p.entry_other_teeth_by_age)[_band(age, p.entry_other_teeth_by_age)]
+    ratio, norm = entry_other_rate_ratio(risk, p), entry_other_rate_norm(p)
+    return base * ratio / norm
+
+
+def _entry_other_teeth(age: int, risk: RiskFactors, chart, site_cols: dict, teeth: dict, p: Params,
+                       rng: random.Random) -> list[int]:
     """Teeth present in the spec 006 mouth that were in fact lost before the first visit for another reason (US7).
-    How many: a Poisson draw with the age band's mean. Which: by tooth type weight, never by attachment loss; third
+    How many: a Poisson draw with the patient's mean (`entry_other_mean`: age band, smoking, diabetes). Which: by tooth type weight, never by attachment loss; third
     molars (their own rule in sites.draw_mouth_columns) and the teeth holding the mouth's worst CAL and probing depth
     stay, so the charted measures stay the chart's; a mouth below stage IV keeps 20 teeth, as in draw_mouth_columns."""
     present = [t for t, ok in zip(teeth["tooth"], teeth["present"]) if ok]
-    n = _poisson(dict(p.entry_other_teeth_by_age)[_band(age, p.entry_other_teeth_by_age)], rng)
+    n = _poisson(entry_other_mean(age, risk, p), rng)
     if not n or not present:
         return []
     cal, pd_ = site_cols["cal_mm"], site_cols["pd_mm"]
@@ -379,7 +427,7 @@ def build_with_readings(p: Params | None = None, seed: int = 42) -> tuple[dict[s
               patnum=pat, moreinfo="", codevalueresult=smoke,
               datestarttobacco=date(first.year - rng.randint(2, 30), 1, 1) if cigs else None,
               tobaccocessationdesire=rng.randint(0, 10) if cigs else 0)
-        diabetic = risk.hba1c is not None and risk.hba1c >= 6.5
+        diabetic = risk.hba1c is not None and risk.hba1c >= DIABETES_HBA1C
         problems = (["Type 2 diabetes mellitus"] if diabetic else []) + \
             (["Essential hypertension"] if age > 50 and rng.random() < 0.35 else []) + \
             (["Asthma"] if rng.random() < 0.07 else [])
@@ -400,7 +448,7 @@ def build_with_readings(p: Params | None = None, seed: int = 42) -> tuple[dict[s
         # ---- the mouth at the first exam: who is missing, and why (the truth)
         chart0 = hist[0].chart
         site_cols, teeth = draw_mouth_columns(chart0, draw_pct_teeth_involved(chart0, rng), rng)
-        for t in _entry_other_teeth(age, chart0, site_cols, teeth, p, entry_rng):
+        for t in _entry_other_teeth(age, risk, chart0, site_cols, teeth, p, entry_rng):
             teeth["present"][t - 1], teeth["missing_reason"][t - 1] = False, "other"
         base = {(t, s): (pd_, cal, b) for t, s, pd_, cal, b in zip(site_cols["tooth"], site_cols["site"],
                                                                     site_cols["pd_mm"], site_cols["cal_mm"],
