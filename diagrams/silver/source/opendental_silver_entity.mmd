@@ -41,6 +41,7 @@ erDiagram
     periomeasure }o..o| patient_tooth : "measures before the loss"
     patient_tooth ||..o| tooth_loss_truth : "scored against (evaluation only)"
     proctp }o..o{ tooth_loss_dq_check : "copies checked against the original"
+    perioexam }o..o{ tooth_loss_dq_group : "charts counted by group"
     patient
     clinic
     procedurelog
@@ -74,4 +75,5 @@ erDiagram
     radiograph_bone_level
     planned_extraction
     tooth_loss_dq_check
+    tooth_loss_dq_group
     tooth_loss_truth

@@ -41,6 +41,7 @@ erDiagram
     periomeasure }o..o| patient_tooth : "measures before the loss"
     patient_tooth ||..o| tooth_loss_truth : "scored against (evaluation only)"
     proctp }o..o{ tooth_loss_dq_check : "copies checked against the original"
+    perioexam }o..o{ tooth_loss_dq_group : "charts counted by group"
     patient {
         bigint patnum PK "Open Dental patient key"
         date birthdate "age is computed from this, never stored"
@@ -364,14 +365,28 @@ erDiagram
         date complete_date "datecomplete, when completed"
     }
     tooth_loss_dq_check {
-        string check_name PK "e.g. proctp_code_differs, dx_item_from_retired_list"
+        string check_name PK "e.g. plan_copy_differs, older_item_after_switch"
         string run_id PK "Databricks job run id"
         string domain_code "completeness · accuracy · consistency · plan_copy · list_in_use"
         bigint check_num "check number after Kookal et al. 2024; null for checks added here"
-        string table_name "the Open Dental table checked"
-        bigint found_count "rows found"
-        double found_ratio "share of rows, 0–1"
-        boolean is_flagged "beyond its threshold"
+        string table_name "the Open Dental tables checked"
+        bigint checked_count "rows, cells or offices checked"
+        bigint found_count "found by the check"
+        double found_ratio "found / checked, 0–1"
+        boolean is_flagged "anything found; null for the missing-value share, which is reported"
+        timestamp run_ts "when the check ran"
+        string git_commit_sha "commit the job was deployed from"
+    }
+    tooth_loss_dq_group {
+        string group_type_code PK "office · provider · sex · race · exam_year · age_band"
+        string group_name PK "the group, e.g. office 2, female, 45–64"
+        string metric_name PK "no_margin_chart · incomplete_chart"
+        string run_id PK "Databricks job run id"
+        bigint chart_count "perio charts in the group"
+        double value_ratio "share of the group's charts, 0–1"
+        double rest_mean_ratio "mean of the other groups of its type"
+        double rest_sd_ratio "SD of the other groups"
+        boolean is_flagged "beyond 2 SD of the rest and 5+ points apart; 30+ charts"
         timestamp run_ts "when the check ran"
         string git_commit_sha "commit the job was deployed from"
     }
