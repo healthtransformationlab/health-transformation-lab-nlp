@@ -69,7 +69,7 @@ def test_the_report_compares_with_our_formats():
               "embedding": {"arrays": 2, "shapes": ["(256,)"], "dtypes": ["float32"], "sample_keys": ["a"]},
               "harness_wheels": ["wheels/swegemma-0.3.0-py3-none-any.whl"]}
     lines = cc.compare_with_ours(theirs)
-    assert any(line.startswith("DIFFERS snapshot root") for line in lines)        # ours has a workspace/ folder
+    assert any(line.startswith("MATCHES snapshot root") for line in lines)        # files at the root, like ours (#452)
     assert any(line.startswith("MATCHES graph keys") for line in lines)
     assert any(line.startswith("MATCHES embeddings") for line in lines)
     assert any(line.startswith("FOUND swegemma") for line in lines)
@@ -81,3 +81,14 @@ def test_the_workflow_installs_six_with_kaggle():
     wf = (REPO_ROOT / ".github/workflows/kaggle-competition-check.yml").read_text()
     line = next(x for x in wf.splitlines() if "pip install" in x and "kaggle==" in x)
     assert "six" in line.split()
+
+
+def test_commit_named_graphs_are_used_when_no_task_named_ones_exist():
+    """The competition's listing has only `<repo_short>_<base_commit>` graphs and embeddings (#452)."""
+    listing = [("snapshots/httpx_3672.tgz", 3_000_000), ("snapshots/rich_1.tgz", 9_000_000),
+               ("graphs/httpx_aaa.json", 2_000_000), ("graphs/rich_bbb.json", 900_000),
+               ("embeddings/httpx_aaa.npz", 1_000_000), ("embeddings/rich_bbb.npz", 500_000)]
+    picked = cc.select_files(listing)
+    assert "snapshots/httpx_3672.tgz" in picked
+    assert "graphs/rich_bbb.json" in picked and "embeddings/rich_bbb.npz" in picked   # smallest pair, same stem
+    assert "graphs/httpx_aaa.json" not in picked
