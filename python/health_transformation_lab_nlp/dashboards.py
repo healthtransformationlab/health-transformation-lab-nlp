@@ -205,7 +205,7 @@ ORDER BY p.visit_id, p.category_order_num, p.item_order_num""",
 DQ_BANNER = """## EHR DQ grader: is this dental record fit for periodontal phenotyping?
 **Synthetic data** from the study's generator, scored against its own truth: **not clinical performance**. The
 light version of the Perio DQ Monitor design: five domains (Zozus completeness, accuracy and consistency; Kahn
-temporal plausibility; Liaw reliability), then one section per domain. Ask the **EHR DQ grader** Genie space for
+temporal plausibility; reliability after de Vet et al. 2006), then one section per domain. Ask the **EHR DQ grader** Genie space for
 anything not shown."""
 
 
@@ -227,7 +227,7 @@ def dq_grader() -> dict:
                            "`fact_visit_evidence` (statuses only, never note text).",
                     (2, 3, 4, 2))]
     layout += [_counter(n, "tiles", f, t, d, (i, 5, 1, 3)) for i, (n, f, t, d) in enumerate(tiles)]
-    layout += [_text("t_reliability", "**Reliability** (Liaw)\n\n**Not assessed**: needs real reviewers to label "
+    layout += [_text("t_reliability", "**Reliability** (de Vet)\n\n**Not assessed**: needs real reviewers to label "
                                       "charts. Simulated reviewers are a dry run.", (4, 5, 1, 3)),
                _counter("t_accuracy_design", "tiles", "accuracy_design_pct", "Accuracy, exam form first (%)",
                         "Rules in the study design's order. The order changes the answer.", (5, 5, 1, 3)),
@@ -498,7 +498,7 @@ DQ_INSTRUCTIONS = [
      "implausible; lower is better. Use visit_pair_count as the denominator, not later_visit_count. "
      "dq_stage_transition has the full matrix: row_pct is the share of the earlier stage's pairs that moved to "
      "each stage."),
-    ("Reliability (Liaw): not assessed. It needs real reviewers to label charts; the study's reviewers are "
+    ("Reliability (de Vet et al. 2006: whether independent reviewers reach the same answer): not assessed. It needs real reviewers to label charts; the study's reviewers are "
      "simulated, so never report a reliability figure."),
     ("dq_check holds each check per clinic; clinic_code = 'All' is every clinic together. Do not add the clinic rows "
      "to the 'All' rows."),

@@ -197,7 +197,7 @@
                 "## EHR DQ grader: is this dental record fit for periodontal phenotyping?\n",
                 "**Synthetic data** from the study's generator, scored against its own truth: **not clinical performance**. The\n",
                 "light version of the Perio DQ Monitor design: five domains (Zozus completeness, accuracy and consistency; Kahn\n",
-                "temporal plausibility; Liaw reliability), then one section per domain. Ask the **EHR DQ grader** Genie space for\n",
+                "temporal plausibility; reliability after de Vet et al. 2006), then one section per domain. Ask the **EHR DQ grader** Genie space for\n",
                 "anything not shown.\n"
               ]
             }
@@ -459,7 +459,7 @@
             "name": "t_reliability",
             "multilineTextboxSpec": {
               "lines": [
-                "**Reliability** (Liaw)\n",
+                "**Reliability** (de Vet)\n",
                 "\n",
                 "**Not assessed**: needs real reviewers to label charts. Simulated reviewers are a dry run.\n"
               ]

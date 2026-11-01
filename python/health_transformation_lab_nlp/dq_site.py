@@ -4,7 +4,7 @@
     python scripts/50_dq_site.py --check   # exit 1 if it is stale
 
 The grader (spec 019, `dashboards.dq_grader`) is organized by data-quality domain: completeness, accuracy and
-consistency (Zozus), temporal plausibility (Kahn) and reliability (Liaw). This file has one section per grader
+consistency (Zozus), temporal plausibility (Kahn) and reliability (de Vet). This file has one section per grader
 dataset, built from the same tables the grader reads (`grader_tables.dq_tables`), with the same definitions as its
 SQL (`dashboards.DQ_SQL`), so the page and the dashboard show the same numbers. A last section adds how messy the
 default synthetic Open Dental extract is (`open_dental.realism_profile`, spec 029 US6).
@@ -184,7 +184,7 @@ def build() -> dict:
         "note": ("Synthetic data from the study's generator, scored against its own truth: not clinical performance, "
                  "and not how good any real practice's records are."),
         "design": "dashboards.dq_grader (spec 019): Zozus completeness, accuracy, consistency; Kahn temporal "
-                  "plausibility; Liaw reliability",
+                  "plausibility; de Vet reliability",
         "sources": ["grader_tables.dq_tables(data/datasets/)",
                     "open_dental.realism_profile (seed 42, default settings)"],
         "sections": sections,

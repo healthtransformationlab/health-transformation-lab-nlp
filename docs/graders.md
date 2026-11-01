@@ -20,7 +20,7 @@ Five domain tiles, then one section per domain:
 | Accuracy | Zozus | Rules on the whole record, gum measurements first (`algorithm_v0`), agreeing with the truth; each source's agreement where it answers |
 | Consistency | Zozus | Spread of periodontitis prevalence across the 8 clinics, in points |
 | Temporal plausibility | Kahn | Later visits whose stage improved (design rules); the full stage-to-stage matrix |
-| Reliability | Liaw | **Not assessed**: needs real reviewers |
+| Reliability | de Vet | **Not assessed**: needs real reviewers |
 
 `fact_visit_evidence` holds statuses only (what each evidence source says, and the truth), never note text.
 

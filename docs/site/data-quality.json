@@ -2,7 +2,7 @@
  "title": "EHR DQ grader: is this dental record fit for finding gum disease?",
  "is_synthetic": true,
  "note": "Synthetic data from the study's generator, scored against its own truth: not clinical performance, and not how good any real practice's records are.",
- "design": "dashboards.dq_grader (spec 019): Zozus completeness, accuracy, consistency; Kahn temporal plausibility; Liaw reliability",
+ "design": "dashboards.dq_grader (spec 019): Zozus completeness, accuracy, consistency; Kahn temporal plausibility; de Vet reliability",
  "sources": [
   "grader_tables.dq_tables(data/datasets/)",
   "open_dental.realism_profile (seed 42, default settings)"
