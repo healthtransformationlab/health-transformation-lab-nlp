@@ -381,8 +381,6 @@ def difficulty(dx_pattern: str, stated_status: str, chart_status: str, copy_forw
 
 # ---------- spec 032 US8 (#448): scoring under the defaults without rebuilding the benchmark note set ----------
 BUILD_N_PEOPLE, BUILD_SEED = 1200, 42        # scripts/10_build_study.py's defaults: the committed build
-ABSENT_CODE_COLUMNS = ("proc_dx_completed", "proc_dx_planned", "algorithm_v0", "algorithm_v0_decided_by",
-                       "algorithm_design", "algorithm_design_decided_by")
 
 
 @traced

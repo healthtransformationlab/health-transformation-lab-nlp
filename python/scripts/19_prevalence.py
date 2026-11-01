@@ -22,7 +22,11 @@ from health_transformation_lab_nlp import study
 from health_transformation_lab_nlp.labels import ALSO_REPORTED_GROUPINGS, DEFAULT_GROUPING
 from health_transformation_lab_nlp.paths import DATASETS_DIR
 from health_transformation_lab_nlp.phenotype import ABSENT_CODE_RULES, DEFAULT_ABSENT_CODE
-from health_transformation_lab_nlp.prevalence import NHANES_2009_2014, prevalence_by, prevalence_by_group
+from health_transformation_lab_nlp.prevalence import (
+    NHANES_2009_2014,
+    prevalence_by,
+    prevalence_by_group,
+)
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--all-visits", action="store_true", help="every visit (no age or date filter)")

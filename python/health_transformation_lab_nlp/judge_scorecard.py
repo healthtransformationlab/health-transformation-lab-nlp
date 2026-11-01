@@ -24,7 +24,7 @@ from . import judge as jg
 from . import readme_results as rr
 from .cost_effectiveness import corrected_accuracy
 from .harm import unsafe_rates
-from .ladder_eval import STAGE4
+from .ladder_eval import STAGE4, grouped
 from .phenotype import cohen_kappa
 from .telemetry import traced
 
@@ -197,7 +197,8 @@ def _point(ref: pd.Series, p: pd.Series, level: pd.Series, score) -> dict:
 
 def _judge_status(judgments: pd.DataFrame) -> pd.Series:
     st = judgments[(judgments["kind"] == "status") & judgments["gate_ok"].astype(bool)]
-    return st.set_index("visit_id")["judge_status"].dropna()
+    # at the scoring grouping (spec 032 US8: five groups), as every answer and the truth are (rr.phenotype_predictions)
+    return grouped(st.set_index("visit_id")["judge_status"].dropna())
 
 
 @traced

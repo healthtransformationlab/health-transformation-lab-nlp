@@ -7,7 +7,12 @@ import pandas as pd
 import pytest
 
 from health_transformation_lab_nlp import harm, ladder_eval, study
-from health_transformation_lab_nlp.labels import DEFAULT_GROUPING, GROUPINGS, HEALTHY_OR_GINGIVITIS, LABELS
+from health_transformation_lab_nlp.labels import (
+    DEFAULT_GROUPING,
+    GROUPINGS,
+    HEALTHY_OR_GINGIVITIS,
+    LABELS,
+)
 from health_transformation_lab_nlp.paths import DATASETS_DIR
 
 REREAD = ("proc_dx_completed", "proc_dx_planned", "algorithm_v0", "algorithm_design")
