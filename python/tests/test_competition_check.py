@@ -73,3 +73,11 @@ def test_the_report_compares_with_our_formats():
     assert any(line.startswith("MATCHES graph keys") for line in lines)
     assert any(line.startswith("MATCHES embeddings") for line in lines)
     assert any(line.startswith("FOUND swegemma") for line in lines)
+
+
+def test_the_workflow_installs_six_with_kaggle():
+    """kaggle 2.2.5 imports six without declaring it (#450)."""
+    from health_transformation_lab_nlp.paths import REPO_ROOT
+    wf = (REPO_ROOT / ".github/workflows/kaggle-competition-check.yml").read_text()
+    line = next(x for x in wf.splitlines() if "pip install" in x and "kaggle==" in x)
+    assert "six" in line.split()
