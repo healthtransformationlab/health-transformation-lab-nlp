@@ -67,10 +67,12 @@ def test_the_two_label_sets_completed_and_completed_plus_planned():
 def test_third_molars_are_left_out_by_default_and_the_minimum_age_is_a_parameter():
     t = _teeth([(1, 1, "extracted_perio", 15), (1, 3, "extracted_perio", 15), (2, 3, "extracted_other", 40),
                 (2, 32, "missing_at_entry", 40)])
-    assert len(tm.eligible(t, tm.ModelParams(min_age=None, include_third_molars=True))) == 4
+    every_year = tm.ModelParams(start_date=None)               # these teeth carry no dates
+    assert len(tm.eligible(t, tm.ModelParams(min_age=None, include_third_molars=True, start_date=None))) == 4
     assert tm.ModelParams().min_age == 18                      # adults only (analysis plan s. 3)
-    assert tm.eligible(t, tm.ModelParams())["patient_id"].tolist() == [2]       # the 15-year-old is out
-    assert sorted(tm.eligible(t, tm.ModelParams(min_age=None))["tooth_num"]) == [3, 3]   # sensitivity: no cut-off
+    assert tm.eligible(t, every_year)["patient_id"].tolist() == [2]       # the 15-year-old is out
+    no_cut = tm.ModelParams(min_age=None, start_date=None)
+    assert sorted(tm.eligible(t, no_cut)["tooth_num"]) == [3, 3]   # sensitivity: no cut-off
 
 
 
@@ -78,11 +80,12 @@ def test_the_teeth_left_out_are_counted_by_reason_including_an_unknown_age():
     # a tooth whose age isn't recorded is left out once a cut-off applies: say how many, so a real run reports it
     t = _teeth([(1, 1, "extracted_perio", 40), (1, 3, "extracted_perio", 15), (2, 3, "extracted_other", 40),
                 (3, 4, "missing_at_entry", None)])
-    out = tm.exclusions(t, tm.ModelParams())
+    every_year = tm.ModelParams(start_date=None)               # these teeth carry no dates
+    out = tm.exclusions(t, every_year)
     assert out == {"third_molar_count": 1, "under_min_age_count": 1, "unknown_age_count": 1,
                    "before_start_date_count": 0, "unknown_date_count": 0, "eligible_count": 1}
-    assert tm.exclusions(t, tm.ModelParams(min_age=None))["unknown_age_count"] == 0
-    assert out["eligible_count"] == len(tm.eligible(t, tm.ModelParams()))
+    assert tm.exclusions(t, tm.ModelParams(min_age=None, start_date=None))["unknown_age_count"] == 0
+    assert out["eligible_count"] == len(tm.eligible(t, every_year))
 
 
 def test_a_start_date_leaves_out_teeth_lost_or_first_charted_before_it():
@@ -91,15 +94,18 @@ def test_a_start_date_leaves_out_teeth_lost_or_first_charted_before_it():
                 (3, 3, "missing_at_entry", 40), (4, 3, "missing_at_entry", 40)])
     t["loss_date"] = pd.to_datetime(["2019-06-01", "2021-03-01", None, None, None])
     t["first_exam_date"] = pd.to_datetime(["2018-01-01", "2018-01-01", "2019-12-31", "2020-01-01", None])
-    assert tm.ModelParams().start_date is None                 # default: every year
-    assert len(tm.eligible(t)) == 5
+    assert tm.ModelParams().start_date == "2018-01-01"         # the default since spec 032 US8 (#448)
+    every_year = tm.ModelParams(start_date=None)
+    assert len(tm.eligible(t, every_year)) == 5
     params = tm.ModelParams(start_date="2020-01-01")
     kept = tm.eligible(t, params)
     assert list(zip(kept["patient_id"], kept["tooth_num"])) == [(1, 4), (3, 3)]
     out = tm.exclusions(t, params)
     assert out["before_start_date_count"] == 2 and out["unknown_date_count"] == 1
     assert out["eligible_count"] == 2 == len(kept)
-    assert tm.exclusions(t)["before_start_date_count"] == 0 and tm.exclusions(t)["unknown_date_count"] == 0
+    none = tm.exclusions(t, every_year)
+    assert none["before_start_date_count"] == 0 and none["unknown_date_count"] == 0
+    assert tm.exclusions(t)["unknown_date_count"] == 1          # the default date: the undated tooth is out
 
 
 def test_the_start_date_applies_after_the_age_cut_and_counts_each_tooth_once():

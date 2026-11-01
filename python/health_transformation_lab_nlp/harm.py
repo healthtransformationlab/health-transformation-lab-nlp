@@ -28,16 +28,17 @@ from __future__ import annotations
 
 import pandas as pd
 
-from .labels import LABELS
+from .labels import HEALTHY_OR_GINGIVITIS, LABELS
 from .telemetry import traced
 
 ORDER = LABELS  # healthy, gingivitis, stage 1..4
+_MERGED = ("healthy_gingivitis", HEALTHY_OR_GINGIVITIS)
 
 
 @traced
 def severity(truth: str, pred: str) -> str:
-    # five-category reports: the collapsed label grades like "healthy"
-    truth, pred = ("healthy" if x == "healthy_gingivitis" else x for x in (truth, pred))
+    # five-category reports: the collapsed label grades like "healthy" (healthy_or_gingivitis: labels.GROUPINGS)
+    truth, pred = ("healthy" if x in _MERGED else x for x in (truth, pred))
     t, p = ORDER.index(truth), ORDER.index(pred)
     if t == p:
         return "S0"
@@ -55,7 +56,7 @@ def severity(truth: str, pred: str) -> str:
 
 @traced
 def unsafe_rates(truth: pd.Series, pred: pd.Series) -> dict:
-    ok = truth.isin([*ORDER, "healthy_gingivitis"]) & pred.isin([*ORDER, "healthy_gingivitis"])
+    ok = truth.isin([*ORDER, *_MERGED]) & pred.isin([*ORDER, *_MERGED])
     if not ok.any():
         return {"n": 0, "unsafe_rate": float("nan"), "s2_rate": float("nan")}
     sev = [severity(t, p) for t, p in zip(truth[ok], pred[ok])]

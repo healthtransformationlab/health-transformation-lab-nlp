@@ -74,6 +74,8 @@ GROUPINGS: dict[str, tuple[str, ...]] = {
     "five": (HEALTHY_OR_GINGIVITIS, *LABELS[2:]),
     "three": (HEALTHY_OR_GINGIVITIS, "mild", "severe"),
 }
+DEFAULT_GROUPING = "five"              # spec 032 US8 (#448): scores and prevalence at five groups by default
+ALSO_REPORTED_GROUPINGS = ("three",)   # reported beside the default grouping
 _HG = {"healthy": HEALTHY_OR_GINGIVITIS, "gingivitis": HEALTHY_OR_GINGIVITIS,
        "healthy_gingivitis": HEALTHY_OR_GINGIVITIS}   # healthy_gingivitis: a source that can't tell them apart
 _GROUP_OF: dict[str, dict[str, str]] = {
@@ -84,7 +86,7 @@ _GROUP_OF: dict[str, dict[str, str]] = {
 
 
 @traced
-def group_status(status, grouping: str = "six"):
+def group_status(status, grouping: str = DEFAULT_GROUPING):
     """The group a status falls in under `grouping` (GROUPINGS). Anything that is not a status (no answer, None,
     NaN, "unknown", a group name already) comes back unchanged, so grouping twice is the same as grouping once."""
     if grouping not in GROUPINGS:
@@ -93,7 +95,7 @@ def group_status(status, grouping: str = "six"):
 
 
 @traced
-def periodontitis_groups(grouping: str = "six") -> tuple[set[str], set[str]]:
+def periodontitis_groups(grouping: str = DEFAULT_GROUPING) -> tuple[set[str], set[str]]:
     """(groups that are periodontitis, groups that are stage III-IV) under `grouping`."""
     return ({group_status(s, grouping) for s in LABELS[2:]}, {group_status(s, grouping) for s in LABELS[4:]})
 

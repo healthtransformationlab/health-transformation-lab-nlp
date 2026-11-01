@@ -31,12 +31,15 @@ from .medical_record import medical_records, people_from_visits
 from .note_reader import read_note
 from .periodx import visits_table as periodx_visits_table
 from .phenotype import (
+    DEFAULT_ABSENT_CODE,
+    DX_CODE_METHODS,
     RULES_DESIGN,
     RULES_V0,
     agreement_matrix,
     coverage,
     phenotype,
     phenotype_v0,
+    read_dx_code,
     with_absent_code,
 )
 from .phi import fake_person, fake_provider
@@ -166,6 +169,13 @@ def generate_visits(n_people: int, seed: int) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+# Spec 032 US8 (#448): which visits count when results are scored. The benchmark note set (build_study: the review
+# set, the answer key, train.csv) keeps every visit, because committed model runs were scored on those exact notes; the
+# scoring scripts leave out the rest (scripts/28_ladder_vs_truth.py, 19_prevalence.py, 40_classify_status.py).
+ANALYSIS_MIN_AGE = 18
+ANALYSIS_START_DATE = "2021-04-01"    # synthetic stand-in for the date a newer classification was adopted
+
+
 def _visit_masks(df: pd.DataFrame, min_age: int | None, start_date: str | None) -> tuple[pd.Series, pd.Series]:
     young = df["age"] < min_age if min_age is not None else pd.Series(False, index=df.index)
     on = pd.to_datetime(df["visit_date"])
@@ -174,9 +184,11 @@ def _visit_masks(df: pd.DataFrame, min_age: int | None, start_date: str | None) 
 
 
 @traced
-def visits_in_study(df: pd.DataFrame, min_age: int | None = None, start_date: str | None = None) -> pd.DataFrame:
+def visits_in_study(df: pd.DataFrame, min_age: int | None = ANALYSIS_MIN_AGE,
+                    start_date: str | None = ANALYSIS_START_DATE) -> pd.DataFrame:
     """The visits that count (spec 032 US2): aged at least `min_age` at the visit when one is set, and on or after
-    `start_date` (an ISO date) when one is set. Both default to None: every visit, as before."""
+    `start_date` (an ISO date) when one is set. The defaults (spec 032 US8) are adults from ANALYSIS_START_DATE; None
+    for both keeps every visit (as build_study does for the benchmark note set)."""
     if min_age is None and start_date is None:
         return df
     young, early = _visit_masks(df, min_age, start_date)
@@ -184,7 +196,8 @@ def visits_in_study(df: pd.DataFrame, min_age: int | None = None, start_date: st
 
 
 @traced
-def visit_exclusions(df: pd.DataFrame, min_age: int | None = None, start_date: str | None = None) -> dict[str, int]:
+def visit_exclusions(df: pd.DataFrame, min_age: int | None = ANALYSIS_MIN_AGE,
+                     start_date: str | None = ANALYSIS_START_DATE) -> dict[str, int]:
     """How many visits `visits_in_study` leaves out, by reason, in the order it applies them (each visit counted
     once, under the first reason), and how many it keeps."""
     young, early = _visit_masks(df, min_age, start_date)
@@ -207,7 +220,7 @@ def apply_deid(df: pd.DataFrame, engine: str = "regex") -> tuple[pd.DataFrame, p
 
 
 @traced
-def read_methods(df: pd.DataFrame, absent_code: str = "no_answer") -> pd.DataFrame:
+def read_methods(df: pd.DataFrame, absent_code: str = DEFAULT_ABSENT_CODE) -> pd.DataFrame:
     """Every method's reading per visit, and the phenotypes built from them. `absent_code` (spec 032 US3,
     phenotype.ABSENT_CODE_RULES) is how the diagnosis-code source reads a visit with no gum-disease code."""
     df = df.copy()
@@ -260,9 +273,11 @@ def label_studio_tasks(review: pd.DataFrame) -> list[dict]:
 @traced
 def build_study(out_dir: Path, raw_dir: Path, n_people: int = 1200, review_n: int = 240,
                 seed: int = 42, engine: str = "regex", min_age: int | None = None,
-                start_date: str | None = None) -> dict:
+                start_date: str | None = None, absent_code: str = "no_answer") -> dict:
     """Build the study files (module docstring). `min_age` and `start_date` (spec 032 US2, default None: every
-    visit) choose which visits count; the summary then reports those left out, by reason."""
+    visit) choose which visits count; the summary then reports those left out, by reason. These and `absent_code`
+    keep their pre-US8 defaults here: this builds the benchmark note set (review set, answer key) that committed model
+    runs were scored on, so the scoring scripts apply the spec 032 US8 defaults instead (ANALYSIS_MIN_AGE)."""
     df = generate_visits(n_people, seed)
     filtered = min_age is not None or start_date is not None
     left_out = visit_exclusions(df, min_age, start_date)
@@ -277,7 +292,7 @@ def build_study(out_dir: Path, raw_dir: Path, n_people: int = 1200, review_n: in
     df, deid_report = apply_deid(df, engine)
     blocked = df[~df["deid_passed"]]
     df = df[df["deid_passed"]].drop(columns=["note_raw", "phi_spans"])  # nothing with PHI past here
-    df = read_methods(df)
+    df = read_methods(df, absent_code)
 
     review = pick_review(df, review_n, seed)
     train = df[~df["person_id"].isin(review["person_id"])]
@@ -362,3 +377,46 @@ def difficulty(dx_pattern: str, stated_status: str, chart_status: str, copy_forw
     if dx_pattern in TRANSLATE_PATTERNS or bool(copy_forward):
         return "L2"
     return "L1"
+
+
+# ---------- spec 032 US8 (#448): scoring under the defaults without rebuilding the benchmark note set ----------
+BUILD_N_PEOPLE, BUILD_SEED = 1200, 42        # scripts/10_build_study.py's defaults: the committed build
+ABSENT_CODE_COLUMNS = ("proc_dx_completed", "proc_dx_planned", "algorithm_v0", "algorithm_v0_decided_by",
+                       "algorithm_design", "algorithm_design_decided_by")
+
+
+@traced
+def reread_absent_code(frame: pd.DataFrame, absent_code: str = DEFAULT_ABSENT_CODE, n_people: int = BUILD_N_PEOPLE,
+                       seed: int = BUILD_SEED) -> pd.DataFrame:
+    """`frame` (committed visits with `visit_id` and every method's reading: the answer key or visits_structured.csv)
+    with the diagnosis-code readings and the two rule phenotypes read again under `absent_code`. The raw codes come
+    from generate_visits with the build's people and seed (no note text is used); a frame those don't reproduce under
+    "no_answer" fails at once, so a build with other settings can't be re-read by mistake."""
+    raw = generate_visits(n_people, seed).set_index("visit_id")
+    ids = frame["visit_id"]
+    missing = ids[~ids.isin(raw.index)]
+    if len(missing):
+        raise ValueError(f"{len(missing)} visits are not in the build of {n_people} people, seed {seed}")
+    raw = raw.loc[ids, [*DX_CODE_METHODS, "proc_codes_planned"]]
+    out = frame.copy()
+    for m in DX_CODE_METHODS:
+        as_built = [READERS[m](v) for v in raw[m]]
+        if list(as_built) != list(frame[m]):
+            raise ValueError(f"{m}: the regenerated codes don't give the committed readings; was the build made "
+                             f"with {n_people} people and seed {seed}?")
+        out[m] = [read_dx_code(d, p, absent_code) for d, p in zip(raw[m], raw["proc_codes_planned"])]
+    pa = [phenotype_v0(r) for _, r in out.iterrows()]
+    out["algorithm_v0"], out["algorithm_v0_decided_by"] = [p[0] for p in pa], [p[1] for p in pa]
+    pd_ = [phenotype(r, RULES_DESIGN) for _, r in out.iterrows()]
+    out["algorithm_design"], out["algorithm_design_decided_by"] = [p[0] for p in pd_], [p[1] for p in pd_]
+    return out
+
+
+@traced
+def scored_review(key: pd.DataFrame, visits: pd.DataFrame, min_age: int | None = ANALYSIS_MIN_AGE,
+                  start_date: str | None = ANALYSIS_START_DATE,
+                  absent_code: str = DEFAULT_ABSENT_CODE) -> pd.DataFrame:
+    """The review charts results are scored on (spec 032 US8): the answer key's visits that count (visits_in_study,
+    with each visit's date from visits_structured.csv), their codes and rule phenotypes read under `absent_code`."""
+    dated = key.merge(visits[["visit_id", "visit_date"]], on="visit_id", how="left")
+    return reread_absent_code(visits_in_study(dated, min_age, start_date), absent_code).reset_index(drop=True)

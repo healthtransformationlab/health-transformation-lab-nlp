@@ -25,7 +25,7 @@ STATUS_GROUPINGS <- list(
          three = c(hg, setNames(c("mild", "mild", "severe", "severe"), PERIO_LABELS[3:6])),
          stop("unknown status grouping '", grouping, "'; one of ", paste(names(STATUS_GROUPINGS), collapse = ", ")))
 }
-group_status <- function(status, grouping = "six") {
+group_status <- function(status, grouping = "five") {
   # Vectorised. The group each status falls in under `grouping`.
   m <- .status_group_of(grouping)
   out <- as.character(status)

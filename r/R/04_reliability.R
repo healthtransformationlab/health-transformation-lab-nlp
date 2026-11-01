@@ -55,7 +55,9 @@ consensus <- function(wide) {
 
 # ---- spec 002: clinical severity of errors (DRAFT matrix; see python/health_transformation_lab_nlp/harm.py)
 severity <- function(truth, pred) {
-  truth[truth == "healthy_gingivitis"] <- "healthy"; pred[pred == "healthy_gingivitis"] <- "healthy"
+  # the collapsed label grades like "healthy"; healthy_or_gingivitis is the five-group name (spec 032 US8)
+  merged <- c("healthy_gingivitis", "healthy_or_gingivitis")
+  truth[truth %in% merged] <- "healthy"; pred[pred %in% merged] <- "healthy"
   t <- match(truth, STATUS_ORDER) - 1; p <- match(pred, STATUS_ORDER) - 1
   ifelse(t == p, "S0",
   ifelse(t < 2 & p < 2, "S0",
@@ -66,7 +68,8 @@ severity <- function(truth, pred) {
 }
 
 unsafe_rates <- function(truth, pred) {
-  ok <- truth %in% VALID_STATUS & pred %in% VALID_STATUS
+  graded <- c(VALID_STATUS, "healthy_or_gingivitis")
+  ok <- truth %in% graded & pred %in% graded
   if (!any(ok)) return(c(unsafe_rate = NA_real_, s2_rate = NA_real_))
   s <- severity(truth[ok], pred[ok])
   c(unsafe_rate = mean(s != "S0"), s2_rate = mean(s == "S2"))

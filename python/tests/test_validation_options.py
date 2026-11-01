@@ -30,10 +30,11 @@ def _teeth(n_patients=200, per=3, seed=0):
 
 # ---------- tooth-loss model: the settings and their defaults
 
-def test_the_defaults_are_a_split_by_person_at_30_percent_without_tuning():
+def test_the_defaults_are_a_split_by_person_at_20_percent_with_5_fold_tuning():
+    # spec 032 US8 (#448): 80/20 and 5-fold tuning; the split stays by person (a split by visit overstates accuracy)
     assert tm.SPLIT_UNITS == ("person", "visit")
     d = tm.ModelParams()
-    assert (d.split_unit, d.test_share, d.cv_folds) == ("person", 0.3, None)
+    assert (d.split_unit, d.test_share, d.cv_folds) == ("person", 0.2, 5)
 
 
 def test_a_split_by_visit_holds_out_random_rows_stratified_and_seeded():
@@ -100,11 +101,19 @@ def extract():
     return {**od.clean(tables), "radiograph_bone_level": reads}, truth
 
 
-def test_a_default_run_reports_the_split_by_person_with_no_one_in_both(extract):
+def test_a_default_run_reports_the_split_by_person_with_no_one_in_both(extract, monkeypatch):
     x, truth = extract
+    monkeypatch.setattr(tm, "XGB_GRID", {"max_depth": [2, 3], "n_estimators": [30], "learning_rate": [0.1],
+                                         "subsample": [1.0], "min_child_weight": [1]})
     v = tm.run(x, truth, tm.ModelParams(n_boot=0), generator_seed=5)["validation"]
     assert set(v["split_unit"]) == {"person"} and (v["people_in_both_count"] == 0).all()
     assert set(v["label_set"]) == set(tm.LABEL_SETS) and (v["data_label"] == "synthetic").all()
+    assert (v["cv_folds"] == 5).all() and (v["test_share"] == 0.2).all()        # the defaults since spec 032 US8
+
+
+def test_a_run_without_tuning_uses_the_fixed_settings(extract):
+    x, truth = extract
+    v = tm.run(x, truth, tm.ModelParams(n_boot=0, cv_folds=None), generator_seed=5)["validation"]
     assert v["cv_folds"].isna().all() and (v["xgboost_params"] == str(tm.XGB_PARAMS)).all()
 
 
@@ -112,8 +121,8 @@ def test_a_run_split_by_visit_reports_the_people_in_both_and_tunes_when_asked(ex
     x, truth = extract
     monkeypatch.setattr(tm, "XGB_GRID", {"max_depth": [2, 3], "n_estimators": [30], "learning_rate": [0.1],
                                          "subsample": [1.0], "min_child_weight": [1]})
-    out = tm.run(x, truth, tm.ModelParams(n_boot=0, split_unit="visit", test_share=0.2, cv_folds=3),
-                 generator_seed=5)
+    out = tm.run(x, truth, tm.ModelParams(n_boot=0, split_unit="visit", test_share=0.2, cv_folds=3,
+                                          start_date=None), generator_seed=5)
     v = out["validation"]
     assert set(v["split_unit"]) == {"visit"} and (v["test_share"] == 0.2).all()
     assert (v["people_in_both_count"] > 0).all()

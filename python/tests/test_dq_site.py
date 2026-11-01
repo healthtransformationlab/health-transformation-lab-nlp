@@ -119,9 +119,7 @@ def test_reliability_is_credited_to_a_paper_that_defines_it(d):
 # ---------- spec 029 FR-009 (#370): the extract checks and the chart kept as well for every group ----------
 def test_the_extract_checks_and_groups_are_the_modules_own(d):
     from health_transformation_lab_nlp import open_dental, tooth_loss_dq
-    tables, _ = open_dental.build(open_dental.Params(), seed=42)
-    # the page leaves out the insurance tables until spec 032 US8 (#448) reruns every result
-    tables = {n: df for n, df in tables.items() if n not in open_dental.INSURANCE_TABLES}
+    tables, _ = open_dental.build(open_dental.Params(), seed=42)    # every table, insurance too (spec 032 US8)
     checks = tooth_loss_dq.run_checks(tables)
     s = d["sections"]
     assert [r["check"] for r in s["extract_checks"]] == list(checks["check_name"])
@@ -130,6 +128,16 @@ def test_the_extract_checks_and_groups_are_the_modules_own(d):
     assert len(s["chart_by_group"]) == len(groups)
     assert {r["group_type"] for r in s["chart_by_group"]} == set(groups["group_type_code"])
     assert all(0 <= r["pct"] <= 100 for r in s["chart_by_group"])
+    assert "insurance_type" in {r["group_type"] for r in s["chart_by_group"]}      # spec 032 US8 (#448)
+
+
+def test_the_cal_icc_is_reported_and_labelled_simulated(d):
+    # spec 032 US8 (#448): the reliability section reports the CAL ICC from scripts/37_cal_reliability.py
+    rows = d["sections"]["cal_reliability"]
+    committed = pd.read_csv(DATASETS_DIR / "reliability_cal" / "simulated_cal_reliability.csv")
+    assert [r["probing_error_sd_mm"] for r in rows] == list(committed["sd_error_true"])
+    assert [r["icc_site"] for r in rows] == [round(x, 3) for x in committed["icc_site"]]
+    assert all(r["is_simulated"] for r in rows) and all(0 <= r["icc_site"] <= 1 for r in rows)
 
 
 def test_every_clinic_and_office_has_a_name(d):

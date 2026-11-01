@@ -1,7 +1,8 @@
 """The model ladder against the synthetic truth (spec 002 T015).
 
 The review charts' true status is known (the generator wrote it), so each method's accuracy can be
-measured directly, not only as agreement with reviewers. Per method:
+measured directly, not only as agreement with reviewers. Since spec 032 US8 the scripts score at the five status
+groups (healthy and gingivitis merged; `grouped`) on the review charts that count (study.scored_review). Per method:
 
   accuracy            share of charts labelled correctly, with a 95% bootstrap CI
   diff_vs_ref         accuracy minus the reference method's (note_rules), paired bootstrap CI:
@@ -24,9 +25,26 @@ import numpy as np
 import pandas as pd
 
 from .harm import unsafe_rates
+from .labels import DEFAULT_GROUPING, GROUPINGS, group_status
 from .telemetry import traced
 
 STAGE4 = "periodontitis_stage_4"
+
+
+# ---------- spec 032 US8 (#448): scored at a status grouping (labels.GROUPINGS; five by default) ----------
+@traced
+def grouped(pred: pd.Series, grouping: str = DEFAULT_GROUPING) -> pd.Series:
+    """Each status as its group under `grouping`; no answer (NaN, "unknown") stays as it is."""
+    return pred.map(lambda s: group_status(s, grouping))
+
+
+@traced
+def grouped_proba(proba: pd.DataFrame, grouping: str = DEFAULT_GROUPING) -> pd.DataFrame:
+    """Class probabilities (one column per status) added up within each group, columns in GROUPINGS order."""
+    cols: dict[str, list[str]] = {}
+    for c in proba.columns:
+        cols.setdefault(group_status(c, grouping), []).append(c)
+    return pd.DataFrame({g: proba[cols[g]].sum(axis=1) for g in GROUPINGS[grouping] if g in cols}, index=proba.index)
 
 
 @traced

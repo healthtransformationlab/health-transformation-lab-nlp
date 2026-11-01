@@ -20,7 +20,7 @@ import math
 
 import pandas as pd
 
-from .labels import GROUPINGS, LABELS, group_status
+from .labels import DEFAULT_GROUPING, GROUPINGS, LABELS, group_status
 from .telemetry import traced
 
 Z95 = 1.959963984540054
@@ -79,7 +79,7 @@ def prevalence_by(visits: pd.DataFrame, status_col: str, by: str | None = None) 
 
 
 @traced
-def prevalence_by_group(visits: pd.DataFrame, status_col: str, grouping: str = "six", by: str | None = None
+def prevalence_by_group(visits: pd.DataFrame, status_col: str, grouping: str = DEFAULT_GROUPING, by: str | None = None
                         ) -> pd.DataFrame:
     """Spec 032 US1: person-level share in each status group of `grouping` (labels.GROUPINGS), with a 95% Wilson
     interval; long format, one row per group (and per <by> value when given). Same people as prevalence_by: the

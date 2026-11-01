@@ -1,4 +1,4 @@
-"""MedGemma note readers vs the fine-tuned BERT encoders, same 240 review charts (spec 004 T018).
+"""MedGemma note readers vs the fine-tuned BERT encoders, same review charts (spec 004 T018).
 
     python scripts/29_medgemma_vs_bert.py                       # real MedGemma runs (needs GPU output)
     python scripts/29_medgemma_vs_bert.py --bert modernbert-base
@@ -16,6 +16,9 @@ Writes data/datasets/ladder/[simulated_]medgemma_vs_bert*.csv:
   medgemma_vs_bert_by_difficulty.csv   accuracy by note difficulty level (L1 plain .. L3 hard)
   medgemma_vs_bert_preds.csv           the predictions scored (R recomputes the point estimates)
 
+Scored as scripts/28_ladder_vs_truth.py scores (spec 032 US8, #448): at the five status groups, on the review
+charts that count (study.scored_review: adults, visits from 2021-04-01); the predictions themselves are unchanged.
+
 --simulated reads simulated_ai_predictions_medgemma-*.csv: the reader errs at placeholder rates,
 so its rows say nothing about MedGemma. The truth is the generator's: synthetic-data results,
 not clinical performance.
@@ -28,8 +31,8 @@ from pathlib import Path
 import pandas as pd
 import yaml
 
-from health_transformation_lab_nlp import ladder_eval
-from health_transformation_lab_nlp.labels import LABELS
+from health_transformation_lab_nlp import ladder_eval, study
+from health_transformation_lab_nlp.labels import DEFAULT_GROUPING, LABELS
 from health_transformation_lab_nlp.llm_reader import summarize_details
 from health_transformation_lab_nlp.paths import COSTS_YAML, DATASETS_DIR
 from health_transformation_lab_nlp.registry import load_registry
@@ -65,7 +68,8 @@ if not llm_files:
 if not bert_files:
     raise SystemExit("no encoder predictions; run scripts/11_ai_predict.py --rung bert-base (or another encoder)")
 
-key = pd.read_csv(DATASETS_DIR / "answer_key" / "review_key.csv").set_index("visit_id")
+key = study.scored_review(pd.read_csv(DATASETS_DIR / "answer_key" / "review_key.csv"),
+                          pd.read_csv(DATASETS_DIR / "visits_structured.csv")).set_index("visit_id")
 truth = key["truth_status"]
 preds, proba, kind = {}, {}, {}
 for group, files in (("llm", llm_files), ("encoder", bert_files), ("rules", {"note_rules": str(
@@ -86,6 +90,9 @@ llm_files = {r: f for r, f in llm_files.items() if (f"sim:{r}" if a.simulated el
 bert_files = {r: f for r, f in bert_files.items() if r in preds}
 for m in [m for m in list(preds) if kind[m] != "rules"]:
     preds[f"{m}+rules4"], kind[f"{m}+rules4"] = ladder_eval.rules_override(preds[m], preds["note_rules"]), kind[m]
+truth = ladder_eval.grouped(truth, DEFAULT_GROUPING)
+preds = {m: ladder_eval.grouped(p, DEFAULT_GROUPING) for m, p in preds.items()}
+proba = {m: ladder_eval.grouped_proba(p, DEFAULT_GROUPING) for m, p in proba.items()}
 
 if a.bert is None:
     a.bert = max(bert_files, key=lambda r: (preds[r] == truth).mean())

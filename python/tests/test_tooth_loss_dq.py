@@ -68,9 +68,10 @@ def test_shares_are_found_over_checked(planted):
 
 
 # ---------- consistency by group: is the record kept as well for every group of patients? ----------
-def test_groups_cover_office_provider_sex_race_year_and_age(clean):
+def test_groups_cover_office_provider_sex_race_year_age_and_insurance(clean):
     g = tooth_loss_dq.group_consistency(clean)
-    assert set(g["group_type_code"]) == {"office", "provider", "sex", "race", "exam_year", "age_band"}
+    assert set(g["group_type_code"]) == {"office", "provider", "sex", "race", "exam_year", "age_band",
+                                         "insurance_type"}       # insurance since spec 032 US8 (#448)
     assert set(g["metric_name"]) == {"no_margin_chart", "incomplete_chart"}
     assert list(g.columns) == tooth_loss_dq.GROUP_COLUMNS
     # every chart counted once per group type and metric
@@ -79,22 +80,23 @@ def test_groups_cover_office_provider_sex_race_year_and_age(clean):
     assert (per == n).all(), per
 
 
-def test_insurance_type_is_a_group_type_when_asked(clean):
-    # spec 032 US6 (#445): the split by insurance (private, public, none) is an option; the default stays as it was
-    assert "insurance_type" not in tooth_loss_dq.GROUP_TYPES
-    assert tooth_loss_dq.ALL_GROUP_TYPES == (*tooth_loss_dq.GROUP_TYPES, "insurance_type")
+def test_insurance_type_is_a_default_group_type(clean):
+    # spec 032 US6 (#445) added the split by insurance (private, public, none); spec 032 US8 (#448) made it a default
+    assert tooth_loss_dq.GROUP_TYPES[-1] == "insurance_type"
+    assert tooth_loss_dq.ALL_GROUP_TYPES == tooth_loss_dq.GROUP_TYPES
     g = tooth_loss_dq.group_consistency(clean, group_types=tooth_loss_dq.ALL_GROUP_TYPES)
     ins = g[g["group_type_code"] == "insurance_type"]
     assert set(ins["group_name"]) <= {"private", "public", "none"} and len(set(ins["group_name"])) >= 2
     per = ins.groupby("metric_name")["chart_count"].sum()
     assert (per == len(clean["perioexam"])).all(), per
-    default = tooth_loss_dq.group_consistency(clean)
-    pd.testing.assert_frame_equal(default, g[g["group_type_code"] != "insurance_type"].reset_index(drop=True))
+    pd.testing.assert_frame_equal(tooth_loss_dq.group_consistency(clean), g)
+    before = tooth_loss_dq.group_consistency(clean, group_types=tooth_loss_dq.GROUP_TYPES[:-1])   # repo_v1's split
+    pd.testing.assert_frame_equal(before, g[g["group_type_code"] != "insurance_type"].reset_index(drop=True))
     with pytest.raises(ValueError, match="group type"):
         tooth_loss_dq.group_consistency(clean, group_types=("payer",))
     without = {n: df for n, df in clean.items() if n != "patplan"}
     with pytest.raises(ValueError, match="insurance tables"):
-        tooth_loss_dq.group_consistency(without, group_types=("insurance_type",))
+        tooth_loss_dq.group_consistency(without)
 
 
 def test_charts_kept_worse_for_one_insurance_type_are_flagged():

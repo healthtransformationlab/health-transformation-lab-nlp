@@ -30,7 +30,9 @@ ladder_point <- function(preds, proba_long) {
     pr <- proba_long[proba_long$method == m, ]
     ece <- if (nrow(pr)) {
       pr <- pr[match(preds$visit_id, pr$visit_id), ]
-      expected_calibration_error(truth, as.matrix(pr[, STATUS_ORDER]))
+      # five status groups since spec 032 US8 (healthy and gingivitis added up), else the six statuses
+      cols <- if ("healthy_or_gingivitis" %in% names(pr)) c("healthy_or_gingivitis", STATUS_ORDER[3:6]) else STATUS_ORDER
+      expected_calibration_error(truth, as.matrix(pr[, cols]))
     } else NA_real_
     data.frame(method = m, accuracy = mean(ok), stage4_recall = mean(ok[s4]),
                unsafe_rate = u[["unsafe_rate"]], s2_rate = u[["s2_rate"]], ece = ece, stringsAsFactors = FALSE)
