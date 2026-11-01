@@ -12,8 +12,9 @@ each choice seen. These are standard parameters, not anyone's method: a status g
 absent diagnosis code is read, how stage IV is decided without a recorded reason for tooth loss, how a model is
 validated, and a consistency split by insurance.
 
-> Personal learning project; synthetic data only. Every default stays as it is, so no committed result changes;
-> each option is reported beside the default, never in its place.
+> Personal learning project; synthetic data only. US1-US7 add each option with today's default, so those pull
+> requests change no committed result. US8 then makes the `exploratory_1` settings the defaults (the owner's
+> decision, 2026-11-01) and reruns every result; today's defaults stay available as the `repo_v1` preset.
 
 ## User stories
 
@@ -65,6 +66,16 @@ validated, and a consistency split by insurance.
   `data/results/synthetic_exploratory_1_*.csv`, each row labelled synthetic, with a table of every setting, its
   default, the preset's value and the headline numbers under each.
 
+### US8 - exploratory_1's settings become the defaults (P1) #448
+
+- The defaults become the `exploratory_1` values: five-level grouping (three also reported), adults 18+, the start
+  date, the healthy-or-gingivitis code rule, the 20-teeth and 10-pairs rules reported beside the others, an 80/20
+  random split by visit, 5-fold tuning, insurance in the consistency split, and the CAL ICC.
+- The split by visit lets one person's visits sit in training and test, which usually flatters a score: the count
+  of people in both parts is reported beside every model score, and the split by person is reported beside it.
+- Today's defaults become the `repo_v1` preset. Every committed result is rerun and recommitted (study build,
+  leaderboards, dashboards, decks, tooth-loss results); R parity passes; the docs say what changed and why.
+
 ## Out of scope
 
 - A probabilistic answer key (PheValuator-style); a later spec if wanted.
@@ -72,6 +83,6 @@ validated, and a consistency split by insurance.
 
 ## Success criteria
 
-- SC-001: with every setting at its default, every committed result is byte-identical.
+- SC-001: US1-US7 each leave every committed result byte-identical; `repo_v1` reproduces today's results after US8.
 - SC-002: each option has a failing test written first, and Python and R agree to 1e-9 where a twin exists.
 - SC-003: `exploratory_1` runs end to end on the synthetic extract and its output names every setting it changed.
