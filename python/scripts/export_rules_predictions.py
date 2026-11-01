@@ -34,3 +34,9 @@ for cal, rbl, pd_, lost, vd, fc, mob, rem in itertools.product(
                  "rem": rem, "label": lab})
 pd.DataFrame(rows).to_csv(LABELS_DIR / "aap_rule_cases.csv", index=False)
 print(f"wrote python_rules_predictions.csv, python_rules_score.csv, aap_rule_cases.csv ({len(rows)} cases)")
+
+# Spec 024 US1: the PerioDx Diagnoser (Patel et al. 2022, Fig. 2) on seeded chart inputs, with gaps, for its R twin
+# (r/R/14_spec024.R); and the repo's summary chart read as the figure's inputs.
+from health_transformation_lab_nlp.periodx import write_parity_cases
+
+print(write_parity_cases(LABELS_DIR))
