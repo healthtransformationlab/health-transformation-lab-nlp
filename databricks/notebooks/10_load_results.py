@@ -41,7 +41,7 @@ dbutils.widgets.text("catalog", "health_transformation_lab")  # noqa: F821
 dbutils.widgets.text("schema", "gold_perio_bench")  # noqa: F821
 dbutils.widgets.text("experiment_name", "")  # noqa: F821  the bundle's experiment; empty: no MLflow runs
 catalog, schema = dbutils.widgets.get("catalog"), dbutils.widgets.get("schema")  # noqa: F821
-experiment = dbutils.widgets.get("experiment_name")  # noqa: F821
+experiment = tracking.setting(dbutils.widgets.get("experiment_name"))  # noqa: F821  "None" or "": no runs (#131)
 
 
 def table(name: str) -> str:
