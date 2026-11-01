@@ -11,7 +11,8 @@
 # MAGIC    and the torch install (the bundle's dev target does, as a quick smoke test)
 # MAGIC 5. Optional: LLM challenger via `ai_query` on a Foundation Model endpoint
 # MAGIC 6. Results and OMOP tables land as Delta in the gold schema; files in the landing volume
-# MAGIC    (`databricks/resources/unity_catalog.yml`)
+# MAGIC    (`databricks/resources/unity_catalog.yml`). The study notes are `dim_study_note` (overwritten) and the
+# MAGIC    scores `benchmark_metric`, replaced per job run so a retry adds nothing (spec 031)
 # MAGIC
 # MAGIC **Free Edition notes:** serverless is Python/SQL only (no R). Limited serverless GPU is
 # MAGIC available from the notebook compute selector, subject to capacity and fair-use limits
@@ -43,6 +44,7 @@ dbutils.library.restartPython()
 # COMMAND ----------
 
 import os
+import time
 
 run_encoder = dbutils.widgets.get("run_encoder") == "true"   # widget defined above the install
 
@@ -55,7 +57,9 @@ dbutils.widgets.text("landing_schema", "landing_perio_bench")   # data volume
 dbutils.widgets.text("n_people", "300")
 dbutils.widgets.dropdown("leak_assessment", "false", ["true", "false"])
 dbutils.widgets.text("experiment_id", "")   # set per target by the bundle (resources/jobs.yml)
+dbutils.widgets.text("run_id", "")          # the job run ({{job.run_id}}): the batch key, the same for every retry
 catalog, schema = dbutils.widgets.get("catalog"), dbutils.widgets.get("schema")
+run_id = dbutils.widgets.get("run_id") or f"manual-{time.strftime('%Y%m%dT%H%M%S')}"
 landing = dbutils.widgets.get("landing_schema")
 
 # The bundle creates these; IF NOT EXISTS covers running the notebook by hand.
@@ -92,12 +96,18 @@ print(len(train), len(test))
 
 # COMMAND ----------
 
-# OMOP + labels as Delta, so Genie / SQL / R-via-Connect can read them.
+# OMOP + labels as Delta, so Genie / SQL / R-via-Connect can read them. The labelled notes go under their gold
+# names (spec 031), each row with this run's key.
+from health_transformation_lab_nlp import gold_names
+from health_transformation_lab_nlp.delta import replace_batch
+
+batch = {"run_id": run_id, "run_ts": pd.Timestamp.now(tz="UTC"), "git_commit": dbutils.widgets.get("git_commit")}
 for t in ["person", "visit_occurrence", "measurement", "note"]:
     spark.createDataFrame(pd.read_parquet(paths.OMOP_DIR / f"{t}.parquet")) \
          .write.mode("overwrite").saveAsTable(f"{catalog}.{schema}.{t}")
-spark.createDataFrame(df).write.mode("overwrite").saveAsTable(f"{catalog}.{schema}.labeled_notes")
-display(spark.table(f"{catalog}.{schema}.labeled_notes").limit(5))
+spark.createDataFrame(gold_names.to_gold(df.assign(**batch), "dim_study_note")).write.mode("overwrite") \
+     .option("overwriteSchema", "true").saveAsTable(f"{catalog}.{schema}.dim_study_note")
+display(spark.table(f"{catalog}.{schema}.dim_study_note").limit(5))
 
 # COMMAND ----------
 
@@ -137,8 +147,13 @@ if run_encoder:
 # COMMAND ----------
 
 all_res = pd.concat(results)
-spark.createDataFrame(all_res.astype({"value": "float"})).write.mode("append") \
-     .saveAsTable(f"{catalog}.{schema}.benchmark_results")
+# One batch per job run: a retry or repair replaces this run's rows instead of adding them again (spec 031).
+metrics = all_res.astype({"value": "float"}).assign(timestamp=pd.to_datetime(all_res["timestamp"], utc=True),
+                                                    job_run_id=run_id, run_ts=batch["run_ts"],
+                                                    git_commit=batch["git_commit"])
+n = replace_batch(spark, gold_names.to_gold(metrics, "benchmark_metric"), f"{catalog}.{schema}.benchmark_metric",
+                  {"run_id": run_id})
+print(f"{catalog}.{schema}.benchmark_metric: {n} rows for run {run_id}")
 display(all_res[all_res["class"] == ""].pivot(index="model_id", columns="metric", values="value").round(3))
 
 # COMMAND ----------
@@ -157,7 +172,7 @@ if llm_endpoint not in ("", "none"):
     if not re.fullmatch(r"[\w.-]+", llm_endpoint):
         raise ValueError(f"llm_endpoint is not a serving endpoint name: {llm_endpoint!r}")
     llm = spark.sql(f"""
-        SELECT note_id, label,
+        SELECT note_id, truth_status_code AS label,
           ai_query(
             '{llm_endpoint}',
             CONCAT('Classify the periodontal status in this dental SOAP note. Answer with exactly one of: ',
@@ -165,7 +180,7 @@ if llm_endpoint not in ("", "none"):
                    note_text),
             failOnError => false
           ).result AS pred
-        FROM {catalog}.{schema}.labeled_notes
-        WHERE split = 'test'""").toPandas()
+        FROM {catalog}.{schema}.dim_study_note
+        WHERE split_code = 'test'""").toPandas()
     llm["pred"] = llm["pred"].fillna("").str.strip().str.lower()
     display(score(llm["label"], llm["pred"], None, model_id="llm_challenger"))

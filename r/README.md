@@ -115,7 +115,7 @@ combined leaderboard.
 
 Databricks Free Edition serverless runs Python and SQL only, so the R side
 runs locally or in Posit. The Delta tables the notebook writes
-(`health_transformation_lab.gold_perio_bench.labeled_notes`, `benchmark_results`) can be read from R
+(`health_transformation_lab.gold_perio_bench.dim_study_note`, `benchmark_metric`) can be read from R
 with `sparklyr` / Databricks Connect when that's useful. In a paid workspace
 with classic compute, these scripts run in an R notebook unchanged.
 

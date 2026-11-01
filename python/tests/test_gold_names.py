@@ -92,7 +92,8 @@ def test_every_old_table_name_has_one_new_name():
                                   "llm_reader_runs": "fact_llm_call", "chart_answers": "fact_chart_answer",
                                   "judgments": "fact_judge_call", "judge_metrics": "judge_metric",
                                   "judge_agreement": "judge_agreement", "judge_run": "judge_cost",
-                                  "deid_scores": "deid_score"}
+                                  "deid_scores": "deid_score",
+                                  "labeled_notes": "dim_study_note", "benchmark_results": "benchmark_metric"}
     assert set(gold_names.TABLES) == {n for n, t in gm.TABLES.items() if t.area != "file"}
 
 
@@ -202,6 +203,60 @@ def test_the_scorecard_waits_for_the_migration_so_it_never_pays_for_calls_it_has
     nb = (ROOT / "databricks/notebooks/07_judge_scorecard.py").read_text()
     assert "gold_names.migration_plan(" in nb and "run Load results first" in nb
 
+
+# spec 027 (#233): the Benchmark job's tables and the GPU encoders' predictions under the gold names
+
+def _study_frame():
+    from health_transformation_lab_nlp.build import CHART_FIELDS
+    notes = pd.DataFrame({"note_id": [1], "person_id": [1], "note_text": ["synthetic"], "label": ["healthy"],
+                          **{f: [1.0] for f in CHART_FIELDS.values()}, "split": ["test"]})
+    return notes.assign(run_id="9", run_ts=pd.Timestamp("2026-10-28", tz="UTC"), git_commit="abc")
+
+
+def test_the_benchmark_notes_become_dim_study_note():
+    assert list(gold_names.to_gold(_study_frame(), "dim_study_note").columns) == declared("dim_study_note")
+
+
+def test_the_benchmark_scores_become_benchmark_metric():
+    import sys
+    sys.path.insert(0, str(ROOT / "eval"))
+    from score import score
+    res = score(["healthy", "gingivitis"], ["healthy", "healthy"], None, model_id="tfidf_logreg")
+    res = res.assign(job_run_id="9", run_ts=pd.Timestamp("2026-10-28", tz="UTC"), git_commit="abc")
+    assert list(gold_names.to_gold(res, "benchmark_metric").columns) == declared("benchmark_metric")
+
+
+def test_the_old_study_tables_are_migrated_and_earlier_benchmark_runs_kept():
+    plan = gold_names.migration_plan({"labeled_notes": _cols("dim_study_note"),
+                                      "benchmark_results": _cols("benchmark_metric"),
+                                      "benchmark_metric": declared("benchmark_metric")})
+    assert plan == [("copy", "labeled_notes", "dim_study_note"), ("merge", "benchmark_results", "benchmark_metric")]
+
+
+def test_the_study_notebook_writes_gold_names_by_batch_key_never_plain_append():
+    nb = (ROOT / "databricks/notebooks/01_run_benchmark.py").read_text()
+    assert 'to_gold(' in nb and "dim_study_note" in nb and "benchmark_metric" in nb
+    assert "replace_batch(" in nb and 'mode("append")' not in nb
+    assert "labeled_notes" not in nb.replace("labeled_notes.csv", "") and "benchmark_results" not in nb
+
+
+def test_the_gpu_encoders_write_fact_prediction_by_run_never_plain_append():
+    nb = (ROOT / "databricks/notebooks/08_encoder_gpu.py").read_text()
+    assert "encoder_gpu_predictions" not in nb and 'mode("append")' not in nb
+    assert "replace_batch(" in nb and '"fact_prediction"' in nb and "run_prediction_rows(" in nb
+    assert '"source_code": "databricks"' in nb
+
+
+def test_the_study_and_gpu_jobs_pass_their_run_id():
+    import yaml
+    jobs = yaml.safe_load((ROOT / "databricks/resources/jobs.yml").read_text())["resources"]["jobs"]
+    for job in ("study_benchmark", "encoder_gpu"):
+        assert jobs[job]["tasks"][0]["notebook_task"]["base_parameters"]["run_id"] == "{{job.run_id}}", job
+
+
+def test_the_migration_turns_text_timestamps_into_timestamps():
+    nb = (ROOT / "databricks/notebooks/11_migrate_gold_names.py").read_text()
+    assert 'endswith("_ts")' in nb and "to_timestamp" in nb
 
 # issue #228: tables left in the old gold schemas (the old catalog before spec 021, the old schema before
 # spec 022; databricks.yml legacy_gold_schemas) are carried into the current schema.

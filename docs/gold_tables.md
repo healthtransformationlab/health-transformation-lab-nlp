@@ -61,13 +61,18 @@ the MedGemma reader's runs were left in the old catalog's gold schema. For each 
 renamed, the task adds the rows whose batch key the current table lacks (a key column the current table doesn't
 have yet counts as null), checks that every old key arrived, and only then adds its `DROP TABLE` to the list.
 A table without a batch key that its own job rebuilds (the scorecard's summaries, the de-id scores, the corpus
-judge's calls) is reported as stale and gets no `DROP`: compare it by hand before dropping it. A schema that doesn't exist is skipped (uat and prod
-never had one). The decisions are `gold_names.legacy_plan` (tested).
+judge's calls) is reported as stale and gets no `DROP`: compare it by hand before dropping it.
+A schema that doesn't exist is skipped (uat and prod never had one). The decisions are `gold_names.legacy_plan` (tested).
 
-Jobs that haven't run in the workspace yet write more tables to gold: `study_benchmark`
-(`01_run_benchmark.py`) writes `person`, `visit_occurrence`, `measurement`, `note` (OMOP, official names),
-`labeled_notes` and `benchmark_results`, and `encoder_gpu` writes `encoder_gpu_predictions`. Those three get
-convention names when they're next changed; they aren't in the data model yet.
+The Benchmark job (`study_benchmark`, `01_run_benchmark.py`) writes `person`, `visit_occurrence`, `measurement`,
+`note` (OMOP, official names) and, since spec 031, `dim_study_note` (the labelled study notes, overwritten each run)
+and `benchmark_metric` (the scores, replaced per job run, so a retry adds nothing). They were `labeled_notes` and
+`benchmark_results`; the migration carries those over, keeping every earlier benchmark run. Rows carried from
+`benchmark_results` have no job run, so their `run_id`, `run_ts` and `git_commit_sha` are null; `model_run_id` keys them,
+and no job's delete by `run_id` touches them. The GPU encoder job
+(`encoder_gpu`) writes its predictions to `fact_prediction` with `source_code` databricks, replaced per job run
+and method, as the MedGemma reader does; the old `encoder_gpu_predictions` table was never written in a
+workspace.
 
 Also in the schema, though not tables: the Unity Catalog model `perio_note_classifier`
 (`databricks/resources/mlops.yml`). The one function the Catalog Explorer lists isn't created by this
@@ -167,8 +172,5 @@ two jobs replaced each other's table; each now has its own.
 
 - The scorecard keeps an earlier judge call only for the same endpoint and the current prompt version
   (`judge_scorecard.reusable`); a new endpoint asks, and pays for, every call again.
-- `encoder_gpu_predictions` (the `encoder_gpu` job) is written by plain append with no batch key
-  (`08_encoder_gpu.py`), so a rerun adds the same predictions again: against AGENTS.md, "Failures, retries
-  and reruns". It isn't in the data model yet.
 - `simulated_*` files are never loaded. `fact_judge_call.is_simulated = true` marks a simulated judge's rows:
   label anything built from them as simulated wherever it's shown.
