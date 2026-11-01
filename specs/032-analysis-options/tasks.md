@@ -7,5 +7,5 @@
 - [x] T005 [US5] failing tests for `split_unit=visit` (overlap reported), `test_share`, `cv_folds`; implement
 - [x] T006 [US6] failing tests for the insurance tables and the `insurance_type` split; implement; ERDs
 - [x] T007 [US7] preset file and script 56; run on synthetic data; commit results labelled synthetic
-- [ ] T008 US1-US7: defaults leave committed results byte-identical (SC-001)
-- [ ] T009 [US8] flip the defaults to exploratory_1, add the repo_v1 preset, rerun and recommit every result, R parity
+- [x] T008 US1-US7: defaults leave committed results byte-identical (SC-001)
+- [x] T009 [US8] flip the defaults to exploratory_1, add the repo_v1 preset, rerun and recommit every result, R parity

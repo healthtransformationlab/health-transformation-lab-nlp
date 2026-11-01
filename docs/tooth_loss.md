@@ -45,8 +45,9 @@ stores the image, not a reading of it.
 
 - **Teeth:** third molars are left out by default. Only adults are included: the minimum age
   (`ModelParams.min_age`, `--min-age`) is 18 by default; no cut-off and 30 and over are sensitivity analyses.
-  A start date (`ModelParams.start_date`, `--start-date`, spec 032; none by default, so every year counts) keeps
-  the teeth lost on or after it, or first charted on or after it when the loss date isn't recorded.
+  A start date (`ModelParams.start_date`, `--start-date`, spec 032; 2018-01-01 by default since spec 032 US8, `""`
+  for every year) keeps the teeth lost on or after it, or first charted on or after it when the loss date isn't
+  recorded.
   `tooth_loss_model.exclusions` counts the teeth left out by each reason.
 - **Two label sets** (FR-010): completed extractions only, and completed plus planned extractions (one per planned
   procedure, however many plan copies; a tooth planned then extracted counts once, as completed).
@@ -55,7 +56,8 @@ stores the image, not a reading of it.
   last measures and how good that chart was, and is shown beside it.
 - **Models:** logistic regression (L2, C = 1, standardised, median imputation and missing indicators) and XGBoost
   (depth 3, 200 trees, learning rate 0.05, subsample 0.8), with three baselines.
-- **Validation:** 70/30 split by patient, stratified on the outcome, seed 42. Both label sets are scored on the same
+- **Validation:** 80/20 split by patient, stratified on the outcome, seed 42, with XGBoost tuned by 5-fold
+  cross-validation (the defaults since spec 032 US8; before it, 70/30 with fixed settings, the `repo_v1` preset). Both label sets are scored on the same
   held-out extractions. The applied sets (teeth missing at entry, extractions without a diagnosis) are scored
   against the synthetic answer key, which is never a feature. Options (spec 032): `--test-share`; `--split-unit
   visit` holds out random teeth instead of patients, so one patient's teeth can be on both sides, which flatters the

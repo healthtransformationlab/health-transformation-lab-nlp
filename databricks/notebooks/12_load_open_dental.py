@@ -12,8 +12,8 @@
 # MAGIC   and the answer key `tooth_loss_truth`, which only the evaluation reads;
 # MAGIC - **data-quality checks** (`tooth_loss_dq`, spec 029 FR-009 after Kookal et al. 2024): one row per check
 # MAGIC   (`tooth_loss_dq_check`) and one per group of patients and measure (`tooth_loss_dq_group`: is the perio chart
-# MAGIC   kept as well at every office, by every provider, for every sex, race, exam year and age band? A split by
-# MAGIC   insurance type is an option, `tooth_loss_dq.ALL_GROUP_TYPES`, off by default until spec 032 US8). They run on
+# MAGIC   kept as well at every office, by every provider, for every sex, race, exam year, age band and, since
+# MAGIC   spec 032 US8, insurance type, `tooth_loss_dq.GROUP_TYPES`). They run on
 # MAGIC   the bronze extract, report what they find and fix nothing; each run replaces its own rows (delete by run_id);
 # MAGIC - **gold** (`gold_opendental_perio.fact_tooth_loss_prediction`, spec 029 US3): P(the tooth was lost to
 # MAGIC   periodontitis) for every missing or labelled tooth, from logistic regression and XGBoost on both label sets

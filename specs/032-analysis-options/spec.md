@@ -62,9 +62,10 @@ validated, and a consistency split by insurance.
   five and three-level groupings, adults (18+), a start date, the healthy-or-gingivitis code rule, the 20-teeth and
   10-pairs rules, a split by visit at 20%, 5-fold tuning, insurance in the consistency split, and the CAL
   reliability ICC (spec 013, `reliability_cal`).
-- `scripts/56_exploratory_preset.py --preset exploratory_1` runs it on synthetic data and writes
-  `data/results/synthetic_exploratory_1_*.csv`, each row labelled synthetic, with a table of every setting, its
-  default, the preset's value and the headline numbers under each.
+- `scripts/58_preset.py --preset exploratory_1` runs it on synthetic data and writes
+  `data/datasets/presets/synthetic_preset_<name>_<part>.csv`, each row labelled synthetic, with a table of every
+  setting, its default, the preset's value and the headline numbers under each (script 56 was taken; the outputs are
+  committed, so they live under `data/datasets/`).
 
 ### US8 - exploratory_1's settings become the defaults (P1) #448
 
@@ -74,8 +75,13 @@ validated, and a consistency split by insurance.
 - One exception: the split stays by person. A random split by visit lets one person's visits sit in both training
   and test, which overstates accuracy, so it stays an option (`split_unit=visit`, reporting the overlap) and is
   never the default.
-- Today's defaults become the `repo_v1` preset. Every committed result is rerun and recommitted (study build,
-  leaderboards, dashboards, decks, tooth-loss results); R parity passes; the docs say what changed and why.
+- Today's defaults become the `repo_v1` preset; the new ones are written out as `repo_v2`. Every committed result
+  is rerun and recommitted (leaderboards, dashboards, decks, tooth-loss results); R parity passes; the docs say what
+  changed and why.
+- The visit filters, the grouping and the absent-code rule apply when results are scored
+  (`study.scored_review`, `study.reread_absent_code`): the benchmark note set itself (study build, review set,
+  answer key, Kaggle and Hugging Face task data) is built as before, because external model runs were scored on
+  those exact notes. Rebuilding it for adults from the start date, and rerunning those model runs, is tracked in #467.
 
 ## Out of scope
 
