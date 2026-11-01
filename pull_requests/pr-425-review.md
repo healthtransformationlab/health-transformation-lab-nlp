@@ -19,7 +19,7 @@ EmbeddingGemma model, so the PR uses `Refs #355`. Verdict: approve with nits. Th
 decisions to make before anything is published.
 
 ## Scope of Change
-- Files changed (c9c96d7, excluding #421's commit and the main merge): 6 (`task_graph.py`, `test_task_graph.py`, `51_build_tasks.py`, `pyproject.toml`, `snapshot_index.csv`, `tasks.md`)
+- Files changed (c9c96d7, excluding #421's commit and the main merge): 6 (`task_graph.py`, `test_task_graph.py`, `52_build_tasks.py`, `pyproject.toml`, `snapshot_index.csv`, `tasks.md`)
 - Areas touched: python, specs, data
 - Commits: c9c96d7 Build task snapshots and code graphs (028 US4, T008-T009); merge of origin/main (no conflicts)
 - Range reviewed: `459c90a..c9c96d7` (the new work); #421 is reviewed in `pr-421-review.md`

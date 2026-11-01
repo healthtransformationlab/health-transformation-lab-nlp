@@ -62,3 +62,88 @@ planned_extraction_029 <- function(pl, pc, defs, tp) {
                     is_completed = e$procstatus == COMPLETE_029)
   out[order(out$procedure_id), ]
 }
+
+# ---- Spec 029 US3 (#371): the tooth-loss model's metrics and the stage IV counting rules
+# Twins of tooth_loss_model.py (auc, brier, classification, youden_threshold, calibration_slope,
+# calibration_intercept, calibration_table) and labels.py (expected_perio_loss, stage4_rule). Model fitting stays
+# Python only (FR-005). Base R.
+
+CLIP_029 <- 1e-8
+N_BINS_029 <- 10
+STAGE4_COUNT_RULES_029 <- c("recorded_only", "every_missing", "expected_perio_loss", "truth")
+
+auc_029 <- function(y, p) {
+  pos <- p[y == 1]; neg <- p[y == 0]
+  if (!length(pos) || !length(neg)) return(NA_real_)
+  r <- rank(c(pos, neg))
+  (sum(r[seq_along(pos)]) - length(pos) * (length(pos) + 1) / 2) / (length(pos) * length(neg))
+}
+
+brier_029 <- function(y, p) mean((p - y)^2)
+
+classification_029 <- function(y, p, threshold) {
+  pred <- p >= threshold
+  tp <- sum(pred & y == 1); fp <- sum(pred & y == 0); fn <- sum(!pred & y == 1); tn <- sum(!pred & y == 0)
+  ratio <- function(a, b) if (b > 0) a / b else NA_real_
+  list(tp = tp, fp = fp, fn = fn, tn = tn, sensitivity = ratio(tp, tp + fn), specificity = ratio(tn, tn + fp),
+       ppv = ratio(tp, tp + fp), npv = ratio(tn, tn + fn))
+}
+
+logit_029 <- function(p) { q <- pmin(pmax(p, CLIP_029), 1 - CLIP_029); log(q / (1 - q)) }
+
+# Newton steps for the logistic regression of y on logit(p): intercept and slope, or the intercept with logit(p) as
+# an offset. NA when it can't be fitted (one class, no spread, separation).
+newton_029 <- function(y, lp, slope, max_iter = 100, tol = 1e-10) {
+  if (all(y == y[1]) || (slope && diff(range(lp)) == 0)) return(c(NA_real_, NA_real_))
+  a <- 0; b <- 1
+  for (it in seq_len(max_iter)) {
+    mu <- 1 / (1 + exp(-(a + b * lp)))
+    w <- mu * (1 - mu); r <- y - mu
+    if (slope) {
+      g0 <- sum(r); g1 <- sum(r * lp)
+      h00 <- sum(w); h01 <- sum(w * lp); h11 <- sum(w * lp * lp)
+      det <- h00 * h11 - h01 * h01
+      da <- (h11 * g0 - h01 * g1) / det; db <- (h00 * g1 - h01 * g0) / det
+    } else {
+      da <- sum(r) / sum(w); db <- 0
+    }
+    if (!is.finite(da) || !is.finite(db)) return(c(NA_real_, NA_real_))
+    a <- a + da; b <- b + db
+    if (max(abs(da), abs(db)) < tol) return(c(a, b))
+  }
+  c(NA_real_, NA_real_)
+}
+
+calibration_slope_029 <- function(y, p) newton_029(y, logit_029(p), TRUE)
+calibration_intercept_029 <- function(y, p) newton_029(y, logit_029(p), FALSE)[1]
+
+# The smallest predicted probability that maximises sensitivity + specificity - 1 (p >= it is positive).
+youden_threshold_029 <- function(y, p) {
+  o <- order(p); ps <- p[o]; ys <- y[o]
+  u <- sort(unique(p))
+  pos <- sum(ys); neg <- length(ys) - pos
+  if (pos == 0 || neg == 0) return(NA_real_)
+  i <- findInterval(u, ps, left.open = TRUE)            # teeth below each threshold
+  tp <- pos - c(0, cumsum(ys))[i + 1]
+  fp <- (length(ys) - i) - tp
+  j <- tp / pos + (neg - fp) / neg - 1
+  u[which.max(j)]
+}
+
+calibration_table_029 <- function(y, p) {
+  b <- pmin(floor(p * N_BINS_029), N_BINS_029 - 1)
+  do.call(rbind, lapply(0:(N_BINS_029 - 1), function(k) {
+    m <- b == k; n <- sum(m)
+    data.frame(bin_num = k, tooth_count = n, mean_predicted_ratio = if (n) mean(p[m]) else NA_real_,
+               observed_ratio = if (n) mean(y[m]) else NA_real_)
+  }))
+}
+
+expected_perio_loss_029 <- function(recorded_perio, unlabelled_probs) recorded_perio + sum(unlabelled_probs)
+
+stage4_rule_029 <- function(rule, recorded_perio, missing, unlabelled_probs = numeric(0), true_perio = NA) {
+  if (!rule %in% STAGE4_COUNT_RULES_029) stop("unknown stage IV counting rule ", rule)
+  n <- switch(rule, recorded_only = recorded_perio, every_missing = missing,
+              expected_perio_loss = expected_perio_loss_029(recorded_perio, unlabelled_probs), truth = true_perio)
+  n >= 5
+}

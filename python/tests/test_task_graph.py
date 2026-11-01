@@ -42,9 +42,9 @@ def test_module_names_come_from_the_path_under_the_source_root():
 
 
 def test_the_package_is_found_at_each_base_even_after_a_rename():
-    old = ["python/dental_omop_nlp/__init__.py", "python/dental_omop_nlp/a.py", "python/tests/__init__.py",
+    old = ["python/old_pkg/__init__.py", "python/old_pkg/a.py", "python/tests/__init__.py",
            "python/scripts/x.py"]
-    assert tg.package_name(old, "python/") == "dental_omop_nlp"
+    assert tg.package_name(old, "python/") == "old_pkg"
     assert tg.package_name(list(PKG), "python/") == "pkg"
     assert tg.package_name(["README.md"], "python/") is None
 

@@ -1,10 +1,10 @@
 """Build `tasks.jsonl` from the task manifest, in the competition's format (spec 028, US3, #354).
 
-    python scripts/51_build_tasks.py                 # data/tasks/tasks.jsonl (git-ignored), tasks_excluded.csv,
+    python scripts/52_build_tasks.py                 # data/tasks/tasks.jsonl (git-ignored), tasks_excluded.csv,
                                                      # tasks_sample.jsonl, and the manifest's base commits
-    python scripts/51_build_tasks.py --sample 3
-    python scripts/51_build_tasks.py --graphs        # also data/tasks/graphs/<instance_id>.json (US4, T009)
-    python scripts/51_build_tasks.py --snapshots 2   # also the first N snapshots/<instance_id>.tgz (US4, T008;
+    python scripts/52_build_tasks.py --sample 3
+    python scripts/52_build_tasks.py --graphs        # also data/tasks/graphs/<instance_id>.json (US4, T009)
+    python scripts/52_build_tasks.py --snapshots 2   # also the first N snapshots/<instance_id>.tgz (US4, T008;
                                                      # each holds the whole history to its base, ~90 MB)
 
 For each candidate in data/tasks/task_manifest.csv: `base_commit` is the parent of a squash or direct commit, or
@@ -156,7 +156,7 @@ def write_graphs(rows: list[dict]) -> None:
         package, sources = package_sources(r["base_commit"])
         g = tg.build_graph(sources, package, SOURCE_ROOT,
                            {"repo": r["repo"], "base_commit": r["base_commit"], "instance_id": r["instance_id"],
-                            "builder": "ast walk, spec 028 (51_build_tasks.py)"})
+                            "builder": "ast walk, spec 028 (52_build_tasks.py)"})
         path = GRAPHS / f"{r['instance_id']}.json"
         path.write_text(json.dumps(g))
         sizes.append((len(g["nodes"]), len(g["edges"]), path.stat().st_size))
@@ -189,7 +189,7 @@ def main() -> int:
     a = ap.parse_args()
     check_settings()
     telemetry.setup()
-    telemetry.start_script("51_build_tasks", data_label="public")
+    telemetry.start_script("52_build_tasks", data_label="public")
 
     manifest = pd.read_csv(MANIFEST, dtype={"spec_number": "string", "issue_number": "Int64", "pr_number": "Int64"})
     if "base_commit_source_code" not in manifest:

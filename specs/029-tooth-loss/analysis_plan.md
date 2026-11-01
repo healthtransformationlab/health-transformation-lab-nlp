@@ -187,3 +187,10 @@ stated plainly:
 | Date | Change | Reason |
 |---|---|---|
 | 2026-10-31 | Plan written | Before any model result (#395) |
+| 2026-11-01 | s. 3: age is at the loss date for completed extractions; at the first exam for teeth missing at entry (as planned) and for planned extractions | The tooth table carries no plan date for a planned tooth; built in `tooth_loss_model` (#371) |
+| 2026-11-01 | s. 9: "stratified on the outcome" is done per patient, by the patient's labels (only periodontal, only other, both); one split serves both label sets | Teeth of one patient can't be split; one split lets both label sets be scored on the same held-out teeth (US3 scenario 4) |
+| 2026-11-01 | s. 9: the applied sets are scored over every patient, not only the held-out ones | They carry no label, so no tooth of theirs is trained on; it is how the model is applied. Their mouth and patient features are shared with labelled teeth of the same patient, which is stated in `docs/tooth_loss.md` |
+| 2026-11-01 | s. 10: bootstrap intervals for the fitted models on the main generator seed only; baselines and the four further seeds as point estimates | Run time; the seeds show the spread (stability) themselves |
+| 2026-11-01 | s. 10: the stage III vs IV comparison covers patients whose worst CAL in the record is 5 mm or more (initial stage III/IV), and leaves out the other complexity factors | That is where the AAP worksheet lets tooth loss alone decide III vs IV |
+| 2026-11-01 | s. 8: the "only recorded periodontal extractions count" baseline is scored on the applied sets only (probability 0) | On the held-out extractions it is the label itself |
+| 2026-11-01 | s. 6: the synthetic run uses 6,000 patients per extract (`scripts/51_tooth_loss_model.py --patients`) | With the default 2,000 there are too few labelled teeth (third molars excluded) for narrow intervals |
