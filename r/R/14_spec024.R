@@ -144,3 +144,67 @@ summary_chart_024 <- function(max_pd_mm, bop_pct, max_cal_mm, rbl_pct, teeth_los
              pct_teeth_involved = ifelse(is.na(n), NA, 100 * (n + lost) / TEETH_FULL_024), molar_incisor = FALSE,
              stringsAsFactors = FALSE)
 }
+
+# ---------------------------------------------------------------- spec 024 US3: every visit, the stepwise phenotype
+
+LABELS_024 <- c("healthy", "gingivitis", paste0("periodontitis_stage_", 1:4))
+
+# The Diagnoser on every visit of visits_structured.csv (periodx.visits_table): charted visits with PD and BOP get
+# chart_status_024 on their summary chart; the rest are 'unknown'. Returns visit_id plus chart_status_024's columns.
+periodx_chart_visits_024 <- function(v) {
+  ok <- as.logical(v$charted) & !is.na(v$rec_max_probing_depth_mm) & !is.na(v$rec_bop_pct)
+  out <- data.frame(visit_id = v$visit_id, status = "unknown", stage = NA, extent = "NA", grade = "NA",
+                    label = "unknown", partial = "", stringsAsFactors = FALSE)
+  w <- v[ok, ]
+  lost <- ifelse(is.na(w$rec_teeth_lost_perio), 0, w$rec_teeth_lost_perio)
+  d <- summary_chart_024(w$rec_max_probing_depth_mm, w$rec_bop_pct, w$rec_max_cal_mm, w$rec_rbl_pct, lost,
+                         w$rec_pct_teeth_involved)
+  d$age <- w$age; d$cigarettes_per_day <- w$cigarettes_per_day; d$diabetes <- as.logical(w$diabetes); d$hba1c <- w$hba1c
+  r <- chart_status_024(d)
+  out[ok, c("status", "stage", "extent", "grade", "label", "partial")] <- r
+  out
+}
+
+# Patel et al. 2022's stepwise phenotype (phenotype.phenotype_patel2022): M1 diagnosis codes (completed, then
+# planned), M2 the Extractor's label, M3 the Diagnoser's label; the first of the six statuses decides.
+phenotype_patel2022_024 <- function(dx_completed, dx_planned, note_label, chart_label) {
+  cols <- list(M1 = dx_completed, M1 = dx_planned, M2 = note_label, M3 = chart_label)
+  status <- rep("unknown", length(dx_completed)); by <- rep("none", length(dx_completed))
+  for (i in seq_along(cols)) {
+    take <- by == "none" & cols[[i]] %in% LABELS_024
+    status[take] <- cols[[i]][take]; by[take] <- names(cols)[i]
+  }
+  data.frame(algorithm_patel2022 = status, algorithm_patel2022_decided_by = by, stringsAsFactors = FALSE)
+}
+
+# Completeness per section before merging, and of the merged result (completeness.section_completeness).
+section_completeness_024 <- function(v, sections, merged, decided_by) {
+  n <- nrow(v)
+  miss <- function(x) is.na(x) | as.character(x) %in% c("unknown", "")
+  rows <- lapply(names(sections), function(s) {
+    has <- Reduce(`|`, lapply(sections[[s]], function(c) !miss(v[[c]])))
+    k <- sum(has); d <- sum(v[[decided_by]] == s)
+    data.frame(section = s, n_visits = n, n_with_value = k, pct_with_value = 100 * k / n, n_decided = d,
+               pct_decided = 100 * d / n)
+  })
+  k <- sum(!miss(v[[merged]]))
+  do.call(rbind, c(rows, list(data.frame(section = "merged", n_visits = n, n_with_value = k,
+                                         pct_with_value = 100 * k / n, n_decided = k, pct_decided = 100 * k / n))))
+}
+
+# Confusion counts, precision, recall and F1 per class one-vs-rest and pooled (reliability.confusion_scores): a
+# prediction outside the classes is a negative prediction for every class; F1 = 2TP / (2TP + FP + FN).
+confusion_scores_024 <- function(truth, pred, classes = LABELS_024) {
+  prf <- function(tp, fp, fn) c(precision = if (tp + fp) tp / (tp + fp) else NA,
+                                recall = if (tp + fn) tp / (tp + fn) else NA,
+                                f1 = if (tp + fp + fn) 2 * tp / (2 * tp + fp + fn) else NA)
+  rows <- lapply(classes, function(c) {
+    tp <- sum(truth == c & pred == c); fp <- sum(truth != c & pred == c); fn <- sum(truth == c & pred != c)
+    tn <- length(truth) - tp - fp - fn
+    data.frame(class = c, tp = tp, fp = fp, fn = fn, tn = tn, t(prf(tp, fp, fn)))
+  })
+  t <- do.call(rbind, rows)
+  s <- colSums(t[c("tp", "fp", "fn", "tn")])
+  rbind(t, data.frame(class = "pooled", tp = s[["tp"]], fp = s[["fp"]], fn = s[["fn"]], tn = s[["tn"]],
+                      t(prf(s[["tp"]], s[["fp"]], s[["fn"]]))))
+}

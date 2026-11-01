@@ -30,6 +30,8 @@ import re
 from dataclasses import dataclass, field
 from typing import NamedTuple
 
+import pandas as pd
+
 from .telemetry import traced
 
 # ---------------------------------------------------------------- Fig. 2 thresholds
@@ -547,6 +549,50 @@ def note_status(note: str, negation: bool = NEGATION_DEFAULT, multiple: str = MU
                           max(grades) if grades else NOT_ASSESSABLE, "M2")
 
 
+# ================================================================ every visit (spec 024 US3, FR-010)
+VISIT_COLUMNS = ["visit_id",
+                 "periodx_note_status", "periodx_note_stage", "periodx_note_extent", "periodx_note_grade",
+                 "periodx_note_label",
+                 "periodx_chart_status", "periodx_chart_stage", "periodx_chart_extent", "periodx_chart_grade",
+                 "periodx_chart_label", "periodx_chart_partial",
+                 "algorithm_patel2022", "algorithm_patel2022_decided_by"]
+
+
+def _flag(x) -> bool | None:
+    if x is None or (isinstance(x, float) and math.isnan(x)):
+        return None
+    return str(x).lower() in ("true", "1") if isinstance(x, str) else bool(x)
+
+
+@traced
+def visits_table(v) -> pd.DataFrame:
+    """The Extractor on each visit's note, the Diagnoser on its chart, and the stepwise phenotype, one row per visit
+    (periodx_visits.csv, next to the study data; visits_structured.csv is left as it is). v needs note_text, the rec_*
+    chart columns, age, cigarettes_per_day, diabetes, hba1c and the diagnosis-code readings."""
+    from .phenotype import phenotype_patel2022  # local: phenotype doesn't import this module
+    rows = []
+    for r in v.to_dict("records"):
+        n = note_status(r.get("note_text") or "")
+        c = chart_from_row(r)
+        if c is None:
+            m3 = PerioDxFinding(UNKNOWN, section="M3")
+        else:
+            m3 = chart_status(c, age=_opt(r.get("age")), cigarettes_per_day=_opt(r.get("cigarettes_per_day")),
+                              diabetes=_flag(r.get("diabetes")), hba1c=_opt(r.get("hba1c")))
+        out = {"visit_id": r["visit_id"],
+               "periodx_note_status": n.status, "periodx_note_stage": n.stage, "periodx_note_extent": n.extent,
+               "periodx_note_grade": n.grade, "periodx_note_label": n.label,
+               "periodx_chart_status": m3.status, "periodx_chart_stage": m3.stage, "periodx_chart_extent": m3.extent,
+               "periodx_chart_grade": m3.grade, "periodx_chart_label": m3.label,
+               "periodx_chart_partial": ";".join(sorted(m3.partial))}
+        status, by = phenotype_patel2022(pd.Series({**r, **out}))
+        rows.append({**out, "algorithm_patel2022": status, "algorithm_patel2022_decided_by": by})
+    t = pd.DataFrame(rows, columns=VISIT_COLUMNS)
+    for col in ("periodx_note_stage", "periodx_chart_stage"):
+        t[col] = t[col].astype("Int64")
+    return t
+
+
 # ---------------------------------------------------------------- parity inputs for the R twin
 _CASE_CHOICES = {
     "bop_pct": [5.0, 10.0, 25.0, 30.0, 45.0], "max_pd_mm": [3.0, 3.9, 4.0, 5.0, 5.5, 7.0],
@@ -577,7 +623,6 @@ def write_parity_cases(out_dir, seed: int = 24, n_charts: int = 4000, n_summarie
     import random
     from pathlib import Path
 
-    import pandas as pd
     rng = random.Random(seed)
     rows = []
     for _ in range(n_charts):

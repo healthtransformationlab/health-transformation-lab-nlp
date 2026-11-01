@@ -81,6 +81,12 @@
         "SELECT clinic_code AS clinic, 'Rules, exam form first (design)' AS evidence_source,\n",
         "  CASE WHEN rules_design_status_code <> 'unknown' THEN 100.0 ELSE 0.0 END AS answered_pct,\n",
         "  CASE WHEN rules_design_status_code = 'unknown' THEN NULL WHEN rules_design_status_code = truth_status_code THEN 100.0 ELSE 0.0 END AS agree_pct\n",
+        "FROM health_transformation_lab.gold_perio_bench.fact_visit_evidence\n",
+        "UNION ALL\n",
+        "\n",
+        "SELECT clinic_code AS clinic, 'Rules, Patel et al. 2022 order' AS evidence_source,\n",
+        "  CASE WHEN rules_patel2022_status_code <> 'unknown' THEN 100.0 ELSE 0.0 END AS answered_pct,\n",
+        "  CASE WHEN rules_patel2022_status_code = 'unknown' THEN NULL WHEN rules_patel2022_status_code = truth_status_code THEN 100.0 ELSE 0.0 END AS agree_pct\n",
         "FROM health_transformation_lab.gold_perio_bench.fact_visit_evidence\n"
       ]
     },

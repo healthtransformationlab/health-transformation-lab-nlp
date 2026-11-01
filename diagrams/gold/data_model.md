@@ -327,6 +327,7 @@ erDiagram
         string probing_chart_status_code "from gum measurements; unknown when not charted"
         string rules_v0_status_code "rules, gum measurements first"
         string rules_design_status_code "rules in the study design's order"
+        string rules_patel2022_status_code "rules in the order of Patel et al. 2022 (spec 024)"
         string truth_status_code "the generator's truth"
         string clinic_code "clinic 1-8"
         string source_files_text "the committed CSVs the table is built from"
@@ -791,6 +792,7 @@ One per synthetic visit: each evidence source's status and the truth (statuses o
 |  | `probing_chart_status_code` | string | from gum measurements; unknown when not charted |
 |  | `rules_v0_status_code` | string | rules, gum measurements first |
 |  | `rules_design_status_code` | string | rules in the study design's order |
+|  | `rules_patel2022_status_code` | string | rules in the order of Patel et al. 2022 (spec 024) |
 |  | `truth_status_code` | string | the generator's truth |
 |  | `clinic_code` | string | clinic 1-8 |
 |  | `source_files_text` | string | the committed CSVs the table is built from |

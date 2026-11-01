@@ -28,6 +28,9 @@ key = pd.read_csv(DATASETS_DIR / "answer_key" / "review_key.csv").set_index("vis
 compare = {m: key[m] for m in ["notes", "exam_form", "proc_codes_completed", "proc_codes_planned",
                                "proc_dx_completed", "proc_dx_planned", "probing_chart", "radiograph_ai",
                                "algorithm_v0", "algorithm_design"]}
+# spec 024: the Patel et al. 2022 stepwise phenotype, from its own file (visits_structured and the key stay unchanged)
+compare["algorithm_patel2022"] = pd.read_csv(DATASETS_DIR / "periodx_visits.csv").set_index("visit_id")[
+    "algorithm_patel2022"].reindex(key.index)
 for f in sorted(glob.glob(str(DATASETS_DIR / "ai_predictions_*.csv"))):
     p = pd.read_csv(f).set_index("visit_id")["pred"]
     compare["ai:" + Path(f).stem.removeprefix("ai_predictions_")] = p

@@ -97,12 +97,36 @@ phenotype.cohen_kappa:
 phenotype.collapse5:
   level: detail
   reason: 29 calls per parent, 29 in total, 0.654 ms per call
+periodx.PerioDxFinding.label:
+  level: detail
+  reason: several times per visit in the study build; spec 024
+  manual: true
+periodx.chart_from_row:
+  level: detail
+  reason: once per visit in the study build (4343 calls); spec 024
+  manual: true
+periodx.chart_from_summary:
+  level: detail
+  reason: once per charted visit in the study build; spec 024
+  manual: true
+periodx.chart_status:
+  level: detail
+  reason: once per charted visit in the study build; spec 024
+  manual: true
+periodx.note_status:
+  level: detail
+  reason: once per visit in the study build (4343 calls); spec 024
+  manual: true
 phenotype.coverage:
   level: call
   reason: 1 calls per parent, 1 in total, 2.412 ms per call
 phenotype.phenotype:
   level: detail
   reason: 5760 calls per parent, 10103 in total, 0.009 ms per call
+phenotype.phenotype_patel2022:
+  level: detail
+  reason: once per visit in the study build (4343 calls); spec 024
+  manual: true
 phenotype.phenotype_v0:
   level: detail
   reason: 4343 calls per parent, 14446 in total, 0.006 ms per call
