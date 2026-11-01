@@ -11,9 +11,9 @@ Implementation starts after this spec, plan and tasks are reviewed.
 
 ## US2 #202: PerioDx Extractor
 
-- [ ] T004 [US2] `PERIODX_TERMS` from the 2017 classification and the synthetic note templates
-- [ ] T005 [US2] Failing tests: snippets with negation off and on, abbreviations, no diagnosis
-- [ ] T006 [US2] `periodx.extract`, two steps, no new dependency
+- [x] T004 [US2] `PERIODX_TERMS` from the 2017 classification and the synthetic note templates
+- [x] T005 [US2] Failing tests: snippets with negation off and on, abbreviations, no diagnosis
+- [x] T006 [US2] `periodx.note_status` (the Extractor), two steps, no new dependency
 
 ## US3 #203: stepwise phenotype, scored
 

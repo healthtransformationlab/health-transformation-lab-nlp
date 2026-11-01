@@ -75,3 +75,45 @@ of teeth with attachment loss. Fig. 2 asks about teeth. This repo's reading, not
 
 A reduced periodontium, healthy or inflamed, is periodontal health or gingivitis on a reduced periodontium in the
 2017 classification (Chapple et al. 2018).
+
+## The PerioDx Extractor: the note, `periodx.note_status`
+
+The paper describes a two-step keyword program, and this follows it:
+
+1. **Normalize and filter.** Lowercase the note, keep abbreviation dots with their word ("st. 2"), split it into
+   clauses, turn special characters into spaces and drop stop words. A note counts only if it mentions a
+   periodontal diagnosis term from the word list.
+2. **Read extent, stage and grade.** Stemming (a small suffix stripper) and string similarity (difflib ratio
+   ≥ 0.85 for words of 5+ letters, exact for shorter ones) match words against the same list, so typos like
+   "generalzied" still count. A stage needs a stage word ("stage", "st", "perio") followed by a numeral (I–IV or
+   1–4, with an optional grade letter: "Perio IIIB"). A grade needs a grade word ("grade", "gr") followed by A–C
+   or i–iii. A pre-2017 severity word counts only when "periodontitis" follows within three words
+   ("moderate chronic periodontitis": slight or mild = I, moderate = II, severe or advanced = III).
+
+The result is the most specific status the words support, or **no diagnosis** (never "healthy" by default). A
+stage, grade or severity term implies periodontitis. When a note holds several, the most severe wins: status
+first, then stage, grade and extent each at their worst. Copied-forward text ("-- copied from visit") is left out
+by default (`multiple="most_severe_current"`, the spec's edge case). `multiple="most_severe"` reads it too.
+
+**The word list** (`PERIODX_TERMS`, FR-003) names a source for every term:
+
+- the 2017 classification (periodontitis, gingivitis, periodontal or gingival health, generalized, localized,
+  molar/incisor, stage, grade);
+- the 1999 classification (the severity words);
+- the paper's own error analysis ("bone loss", which its missed-negation example shows the program reading);
+- the repo's synthetic note templates ("ging", "perio health", "perio WNL", "gen", "loc", "st", "gr", "perio" as
+  a stage word).
+
+It is built from those sources and the templates, never from real notes. "Perio" on its own ("perio charting
+done") is not a diagnosis. AAP case types are not in the list, since the paper's bag has none.
+
+**Negation** is off by default, as published: "no evidence of bone loss, gingivitis localized" reads as
+periodontitis with no stage. With `negation=True`, a minimal NegEx-style cue list (no, not, without, denies,
+negative, absent, absence, free) negates the next five words of its clause, and the same note reads as localized
+gingivitis. Both versions can be scored.
+
+**What differs from the paper:** it used gensim word vectors for similarity. The difflib ratio stands in, so the
+method needs no new dependency.
+
+**In the six labels:** health is healthy; gingivitis of any extent is gingivitis; periodontitis with a stage is
+that stage. Periodontitis with no stage, and no diagnosis, give no status.
