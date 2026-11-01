@@ -541,6 +541,25 @@ used because it is the only one with a full table of counts by age band that cou
 recent, it is a national sample, and its categories map onto ours. Its overall periodontal share (37.6% of all 7,809 teeth, sexes pooled) is at
 the top of the review's range (24.8-38.1%), so the synthetic mix leans periodontal; a lower share is a parameter away.
 
+### How the generator reaches the shares
+
+The spec 006 mouth decides the periodontal losses at entry; this story adds, per patient, a Poisson number of
+non-periodontal ones with mean `Params.entry_other_teeth_by_age` for the age band. For the share `s` in a band
+where the mean periodontal count per patient is `m`, the mean is `m (1 - s) / s`. `m` was measured with the
+non-periodontal means at zero, pooled over generator seeds 101-105 at 6,000 patients each (30,000 patients):
+
+| Age band | `m`, periodontal teeth at entry per patient | Target share `s` | Mean non-periodontal teeth (default) |
+|---|---|---|---|
+| 25-34 | 0.247 | 0.064 | 3.61 |
+| 35-44 | 0.253 | 0.209 | 0.96 |
+| 45-54 | 0.264 | 0.329 | 0.54 |
+| 55-64 | 0.302 | 0.480 | 0.33 |
+| 65-74 | 0.285 | 0.500 | 0.28 |
+| 75+ | 0.311 | 0.470 | 0.35 |
+
+The periodontal counts are heavy-tailed (a stage IV mouth loses many teeth at once), so one seed's share in a band
+can sit 0.03-0.05 from the target; `test_open_dental.py` checks a 6,000-patient extract within 0.05.
+
 ### Caveats
 
 - **Extractions in one week, applied to teeth already missing.** The surveys count extractions done at a given age

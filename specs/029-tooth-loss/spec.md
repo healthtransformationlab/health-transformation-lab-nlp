@@ -265,7 +265,7 @@ AUC and specificity reported.
    left out) are grouped by the patient's age band, **Then** the periodontal share in each band is within 0.05 of
    `ENTRY_PERIO_SHARE_BY_AGE`, and it is lower under 45 than over 55.
 2. **Given** the same extract, **Then** the count of non-periodontal teeth missing at entry per patient is not
-   correlated with the patient's worst CAL within an age band (|r| < 0.1), while the periodontal count is.
+   correlated with the patient's worst CAL within an age band (|r| < 0.05), while the periodontal count is (r > 0.1).
 3. **Given** the same seed twice, **Then** the extract and the answer key are identical; the reasons draw on their
    own stream (`f"{seed}:open_dental:entry_reason"`), and the study datasets don't change.
 4. **Given** a model run, **Then** the missing-at-entry evaluation has periodontal and non-periodontal teeth, and
