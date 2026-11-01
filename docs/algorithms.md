@@ -6,7 +6,8 @@ Some come from published work, cited by author and year, with the full citation 
 and say so. Exact rules and worked examples: [evidence_rules.md](evidence_rules.md). Every model's paper and
 licence: [model_inventory.md](model_inventory.md).
 
-**Correct (95% CI)** is the share of the 240 synthetic review charts given the right status, copied from
+**Correct (95% CI)** is the share of the 221 scored synthetic review charts (the 240 less the visits before
+2021-04-01) given the right status group (healthy and gingivitis together; spec 032 US8, [presets](presets.md)), copied from
 [results.md](results.md). It is scored against the generator's truth, not clinical performance: the generator's
 error rates are design choices, not measured from real clinics. `tests/test_algorithms_doc.py` fails if a number
 here stops matching results.md, or if a rule phenotype or evidence reader in the results has no row.
@@ -17,9 +18,9 @@ Each takes the first part of the record, in a fixed order, that gives an answer.
 
 | Algorithm | Reads | How it decides | Source | Correct (95% CI) |
 |---|---|---|---|---|
-| `algorithm_v0` | whole record | Gum measurements → note → diagnosis codes → exam form → procedure codes; the X-ray reading is a floor when the measurements didn't decide | this repo's own placeholder (spec 003); not from a published algorithm | 97.5 (95.4–99.2) |
-| `algorithm_design` | whole record | Exam form → diagnosis codes → note → gum measurements | The study design's starting order (spec 005). Its diagnosis codes → note → charting part follows Patel et al. 2022 [[4]](#sources); putting the exam form first does not: the paper never uses an exam form (corrected throughout by spec 024) | 72.1 (66.2–77.5) |
-| `algorithm_patel2022` | whole record | Diagnosis codes, done then planned, standing in for the diagnosis section (M1) → the PerioDx Extractor on the note (M2) → the PerioDx Diagnoser on the gum measurements (M3); no exam form ([periodx.md](periodx.md)) | Patel et al. 2022 [[4]](#sources), spec 024; the codes standing in for the diagnosis section, and the summary chart read as tooth counts, are this repo's own | 67.5 (61.3–73.3) |
+| `algorithm_v0` | whole record | Gum measurements → note → diagnosis codes → exam form → procedure codes; the X-ray reading is a floor when the measurements didn't decide | this repo's own placeholder (spec 003); not from a published algorithm | 97.3 (95.0–99.1) |
+| `algorithm_design` | whole record | Exam form → diagnosis codes → note → gum measurements | The study design's starting order (spec 005). Its diagnosis codes → note → charting part follows Patel et al. 2022 [[4]](#sources); putting the exam form first does not: the paper never uses an exam form (corrected throughout by spec 024) | 73.8 (67.4–79.2) |
+| `algorithm_patel2022` | whole record | Diagnosis codes, done then planned, standing in for the diagnosis section (M1) → the PerioDx Extractor on the note (M2) → the PerioDx Diagnoser on the gum measurements (M3); no exam form ([periodx.md](periodx.md)) | Patel et al. 2022 [[4]](#sources), spec 024; the codes standing in for the diagnosis section, and the summary chart read as tooth counts, are this repo's own | 70.1 (63.8–76.0) |
 
 The same rules read in other orders: `scripts/18_phenotype_order.py` scores all 24 orders of the four evidence
 groups against **simulated** reviewers (`data/review/simulated_reliability_5cat/phenotype_orders.csv`). That is a
@@ -29,14 +30,14 @@ dry run, not a result.
 
 | Algorithm | Reads | How it decides | Source | Correct (95% CI) |
 |---|---|---|---|---|
-| `probing_chart` | probing chart | Stage from the worst attachment loss, raised by teeth lost and complexity; healthy or gingivitis by bleeding on probing | 2017 AAP/EFP classification: Tonetti et al. 2018 and the AAP worksheet [[7, 26]](#sources) | 80.4 (75.0–85.4) |
-| `note_rules` | chart note | A written diagnosis in any scheme (2017 stage, pre-2017 severity, AAP case type), else the findings through the probing-chart rules | Keyword list and mapping are this repo's own; the schemes it reads are the 2017 classification (Tonetti et al. 2018) and the 1999 one it replaced (Armitage 1999) [[7, 8]](#sources) | 78.8 (73.3–83.8) |
-| `exam_form` | exam form | The perio-status checkbox, else the PSR screening score | Mapping is this repo's own | 62.1 (56.7–68.3) |
-| `proc_dx_completed` | diagnosis codes, done treatment | ICD-10-CM code on the procedure mapped to a status | Mapping is this repo's own | 45.0 (39.2–50.8) |
-| `proc_dx_planned` | diagnosis codes, planned treatment | Same mapping, on planned procedures | Mapping is this repo's own | 50.0 (43.3–56.7) |
-| `proc_codes_completed` | procedure codes, done | CDT treatment code mapped to a rough status | Mapping is this repo's own | 47.1 (40.8–53.3) |
-| `proc_codes_planned` | procedure codes, planned | Same mapping, on planned procedures | Mapping is this repo's own | 50.8 (44.6–57.5) |
-| `radiograph_ai` | X-ray bone-loss reading | 15% bone loss on at least two teeth; up to 33% stage 2, over 33% stage 3; a lower bound only | Bone-loss bands from the 2017 classification, Tonetti et al. 2018 [[7]](#sources); the two-teeth rule is this repo's own (spec 003) | 17.5 (12.9–22.5) |
+| `probing_chart` | probing chart | Stage from the worst attachment loss, raised by teeth lost and complexity; healthy or gingivitis by bleeding on probing | 2017 AAP/EFP classification: Tonetti et al. 2018 and the AAP worksheet [[7, 26]](#sources) | 80.1 (74.2–85.1) |
+| `note_rules` | chart note | A written diagnosis in any scheme (2017 stage, pre-2017 severity, AAP case type), else the findings through the probing-chart rules | Keyword list and mapping are this repo's own; the schemes it reads are the 2017 classification (Tonetti et al. 2018) and the 1999 one it replaced (Armitage 1999) [[7, 8]](#sources) | 81.0 (75.6–86.0) |
+| `exam_form` | exam form | The perio-status checkbox, else the PSR screening score | Mapping is this repo's own | 63.8 (57.5–70.1) |
+| `proc_dx_completed` | diagnosis codes, done treatment | ICD-10-CM code on the procedure mapped to a status | Mapping is this repo's own | 56.1 (49.8–62.9) |
+| `proc_dx_planned` | diagnosis codes, planned treatment | Same mapping, on planned procedures | Mapping is this repo's own | 62.0 (54.8–68.3) |
+| `proc_codes_completed` | procedure codes, done | CDT treatment code mapped to a rough status | Mapping is this repo's own | 60.2 (54.3–66.1) |
+| `proc_codes_planned` | procedure codes, planned | Same mapping, on planned procedures | Mapping is this repo's own | 63.3 (57.0–69.7) |
+| `radiograph_ai` | X-ray bone-loss reading | 15% bone loss on at least two teeth; up to 33% stage 2, over 33% stage 3; a lower bound only | Bone-loss bands from the 2017 classification, Tonetti et al. 2018 [[7]](#sources); the two-teeth rule is this repo's own (spec 003) | 18.6 (13.6–23.5) |
 
 ## AI and text methods on the note
 
@@ -44,11 +45,11 @@ The best of each kind; every variant is in [results.md](results.md).
 
 | Algorithm | Reads | How it decides | Source | Correct (95% CI) |
 |---|---|---|---|---|
-| `modernbert-base+cw+s2+rules4` | chart note | ModernBERT fine-tuned on the synthetic training notes, class-weighted, then the stage 4 rule | Model: ModernBERT ([model inventory](model_inventory.md)); fine-tuning recipe is this repo's own (spec 002) | 91.2 (87.5–94.6) |
-| `fusion_tfidf_rad+rules4` | chart note + X-ray reading | Word counts plus bone-loss features, logistic regression, then the stage 4 rule | this repo's own | 87.1 (82.9–90.8) |
-| `tfidf_logreg+rules4` | chart note | Word counts (TF-IDF) and logistic regression, then the stage 4 rule | this repo's own standard baseline | 86.7 (82.5–90.8) |
-| `llama-3.3-70b-instruct` | chart note | Asked for the status with no training on these notes, through Databricks | Model: Llama 3.3 70B ([model inventory](model_inventory.md)); prompt is this repo's own (spec 017) | 83.8 (78.8–88.3) |
-| `medgemma-1.5-4b-it+rules4` | chart note | MedGemma asked for the status with no training on these notes, then the stage 4 rule | Model: MedGemma, Sellergren et al. 2025 and Google's model card [[22, 23]](#sources); prompt is this repo's own (spec 004) | 77.1 (71.2–82.5) |
+| `modernbert-base+cw+s2+rules4` | chart note | ModernBERT fine-tuned on the synthetic training notes, class-weighted, then the stage 4 rule | Model: ModernBERT ([model inventory](model_inventory.md)); fine-tuning recipe is this repo's own (spec 002) | 91.0 (86.4–94.6) |
+| `fusion_tfidf_rad+rules4` | chart note + X-ray reading | Word counts plus bone-loss features, logistic regression, then the stage 4 rule | this repo's own | 88.2 (83.7–92.8) |
+| `tfidf_logreg+rules4` | chart note | Word counts (TF-IDF) and logistic regression, then the stage 4 rule | this repo's own standard baseline | 88.7 (84.2–93.2) |
+| `llama-3.3-70b-instruct` | chart note | Asked for the status with no training on these notes, through Databricks | Model: Llama 3.3 70B ([model inventory](model_inventory.md)); prompt is this repo's own (spec 017) | 84.6 (79.2–89.6) |
+| `medgemma-1.5-4b-it+rules4` | chart note | MedGemma asked for the status with no training on these notes, then the stage 4 rule | Model: MedGemma, Sellergren et al. 2025 and Google's model card [[22, 23]](#sources); prompt is this repo's own (spec 004) | 80.1 (74.2–85.1) |
 
 **Stage 4 rule (`+rules4`)**: when the keyword rules read stage 4, that replaces the model's answer, because the
 trained models saw few stage 4 notes. This repo's own.
