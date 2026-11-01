@@ -5,7 +5,7 @@
     python scripts/55_build_tasks.py --sample 3
     python scripts/55_build_tasks.py --graphs        # also data/tasks/graphs/<instance_id>.json (US4, T009)
     python scripts/55_build_tasks.py --snapshots 2   # also the first N snapshots/<instance_id>.tgz (US4, T008;
-                                                     # each holds the whole history to its base, ~90 MB)
+                                                     # one commit of the base's files, no history, name redacted, #435)
 
 For each candidate in data/tasks/task_manifest.csv: `base_commit` is the parent of a squash or direct commit, or
 the PR's merge base for a merge commit (recorded in the manifest as `base_commit_source_code`); the diff from
@@ -171,8 +171,9 @@ def write_snapshots(rows: list[dict], limit: int) -> None:
         info = tg.snapshot(REPO_ROOT, r["base_commit"], SNAPSHOTS / f"{r['instance_id']}.tgz",
                            work_dir=SNAPSHOTS / "_work")
         out.append({"instance_id": r["instance_id"], **info})
-        print(f"  snapshot {r['instance_id']}: {info['commit_count']} commits, {info['size_bytes'] / 1e6:.0f} MB, "
-              f"head {'= base' if info['snapshot_head_sha'] == info['base_commit'] else 'differs (signatures dropped)'}")
+        print(f"  snapshot {r['instance_id']}: one commit, {info['size_bytes'] / 1e6:.1f} MB, head "
+              f"{info['snapshot_head_sha'][:12]} (base {info['base_commit'][:12]}), "
+              f"{len([x for x in info['redacted_paths'].split(';') if x])} files redacted")
     shutil.rmtree(SNAPSHOTS / "_work", ignore_errors=True)
     new = pd.DataFrame(out)
     if SNAPSHOT_INDEX.exists():   # keyed by instance_id: re-runs replace their own rows
@@ -208,23 +209,30 @@ def main() -> int:
         if reason:
             excluded.append({"instance_id": row["instance_id"], "tier_code": row["tier_code"], "reason_text": reason})
             continue
-        rows.append(tm.task_row(row["instance_id"], REPO, base, text_for(row, items), split))
+        task = tm.task_row(row["instance_id"], REPO, base, text_for(row, items), split)
+        reason = tm.org_exclusion_reason(task)
+        if reason:   # CLAUDE.md: a published task never carries the organisation name (#435)
+            excluded.append({"instance_id": row["instance_id"], "tier_code": row["tier_code"], "reason_text": reason})
+            continue
+        rows.append(task)
 
     rows.sort(key=lambda r: r["instance_id"])
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text("".join(json.dumps(r) + "\n" for r in rows))   # overwritten whole: re-runnable
     pd.DataFrame(excluded, columns=["instance_id", "tier_code", "reason_text"]) \
         .sort_values("instance_id").to_csv(EXCLUDED, index=False)
-    clean = [r for r in rows if tm.redact(json.dumps(r)) == json.dumps(r)]   # sample never carries the name
-    sample = sorted(clean, key=lambda r: len(r["patch"]) + len(r["test_patch"]))[: a.sample]
+    leaked = [r["instance_id"] for r in rows if tm.names_org(json.dumps(r))]
+    if leaked:   # statements and hints are redacted and naming rows excluded above, so this is a bug (#435)
+        raise RuntimeError(f"{len(leaked)} rows still name the organisation CLAUDE.md forbids: {leaked[:5]}")
+    sample = sorted(rows, key=lambda r: len(r["patch"]) + len(r["test_patch"]))[: a.sample]
     SAMPLE.write_text("".join(json.dumps(r) + "\n" for r in sorted(sample, key=lambda r: r["instance_id"])))
 
     tiers = manifest.set_index("instance_id")["tier_code"]
     counts = pd.Series([tiers[r["instance_id"]] for r in rows]).value_counts().sort_index()
     print(f"{len(rows)} ungated rows -> {OUT.relative_to(REPO_ROOT)} ({OUT.stat().st_size / 1e6:.1f} MB; "
           + ", ".join(f"tier {t} {n}" for t, n in counts.items()) + f"); {len(excluded)} excluded -> "
-          f"{EXCLUDED.relative_to(REPO_ROOT)}; {len(rows) - len(clean)} rows name the organisation in a patch "
-          f"(redact before publishing); sample {len(sample)} -> {SAMPLE.relative_to(REPO_ROOT)}")
+          f"{EXCLUDED.relative_to(REPO_ROOT)} (organisation name: {sum('#435' in e['reason_text'] for e in excluded)});"
+          f" sample {len(sample)} -> {SAMPLE.relative_to(REPO_ROOT)}")
     print("gates NOT run (T007): needs `swegemma eval --skip-agent-patch`; rows are candidates, not verified tasks")
     if a.graphs:
         write_graphs(rows)

@@ -50,7 +50,7 @@ written only if, in the competition's sandbox image, the tests fail on `base_com
 files the grader strips (`conftest.py`, `pytest.ini`, `pyproject.toml`, test files) are excluded and listed.
 
 ### US4 - Snapshots, graphs, embeddings, wheels (P2) #355
-Snapshot: `git fast-export` to `base_commit` into a fresh repo on `main`, as a `.tgz`. Graph: an AST walk
+Snapshot: the files at `base_commit` as one commit in a fresh repo on `main`, as a `.tgz`, with no history, so no old commit message comes along; text files that name the organisation CLAUDE.md forbids have it replaced with `[org]`, like the statements, and a task whose patch names it is left out (#435). Graph: an AST walk
 over the package into NetworkX node-link JSON with the dataset's keys. Embeddings: one 256-float array per
 node from a named open model (EmbeddingGemma at 256 dimensions), with parity to the competition's unnamed
 model stated as unverified. Wheels: the repo's dependencies for the Python 3.13 sandbox.

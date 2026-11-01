@@ -1,7 +1,8 @@
 """Snapshots and code graphs for the task set (spec 028, US4, #355).
 
-    snapshot     the history up to `base_commit`, by `git fast-export`, imported into a fresh repo on `main`,
-                 as a `.tgz` (nothing after the base can leak through `git log`)
+    snapshot     the files at `base_commit` as one commit in a fresh repo on `main`, as a `.tgz`: no history, so
+                 nothing after the base and no old commit message can leak through `git log`; the organisation
+                 name CLAUDE.md forbids is redacted in the few text files that carried it (#435)
     build_graph  an AST walk over the package into NetworkX node-link JSON with the competition's keys:
                  directed multigraph; nodes `id` (qualified symbol) / `name` (= id) / `text` (the def's source);
                  edges `source` / `target` / `type` ("calls") / `key` (parallel-edge index)
@@ -14,12 +15,14 @@ starter notebook's `<repo>;...`) and the tgz layout (one `workspace/` folder) ar
 from __future__ import annotations
 
 import ast
+import io
 import os
 import shutil
 import subprocess
 import tarfile
 from pathlib import Path
 
+from . import task_mine  # one definition of the organisation name and its redaction
 from .telemetry import traced
 
 
@@ -146,38 +149,89 @@ def _git(cwd: Path, *args: str, stdin: bytes | None = None) -> bytes:
     return subprocess.run(["git", *args], cwd=cwd, input=stdin, capture_output=True, check=True).stdout
 
 
+SNAPSHOT_AUTHOR = ("task-set", "task-set@invalid")
+
+
+def _decode(data: bytes) -> str:
+    """Bytes as text that encodes back to the same bytes (invalid UTF-8 kept via surrogateescape)."""
+    return data.decode("utf-8", errors="surrogateescape")
+
+
+def _text_files(repo: Path, commit: str) -> dict[str, bytes]:
+    """path -> contents of every text file at `commit` (binary: a NUL in the first 8 KB, as the repo's tests)."""
+    out = {}
+    with tarfile.open(fileobj=io.BytesIO(_git(repo, "archive", "--format=tar", commit))) as t:
+        for m in t.getmembers():
+            if m.isfile():
+                data = t.extractfile(m).read()
+                if b"\0" not in data[:8192]:
+                    out[m.name] = data
+    return out
+
+
+@traced
+def files_naming_org(repo: Path, commit: str) -> list[str]:
+    """Paths of text files at `commit` that name the organisation CLAUDE.md forbids. One definition of the name,
+    `task_mine.names_org`, so finding and redacting always agree (#435)."""
+    return sorted(p for p, data in _text_files(repo, commit).items() if task_mine.names_org(_decode(data)))
+
+
+def _blobs(cwd: Path, rev: str) -> dict[str, str]:
+    """path -> "<mode> <blob SHA>" for every file at `rev`, so a lost executable bit counts as a change."""
+    out = _git(cwd, "ls-tree", "-r", "-z", rev).decode("utf-8", errors="surrogateescape")
+    blobs = {}
+    for e in filter(None, out.split("\0")):
+        meta, path = e.split("\t", 1)
+        mode, _, sha = meta.split()
+        blobs[path] = f"{mode} {sha}"
+    return blobs
+
+
 @traced
 def snapshot(repo: Path, base_commit: str, out_tgz: Path, work_dir: Path, arcname: str = "workspace") -> dict:
-    """`git fast-export` of the history up to `base_commit`, imported into a fresh repo on `main`, packed as a
-    `.tgz` with one `<arcname>/` folder. Signed commits keep their SHAs only where git supports
-    `--signed-commits=verbatim` (2.46+); otherwise signatures are dropped and the SHAs change, which is why the
-    snapshot's own head is returned. A temporary ref in the source repo is removed whatever happens."""
-    ref = f"refs/tasksnap/{os.getpid()}"
-    _git(repo, "update-ref", ref, base_commit)
-    try:
-        base = ["fast-export", "--signed-tags=strip", f"--refspec={ref}:refs/heads/main", ref]
-        try:
-            stream = _git(repo, *base[:1], "--signed-commits=verbatim", *base[1:])
-        except subprocess.CalledProcessError:
-            stream = _git(repo, *base)
-    finally:
-        _git(repo, "update-ref", "-d", ref)
+    """The files at `base_commit` as one commit in a fresh repo on `main`, packed as a `.tgz` with one
+    `<arcname>/` folder. No history: earlier commit messages and files stay behind. Text files that name the
+    organisation CLAUDE.md forbids have the name replaced with `[org]`, as the statements and hints are, byte for
+    byte elsewhere (line endings and non-UTF-8 bytes kept); every other file is the base's, mode and content
+    (checked), and the redacted paths are returned (#435). The commit's author, date (the base's committer date)
+    and message ("Snapshot of <base_commit>") are fixed, so a rebuild gives the same head SHA; it differs from
+    `base_commit`, which is why the head is returned. The work folder is removed whatever happens."""
     dest = work_dir / arcname
     if dest.exists():
         shutil.rmtree(dest)
-    dest.mkdir(parents=True)
-    _git(dest, "init", "-q", "-b", "main")
-    _git(dest, "fast-import", "--quiet", stdin=stream)
-    _git(dest, "checkout", "-q", "-f", "main")
-    head = _git(dest, "rev-parse", "HEAD").decode().strip()
-    tree = _git(dest, "rev-parse", "HEAD^{tree}").decode().strip()
-    if tree != _git(repo, "rev-parse", f"{base_commit}^{{tree}}").decode().strip():
-        raise RuntimeError(f"snapshot tree differs from {base_commit}'s")   # the files must be the base's exactly
-    count = int(_git(dest, "rev-list", "--count", "--all").decode().strip())
-    _git(dest, "gc", "-q", "--prune=now")
-    out_tgz.parent.mkdir(parents=True, exist_ok=True)
-    with tarfile.open(out_tgz, "w:gz") as t:
-        t.add(dest, arcname=arcname)
-    shutil.rmtree(dest)
+    try:
+        dest.mkdir(parents=True)
+        with tarfile.open(fileobj=io.BytesIO(_git(repo, "archive", "--format=tar", base_commit))) as t:
+            t.extractall(dest, filter="tar")
+        named = files_naming_org(repo, base_commit)
+        for rel in named:
+            f = dest / rel
+            f.write_bytes(task_mine.redact(_decode(f.read_bytes())).encode("utf-8", errors="surrogateescape"))
+        when = _git(repo, "show", "-s", "--format=%cI", base_commit).decode().strip()
+        env = {**os.environ, "GIT_AUTHOR_NAME": SNAPSHOT_AUTHOR[0], "GIT_AUTHOR_EMAIL": SNAPSHOT_AUTHOR[1],
+               "GIT_COMMITTER_NAME": SNAPSHOT_AUTHOR[0], "GIT_COMMITTER_EMAIL": SNAPSHOT_AUTHOR[1],
+               "GIT_AUTHOR_DATE": when, "GIT_COMMITTER_DATE": when}
+        _git(dest, "init", "-q", "-b", "main")
+        _git(dest, "-c", "core.autocrlf=false", "add", "-A", "-f")
+        subprocess.run(["git", "-c", "commit.gpgsign=false", "commit", "-q", "--no-verify", "-m",
+                        f"Snapshot of {base_commit}"], cwd=dest, env=env, check=True, capture_output=True)
+        head = _git(dest, "rev-parse", "HEAD").decode().strip()
+        base_blobs, snap_blobs = _blobs(repo, base_commit), _blobs(dest, "HEAD")
+        changed = sorted(p for p in base_blobs.keys() | snap_blobs.keys() if base_blobs.get(p) != snap_blobs.get(p))
+        if changed != named:   # only the redacted files may differ from the base, and nothing may be added or lost
+            raise RuntimeError(f"snapshot differs from {base_commit} beyond the redacted files: {changed[:5]}")
+        if files_naming_org(dest, "HEAD"):
+            raise RuntimeError(f"snapshot of {base_commit} still names the organisation CLAUDE.md forbids")
+        count = int(_git(dest, "rev-list", "--count", "--all").decode().strip())
+        tree = _git(dest, "rev-parse", "HEAD^{tree}").decode().strip()
+        _git(dest, "gc", "-q", "--prune=now")
+        out_tgz.parent.mkdir(parents=True, exist_ok=True)
+        with tarfile.open(out_tgz, "w:gz") as t:
+            t.add(dest, arcname=arcname)
+    except BaseException:
+        out_tgz.unlink(missing_ok=True)
+        raise
+    finally:
+        shutil.rmtree(dest, ignore_errors=True)
     return {"base_commit": base_commit, "snapshot_head_sha": head, "tree_sha": tree, "commit_count": count,
-            "size_bytes": out_tgz.stat().st_size}
+            "redacted_paths": ";".join(named), "size_bytes": out_tgz.stat().st_size}
