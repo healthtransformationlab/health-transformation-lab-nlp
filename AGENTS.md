@@ -184,10 +184,9 @@ A SEV2 that fires every week for the same cause gets its cause fixed or its leve
 ## SQL and data names
 
 New tables and views, in Unity Catalog or Postgres, follow these, and the gold tables do since spec 018
-(adapted from jcbowyer/DE_Assessment). OMOP CDM tables and columns keep their official names. Older objects that
-don't yet (the Postgres `perio_chart` view, `labeled_notes`, `benchmark_results`, `encoder_gpu_predictions`) change
-when they're next touched. `python/tests/test_sql_conventions.py` checks the gold tables declared in
-`diagrams/_build/gold_model.py`.
+(adapted from jcbowyer/DE_Assessment; the Benchmark job's tables since spec 031). OMOP CDM tables and columns keep
+their official names. The Postgres `perio_chart` view doesn't yet, and changes when it's next touched.
+`python/tests/test_sql_conventions.py` checks the gold tables declared in `diagrams/_build/gold_model.py`.
 
 - **Style:** lowercase snake_case names, no quoted or mixed-case identifiers. Keywords lowercase in new SQL; older
   files and the dashboard queries are uppercase, so keep one case per file. Three-part names
@@ -217,6 +216,7 @@ when they're next touched. `python/tests/test_sql_conventions.py` checks the gol
 | `_rate` | a count per unit, the unit named before it | `double` | `leaked_phi_per_1k_note_rate` |
 | `_coef` | a coefficient such as Cohen's kappa, −1 to 1 | `double` | `kappa_coef` |
 | `_seconds` | a duration | `double` | `latency_seconds` |
+| `_mm` | a length in millimetres | `double` | `max_probing_depth_mm` |
 | `_usd` | money, US dollars (`double`: per-call costs are fractions of a cent) | `double` | `cost_usd` |
 | `_num` | a number that isn't a count or a measure: a position, a year | `bigint` | |
 | `_url` | a link | `string` | `run_url` |

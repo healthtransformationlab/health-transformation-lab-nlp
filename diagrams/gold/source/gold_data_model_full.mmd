@@ -18,6 +18,7 @@ erDiagram
     fact_record_mismatch }o..o{ dq_mismatch_rule : "rule_name (scores are per rule and clinic: join on clinic_code too)"
     fact_pipeline_run ||--o| fact_pipeline_signal : "run_id"
     fact_pipeline_run ||--o| fact_remediation_decision : "run_id (failed runs)"
+    dim_study_note }o..o{ benchmark_metric : "run_id (its test split)"
     review_key {
         bigint visit_id PK "review chart (240)"
         string truth_status "the generator's truth"
@@ -416,4 +417,32 @@ erDiagram
         string doctor_run_id "the Pipeline doctor run that wrote the row (batch key)"
         timestamp loaded_ts "when it wrote it"
         string doctor_git_commit_sha "commit the doctor was deployed from"
+    }
+    dim_study_note {
+        bigint note_id PK "OMOP note_id (= visit_occurrence_id)"
+        bigint person_id "OMOP person_id; the split is by person"
+        string note_text "the synthetic SOAP note"
+        string truth_status_code "the generator's label, one of six"
+        double max_probing_depth_mm "deepest probing depth on the chart"
+        double bop_pct "sites bleeding on probing"
+        double max_cal_mm "greatest clinical attachment loss"
+        double rbl_pct "radiographic bone loss"
+        bigint perio_lost_tooth_count "teeth lost to periodontitis"
+        string split_code "train · test"
+        string run_id "Databricks job run that built it"
+        timestamp run_ts "when that run wrote it"
+        string git_commit_sha "commit the job was deployed from"
+    }
+    benchmark_metric {
+        string model_run_id PK "one model fit (eval/score.py run_id)"
+        string method_name "method (rung), e.g. tfidf_logreg"
+        string language_code "python · r"
+        string metric_code PK "macro_f1 · f1 · sensitivity · specificity · ppv · npv · auroc"
+        string class_status_code PK "the status an f1 row is for; empty for the others"
+        double metric_ratio "the metric's value, 0 to 1; null when undefined"
+        bigint test_note_count "notes in the test split"
+        timestamp scored_ts "when the fit was scored"
+        string run_id PK "Databricks job run: the batch key"
+        timestamp run_ts "when that run wrote it"
+        string git_commit_sha "commit the job was deployed from"
     }

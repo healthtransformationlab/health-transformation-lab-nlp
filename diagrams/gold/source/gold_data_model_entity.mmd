@@ -18,6 +18,7 @@ erDiagram
     fact_record_mismatch }o..o{ dq_mismatch_rule : "rule_name (scores are per rule and clinic: join on clinic_code too)"
     fact_pipeline_run ||--o| fact_pipeline_signal : "run_id"
     fact_pipeline_run ||--o| fact_remediation_decision : "run_id (failed runs)"
+    dim_study_note }o..o{ benchmark_metric : "run_id (its test split)"
     review_key
     dim_result_file
     fact_prediction
@@ -46,3 +47,5 @@ erDiagram
     fact_pipeline_run
     fact_pipeline_signal
     fact_remediation_decision
+    dim_study_note
+    benchmark_metric

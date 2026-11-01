@@ -160,9 +160,24 @@ TABLES |= {
         "decided_action_code", "decided_by_name", "decided_ts", "is_match", *_DOCTOR_PROV)},
 }
 
+# spec 031: the Benchmark job's tables (01_run_benchmark.py). score()'s own run_id is one model fit (model_run_id);
+# run_id is the Databricks job run, the batch key.
+_RUN = {"run_id": "run_id", "run_ts": "run_ts", "git_commit": "git_commit_sha"}
+TABLES |= {
+    "dim_study_note": {"note_id": "note_id", "person_id": "person_id", "note_text": "note_text",
+                       "label": "truth_status_code", "max_probing_depth_mm": "max_probing_depth_mm",
+                       "bop_pct": "bop_pct", "max_cal_mm": "max_cal_mm", "rbl_pct": "rbl_pct",
+                       "teeth_lost_perio": "perio_lost_tooth_count", "split": "split_code", **_RUN},
+    "benchmark_metric": {"job_run_id": "run_id", "run_ts": "run_ts", "git_commit": "git_commit_sha",
+                         "run_id": "model_run_id", "model_id": "method_name", "language": "language_code",
+                         "metric": "metric_code", "class": "class_status_code", "value": "metric_ratio",
+                         "n_test": "test_note_count", "timestamp": "scored_ts"},
+}
+
 RENAMED = {"result_files": "dim_result_file", "ai_predictions": "fact_prediction", "llm_reader_runs": "fact_llm_call",
            "chart_answers": "fact_chart_answer", "judgments": "fact_judge_call", "judge_metrics": "judge_metric",
-           "judge_agreement": "judge_agreement", "judge_run": "judge_cost", "deid_scores": "deid_score"}
+           "judge_agreement": "judge_agreement", "judge_run": "judge_cost", "deid_scores": "deid_score",
+           "labeled_notes": "dim_study_note", "benchmark_results": "benchmark_metric"}
 # judge_agreement keeps its name: the migration renames its columns in place
 
 # An old judgments table was written by the scorecard or, if it ran last, by the corpus judge (02): its columns say which.
@@ -174,7 +189,8 @@ MERGE_KEYS = {"dim_result_file": ("file_sha256",),
               "fact_prediction": ("source_code", "run_id", "method_name", "file_sha256", "visit_id"),
               "fact_llm_call": ("source_code", "run_id", "method_name", "file_sha256", "visit_id"),
               "fact_judge_call": ("visit_id", "call_kind_code", "answer_status_code", "endpoint_name",
-                                  "prompt_version_code")}
+                                  "prompt_version_code"),
+              "benchmark_metric": ("model_run_id", "metric_code", "class_status_code")}
 
 
 @traced
@@ -232,7 +248,8 @@ def legacy_plan(legacy: dict[str, list[str]], current: dict[str, list[str]]) -> 
     """(action, legacy table, current table) for each table in an old gold schema (legacy: name -> columns) that
     the current schema's tables (current) take over, old-named or already renamed: copy (none there yet), merge
     (add the rows whose MERGE_KEYS it lacks), stale (rebuilt every run from committed files) or fail (the third
-    item is then the unknown columns). Tables the migration doesn't know (OMOP, study tables) are left out."""
+    item is then the unknown columns). Tables the migration doesn't know (OMOP) are left out; the study tables
+    (spec 031) are carried: labeled_notes is stale once dim_study_note exists, benchmark_results merges."""
     plan = []
     for name, cols in legacy.items():
         if name not in RENAMED and name not in TABLES:

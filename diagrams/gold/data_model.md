@@ -27,6 +27,7 @@ erDiagram
     fact_record_mismatch }o..o{ dq_mismatch_rule : "rule_name (scores are per rule and clinic: join on clinic_code too)"
     fact_pipeline_run ||--o| fact_pipeline_signal : "run_id"
     fact_pipeline_run ||--o| fact_remediation_decision : "run_id (failed runs)"
+    dim_study_note }o..o{ benchmark_metric : "run_id (its test split)"
     review_key
     dim_result_file
     fact_prediction
@@ -55,6 +56,8 @@ erDiagram
     fact_pipeline_run
     fact_pipeline_signal
     fact_remediation_decision
+    dim_study_note
+    benchmark_metric
 ```
 
 ## Every column (full)
@@ -82,6 +85,7 @@ erDiagram
     fact_record_mismatch }o..o{ dq_mismatch_rule : "rule_name (scores are per rule and clinic: join on clinic_code too)"
     fact_pipeline_run ||--o| fact_pipeline_signal : "run_id"
     fact_pipeline_run ||--o| fact_remediation_decision : "run_id (failed runs)"
+    dim_study_note }o..o{ benchmark_metric : "run_id (its test split)"
     review_key {
         bigint visit_id PK "review chart (240)"
         string truth_status "the generator's truth"
@@ -480,6 +484,34 @@ erDiagram
         string doctor_run_id "the Pipeline doctor run that wrote the row (batch key)"
         timestamp loaded_ts "when it wrote it"
         string doctor_git_commit_sha "commit the doctor was deployed from"
+    }
+    dim_study_note {
+        bigint note_id PK "OMOP note_id (= visit_occurrence_id)"
+        bigint person_id "OMOP person_id; the split is by person"
+        string note_text "the synthetic SOAP note"
+        string truth_status_code "the generator's label, one of six"
+        double max_probing_depth_mm "deepest probing depth on the chart"
+        double bop_pct "sites bleeding on probing"
+        double max_cal_mm "greatest clinical attachment loss"
+        double rbl_pct "radiographic bone loss"
+        bigint perio_lost_tooth_count "teeth lost to periodontitis"
+        string split_code "train · test"
+        string run_id "Databricks job run that built it"
+        timestamp run_ts "when that run wrote it"
+        string git_commit_sha "commit the job was deployed from"
+    }
+    benchmark_metric {
+        string model_run_id PK "one model fit (eval/score.py run_id)"
+        string method_name "method (rung), e.g. tfidf_logreg"
+        string language_code "python · r"
+        string metric_code PK "macro_f1 · f1 · sensitivity · specificity · ppv · npv · auroc"
+        string class_status_code PK "the status an f1 row is for; empty for the others"
+        double metric_ratio "the metric's value, 0 to 1; null when undefined"
+        bigint test_note_count "notes in the test split"
+        timestamp scored_ts "when the fit was scored"
+        string run_id PK "Databricks job run: the batch key"
+        timestamp run_ts "when that run wrote it"
+        string git_commit_sha "commit the job was deployed from"
     }
 ```
 
@@ -1021,3 +1053,41 @@ One per failed run: the doctor's recommendation and, once given, the owner's dec
 |  | `doctor_run_id` | string | the Pipeline doctor run that wrote the row (batch key) |
 |  | `loaded_ts` | timestamp | when it wrote it |
 |  | `doctor_git_commit_sha` | string | commit the doctor was deployed from |
+
+### `dim_study_note`
+
+One per synthetic study note, with its generator label and split. Written by: Benchmark: overwrite.
+
+| Key | Column | Type | Description |
+|---|---|---|---|
+| PK | `note_id` | bigint | OMOP note_id (= visit_occurrence_id) |
+|  | `person_id` | bigint | OMOP person_id; the split is by person |
+|  | `note_text` | string | the synthetic SOAP note |
+|  | `truth_status_code` | string | the generator's label, one of six |
+|  | `max_probing_depth_mm` | double | deepest probing depth on the chart |
+|  | `bop_pct` | double | sites bleeding on probing |
+|  | `max_cal_mm` | double | greatest clinical attachment loss |
+|  | `rbl_pct` | double | radiographic bone loss |
+|  | `perio_lost_tooth_count` | bigint | teeth lost to periodontitis |
+|  | `split_code` | string | train · test |
+|  | `run_id` | string | Databricks job run that built it |
+|  | `run_ts` | timestamp | when that run wrote it |
+|  | `git_commit_sha` | string | commit the job was deployed from |
+
+### `benchmark_metric`
+
+One per job run, model fit, metric and class (class empty for overall metrics). Written by: Benchmark: replace by run_id (delete-then-append).
+
+| Key | Column | Type | Description |
+|---|---|---|---|
+| PK | `model_run_id` | string | one model fit (eval/score.py run_id) |
+|  | `method_name` | string | method (rung), e.g. tfidf_logreg |
+|  | `language_code` | string | python · r |
+| PK | `metric_code` | string | macro_f1 · f1 · sensitivity · specificity · ppv · npv · auroc |
+| PK | `class_status_code` | string | the status an f1 row is for; empty for the others |
+|  | `metric_ratio` | double | the metric's value, 0 to 1; null when undefined |
+|  | `test_note_count` | bigint | notes in the test split |
+|  | `scored_ts` | timestamp | when the fit was scored |
+| PK | `run_id` | string | Databricks job run: the batch key |
+|  | `run_ts` | timestamp | when that run wrote it |
+|  | `git_commit_sha` | string | commit the job was deployed from |
