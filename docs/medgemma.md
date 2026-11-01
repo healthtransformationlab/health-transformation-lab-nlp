@@ -122,6 +122,30 @@ Where the note states something else (a copied-forward or miscoded record), the 
 `note_stated_status` shows the note. The reader returns no pocket depths or bleeding, so they have no reference
 column. Synthetic truth, not a clinician's reading.
 
+**Accuracy per field (#132).** `python scripts/54_medgemma_field_accuracy.py` scores each committed MedGemma run
+against those reference answers, one row per field, and writes `data/datasets/ladder/medgemma_field_accuracy.csv`
+(R twin `r/R/17_spec004.R`, checked by the parity test). It logs `field_accuracy_<field>` and `field_n_<field>` to
+MLflow, and `11_ai_predict.py` logs the same metrics after a complete reader run. How each field is scored:
+
+- **status**: the rung's answer after any fallback to note_rules, on all 240 visits. This is the headline accuracy above.
+- **grade** and **extent**: only the 156 visits whose truth is periodontitis, and only answers that passed the
+  quote gate. note_rules reads neither field, so a fallback row counts as wrong. A grade can be right while the stage is wrong.
+
+| Run | Field | n | Accuracy (95% Wilson CI) |
+|---|---|---|---|
+| `medgemma-4b-it` | status | 240 | 0.779 (0.723-0.827) |
+| | grade | 156 | 0.795 (0.725-0.851) |
+| | extent | 156 | 0.679 (0.603-0.748) |
+| `medgemma-1.5-4b-it` | status | 240 | 0.758 (0.700-0.808) |
+| | grade | 156 | 0.801 (0.732-0.856) |
+| | extent | 156 | 0.833 (0.767-0.884) |
+
+So the two models read grade about equally well. On extent, 1.5 does better than 4B and their intervals don't
+overlap: 4B called 26 of the 65 localized cases generalized (1.5 called 6). These are measurements on synthetic notes against
+the generator's truth, not evidence about either model on real records. The simulated dry run
+(`simulated_medgemma_field_accuracy.csv`) has no grade or extent at all, because the placeholder reader returns
+none.
+
 Per-note details (gate pass, fallback, tokens, latency) go to
 `data/datasets/llm_details_<rung><tag>.csv`; the tag (`+lora`, `+k<shots>`, `+terse`) keeps
 zero-shot, few-shot and fine-tuned runs apart. The simulated dry run's numbers come from

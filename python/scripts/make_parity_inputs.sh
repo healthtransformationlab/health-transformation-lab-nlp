@@ -13,6 +13,9 @@ python scripts/13_reliability.py --simulated --n-boot 200
 python scripts/28_ladder_vs_truth.py --n-boot 200
 python scripts/11_ai_predict.py --rung medgemma-1.5-4b-it --backend simulated
 python scripts/29_medgemma_vs_bert.py --simulated --n-boot 200   # needs committed encoder predictions
+python scripts/53_reference_answers.py                 # spec 004 US5: reference answers per reader field
+python scripts/54_medgemma_field_accuracy.py           # spec 004 US6: per field, the committed MedGemma runs
+python scripts/54_medgemma_field_accuracy.py --simulated
 python scripts/19_prevalence.py
 python scripts/20_data_quality.py
 python scripts/45_case_profiles.py      # spec 026: record-mismatch rules and scores (read by the R parity test)
