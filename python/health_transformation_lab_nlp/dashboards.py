@@ -456,7 +456,118 @@ def lab_grader() -> dict:
                        "layout": layout}]}
 
 
-DASHBOARDS = {"dq_grader": dq_grader, "lab_grader": lab_grader}
+# ---------------------------------------------------------------- Pipeline doctor (spec 027 US5)
+
+SCHEMA_STATE = ("CASE WHEN is_schema_changed THEN 'changed' WHEN NOT is_schema_changed THEN 'same' "
+                "ELSE 'unknown' END")
+
+# gold names (AGENTS.md "SQL and data names"); the output aliases are the widgets' field names
+DOCTOR_SQL = {
+    "tiles": """
+SELECT COUNT(DISTINCT pipeline_name) AS pipelines, COUNT(*) AS runs,
+  SUM(CASE WHEN run_status_code <> 'ok' THEN 1 ELSE 0 END) AS failed_runs,
+  (SELECT COUNT(*) FROM {gold}.fact_remediation_decision WHERE decided_action_code IS NULL) AS awaiting_decision
+FROM {gold}.fact_pipeline_signal""",
+    "latest_signals": f"""
+WITH ranked AS (
+  SELECT pipeline_name, run_id, started_ts, run_status_code, freshness_seconds, sla_seconds, volume_ratio,
+    is_schema_changed, quality_ratio, duration_ratio, cost_ratio,
+    ROW_NUMBER() OVER (PARTITION BY pipeline_name ORDER BY started_ts DESC) AS run_rank
+  FROM {{gold}}.fact_pipeline_signal)
+SELECT pipeline_name AS pipeline, run_id, started_ts AS started, run_status_code AS status,
+  ROUND(freshness_seconds / 3600, 1) AS freshness_hours, ROUND(sla_seconds / 3600, 1) AS sla_hours,
+  ROUND(volume_ratio, 2) AS volume_ratio, {SCHEMA_STATE} AS schema_state,
+  ROUND(100 * quality_ratio, 1) AS quality_pct, ROUND(duration_ratio, 2) AS duration_ratio,
+  ROUND(cost_ratio, 2) AS cost_ratio
+FROM ranked
+WHERE run_rank = 1
+ORDER BY pipeline_name""",
+    "runs_by_status": """
+SELECT pipeline_name AS pipeline, run_status_code AS status, COUNT(*) AS runs
+FROM {gold}.fact_pipeline_signal
+GROUP BY pipeline_name, run_status_code""",
+    "signal_history": f"""
+SELECT pipeline_name AS pipeline, run_id, started_ts AS started, run_status_code AS status,
+  ROUND(freshness_seconds / 3600, 1) AS freshness_hours, ROUND(volume_ratio, 2) AS volume_ratio,
+  {SCHEMA_STATE} AS schema_state, ROUND(100 * quality_ratio, 1) AS quality_pct,
+  ROUND(duration_ratio, 2) AS duration_ratio, ROUND(cost_ratio, 2) AS cost_ratio
+FROM {{gold}}.fact_pipeline_signal
+ORDER BY started_ts DESC""",
+    "decisions": """
+SELECT pipeline_name AS pipeline, run_id, run_started_ts AS started, failure_class_code AS failure_class,
+  rule_name AS rule, recommended_action_code AS recommended, severity_code AS severity, run_mode_code AS run_mode,
+  decided_action_code AS decided,
+  CASE WHEN decided_action_code IS NULL THEN 'awaiting decision' WHEN is_match THEN 'matched'
+    ELSE 'overridden' END AS match_state,
+  impact_text AS impact
+FROM {gold}.fact_remediation_decision
+ORDER BY run_started_ts DESC""",
+    "by_class": """
+SELECT failure_class_code AS failure_class, severity_code AS severity, COUNT(*) AS failures,
+  SUM(CASE WHEN decided_action_code IS NOT NULL THEN 1 ELSE 0 END) AS decided,
+  SUM(CASE WHEN is_match THEN 1 ELSE 0 END) AS matched
+FROM {gold}.fact_remediation_decision
+GROUP BY failure_class_code, severity_code
+ORDER BY failures DESC, failure_class_code""",
+}
+
+DOCTOR_BANNER = """## Pipeline doctor: what ran, what failed, and what it recommends
+Each of this bundle's jobs, from the job run timeline: six signals per run against the pipeline's runs before
+it, and for each failed run a failure class, the first allowed runbook action, its severity and its impact. Run
+metadata only (names, states, times, counts, error types), never note text. The doctor recommends; the owner
+decides (the job's `decisions` parameter) and nothing acts on its own. Empty until the job has run."""
+
+
+@traced
+def doctor_dashboard() -> dict:
+    tiles = [("c_pipelines", "pipelines", "Pipelines", "Bundle jobs with a run in the lookback window."),
+             ("c_runs", "runs", "Runs", "Finished runs in the window."),
+             ("c_failed", "failed_runs", "Failed runs", "Failed or timed out: each has a decision row."),
+             ("c_awaiting", "awaiting_decision", "Awaiting a decision",
+              "Recommendations the owner hasn't decided yet.")]
+    layout = [_text("banner", DOCTOR_BANNER, (0, 0, 6, 3))]
+    layout += [_counter(n, "tiles", f, t, d, (i, 3, 1, 3)) for i, (n, f, t, d) in enumerate(tiles)]
+    layout += [_filter("f_pipeline", "pipeline", ["latest_signals", "signal_history", "decisions"], "Pipeline",
+                       (4, 3, 2, 3)),
+               _text("s_signals", "### Signals, latest run per pipeline", (0, 6, 6, 1)),
+               _table("tb_latest", "latest_signals", [
+                   ("pipeline", "Pipeline"), ("status", "Status"), ("started", "Started"),
+                   ("freshness_hours", "Freshness (h)"), ("sla_hours", "SLA (h)"), ("volume_ratio", "Volume ×"),
+                   ("schema_state", "Schema"), ("quality_pct", "Checks passed (%)"),
+                   ("duration_ratio", "Duration ×"), ("cost_ratio", "Cost ×")],
+                   "Freshness, volume, schema, quality, duration and cost",
+                   "Freshness: hours since the last ok run ended, against the SLA. Volume, duration and cost: this "
+                   "run over the median of the pipeline's last 5 ok runs (1 = usual). Blank = the run table has no "
+                   "count, check or cost for it (the span export isn't set).", (0, 7, 6, 6)),
+               _bar("b_status", "runs_by_status", "pipeline", "runs", "Runs by pipeline and status", "",
+                    (0, 13, 3, 6), color="status", x_title="Pipeline", y_title="Runs"),
+               _table("tb_class", "by_class", [("failure_class", "Failure class"), ("severity", "Severity"),
+                                               ("failures", "Failures"), ("decided", "Decided"),
+                                               ("matched", "Matched the recommendation")],
+                      "Failures by class",
+                      "A reversible class may run on its own only after 5 decisions in a row matched; two misses "
+                      "send it back (ops/runbook.yaml).", (3, 13, 3, 6)),
+               _text("s_decisions", "### Recommendations and decisions", (0, 19, 6, 1)),
+               _table("tb_decisions", "decisions", [
+                   ("pipeline", "Pipeline"), ("run_id", "Run"), ("started", "Started"),
+                   ("failure_class", "Failure class"), ("rule", "Rule"), ("recommended", "Recommended"),
+                   ("severity", "Severity"), ("run_mode", "Mode"), ("decided", "Decided"),
+                   ("match_state", "Match"), ("impact", "Impact")],
+                   "One row per failed run",
+                   "SEV1 and SEV2 reach the owner when first seen; SEV3 and SEV4 wait for the digests.",
+                   (0, 20, 6, 7)),
+               _text("s_history", "### Every run in the window", (0, 27, 6, 1)),
+               _table("tb_history", "signal_history", [
+                   ("pipeline", "Pipeline"), ("run_id", "Run"), ("started", "Started"), ("status", "Status"),
+                   ("freshness_hours", "Freshness (h)"), ("volume_ratio", "Volume ×"), ("schema_state", "Schema"),
+                   ("quality_pct", "Checks passed (%)"), ("duration_ratio", "Duration ×"),
+                   ("cost_ratio", "Cost ×")], "Signals per run, newest first", "", (0, 28, 6, 7))]
+    return {"datasets": [_dataset(n, s) for n, s in DOCTOR_SQL.items()],
+            "pages": [{"name": "pipeline_doctor", "displayName": "Pipeline doctor", "pageType": "PAGE_TYPE_CANVAS",
+                       "layout": layout}]}
+
+
+DASHBOARDS = {"dq_grader": dq_grader, "lab_grader": lab_grader, "pipeline_doctor": doctor_dashboard}
 
 
 # ---------------------------------------------------------------- Genie spaces (spec 019 US5)

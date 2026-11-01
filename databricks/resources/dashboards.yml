@@ -15,3 +15,8 @@ resources:
       display_name: Lab grader
       file_path: ../dashboards/lab_grader.lvdash.json
       warehouse_id: ${var.warehouse_id}
+    # Spec 027 US5: the pipeline doctor's signals and decisions, same builder; empty until the job has run.
+    pipeline_doctor_dashboard:   # the job is pipeline_doctor; bundle keys are unique across resource types
+      display_name: Pipeline doctor
+      file_path: ../dashboards/pipeline_doctor.lvdash.json
+      warehouse_id: ${var.warehouse_id}

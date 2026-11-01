@@ -26,7 +26,29 @@ def con():
         df = gold_names.to_gold(df.assign(git_commit="abc1234", loaded_at=now), name)
         c.register(f"src_{name}", df)
         c.execute(f"CREATE TABLE health_transformation_lab.gold_perio_bench.{name} AS SELECT * FROM src_{name}")
+    for name, df in _doctor_tables(now).items():                                       # spec 027 US5
+        c.register(f"src_{name}", df)
+        c.execute(f"CREATE TABLE health_transformation_lab.gold_perio_bench.{name} AS SELECT * FROM src_{name}")
     return c
+
+
+def _doctor_tables(now):
+    """The pipeline doctor's tables as the job writes them, here from the incident set after the SIMULATED
+    baseline runs (test data only: the job reads the real run timeline)."""
+    from health_transformation_lab_nlp import doctor, doctor_job
+    config, runbook, lineage = doctor.load_config(), doctor.load_runbook(), doctor.load_lineage()
+    incidents = doctor.load_incidents()
+    runs = pd.concat([doctor.baseline_history(config), incidents[doctor.RUN_COLUMNS]], ignore_index=True)
+    sig, dec = doctor_job.diagnose(runs, config, runbook, lineage, since=incidents["started_ts"].min(), now=now)
+    batch = {"doctor_run_id": "1", "loaded_ts": now, "doctor_git_commit_sha": "abc1234"}
+    frames = {"fact_pipeline_run": runs, "fact_pipeline_signal": sig, "fact_remediation_decision": dec}
+    out = {}
+    for n, df in frames.items():
+        df = doctor_job.rows(df, n, **batch)
+        for col in [c for c in df.columns if c.endswith("_ts")]:      # UTC, naive, as Spark's toPandas gives them
+            df[col] = pd.to_datetime(df[col], utc=True).dt.tz_convert(None)
+        out[n] = df.infer_objects()
+    return out
 
 
 @pytest.mark.parametrize("name", sorted(dash.DASHBOARDS))
@@ -314,3 +336,39 @@ def test_filters_keep_the_all_rows_and_say_what_they_narrow():
     assert "blank" in rules_note.lower() and "clinic filter" in rules_note.lower()
     flagged_note = w["tb_flagged"]["spec"]["frame"]["description"]
     assert "Rules failed" in flagged_note and "rule filter" in flagged_note.lower()
+
+
+# ---------------------------------------------------------------- spec 027 US5: the pipeline doctor
+
+def test_every_doctor_dataset_runs_and_returns_rows(con):
+    for ds in _datasets("pipeline_doctor"):
+        assert con.execute("".join(ds["queryLines"])).fetchall(), ds["name"]
+
+
+def test_doctor_dashboard_shows_each_pipelines_latest_signals(con):
+    latest = _run(con, "pipeline_doctor", "latest_signals")
+    assert latest.pipeline.is_unique and len(latest) >= 3
+    for col in ("freshness_hours", "sla_hours", "volume_ratio", "schema_state", "quality_pct", "duration_ratio",
+                "cost_ratio", "status"):
+        assert col in latest.columns, col
+    assert set(latest.schema_state) <= {"changed", "same", "unknown"}
+    signals = _doctor_tables(pd.Timestamp("2026-10-28", tz="UTC"))["fact_pipeline_signal"]
+    last = signals.sort_values("started_ts").groupby("pipeline_name").tail(1).set_index("pipeline_name")
+    for r in latest.itertuples():
+        assert r.run_id == last.loc[r.pipeline, "run_id"]
+
+
+def test_doctor_dashboard_lists_decisions_and_their_classes(con):
+    dec = _run(con, "pipeline_doctor", "decisions")
+    assert {"failure_class", "recommended", "severity", "run_mode", "match_state"} <= set(dec.columns)
+    assert set(dec.match_state) <= {"matched", "overridden", "awaiting decision"}
+    by_class = _run(con, "pipeline_doctor", "by_class")
+    assert by_class.failures.sum() == len(dec)
+
+
+def test_doctor_dashboard_reads_only_the_doctor_tables_and_says_what_it_holds():
+    for ds in _datasets("pipeline_doctor"):
+        tables = set(re.findall(r"gold_perio_bench\.(\w+)", "".join(ds["queryLines"])))
+        assert tables and tables <= {"fact_pipeline_signal", "fact_remediation_decision"}, ds["name"]
+    text = dash.render("pipeline_doctor")
+    assert "never note text" in text and "recommends" in text and "Pipeline doctor" in text

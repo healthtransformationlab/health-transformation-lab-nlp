@@ -48,6 +48,10 @@ DQ_PROV = [C("source_files_text", "string", "the committed CSVs the table is bui
            C("git_commit_sha", "string", "commit the job was deployed from"),
            C("loaded_ts", "timestamp", "when Load results wrote it")]
 
+DOCTOR_PROV = [C("doctor_run_id", "string", "the Pipeline doctor run that wrote the row (batch key)"),
+               C("loaded_ts", "timestamp", "when it wrote it"),
+               C("doctor_git_commit_sha", "string", "commit the doctor was deployed from")]
+
 TABLES = {
     "review_key": Table(
         "file", "One per synthetic review chart (answer_key/review_key.csv, not a table)", "10_build_study.py (seeded)", [
@@ -365,6 +369,64 @@ TABLES = {
             C("run_id", "string", "the grading run"),
             C("is_simulated", "boolean", "true for the simulated sample"),
             *DQ_PROV]),
+    # spec 027 US5: the pipeline doctor (run metadata only, never note text)
+    "fact_pipeline_run": Table(
+        "ops", "One per finished run of a bundle job (step_name job), from system.lakeflow.job_run_timeline and the "
+        "span export", "Pipeline doctor: delete-then-append by run_id", [
+            C("pipeline_name", "string", "the job's key in the bundle (ops/pipeline_config.yaml)", "FK"),
+            C("step_name", "string", "job (the whole run), or a step from the span export"),
+            C("run_id", "string", "Databricks job run id", "PK"),
+            C("started_ts", "timestamp", "run start (UTC)"),
+            C("ended_ts", "timestamp", "run end (UTC)"),
+            C("run_status_code", "string", "ok · failed · timed_out"),
+            C("row_in_count", "bigint", "rows read (span export)"),
+            C("row_out_count", "bigint", "rows written (span export)"),
+            C("schema_sha256", "string", "hash of the output schema (span export)"),
+            C("check_passed_count", "bigint", "data-quality checks passed (span export)"),
+            C("check_failed_count", "bigint", "data-quality checks failed (span export)"),
+            C("error_type_name", "string", "exception type (span export), else the run's termination code"),
+            C("error_text", "string", "first line of the error (span export); never row data"),
+            C("duration_seconds", "double", "run length"),
+            C("cost_usd", "double", "run cost (span export)"),
+            C("git_commit_sha", "string", "commit the pipeline ran (span export)"),
+            C("data_label_code", "string", "synthetic · public · simulated, from the pipeline's config"),
+            *DOCTOR_PROV]),
+    "fact_pipeline_signal": Table(
+        "ops", "One per run in the doctor's lookback window: its six signals against the pipeline's runs before it",
+        "Pipeline doctor: delete-then-append by run_id", [
+            C("pipeline_name", "string", "pipeline", "FK"),
+            C("step_name", "string", "as fact_pipeline_run"),
+            C("run_id", "string", "Databricks job run id", "PK,FK"),
+            C("started_ts", "timestamp", "run start (UTC)"),
+            C("run_status_code", "string", "ok · failed · timed_out"),
+            C("freshness_seconds", "double", "seconds since the pipeline's last ok run ended"),
+            C("sla_seconds", "double", "how stale its output may be (ops/pipeline_config.yaml)"),
+            C("volume_ratio", "double", "rows out / trailing median of the last 5 ok runs"),
+            C("is_schema_changed", "boolean", "schema hash differs from the last ok run; null when unknown"),
+            C("quality_ratio", "double", "share of data-quality checks passed"),
+            C("duration_ratio", "double", "duration / trailing median"),
+            C("cost_ratio", "double", "cost / trailing median"),
+            *DOCTOR_PROV]),
+    "fact_remediation_decision": Table(
+        "ops", "One per failed run: the doctor's recommendation and, once given, the owner's decision",
+        "Pipeline doctor: delete-then-append by run_id, decisions carried forward", [
+            C("pipeline_name", "string", "pipeline", "FK"),
+            C("run_id", "string", "the failed run", "PK,FK"),
+            C("run_started_ts", "timestamp", "when that run started"),
+            C("failure_class_code", "string", "credential_expiry · platform · schema_drift · ... · unknown (ops/runbook.yaml)"),
+            C("rule_name", "string", "the rule that fired (doctor.classify)"),
+            C("recommended_action_code", "string", "first allowed runbook action for the class"),
+            C("is_reversible", "boolean", "the runbook entry is reversible: it can graduate to automatic"),
+            C("severity_code", "string", "SEV1-SEV4 from the runbook"),
+            C("owner_name", "string", "who is told (ops/pipeline_config.yaml)"),
+            C("impact_text", "string", "outputs and consumers one hop down the lineage"),
+            C("notification_text", "string", "templated notification: names and codes, no row data"),
+            C("run_mode_code", "string", "recommend_only · automatic (doctor.graduation on past decisions)"),
+            C("decided_action_code", "string", "the owner's decision (job parameter); null until given"),
+            C("decided_by_name", "string", "who decided"),
+            C("decided_ts", "timestamp", "when the decision was recorded"),
+            C("is_match", "boolean", "decided = recommended; null until decided"),
+            *DOCTOR_PROV]),
     # spec 029 US3 (#371): in health_transformation_lab.gold_opendental_perio, not gold_perio_bench
     "fact_tooth_loss_prediction": Table(
         "tooth", "Schema gold_opendental_perio. One per (synthetic patient, missing or labelled tooth, label set, "
@@ -447,6 +509,8 @@ RELATIONSHIPS = [
     R("fact_visit_evidence", "fact_record_mismatch", ("visit_id",), ("visit_id",), "visit_id"),
     R("fact_record_mismatch", "dq_mismatch_rule", ("rule_name",), ("rule_name",),
       "rule_name (scores are per rule and clinic: join on clinic_code too)", "}o..o{", derived=True),
+    R("fact_pipeline_run", "fact_pipeline_signal", ("run_id",), ("run_id",), "run_id", "||--o|"),
+    R("fact_pipeline_run", "fact_remediation_decision", ("run_id",), ("run_id",), "run_id (failed runs)", "||--o|"),
     R("dim_study_note", "benchmark_metric", ("run_id",), ("run_id",), "run_id (its test split)",
       "}o..o{", derived=True),
 ]
@@ -458,6 +522,7 @@ AREAS = {   # fill, legend label
     "corpus": ("#FDE7F1", "gold · corpus judge (ai_query, notebook 02)"),
     "dq": ("#E1EEF6", "gold · EHR DQ grader (spec 019)"),
     "lab": ("#F6E7DE", "gold · lab grader, simulated sample (spec 019)"),
+    "ops": ("#ECEFD9", "gold · pipeline doctor, run metadata (spec 027)"),
     "tooth": ("#E8F0DC", "gold_opendental_perio · tooth-loss model, synthetic (spec 029)"),
     "study": ("#EDEDF7", "gold · Benchmark job, synthetic study notes (spec 031)"),
     "file": ("#E4E7EA", "file in git, not a table"),

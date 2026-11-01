@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-28
 
-**Status**: draft; US1-US4 and the ablation have a first implementation (`doctor.py`, pandas only, 26 tests), US5-US7 are planned
+**Status**: draft; US1-US4 and the ablation have a first implementation (`doctor.py`, pandas only, 26 tests); US5 has the job, created paused (`13_pipeline_doctor.py`, `doctor_job.py`); US6-US7 are planned
 
 **Input**: Spec 014 ended with "Out of scope (next spec): the pipeline doctor: classifying failures,
 choosing a recovery, escalation and notification, and its evaluation on this repo's real incidents."

@@ -6,6 +6,11 @@
 A retry of the same batch replaces its rows instead of adding them again. Rows carry the key columns, so a bad
 batch can be found and removed. Rows written by other writers are untouched: their key columns are NULL or
 differ (Load results keys on file_sha256 and leaves source_code = databricks rows alone).
+
+    replace_keys(spark, rows, table, "run_id", schema=ddl)
+
+For a writer that reads overlapping windows (the pipeline doctor, spec 027): the rows of every run_id in the
+batch are deleted, then the batch appended, whichever earlier writer run wrote them.
 """
 
 from __future__ import annotations
@@ -38,5 +43,27 @@ def replace_batch(spark, rows: pd.DataFrame, table: str, key: dict) -> int:
         for field in schema.fields:
             if field.name in empty:
                 sdf = sdf.withColumn(field.name, sdf[field.name].cast(field.dataType))
+    sdf.write.mode("append").option("mergeSchema", "true").saveAsTable(table)
+    return len(rows)
+
+
+@traced
+def replace_keys(spark, rows: pd.DataFrame, table: str, column: str, schema: str | None = None) -> int:
+    """Delete table's rows whose `column` holds any value in rows[column], then append rows. For a writer that
+    re-reads overlapping windows (the pipeline doctor reads the last days of job runs each time): a run read
+    twice replaces its rows, whichever writer run read it first. `schema` (Spark DDL) fixes the column types,
+    so an all-null column in one batch never sets the wrong type. Returns the rows written."""
+    if not re.fullmatch(r"\w+", column):
+        raise ValueError(f"key column {column!r}: letters, digits and _ only")
+    if not len(rows):
+        return 0
+    values = sorted({str(v) for v in rows[column]})
+    bad = [v for v in values if not _SAFE.fullmatch(v)]
+    if bad:
+        raise ValueError(f"key {column}={bad[0]!r}: letters, digits and . : + @ / - _ only")
+    sdf = spark.createDataFrame(rows, schema) if schema else spark.createDataFrame(rows)
+    if spark.catalog.tableExists(table) and column in spark.table(table).schema.fieldNames():
+        listed = ", ".join(f"'{v}'" for v in values)
+        spark.sql(f"DELETE FROM {table} WHERE {column} IN ({listed})")
     sdf.write.mode("append").option("mergeSchema", "true").saveAsTable(table)
     return len(rows)
