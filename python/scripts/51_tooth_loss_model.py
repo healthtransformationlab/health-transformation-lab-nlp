@@ -3,6 +3,7 @@
 
     python scripts/51_tooth_loss_model.py [--patients 6000] [--seed 42] [--stability-seeds 5] [--n-boot 1000]
                                           [--min-age N] [--third-molars]
+                                          [--split-unit person|visit] [--test-share 0.3] [--cv-folds K]
 
 For the main generator seed and each further stability seed (seed + 1, ...): builds the extract (open_dental), cleans
 it as silver, fits logistic regression and XGBoost on both label sets (tooth_loss_model.run) and scores them on the
@@ -11,14 +12,21 @@ a diagnosis. Bootstrap intervals are computed for the main seed only. Writes to 
 
     synthetic_tooth_loss_scores.csv         one row per seed, label set, feature set, model, set of teeth, metric
     synthetic_tooth_loss_calibration.csv    ten bins per seed, label set, feature set, model and set of teeth
-    synthetic_tooth_loss_stage_recount.csv  patients called stage III and IV under each counting rule
-    synthetic_tooth_loss_patient_stage.csv  one row per patient: teeth lost to periodontitis counted four ways
+    synthetic_tooth_loss_stage_recount.csv  patients called stage III and IV under each rule (labels.STAGE4_COUNT_RULES)
+    synthetic_tooth_loss_patient_stage.csv  one row per patient: teeth lost to periodontitis counted four ways, the
+                                            teeth and occluding pairs left, and stage IV under each rule
     synthetic_tooth_loss_predictions.csv    one row per tooth and model (the gold fact_tooth_loss_prediction rows)
     synthetic_tooth_loss_missing.csv        share missing per predictor, by label set and split
     synthetic_tooth_loss_eval_rows.csv      outcome and probability per scored tooth (read by r/tests/test_parity.R)
 
 Every number is SYNTHETIC: agreement with a synthetic answer key, not a finding about any practice. Needs the `ml`
 extra (xgboost). Adults only by default (analysis plan s. 3): --min-age 18; --min-age 0 for no cut-off.
+
+Validation settings (spec 032 US5): --split-unit visit holds out random teeth instead of patients and reports how many
+patients fall in both parts (a leak that flatters the score; never the default); --cv-folds K tunes XGBoost by K-fold
+cross-validation (tooth_loss_model.XGB_GRID). With any of the three away from its default the files are written as
+synthetic_tooth_loss_<split>_<share>_cv<K>_<name>.csv, beside the default results rather than over them, with a
+..._validation.csv saying how; with the defaults the validation is printed only.
 """
 
 import argparse
@@ -36,7 +44,16 @@ ap.add_argument("--stability-seeds", type=int, default=5, help="generator seeds 
 ap.add_argument("--n-boot", type=int, default=1000, help="bootstrap resamples of patients (main seed only)")
 ap.add_argument("--min-age", type=int, default=18, help="minimum age (analysis plan s. 3); 0 for no cut-off")
 ap.add_argument("--third-molars", action="store_true", help="include third molars (a sensitivity analysis)")
+ap.add_argument("--split-unit", default=tlm.DEFAULT.split_unit, choices=tlm.SPLIT_UNITS,
+                help="hold out patients (default) or random teeth (reports the patients in both parts)")
+ap.add_argument("--test-share", type=float, default=tlm.DEFAULT.test_share, help="held-out share")
+ap.add_argument("--cv-folds", type=int, default=0, help="tune XGBoost by K-fold cross-validation; 0 for no tuning")
+ap.add_argument("--start-date", default=None, help="ISO date: leave out teeth lost (or first charted) before it")
 args = ap.parse_args()
+validation = {"split_unit": args.split_unit, "test_share": args.test_share, "cv_folds": args.cv_folds or None}
+changed = any(getattr(tlm.DEFAULT, k) != v for k, v in validation.items())
+prefix = (f"synthetic_tooth_loss_{args.split_unit}_{args.test_share:g}_cv{args.cv_folds}_" if changed
+          else "synthetic_tooth_loss_")
 
 telemetry.setup()
 telemetry.start_script("51_tooth_loss_model", data_label="synthetic")
@@ -46,10 +63,15 @@ for k in range(max(1, args.stability_seeds)):
     tables, truth, readings = open_dental.build_with_readings(open_dental.Params(n_patients=args.patients), gen_seed)
     x = {**open_dental.clean(tables), "radiograph_bone_level": readings}   # the reading is SIMULATED (#385)
     params = tlm.ModelParams(n_boot=args.n_boot if k == 0 else 0, min_age=args.min_age or None,
-                             include_third_molars=args.third_molars)
+                             include_third_molars=args.third_molars, start_date=args.start_date, **validation)
     out = tlm.run(x, truth, params, generator_seed=gen_seed)
     if k == 0:                     # who was left out, and why (a tooth with no recorded age, once a cut-off applies)
-        print(f"generator seed {gen_seed}: teeth {tlm.exclusions(tooth_loss.tooth_table(x), params)}")
+        teeth = tlm.with_first_exam_date(tooth_loss.tooth_table(x), x)
+        print(f"generator seed {gen_seed}: teeth {tlm.exclusions(teeth, params)}")
+        print(f"generator seed {gen_seed}: validation\n"
+              f"{out['validation'].drop(columns=['data_label']).to_string(index=False)}")
+    if not changed:                # the default results keep their files; the validation is printed above
+        out = {n: df for n, df in out.items() if n != "validation"}
     keep = out if k == 0 else {n: out[n] for n in ("scores", "stage_recount")}   # stability: the spread only
     for name, df in keep.items():
         frames.setdefault(name, []).append(df)
@@ -57,7 +79,7 @@ for k in range(max(1, args.stability_seeds)):
 
 RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 for name, parts in frames.items():
-    path = RESULTS_DIR / f"synthetic_tooth_loss_{name}.csv"
+    path = RESULTS_DIR / f"{prefix}{name}.csv"
     pd.concat(parts, ignore_index=True).to_csv(path, index=False)
     print(f"wrote {path}")
 

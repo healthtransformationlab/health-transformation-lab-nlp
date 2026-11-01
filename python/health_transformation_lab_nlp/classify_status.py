@@ -5,6 +5,11 @@ and prior treatment. Two schemes: 5-level (healthy+gingivitis, stage 1-4) and 3-
 stage 1-2, stage 3-4). Design after Patel et al. 2022 (Front Artif Intell, doi 10.3389/frai.2022.979525):
 XGBoost, 80/20 split (here by person), 5-fold cross-validation for the hyperparameters, one-vs-rest metrics.
 
+Validation settings (spec 032 US5): `split_unit` `person` (the default: no person in both parts, and tuning folds
+grouped by person) or `visit` (random visits, folds by visit). A split by visit lets one person's visits fall on
+both sides, which flatters the score, so the result's `validation` counts those people; it is never the default.
+`test_share` sets the held-out share and `folds` the cross-validation folds.
+
 SHAP: exact TreeSHAP computed by XGBoost itself (pred_contribs), the algorithm of Lundberg et al. 2020 that
 the `shap` package uses for trees. For each held-out visit and class, the values plus a bias add up to the
 model's margin (log-odds) for that class. Each feature carries its role in the 2017 AAP/EFP classification
@@ -73,6 +78,7 @@ TEST_SHARE_023 = 0.3   # Patel et al. 2026: 70/30, stratified; the 80/20 split s
 GRID = {"max_depth": [3, 5], "learning_rate": [0.05, 0.2], "reg_lambda": [1.0, 10.0], "min_child_weight": [1, 5],
         "class_weight": [None, "balanced"]}
 N_TREES = 200
+SPLIT_UNITS = ("person", "visit")       # spec 032 US5; visit: random rows, the people in both parts reported
 assert set(SCHEMES["5level"]) == set(LABELS)
 
 
@@ -95,6 +101,33 @@ def split_people(f: pd.DataFrame, seed: int = 0, test_share: float = 0.2) -> np.
     people = np.sort(f["person_id"].unique())
     test = np.random.default_rng(seed).choice(people, size=round(len(people) * test_share), replace=False)
     return f["person_id"].isin(test).to_numpy()
+
+
+@traced
+def split_visits(f: pd.DataFrame, seed: int = 0, test_share: float = 0.2) -> np.ndarray:
+    """True for held-out rows: a random `test_share` of visits (`split_unit=visit`). A person's visits can fall on
+    both sides (`people_in_both`)."""
+    test = np.random.default_rng(seed).choice(len(f), size=round(len(f) * test_share), replace=False)
+    return np.isin(np.arange(len(f)), test)
+
+
+@traced
+def people_in_both(f: pd.DataFrame, te: np.ndarray) -> int:
+    """How many people have visits in both the training and the test part."""
+    te = np.asarray(te, dtype=bool)
+    return len(set(f.loc[te, "person_id"]) & set(f.loc[~te, "person_id"]))
+
+
+def _check_split(split_unit: str, test_share: float) -> None:
+    if split_unit not in SPLIT_UNITS:
+        raise ValueError(f"split_unit {split_unit!r}: one of {SPLIT_UNITS}")
+    if not 0 < test_share < 1:
+        raise ValueError(f"test_share {test_share!r}: between 0 and 1")
+
+
+def _groups(f: pd.DataFrame, split_unit: str) -> np.ndarray:
+    """Tuning folds: by person, or by visit when the split is by visit."""
+    return f["person_id" if split_unit == "person" else "visit_id"].to_numpy()
 
 
 def _model(params: dict, n_class: int, seed: int):
@@ -139,16 +172,20 @@ def shap_values(model, X: pd.DataFrame) -> np.ndarray:
 
 
 @traced
-def train_eval(f: pd.DataFrame, scheme: str, seed: int = 0, grid: dict | None = None, folds: int = 5) -> dict:
+def train_eval(f: pd.DataFrame, scheme: str, seed: int = 0, grid: dict | None = None, folds: int = 5,
+               split_unit: str = "person", test_share: float = 0.2) -> dict:
+    """Split, tune by `folds`-fold CV, fit and score on the held-out part, with SHAP. `validation` says how: the
+    split unit, the held-out share, the folds and how many people are in both parts (0 when split by person)."""
+    _check_split(split_unit, test_share)
     names = CLASS_NAMES[scheme]
     n_class = len(names)
-    te = split_people(f, seed)
+    te = (split_people if split_unit == "person" else split_visits)(f, seed, test_share)
     X, y = f[FEATURES], f["y"].to_numpy()
     missing = [names[k] for k in range(n_class) if not (y[~te] == k).any()]
     if missing:
         raise ValueError(f"no {', '.join(missing)} among the training people: the model can't learn it "
                          "(a larger study, or a coarser scheme such as 3level)")
-    best = tune(X[~te], y[~te], f.loc[~te, "person_id"].to_numpy(), n_class, seed, grid, folds)
+    best = tune(X[~te], y[~te], _groups(f.loc[~te], split_unit), n_class, seed, grid, folds)
     params = {k: v for k, v in best.items() if k not in ("cv_macro_f1", "cv_folds_used")}
     model = _fit(params, X[~te], y[~te], n_class, seed)
     Xt, yt = X[te], y[te]
@@ -179,7 +216,10 @@ def train_eval(f: pd.DataFrame, scheme: str, seed: int = 0, grid: dict | None = 
                "people_test": int(f.loc[te, "person_id"].nunique()), "accuracy": float(accuracy_score(yt, pred)),
                "macro_f1": float(f1_score(yt, pred, average="macro", labels=list(range(n_class)), zero_division=0)),
                "cv_macro_f1": best["cv_macro_f1"], "cv_folds_used": best["cv_folds_used"], "params": params}
-    return {"summary": summary, "metrics": metrics, "shap_importance": imp, "shap_test": per, "model": model,
+    validation = {"split_unit": split_unit, "test_share": test_share, "cv_folds": folds,
+                  "people_in_both_count": people_in_both(f, te)}
+    return {"summary": summary, "validation": validation, "metrics": metrics, "shap_importance": imp,
+            "shap_test": per, "model": model,
             "X_test": Xt, "test_predictions": pd.DataFrame({"visit_id": f.loc[te, "visit_id"].to_numpy(),
                                                             "y": yt, "pred": pred})}
 
@@ -201,20 +241,25 @@ def person_features(visits: pd.DataFrame, record: pd.DataFrame, outcome: str, sc
 
 
 @traced
-def split_stratified(f: pd.DataFrame, seed: int = 0, test_share: float = TEST_SHARE_023) -> np.ndarray:
+def split_stratified(f: pd.DataFrame, seed: int = 0, test_share: float = TEST_SHARE_023,
+                     split_unit: str = "person") -> np.ndarray:
     """True for held-out rows. People are stratified by their highest class; within each class a random
     `test_share` of them (rounded) is held out, so no person is in both parts, and with one row per person each
     class's test count is within one visit of proportional. A class with fewer than 2 people fails: it can't be
-    in both parts, and running unstratified would hide that (spec 023 edge cases)."""
-    per_person = f.groupby("person_id")["y"].max()
+    in both parts, and running unstratified would hide that (spec 023 edge cases). With `split_unit=visit` the
+    rows themselves are stratified by class and held out at random, so a person can be in both parts."""
+    _check_split(split_unit, test_share)
+    unit = f.groupby("person_id")["y"].max() if split_unit == "person" else f["y"]
     rng = np.random.default_rng(seed)
     test = []
-    for k, people in per_person.groupby(per_person):
-        if len(people) < 2:
-            raise ValueError(f"class {k} has {len(people)} person: too few to stratify into train and test")
-        ids = np.sort(people.index.to_numpy())
+    for k, members in unit.groupby(unit):
+        if len(members) < 2:
+            raise ValueError(f"class {k} has {len(members)} {split_unit}: too few to stratify into train and test")
+        ids = np.sort(members.index.to_numpy())
         n = min(max(round(len(ids) * test_share), 1), len(ids) - 1)
         test.extend(rng.choice(ids, size=n, replace=False))
+    if split_unit == "visit":
+        return f.index.isin(test)
     return f["person_id"].isin(test).to_numpy()
 
 
@@ -256,15 +301,17 @@ def class_metrics(y: np.ndarray, proba: np.ndarray, names: list[str]) -> pd.Data
 
 @traced
 def compare_feature_sets(people: pd.DataFrame, seed: int = 0, grid: dict | None = None, folds: int = 5,
-                         scheme: str = "four") -> dict:
+                         scheme: str = "four", split_unit: str = "person",
+                         test_share: float = TEST_SHARE_023) -> dict:
     """Train and test each of FEATURE_SETS on the same stratified 70/30 split of `people` (person_features).
     Returns, per feature set and class, the metrics (`metrics`); the held-out class probabilities
-    (`predictions`); and mean |SHAP| per feature (`shap_importance`). SYNTHETIC: nothing about real patients."""
+    (`predictions`); mean |SHAP| per feature (`shap_importance`); and how it was validated (`validation`, as in
+    train_eval). SYNTHETIC: nothing about real patients."""
     names = CLASS_NAMES[scheme]
     n_class = len(names)
-    te = split_stratified(people, seed)
+    te = split_stratified(people, seed, test_share, split_unit)
     y = people["y"].to_numpy()
-    groups = people.loc[~te, "person_id"].to_numpy()
+    groups = _groups(people.loc[~te], split_unit)
     metrics, preds, imps = [], [], []
     for name, cols in FEATURE_SETS.items():
         X = people[cols]
@@ -285,4 +332,7 @@ def compare_feature_sets(people: pd.DataFrame, seed: int = 0, grid: dict | None 
     m = m[["feature_set", "class", "n_test", "sensitivity", "specificity", "auc", "brier", "classes_averaged",
            "n_train", "features", "seed", "is_synthetic"]]
     p = pd.concat(preds, ignore_index=True)[["feature_set", "visit_id", "y", *[f"p_{c}" for c in names]]]
-    return {"metrics": m, "predictions": p, "shap_importance": pd.concat(imps, ignore_index=True)}
+    validation = {"split_unit": split_unit, "test_share": test_share, "cv_folds": folds,
+                  "people_in_both_count": people_in_both(people, te)}
+    return {"metrics": m, "predictions": p, "shap_importance": pd.concat(imps, ignore_index=True),
+            "validation": validation}

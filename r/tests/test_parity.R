@@ -55,6 +55,30 @@ if (file.exists(py_res_file)) {
   stopifnot(max(diff) < 1e-9)
 } else cat("scorer:  skipped (python score file not found)\n")
 
+# 3b. Spec 032 US1: status groupings (same as labels.GROUPINGS; tests/test_status_grouping.py has the Python side),
+# then the same predictions scored at the five and three status groupings.
+stopifnot(identical(group_status(c(PERIO_LABELS, NA, "unknown", "healthy_gingivitis"), "three"),
+                    c(rep("healthy_or_gingivitis", 2), rep("mild", 2), rep("severe", 2), NA, "unknown",
+                      "healthy_or_gingivitis")),
+          identical(group_status(PERIO_LABELS, "five"), c(rep("healthy_or_gingivitis", 2), PERIO_LABELS[3:6])),
+          identical(group_status(PERIO_LABELS), PERIO_LABELS),
+          identical(STATUS_GROUPINGS, SCORE_GROUPINGS),
+          inherits(try(group_status("healthy", "four"), silent = TRUE), "try-error"))
+for (grouping in c("five", "three")) {
+  f <- sprintf("data/labels/python_rules_score_%s.csv", grouping)
+  if (!file.exists(f)) { cat(sprintf("scorer %s: skipped (run export_rules_predictions.py)\n", grouping)); next }
+  py <- read.csv(f, stringsAsFactors = FALSE)
+  rg <- score_run(test$label, rules_predict(test$note_text), NULL, "rules_baseline", run_id = "parity",
+                  grouping = grouping)
+  key <- function(d) paste(d$metric, ifelse(is.na(d$class), "", d$class))
+  both <- merge(data.frame(k = key(rg), r = rg$value), data.frame(k = key(py), p = py$value))
+  diff <- abs(both$r - both$p); diff[is.na(diff)] <- 0
+  stopifnot(nrow(both) == nrow(py), nrow(rg) == nrow(py),
+            identical(rg$class[rg$metric == "f1"], STATUS_GROUPINGS[[grouping]]))
+  cat(sprintf("scorer %s: max |R - Python| = %.2e over %d metrics\n", grouping, max(diff), nrow(both)))
+  stopifnot(max(diff) < 1e-9)
+}
+
 } else cat("labels/rules/scorer: skipped (run python scripts 01 + 02 + export_rules_predictions first)\n")
 
 # 4. Reliability: R 04_reliability.R == Python reliability.py (needs a simulated or real review run).
@@ -450,6 +474,21 @@ if (file.exists(vs) && file.exists(pp)) {
   cat(sprintf("prevalence:   max |R - Python| = %.2e over %d clinics\n", d, nrow(m)))
   stopifnot(nrow(m) == nrow(py), d < 1e-9)
 } else cat("prevalence: skipped (run 19_prevalence.py)\n")
+
+# Spec 032 US1: prevalence per status group at the six, five and three groupings.
+pg <- "data/labels/python_prevalence_by_group.csv"
+if (file.exists(vs) && file.exists(pg)) {
+  v <- read.csv(vs, stringsAsFactors = FALSE)
+  py <- read.csv(pg, stringsAsFactors = FALSE)
+  r <- do.call(rbind, lapply(c("six", "five", "three"),
+                             function(g) prevalence_by_group(v, "algorithm_design", grouping = g, by = "clinic_id")))
+  stopifnot(nrow(r) == nrow(py), all(r$clinic_id == py$clinic_id), all(r$grouping == py$grouping),
+            all(r$status_group == py$status_group))
+  num <- c("n_people", "n_unknown", "n_in_group", "share", "share_ci_low", "share_ci_high")
+  d <- max(abs(as.matrix(r[num]) - as.matrix(py[num])), na.rm = TRUE)
+  cat(sprintf("prevalence by group: max |R - Python| = %.2e over %d rows\n", d, nrow(py)))
+  stopifnot(d < 1e-9)
+} else cat("prevalence by group: skipped (run export_rules_predictions.py)\n")
 cat("parity OK (spec 005)\n")
 
 # 7. Spec 006: derived measures and CDC/AAP from site-level charts.
@@ -695,6 +734,20 @@ if (file.exists(pvf) && file.exists(pcf) && file.exists(pkf)) {
   stopifnot(bad_chart == 0, bad_merge == 0, nrow(mk) == nrow(py_k), dk < 1e-9, nrow(mc) == nrow(py_c), dc < 1e-9)
   cat("parity OK (spec 024 US3)\n")
 } else cat("PerioDx visits: skipped (run 10_build_study.py and 52_patel2022.py)\n")
+# Spec 032 US4: the teeth-left stage IV rules on the hand-worked cases of python/tests/test_tooth_loss_model.py
+local({
+  source("r/R/16_spec029.R")
+  stopifnot(all(stage4_tooth_counts_029(1:32) == c(28, 14)), all(stage4_tooth_counts_029(integer(0)) == c(0, 0)),
+            all(stage4_tooth_counts_029(c(1, 3, 14, 16, 17, 19, 30, 32)) == c(4, 2)),
+            all(stage4_tooth_counts_029(2:5) == c(4, 0)))
+  twenty <- c(2:11, 33 - 2:11); nineteen <- twenty[-20]; one_arch <- c(2:15, 18:23)
+  r <- function(rule, teeth) stage4_rule_029(rule, 0, 0, teeth_present = teeth)
+  stopifnot(!r("teeth_lt_20", twenty), !r("pairs_lt_10", twenty), r("teeth_lt_20", nineteen),
+            r("pairs_lt_10", nineteen), !r("teeth_lt_20", one_arch), r("pairs_lt_10", one_arch),
+            !r("teeth_lt_20", c(twenty, 1, 16)), r("teeth_lt_20", c(nineteen, 1)),
+            stage4_rule_029("every_missing", 0, 5, teeth_present = integer(0)))
+  cat("parity OK (spec 032 US4: teeth-left stage rules, hand-worked cases)\n")
+})
 # Spec 029 US3: the tooth-loss model's metrics and the stage IV counting rules (R 16_spec029.R vs
 # tooth_loss_model.py / labels.py, from scripts/51_tooth_loss_model.py's outputs). Model fitting is Python only.
 rt <- "data/results"
@@ -751,11 +804,17 @@ if (file.exists(file.path(rt, "synthetic_tooth_loss_eval_rows.csv"))) {
       probs <- sums[[as.character(grp$patient_id[i])]]
       if (is.null(probs)) probs <- numeric(0)
       e <- expected_perio_loss_029(grp$recorded_perio_count[i], probs)
+      # spec 032 US4: the teeth left, as charted (third molars too); the counts leave third molars out
+      txt <- as.character(grp$present_tooth_text[i])
+      left <- if (is.na(txt) || !nzchar(txt)) integer(0) else as.integer(strsplit(txt, " ", fixed = TRUE)[[1]])
+      cnt <- stage4_tooth_counts_029(left)
       iv <- sapply(STAGE4_COUNT_RULES_029, function(rule) stage4_rule_029(rule, grp$recorded_perio_count[i],
-                   grp$missing_count[i], probs, grp$true_perio_count[i]))
+                   grp$missing_count[i], probs, grp$true_perio_count[i], teeth_present = left))
       py_iv <- as.logical(unlist(grp[i, paste0("is_stage4_", STAGE4_COUNT_RULES_029)]))
       at_edge <- abs(e - 5) < 1e-9                       # summation order may differ at exactly five teeth
-      if (abs(e - grp$expected_perio_loss[i]) >= 1e-9 || (!at_edge && any(iv != py_iv))) bad_stage <- bad_stage + 1
+      edge_ok <- if (at_edge) all(iv[c("teeth_lt_20", "pairs_lt_10")] == py_iv[c(5, 6)]) else all(iv == py_iv)
+      counts_ok <- cnt[["teeth"]] == grp$teeth_present_count[i] && cnt[["pairs"]] == grp$occluding_pair_count[i]
+      if (abs(e - grp$expected_perio_loss[i]) >= 1e-9 || !edge_ok || !counts_ok) bad_stage <- bad_stage + 1
     }
   }
   cat(sprintf("tooth-loss metrics: %d sets of teeth, %d values checked, %d sets differ; stage rule: %d patient rows, %d differ\n",
@@ -764,3 +823,18 @@ if (file.exists(file.path(rt, "synthetic_tooth_loss_eval_rows.csv"))) {
   stopifnot(length(bad) == 0, bad_stage == 0, nrow(ps) > 0)
   cat("parity OK (spec 029 US3)\n")
 } else cat("tooth-loss model: skipped (run 51_tooth_loss_model.py)\n")
+
+# Spec 032 US3: the diagnosis-code source under each absent-code rule (r/R/18_spec032.R).
+ac_file <- "data/labels/absent_code_cases.csv"
+if (file.exists(ac_file)) {
+  source("r/R/18_spec032.R")
+  ac <- read.csv(ac_file, stringsAsFactors = FALSE, colClasses = "character", na.strings = character(0))
+  r_ac <- character(nrow(ac))
+  for (rule in ABSENT_CODE_RULES_032) {
+    i <- ac$absent_code == rule
+    r_ac[i] <- read_dx_code_032(ac$dx_raw[i], ac$plan_raw[i], rule)
+  }
+  cat(sprintf("absent code:  %d / %d cases agree\n", sum(r_ac == ac$status), nrow(ac)))
+  stopifnot(nrow(ac) > 0, all(r_ac == ac$status), any(ac$status == ABSENT_CODE_STATUS_032 & ac$dx_raw == ""))
+  cat("parity OK (spec 032 US3)\n")
+} else cat("absent code: skipped (run python/scripts/export_rules_predictions.py)\n")

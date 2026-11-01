@@ -1,6 +1,7 @@
 """Classify periodontal status from the recorded chart and explain it with SHAP (spec 013 G10).
 
     python scripts/40_classify_status.py [--outcome algorithm_design|truth_status] [--scheme 5level|3level]
+                                         [--split-unit person|visit] [--test-share 0.2] [--cv-folds 5]
 
 Gradient-boosted trees (XGBoost, the `ml` extra), people split 80/20, hyperparameters by 5-fold grouped
 cross-validation, one-vs-rest metrics, exact TreeSHAP on the held-out visits. SYNTHETIC: the labels come from
@@ -21,6 +22,11 @@ ap = argparse.ArgumentParser()
 ap.add_argument("--outcome", default="algorithm_design", choices=["algorithm_design", "truth_status"])
 ap.add_argument("--scheme", default="5level", choices=sorted(cs.SCHEMES))
 ap.add_argument("--seed", type=int, default=3)
+# spec 032 US5: away from these defaults the files get a suffix, beside the default results rather than over them
+ap.add_argument("--split-unit", default="person", choices=cs.SPLIT_UNITS,
+                help="hold out people (default) or random visits (reports the people in both parts)")
+ap.add_argument("--test-share", type=float, default=0.2, help="held-out share")
+ap.add_argument("--cv-folds", type=int, default=5, help="cross-validation folds for the hyperparameters")
 a = ap.parse_args()
 
 v = pd.read_csv(DATASETS_DIR / "visits_structured.csv")
@@ -28,10 +34,12 @@ if a.outcome == "truth_status":
     v = v.merge(pd.read_csv(DATASETS_DIR / "answer_key" / "visits_truth.csv")[["visit_id", "truth_status"]],
                 on="visit_id")
 f = cs.features(v, a.outcome, a.scheme)
-res = cs.train_eval(f, a.scheme, seed=a.seed)
+res = cs.train_eval(f, a.scheme, seed=a.seed, folds=a.cv_folds, split_unit=a.split_unit, test_share=a.test_share)
 out = DATASETS_DIR / "classify_status"
 out.mkdir(exist_ok=True)
 stem = f"{a.outcome}_{a.scheme}"
+if (a.split_unit, a.test_share, a.cv_folds) != ("person", 0.2, 5):
+    stem += f"_{a.split_unit}_{a.test_share:g}_cv{a.cv_folds}"
 summary = res["summary"] | {"outcome": a.outcome, "params": json.dumps(res["summary"]["params"]), "synthetic": True}
 pd.DataFrame([summary]).to_csv(out / f"{stem}_summary.csv", index=False)
 res["metrics"].to_csv(out / f"{stem}_metrics.csv", index=False)
@@ -78,6 +86,10 @@ print(f"SYNTHETIC: {a.scheme} status from the recorded chart, outcome {a.outcome
 print(f"train {s['n_train']} visits, test {s['n_test']} ({s['people_test']} people); best {s['params']} "
       f"(CV macro F1 {s['cv_macro_f1']:.3f})")
 print(f"held out: accuracy {s['accuracy']:.3f}, macro F1 {s['macro_f1']:.3f}")
+val = res["validation"]
+print(f"validation: split by {val['split_unit']}, test share {val['test_share']:g}, {val['cv_folds']}-fold tuning; "
+      f"people in both parts: {val['people_in_both_count']}"
+      + (" (a split by visit lets them in, which flatters the score)" if val["people_in_both_count"] else ""))
 print(res["metrics"].round(3).to_string(index=False))
 print(res["shap_importance"][["feature", "role", "mean_abs_shap"]].round(3).to_string(index=False))
 

@@ -43,6 +43,8 @@ import math
 from dataclasses import dataclass
 from enum import Enum
 
+from .aces import THIRD_MOLARS, opposing_pair_count
+from .periodx import OCCLUDING_PAIRS_MIN
 from .telemetry import traced
 
 
@@ -61,6 +63,39 @@ class Status(str, Enum):
 
 
 LABELS: list[str] = [s.value for s in Status]
+
+# Spec 032 US1 (#440): scores and prevalence at a chosen status grouping. Each grouping lists its groups in order:
+# `six` the six statuses (the default everywhere), `five` healthy and gingivitis merged, `three` that merge plus
+# stage I-II as `mild` and stage III-IV as `severe`. Every grouping keeps the periodontitis yes/no line and the
+# stage III-IV line, so those two numbers are the same at each. R twin: r/R/labels.R.
+HEALTHY_OR_GINGIVITIS = "healthy_or_gingivitis"
+GROUPINGS: dict[str, tuple[str, ...]] = {
+    "six": tuple(LABELS),
+    "five": (HEALTHY_OR_GINGIVITIS, *LABELS[2:]),
+    "three": (HEALTHY_OR_GINGIVITIS, "mild", "severe"),
+}
+_HG = {"healthy": HEALTHY_OR_GINGIVITIS, "gingivitis": HEALTHY_OR_GINGIVITIS,
+       "healthy_gingivitis": HEALTHY_OR_GINGIVITIS}   # healthy_gingivitis: a source that can't tell them apart
+_GROUP_OF: dict[str, dict[str, str]] = {
+    "six": {},
+    "five": _HG,
+    "three": {**_HG, LABELS[2]: "mild", LABELS[3]: "mild", LABELS[4]: "severe", LABELS[5]: "severe"},
+}
+
+
+@traced
+def group_status(status, grouping: str = "six"):
+    """The group a status falls in under `grouping` (GROUPINGS). Anything that is not a status (no answer, None,
+    NaN, "unknown", a group name already) comes back unchanged, so grouping twice is the same as grouping once."""
+    if grouping not in GROUPINGS:
+        raise ValueError(f"unknown status grouping {grouping!r}; one of {tuple(GROUPINGS)}")
+    return _GROUP_OF[grouping].get(status, status) if isinstance(status, str) else status
+
+
+@traced
+def periodontitis_groups(grouping: str = "six") -> tuple[set[str], set[str]]:
+    """(groups that are periodontitis, groups that are stage III-IV) under `grouping`."""
+    return ({group_status(s, grouping) for s in LABELS[2:]}, {group_status(s, grouping) for s in LABELS[4:]})
 
 
 @dataclass(frozen=True)
@@ -180,9 +215,14 @@ def label_row(row) -> str:
 # Spec 029 US3 (#371): teeth lost to periodontitis, counted four ways, decide stage III vs IV (>= 5 teeth -> IV).
 # A missing tooth seldom says why it was lost; `expected_perio_loss` counts the recorded periodontal losses plus the
 # model's probability for each missing tooth with no recorded reason (specs/029-tooth-loss/analysis_plan.md, s. 10).
-# R twin: r/R/16_spec029.R.
-STAGE4_COUNT_RULES = ("recorded_only", "every_missing", "expected_perio_loss", "truth")
+# Spec 032 US4 (#443): two more rules read the teeth left rather than the teeth lost, as several published record
+# studies do: fewer than 20 teeth (`teeth_lt_20`) or fewer than 10 occluding pairs (`pairs_lt_10`) gives stage IV.
+# Third molars are left out of both counts, as in aces.py. R twin: r/R/16_spec029.R.
+STAGE4_COUNT_RULES = ("recorded_only", "every_missing", "expected_perio_loss", "truth", "teeth_lt_20", "pairs_lt_10")
 STAGE4_TEETH = 5
+STAGE4_TEETH_LEFT_RULES = ("teeth_lt_20", "pairs_lt_10")
+STAGE4_TEETH_LEFT_MIN = 20                    # fewer than 20 teeth left gives stage IV (teeth_lt_20)
+STAGE4_PAIRS_MIN = OCCLUDING_PAIRS_MIN        # fewer than 10 occluding pairs gives stage IV (pairs_lt_10)
 
 
 @traced
@@ -192,15 +232,29 @@ def expected_perio_loss(recorded_perio: int, unlabelled_probs) -> float:
 
 
 @traced
-def stage4_rule(rule: str, recorded_perio: int, missing: int, unlabelled_probs=(), true_perio: int | None = None
-                ) -> bool:
-    """Stage IV by tooth loss under one counting rule (STAGE4_COUNT_RULES): the count is 5 teeth or more.
+def stage4_tooth_counts(teeth_present) -> tuple[int, int]:
+    """(teeth, occluding pairs) left in the mouth, from the tooth numbers present (1-32); third molars left out."""
+    kept = {int(t) for t in teeth_present} - THIRD_MOLARS
+    return len(kept), opposing_pair_count(kept)
+
+
+@traced
+def stage4_rule(rule: str, recorded_perio: int, missing: int, unlabelled_probs=(), true_perio: int | None = None,
+                *, teeth_present=None) -> bool:
+    """Stage IV under one rule (STAGE4_COUNT_RULES). The counting rules call IV at 5 teeth lost or more:
     recorded_only: extractions with a periodontal diagnosis; every_missing: every missing tooth; expected_perio_loss:
-    recorded plus the model's probabilities; truth: the synthetic answer key (never available on real records)."""
+    recorded plus the model's probabilities; truth: the synthetic answer key (never available on real records).
+    The teeth-left rules read `teeth_present` (tooth numbers, third molars ignored): teeth_lt_20, fewer than 20 teeth;
+    pairs_lt_10, fewer than 10 occluding pairs. The counting rules ignore `teeth_present`."""
     if rule not in STAGE4_COUNT_RULES:
         raise ValueError(f"unknown stage IV counting rule {rule!r}; one of {STAGE4_COUNT_RULES}")
     if rule == "truth" and true_perio is None:
         raise ValueError("the truth rule needs true_perio")
+    if rule in STAGE4_TEETH_LEFT_RULES:
+        if teeth_present is None:
+            raise ValueError(f"the {rule} rule needs teeth_present")
+        teeth, pairs = stage4_tooth_counts(teeth_present)
+        return bool(teeth < STAGE4_TEETH_LEFT_MIN) if rule == "teeth_lt_20" else bool(pairs < STAGE4_PAIRS_MIN)
     count = {"recorded_only": lambda: recorded_perio, "every_missing": lambda: missing,
              "expected_perio_loss": lambda: expected_perio_loss(recorded_perio, unlabelled_probs),
              "truth": lambda: true_perio}[rule]()

@@ -20,7 +20,7 @@ import math
 
 import pandas as pd
 
-from .labels import LABELS
+from .labels import GROUPINGS, LABELS, group_status
 from .telemetry import traced
 
 Z95 = 1.959963984540054
@@ -75,4 +75,29 @@ def prevalence_by(visits: pd.DataFrame, status_col: str, by: str | None = None) 
                      "periodontitis": k1 / n if n else float("nan"), "periodontitis_ci_low": l1,
                      "periodontitis_ci_high": h1, "stage3_4": k2 / n if n else float("nan"),
                      "stage3_4_ci_low": l2, "stage3_4_ci_high": h2})
+    return pd.DataFrame(rows)
+
+
+@traced
+def prevalence_by_group(visits: pd.DataFrame, status_col: str, grouping: str = "six", by: str | None = None
+                        ) -> pd.DataFrame:
+    """Spec 032 US1: person-level share in each status group of `grouping` (labels.GROUPINGS), with a 95% Wilson
+    interval; long format, one row per group (and per <by> value when given). Same people as prevalence_by: the
+    latest visit with a known status. At `six`, a source that says only "healthy or gingivitis" counts as known but
+    falls in neither group; `five` and `three` merge it."""
+    groups = GROUPINGS[grouping]
+    people = visits.drop_duplicates("person_id")
+    last = latest_known(visits, status_col)
+    grouped = last[status_col].map(lambda s: group_status(s, grouping))
+    parts = [("all", people, grouped)] if by is None else [
+        (g, people[people[by] == g], grouped[last[by] == g]) for g in sorted(people[by].unique())]
+    rows = []
+    for g, ppl, gs in parts:
+        n = len(gs)
+        for grp in groups:
+            k = int((gs == grp).sum())
+            lo, hi = wilson_ci(k, n)
+            rows.append({by or "group": g, "grouping": grouping, "status_group": grp, "n_people": n,
+                         "n_unknown": len(ppl) - n, "n_in_group": k, "share": k / n if n else float("nan"),
+                         "share_ci_low": lo, "share_ci_high": hi})
     return pd.DataFrame(rows)

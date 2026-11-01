@@ -45,6 +45,9 @@ stores the image, not a reading of it.
 
 - **Teeth:** third molars are left out by default. Only adults are included: the minimum age
   (`ModelParams.min_age`, `--min-age`) is 18 by default; no cut-off and 30 and over are sensitivity analyses.
+  A start date (`ModelParams.start_date`, `--start-date`, spec 032; none by default, so every year counts) keeps
+  the teeth lost on or after it, or first charted on or after it when the loss date isn't recorded.
+  `tooth_loss_model.exclusions` counts the teeth left out by each reason.
 - **Two label sets** (FR-010): completed extractions only, and completed plus planned extractions (one per planned
   procedure, however many plan copies; a tooth planned then extracted counts once, as completed).
 - **Two predictor sets:** *shared* (what every missing tooth has: tooth type, neighbours' worst CAL, the mouth at
@@ -54,7 +57,10 @@ stores the image, not a reading of it.
   (depth 3, 200 trees, learning rate 0.05, subsample 0.8), with three baselines.
 - **Validation:** 70/30 split by patient, stratified on the outcome, seed 42. Both label sets are scored on the same
   held-out extractions. The applied sets (teeth missing at entry, extractions without a diagnosis) are scored
-  against the synthetic answer key, which is never a feature.
+  against the synthetic answer key, which is never a feature. Options (spec 032): `--test-share`; `--split-unit
+  visit` holds out random teeth instead of patients, so one patient's teeth can be on both sides, which flatters the
+  score: the run prints how many patients that is, and it is never the default; `--cv-folds K` tunes XGBoost by
+  K-fold cross-validation over a small fixed grid, folds grouped by patient unless the split is by visit.
 - **Measures:** AUC, Brier score, calibration intercept and slope, a 10-bin calibration table, and sensitivity,
   specificity and predictive values at 0.5 and at the Youden threshold chosen on the training teeth. 95% intervals
   from 1,000 bootstrap resamples of patients. The run is repeated on 5 generator seeds.
@@ -150,6 +156,8 @@ intercept is near 0 (0.18 and 0.07).
 | expected, completed, XGBoost | 27 | 2,339 | 1 | 71 |
 | expected, completed + planned, logistic | 85 | 2,347 | 26 | 38 |
 | expected, completed + planned, XGBoost | 84 | 2,348 | 25 | 38 |
+| fewer than 20 teeth left (spec 032) | 46 | 2,336 | 12 | 63 |
+| fewer than 10 occluding pairs left (spec 032) | 181 | 2,241 | 127 | 43 |
 | the synthetic truth | 97 | 2,411 | 0 | 0 |
 
 "Every missing tooth" calls 273 patients stage IV, 176 of them wrongly: nearly three times the true number. The
@@ -157,6 +165,15 @@ expected count calls 21-85, with 1-26 wrongly and 38-77 missed; with planned ext
 truth, and recorded periodontal extractions alone find no stage IV patient by tooth loss. On this seed the
 completed-extraction models undercount (their probabilities run low on teeth missing at entry, above), so they miss
 more stage IV patients than before US8 (40-45 on the earlier seed 42 extract).
+
+The last two rules (spec 032 US4, #443) don't ask why teeth were lost: they call stage IV from the teeth left,
+fewer than 20 teeth or fewer than 10 occluding pairs (upper and lower teeth that meet), third molars left out as in
+`aces.py`, counted from the whole tooth table (`labels.stage4_rule`, rules `teeth_lt_20` and `pairs_lt_10`). Fewer
+than 20 teeth calls 46 stage IV (12 wrongly, 63 missed): it misses most true stage IV patients, who keep 20 or more
+teeth. Fewer than 10 pairs calls 181 (127 wrongly, 43 missed): a tooth lost for any reason can break a pair, so this
+rule overcounts like "every missing tooth", though less. Mean of the 5 generator seeds: fewer than 20
+teeth 38 called stage IV (10 wrongly, 65 missed), fewer than 10 pairs 169 (120 wrongly, 45 missed). Adding the two
+rules left every other number on this page unchanged.
 
 Stage recount, mean of the 5 generator seeds, before → after US8: "every missing tooth" 271 → 264 called stage IV
 (168 → 170 wrongly) against a truth of 102 → 94; expected count, completed, 56-61 → 50-53 (7-8 → 5 wrongly, 49-54 →

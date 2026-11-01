@@ -35,6 +35,13 @@ Computed on the test split only.
 | `specificity` | same binary. TN / (TN + FP) |
 | `auroc` | same binary, from P(periodontitis) = sum of the four stage probabilities. Blank if the rung gives no probabilities. |
 
+**Status grouping** (spec 032 US1): `score(..., grouping=)` in Python and `score_run(..., grouping =)` in R take
+`six` (the default, as above), `five` (healthy and gingivitis merged as `healthy_or_gingivitis`) or `three`
+(`healthy_or_gingivitis`, `mild` = stage I-II, `severe` = stage III-IV). The truth and the predictions are grouped
+first, so `f1` has one row per group and `macro_f1` averages the groups; anything that isn't a status (no answer,
+`unknown`) stays as it is and never matches a group. The binary metrics are the same at every grouping. The groupings are the same
+as `labels.GROUPINGS`, and the parity test checks five and three.
+
 ## Output
 
 One CSV per run under `data/results/`, long format:

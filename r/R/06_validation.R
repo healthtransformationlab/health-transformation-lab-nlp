@@ -66,6 +66,32 @@ prevalence_by <- function(visits, status_col, by = NULL) {
   out
 }
 
+# Spec 032 US1 (#440): twin of prevalence.prevalence_by_group. Person-level share in each status group of
+# `grouping`, Wilson 95% interval, one row per group (and per <by> value). Uses group_status from r/R/labels.R.
+prevalence_by_group <- function(visits, status_col, grouping = "six", by = NULL) {
+  known <- c(PERIO_LABELS6, "healthy_gingivitis")
+  groups_of <- STATUS_GROUPINGS[[grouping]]
+  v <- visits[order(visits$person_id, as.character(visits$visit_date)), ]
+  k <- v[v[[status_col]] %in% known, ]
+  last <- k[!duplicated(k$person_id, fromLast = TRUE), ]
+  last$.group <- group_status(last[[status_col]], grouping)
+  people <- v[!duplicated(v$person_id), ]
+  parts <- if (is.null(by)) list("all") else as.list(sort(unique(people[[by]])))
+  rows <- lapply(parts, function(g) {
+    ppl <- if (is.null(by)) people else people[people[[by]] == g, ]
+    lk <- if (is.null(by)) last else last[last[[by]] == g, ]
+    n <- nrow(lk)
+    do.call(rbind, lapply(groups_of, function(grp) {
+      kk <- sum(lk$.group == grp); ci <- wilson_ci(kk, n)
+      data.frame(group = g, grouping = grouping, status_group = grp, n_people = n, n_unknown = nrow(ppl) - n,
+                 n_in_group = kk, share = if (n) kk / n else NA_real_, share_ci_low = ci[1], share_ci_high = ci[2])
+    }))
+  })
+  out <- do.call(rbind, rows)
+  if (!is.null(by)) names(out)[1] <- by
+  out
+}
+
 # Spec 013 G8: twin of plausibility.transition_pairs (five categories; first visit 365-730 days later;
 # pairs with therapy in between dropped).
 PERIO_FIVE <- c("healthy_gingivitis", PERIO_LABELS6[3:6])

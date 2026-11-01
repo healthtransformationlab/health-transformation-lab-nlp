@@ -6,7 +6,9 @@ only to score the teeth that have no recorded reason, never as a feature. Synthe
 
 - Who (s. 3): every tooth, third molars left out by default; adults only: a minimum age (`ModelParams.min_age`,
   default 18; None for no cut-off, a sensitivity analysis). Age is at the tooth's loss, or at the first exam when the
-  loss date isn't recorded (teeth missing at entry, planned extractions).
+  loss date isn't recorded (teeth missing at entry, planned extractions). Optionally from a start date
+  (`ModelParams.start_date`, default None: every year; spec 032 US2): a tooth counts when its loss date, or its
+  patient's first exam date when the loss date isn't recorded, is on or after it.
 - Label (s. 4, FR-010): 1 = the extraction's diagnosis item is periodontal, 0 = another reason. Two label sets:
   `completed` (completed extractions) and `completed_planned` (plus planned ones; the tooth table already counts a
   tooth planned then completed once, as completed).
@@ -19,16 +21,21 @@ only to score the teeth that have no recorded reason, never as a feature. Synthe
 - Validation (s. 9): 70/30 split by patient, stratified on the outcome, seed fixed; one split shared by both label
   sets, so both are scored on the same held-out teeth (completed extractions of the held-out patients). Applied sets:
   teeth missing at entry and extractions without a diagnosis, scored against the synthetic answer key.
+  Settings (spec 032 US5): `split_unit` `visit` holds out random teeth instead of patients (stratified on the
+  outcome); a patient can then be on both sides, which flatters the score, so the `validation` frame counts them
+  and it is never the default. `cv_folds` tunes XGBoost by k-fold cross-validated AUC over XGB_GRID (folds grouped
+  by patient unless the split is by visit), in place of the fixed XGB_PARAMS.
 - Measures (s. 10): AUC, Brier, calibration intercept and slope, a 10-bin calibration table, and sensitivity,
   specificity, PPV and NPV at 0.5 and at Youden's threshold chosen on the training predictions; 95% intervals from
-  bootstrap resamples of patients, not teeth. Stage III vs IV per patient under four counting rules
-  (labels.STAGE4_COUNT_RULES).
+  bootstrap resamples of patients, not teeth. Stage III vs IV per patient under four counting rules, and two rules
+  on the teeth left (fewer than 20 teeth, fewer than 10 occluding pairs; spec 032 US4) (labels.STAGE4_COUNT_RULES).
 
 Base-R twins of the metrics and the stage rule: r/R/16_spec029.R, checked by r/tests/test_parity.R.
 """
 
 from __future__ import annotations
 
+import itertools
 from dataclasses import dataclass
 
 import numpy as np
@@ -53,6 +60,9 @@ TOOTH_TYPES = tuple(f"{arch}_{kind}" for arch in ("upper", "lower") for kind in 
 CHART_QUALITY = ("complete", "partial", "copied", "uniform")
 CATEGORICAL = {"tooth_type_code": TOOTH_TYPES, "last_chart_quality_code": CHART_QUALITY}
 XGB_PARAMS = {"max_depth": 3, "n_estimators": 200, "learning_rate": 0.05, "subsample": 0.8}
+XGB_GRID = {"max_depth": [2, 3, 4], "n_estimators": [100, 200], "learning_rate": [0.05, 0.1],
+            "subsample": [0.8, 1.0], "min_child_weight": [1, 5]}       # cv_folds: the tuning grid (spec 032 US5)
+SPLIT_UNITS = ("person", "visit")       # visit: random rows, so a patient can be on both sides (reported)
 LOGISTIC_C = 1.0
 N_BINS = 10
 CLIP = 1e-8                     # probabilities are clipped to [CLIP, 1 - CLIP] before the logit
@@ -67,11 +77,25 @@ class ModelParams:
     seed: int = 42                         # split, models and bootstrap
     min_age: int | None = 18               # analysis plan s. 3: adults; sensitivity none (None) and 30
     include_third_molars: bool = False     # sensitivity analysis when True
+    start_date: str | None = None          # spec 032 US2: ISO date; teeth lost (or first charted) before it are out
     n_boot: int = 1000
     threshold: float = 0.5
+    split_unit: str = "person"             # spec 032 US5: SPLIT_UNITS; visit reports the patients in both
+    cv_folds: int | None = None            # spec 032 US5: tune XGBoost over XGB_GRID by k-fold CV when set
 
 
 DEFAULT = ModelParams()
+
+
+@traced
+def check_params(params: ModelParams) -> None:
+    """Fail at once, naming the setting, on a validation setting that can't work."""
+    if params.split_unit not in SPLIT_UNITS:
+        raise ValueError(f"split_unit {params.split_unit!r}: one of {SPLIT_UNITS}")
+    if not 0 < params.test_share < 1:
+        raise ValueError(f"test_share {params.test_share!r}: between 0 and 1")
+    if params.cv_folds is not None and params.cv_folds < 2:
+        raise ValueError(f"cv_folds {params.cv_folds!r}: at least 2, or None for no tuning")
 
 
 # ---------- who, the label sets and the predictors
@@ -81,27 +105,56 @@ def _age(t: pd.DataFrame) -> pd.Series:
                          errors="coerce")
 
 
+def _ref_date(t: pd.DataFrame) -> pd.Series:
+    """The date a start date is compared with: the loss date, else the first exam date (when the frame has one)."""
+    on = pd.to_datetime(t["loss_date"])
+    return on.fillna(pd.to_datetime(t["first_exam_date"])) if "first_exam_date" in t else on
+
+
 @traced
 def eligible(teeth: pd.DataFrame, params: ModelParams = DEFAULT) -> pd.DataFrame:
     """The teeth in the analysis: third molars out unless included; at least `min_age` when one is set (a tooth
-    whose age isn't recorded is then left out too: `exclusions` counts them)."""
+    whose age isn't recorded is then left out too: `exclusions` counts them); on or after `start_date` when one is
+    set (a tooth with no date is then left out too)."""
     t = teeth if params.include_third_molars else teeth[~teeth["tooth_num"].isin(THIRD_MOLARS)]
     if params.min_age is not None:
         t = t[_age(t) >= params.min_age]
+    if params.start_date is not None:
+        t = t[_ref_date(t) >= pd.Timestamp(params.start_date)]
     return t
 
 
 @traced
 def exclusions(teeth: pd.DataFrame, params: ModelParams = DEFAULT) -> dict[str, int]:
-    """How many teeth `eligible` leaves out, by reason, in the order it applies them, and how many it keeps."""
+    """How many teeth `eligible` leaves out, by reason, in the order it applies them (each tooth counted once, under
+    the first reason), and how many it keeps."""
     molar = pd.Series(False, index=teeth.index) if params.include_third_molars else \
         teeth["tooth_num"].isin(THIRD_MOLARS)
     age = _age(teeth)
     cut = params.min_age is not None
     unknown = ~molar & age.isna() & cut
     young = ~molar & ~age.isna() & (age < params.min_age if cut else False)
+    left = ~molar & ~unknown & ~young
+    on = _ref_date(teeth)
+    dated = params.start_date is not None
+    no_date = left & on.isna() & dated
+    early = left & on.notna() & ((on < pd.Timestamp(params.start_date)) if dated else False)
     return {"third_molar_count": int(molar.sum()), "under_min_age_count": int(young.sum()),
-            "unknown_age_count": int(unknown.sum()), "eligible_count": int((~molar & ~unknown & ~young).sum())}
+            "unknown_age_count": int(unknown.sum()), "before_start_date_count": int(early.sum()),
+            "unknown_date_count": int(no_date.sum()), "eligible_count": int((left & ~no_date & ~early).sum())}
+
+
+@traced
+def with_first_exam_date(teeth: pd.DataFrame, x: dict[str, pd.DataFrame]) -> pd.DataFrame:
+    """The tooth table plus `first_exam_date`: each patient's first perio exam, else their first visit date (the
+    same date the age at first exam uses). Added only when a start date is set, so the default run is unchanged."""
+    exams = x["perioexam"]
+    first = pd.to_datetime(exams["examdate"]).groupby(pd.to_numeric(exams["patnum"], errors="coerce")).min()
+    pat = x["patient"]
+    visit = pd.Series(pd.to_datetime(pat["datefirstvisit"], errors="coerce").to_numpy(),
+                      index=pd.to_numeric(pat["patnum"], errors="coerce"))
+    on = teeth["patient_id"].map(first).astype("datetime64[ns]")
+    return teeth.assign(first_exam_date=on.fillna(teeth["patient_id"].map(visit).astype("datetime64[ns]")))
 
 
 @traced
@@ -147,6 +200,59 @@ def split_patients(labelled: pd.DataFrame, test_share: float = 0.3, seed: int = 
     return frozenset(test)
 
 
+@traced
+def split_teeth(labelled: pd.DataFrame, test_share: float = 0.3, seed: int = 42) -> frozenset:
+    """Held-out teeth (index labels) for `split_unit=visit`: `test_share` of each outcome, at random, seeded. A
+    patient can have teeth on both sides (`people_in_both`)."""
+    y = labelled["is_perio_loss"].astype(bool).to_numpy()
+    rng = np.random.default_rng(seed)
+    test = []
+    for v in (False, True):
+        rows = np.sort(labelled.index[y == v].to_numpy())
+        test.extend(rng.permutation(rows)[:round(len(rows) * test_share)].tolist())
+    return frozenset(test)
+
+
+@traced
+def people_in_both(people, in_test) -> int:
+    """How many people have rows in both the training and the test part."""
+    people, in_test = np.asarray(people), np.asarray(in_test, dtype=bool)
+    return len(set(people[in_test].tolist()) & set(people[~in_test].tolist()))
+
+
+@traced
+def cv_splits(y, groups, folds: int, seed: int = 42) -> list[tuple[np.ndarray, np.ndarray]]:
+    """(train, validation) row positions for `folds`-fold CV, stratified on the outcome and seeded; grouped so
+    no person is on both sides of a fold, unless `groups` is None (a split by visit)."""
+    from sklearn.model_selection import StratifiedGroupKFold, StratifiedKFold
+    y = np.asarray(y, dtype=int)
+    if groups is None:
+        return list(StratifiedKFold(n_splits=folds, shuffle=True, random_state=seed).split(np.zeros(len(y)), y))
+    return list(StratifiedGroupKFold(n_splits=folds, shuffle=True, random_state=seed)
+                .split(np.zeros(len(y)), y, np.asarray(groups)))
+
+
+@traced
+def tune_xgboost(X: pd.DataFrame, y, groups, folds: int, seed: int = 42, grid: dict | None = None) -> dict:
+    """The grid point (XGB_GRID by default) with the best mean validation AUC over `folds` folds (cv_splits),
+    plus `cv_auc` and `cv_folds_used`. A fold without both outcomes on each side is skipped."""
+    grid = grid or XGB_GRID
+    y = np.asarray(y, dtype=int)
+    cv = [(tr, va) for tr, va in cv_splits(y, groups, folds, seed)
+          if len(np.unique(y[tr])) == 2 and len(np.unique(y[va])) == 2]
+    if not cv:
+        raise ValueError(f"cv_folds {folds}: no fold has both outcomes on each side")
+    keys = list(grid)
+    best, best_auc = None, -1.0
+    for values in itertools.product(*(grid[k] for k in keys)):
+        params = dict(zip(keys, values))
+        aucs = [_auc(y[va].astype(float), _XGBoost(seed, params).fit(X.iloc[tr], y[tr]).predict(X.iloc[va]))
+                for tr, va in cv]
+        if np.mean(aucs) > best_auc:
+            best, best_auc = params, float(np.mean(aucs))
+    return best | {"cv_auc": best_auc, "cv_folds_used": len(cv)}
+
+
 # ---------- models
 
 class _Logistic:
@@ -179,10 +285,10 @@ class _Logistic:
 
 
 class _XGBoost:
-    def __init__(self, seed: int):
+    def __init__(self, seed: int, params: dict | None = None):
         from xgboost import XGBClassifier
         self.model = XGBClassifier(objective="binary:logistic", tree_method="hist", random_state=seed, n_jobs=1,
-                                   eval_metric="logloss", **XGB_PARAMS)
+                                   eval_metric="logloss", **(params or XGB_PARAMS))
 
     @traced
     def fit(self, X: pd.DataFrame, y: np.ndarray) -> _XGBoost:
@@ -195,12 +301,15 @@ class _XGBoost:
 
 
 @traced
-def fit(model: str, X: pd.DataFrame, y, seed: int = 42):
-    """A fitted `logistic` or `xgboost` model with .predict(X) -> P(lost to periodontitis)."""
+def fit(model: str, X: pd.DataFrame, y, seed: int = 42, xgb_params: dict | None = None):
+    """A fitted `logistic` or `xgboost` model with .predict(X) -> P(lost to periodontitis). `xgb_params` replaces
+    XGB_PARAMS (a tuned grid point); the logistic model has no such settings."""
     y = np.asarray(y, dtype=int)
     if len(np.unique(y)) < 2:
         raise ValueError(f"{model}: the training teeth hold one class only; nothing to fit")
-    return {"logistic": _Logistic, "xgboost": _XGBoost}[model](seed).fit(X, y)
+    if model == "xgboost":
+        return _XGBoost(seed, xgb_params).fit(X, y)
+    return {"logistic": _Logistic}[model](seed).fit(X, y)
 
 
 # ---------- metrics (twins in r/R/16_spec029.R)
@@ -378,10 +487,18 @@ def patient_worst_cal(x: dict[str, pd.DataFrame]) -> pd.Series:
 
 
 @traced
-def patient_stage(teeth: pd.DataFrame, prob: pd.Series, truth: pd.DataFrame, worst_cal: pd.Series) -> pd.DataFrame:
-    """One row per patient: teeth lost to periodontitis counted four ways, and stage IV (>= 5) under each rule.
+def patient_stage(teeth: pd.DataFrame, prob: pd.Series, truth: pd.DataFrame, worst_cal: pd.Series,
+                  chart: pd.DataFrame | None = None) -> pd.DataFrame:
+    """One row per patient: teeth lost to periodontitis counted four ways, and stage IV (>= 5) under each rule; and
+    the teeth left, with the occluding pairs between them, for the teeth-left rules (spec 032 US4).
     prob: P(lost to periodontitis) per tooth (teeth's index), read for the unlabelled missing teeth only.
+    chart: the whole tooth table the teeth left are read from (default `teeth`): every tooth not missing, planned
+    extractions included, whoever the model leaves out; `present_tooth_text` lists them as charted, and the counts
+    leave out third molars (labels.stage4_tooth_counts).
     Patients with worst CAL >= 5 mm are the ones tooth loss moves between III and IV (`is_stage3_4`)."""
+    chart = teeth if chart is None else chart
+    left = chart.loc[~chart["tooth_status_code"].isin(MISSING_STATUSES), ["patient_id", "tooth_num"]]
+    left = left.astype("int64").sort_values(["patient_id", "tooth_num"]).groupby("patient_id")["tooth_num"].agg(list)
     t = teeth[["patient_id", "tooth_num", "tooth_status_code"]].assign(p=prob.reindex(teeth.index))
     t = t.merge(truth[["patient_id", "tooth_num", "true_reason_code"]], on=["patient_id", "tooth_num"], how="left")
     t["missing"] = t["tooth_status_code"].isin(MISSING_STATUSES)
@@ -396,8 +513,11 @@ def patient_stage(teeth: pd.DataFrame, prob: pd.Series, truth: pd.DataFrame, wor
                "unlabelled_tooth_count": len(probs), "unlabelled_prob_sum": float(sum(probs)),
                "expected_perio_loss": labels.expected_perio_loss(recorded, probs), "true_perio_count": true,
                "worst_cal_mm": float(worst_cal.get(pat, np.nan))}
+        present = left.get(pat, [])
+        row["teeth_present_count"], row["occluding_pair_count"] = labels.stage4_tooth_counts(present)
+        row["present_tooth_text"] = " ".join(str(n) for n in present)
         for rule in labels.STAGE4_COUNT_RULES:
-            row[f"is_stage4_{rule}"] = labels.stage4_rule(rule, recorded, missing, probs, true)
+            row[f"is_stage4_{rule}"] = labels.stage4_rule(rule, recorded, missing, probs, true, teeth_present=present)
         rows.append(row)
     out = pd.DataFrame(rows)
     out["is_stage3_4"] = out["worst_cal_mm"] >= STAGE3_4_CAL_MM
@@ -433,13 +553,21 @@ def _age_at_loss(teeth: pd.DataFrame, x: dict[str, pd.DataFrame]) -> pd.Series:
 def run(x: dict[str, pd.DataFrame], truth: pd.DataFrame, params: ModelParams = DEFAULT,
         generator_seed: int = 42) -> dict[str, pd.DataFrame]:
     """Fit and score every model on both label sets (module docstring). Returns frames: scores, calibration,
-    stage_recount, patient_stage, predictions, missing, eval_rows. Every row is labelled synthetic."""
+    stage_recount, patient_stage, predictions, missing, eval_rows, and validation (how it was validated: the split,
+    the patients in both parts, the XGBoost settings). Every row is labelled synthetic."""
+    check_params(params)
     teeth = tl.tooth_table(x)
     teeth["age_at_loss_num"] = _age_at_loss(teeth, x)
+    if params.start_date is not None:
+        teeth = with_first_exam_date(teeth, x)
     el = eligible(teeth, params).reset_index(drop=True)
     true = el.merge(truth, on=["patient_id", "tooth_num"], how="left")["true_reason_code"]
-    test_pats = split_patients(label_set(el, "completed_planned"), params.test_share, params.seed)
-    in_test = el["patient_id"].isin(test_pats)
+    if params.split_unit == "person":
+        test_pats = split_patients(label_set(el, "completed_planned"), params.test_share, params.seed)
+        in_test = el["patient_id"].isin(test_pats)
+    else:                                       # random teeth: a patient can be on both sides (reported below)
+        test_rows = split_teeth(label_set(el, "completed_planned"), params.test_share, params.seed)
+        in_test = pd.Series(el.index.isin(list(test_rows)), index=el.index)
 
     status = el["tooth_status_code"]
     eval_masks = {"held_out": status.isin(LABEL_SETS["completed"]) & el["is_perio_loss"].notna() & in_test,
@@ -449,7 +577,7 @@ def run(x: dict[str, pd.DataFrame], truth: pd.DataFrame, params: ModelParams = D
               "extracted_no_dx": (true == "perio").astype(float)}
     worst_cal = patient_worst_cal(x)
     tag = {"generator_seed": generator_seed}
-    scores, cals, preds, eval_rows, stage_parts, missing = [], [], [], [], [], []
+    scores, cals, preds, eval_rows, stage_parts, missing, validation = [], [], [], [], [], [], []
 
     def score(ls, fs, model, ev, p, thresholds, boot):
         m = eval_masks[ev]
@@ -477,10 +605,23 @@ def run(x: dict[str, pd.DataFrame], truth: pd.DataFrame, params: ModelParams = D
             missing += [{**tag, "label_set": ls, "split": sp, "predictor": f, "tooth_count": int(rows.sum()),
                          "missing_ratio": float(el.loc[rows, f].isna().mean()) if rows.any() else np.nan}
                         for f in tl.OWN_FEATURES]
+        both = people_in_both(el.loc[labelled, "patient_id"], in_test.to_numpy()[labelled])
         for fs in FEATURE_SETS:
             X = design_matrix(el, fs)
+            xgb, cv_auc = XGB_PARAMS, np.nan
+            if params.cv_folds:
+                groups = None if params.split_unit == "visit" else el.loc[train, "patient_id"].to_numpy()
+                best = tune_xgboost(X[train], y_train, groups, params.cv_folds, params.seed)
+                cv_auc = best.pop("cv_auc")
+                best.pop("cv_folds_used")
+                xgb = best
+            validation.append({**tag, "label_set": ls, "feature_set": fs, "split_unit": params.split_unit,
+                               "test_share": params.test_share, "cv_folds": params.cv_folds,
+                               "train_tooth_count": int(train.sum()),
+                               "test_tooth_count": int((labelled & ~train).sum()),
+                               "people_in_both_count": both, "xgboost_params": str(xgb), "cv_auc": cv_auc})
             for model in MODELS:
-                fitted = fit(model, X[train], y_train, params.seed)
+                fitted = fit(model, X[train], y_train, params.seed, xgb)
                 p = fitted.predict(X)
                 cut = _youden(y_train.astype(float), p[train])
                 thresholds = {"fixed_0.5": params.threshold, "youden_train": cut}
@@ -499,7 +640,7 @@ def run(x: dict[str, pd.DataFrame], truth: pd.DataFrame, params: ModelParams = D
                     "predicted_perio": p[rows] >= params.threshold, "generator_seed": generator_seed,
                     "synthetic": True}))
                 if fs == "shared":
-                    ps = patient_stage(el, pd.Series(p, index=el.index), truth, worst_cal)
+                    ps = patient_stage(el, pd.Series(p, index=el.index), truth, worst_cal, chart=teeth)
                     stage_parts.append(ps.assign(**tag, label_set=ls, model=model))
         rate = float(y_train.mean())
         for model, value in (("baseline_all_perio", 1.0), ("baseline_outcome_rate", rate),
@@ -522,4 +663,5 @@ def run(x: dict[str, pd.DataFrame], truth: pd.DataFrame, params: ModelParams = D
     return {"scores": label(pd.DataFrame(scores)), "calibration": label(pd.concat(cals, ignore_index=True)),
             "stage_recount": label(pd.DataFrame(recount)), "patient_stage": label(ps_all),
             "predictions": pd.concat(preds, ignore_index=True), "missing": label(pd.DataFrame(missing)),
-            "eval_rows": label(pd.concat(eval_rows, ignore_index=True))}
+            "eval_rows": label(pd.concat(eval_rows, ignore_index=True)),
+            "validation": label(pd.DataFrame(validation))}

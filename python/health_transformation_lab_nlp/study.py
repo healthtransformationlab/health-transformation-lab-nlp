@@ -30,7 +30,15 @@ from .labels import PerioChart, Status, extent_of, grade_of, label_chart
 from .medical_record import medical_records, people_from_visits
 from .note_reader import read_note
 from .periodx import visits_table as periodx_visits_table
-from .phenotype import RULES_DESIGN, RULES_V0, agreement_matrix, coverage, phenotype, phenotype_v0
+from .phenotype import (
+    RULES_DESIGN,
+    RULES_V0,
+    agreement_matrix,
+    coverage,
+    phenotype,
+    phenotype_v0,
+    with_absent_code,
+)
 from .phi import fake_person, fake_provider
 from .radiograph import FEATURES as RAD_FEATURES
 from .radiograph import features as rad_features
@@ -158,6 +166,32 @@ def generate_visits(n_people: int, seed: int) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+def _visit_masks(df: pd.DataFrame, min_age: int | None, start_date: str | None) -> tuple[pd.Series, pd.Series]:
+    young = df["age"] < min_age if min_age is not None else pd.Series(False, index=df.index)
+    on = pd.to_datetime(df["visit_date"])
+    early = ~young & (on < pd.Timestamp(start_date)) if start_date is not None else pd.Series(False, index=df.index)
+    return young, early
+
+
+@traced
+def visits_in_study(df: pd.DataFrame, min_age: int | None = None, start_date: str | None = None) -> pd.DataFrame:
+    """The visits that count (spec 032 US2): aged at least `min_age` at the visit when one is set, and on or after
+    `start_date` (an ISO date) when one is set. Both default to None: every visit, as before."""
+    if min_age is None and start_date is None:
+        return df
+    young, early = _visit_masks(df, min_age, start_date)
+    return df[~young & ~early]
+
+
+@traced
+def visit_exclusions(df: pd.DataFrame, min_age: int | None = None, start_date: str | None = None) -> dict[str, int]:
+    """How many visits `visits_in_study` leaves out, by reason, in the order it applies them (each visit counted
+    once, under the first reason), and how many it keeps."""
+    young, early = _visit_masks(df, min_age, start_date)
+    return {"under_min_age_count": int(young.sum()), "before_start_date_count": int(early.sum()),
+            "eligible_count": int((~young & ~early).sum())}
+
+
 @traced
 def apply_deid(df: pd.DataFrame, engine: str = "regex") -> tuple[pd.DataFrame, pd.DataFrame]:
     out, report = [], []
@@ -173,11 +207,14 @@ def apply_deid(df: pd.DataFrame, engine: str = "regex") -> tuple[pd.DataFrame, p
 
 
 @traced
-def read_methods(df: pd.DataFrame) -> pd.DataFrame:
+def read_methods(df: pd.DataFrame, absent_code: str = "no_answer") -> pd.DataFrame:
+    """Every method's reading per visit, and the phenotypes built from them. `absent_code` (spec 032 US3,
+    phenotype.ABSENT_CODE_RULES) is how the diagnosis-code source reads a visit with no gum-disease code."""
     df = df.copy()
     df["notes"] = [read_note(t) for t in df["note_text"]]
     for col, reader in READERS.items():
         df[col] = [reader(v) for v in df[col + "_raw"]]
+    df = with_absent_code(df, absent_code)
     # The chart is the measured evidence, when it was done (Patel 2020: ~80% charted;
     # here it varies by clinic). Read from the RECORDED chart, which carries the
     # injected charting errors, and staged from that visit's chart alone.
@@ -222,8 +259,14 @@ def label_studio_tasks(review: pd.DataFrame) -> list[dict]:
 
 @traced
 def build_study(out_dir: Path, raw_dir: Path, n_people: int = 1200, review_n: int = 240,
-                seed: int = 42, engine: str = "regex") -> dict:
+                seed: int = 42, engine: str = "regex", min_age: int | None = None,
+                start_date: str | None = None) -> dict:
+    """Build the study files (module docstring). `min_age` and `start_date` (spec 032 US2, default None: every
+    visit) choose which visits count; the summary then reports those left out, by reason."""
     df = generate_visits(n_people, seed)
+    filtered = min_age is not None or start_date is not None
+    left_out = visit_exclusions(df, min_age, start_date)
+    df = visits_in_study(df, min_age, start_date)
     # Spec 023: the synthetic medical record, on its own random stream after every study draw, so no other file changes.
     medical = medical_records(people_from_visits(df), seed)
     for c in READERS:
@@ -271,7 +314,7 @@ def build_study(out_dir: Path, raw_dir: Path, n_people: int = 1200, review_n: in
     deid_report.to_csv(out_dir / "deid_report.csv", index=False)
 
     tot = deid_report[["phi_chars", "phi_chars_removed", "non_phi_chars_removed"]].sum()
-    return {"visits": len(df) + len(blocked), "blocked_by_leak_gate": len(blocked),
+    summary = {"visits": len(df) + len(blocked), "blocked_by_leak_gate": len(blocked),
             "train_visits": len(train), "train_people": train["person_id"].nunique(),
             "review_visits": len(review), "deid_engine": engine,
             "deid_char_recall": round(tot.phi_chars_removed / tot.phi_chars, 4),
@@ -279,6 +322,9 @@ def build_study(out_dir: Path, raw_dir: Path, n_people: int = 1200, review_n: in
             "algorithm": RULES_V0["version"], "algorithm_design": RULES_DESIGN["version"],
             "record_errors_injected": int((df["record_error"] != "").sum()),
             "review_status_mix": review["truth_status"].value_counts().to_dict()}
+    if filtered:      # only then, so the default summary (data/datasets/build_summary.json) is unchanged
+        summary["visits_left_out"] = {"min_age": min_age, "start_date": start_date, **left_out}
+    return summary
 
 
 @traced

@@ -17,6 +17,18 @@ notes[["note_id", "pred"]].to_csv(LABELS_DIR / "python_rules_predictions.csv", i
 test = notes.merge(pd.read_csv(LABELS_DIR / "split.csv"), on="person_id").query("split == 'test'")
 score(test["label"], test["pred"], None, "rules_baseline", run_id="parity").to_csv(
     LABELS_DIR / "python_rules_score.csv", index=False)
+# Spec 032 US1: the same predictions scored at the five and three status groupings, and person-level prevalence
+# per status group by clinic, for the R twins (eval/score.R, r/R/06_validation.R). data/labels/ is not committed.
+for grouping in ("five", "three"):
+    score(test["label"], test["pred"], None, "rules_baseline", run_id="parity", grouping=grouping).to_csv(
+        LABELS_DIR / f"python_rules_score_{grouping}.csv", index=False)
+
+from health_transformation_lab_nlp.paths import DATASETS_DIR
+from health_transformation_lab_nlp.prevalence import prevalence_by_group
+
+visits = pd.read_csv(DATASETS_DIR / "visits_structured.csv")
+pd.concat([prevalence_by_group(visits, "algorithm_design", grouping=g, by="clinic_id")
+           for g in ("six", "five", "three")]).to_csv(LABELS_DIR / "python_prevalence_by_group.csv", index=False)
 
 # AAP worksheet edge cases (CAL missing, tooth loss, complexity) for the R twin of label_chart
 import itertools
@@ -40,3 +52,15 @@ print(f"wrote python_rules_predictions.csv, python_rules_score.csv, aap_rule_cas
 from health_transformation_lab_nlp.periodx import write_parity_cases
 
 print(write_parity_cases(LABELS_DIR))
+
+# Spec 032 US3: the diagnosis-code source under each absent-code rule, on every pairing of a code and a plan, for its
+# R twin (r/R/18_spec032.R).
+from health_transformation_lab_nlp.phenotype import ABSENT_CODE_RULES, read_dx_code
+
+codes = ["", "Z01.20", "Z00.00", "K05.00", "K05.10", "K05.311", "K05.312", "K05.313", "K05.321", "K05.322",
+         "K05.323", "K05.3", "K05.6", "K08.1"]
+plans = ["", "(none)", "D0120 D1110", "D0180 D4341", "D0180 D4341 D7140"]
+cases = pd.DataFrame([{"dx_raw": dx, "plan_raw": plan, "absent_code": rule, "status": read_dx_code(dx, plan, rule)}
+                      for dx, plan, rule in itertools.product(codes, plans, ABSENT_CODE_RULES)])
+cases.to_csv(LABELS_DIR / "absent_code_cases.csv", index=False)
+print(f"wrote absent_code_cases.csv ({len(cases)} cases)")

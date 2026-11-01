@@ -65,12 +65,17 @@ planned_extraction_029 <- function(pl, pc, defs, tp) {
 
 # ---- Spec 029 US3 (#371): the tooth-loss model's metrics and the stage IV counting rules
 # Twins of tooth_loss_model.py (auc, brier, classification, youden_threshold, calibration_slope,
-# calibration_intercept, calibration_table) and labels.py (expected_perio_loss, stage4_rule). Model fitting stays
-# Python only (FR-005). Base R.
+# calibration_intercept, calibration_table) and labels.py (expected_perio_loss, stage4_tooth_counts, stage4_rule).
+# Model fitting stays Python only (FR-005). Base R.
+# Spec 032 US4 (#443): teeth_lt_20 and pairs_lt_10 call stage IV from the teeth left (third molars aside).
 
 CLIP_029 <- 1e-8
 N_BINS_029 <- 10
-STAGE4_COUNT_RULES_029 <- c("recorded_only", "every_missing", "expected_perio_loss", "truth")
+STAGE4_COUNT_RULES_029 <- c("recorded_only", "every_missing", "expected_perio_loss", "truth", "teeth_lt_20",
+                            "pairs_lt_10")
+STAGE4_TEETH_LEFT_MIN_029 <- 20   # fewer than 20 teeth left: stage IV
+STAGE4_PAIRS_MIN_029 <- 10        # fewer than 10 occluding pairs: stage IV (periodx.OCCLUDING_PAIRS_MIN)
+THIRD_MOLARS_029 <- c(1, 16, 17, 32)
 
 auc_029 <- function(y, p) {
   pos <- p[y == 1]; neg <- p[y == 0]
@@ -141,8 +146,20 @@ calibration_table_029 <- function(y, p) {
 
 expected_perio_loss_029 <- function(recorded_perio, unlabelled_probs) recorded_perio + sum(unlabelled_probs)
 
-stage4_rule_029 <- function(rule, recorded_perio, missing, unlabelled_probs = numeric(0), true_perio = NA) {
+# (teeth, occluding pairs) left, from the tooth numbers present; third molars left out; upper t opposes lower 33 - t
+stage4_tooth_counts_029 <- function(teeth_present) {
+  kept <- setdiff(unique(as.integer(teeth_present)), THIRD_MOLARS_029)
+  c(teeth = length(kept), pairs = sum(vapply(2:15, function(k) (k %in% kept) && ((33 - k) %in% kept), logical(1))))
+}
+
+stage4_rule_029 <- function(rule, recorded_perio, missing, unlabelled_probs = numeric(0), true_perio = NA,
+                            teeth_present = NULL) {
   if (!rule %in% STAGE4_COUNT_RULES_029) stop("unknown stage IV counting rule ", rule)
+  if (rule %in% c("teeth_lt_20", "pairs_lt_10")) {
+    if (is.null(teeth_present)) stop("the ", rule, " rule needs teeth_present")
+    n <- stage4_tooth_counts_029(teeth_present)
+    return(if (rule == "teeth_lt_20") n[["teeth"]] < STAGE4_TEETH_LEFT_MIN_029 else n[["pairs"]] < STAGE4_PAIRS_MIN_029)
+  }
   n <- switch(rule, recorded_only = recorded_perio, every_missing = missing,
               expected_perio_loss = expected_perio_loss_029(recorded_perio, unlabelled_probs), truth = true_perio)
   n >= 5
