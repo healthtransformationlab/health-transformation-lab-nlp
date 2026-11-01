@@ -167,3 +167,22 @@ def test_the_open_dental_areas_sit_in_the_reference_layout():
     assert tables["Perio Charting"] == ["perioexam", "periomeasure"]
     # every column now fills from the top, as in the reference
     assert not getattr(OD, "COLUMN_ALIGN", {})
+
+
+@pytest.mark.parametrize("model", [OD, OM], ids=["opendental", "omop"])
+def test_dictionary_lines_never_cross_a_table_or_loop_round_the_diagram(model):
+    # "These lines look bad": lines ran through tables and looped over the whole diagram. Each line's segments must
+    # stay out of every table, and no line may pass above or below all the subject areas.
+    dic = _load("dictionary_erd")
+    d = dic.build(model)
+    assert len(d.routes) == len(model.RELATIONSHIPS)
+    top = min(y for _, y, _, _ in d.areas)
+    bottom = max(y + h for _, y, _, h in d.areas)
+    for route in d.routes:
+        for (x1, y1), (x2, y2) in zip(route, route[1:]):
+            assert x1 == x2 or y1 == y2, "right angles only"
+            lo_x, hi_x, lo_y, hi_y = min(x1, x2), max(x1, x2), min(y1, y2), max(y1, y2)
+            for rx, ry, rw, rh in d.obstacles:
+                inside = lo_x < rx + rw - 1 and hi_x > rx + 1 and lo_y < ry + rh - 1 and hi_y > ry + 1
+                assert not inside, ((x1, y1), (x2, y2), (rx, ry, rw, rh))
+            assert top <= lo_y and hi_y <= bottom, "a line loops round the diagram"
