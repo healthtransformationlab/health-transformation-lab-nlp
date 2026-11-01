@@ -26,8 +26,8 @@ COMPETITION = "gemma-4-developer-agent"
 SMALL_FILES = ("HARNESS_README.md",)
 SMALL_FOLDERS = ("docker/", "sandbox/", "sample_submission/")
 HARNESS_WHEEL = re.compile(r"^wheels/(swegemma|adk[_-]submission|adk[_-]eval[_-]core)[-_].*\.whl$", re.IGNORECASE)
-# what task_graph writes (spec 028 US4): a `workspace/` root folder, these graph keys, 256 float32 per node (T010)
-OUR_SNAPSHOT_ROOT = "workspace"
+# what task_graph writes (spec 028 US4): files at the archive root (#452), these graph keys, 256 float32 per node
+OUR_SNAPSHOT_ROOT = None
 OUR_GRAPH_TOP = ["directed", "edges", "graph", "multigraph", "nodes"]
 OUR_NODE_KEYS = ["id", "name", "text"]
 OUR_EDGE_KEYS = ["key", "source", "target", "type"]
@@ -44,6 +44,11 @@ def select_files(listing: list[tuple[str, int]]) -> list[str]:
     if snapshots:
         iid = Path(snapshots[0][1]).name.removesuffix(".tgz")
         picked |= {snapshots[0][1]} | {f for f in (f"graphs/{iid}.json", f"embeddings/{iid}.npz") if f in names}
+    if not any(n.startswith("graphs/") for n in picked):   # only `<repo_short>_<base_commit>` copies listed (#452)
+        pairs = sorted((size, n) for n, size in listing if n.startswith("graphs/") and n.endswith(".json")
+                       and f"embeddings/{Path(n).stem}.npz" in names)
+        if pairs:
+            picked |= {pairs[0][1], f"embeddings/{Path(pairs[0][1]).stem}.npz"}
     return sorted(picked, key=lambda n: (n.split("/")[0] != "HARNESS_README.md", _order(n), n))
 
 
@@ -98,8 +103,9 @@ def compare_with_ours(theirs: dict) -> list[str]:
     s = theirs.get("snapshot")
     if s:
         same = s["root_folder"] == OUR_SNAPSHOT_ROOT
+        ours = f"a {OUR_SNAPSHOT_ROOT}/ folder" if OUR_SNAPSHOT_ROOT else "files at the root"
         out.append(f"{'MATCHES' if same else 'DIFFERS'} snapshot root: theirs {s['root_folder'] or 'files at the root'}"
-                   f" (.git at {s['git_dir']}), ours a {OUR_SNAPSHOT_ROOT}/ folder")
+                   f" (.git at {s['git_dir']}), ours {ours}")
     g = theirs.get("graph")
     if g:
         same = (g["top_keys"], g["node_keys"], g["edge_keys"]) == (OUR_GRAPH_TOP, OUR_NODE_KEYS, OUR_EDGE_KEYS)
