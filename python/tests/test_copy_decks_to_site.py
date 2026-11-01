@@ -93,19 +93,53 @@ def test_workflow_runs_on_main_when_a_source_changes_and_by_hand():
         assert src in paths, src
 
 
-def test_workflow_checks_the_token_before_any_work_and_commits_only_on_change():
+KEY = "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAA\n-----END OPENSSH PRIVATE KEY-----\n"
+
+
+def test_a_deploy_key_is_preferred_and_the_token_is_the_fallback():
+    """#464: a deploy key doesn't expire; the token still works when no key is set."""
+    assert cd.auth_method({"SITE_DEPLOY_KEY": KEY, "SITE_PUSH_TOKEN": "github_pat_" + "A1_b" * 20}) == "key"
+    assert cd.auth_method({"SITE_DEPLOY_KEY": "", "SITE_PUSH_TOKEN": "github_pat_" + "A1_b" * 20}) == "token"
+
+
+def test_with_neither_credential_the_check_names_both():
+    with pytest.raises(ValueError) as e:
+        cd.auth_method({})
+    assert "SITE_DEPLOY_KEY" in str(e.value) and "SITE_PUSH_TOKEN" in str(e.value)
+
+
+@pytest.mark.parametrize("key", ["ssh-ed25519 AAAAC3Nz public half", "-----BEGIN RSA PRIVATE KEY-----\nabc\n",
+                                 "-----BEGIN OPENSSH PRIVATE KEY-----\nno end line\n"])
+def test_a_malformed_deploy_key_fails_without_echoing_it(key):
+    with pytest.raises(ValueError) as e:
+        cd.auth_method({"SITE_DEPLOY_KEY": key})
+    assert "SITE_DEPLOY_KEY" in str(e.value) and key.strip() not in str(e.value)
+
+
+def test_the_cli_writes_the_method_for_later_steps(monkeypatch, tmp_path, capsys):
+    out = tmp_path / "out"
+    monkeypatch.setenv("SITE_DEPLOY_KEY", KEY)
+    monkeypatch.delenv("SITE_PUSH_TOKEN", raising=False)
+    monkeypatch.setenv("GITHUB_OUTPUT", str(out))
+    assert cd.main(["check-auth"]) == 0
+    assert out.read_text() == "method=key\n" and KEY not in capsys.readouterr().out
+
+
+def test_workflow_checks_the_credential_before_any_work_and_commits_only_on_change():
     steps = _workflow()["jobs"]["copy"]["steps"]
     runs = [s.get("run", "") for s in steps]
-    check = next(i for i, r in enumerate(runs) if "check-token" in r)
+    check = next(i for i, r in enumerate(runs) if "check-auth" in r)
     push_check = next(i for i, r in enumerate(runs) if "push --dry-run" in r)
     build = next(i for i, r in enumerate(runs) if "copy_decks_to_site.py build" in r)
     assert check < push_check < build
-    assert "SITE_PUSH_TOKEN" in runs[push_check]                         # the refusal names the token
+    assert "SITE_DEPLOY_KEY" in runs[push_check] and "SITE_PUSH_TOKEN" in runs[push_check]   # the refusal names both
     text = WF.read_text()
-    assert "secrets.SITE_PUSH_TOKEN" in text
+    assert "secrets.SITE_DEPLOY_KEY" in text and "secrets.SITE_PUSH_TOKEN" in text
     assert "git diff --cached --quiet" in runs[build]                   # commit only when something changed
     assert "${{ github.sha }}" in runs[build] or "GITHUB_SHA" in runs[build]   # names the source commit
     assert "x-access-token:${SITE_PUSH_TOKEN}@" not in text             # the token never lands in .git/config
+    assert "StrictHostKeyChecking=yes" in text and "github.com ssh-ed25519 " in text   # GitHub's host key, pinned
+    assert "chmod 600" in text and "rm -f" in text                      # the key file is private and removed
 
 
 def test_the_site_token_is_in_the_register():
