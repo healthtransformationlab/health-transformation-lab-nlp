@@ -2,7 +2,7 @@
 
 Spec: [specs/002-dentbench-methods](../specs/002-dentbench-methods/spec.md).
 
-**GlobalDentBench** (Cai, Zhao et al., [arXiv 2605.24636](https://arxiv.org/abs/2605.24636),
+**GlobalDentBench** (Zhao, Liang, Cai et al., [arXiv 2605.24636](https://arxiv.org/abs/2605.24636),
 May 2026) evaluates 12 LLMs on 8,978 dental items from 88 countries:
 licensing-exam multiple choice, textbook short answers, and 1,590 clinical
 cases from published case reports. Its task differs from ours (answering

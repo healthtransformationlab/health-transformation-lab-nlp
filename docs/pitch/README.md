@@ -32,7 +32,7 @@ The pitch asks for a fair test, and this repo is where one gets built on synthet
 
 ## Sources cited in the deck
 
-- GlobalDentBench: Cai, Zhao et al., [arXiv 2605.24636](https://arxiv.org/abs/2605.24636), 2026
+- GlobalDentBench: Zhao, Liang, Cai et al., [arXiv 2605.24636](https://arxiv.org/abs/2605.24636), 2026
 - First, Do NOHARM (ARISE network), 2026 preprint
 - Hager et al., *Evaluation and mitigation of the limitations of large language models in clinical decision-making*,
   Nat Med 2024, [doi:10.1038/s41591-024-03097-1](https://doi.org/10.1038/s41591-024-03097-1)

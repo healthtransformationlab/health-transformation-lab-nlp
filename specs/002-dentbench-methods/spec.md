@@ -10,7 +10,7 @@
 
 ## Context
 
-GlobalDentBench (Cai, Zhao et al., arXiv 2605.24636, May 2026) evaluates 12 LLMs
+GlobalDentBench (Zhao, Liang, Cai et al., arXiv 2605.24636, May 2026) evaluates 12 LLMs
 on 8,978 dental items, including 1,590 clinical cases. Its task is different
 from ours (answering dental questions vs. reading a chart note), but four of
 its evaluation methods transfer directly, and two of its gaps are worth

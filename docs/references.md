@@ -11,7 +11,9 @@ Everything this repo relies on, and what it's used for.
    ([note_realism.md](note_realism.md)); regex baseline design.
 2. **Chuang Y-S, Lee C-T, Tokede O, Lin G-H, Brandon R, Tran TD, Jiang X, Walji MF.**
    *Artificial Intelligence in Extracting Diagnostic Data from Dental Records.*
-   [arXiv 2407.21050](https://arxiv.org/abs/2407.21050v3). UTHealth + UCSF.
+   [arXiv 2407.21050v2](https://arxiv.org/abs/2407.21050v2). UTHealth + UCSF. (v3 is retitled *Cross-Institutional
+   Dental EHR Entity Extraction via Generative AI and Synthetic Notes* and uses 360 notes per site; the 240 below is
+   v2's.)
    → Label schema (status, stage, grade, extent); 240 dentist-labeled notes per
    site as the test-set size; synthetic-train / real-test design; the extent trap.
 3. **Patel JS.** *Utilizing Electronic Dental Record Data to Track Periodontal
@@ -31,13 +33,13 @@ Everything this repo relies on, and what it's used for.
    200 charts) and the note extractor (400 notes) were. `algorithm_design` (`phenotype.py`) follows this order, with differences
    listed in action item A2 (checked 2026-10-31, #389). `algorithm_v0` (gum measurements first) is this repo's
    own, not from it.
-5. **Patel JS, Rao R, Tellez M, Albandar M, Joachim K, Wu H.** *Natural Language
-   Processing Applications to Extract Periodontal Disease and Medical History
-   Information from Electronic Dental Records.* ICMHI, 2022.
+5. **Patel JS, Rao R, Brandon R, Iyer V, Albandar JM, Tellez M, Krois J, Wu H.** *Develop a Natural Language
+   Processing Pipeline to Automate Extraction of Periodontal Disease Information from Electronic Dental Clinical
+   Notes.* ICMHI 2022 (ACM), pp. 61–68. doi:10.1145/3545729.3545744.
 
 ## Evaluation methods
 
-6. **Cai Z, Zhao J, et al.** *GlobalDentBench: A Multinational Benchmark for
+6. **Zhao J, Liang J, Cai Z, et al.** *GlobalDentBench: A Multinational Benchmark for
    Evaluating LLM Clinical Reasoning in Dentistry with Expert Calibration.*
    [arXiv 2605.24636](https://arxiv.org/abs/2605.24636), May 2026.
    Code: github.com/FreedomIntelligence/GlobalDentBench.
@@ -67,7 +69,7 @@ Everything this repo relies on, and what it's used for.
 8. **Armitage GC.** *Development of a classification system for periodontal
    diseases and conditions.* Ann Periodontol 1999;4(1):1–6. → Pre-2017 terms
    (slight / moderate / severe chronic periodontitis).
-9. **OHDSI Dentistry Workgroup (Koski R et al.).** *Mapping Dental Use Cases to the
+9. **Koski R, Chandrasekharan G, Duncan WD (OHDSI Dentistry Workgroup).** *Mapping Dental Use Cases to the
    OMOP-CDM: Vocabulary and Common Data Model Evaluation.* OHDSI Symposium 2023.
    [PDF](https://ohdsi.org/wp-content/uploads/2023/10/39-Koski-OHDSIreport-Robert-Koski.pdf).
    → `SITE` / `SITE_EVENT` tooth-level extension.
@@ -91,9 +93,11 @@ Everything this repo relies on, and what it's used for.
 
 ## Knowledge graphs, retrieval and OMOP vocabulary
 
-29. **Lee J, Liu C, Kim JH, et al. (Columbia).** *Comparative effectiveness of knowledge graphs- and EHR
-    data-based medical concept embedding for phenotyping.* medRxiv 2020.
-    [link](https://www.medrxiv.org/content/10.1101/2020.07.14.20151274v1.abstract)
+29. **Lee J, Liu C, Kim JH, et al. (Columbia).** *Comparative effectiveness of medical concept embedding for
+    feature engineering in phenotyping.* JAMIA Open 2021;4(2):ooab028.
+    [doi:10.1093/jamiaopen/ooab028](https://doi.org/10.1093/jamiaopen/ooab028); preprint
+    [medRxiv 2020.07.14.20151274](https://www.medrxiv.org/content/10.1101/2020.07.14.20151274v2). Compares
+    knowledge-graph and EHR-data concept embeddings.
 30. **Ahmed A, Soby S, Aasman B, Mirhaji P.** *Automated OMOP concept mapping using multi-agent LLMs and
     graph-enhanced semantic retrieval.* OHDSI Symposium 2025.
     [PDF](https://www.ohdsi.org/wp-content/uploads/2025/10/508-Ahmed-Automated-OMOP-Concept-Mapping-Using-Multi-Agent-Large-Language-Models-and-Graph-Enhanced-Semantic-Retrieval-Report-Adil-Ahmed.pdf)
@@ -161,7 +165,8 @@ Everything this repo relies on, and what it's used for.
 24. **BioPharmaTrend.** *Google updates open medical AI suite with new imaging and speech models* (MedGemma 1.5, MedASR), January 2026.
     [biopharmatrend.com](https://www.biopharmatrend.com/news/google-updates-open-medical-ai-suite-with-new-imaging-and-speech-models-launches-100k-developer-hackathon-1464/)
 
-25. **Koski R, et al.** *Identifying Oral Health Concepts in OMOP-CDM Datasets.* OHDSI Symposium 2025.
+25. **Koski R, Boyce D, Martin B, Cha J, Sanchez M.** *Identifying Oral Health Concepts from Previously
+    "OMOP-ified" Data.* OHDSI 2025 Global Collaborator Showcase, poster 111.
     [PDF](https://www.ohdsi.org/wp-content/uploads/2025/10/111-koski-robert_Identifying_Oral_Health_Concepts-Robert-Koski.pdf)
 
 ## Synthetic data
@@ -181,10 +186,10 @@ Everything this repo relies on, and what it's used for.
     Psychol Bull 1971;76(5):378–382. → Reviewer reliability.
 15. **Cohen J.** *Weighted kappa.* Psychol Bull 1968;70(4):213–220. → Ordinal agreement.
 51. **Patel JS, et al.** *Developing and testing a prediction model for periodontal disease using machine
-    learning and big electronic dental record data.* Frontiers in Artificial Intelligence 2022.
-    doi:10.3389/frai.2022.979525. → Design of the status classifier (`classify_status.py`, spec 013 G10):
-    XGBoost, 80/20 split, 5-fold cross-validated hyperparameters, one-vs-all metrics. Whether it used SHAP
-    was not checked against the full text; SHAP here is this repo's choice.
+    learning and big electronic dental record data.* Front Artif Intell 2022;5:979525.
+    doi:10.3389/frai.2022.979525, PMID 36311550, PMC9608121. → Design of the status classifier (`classify_status.py`, spec 013 G10):
+    XGBoost, 80/20 split, 5-fold cross-validated hyperparameters, one-vs-all metrics. It also used SHAP to
+    explain predictions (Methods, "Predictor contribution interpretation"; Figure 4), as this repo does.
 52. **Lundberg SM, Erion G, Chen H, et al.** *From local explanations to global understanding with
     explainable AI for trees.* Nature Machine Intelligence 2020;2:56–67. → TreeSHAP, the exact SHAP values
     XGBoost computes (`pred_contribs`) for the status classifier.
