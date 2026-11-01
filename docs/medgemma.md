@@ -85,14 +85,14 @@ suppresses it (it otherwise used up the 300 new tokens before the JSON) and
 | Compare with BERT | `python scripts/29_medgemma_vs_bert.py [--bert modernbert-base]`: each MedGemma run minus the encoder, paired bootstrap CI, stage IV recall, by difficulty, fallback rate; R twin in `10_ladder.R`. Notebook 03 runs it after the reader (set `limit` 0, `lora_train` > 0 for the fine-tuned version) |
 
 **Reference answers per field (#130).** The reader returns three fields: status, grade and extent. Their
-correct answers per review visit are in `data/datasets/answer_key/reference_answers.csv` (`51_reference_answers.py`),
+correct answers per review visit are in `data/datasets/answer_key/reference_answers.csv` (`53_reference_answers.py`),
 taken from the generator's truth: the synthetic generator decides each visit's status, grade and extent before it
 writes the note, so no reviewer had to fill them in. Grade and extent are `NA` unless the truth is periodontitis.
 Where the note states something else (a copied-forward or miscoded record), the reference keeps the truth and
 `note_stated_status` shows the note. The reader returns no pocket depths or bleeding, so they have no reference
 column. Synthetic truth, not a clinician's reading.
 
-**Accuracy per field (#132).** `python scripts/52_medgemma_field_accuracy.py` scores each committed MedGemma run
+**Accuracy per field (#132).** `python scripts/54_medgemma_field_accuracy.py` scores each committed MedGemma run
 against those reference answers, one row per field, and writes `data/datasets/ladder/medgemma_field_accuracy.csv`
 (R twin `r/R/17_spec004.R`, checked by the parity test). It logs `field_accuracy_<field>` and `field_n_<field>` to
 MLflow, and `11_ai_predict.py` logs the same metrics after a complete reader run. How each field is scored:

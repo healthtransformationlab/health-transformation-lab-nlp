@@ -232,7 +232,7 @@ for (pfx in c("", "simulated_")) {
   stopifnot(nrow(m) == nrow(py), d < 1e-9, nrow(ml) == nrow(pl), dl < 1e-9)
 }
 
-# 9e. MedGemma accuracy per field (spec 004 US6, #132): R 17_spec004.R vs scripts/52_medgemma_field_accuracy.py.
+# 9e. MedGemma accuracy per field (spec 004 US6, #132): R 17_spec004.R vs scripts/54_medgemma_field_accuracy.py.
 # The committed real runs, and the simulated dry run (placeholder reader, not a result).
 ref_file <- "data/datasets/answer_key/reference_answers.csv"
 for (pfx in c("", "simulated_")) {

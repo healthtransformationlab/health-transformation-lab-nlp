@@ -1,6 +1,6 @@
 """Reference answers for the note reader's fields, one row per review visit (spec 004 US5, #130).
 
-    python scripts/51_reference_answers.py
+    python scripts/53_reference_answers.py
 
 Reads data/datasets/answer_key/review_key.csv (the generator's truth, written by 10_build_study.py with
 seed 42) and writes data/datasets/answer_key/reference_answers.csv: visit_id, status, grade, extent (the

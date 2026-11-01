@@ -131,5 +131,5 @@ def test_mlflow_metrics_name_each_field():
 
 def test_the_reader_and_the_per_field_script_log_these_metrics():
     from health_transformation_lab_nlp.paths import REPO_ROOT
-    for s in ("11_ai_predict.py", "52_medgemma_field_accuracy.py"):
+    for s in ("11_ai_predict.py", "54_medgemma_field_accuracy.py"):
         assert "field_metrics(" in (REPO_ROOT / "python" / "scripts" / s).read_text(), s
