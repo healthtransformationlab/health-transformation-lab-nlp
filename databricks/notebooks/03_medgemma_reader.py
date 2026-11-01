@@ -53,7 +53,7 @@ telemetry.use_databricks_secret(dbutils, dbutils.widgets.get("telemetry"),  # no
 tracking.pass_databricks_login()       # the scripts below log to MLflow with the notebook's login
 # ... to the bundle's experiment: on Databricks the name must be an absolute path (tracking checks it)
 os.environ["MLFLOW_TRACKING_URI"] = "databricks"
-os.environ["DENTAL_MLFLOW_EXPERIMENT"] = (dbutils.widgets.get("experiment_name")  # noqa: F821
+os.environ["DENTAL_MLFLOW_EXPERIMENT"] = (tracking.setting(dbutils.widgets.get("experiment_name"))  # noqa: F821  "None": unset (#131)
                                           or f"/Users/{spark.sql('select current_user()').first()[0]}/health-transformation-lab-nlp")  # noqa: F821
 print("MLflow experiment:", os.environ["DENTAL_MLFLOW_EXPERIMENT"])
 
