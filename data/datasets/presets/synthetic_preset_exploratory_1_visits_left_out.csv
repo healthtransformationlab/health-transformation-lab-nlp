@@ -1,0 +1,4 @@
+reason_name,visit_count,preset_name,data_label
+under_min_age_count,0,exploratory_1,synthetic
+before_start_date_count,549,exploratory_1,synthetic
+eligible_count,3794,exploratory_1,synthetic

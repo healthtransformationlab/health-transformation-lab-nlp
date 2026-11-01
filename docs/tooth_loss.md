@@ -70,6 +70,9 @@ twins (`r/R/16_spec029.R`) checked to 1e-9 by `r/tests/test_parity.R`. The gold 
 `gold_opendental_perio.fact_tooth_loss_prediction` holds one probability per tooth, model, label set and run
 (written by the Load Open Dental job).
 
+These options can also be run together as a named preset, beside today's defaults: see [presets](presets.md)
+(spec 032 US7).
+
 ## Results (SYNTHETIC)
 
 ```bash

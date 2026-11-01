@@ -1,0 +1,10 @@
+metric_name,value,patient_count,teeth_per_patient_count,visits_per_patient_count,preset_name,data_label
+var_patient,0.8853080314,100,12,3,exploratory_1,synthetic
+var_tooth,0.3269905537,100,12,3,exploratory_1,synthetic
+var_site,0.2234666667,100,12,3,exploratory_1,synthetic
+var_error,0.6670907407,100,12,3,exploratory_1,synthetic
+icc_patient,0.4210026909,100,12,3,exploratory_1,synthetic
+icc_tooth,0.5765010012,100,12,3,exploratory_1,synthetic
+icc_site,0.6827691753,100,12,3,exploratory_1,synthetic
+sem_mm,0.8167562309,100,12,3,exploratory_1,synthetic
+total_var,2.1028559925,100,12,3,exploratory_1,synthetic
