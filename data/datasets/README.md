@@ -9,11 +9,13 @@ the counts and de-id recall for this build.
 |------|-----|
 | `train.csv` | Train the AI model. `label` = chart truth, `stated_status` = what the clinician wrote, `grade`, `extent`. |
 | `review_tasks.json` | Import into Label Studio (`labelstudio/README.md`). |
-| `answer_key/` | **Reviewers must not open this.** Generator truth, each evidence type's reading, the algorithm's call, per chart. Used only by `13_reliability.py`. |
+| `answer_key/` | **Reviewers must not open this.** Generator truth, each evidence type's reading, the algorithm's call, per chart. Used by `13_reliability.py` and the scoring scripts. `answer_key/reference_answers.csv`: the correct status, grade and extent per review visit, the fields the MedGemma reader returns (`53_reference_answers.py`, spec 004 US5). |
 | `method_agreement.csv` | Pairwise agreement between the evidence types (note, exam form, procedure codes and diagnosis codes completed/planned, probing chart, radiograph AI) (status level and perio yes/no). |
 | `method_coverage.csv` | How often each evidence type says anything. |
 | `deid_report.csv` | Per note: PHI characters, removed, over-redacted, leaked values. |
 | `ai_predictions_*.csv` | One file per AI model, predictions on the review charts. |
+| `periodx_visits.csv` | Spec 024: per visit, the PerioDx Extractor's reading of the note and the PerioDx Diagnoser's reading of the chart (Patel et al. 2022), and `algorithm_patel2022`, the paper's stepwise order, with the section that decided it. Statuses only, no note text, all synthetic. Kept apart from `visits_structured.csv`, so that file stays as it was ([periodx.md](../../docs/periodx.md)). |
+| `periodx/confusion_scores.csv`, `data_quality/completeness_patel2022.csv` | Spec 024: confusion counts, precision, recall and F1 per status for the Diagnoser, the Extractor and the phenotype on the review charts; completeness per section before and after merging (`scripts/52_patel2022.py`). Synthetic, against the generator's truth. |
 | `medical_record.csv` | **Synthetic** medical record, one row per person (spec 023): diabetes (the visits' HbA1c ≥ 6.5), hypertension, chronic kidney disease, cardiovascular disease, COPD, blood pressure, ASA class, and `is_synthetic`. Join on `person_id`; HbA1c stays in `visits_structured.csv`. |
 
 ## The medical record (`medical_record.csv`, spec 023)

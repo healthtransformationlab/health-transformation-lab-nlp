@@ -219,6 +219,11 @@ def test_a_run_fits_both_models_on_both_label_sets_and_scores_the_same_teeth(sma
     assert {"auc", "brier", "calibration_intercept", "calibration_slope", "sensitivity", "specificity", "ppv",
             "npv", "outcome_rate"} <= set(s["metric"])
     assert set(s["threshold_name"].dropna()) == {"fixed_0.5", "youden_train"}
+    # US7 (#429): teeth missing at entry hold both classes, so AUC and specificity there are numbers
+    entry = s[(s["eval_set"] == "missing_at_entry") & s["model"].isin(tm.MODELS)]
+    rate = entry.loc[entry["metric"] == "outcome_rate", "value"]
+    assert ((rate > 0) & (rate < 1)).all()
+    assert entry.loc[entry["metric"].isin(["auc", "specificity"]), "value"].notna().all()
     ok = s[(s["model"] == "xgboost") & (s["metric"] == "auc") & s["value"].notna()]
     assert (ok["ci_low"] <= ok["value"]).all() and (ok["value"] <= ok["ci_high"]).all()
 

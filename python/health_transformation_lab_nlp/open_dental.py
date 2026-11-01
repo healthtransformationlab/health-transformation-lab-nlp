@@ -26,7 +26,9 @@ What the extract carries, as Open Dental records it:
   (`radiograph_bone_level`), standing in for a radiograph-reading tool; it is never an Open Dental table.
 
 Why each tooth was lost (`tooth_loss_truth`) is returned apart from the extract and written to another folder: the
-evaluation reads it, the extract never carries it.
+evaluation reads it, the extract never carries it. Teeth missing at the first visit are lost to periodontitis (the
+spec 006 mouth) or to another reason (caries, fracture, orthodontic, failed treatment), added here by age band so the
+periodontal share among them follows a published mix (`ENTRY_PERIO_SHARE_BY_AGE`, spec 029 US7, #429).
 """
 
 from __future__ import annotations
@@ -38,6 +40,7 @@ from pathlib import Path
 
 import pandas as pd
 
+from .labels import label_chart
 from .sites import MOLARS, SITES, THIRD_MOLARS, draw_mouth_columns
 from .synthetic import draw_history, draw_pct_teeth_involved, draw_risk
 from .telemetry import traced
@@ -135,6 +138,13 @@ CDCREC = [("1002-5", "R1", "American Indian or Alaska Native"), ("2028-9", "R2",
           ("2054-5", "R3", "Black or African American"), ("2076-8", "R4", "Native Hawaiian or Other Pacific Islander"),
           ("2106-3", "R5", "White"), ("2135-2", "E1", "Hispanic or Latino"), ("2186-5", "E2", "Not Hispanic or Latino")]
 
+# spec 029 US7 (#429): the share of extracted teeth lost to periodontal disease, by age band (lower bound, years),
+# third molars aside: Suzuki et al., Int Dent J 2022;72(3):366-372, Table 2, men and women pooled, impacted teeth left
+# out (specs/029-tooth-loss/research.md, "Why teeth are missing"; docs/references.md item 63)
+ENTRY_PERIO_SHARE_BY_AGE = ((25, 0.064), (35, 0.209), (45, 0.329), (55, 0.480), (65, 0.500), (75, 0.470))
+_TOOTH_KIND = {**{t: "incisor" for t in (7, 8, 9, 10, 23, 24, 25, 26)}, **{t: "canine" for t in (6, 11, 22, 27)},
+               **{t: "premolar" for t in (4, 5, 12, 13, 20, 21, 28, 29)}, **{t: "molar" for t in MOLARS}}
+
 
 @dataclass(frozen=True)
 class Params:
@@ -174,6 +184,13 @@ class Params:
     bitewing_per_visit: float = 0.35          # bitewings at a later visit
     pano_per_visit: float = 0.03              # a panoramic image at a later visit
     reading_missing: float = 0.15             # a tooth on a radiograph that the (simulated) reading leaves unread
+    # why teeth are missing at entry (US7, #429): the mean number of teeth (third molars aside) missing at the first
+    # visit for a reason other than periodontitis, by age band (lower bound, years). Set so the periodontal share
+    # among teeth missing at entry matches ENTRY_PERIO_SHARE_BY_AGE, given the spec 006 periodontal losses
+    # (specs/029-tooth-loss/research.md, "How the generator reaches the shares")
+    entry_other_teeth_by_age: tuple = ((25, 3.61), (35, 0.96), (45, 0.54), (55, 0.33), (65, 0.28), (75, 0.35))
+    # which teeth those are: a weight per tooth type (this repo's choice, not a cited figure; research.md)
+    entry_other_tooth_weights: tuple = (("molar", 3.0), ("premolar", 2.0), ("canine", 1.0), ("incisor", 1.0))
 
 
 # every mess rate at zero: a complete chart at every visit, every radiograph read
@@ -210,6 +227,44 @@ def _frames(r: _Rows) -> dict[str, pd.DataFrame]:
     return out
 
 
+def _band(age: float, bands) -> int:
+    """The lower bound of the age band `age` falls in (bands: (lower bound, ...) pairs, ascending)."""
+    return max([low for low, _ in bands if age >= low] or [bands[0][0]])
+
+
+def _poisson(mean: float, rng: random.Random) -> int:
+    """A Poisson draw (Knuth), from the given stream only."""
+    limit, k, prod = pow(2.718281828459045, -mean), 0, rng.random()
+    while prod > limit:
+        k += 1
+        prod *= rng.random()
+    return k
+
+
+def _entry_other_teeth(age: int, chart, site_cols: dict, teeth: dict, p: Params, rng: random.Random) -> list[int]:
+    """Teeth present in the spec 006 mouth that were in fact lost before the first visit for another reason (US7).
+    How many: a Poisson draw with the age band's mean. Which: by tooth type weight, never by attachment loss; third
+    molars (their own rule in sites.draw_mouth_columns) and the teeth holding the mouth's worst CAL and probing depth
+    stay, so the charted measures stay the chart's; a mouth below stage IV keeps 20 teeth, as in draw_mouth_columns."""
+    present = [t for t, ok in zip(teeth["tooth"], teeth["present"]) if ok]
+    n = _poisson(dict(p.entry_other_teeth_by_age)[_band(age, p.entry_other_teeth_by_age)], rng)
+    if not n or not present:
+        return []
+    cal, pd_ = site_cols["cal_mm"], site_cols["pd_mm"]
+    keep = {site_cols["tooth"][cal.index(max(cal))], site_cols["tooth"][pd_.index(max(pd_))]} if cal else set()
+    pool = [t for t in present if t not in THIRD_MOLARS and t not in keep]
+    stage = label_chart(chart).value
+    if not stage.startswith("periodontitis") or int(stage[-1]) < 4:
+        n = min(n, max(0, len(present) - 20))
+    weight = dict(p.entry_other_tooth_weights)
+    chosen = []
+    for _ in range(min(n, len(pool))):
+        t = rng.choices(pool, weights=[weight[_TOOTH_KIND[t]] for t in pool])[0]
+        pool.remove(t)
+        chosen.append(t)
+    return sorted(chosen)
+
+
 def _adoption(d: date, p: Params) -> float:
     """Share of new diagnoses drawn from the 2017 list on day d: 0 before the switch, rising to 1 over the lag."""
     years = (d - p.list_switch_date).days / 365.25
@@ -230,6 +285,7 @@ def build_with_readings(p: Params | None = None, seed: int = 42) -> tuple[dict[s
     """`build`, plus the SIMULATED radiograph reading (READING_COLUMNS): one row per radiograph and tooth on it."""
     p = p or Params()
     rng = random.Random(f"{seed}:open_dental")
+    entry_rng = random.Random(f"{seed}:open_dental:entry_reason")     # why teeth are missing at entry (US7)
     r = _Rows()
     truth: dict[tuple[int, int], str] = {}
 
@@ -344,6 +400,8 @@ def build_with_readings(p: Params | None = None, seed: int = 42) -> tuple[dict[s
         # ---- the mouth at the first exam: who is missing, and why (the truth)
         chart0 = hist[0].chart
         site_cols, teeth = draw_mouth_columns(chart0, draw_pct_teeth_involved(chart0, rng), rng)
+        for t in _entry_other_teeth(age, chart0, site_cols, teeth, p, entry_rng):
+            teeth["present"][t - 1], teeth["missing_reason"][t - 1] = False, "other"
         base = {(t, s): (pd_, cal, b) for t, s, pd_, cal, b in zip(site_cols["tooth"], site_cols["site"],
                                                                     site_cols["pd_mm"], site_cols["cal_mm"],
                                                                     site_cols["bop"])}
@@ -574,6 +632,40 @@ def extractions(tables: dict[str, pd.DataFrame], truth: pd.DataFrame) -> pd.Data
     older = {n for n, _, _ in OLDER_LIST}
     ext["dx_list"] = ext["dx"].map(lambda x: None if x == 0 else ("older" if names.get(x) in older else "2017"))
     return ext.merge(truth, left_on=["patnum", "tooth_num"], right_on=["patient_id", "tooth_num"], how="left")
+
+
+@traced
+def patient_age(tables: dict[str, pd.DataFrame]) -> pd.Series:
+    """Age in whole years at the first visit, one per `patient` row (same order)."""
+    pat = tables["patient"]
+    born, first = pd.to_datetime(pat["birthdate"]), pd.to_datetime(pat["datefirstvisit"])
+    before = (first.dt.month < born.dt.month) | ((first.dt.month == born.dt.month) & (first.dt.day < born.dt.day))
+    return (first.dt.year - born.dt.year - before.astype(int)).rename("age_num")
+
+
+@traced
+def age_band(age: pd.Series) -> pd.Series:
+    """The lower bound of the ENTRY_PERIO_SHARE_BY_AGE band each age falls in."""
+    return age.map(lambda a: _band(a, ENTRY_PERIO_SHARE_BY_AGE)).rename("age_band_num")
+
+
+@traced
+def entry_reasons(tables: dict[str, pd.DataFrame], truth: pd.DataFrame) -> pd.DataFrame:
+    """One row per tooth missing at the first visit (`toothinitial`, or an extraction done elsewhere, ProcStatus 4),
+    third molars left out: patient, tooth, the patient's age band and the true reason from the answer key. For checking
+    the generator against ENTRY_PERIO_SHARE_BY_AGE (US7); the evaluation alone reads the truth."""
+    ti = tables["toothinitial"]
+    pl = tables["procedurelog"]
+    done_elsewhere = pl[(pl["procstatus"] == EXISTING_OTHER) & pl["codenum"].isin(extraction_codenums(tables))]
+    entry = pd.concat([ti.loc[ti["initialtype"] == 0, ["patnum", "toothnum"]], done_elsewhere[["patnum", "toothnum"]]])
+    entry = pd.DataFrame({"patient_id": entry["patnum"].astype(int).to_numpy(),
+                          "tooth_num": entry["toothnum"].astype(int).to_numpy()}).drop_duplicates()
+    entry = entry[~entry["tooth_num"].isin(THIRD_MOLARS)]
+    band = pd.Series(age_band(patient_age(tables)).to_numpy(), index=tables["patient"]["patnum"].astype(int))
+    entry["age_band_num"] = entry["patient_id"].map(band).astype(int)
+    out = entry.merge(truth, on=["patient_id", "tooth_num"], how="left")
+    return out[["patient_id", "tooth_num", "age_band_num", "true_reason_code"]].sort_values(
+        ["patient_id", "tooth_num"]).reset_index(drop=True)
 
 
 @traced

@@ -114,7 +114,8 @@ def _filter(name, field, datasets, title, pos, widget_type="filter-multi-select"
 SOURCES = [("exam_form_status_code", "Exam form"), ("dx_completed_status_code", "Diagnosis codes, done"),
            ("dx_planned_status_code", "Diagnosis codes, planned"), ("note_status_code", "Chart note"),
            ("probing_chart_status_code", "Gum measurements"), ("rules_v0_status_code", "Rules, measurements first (v0)"),
-           ("rules_design_status_code", "Rules, exam form first (design)")]
+           ("rules_design_status_code", "Rules, exam form first (design)"),
+           ("rules_patel2022_status_code", "Rules, Patel et al. 2022 order")]
 
 # gold names (AGENTS.md "SQL and data names"); the output aliases are the widgets' field names
 DQ_SQL = {

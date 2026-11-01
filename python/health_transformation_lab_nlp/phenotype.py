@@ -40,8 +40,8 @@ RULES_V0 = {
 }
 # Spec 005: the study design's starting order for the integrated phenotype. The order is this repo's own:
 # Patel et al. 2022 (Methods Inf Med; docs/references.md item 4) uses the structured diagnosis section, then
-# notes, then charting, with no exam-form or PSR step; its order will be algorithm_patel2022 (spec 024, not built
-# yet; action item A2, checked against the full text). Not assumed final: scripts/18_phenotype_order.py scores every
+# notes, then charting, with no exam-form or PSR step; its order is algorithm_patel2022 (spec 024, below; action
+# item A2, checked against the full text). Not assumed final: scripts/18_phenotype_order.py scores every
 # ordering of the four groups so the order can change if another evidence type proves more accurate.
 DESIGN_GROUPS = {
     "exam_form": ["exam_form"],
@@ -50,6 +50,15 @@ DESIGN_GROUPS = {
     "probing_chart": ["probing_chart"],
 }
 DESIGN_ORDER = ["exam_form", "dx_code", "notes", "probing_chart"]
+
+# Spec 024 US3: the paper's own order, with its own readers (periodx.py): M1 the structured diagnosis (this repo's
+# diagnosis codes stand in, completed then planned: the repo's choice, as in algorithm_design), M2 the PerioDx
+# Extractor on the note, M3 the PerioDx Diagnoser on the chart. No exam form: the paper has none. Kept apart from
+# DESIGN_GROUPS, so script 18's 24 orderings stay as they are and this is scored as one extra row.
+PATEL2022_ORDER = ["dx_code", "notes", "probing_chart"]
+PATEL2022_ROW = "patel2022:" + ">".join(PATEL2022_ORDER)   # its row in scripts/18_phenotype_order.py
+PATEL2022_SECTIONS = {"M1": ["proc_dx_completed", "proc_dx_planned"], "M2": ["periodx_note_label"],
+                      "M3": ["periodx_chart_label"]}
 
 
 @traced
@@ -93,6 +102,18 @@ def phenotype_v0(row: pd.Series, rules: dict = RULES_V0) -> tuple[str, str]:
         if status not in _ORDER or _ORDER.index(rad) > _ORDER.index(status):
             return rad, "radiograph_ai"
     return status, by
+
+
+@traced
+def phenotype_patel2022(row: pd.Series) -> tuple[str, str]:
+    """Patel et al. 2022's stepwise phenotype: (status, deciding section M1/M2/M3, or 'none'). The first section
+    with one of the six statuses decides; later sections are not read."""
+    for section, cols in PATEL2022_SECTIONS.items():
+        for c in cols:
+            v = row.get(c, UNKNOWN)
+            if isinstance(v, str) and v in _ORDER:
+                return v, section
+    return UNKNOWN, "none"
 
 
 @traced
@@ -144,14 +165,17 @@ def split_halves(ids, seed: int) -> tuple[set, set]:
 
 @traced
 def score_orders(key: pd.DataFrame, reviewer_wide: pd.DataFrame, n_boot: int = 200, seed: int = 0,
-                 five: bool = True, margin: float = 0.05) -> pd.DataFrame:
+                 five: bool = True, margin: float = 0.05, extra: dict[str, pd.Series] | None = None) -> pd.DataFrame:
     """Score every ordering of the four evidence groups (spec 005).
 
     The review charts are split in half by seed. The order is chosen on the
     'select' half (highest kappa vs reviewer consensus) and reported on the
     held-out half, with the acceptance test, so the chosen order isn't graded on
     the charts that chose it. key: review_key indexed by visit_id;
-    reviewer_wide: visits x reviewers."""
+    reviewer_wide: visits x reviewers.
+
+    extra: name -> status per visit for a fixed method scored on the same halves and appended after the 24
+    orderings, never selected (spec 024: the order of Patel et al. 2022, algorithm_patel2022)."""
     from .reliability import agreement_vs_humans, consensus  # local: avoid import cycle
     ids = np.array(sorted(set(key.index) & set(reviewer_wide.index)))
     sel, hold = split_halves(ids, seed)
@@ -159,11 +183,8 @@ def score_orders(key: pd.DataFrame, reviewer_wide: pd.DataFrame, n_boot: int = 2
     wide = reviewer_wide.apply(f)
     cons = f(consensus(reviewer_wide))
     cats = FIVE if five else _ORDER
-    rows = []
-    for order in itertools.permutations(DESIGN_GROUPS):
-        rules = rules_for_order(list(order))
-        pred = f(pd.Series({vid: phenotype(key.loc[vid], rules)[0] for vid in ids}))
-        out = {"order": ">".join(order), "is_design_order": list(order) == DESIGN_ORDER}
+    def scored(name_: str, pred: pd.Series, is_design: bool) -> dict:
+        out = {"order": name_, "is_design_order": is_design}
         for name, part in (("select", sel), ("holdout", hold)):
             p = pred.reindex(sorted(part))
             c = cons.reindex(p.index)
@@ -177,7 +198,16 @@ def score_orders(key: pd.DataFrame, reviewer_wide: pd.DataFrame, n_boot: int = 2
         m = vh[vh["kind"] == "method"].iloc[0]
         out.update({"holdout_diff_vs_human_bar": m["diff_vs_human_bar"], "holdout_ci_low": m["ci_low"],
                     "holdout_ci_high": m["ci_high"], "holdout_verdict": m["verdict"] if n_boot else ""})
-        rows.append(out)
+        return out
+
+    rows = []
+    for order in itertools.permutations(DESIGN_GROUPS):
+        rules = rules_for_order(list(order))
+        pred = f(pd.Series({vid: phenotype(key.loc[vid], rules)[0] for vid in ids}))
+        rows.append(scored(">".join(order), pred, list(order) == DESIGN_ORDER))
     t = pd.DataFrame(rows).sort_values("select_kappa", ascending=False).reset_index(drop=True)
     t["selected"] = t.index == 0
+    more = [scored(name, f(s.reindex(ids).fillna(UNKNOWN)), False) for name, s in (extra or {}).items()]
+    if more:
+        t = pd.concat([t, pd.DataFrame(more).assign(selected=False)], ignore_index=True)
     return t

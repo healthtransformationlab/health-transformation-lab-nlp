@@ -5,6 +5,15 @@
 source("r/R/labels.R")
 source("eval/score.R")
 
+# Spec 024: algorithm_patel2022 lives in data/datasets/periodx_visits.csv, not in the review key (FR-010).
+with_patel2022_024 <- function(key) {
+  f <- "data/datasets/periodx_visits.csv"
+  if (!file.exists(f)) return(key)
+  pv <- read.csv(f, stringsAsFactors = FALSE)
+  key$algorithm_patel2022 <- pv$algorithm_patel2022[match(key$visit_id, pv$visit_id)]
+  key
+}
+
 # 0. AAP worksheet edge cases: CAL missing, tooth loss, complexity factors.
 if (file.exists("data/labels/aap_rule_cases.csv")) {
   g <- read.csv("data/labels/aap_rule_cases.csv", stringsAsFactors = FALSE)
@@ -54,6 +63,7 @@ if (file.exists(py_rel) && file.exists("data/review/simulated_reviewer_labels.cs
   source("r/R/04_reliability.R")
   labels <- read.csv("data/review/simulated_reviewer_labels.csv", stringsAsFactors = FALSE)
   key <- read.csv("data/datasets/answer_key/review_key.csv", stringsAsFactors = FALSE)
+  key <- with_patel2022_024(key)
   py <- read.csv(py_rel, stringsAsFactors = FALSE)
   compare <- setNames(lapply(setdiff(py$method, "generator_chart_truth"), function(m) {
     if (startsWith(m, "ai:")) { p <- read.csv(sprintf("data/datasets/ai_predictions_%s.csv", sub("^ai:", "", m)))
@@ -232,6 +242,27 @@ for (pfx in c("", "simulated_")) {
   stopifnot(nrow(m) == nrow(py), d < 1e-9, nrow(ml) == nrow(pl), dl < 1e-9)
 }
 
+# 9e. MedGemma accuracy per field (spec 004 US6, #132): R 17_spec004.R vs scripts/54_medgemma_field_accuracy.py.
+# The committed real runs, and the simulated dry run (placeholder reader, not a result).
+ref_file <- "data/datasets/answer_key/reference_answers.csv"
+for (pfx in c("", "simulated_")) {
+  f <- sprintf("data/datasets/ladder/%smedgemma_field_accuracy.csv", pfx)
+  if (!file.exists(f) || !file.exists(ref_file)) next
+  source("r/R/17_spec004.R")
+  ref <- read.csv(ref_file, stringsAsFactors = FALSE, na.strings = "")
+  py <- read.csv(f, stringsAsFactors = FALSE)
+  r <- do.call(rbind, lapply(unique(py$run), function(run) {
+    det <- read.csv(sprintf("data/datasets/%sllm_details_%s.csv", pfx, run), stringsAsFactors = FALSE)
+    cbind(run = run, field_accuracy_004(det, ref), stringsAsFactors = FALSE)
+  }))
+  m <- merge(r, py, by = c("run", "field"), suffixes = c(".r", ".p"))
+  cols <- c("n", "correct", "accuracy", "ci_lo", "ci_hi")
+  d <- max(sapply(cols, function(k) max(abs(m[[paste0(k, ".r")]] - m[[paste0(k, ".p")]]))))
+  cat(sprintf("%smedgemma per field: %d runs x %d fields, max |R - Python| = %.2e\n",
+              pfx, length(unique(py$run)), length(FIELDS_004), d))
+  stopifnot(nrow(m) == nrow(py), nrow(r) == nrow(py), d < 1e-9)
+}
+
 # 10. Spec 005 twins: evidence-order search, data quality, progression (R 09_spec005.R).
 sp <- "data/review/simulated_reliability_5cat/phenotype_orders_split.csv"
 if (file.exists(sp) && file.exists("data/review/simulated_reviewer_labels.csv") &&
@@ -251,6 +282,24 @@ if (file.exists(sp) && file.exists("data/review/simulated_reviewer_labels.csv") 
   same_pick <- r_o$order[r_o$selected] == py_o$order[as.logical(py_o$selected)]
   cat(sprintf("orders:       %d orders, max |R - Python| = %.2e; same order selected: %s\n", nrow(m), d, same_pick))
   stopifnot(nrow(m) == 24, d < 1e-9, same_pick)
+  # spec 024: the order of Patel et al. 2022 (algorithm_patel2022), one extra row on the same halves, never selected
+  pe <- py_o[startsWith(py_o$order, "patel2022:"), ]
+  if (nrow(pe) == 1 && file.exists("data/datasets/periodx_visits.csv")) {
+    split_ <- read.csv(sp)
+    ids <- sort(intersect(as.numeric(rownames(w)), key$visit_id))
+    cons <- collapse5(consensus(w[as.character(ids), , drop = FALSE])); names(cons) <- ids
+    pred <- collapse5(with_patel2022_024(key)$algorithm_patel2022[match(ids, key$visit_id)]); names(pred) <- ids
+    de <- 0
+    for (half in c("select", "holdout")) {
+      h <- as.character(sort(split_$visit_id[split_$half == half]))
+      p <- pred[h]; c0 <- cons[h]; ok <- c0 %in% FIVE_ORDER & p %in% FIVE_ORDER
+      de <- max(de, abs(sum(ok) - pe[[paste0(half, "_n")]]), abs(mean(p %in% FIVE_ORDER) - pe[[paste0(half, "_coverage")]]),
+                abs(mean(p[ok] == c0[ok]) - pe[[paste0(half, "_pct_agree")]]),
+                abs(cohen_kappa(p[ok], c0[ok]) - pe[[paste0(half, "_kappa")]]))
+    }
+    cat(sprintf("orders:       Patel et al. 2022 row, max |R - Python| = %.2e; selected: %s\n", de, pe$selected))
+    stopifnot(de < 1e-9, !as.logical(pe$selected))
+  }
   # data quality: every check, overall
   v <- read.csv("data/datasets/visits_structured.csv", stringsAsFactors = FALSE)
   r_dq <- run_checks_r(v, "2026-10-25")
@@ -334,6 +383,7 @@ if (file.exists(py5) && file.exists("data/review/simulated_reviewer_labels.csv")
   source("r/R/04_reliability.R")
   labels <- read.csv("data/review/simulated_reviewer_labels.csv", stringsAsFactors = FALSE)
   key <- read.csv("data/datasets/answer_key/review_key.csv", stringsAsFactors = FALSE)
+  key <- with_patel2022_024(key)
   py <- read.csv(py5, stringsAsFactors = FALSE)
   ms <- setdiff(py$method, "generator_chart_truth")
   compare <- setNames(lapply(ms, function(m) {
@@ -570,6 +620,81 @@ if (file.exists(file.path(td, "patient_tooth.csv"))) {
   cat("parity OK (spec 029)\n")
 } else cat("tooth statuses: skipped (run 47_tooth_table.py)\n")
 
+# Spec 024 US1: the PerioDx Diagnoser (Patel et al. 2022, Fig. 2), R 14_spec024.R vs periodx.chart_status on seeded
+# chart inputs with gaps, and on the repo's summary chart read as the figure's inputs. Labels compared exactly.
+pc <- "data/labels/periodx_chart_cases.csv"
+ps <- "data/labels/periodx_summary_cases.csv"
+if (file.exists(pc) && file.exists(ps)) {
+  source("r/R/14_spec024.R")
+  same_024 <- function(r, py, cols) {
+    py[is.na(py)] <- ""; r[is.na(r)] <- ""
+    sum(sapply(cols, function(k) sum(as.character(r[[k]]) != as.character(py[[k]]))))
+  }
+  cols_024 <- c("status", "stage", "extent", "grade", "label", "partial")
+  g <- read.csv(pc, stringsAsFactors = FALSE, na.strings = "")
+  r_g <- chart_status_024(g)
+  bad_g <- same_024(r_g, g[cols_024], cols_024)
+  s <- read.csv(ps, stringsAsFactors = FALSE, na.strings = "")
+  sc <- summary_chart_024(s$max_pd_mm, s$bop_pct, s$max_cal_mm, s$rbl_pct, s$teeth_lost_perio, s$pct_teeth_involved)
+  d_pct <- max(abs(sc$pct_teeth_involved - s$chart_pct_teeth_involved), na.rm = TRUE)
+  same_na <- all(is.na(sc$pct_teeth_involved) == is.na(s$chart_pct_teeth_involved))
+  bad_counts <- same_024(sc, s, c("interproximal_cal_teeth", "cal5_adjacent_teeth", "pd5_adjacent_teeth"))
+  sc$age <- 55; sc$cigarettes_per_day <- 0; sc$diabetes <- FALSE; sc$hba1c <- NA
+  bad_s <- same_024(chart_status_024(sc), s[cols_024], cols_024)
+  cat(sprintf("PerioDx Diagnoser: %d chart cases, %d values differ; %d summary charts, %d inputs and %d values differ, extent share max |R - Python| = %.2e\n",
+              nrow(g), bad_g, nrow(s), bad_counts, bad_s, d_pct))
+  stopifnot(bad_g == 0, bad_counts == 0, bad_s == 0, same_na, d_pct < 1e-9)
+  cat("parity OK (spec 024 US1)\n")
+} else cat("PerioDx Diagnoser: skipped (run python/scripts/export_rules_predictions.py)\n")
+
+# Spec 024 US3: the Diagnoser on every visit, the stepwise phenotype (codes, then the Extractor's reading of the
+# note, then the chart), completeness per section and the confusion scores, R 14_spec024.R vs periodx_visits.csv
+# and scripts/52_patel2022.py. The Extractor is NLP, so R reads its labels from Python's table (plan item 6).
+pvf <- "data/datasets/periodx_visits.csv"
+pcf <- "data/datasets/periodx/confusion_scores.csv"
+pkf <- "data/datasets/data_quality/completeness_patel2022.csv"
+if (file.exists(pvf) && file.exists(pcf) && file.exists(pkf)) {
+  source("r/R/14_spec024.R")
+  v <- read.csv("data/datasets/visits_structured.csv", stringsAsFactors = FALSE)
+  pv <- read.csv(pvf, stringsAsFactors = FALSE, na.strings = "")
+  pv <- pv[match(v$visit_id, pv$visit_id), ]
+  rc <- periodx_chart_visits_024(v)
+  pyc <- data.frame(status = pv$periodx_chart_status, stage = pv$periodx_chart_stage, extent = pv$periodx_chart_extent,
+                    grade = pv$periodx_chart_grade, label = pv$periodx_chart_label, partial = pv$periodx_chart_partial,
+                    stringsAsFactors = FALSE)
+  bad_chart <- same_024(rc[names(pyc)], pyc, names(pyc))
+  rm_ <- phenotype_patel2022_024(v$proc_dx_completed, v$proc_dx_planned, pv$periodx_note_label, pv$periodx_chart_label)
+  bad_merge <- sum(rm_$algorithm_patel2022 != pv$algorithm_patel2022 |
+                   rm_$algorithm_patel2022_decided_by != pv$algorithm_patel2022_decided_by)
+  vv <- cbind(v, pv[, setdiff(names(pv), "visit_id")])
+  sections <- list(M1 = c("proc_dx_completed", "proc_dx_planned"), M2 = "periodx_note_label", M3 = "periodx_chart_label")
+  r_k <- rbind(cbind(scale = "all_visits", section_completeness_024(vv, sections, "algorithm_patel2022",
+                                                                    "algorithm_patel2022_decided_by")),
+               cbind(scale = "reference_set", section_completeness_024(vv[as.logical(vv$in_review), ], sections,
+                                                                       "algorithm_patel2022", "algorithm_patel2022_decided_by")))
+  py_k <- read.csv(pkf, stringsAsFactors = FALSE)
+  mk <- merge(r_k, py_k, by = c("scale", "section"), suffixes = c(".r", ".p"))
+  dk <- max(sapply(c("n_visits", "n_with_value", "pct_with_value", "n_decided", "pct_decided"),
+                   function(k) max(abs(mk[[paste0(k, ".r")]] - mk[[paste0(k, ".p")]]))))
+  key <- read.csv("data/datasets/answer_key/review_key.csv", stringsAsFactors = FALSE)
+  rk <- merge(key[, c("visit_id", "truth_status")], pv, by = "visit_id")
+  rk <- rk[order(rk$visit_id), ]
+  r_c <- do.call(rbind, lapply(list(c("diagnoser", "periodx_chart_label"), c("extractor", "periodx_note_label"),
+                                    c("algorithm_patel2022", "algorithm_patel2022")), function(x)
+    cbind(component = x[1], confusion_scores_024(rk$truth_status, rk[[x[2]]]))))
+  py_c <- read.csv(pcf, stringsAsFactors = FALSE)
+  mc <- merge(r_c, py_c, by = c("component", "class"), suffixes = c(".r", ".p"))
+  diff_c <- function(k) {
+    a <- mc[[paste0(k, ".r")]]; b <- mc[[paste0(k, ".p")]]
+    if (any(is.na(a) != is.na(b))) return(Inf)
+    if (all(is.na(a))) 0 else max(abs(a - b), na.rm = TRUE)
+  }
+  dc <- max(sapply(c("tp", "fp", "fn", "tn", "precision", "recall", "f1"), diff_c))
+  cat(sprintf("PerioDx visits: %d charts, %d values differ; stepwise phenotype %d differ; completeness %d rows max |R - Python| = %.2e; confusion %d rows max |R - Python| = %.2e\n",
+              nrow(v), bad_chart, bad_merge, nrow(mk), dk, nrow(mc), dc))
+  stopifnot(bad_chart == 0, bad_merge == 0, nrow(mk) == nrow(py_k), dk < 1e-9, nrow(mc) == nrow(py_c), dc < 1e-9)
+  cat("parity OK (spec 024 US3)\n")
+} else cat("PerioDx visits: skipped (run 10_build_study.py and 52_patel2022.py)\n")
 # Spec 029 US3: the tooth-loss model's metrics and the stage IV counting rules (R 16_spec029.R vs
 # tooth_loss_model.py / labels.py, from scripts/51_tooth_loss_model.py's outputs). Model fitting is Python only.
 rt <- "data/results"

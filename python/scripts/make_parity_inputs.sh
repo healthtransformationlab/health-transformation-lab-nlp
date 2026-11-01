@@ -13,9 +13,13 @@ python scripts/13_reliability.py --simulated --n-boot 200
 python scripts/28_ladder_vs_truth.py --n-boot 200
 python scripts/11_ai_predict.py --rung medgemma-1.5-4b-it --backend simulated
 python scripts/29_medgemma_vs_bert.py --simulated --n-boot 200   # needs committed encoder predictions
+python scripts/53_reference_answers.py                 # spec 004 US5: reference answers per reader field
+python scripts/54_medgemma_field_accuracy.py           # spec 004 US6: per field, the committed MedGemma runs
+python scripts/54_medgemma_field_accuracy.py --simulated
 python scripts/19_prevalence.py
 python scripts/20_data_quality.py
 python scripts/44_medical_features.py --metrics-only   # spec 023: per-class metrics on committed predictions + seeded cases (no xgboost)
+python scripts/52_patel2022.py          # spec 024: Patel et al. 2022 completeness and confusion scores (read by the R parity test)
 python scripts/45_case_profiles.py      # spec 026: record-mismatch rules and scores (read by the R parity test)
 python scripts/47_tooth_table.py        # spec 029: tooth statuses on a seeded synthetic Open Dental extract
 python scripts/51_tooth_loss_model.py --patients 2000 --stability-seeds 1 --n-boot 50   # spec 029 US3: model metrics, stage rule

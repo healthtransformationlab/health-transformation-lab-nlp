@@ -469,3 +469,109 @@ therefore cover every list the practice has used, and the switch is a date range
    has an ICD-10 code in E10–E11.
 6. **Office**: `ClinicNum` on `patient` and `procedurelog` is the office for the per-office consistency check
    (FR-009).
+
+## Why teeth are missing: published reasons for extraction by age (US7, #429)
+
+The generator needs, for teeth already missing at a patient's first visit, how often the reason is periodontitis
+and how often something else (caries, fracture, orthodontic, failed treatment, other), by age. Every figure below was
+checked against the paper (PubMed record, and the PMC full text where open); none is invented. References items
+63-67 in [docs/references.md](../../docs/references.md).
+
+### The source used: Suzuki et al. 2022 (Japan, second nationwide survey)
+
+Suzuki S, Sugihara N, Kamijo H, Morita M, Kawato T, Tsuneishi M, Kobayashi K, Hasuike Y, Sato T. *Reasons for tooth
+extractions in Japan: the second nationwide survey.* Int Dent J 2022;72(3):366-372.
+doi:10.1016/j.identj.2021.05.008, PMID 34193342, PMC9275201.
+
+- **Population:** 2,345 of 5,250 dentists sampled systematically (every 10th) from the Japan Dental Association's
+  2018 directory (44.8%) recorded every permanent tooth extracted in one week, 4-10 June 2018: 7,809 teeth from
+  6,398 patients aged 10-106 (194 of 8,003 left out for missing data).
+- **Reasons** (six groups): caries, periodontal disease, fracture, orthodontics, impacted teeth, others.
+- **Table 2** gives teeth by reason, age band and sex. Pooling men and women (counts added from Table 2, read in the
+  PMC full text on 2026-11-01) for the ages the synthetic patients have (25-85):
+
+| Age band | Caries | Periodontal | Fracture | Orthodontic | Impacted | Others | Teeth, impacted left out | Periodontal share |
+|---|---|---|---|---|---|---|---|---|
+| 25-34 | 278 | 31 | 32 | 20 | 126 | 127 | 488 | 0.064 |
+| 35-44 | 290 | 120 | 63 | 8 | 81 | 94 | 575 | 0.209 |
+| 45-54 | 350 | 301 | 184 | 4 | 37 | 75 | 914 | 0.329 |
+| 55-64 | 340 | 627 | 270 | 0 | 16 | 70 | 1,307 | 0.480 |
+| 65-74 | 472 | 1,008 | 443 | 0 | 5 | 93 | 2,016 | 0.500 |
+| 75+ (75-79, 80-84, 85+) | 469 | 841 | 402 | 1 | 3 | 77 | 1,790 | 0.470 |
+
+  For example, 25-34 is men 150/18/18/0/54/55 plus women 128/13/14/20/72/72. The paper's totals: periodontal 40.4%
+  (men) and 34.9% (women), caries 30.2% and 29.0%, fracture 16.8% and 19.2%; periodontal disease predominant over 55.
+- **What the generator takes:** the periodontal share by band (last column), as `open_dental.ENTRY_PERIO_SHARE_BY_AGE`.
+  Impacted teeth are left out of the denominator because they are mostly third molars, which the label and the stage
+  count leave out by default (spec Edge Cases); the paper doesn't say how many third molars fall under other reasons
+  (caries is the main reason for upper third molars, 51.1%), so some third molars stay in the denominator.
+  Everything other than periodontal (caries, fracture, orthodontic, others) is `other` in the answer key.
+
+### Other sources, and where they disagree
+
+- **Aida J, Ando Y, Akhter R, Aoyama H, Masui M, Morita M.** *Reasons for permanent tooth extractions in Japan.*
+  J Epidemiol 2006;16(5):214-219. doi:10.2188/jea.16.214, PMID 16951541, PMC7683702. The first Japanese survey:
+  2,001 dentists (39.1%), one week of February 2005, 9,115 teeth from 7,499 patients. Caries 32.7% and fracture of
+  teeth weakened by caries or endodontics 10.6% (43.3% together), periodontal disease 41.8%; caries or fracture
+  common in every age group over 15, periodontal disease predominant over 45 (abstract). Same pattern as Suzuki;
+  its age breakdown is a figure, not a table, so Suzuki's counts are used.
+- **Murray H, Locker D, Kay EJ.** *Patterns of and reasons for tooth extractions in general dental practice in
+  Ontario, Canada.* Community Dent Oral Epidemiol 1996;24(3):196-200. doi:10.1111/j.1600-0528.1996.tb00841.x,
+  PMID 8871019. 128 dentists, 6,143 patients in a reference week: periodontal disease 35.9% of teeth lost, caries
+  28.9%; orthodontics the main reason in childhood, periodontal disease above caries after 40 (abstract). Agrees with
+  the Japanese surveys on the age pattern.
+- **McCaul LK, Jenkins WM, Kay EJ.** *The reasons for extraction of permanent teeth in Scotland: a 15-year follow-up
+  study.* Br Dent J 2001;190(12):658-662. doi:10.1038/sj.bdj.4801068, PMID 11453155. 352 general dental
+  practitioners (82.8%), one week in 1999: caries the commonest reason in every age group over 20, where in 1984
+  periodontal disease had been the main reason over 40 (abstract). **Disagrees** with the above after 40.
+- **Chestnutt IG, Binnie VI, Taylor MM.** *Reasons for tooth extraction in Scotland.* J Dent 2000;28(4):295-297.
+  doi:10.1016/s0300-5712(99)00069-x, PMID 10722904. 139 practitioners, one week of November 1994, 917 teeth from
+  613 patients: caries 51%, periodontal disease 21%, orthodontics 11%, failed endodontics 4%, trauma, pericoronitis
+  and other 5.5%, patient request 7.5%; the periodontal share rose from 31 to 60 and fell after (abstract).
+- **Broers DLM, Dubois L, de Lange J, Su N, de Jongh A.** *Reasons for tooth removal in adults: a systematic
+  review.* Int Dent J 2022;72(1):52-57. doi:10.1016/j.identj.2021.01.011, PMID 33648772, PMC9275356. Three studies
+  (Greece twice, Croatia; 4,396 extractions, adults, third molars left out): caries 36.0-55.3%, periodontitis
+  24.8-38.1%, trauma 0.8-4.4%, periapical disease 7.3-19.1%, orthodontics 2.5-7.2%, other 4.5-9.2%, patient request
+  3.6-5.9% (abstract and full text). No age breakdown.
+
+**Choice and reason.** The sources agree that caries and its sequelae dominate young adults' extractions and that
+the periodontal share rises with age; they disagree on how far (periodontal the main reason after 40-55 in Japan
+and Ontario; caries still the main one in Scotland 1999 and in the review's three studies). Suzuki et al. 2022 is
+used because it is the only one with a full table of counts by age band that could be checked here, it is the most
+recent, it is a national sample, and its categories map onto ours. Its overall periodontal share (37.6% of all 7,809 teeth, sexes pooled) is at
+the top of the review's range (24.8-38.1%), so the synthetic mix leans periodontal; a lower share is a parameter away.
+
+### How the generator reaches the shares
+
+The spec 006 mouth decides the periodontal losses at entry; this story adds, per patient, a Poisson number of
+non-periodontal ones with mean `Params.entry_other_teeth_by_age` for the age band. For the share `s` in a band
+where the mean periodontal count per patient is `m`, the mean is `m (1 - s) / s`. `m` was measured with the
+non-periodontal means at zero, pooled over generator seeds 101-105 at 6,000 patients each (30,000 patients):
+
+| Age band | `m`, periodontal teeth at entry per patient | Target share `s` | Mean non-periodontal teeth (default) |
+|---|---|---|---|
+| 25-34 | 0.247 | 0.064 | 3.61 |
+| 35-44 | 0.253 | 0.209 | 0.96 |
+| 45-54 | 0.264 | 0.329 | 0.54 |
+| 55-64 | 0.302 | 0.480 | 0.33 |
+| 65-74 | 0.285 | 0.500 | 0.28 |
+| 75+ | 0.311 | 0.470 | 0.35 |
+
+The periodontal counts are heavy-tailed (a stage IV mouth loses many teeth at once), so one seed's share in a band
+can sit 0.03-0.05 from the target; `test_open_dental.py` checks a 6,000-patient extract within 0.05.
+
+### Caveats
+
+- **Extractions in one week, applied to teeth already missing.** The surveys count extractions done at a given age
+  (incidence). A tooth missing at a first visit at 60 may have been lost at 30. Using the share for the patient's
+  current age band is an approximation, and probably overstates the periodontal share for older patients, whose
+  earlier losses were more often caries.
+- **Japan, not the US.** No US survey with age bands was found; the age pattern matches Ontario's.
+- **Counts per patient are not calibrated.** The synthetic perio losses at entry come from the spec 006 charts
+  (about 0.2-0.35 teeth per patient, flat with age), which this story doesn't change. Matching the share therefore
+  gives more non-periodontal teeth to younger patients than older ones; the share, not the count, is what the
+  evaluation needs.
+- **Which teeth.** `Params.entry_other_tooth_weights` (molars 3, premolars 2, canines and incisors 1) is this repo's
+  choice, not a cited figure. Suzuki et al. give reasons by tooth type only as a figure (in the text: the lower first
+  molar is most often extracted for fracture, 34.7%; the upper third molar for caries, 51.1%), with no table to set
+  the weights from.

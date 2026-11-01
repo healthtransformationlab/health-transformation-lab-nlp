@@ -6,7 +6,7 @@ Patel et al., Methods Inf Med 2022;61(S2):e125–e133 (references item 4), Fig. 
 ## Approach
 
 1. **Diagnoser** (`python/health_transformation_lab_nlp/periodx.py`):
-   - `diagnose(chart, age, cigarettes_per_day, diabetes, hba1c) -> PerioDxDiagnosis` follows Fig. 2 top to
+   - `chart_status(chart, age, cigarettes_per_day, diabetes, hba1c) -> PerioDxFinding` follows Fig. 2 top to
      bottom: health and gingivitis, then stage, extent, grade.
    - Constants are named after the figure's boxes (`BOP_LOCALIZED_PCT = 10`, `BOP_GENERALIZED_PCT = 30`,
      `MIDDLE_THIRD_BL_PCT = 33`, `OCCLUDING_PAIRS_MIN = 10`, ...), each citing Fig. 2.
@@ -16,7 +16,7 @@ Patel et al., Methods Inf Med 2022;61(S2):e125–e133 (references item 4), Fig. 
      `labels.py`), or use the documented fallback (`III_IV_NO_TOOTH_LOSS`, `GRADE_MID_ENTRY` and the rest,
      each a named constant).
 2. **Extractor** (same module):
-   - `extract(note, negation=False) -> PerioDxDiagnosis | None`.
+   - `note_status(note, negation=False) -> PerioDxFinding` ("no_diagnosis" when the note has none).
    - Step 1: normalise and filter on `PERIODX_TERMS`, a checked-in table of 2017 classification terms plus the
      repo's synthetic abbreviations.
    - Step 2: stem with a small suffix stripper, and match with `difflib.SequenceMatcher` at a declared

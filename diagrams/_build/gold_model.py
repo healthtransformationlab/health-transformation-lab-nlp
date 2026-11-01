@@ -286,6 +286,7 @@ TABLES = {
             C("probing_chart_status_code", "string", "from gum measurements; unknown when not charted"),
             C("rules_v0_status_code", "string", "rules, gum measurements first"),
             C("rules_design_status_code", "string", "rules in the study design's order"),
+            C("rules_patel2022_status_code", "string", "rules in the order of Patel et al. 2022 (spec 024)"),
             C("truth_status_code", "string", "the generator's truth"),
             C("clinic_code", "string", "clinic 1-8"),
             *DQ_PROV]),
