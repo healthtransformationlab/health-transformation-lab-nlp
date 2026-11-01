@@ -160,3 +160,53 @@ def test_the_publish_token_is_in_the_secrets_register_with_its_scope():
     tok = next(c for c in reg if "HF_PUBLISH_TOKEN" in c["stored_in"])
     assert "healthtransformationlab" in tok["scope"] and "write" in tok["scope"]
     assert tok["expires"] and "kaggle-publish.yml" in tok["used_by"]
+
+
+def test_the_workflow_falls_back_to_hf_token_and_the_check_names_both():
+    # issue #249: the owner's existing HF_TOKEN secret is used when HF_PUBLISH_TOKEN isn't set
+    wf = yaml.safe_load((REPO_ROOT / ".github" / "workflows" / "kaggle-publish.yml").read_text())
+    for step in wf["jobs"]["huggingface"]["steps"]:
+        if "HF_PUBLISH_TOKEN" in str(step.get("env", {})):
+            assert step["env"]["HF_PUBLISH_TOKEN"] == "${{ secrets.HF_PUBLISH_TOKEN || secrets.HF_TOKEN }}"
+    for token, match in (("", "HF_PUBLISH_TOKEN or HF_TOKEN"), ("abc", "HF_PUBLISH_TOKEN or HF_TOKEN")):
+        with pytest.raises(SystemExit, match=match):
+            hpub.check_token(token, whoami=lambda t: {})
+    reg = yaml.safe_load((REPO_ROOT / "ops" / "secrets_register.yaml").read_text())["credentials"]
+    assert "HF_TOKEN" in next(c for c in reg if "HF_PUBLISH_TOKEN" in c["stored_in"])["stored_in"]
+
+
+def test_the_token_check_forgives_paste_mistakes():
+    # issue #255: a token pasted with a line break, quotes or as a NAME=value line is still the token
+    ok = {"name": "someone", "orgs": [{"name": "healthtransformationlab", "roleInOrg": "admin"}]}
+    seen = []
+    for raw in (" hf_abc\n", '"hf_abc"', "'hf_abc'", "HF_PUBLISH_TOKEN=hf_abc", "HF_TOKEN = 'hf_abc'\r\n",
+                '"HF_TOKEN=hf_abc"', "export HF_TOKEN=hf_abc"):
+        assert hpub.clean_token(raw) == "hf_abc", raw
+        assert hpub.check_token(raw, whoami=lambda t: seen.append(t) or ok) == "someone"
+    assert set(seen) == {"hf_abc"}                               # Hugging Face only ever sees the cleaned token
+
+
+def test_a_wrong_token_is_described_without_printing_it():
+    # issue #255: say which secret was read and what the value looks like, never the value
+    secret = "HF_TOKEN"
+    with pytest.raises(SystemExit) as e:
+        hpub.check_token(secret, whoami=lambda t: {}, source="HF_PUBLISH_TOKEN")
+    msg = str(e.value)
+    assert "HF_PUBLISH_TOKEN" in msg and "8 characters" in msg and "name" in msg
+    with pytest.raises(SystemExit) as e:
+        hpub.check_token("abcdefghijklmnopqrstuvwxyz0123456789", whoami=lambda t: {}, source="HF_TOKEN")
+    msg = str(e.value)
+    assert "from HF_TOKEN" in msg and "36 characters" in msg and "abcdef" not in msg
+    with pytest.raises(SystemExit, match="Bearer"):
+        hpub.check_token("Bearer hf_abc", whoami=lambda t: {})
+
+
+def test_the_workflow_tells_the_check_which_secret_it_read():
+    wf = yaml.safe_load((REPO_ROOT / ".github" / "workflows" / "kaggle-publish.yml").read_text())
+    steps = [s for s in wf["jobs"]["huggingface"]["steps"] if "HF_PUBLISH_TOKEN" in str(s.get("env", {}))]
+    assert steps
+    for step in steps:
+        assert step["env"]["HF_TOKEN_SOURCE"] == \
+            "${{ secrets.HF_PUBLISH_TOKEN != '' && 'HF_PUBLISH_TOKEN' || 'HF_TOKEN' }}"
+    check = next(s for s in steps if s["name"].startswith("Check the Hugging Face token"))
+    assert "HF_TOKEN_SOURCE" in check["run"]

@@ -6,8 +6,8 @@
 
 1. **Names in one place.** `python/health_transformation_lab_nlp/schemas.py`: the benches, their layers,
    `schema(bench, layer)`, `all_schemas()`, and the legacy suffix.
-2. **Bundle.** `databricks/resources/unity_catalog.yml` declares `perio_bench_*`, `access_bench_*` and
-   `oral_health_bench_*` schemas and a `perio_bench_data` volume, all `prevent_destroy`; `mlops.yml` declares
+2. **Bundle.** `databricks/resources/unity_catalog.yml` declares `perio_bench_*`, `oral_health_bench_*` and
+   `access_bench_*` schemas and a `perio_bench_data` volume, all `prevent_destroy`; `mlops.yml` declares
    `perio_bench_note_classifier` (name `perio_note_classifier`, in `gold_perio_bench`). Every job points at
    them. The old `landing`/`bronze`/`silver`/`gold` schemas, `data` volume and `perio_note_classifier` model keep
    their keys, but only under `targets.dev` in `databricks.yml` (the one target that deployed them), named with

@@ -19,6 +19,13 @@ DQ = {
     "dq_injected_error": {"injected_errors", "caught_share", "flag_rate_without_error"},
     # spec 026 US1
     "fact_case_profile_item": {"visit_id", "category", "category_order", "item", "item_order", "value", "unit"},
+    # spec 026 US2
+    "fact_record_mismatch": {"visit_id", "rule", "rule_label", "evidence", "related_visit_id", "failed_rule_count",
+                             "clinic",
+                             "injected_error"},
+    "dq_mismatch_rule": {"rule", "rule_label", "clinic", "checkable_count", "not_checkable_count", "flagged_count",
+                         "code_truth_mismatch_count", "true_flag_count", "precision", "recall", "only_rule_count",
+                         "injected_checkable_count", "injected_caught_count"},
 }
 PROVENANCE = {"sha256", "source_files"}   # analysis names; gold_names.to_gold renames them for gold
 
@@ -166,3 +173,10 @@ def test_every_visit_has_a_case_profile_in_gold(dq):
     visits = dq["fact_visit_evidence"]
     assert set(p.visit_id) == set(visits.visit_id)
     assert p.groupby("visit_id").category.nunique().eq(9).all()
+
+
+def test_every_record_mismatch_names_a_known_rule_and_the_scores_cover_every_clinic(dq):
+    m, s = dq["fact_record_mismatch"], dq["dq_mismatch_rule"]
+    assert set(m.rule) <= set(s.rule) and "any_rule" in set(s.rule)
+    assert set(s.clinic) == {"All"} | {str(i) for i in range(1, 9)}
+    assert set(m.visit_id) <= set(dq["fact_visit_evidence"].visit_id)

@@ -265,3 +265,7 @@ python/runs/
 *.tfstate.*
 *.tfvars
 crash.log
+
+# Kaggle Benchmarks SDK run files (one per note; written where the task runs)
+*.run.json
+*.task.json

@@ -310,7 +310,7 @@ def test_deploy_still_stops_on_an_ordinary_failure(tmp_path):
     assert rc == 1 and calls == ['bundle deploy -t dev']
 
 def test_run_prediction_rows_keep_the_run_key_and_the_files_version(tmp_path):
-    # spec 027: the GPU encoder job writes its predictions to fact_prediction as the reader does
+    # spec 031: the GPU encoder job writes its predictions to fact_prediction as the reader does
     _preds(tmp_path / "ai_predictions_modernbert-large.csv", 3)
     p = rs.run_prediction_rows(tmp_path / "ai_predictions_modernbert-large.csv", "modernbert-large",
                                source="databricks", run_id="5", git_commit="abc", run_ts=pd.Timestamp("2026-10-28"))

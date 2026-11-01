@@ -164,7 +164,10 @@ def test_bundle_creates_the_catalog_bench_schemas_and_landing_volume():
     bench = {f"{b}_{layer}": schemas.schema(b, layer) for b, layers in schemas.LAYERS.items() for layer in layers}
     assert {k: sc["name"] for k, sc in uc["schemas"].items()} == bench
     assert {sc["catalog_name"] for sc in uc["schemas"].values()} == {"${resources.catalogs.health_transformation_lab.name}"}
-    assert set(uc["volumes"]) == {"perio_bench_data"}
+    assert set(uc["volumes"]) == {"perio_bench_data", "opendental_perio_data"}
+    od = uc["volumes"]["opendental_perio_data"]                       # spec 029: the extract's files
+    assert od["schema_name"] == "${resources.schemas.opendental_perio_landing.name}" and od["name"] == "data"
+    assert od["volume_type"] == "MANAGED" and od["lifecycle"]["prevent_destroy"] is True
     vol = uc["volumes"]["perio_bench_data"]
     assert vol["catalog_name"] == "${resources.schemas.perio_bench_landing.catalog_name}" and vol["name"] == "data"
     assert vol["schema_name"] == "${resources.schemas.perio_bench_landing.name}" and vol["volume_type"] == "MANAGED"
@@ -297,7 +300,7 @@ def test_encoder_gpu_notebook_runs_the_script_and_keeps_the_predictions():
     assert "scripts/11_ai_predict.py" in nb and "--lr" in nb
     assert "/Volumes/" in nb and "encoder_gpu" in nb          # predictions copied to the landing volume
     assert "local_disk0" not in nb                           # serverless has no local_disk0
-    assert "replace_batch(" in nb                             # and kept in fact_prediction, per run (spec 027)
+    assert "replace_batch(" in nb                             # and kept in fact_prediction, per run (spec 031)
 
 
 def test_every_model_that_can_be_scored_has_a_plain_name():

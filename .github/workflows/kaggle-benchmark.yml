@@ -1,0 +1,127 @@
+# PerioBench on Kaggle Benchmarks (docs/kaggle_benchmarks.md): push the task, run it against models, publish it.
+# Start it from the Actions tab: "Run PerioBench on Kaggle Benchmarks" -> Run workflow (the GitHub app works).
+# Nothing runs from a laptop. Settings, in the GitHub environment `dev` (the same as "Publish datasets"):
+#   KAGGLE_USERNAME (variable) and KAGGLE_API_TOKEN (or KAGGLE_KEY) (secret).
+# The Kaggle CLI fetches short-lived Model Proxy credentials itself (`kaggle b init`); they live only in the
+# runner's gitignored .env and are never printed.
+name: "Run PerioBench on Kaggle Benchmarks"
+run-name: "PerioBench: ${{ inputs.action }} ${{ inputs.models }}"
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "What to do"
+        type: choice
+        options: [push, push-and-run, run, status, publish]
+        default: push-and-run
+      models:
+        description: "Model slugs for `run`, space-separated (`kaggle b t models` lists them)"
+        default: "gemini-2.5-flash"
+      validate:
+        description: "Before pushing, run the task here on 3 notes with the real default model (a few cents of quota) and fail if no run file appears"
+        type: boolean
+        default: true
+      wait:
+        description: "Wait for the runs to finish and attach their outputs"
+        type: boolean
+        default: true
+
+concurrency: kaggle-benchmark
+
+env:
+  TASK: perio-bench
+  TASK_FILE: kaggle/perio_bench_task.py
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    environment: dev
+    timeout-minutes: 120
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with: {python-version: "3.12"}
+      - run: pip install --quiet "kaggle==2.2.5" -e "./python[kbench]"
+
+      - name: Kaggle credentials (values stay masked)
+        env:
+          U: ${{ vars.KAGGLE_USERNAME || secrets.KAGGLE_USERNAME }}
+          T: ${{ secrets.KAGGLE_API_TOKEN }}
+          K: ${{ secrets.KAGGLE_KEY }}
+        run: |
+          [ -n "$U" ] || { echo "::error::KAGGLE_USERNAME is not set in the GitHub environment 'dev' (variable or secret)"; exit 1; }
+          echo "KAGGLE_USERNAME=$U" >> "$GITHUB_ENV"
+          tok="${T:-$K}"
+          [ -n "$tok" ] || { echo "::error::Set KAGGLE_API_TOKEN (or KAGGLE_KEY) in the GitHub environment 'dev'"; exit 1; }
+          echo "KAGGLE_API_TOKEN=$tok" >> "$GITHUB_ENV"
+          [ -n "$K" ] && echo "KAGGLE_KEY=$K" >> "$GITHUB_ENV"
+          true
+
+      # One cheap authenticated call before any work (AGENTS.md "Configuration and secrets"): fetches the
+      # Model Proxy credentials into the runner's .env (gitignored) and proves the token works.
+      - name: Model Proxy credentials and quota
+        run: |
+          mkdir -p build                    # gitignored, so a fresh checkout has none (#364)
+          kaggle b init -y --env-file .env --example-file build/example_task.py
+          grep -q '^MODEL_PROXY_API_KEY=' .env || { echo "::error::kaggle b init wrote no MODEL_PROXY_API_KEY"; exit 1; }
+          grep -E '^(LLM_DEFAULT|LLM_DEFAULT_EVAL|LLMS_AVAILABLE)=' .env | tee -a "$GITHUB_STEP_SUMMARY"
+          kaggle b quota | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Validate the task on 3 notes with the real default model
+        if: inputs.validate && (inputs.action == 'push' || inputs.action == 'push-and-run')
+        env:
+          PERIO_BENCH_N: "3"
+          KBENCH_UI_MODE: none
+        run: |
+          set -a; . ./.env; set +a          # the SDK only auto-loads a .env next to its own install, not the cwd's
+          mkdir -p build/validate && cd build/validate
+          python "$GITHUB_WORKSPACE/$TASK_FILE" | tail -20
+          ls -1 *.run.json >/dev/null 2>&1 || { echo "::error::The task produced no .run.json; nothing would be recorded on Kaggle"; exit 1; }
+          echo "Validated: $(ls -1 *.run.json | wc -l) run files from 3 notes" | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Push the task (dataset attached; re-specified on every push or Kaggle detaches it)
+        if: inputs.action == 'push' || inputs.action == 'push-and-run'
+        run: |
+          set -o pipefail
+          kaggle b t push "$TASK" -f "$TASK_FILE" -d "$KAGGLE_USERNAME/perio-bench-notes" --wait 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Run the task against the models
+        if: inputs.action == 'run' || inputs.action == 'push-and-run'
+        env:
+          MODELS: ${{ inputs.models }}
+          WAIT: ${{ inputs.wait }}
+        run: |
+          set -o pipefail
+          args=""; for m in $MODELS; do args="$args -m $m"; done
+          [ -n "$args" ] || { echo "::error::No model slugs given"; exit 1; }
+          [ "$WAIT" = "true" ] && wait="--wait" || wait=""
+          kaggle b t run "$TASK" $args $wait 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Status
+        if: inputs.action != 'publish'
+        run: |
+          set -o pipefail
+          kaggle b t status "$TASK" 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Download the finished runs
+        if: inputs.wait && (inputs.action == 'run' || inputs.action == 'push-and-run' || inputs.action == 'status')
+        run: |
+          kaggle b t download "$TASK" -o build/results 2>&1 | tee -a "$GITHUB_STEP_SUMMARY" || true
+          find build/results -name '*.json' | head -50
+
+      - uses: actions/upload-artifact@v4
+        if: inputs.wait && (inputs.action == 'run' || inputs.action == 'push-and-run' || inputs.action == 'status')
+        with:
+          name: perio-bench-runs-${{ github.run_number }}
+          path: build/results
+          if-no-files-found: ignore
+
+      - name: Publish the task (public task and backing notebook)
+        if: inputs.action == 'publish'
+        run: |
+          set -o pipefail
+          kaggle b t publish "$TASK" 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "Task: https://www.kaggle.com/benchmarks/$KAGGLE_USERNAME/$TASK" >> "$GITHUB_STEP_SUMMARY"

@@ -40,6 +40,28 @@ tiers:
     price_source: "claude.com/pricing: Fable 5.1 $10 / MTok input, $50 / MTok output"
     price_checked: 2026-10-28
     usd_per_1m_visits: 5530
+  gemini_note:
+    model: Gemini 3.1 Pro Preview (Gemini API, paid tier, prompts up to 200k tokens; batch is 50% less)
+    in_tokens: 453
+    out_tokens: 20
+    usd_per_1m_in: 2.0
+    usd_per_1m_out: 12.0
+    calls: 1
+    tokens: assumed
+    price_source: "ai.google.dev/gemini-api/docs/pricing: Gemini 3.1 Pro Preview $2.00 input, $12.00 output (incl. thinking) per 1M tokens, prompts <= 200k"
+    price_checked: 2026-10-28
+    usd_per_1m_visits: 1146
+  gemini_whole_record:
+    model: Gemini 3.1 Pro Preview, reading the whole record with worked examples and reasoning, three calls a visit
+    in_tokens: 20000
+    out_tokens: 4000
+    usd_per_1m_in: 2.0
+    usd_per_1m_out: 12.0
+    calls: 3
+    tokens: assumed
+    price_source: "ai.google.dev/gemini-api/docs/pricing: Gemini 3.1 Pro Preview $2.00 / $12.00 per 1M tokens, prompts <= 200k"
+    price_checked: 2026-10-28
+    usd_per_1m_visits: 264000
   frontier_llm_whole_record:
     model: Claude Fable 5.1, reading the whole record with worked examples and reasoning, three calls a visit
     in_tokens: 20000
@@ -56,14 +78,14 @@ edr:
   problem:
     - value: "42%"
       kind: cited
-      source: "Eke et al., J Am Dent Assoc 2018 (NHANES 2009-2014)"
-      checked: null
-      covers: US adults 30 and over with periodontitis, any severity
+      source: "Eke et al., J Am Dent Assoc 2018;149(7):576-588 (NHANES 2009-2014), PMID 29957185: 'An estimated 42% of dentate US adults 30 years or older had periodontitis'"
+      checked: 2026-10-28
+      covers: dentate US adults 30 and over (with teeth) with periodontitis, any severity
     - value: "7.8%"
       kind: cited
-      source: "Eke et al., J Am Dent Assoc 2018 (NHANES 2009-2014)"
-      checked: null
-      covers: US adults 30 and over with severe periodontitis
+      source: "Eke et al., J Am Dent Assoc 2018;149(7):576-588 (NHANES 2009-2014), PMID 29957185: 'with 7.8% having severe periodontitis'"
+      checked: 2026-10-28
+      covers: dentate US adults 30 and over (with teeth) with severe periodontitis
   solution:
     - value: "240"
       kind: measured
@@ -122,6 +144,10 @@ edr:
       kind: derived
       from: "tiers.open_llm_note ($256.50)"
       covers: open LLM hosted per token, the note only, a million visits
+    - value: "$1,100"
+      kind: derived
+      from: "tiers.gemini_note ($1,146)"
+      covers: frontier commercial LLM (Gemini 3.1 Pro), the note only, a million visits
     - value: "$5,500"
       kind: derived
       from: "tiers.frontier_llm_note ($5,530)"
@@ -134,6 +160,10 @@ edr:
       kind: illustrative
       from: "tiers.frontier_llm_whole_record out_tokens, assumed"
       covers: tokens out per call, including reasoning
+    - value: "$260k"
+      kind: derived
+      from: "tiers.gemini_whole_record ($264,000)"
+      covers: Gemini 3.1 Pro, whole record with examples and reasoning, three calls a visit (assumed tokens)
     - value: "$1.2M"
       kind: derived
       from: "tiers.frontier_llm_whole_record ($1,200,000)"
@@ -152,7 +182,7 @@ edr:
     - value: "72%"
       kind: measured
       file: docs/results.md
-      match: "`algorithm_design` | whole record | rules, study-design order: exam form, diagnosis codes, note, chart | **72.1**"
+      match: "`algorithm_design` | whole record | rules, study-design order: exam form, diagnosis codes, note, chart † | **72.1**"
       covers: synthetic charts right with the study design's source order (72.1%)
     - value: "173"
       kind: derived
@@ -217,20 +247,20 @@ pitch:
   problem:
     - value: "81%"
       kind: cited
-      source: "GlobalDentBench 2026 (arXiv 2605.24636), averages for 12 AI models"
-      checked: null
-      covers: AI scores on dental licensing-exam questions
+      source: "GlobalDentBench, arXiv 2605.24636v2 (Zhao et al., 2026): 12 frontier LLMs; accuracy 81.34% on multiple-choice questions, which are sourced from official qualification examinations"
+      checked: 2026-10-28
+      covers: the 12 models' average on multiple-choice questions from dental licensing exams
     - value: "22%"
       kind: cited
-      source: "GlobalDentBench 2026 (arXiv 2605.24636), averages for 12 AI models"
-      checked: null
-      covers: AI scores on real patient cases
+      source: "GlobalDentBench, arXiv 2605.24636v2 (Zhao et al., 2026): 12 frontier LLMs; 22.34% on case-based questions, extracted from peer-reviewed clinical case reports"
+      checked: 2026-10-28
+      covers: the 12 models' average on questions built from published patient case reports
   example:
     - value: "22%"
       kind: cited
-      source: "GlobalDentBench 2026 (arXiv 2605.24636)"
-      checked: null
-      covers: AI scores on real patient cases
+      source: "GlobalDentBench, arXiv 2605.24636v2 (Zhao et al., 2026): 12 frontier LLMs; 22.34% on case-based questions, extracted from peer-reviewed clinical case reports"
+      checked: 2026-10-28
+      covers: the 12 models' average on dental case questions
   mdi:
     - value: "1.9M"
       kind: cited
@@ -243,26 +273,26 @@ pitch:
   reach:
     - value: "40 million"
       kind: cited
-      source: "OpenAI, January 2026 (global)"
-      checked: null
-      covers: people a day asking OpenAI's assistant health questions, worldwide
+      source: "OpenAI report, January 2026, as reported by Axios (axios.com/2026/01/05/chatgpt-openai-health-insurance-aca, an exclusive, headline corrected to global) and Medical Economics (2026-01-07): more than 40 million people use ChatGPT daily for health questions, worldwide; 1.6 to 1.9 million health-insurance messages a week. Read via that reporting: openai.com refuses automated requests"
+      checked: 2026-10-29
+      covers: people a day asking ChatGPT health questions, worldwide (OpenAI's own data, not independently verified)
   tests:
     - value: "8,000"
       kind: cited
-      source: "a UK public health guidance benchmark (arXiv list on the slide: a first search, not a full review)"
-      checked: null
-      covers: questions in that benchmark
+      source: "PubHealthBench, arXiv 2505.06046 (Healthy LLMs? Benchmarking LLM Knowledge of UK Government Public Health Information): over 8000 questions"
+      checked: 2026-10-28
+      covers: questions in the UK public health guidance benchmark (over 8,000)
   proof:
-    - value: "8,000"
+    - value: "8,500"
       kind: cited
-      source: "Vanderbilt CTTC (REDCap)"
-      checked: null
-      covers: institutions using REDCap
-    - value: "163"
+      source: "projectredcap.org: The REDCap Consortium has 8,502 active partners in 167 countries"
+      checked: 2026-10-28
+      covers: institutions in the REDCap consortium (shown as over 8,500)
+    - value: "167"
       kind: cited
-      source: "Vanderbilt CTTC (REDCap)"
-      checked: null
-      covers: countries with REDCap institutions
+      source: "projectredcap.org: 8,502 active partners in 167 countries"
+      checked: 2026-10-28
+      covers: countries with REDCap consortium partners
   ask:
     - value: "180"
       kind: proposal

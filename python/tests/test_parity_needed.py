@@ -72,3 +72,45 @@ def test_the_package_it_follows_exists_and_is_reached(deps):
     # #187: after the rename the package path didn't exist, so no module was ever a dependency
     assert (REPO_ROOT / pn.PACKAGE / "__init__.py").exists()
     assert sum(p.startswith(pn.PACKAGE + "/") for p in deps) >= 10
+
+
+# Issue #244: every PR reports every check, so the checks can be required on main. The Python tests always run: many
+# of them read the docs (wording, citations, links, decks). On a docs-only PR the jobs docs can't affect (Postgres,
+# Terraform, bundle) are skipped instead, and a skipped job counts as passing; any other change runs them.
+@pytest.mark.parametrize("changed", [
+    [],
+    ["README.md"],
+    ["docs/edr/README.md", "docs/img/pitch_deck_cover.png", "diagrams/d0_medallion_architecture.png",
+     "diagrams/d1_study_process.drawio"],
+    ["python/README.md", "pull_requests/pr-12-review.md"],
+])
+def test_docs_only_changes_skip_the_jobs(changed):
+    assert not pn.code_changed(changed)
+
+
+@pytest.mark.parametrize("changed", [
+    ["python/health_transformation_lab_nlp/labels.py"],
+    ["README.md", "databricks.yml"],
+    [".github/workflows/ci.yml"],
+    ["docs/build_decks.py"],                     # code that lives under docs/ is still code
+    ["docs/edr/slides/04-results.html"],         # so are the slides the decks are built from
+    ["diagrams/_build/gold_model.py"],
+])
+def test_any_other_change_runs_the_jobs(changed):
+    assert pn.code_changed(changed)
+
+
+def test_ci_runs_on_every_pull_request_and_skips_only_jobs_docs_cannot_affect():
+    import yaml
+    wf = yaml.safe_load((REPO_ROOT / ".github" / "workflows" / "ci.yml").read_text())
+    on = wf[True]
+    assert "paths-ignore" not in (on["pull_request"] or {})        # docs-only PRs still report the checks
+    assert "paths-ignore" in on["push"]                             # docs-only pushes to main still don't run CI
+    assert wf["jobs"]["changes"]["outputs"]["code"]
+    assert "if" not in wf["jobs"]["python"]                         # the docs are tested too
+    for name in ("postgres", "azure-infra", "bundle"):
+        job = wf["jobs"][name]
+        assert job["needs"] == "changes", name
+        assert job["if"] == "needs.changes.outputs.code == 'true'", name
+    step = wf["jobs"]["changes"]["steps"][-1]["run"]
+    assert "code=true" in step                                      # pushes, manual and weekly runs run everything

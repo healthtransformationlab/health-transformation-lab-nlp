@@ -9,7 +9,10 @@ a changed file is one that pipeline depends on:
 Everything else (docs, tests, dashboards, notebooks, infra, modules the pipeline never imports) cannot change what R
 is compared against. Pushes to main, manual runs and the weekly run don't ask: they always run parity.
 
-    BASE=<sha> HEAD=<sha> python .github/scripts/parity_needed.py    # prints needed=true|false for $GITHUB_OUTPUT
+It also says whether anything but docs changed (issue #244): a pull request that changes only Markdown and images
+skips the CI jobs docs can't affect, so every check still reports and can be required on main.
+
+    BASE=<sha> HEAD=<sha> python .github/scripts/parity_needed.py    # prints needed= and code=true|false for $GITHUB_OUTPUT
 """
 
 import ast
@@ -67,6 +70,15 @@ def dependencies(root: Path = ROOT) -> set[str]:
     return files
 
 
+DOC_SUFFIXES = (".md", ".png", ".jpg", ".jpeg", ".gif", ".svg", ".pdf", ".drawio")
+
+
+def code_changed(changed: list[str]) -> bool:
+    """True when a changed file is anything but prose or an image. Slides, scripts and builders under docs/ or
+    diagrams/ count as code: tests read them."""
+    return any(not c.lower().endswith(DOC_SUFFIXES) for c in changed)
+
+
 def needed(changed: list[str], root: Path = ROOT) -> bool:
     deps = dependencies(root)
     return any(c in deps or c.startswith(ALWAYS) for c in changed)
@@ -78,4 +90,5 @@ if __name__ == "__main__":
                              capture_output=True, text=True).stdout.split()
     hits = sorted(c for c in changed if c in dependencies() or c.startswith(ALWAYS))
     print(f"needed={'true' if hits else 'false'}")
+    print(f"code={'true' if code_changed(changed) else 'false'}")
     print(f"{len(hits)} of {len(changed)} changed files reach R parity: {', '.join(hits[:10]) or 'none'}", file=sys.stderr)

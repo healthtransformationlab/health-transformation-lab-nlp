@@ -57,3 +57,50 @@ def test_gradient_checkpointing_keeps_the_output_file_name():
 
     from health_transformation_lab_nlp.rungs import output_tag
     assert "grad_checkpoint" not in inspect.signature(output_tag).parameters
+
+
+# ---- float32 weights (#226): GatorTron's checkpoint is float16, and transformers 5 loads a checkpoint in its own
+# dtype. AdamW on float16 weights, with no float32 copy, made the loss NaN after one step (CPU) and diverge on the T4s.
+
+def test_the_encoder_trains_float32_weights_whatever_the_checkpoint_stores(monkeypatch, tmp_path):
+    import sys
+    import types
+
+    import pandas as pd
+
+    from health_transformation_lab_nlp.rungs import HFEncoder
+    seen = {}
+
+    class Model:
+        def float(self):
+            seen["cast"] = True
+            return self
+
+    class Trainer:
+        def __init__(self, model, args, train_dataset):
+            seen["trained"] = model
+
+        def train(self, resume_from_checkpoint=None):
+            pass
+
+    class Args:
+        def __init__(self, **kw):
+            self.output_dir = kw["output_dir"]
+
+    class Data:
+        @classmethod
+        def from_pandas(cls, df):
+            return cls()
+
+        def map(self, fn, batched):
+            return self
+
+    tf = types.SimpleNamespace(
+        AutoTokenizer=types.SimpleNamespace(from_pretrained=lambda *a, **k: object()),
+        AutoModelForSequenceClassification=types.SimpleNamespace(from_pretrained=lambda *a, **k: Model()),
+        Trainer=Trainer, TrainingArguments=Args)
+    monkeypatch.setitem(sys.modules, "transformers", tf)
+    monkeypatch.setitem(sys.modules, "datasets", types.SimpleNamespace(Dataset=Data))
+    enc = HFEncoder("UFNLP/gatortron-base", out_dir=str(tmp_path)).fit(
+        pd.DataFrame({"note_text": ["pd 6 mm"], "label": ["healthy"]}))
+    assert seen.get("cast") is True and isinstance(seen["trained"], Model) and enc.model is seen["trained"]

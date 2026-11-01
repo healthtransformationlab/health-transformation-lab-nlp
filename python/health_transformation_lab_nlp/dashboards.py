@@ -99,11 +99,11 @@ def _scatter(name, ds, x, y, color, title, description, pos, *, x_title="", y_ti
             "frame": _frame(title, description)}}, "position": _at(*pos)}
 
 
-def _filter(name, field, datasets, title, pos) -> dict:
+def _filter(name, field, datasets, title, pos, widget_type="filter-multi-select") -> dict:
     queries = [{"name": f"f_{name}_{ds}", "query": {"datasetName": ds, "fields": _fields(field),
                                                     "disaggregated": False}} for ds in datasets]
     return {"widget": {"name": name, "queries": queries, "spec": {
-        "version": 2, "widgetType": "filter-multi-select", "encodings": {"fields": [
+        "version": 2, "widgetType": widget_type, "encodings": {"fields": [
             {"fieldName": field, "displayName": title, "queryName": q["name"]} for q in queries]},
         "frame": _frame(title)}}, "position": _at(*pos)}
 
@@ -178,12 +178,34 @@ ORDER BY improved_pct""",
 SELECT injected_error_count AS injected_errors, ROUND(100 * caught_ratio, 1) AS caught_pct,
   ROUND(100 * false_flag_ratio, 2) AS false_flag_pct
 FROM {gold}.dq_injected_error""",
+    # spec 026 US3: Records to recheck
+    "mismatch_rules": """
+SELECT rule_label_name AS rule, clinic_code AS clinic, checkable_count AS checkable, flagged_count AS flagged,
+  ROUND(100 * precision_ratio, 1) AS precision_pct, ROUND(100 * recall_ratio, 1) AS recall_pct,
+  only_rule_count AS only_this_rule, injected_caught_count AS injected_caught,
+  injected_checkable_count AS injected_checkable
+FROM {gold}.dq_mismatch_rule
+ORDER BY CASE WHEN clinic_code = 'All' THEN 0 ELSE 1 END, clinic_code,
+  CASE WHEN rule_name = 'any_rule' THEN 1 ELSE 0 END, rule_name""",
+    "mismatch_visits": """
+SELECT m.visit_id, m.clinic_code AS clinic, v.visit_date, m.failed_rule_count AS rules_failed,
+  m.rule_label_name AS rule, m.mismatch_evidence_text AS evidence
+FROM {gold}.fact_record_mismatch m
+INNER JOIN {gold}.fact_visit_evidence v ON m.visit_id = v.visit_id
+ORDER BY m.failed_rule_count DESC, m.visit_id, m.rule_name""",
+    "case_profile": """
+WITH flagged AS (SELECT DISTINCT visit_id FROM {gold}.fact_record_mismatch)
+SELECT p.visit_id, p.category_name AS category, p.item_name AS item, p.item_value_name AS shown_value,
+  p.item_unit_name AS unit, p.category_order_num, p.item_order_num
+FROM {gold}.fact_case_profile_item p
+INNER JOIN flagged f ON p.visit_id = f.visit_id
+ORDER BY p.visit_id, p.category_order_num, p.item_order_num""",
 }
 
 DQ_BANNER = """## EHR DQ grader: is this dental record fit for periodontal phenotyping?
 **Synthetic data** from the study's generator, scored against its own truth: **not clinical performance**. The
 light version of the Perio DQ Monitor design: five domains (Zozus completeness, accuracy and consistency; Kahn
-temporal plausibility; Liaw reliability), then one section per domain. Ask the **EHR DQ grader** Genie space for
+temporal plausibility; reliability after de Vet et al. 2006), then one section per domain. Ask the **EHR DQ grader** Genie space for
 anything not shown."""
 
 
@@ -205,7 +227,7 @@ def dq_grader() -> dict:
                            "`fact_visit_evidence` (statuses only, never note text).",
                     (2, 3, 4, 2))]
     layout += [_counter(n, "tiles", f, t, d, (i, 5, 1, 3)) for i, (n, f, t, d) in enumerate(tiles)]
-    layout += [_text("t_reliability", "**Reliability** (Liaw)\n\n**Not assessed**: needs real reviewers to label "
+    layout += [_text("t_reliability", "**Reliability** (de Vet)\n\n**Not assessed**: needs real reviewers to label "
                                       "charts. Simulated reviewers are a dry run.", (4, 5, 1, 3)),
                _counter("t_accuracy_design", "tiles", "accuracy_design_pct", "Accuracy, exam form first (%)",
                         "Rules in the study design's order. The order changes the answer.", (5, 5, 1, 3)),
@@ -261,7 +283,47 @@ def dq_grader() -> dict:
                       "Injected charting errors the temporal checks catch (synthetic only)", "", (3, 34, 3, 3))]
     return {"datasets": [_dataset(n, s) for n, s in DQ_SQL.items()],
             "pages": [{"name": "dq_grader", "displayName": "EHR DQ grader", "pageType": "PAGE_TYPE_CANVAS",
-                       "layout": layout}]}
+                       "layout": layout},
+                      {"name": "records_to_recheck", "displayName": "Records to recheck",
+                       "pageType": "PAGE_TYPE_CANVAS", "layout": _recheck_layout()}]}
+
+
+RECHECK_BANNER = """## Records to recheck
+**Synthetic records**, scored against the generator's truth: **not clinical performance**. Each rule asks whether a
+visit's recorded code (the completed diagnosis code) fits the rest of its record. A flag is a record mismatch: a
+coding or charting gap, not a clinical error. Precision and recall count only the visits a rule can check
+(*checkable*); *only this rule* is how many of its flags no other rule makes. Pick a flagged visit to see its case
+profile (spec 026, after KEEPER)."""
+
+
+def _recheck_layout() -> list[dict]:
+    return [_text("recheck_banner", RECHECK_BANNER, (0, 0, 6, 3)),
+            # the clinic filter leaves the rule scores alone, so their All rows stay (as page 1 keeps its checks')
+            _filter("f_recheck_clinic", "clinic", ["mismatch_visits"], "Clinic", (0, 3, 2, 2)),
+            _filter("f_rule", "rule", ["mismatch_visits", "mismatch_rules"], "Rule", (2, 3, 2, 2)),
+            _filter("f_visit", "visit_id", ["mismatch_visits", "case_profile"], "Visit", (4, 3, 2, 2),
+                    widget_type="filter-single-select"),
+            _table("tb_rules", "mismatch_rules", [("rule", "Rule"), ("clinic", "Clinic"),
+                                                  ("checkable", "Checkable"), ("flagged", "Flagged"),
+                                                  ("precision_pct", "Precision (%)"), ("recall_pct", "Recall (%)"),
+                                                  ("only_this_rule", "Only this rule"),
+                                                  ("injected_caught", "Injected errors caught"),
+                                                  ("injected_checkable", "Injected errors checkable")],
+                   "Each rule against the truth (synthetic)",
+                   "All = every clinic; the clinic filter doesn't apply here, so All always shows. Blank precision "
+                   "or recall = the rule flags nothing there. Per-clinic injected-error counts are too few to "
+                   "compare.", (0, 5, 6, 6)),
+            _table("tb_flagged", "mismatch_visits", [("visit_id", "Visit"), ("clinic", "Clinic"),
+                                                     ("visit_date", "Date"), ("rules_failed", "Rules failed"),
+                                                     ("rule", "Rule"), ("evidence", "Evidence")],
+                   "Flagged visits, most rules failed first",
+                   "One row per visit and failed rule. Rules failed counts all of the visit's rules, even when the "
+                   "rule filter shows only some of them.", (0, 11, 3, 9)),
+            _table("tb_profile", "case_profile", [("visit_id", "Visit"), ("category", "Category"), ("item", "Item"),
+                                                  ("shown_value", "Value"), ("unit", "Unit")],
+                   "Case profile of the selected visit",
+                   "Pick a visit in the Visit filter; until then every flagged visit's profile is listed. "
+                   "Structured values only, never note text. Not recorded = the record lacks it.", (3, 11, 3, 9))]
 
 
 # ---------------------------------------------------------------- Lab grader (spec 019 US4)
@@ -413,7 +475,8 @@ def _space(tables: list[str], instructions: list[str], questions: list[str]) -> 
 
 
 DQ_TABLES = ["dq_check", "dq_column_missing", "dq_prevalence", "dq_temporal_change", "dq_stage_transition",
-             "dq_source_concordance", "fact_visit_evidence", "dq_injected_error", "fact_case_profile_item"]
+             "dq_source_concordance", "fact_visit_evidence", "dq_injected_error", "fact_case_profile_item",
+             "fact_record_mismatch", "dq_mismatch_rule"]
 
 DQ_INSTRUCTIONS = [
     ("Every table holds synthetic data from the study's generator, scored against its own truth. Start every "
@@ -435,7 +498,7 @@ DQ_INSTRUCTIONS = [
      "implausible; lower is better. Use visit_pair_count as the denominator, not later_visit_count. "
      "dq_stage_transition has the full matrix: row_pct is the share of the earlier stage's pairs that moved to "
      "each stage."),
-    ("Reliability (Liaw): not assessed. It needs real reviewers to label charts; the study's reviewers are "
+    ("Reliability (de Vet et al. 2006: whether independent reviewers reach the same answer): not assessed. It needs real reviewers to label charts; the study's reviewers are "
      "simulated, so never report a reliability figure."),
     ("dq_check holds each check per clinic; clinic_code = 'All' is every clinic together. Do not add the clinic rows "
      "to the 'All' rows."),
@@ -448,6 +511,15 @@ DQ_INSTRUCTIONS = [
      "before, not now), stage_drop (a lower stage than before). Structured values only, never note text. To show a "
      "visit's profile, list category_name, item_name, item_value_name and item_unit_name for its visit_id in order. "
      "Recorded diagnosis codes are what the dentist recorded; we find gum disease in records, we don't diagnose."),
+    ("fact_record_mismatch has one row per visit and failed rule: a record mismatch, where the recorded code "
+     "(the completed diagnosis code) doesn't fit the rest of the record. Call it a record mismatch or a record to "
+     "recheck: it is usually a coding or charting gap, never a judgment that a dentist got it wrong. rule_name is "
+     "code_vs_chart, code_above_chart, code_below_chart, no_periodontal_care, code_vs_radiograph or stage_drop; "
+     "mismatch_evidence_text gives the values; for stage_drop, related_visit_id is the earlier visit with the "
+     "higher code; failed_rule_count is how many rules the visit fails (list visits with most first). dq_mismatch_rule scores each rule, and any_rule, against the generator's truth over the visits "
+     "it can check (checkable_count), overall (clinic_code = 'All') and per clinic: precision_ratio, recall_ratio, "
+     "only_rule_count (flags no other rule makes), injected_caught_count of injected_checkable_count. Always give "
+     "checkable_count with a rule's precision or recall. Per-clinic injected-error counts are too few to compare."),
 ]
 
 DQ_QUESTIONS = [
@@ -458,6 +530,8 @@ DQ_QUESTIONS = [
     "What share of later visits show the stage improving, by method?",
     "How well do the chart note and the exam form agree with each other?",
     "Show the case profile of visit 1234.",
+    "Which visits have a stage III code but max CAL under 3 mm?",
+    "Which record-mismatch rule adds the most flags no other rule makes?",
 ]
 
 

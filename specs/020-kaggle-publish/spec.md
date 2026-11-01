@@ -44,7 +44,9 @@ on Kaggle and publishes it as a model instance (Apache 2.0, the base model's lic
 ### US4 - One place to start: a Kaggle README and a collection (P2) #123
 
 `kaggle/README.md` explains the notebooks, workflows, datasets and model in one page; the collection on
-kaggle.com groups them (Kaggle's API has no collections, so its steps are in the README).
+kaggle.com groups them (Kaggle's API has no collections, so its steps are in the README). Kaggle collections
+turned out to be private lists with no public setting (#270), so the README's table is the shared index and the
+collection is the owner's own list.
 
 ## Requirements
 

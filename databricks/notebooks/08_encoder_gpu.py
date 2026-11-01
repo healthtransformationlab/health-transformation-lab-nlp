@@ -9,7 +9,7 @@
 # MAGIC lower.
 # MAGIC
 # MAGIC Predictions are copied to the landing volume (`encoder_gpu/`) and written to `fact_prediction` in the gold
-# MAGIC schema with `source_code` databricks, replaced per job run and method so a retry adds nothing (spec 027), as
+# MAGIC schema with `source_code` databricks, replaced per job run and method so a retry adds nothing (spec 031), as
 # MAGIC the MedGemma reader does. To score them with the other models, copy the CSVs into `data/datasets/`, then run
 # MAGIC `python/scripts/28_ladder_vs_truth.py` and `35_readme_results.py`.
 # MAGIC

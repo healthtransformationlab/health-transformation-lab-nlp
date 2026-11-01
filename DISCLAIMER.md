@@ -12,11 +12,13 @@ area would need.
   methods, data, findings, priorities or positions of any organization. It is
   not a study protocol, not a research deliverable, and not a commitment to
   build anything.
-- **No real data.** Every record is synthetic. No patient data, no PHI, no
-  internal data, no internal documents, and no vendor data or APIs are used.
-  The one exception is public data: datasets already published and
-  de-identified by others and licensed for redistribution (MACCROBAT case
-  reports, CC BY 4.0), kept in `data/external/` with their source and licence.
+- **Synthetic patients.** The study's patient records are synthetic. No
+  identifiable patient data (PHI), internal data or internal documents are
+  used. To test the de-identification step, tools are also scored on clinical
+  text that others have published already de-identified: MACCROBAT case
+  reports (CC BY 4.0), kept in `data/external/` with their source and licence,
+  and John Snow Labs' 48-note benchmark, which stays outside this repository
+  under its own terms.
 - **Public information only.** Organizations and products are mentioned only
   as described in their own public sources, which are cited.
 - **No results.** Numbers in the docs come from simulated data, simulated

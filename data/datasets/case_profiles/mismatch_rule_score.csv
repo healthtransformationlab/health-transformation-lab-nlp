@@ -1,0 +1,64 @@
+rule,rule_label,clinic,checkable_count,not_checkable_count,flagged_count,code_truth_mismatch_count,true_flag_count,precision,recall,only_rule_count,injected_checkable_count,injected_caught_count
+code_vs_chart,Code against the chart reading,All,2429,632,159,756,155,0.9748427672955975,0.20502645502645503,6,34,7
+code_vs_chart,Code against the chart reading,1,240,35,16,70,16,1.0,0.22857142857142856,0,5,0
+code_vs_chart,Code against the chart reading,2,280,82,17,89,17,1.0,0.19101123595505617,0,3,0
+code_vs_chart,Code against the chart reading,3,206,75,15,70,13,0.8666666666666667,0.18571428571428572,0,6,2
+code_vs_chart,Code against the chart reading,4,418,105,24,122,23,0.9583333333333334,0.1885245901639344,1,7,1
+code_vs_chart,Code against the chart reading,5,300,69,13,87,13,1.0,0.14942528735632185,0,6,0
+code_vs_chart,Code against the chart reading,6,274,29,24,93,24,1.0,0.25806451612903225,1,2,1
+code_vs_chart,Code against the chart reading,7,363,61,23,119,22,0.9565217391304348,0.18487394957983194,3,3,2
+code_vs_chart,Code against the chart reading,8,348,176,27,106,27,1.0,0.25471698113207547,1,2,1
+code_above_chart,Code higher than the chart,All,2429,632,3,756,3,1.0,0.003968253968253968,2,34,0
+code_above_chart,Code higher than the chart,1,240,35,0,70,0,,0.0,0,5,0
+code_above_chart,Code higher than the chart,2,280,82,1,89,1,1.0,0.011235955056179775,1,3,0
+code_above_chart,Code higher than the chart,3,206,75,0,70,0,,0.0,0,6,0
+code_above_chart,Code higher than the chart,4,418,105,0,122,0,,0.0,0,7,0
+code_above_chart,Code higher than the chart,5,300,69,1,87,1,1.0,0.011494252873563218,0,6,0
+code_above_chart,Code higher than the chart,6,274,29,1,93,1,1.0,0.010752688172043012,1,2,0
+code_above_chart,Code higher than the chart,7,363,61,0,119,0,,0.0,0,3,0
+code_above_chart,Code higher than the chart,8,348,176,0,106,0,,0.0,0,2,0
+code_below_chart,Code lower than the chart,All,2429,632,141,756,139,0.9858156028368794,0.18386243386243387,0,34,2
+code_below_chart,Code lower than the chart,1,240,35,16,70,16,1.0,0.22857142857142856,0,5,0
+code_below_chart,Code lower than the chart,2,280,82,14,89,14,1.0,0.15730337078651685,0,3,0
+code_below_chart,Code lower than the chart,3,206,75,15,70,13,0.8666666666666667,0.18571428571428572,0,6,2
+code_below_chart,Code lower than the chart,4,418,105,21,122,21,1.0,0.1721311475409836,0,7,0
+code_below_chart,Code lower than the chart,5,300,69,10,87,10,1.0,0.11494252873563218,0,6,0
+code_below_chart,Code lower than the chart,6,274,29,22,93,22,1.0,0.23655913978494625,0,2,0
+code_below_chart,Code lower than the chart,7,363,61,18,119,18,1.0,0.15126050420168066,0,3,0
+code_below_chart,Code lower than the chart,8,348,176,25,106,25,1.0,0.2358490566037736,0,2,0
+no_periodontal_care,No periodontal care,All,3061,0,353,948,196,0.5552407932011332,0.20675105485232068,326,34,1
+no_periodontal_care,No periodontal care,1,275,0,27,77,15,0.5555555555555556,0.19480519480519481,27,5,0
+no_periodontal_care,No periodontal care,2,362,0,42,116,24,0.5714285714285714,0.20689655172413793,38,3,0
+no_periodontal_care,No periodontal care,3,281,0,33,89,19,0.5757575757575758,0.21348314606741572,32,6,0
+no_periodontal_care,No periodontal care,4,523,0,82,151,50,0.6097560975609756,0.33112582781456956,79,7,1
+no_periodontal_care,No periodontal care,5,369,0,32,109,15,0.46875,0.13761467889908258,27,6,0
+no_periodontal_care,No periodontal care,6,303,0,24,99,15,0.625,0.15151515151515152,22,2,0
+no_periodontal_care,No periodontal care,7,424,0,57,143,28,0.49122807017543857,0.1958041958041958,49,3,0
+no_periodontal_care,No periodontal care,8,524,0,56,164,30,0.5357142857142857,0.18292682926829268,52,2,0
+code_vs_radiograph,Code against the radiograph,All,677,2384,141,287,139,0.9858156028368794,0.4843205574912892,20,3,0
+code_vs_radiograph,Code against the radiograph,1,63,212,15,29,15,1.0,0.5172413793103449,2,0,0
+code_vs_radiograph,Code against the radiograph,2,58,304,15,23,14,0.9333333333333333,0.6086956521739131,3,0,0
+code_vs_radiograph,Code against the radiograph,3,60,221,14,25,14,1.0,0.56,3,0,0
+code_vs_radiograph,Code against the radiograph,4,106,417,18,44,18,1.0,0.4090909090909091,1,2,0
+code_vs_radiograph,Code against the radiograph,5,77,292,17,36,16,0.9411764705882353,0.4444444444444444,5,0,0
+code_vs_radiograph,Code against the radiograph,6,85,218,20,40,20,1.0,0.5,2,0,0
+code_vs_radiograph,Code against the radiograph,7,80,344,17,34,17,1.0,0.5,0,0,0
+code_vs_radiograph,Code against the radiograph,8,148,376,25,56,25,1.0,0.44642857142857145,4,1,0
+stage_drop,Stage drops,All,1065,1996,478,686,478,1.0,0.6967930029154519,340,8,3
+stage_drop,Stage drops,1,91,184,43,53,43,1.0,0.8113207547169812,35,2,2
+stage_drop,Stage drops,2,118,244,56,80,56,1.0,0.7,38,0,0
+stage_drop,Stage drops,3,95,186,38,61,38,1.0,0.6229508196721312,28,0,0
+stage_drop,Stage drops,4,193,330,95,130,95,1.0,0.7307692307692307,73,1,0
+stage_drop,Stage drops,5,117,252,58,82,58,1.0,0.7073170731707317,45,1,1
+stage_drop,Stage drops,6,115,188,53,77,53,1.0,0.6883116883116883,36,1,0
+stage_drop,Stage drops,7,142,282,60,89,60,1.0,0.6741573033707865,39,2,0
+stage_drop,Stage drops,8,194,330,75,114,75,1.0,0.6578947368421053,46,1,0
+any_rule,Any rule,All,3061,0,893,948,527,0.5901455767077267,0.5559071729957806,694,34,11
+any_rule,Any rule,1,275,0,80,77,48,0.6,0.6233766233766234,64,5,2
+any_rule,Any rule,2,362,0,104,116,62,0.5961538461538461,0.5344827586206896,80,3,0
+any_rule,Any rule,3,281,0,81,89,50,0.6172839506172839,0.5617977528089888,63,6,2
+any_rule,Any rule,4,523,0,182,151,91,0.5,0.6026490066225165,154,7,2
+any_rule,Any rule,5,369,0,97,109,58,0.5979381443298969,0.5321100917431193,77,6,1
+any_rule,Any rule,6,303,0,88,99,54,0.6136363636363636,0.5454545454545454,62,2,1
+any_rule,Any rule,7,424,0,121,143,72,0.5950413223140496,0.5034965034965035,91,3,2
+any_rule,Any rule,8,524,0,140,164,92,0.6571428571428571,0.5609756097560976,103,2,1

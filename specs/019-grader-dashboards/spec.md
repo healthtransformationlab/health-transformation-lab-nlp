@@ -13,8 +13,8 @@ DQ grader's design is the React *Perio Data Quality (DQ) Monitor* (a personal ar
 grader has no design beyond the pitch (`docs/pitch/`, slides 11 uplift, 12 tests and 13 leaderboard) and
 GlobalDentBench's practices (`docs/dentbench_methods.md`).
 
-> Personal learning project; synthetic data only. "Health Transformation Lab" is a working name for a personal
-> idea, not any organization's plan. The DQ grader reads the synthetic study's structured evidence (statuses and
+> Personal learning project; synthetic data only. Health Transformation Lab is a personal idea, not any
+> organization's plan. The DQ grader reads the synthetic study's structured evidence (statuses and
 > measurements, never note text). The lab grader holds only a simulated sample until real runs exist, and says so
 > on every page and in every Genie answer.
 
@@ -49,7 +49,7 @@ against the generator's truth. One page, filtered by clinic:
 - **Five domain tiles**, as in the design: completeness (share of visits with every evidence source present),
   accuracy (the whole-record rule phenotype vs truth), consistency (spread of periodontitis prevalence across
   clinics, in points), temporal plausibility (share of later visits whose stage improves without a reason; Kahn),
-  and reliability (Liaw) shown as **not assessed** until real reviewers have labelled charts.
+  and reliability (de Vet et al. 2006; #405 corrected an earlier credit to Liaw et al. 2013) shown as **not assessed** until real reviewers have labelled charts.
 - **Completeness:** missingness by evidence column; checks with their pass rate and status.
 - **Accuracy:** each evidence source against the truth (share answered, agreement where answered); concordance
   between sources.

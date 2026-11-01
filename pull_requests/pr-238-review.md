@@ -1,17 +1,17 @@
 ---
 pr: 238
-branch: spec/233-027-study-gold-names
-title: "Name the Benchmark and GPU encoder tables by the gold conventions (spec 027)"
+branch: spec/233-026-study-gold-names
+title: "Name the Benchmark and GPU encoder tables by the gold conventions (spec 031)"
 author: jcbowyer
 reviewed_at: 2026-10-28
 reviewer: superpowers requesting-code-review subagent + coordinator verification
 verdict: approve-with-nits
 ---
 
-# PR Review: Name the Benchmark and GPU encoder tables by the gold conventions (spec 027)
+# PR Review: Name the Benchmark and GPU encoder tables by the gold conventions (spec 031)
 
 ## Summary
-Spec 027 brings the last gold tables under AGENTS.md "SQL and data names":
+Spec 031 brings the last gold tables under AGENTS.md "SQL and data names":
 - `labeled_notes` becomes `dim_study_note`.
 - `benchmark_results` becomes `benchmark_metric`, replaced per job run instead of plain append.
 - The GPU encoder job writes `fact_prediction` by `replace_batch` per (run, method) instead of appending to
@@ -25,7 +25,7 @@ with nits.
 ## Scope of Change
 - Files changed: 29 (+~400 / -52, of which 4 PNGs and 2 drawio files are generated)
 - Areas touched: python, databricks, docs, specs, diagrams, AGENTS.md
-- Commits: 6ef6309 Name the Benchmark and GPU encoder tables by the gold conventions (spec 027); review commit
+- Commits: 6ef6309 Name the Benchmark and GPU encoder tables by the gold conventions (spec 031); review commit
 - Range reviewed: `origin/main...6ef6309`, then the review fixes
 
 ## CI Status
@@ -64,7 +64,7 @@ None.
 | No organization claims | ✅ | |
 | Test first | ✅ | 9 tests failed before the code |
 | Python and R in parity | n/a | no label, scoring, reliability or cost change |
-| Spec for big changes | ✅ | `specs/027-study-gold-names/` (spec, plan, tasks); issue #233 |
+| Spec for big changes | ✅ | `specs/031-study-gold-names/` (spec, plan, tasks); issue #233 |
 | Configuration | ✅ | no new settings; jobs pass `{{job.run_id}}` |
 | Idempotent writes | ✅ | the two plain appends replaced by `replace_batch`; rows carry `run_id`, `run_ts`, `git_commit_sha` |
 | Docs | ✅ | gold_tables, deployment, r/README, AGENTS.md `_mm` |

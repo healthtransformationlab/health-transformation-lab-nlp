@@ -5,10 +5,10 @@
 > partner named here has been contacted or has agreed to anything.
 > Figures come from the public sources cited on each slide; nothing marked "to measure" has been measured.
 
-**The pitch in one line:** AI passes the dental exam and fails the real patient, and no test checks whether it
-connects the mouth to the rest of the body or helps people get care. An open lab writes those missing test
-questions, publishes an open agent built on public evidence, and measures the gain in public, for better oral
-health for millions of Americans and better overall health through medical-dental care.
+**The pitch in one line:** AI passes the dental exam and fails the real patient: most benchmarks test exam knowledge,
+and published studies have found AI falling short on real patient cases such as drug interactions. An open lab writes
+the missing real-world test questions, publishes an open agent built on public evidence, and measures the gain in
+public, for better oral health for millions of Americans and better overall health through medical-dental care.
 
 | File | What it is |
 |---|---|
@@ -26,14 +26,20 @@ The pitch asks for a fair test, and this repo is where one gets built on synthet
 - **The medical-dental seam, from the record:** the periodontal phenotyping study ([the dental record path](../edr/README.md)) reads a dental chart the
   way a doctor or an AI would have to, with harm grades borrowed from GlobalDentBench
   ([dentbench_methods.md](../dentbench_methods.md)) and the record in OMOP, the format medicine already uses.
-- **Large LLMs, from narrow to broad:** the same models, runners, harm grades and leaderboards score LLMs first on
+- **Large LLMs, from narrow to broad:** the same models, harm grades and leaderboards score LLMs first on
   periodontal charts, then on case questions written from synthetic patients whose right answers are known, then on
   broader dental and medical-dental questions.
 
 ## Sources cited in the deck
 
-- GlobalDentBench: Cai, Zhao et al., [arXiv 2605.24636](https://arxiv.org/abs/2605.24636), 2026
+- GlobalDentBench: Zhao, Liang, Cai et al., [arXiv 2605.24636](https://arxiv.org/abs/2605.24636), 2026
 - First, Do NOHARM (ARISE network), 2026 preprint
+- Hager et al., *Evaluation and mitigation of the limitations of large language models in clinical decision-making*,
+  Nat Med 2024, [doi:10.1038/s41591-024-03097-1](https://doi.org/10.1038/s41591-024-03097-1)
+- Bean et al., *Reliability of LLMs as medical assistants for the general public*, Nat Med 2026,
+  [doi:10.1038/s41591-025-04074-y](https://doi.org/10.1038/s41591-025-04074-y)
+- Al-Ashwal et al., ChatGPT, Bing AI and Bard against drug-drug interaction tools, Drug Healthc Patient Saf 2023,
+  [doi:10.2147/DHPS.S425858](https://doi.org/10.2147/DHPS.S425858)
 - Kaplan and Akyol, systematic review of AI evaluation in dentistry, Japanese Dental Science Review 2026,
   [doi:10.1016/j.jdsr.2026.01.002](https://doi.org/10.1016/j.jdsr.2026.01.002)
 - CDC, NCHS Data Brief 531, *Emergency Department Visits for Tooth Disorders: United States, 2020–2022* (June 2025),

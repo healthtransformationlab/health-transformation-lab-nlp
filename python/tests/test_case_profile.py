@@ -137,3 +137,164 @@ def test_treatment_items_say_they_are_statuses_read_from_procedure_codes(two_vis
     items = set(cp.build_profiles(two_visits).query("category == 'Treatment'")["item"])
     assert items == {"status from periodontal procedure codes, completed",
                      "status from periodontal procedure codes, planned"}
+
+
+# ---------------------------------------------------------------- spec 026 US2: record-mismatch rules
+
+S = "periodontitis_stage_"
+RULE_NAMES = ["code_vs_chart", "code_above_chart", "code_below_chart", "no_periodontal_care", "code_vs_radiograph",
+              "stage_drop"]
+
+
+def _fails(visits):
+    c = cp.check_rules(pd.DataFrame(visits))
+    return {(r.visit_id, r.rule) for r in c.itertuples() if r.outcome == "fail"}
+
+
+def _outcome(visits, visit_id, rule):
+    c = cp.check_rules(pd.DataFrame(visits))
+    return c[(c.visit_id == visit_id) & (c.rule == rule)].outcome.item()
+
+
+def test_the_rules_are_named_and_a_plain_visit_fails_none():
+    assert [r for r, *_ in cp.RULES] == RULE_NAMES
+    assert _fails([_visit()]) == set()
+
+
+@pytest.mark.parametrize("rule, kw", [
+    ("code_above_chart", {"proc_dx_completed": S + "3", "probing_chart": S + "2", "rec_max_cal_mm": 2.0,
+                          "rec_rbl_pct": 10.0, "rec_teeth_lost_perio": 0.0, "rec_max_probing_depth_mm": 4.0}),
+    ("code_below_chart", {"proc_dx_completed": "gingivitis", "probing_chart": S + "1", "rec_max_cal_mm": 4.0,
+                          "rec_rbl_pct": 10.0}),
+    ("no_periodontal_care", {"proc_codes_completed": "unknown", "proc_codes_planned": "healthy"}),
+    ("code_vs_chart", {"proc_dx_completed": "healthy", "probing_chart": S + "2", "rec_max_cal_mm": 1.0,
+                       "rec_rbl_pct": 5.0}),
+    ("code_vs_radiograph", {"proc_dx_completed": "gingivitis", "probing_chart": "gingivitis",
+                            "radiograph_ai": S + "3", "rec_max_cal_mm": 1.0, "rec_rbl_pct": 5.0}),
+])
+def test_each_rule_fires_alone_on_a_visit_built_for_it(rule, kw):
+    assert _fails([_visit(**kw)]) == {(1, rule)}
+
+
+def test_a_stage_drop_fails_at_the_later_visit_and_names_the_earlier_one():
+    earlier = _visit(proc_dx_completed=S + "3", probing_chart=S + "3", rec_max_cal_mm=5.0, rec_rbl_pct=30.0)
+    later = _visit(visit_id=2, visit_seq=1, visit_date="2021-07-01", proc_dx_completed=S + "1",
+                   probing_chart=S + "2", rec_max_cal_mm=5.0, rec_rbl_pct=30.0)
+    assert _fails([earlier, later]) == {(2, "stage_drop")}
+    c = cp.check_rules(pd.DataFrame([earlier, later]))
+    row = c[(c.visit_id == 2) & (c.rule == "stage_drop")]
+    assert row.related_visit_id.item() == 1 and "visit 1" in row.evidence.item()
+
+
+def test_stage_drops_match_the_plausibility_checks_on_the_study():
+    v = pd.read_csv(DATASETS_DIR / "visits_structured.csv")
+    c = cp.check_rules(v)
+    ours = set(c[(c.rule == "stage_drop") & (c.outcome == "fail")].visit_id)
+    h = plausibility.check_history(cp.history_frame(v), "proc_dx_completed")
+    theirs = set(h[h.stage_drop | h.perio_resolved].visit_id)
+    assert ours == theirs and ours
+
+
+def test_missing_evidence_is_not_checkable_and_a_missing_code_is_no_code():
+    no_chart = _visit(charted=False, probing_chart="unknown", rec_max_probing_depth_mm=float("nan"),
+                      rec_bop_pct=float("nan"), rec_max_cal_mm=float("nan"), rec_rbl_pct=float("nan"),
+                      rec_teeth_lost_perio=float("nan"), rec_pct_teeth_involved=float("nan"))
+    for rule in ("code_vs_chart", "code_above_chart", "code_below_chart"):
+        assert _outcome([no_chart], 1, rule) == "not_checkable"
+    assert _outcome([no_chart], 1, "code_vs_radiograph") == "not_checkable"   # radiograph unknown
+    assert _outcome([no_chart], 1, "stage_drop") == "not_checkable"           # no earlier periodontitis code
+    assert _outcome([no_chart], 1, "no_periodontal_care") == "pass"
+    no_code = _visit(proc_dx_completed="unknown")
+    assert {_outcome([no_code], 1, r) for r in RULE_NAMES} == {"no_code"}
+
+
+def _score_case():
+    """Four visits at two clinics, hand-worked. Visit 1: stage III code, chart within stage I (above-chart fail),
+    truth stage I, an injected error. Visit 2: stage II code, no care (fail), truth stage II. Visit 3: stage III code
+    then visit 4 stage I at the same patient: a stage drop where the earlier code is the wrong one."""
+    v = pd.DataFrame([
+        _visit(visit_id=1, person_id=1, clinic_id=1, proc_dx_completed=S + "3", probing_chart=S + "2",
+               rec_max_cal_mm=2.0, rec_rbl_pct=10.0, rec_teeth_lost_perio=0.0, rec_max_probing_depth_mm=4.0),
+        _visit(visit_id=2, person_id=2, clinic_id=2, proc_codes_completed="unknown"),
+        _visit(visit_id=3, person_id=3, clinic_id=2, proc_dx_completed=S + "3", probing_chart=S + "2"),
+        _visit(visit_id=4, person_id=3, clinic_id=2, visit_seq=1, visit_date="2021-07-01",
+               proc_dx_completed=S + "1", probing_chart=S + "1", rec_max_cal_mm=5.0, rec_rbl_pct=30.0),
+    ])
+    truth = pd.DataFrame({"visit_id": [1, 2, 3, 4], "truth_status": [S + "1", S + "2", S + "1", S + "1"],
+                          "record_error": ["decimal_slip", None, None, None]})
+    return v, truth
+
+
+def test_scores_are_counted_over_the_visits_each_rule_can_check():
+    v, truth = _score_case()
+    s = cp.score_rules(cp.check_rules(v), v, truth).set_index(["rule", "clinic"])
+    above = s.loc[("code_above_chart", "All")]
+    assert (above.checkable_count, above.flagged_count, above.true_flag_count) == (4, 1, 1)
+    assert above.code_truth_mismatch_count == 2          # visits 1 and 3 have codes the truth doesn't share
+    assert above.precision == 1.0 and above.recall == 0.5
+    assert (above.injected_checkable_count, above.injected_caught_count) == (1, 1)
+    care = s.loc[("no_periodontal_care", "All")]
+    assert care.flagged_count == 1 and care.true_flag_count == 0 and care.precision == 0.0
+    drop = s.loc[("stage_drop", "All")]
+    # only visit 4 has an earlier periodontitis code; its drop counts as true because visit 3's code is wrong
+    assert (drop.checkable_count, drop.not_checkable_count, drop.flagged_count, drop.true_flag_count) == (1, 3, 1, 1)
+    assert s.loc[("code_above_chart", "2")].flagged_count == 0 and s.loc[("code_above_chart", "1")].flagged_count == 1
+
+
+def test_any_rule_covers_every_coded_visit_and_counts_flags_only_one_rule_made():
+    v, truth = _score_case()
+    s = cp.score_rules(cp.check_rules(v), v, truth).set_index(["rule", "clinic"])
+    a = s.loc[("any_rule", "All")]
+    assert (a.checkable_count, a.flagged_count) == (4, 3)
+    assert a.true_flag_count == 1                       # visit 1; visit 4's own code is right, visit 2's too
+    assert a.only_rule_count == 3                       # each flagged visit fails exactly one rule
+    assert s.loc[("code_above_chart", "All")].only_rule_count == 1
+
+
+def test_every_rule_is_scored_on_the_study_with_its_checkable_count():
+    v = pd.read_csv(DATASETS_DIR / "visits_structured.csv")
+    truth = pd.read_csv(DATASETS_DIR / "answer_key" / "visits_truth.csv")
+    s = cp.score_rules(cp.check_rules(v), v, truth)
+    overall = s[s.clinic == "All"].set_index("rule")
+    assert list(overall.index) == RULE_NAMES + ["any_rule"]
+    assert (overall.checkable_count > 0).all() and (overall.flagged_count > 0).all()
+    assert overall.loc["any_rule", "checkable_count"] == (v.proc_dx_completed != "unknown").sum()
+    assert overall.loc["any_rule", "injected_checkable_count"] == 34
+
+
+@pytest.mark.parametrize("kw, fails", [
+    # code_above_chart: CAL < 3, bone loss < 15, PD < 6, no tooth lost; each edge sits outside
+    ({"rec_max_cal_mm": 2.9}, True), ({"rec_max_cal_mm": 3.0}, False),
+    ({"rec_rbl_pct": 14.9}, True), ({"rec_rbl_pct": 15.0}, False),
+    ({"rec_max_probing_depth_mm": 5.9}, True), ({"rec_max_probing_depth_mm": 6.0}, False),
+    ({"rec_teeth_lost_perio": 1.0}, False),
+])
+def test_code_above_chart_at_its_thresholds(kw, fails):
+    base = {"proc_dx_completed": S + "3", "probing_chart": S + "2", "rec_max_cal_mm": 2.0, "rec_rbl_pct": 10.0,
+            "rec_teeth_lost_perio": 0.0, "rec_max_probing_depth_mm": 4.0}
+    assert _outcome([_visit(**(base | kw))], 1, "code_above_chart") == ("fail" if fails else "pass")
+
+
+@pytest.mark.parametrize("kw, fails", [
+    # code_below_chart: CAL >= 3 or bone loss >= 15; each edge sits inside
+    ({"rec_max_cal_mm": 2.9}, False), ({"rec_max_cal_mm": 3.0}, True),
+    ({"rec_rbl_pct": 14.9}, False), ({"rec_rbl_pct": 15.0}, True),
+])
+def test_code_below_chart_at_its_thresholds(kw, fails):
+    base = {"proc_dx_completed": "gingivitis", "probing_chart": S + "1", "rec_max_cal_mm": 1.0, "rec_rbl_pct": 5.0}
+    assert _outcome([_visit(**(base | kw))], 1, "code_below_chart") == ("fail" if fails else "pass")
+
+
+@pytest.mark.parametrize("chart, fails", [(S + "1", False), ("gingivitis", True)])
+def test_code_vs_chart_allows_one_step(chart, fails):
+    assert _outcome([_visit(probing_chart=chart)], 1, "code_vs_chart") == ("fail" if fails else "pass")
+
+
+def test_each_mismatch_row_carries_how_many_rules_its_visit_fails(two_visits):
+    v = pd.DataFrame([_visit(proc_dx_completed="healthy", probing_chart=S + "2", rec_max_cal_mm=4.0,
+                             radiograph_ai=S + "3")])
+    m = cp.record_mismatches(cp.check_rules(v), v, pd.DataFrame({"visit_id": [1], "record_error": [None]}))
+    assert set(m.rule) == {"code_vs_chart", "code_below_chart", "code_vs_radiograph"}
+    assert set(m.failed_rule_count) == {3}
+    assert list(m.columns) == ["visit_id", "rule", "rule_label", "evidence", "related_visit_id", "failed_rule_count",
+                               "clinic", "injected_error"]

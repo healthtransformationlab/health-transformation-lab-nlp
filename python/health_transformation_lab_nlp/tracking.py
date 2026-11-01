@@ -12,6 +12,8 @@
 - No-op when mlflow isn't installed or DENTAL_MLFLOW=0, so scripts run without it.
 - Never fails a step: settings are checked before a run starts (on Databricks the experiment must be an
   absolute workspace path, the bundle's), and a logging call that fails warns instead of raising.
+- A setting, param or MLflow id of None, "", "None" or "null" counts as unset (`setting`), so a Python None
+  never reaches the server as the text "None" (#131). Warnings keep the start and end of a long error (#143).
 """
 
 from __future__ import annotations
@@ -29,6 +31,34 @@ from .telemetry import traced
 
 EXPERIMENT = "health-transformation-lab-nlp"
 log = logging.getLogger(__name__)
+_UNSET = {"", "none", "null"}
+# MLflow reads these itself; "None" in one goes to the server as an id, which fails 'For input string: "None"' (#131)
+_MLFLOW_ID_VARS = ("MLFLOW_EXPERIMENT_ID", "MLFLOW_EXPERIMENT_NAME", "MLFLOW_RUN_ID")
+
+
+@traced
+def setting(value, default=None):
+    """A setting as given, trimmed; None, "", "None" and "null" count as unset and give `default`. A Python None
+    passed through str() or a job parameter arrives as the text "None", never as a real value (#131)."""
+    if value is None:
+        return default
+    text = str(value).strip()
+    return default if text.lower() in _UNSET else text
+
+
+def _clear_none_ids() -> None:
+    for var in _MLFLOW_ID_VARS:
+        if var in os.environ and setting(os.environ[var]) is None:
+            log.warning("MLflow: %s=%r counts as unset, cleared", var, os.environ.pop(var))
+
+
+def _number(v):
+    """A metric value as a float, or None when it's missing, "None", not a number or NaN."""
+    try:
+        f = float(v)
+    except (TypeError, ValueError):
+        return None
+    return None if math.isnan(f) else f
 
 
 @traced
@@ -89,14 +119,15 @@ class _Run:
     def log_metrics(self, m: dict):
         if self.run_id:
             import mlflow
-            _quietly("log_metrics", lambda: mlflow.log_metrics(
-                {k: float(v) for k, v in m.items() if v is not None and not math.isnan(float(v))}))
+            numbers = {k: _number(v) for k, v in m.items()}
+            _quietly("log_metrics", lambda: mlflow.log_metrics({k: v for k, v in numbers.items() if v is not None}))
 
     @traced
     def log_params(self, p: dict):
         if self.run_id:
             import mlflow
-            _quietly("log_params", lambda: mlflow.log_params({k: str(v)[:500] for k, v in p.items()}))
+            given = {k: setting(v) for k, v in p.items()}       # an unset param is left out, never sent as "None"
+            _quietly("log_params", lambda: mlflow.log_params({k: v[:500] for k, v in given.items() if v is not None}))
 
     @traced
     def set_tags(self, t: dict):
@@ -140,11 +171,12 @@ def pass_databricks_login() -> bool:
 
 def _setup():
     import mlflow
-    uri = os.environ.get("MLFLOW_TRACKING_URI", "")
-    experiment = os.environ.get("DENTAL_MLFLOW_EXPERIMENT", EXPERIMENT)
+    uri = setting(os.environ.get("MLFLOW_TRACKING_URI"), "")
+    experiment = setting(os.environ.get("DENTAL_MLFLOW_EXPERIMENT"), EXPERIMENT)
     if uri.startswith("databricks") and not experiment.startswith("/"):
         raise ValueError(f"experiment {experiment!r} is not an absolute workspace path: set DENTAL_MLFLOW_EXPERIMENT "
                          "to the bundle's experiment (the job's experiment_name parameter)")
+    _clear_none_ids()
     if not uri:
         (REPO_ROOT / "mlruns").mkdir(exist_ok=True)
         mlflow.set_tracking_uri(f"sqlite:///{REPO_ROOT / 'mlruns' / 'mlflow.db'}")
@@ -161,7 +193,7 @@ def track(step: str, run_name: str, params: dict | None = None, simulated: bool 
         mlflow = _setup()
         ctx = mlflow.start_run(run_name=run_name, nested=nested)
     except Exception as e:  # noqa: BLE001 - MlflowException, connection and auth errors alike
-        log.warning("MLflow tracking off for %s: %s", run_name, str(e).splitlines()[0][:200])
+        log.warning("MLflow tracking off for %s: %s", run_name, _short(e))
         yield _Run()
         return
     with ctx as r:

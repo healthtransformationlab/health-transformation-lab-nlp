@@ -1,13 +1,13 @@
 # Tests on every push and pull request: Python tests (incl. bundle structure),
 # R parity, and the bundle against its schema.
 name: Test every change (Python, R parity, bundle)
-# Changes that touch only docs (docs/, any .md, diagrams) skip CI: nothing they change is tested.
+# Pushes to main that touch only docs (docs/, any .md, diagrams) skip CI. Pull requests always run it: a docs-only PR
+# runs the Python tests (many of them read the docs) and skips the jobs docs can't affect (issue #244).
 on:
   push:
     branches: [main]
     paths-ignore: ["docs/**", "**/*.md", "diagrams/**"]
-  pull_request:
-    paths-ignore: ["docs/**", "**/*.md", "diagrams/**"]
+  pull_request:            # every PR, docs-only too, so every check reports and can be required (issue #244)
   workflow_dispatch:      # Actions -> ci -> Run workflow: rerun the checks on any branch by hand
   schedule:
     - cron: "17 6 * * 1"  # Mondays: R parity in full, whatever changed (issue #152)
@@ -25,6 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       parity: ${{ steps.parity.outputs.needed }}
+      code: ${{ steps.parity.outputs.code }}
     steps:
       - uses: actions/checkout@v6
         with: {fetch-depth: 0}
@@ -36,7 +37,7 @@ jobs:
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             python .github/scripts/parity_needed.py >> "$GITHUB_OUTPUT"
           else
-            echo "needed=true" >> "$GITHUB_OUTPUT"
+            printf 'needed=true\ncode=true\n' >> "$GITHUB_OUTPUT"
           fi
 
   python:
@@ -50,6 +51,8 @@ jobs:
 
   postgres:
     # OMOP CDM 5.4 + dental extension on Postgres (Lakebase is managed Postgres)
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -82,6 +85,8 @@ jobs:
 
   azure-infra:
     # Check the telemetry Terraform (spec 014): formatting, then validate without a backend or Azure sign-in.
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -91,6 +96,8 @@ jobs:
 
   bundle:
     # Validate needs a workspace; runs only once dev has the service principal's secret.
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     environment: dev
     steps:

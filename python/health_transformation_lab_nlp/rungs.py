@@ -197,9 +197,11 @@ class HFEncoder:
             TrainingArguments,
         )
         self.tok = AutoTokenizer.from_pretrained(self.hf_id)
+        # float32 whatever the checkpoint stores (#226): transformers 5 loads a checkpoint in its own dtype, and
+        # GatorTron's is float16; AdamW on float16 weights (no float32 copy) went NaN after one step.
         self.model = AutoModelForSequenceClassification.from_pretrained(
             self.hf_id, num_labels=len(LABELS), id2label=dict(enumerate(LABELS)),
-            label2id={l: i for i, l in enumerate(LABELS)}, ignore_mismatched_sizes=True)
+            label2id={l: i for i, l in enumerate(LABELS)}, ignore_mismatched_sizes=True).float()
         args = TrainingArguments(**self.training_kwargs())
         trainer_cls = Trainer
         if self.class_weight == "sqrt":

@@ -14,6 +14,8 @@ erDiagram
     judge_queue ||--o| fact_corpus_judge_call : "method_name, visit_id"
     dim_grader_question ||--o{ fact_grader_answer : "question_id"
     fact_visit_evidence ||--o{ fact_case_profile_item : "visit_id"
+    fact_visit_evidence ||--o{ fact_record_mismatch : "visit_id"
+    fact_record_mismatch }o..o{ dq_mismatch_rule : "rule_name (scores are per rule and clinic: join on clinic_code too)"
     dim_study_note }o..o{ benchmark_metric : "run_id (its test split)"
     review_key
     dim_result_file
@@ -36,6 +38,8 @@ erDiagram
     fact_visit_evidence
     dq_injected_error
     fact_case_profile_item
+    fact_record_mismatch
+    dq_mismatch_rule
     dim_grader_question
     fact_grader_answer
     dim_study_note

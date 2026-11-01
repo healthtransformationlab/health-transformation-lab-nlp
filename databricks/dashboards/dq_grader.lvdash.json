@@ -145,6 +145,42 @@
         "  ROUND(100 * false_flag_ratio, 2) AS false_flag_pct\n",
         "FROM health_transformation_lab.gold_perio_bench.dq_injected_error\n"
       ]
+    },
+    {
+      "name": "mismatch_rules",
+      "displayName": "mismatch_rules",
+      "queryLines": [
+        "SELECT rule_label_name AS rule, clinic_code AS clinic, checkable_count AS checkable, flagged_count AS flagged,\n",
+        "  ROUND(100 * precision_ratio, 1) AS precision_pct, ROUND(100 * recall_ratio, 1) AS recall_pct,\n",
+        "  only_rule_count AS only_this_rule, injected_caught_count AS injected_caught,\n",
+        "  injected_checkable_count AS injected_checkable\n",
+        "FROM health_transformation_lab.gold_perio_bench.dq_mismatch_rule\n",
+        "ORDER BY CASE WHEN clinic_code = 'All' THEN 0 ELSE 1 END, clinic_code,\n",
+        "  CASE WHEN rule_name = 'any_rule' THEN 1 ELSE 0 END, rule_name\n"
+      ]
+    },
+    {
+      "name": "mismatch_visits",
+      "displayName": "mismatch_visits",
+      "queryLines": [
+        "SELECT m.visit_id, m.clinic_code AS clinic, v.visit_date, m.failed_rule_count AS rules_failed,\n",
+        "  m.rule_label_name AS rule, m.mismatch_evidence_text AS evidence\n",
+        "FROM health_transformation_lab.gold_perio_bench.fact_record_mismatch m\n",
+        "INNER JOIN health_transformation_lab.gold_perio_bench.fact_visit_evidence v ON m.visit_id = v.visit_id\n",
+        "ORDER BY m.failed_rule_count DESC, m.visit_id, m.rule_name\n"
+      ]
+    },
+    {
+      "name": "case_profile",
+      "displayName": "case_profile",
+      "queryLines": [
+        "WITH flagged AS (SELECT DISTINCT visit_id FROM health_transformation_lab.gold_perio_bench.fact_record_mismatch)\n",
+        "SELECT p.visit_id, p.category_name AS category, p.item_name AS item, p.item_value_name AS shown_value,\n",
+        "  p.item_unit_name AS unit, p.category_order_num, p.item_order_num\n",
+        "FROM health_transformation_lab.gold_perio_bench.fact_case_profile_item p\n",
+        "INNER JOIN flagged f ON p.visit_id = f.visit_id\n",
+        "ORDER BY p.visit_id, p.category_order_num, p.item_order_num\n"
+      ]
     }
   ],
   "pages": [
@@ -161,7 +197,7 @@
                 "## EHR DQ grader: is this dental record fit for periodontal phenotyping?\n",
                 "**Synthetic data** from the study's generator, scored against its own truth: **not clinical performance**. The\n",
                 "light version of the Perio DQ Monitor design: five domains (Zozus completeness, accuracy and consistency; Kahn\n",
-                "temporal plausibility; Liaw reliability), then one section per domain. Ask the **EHR DQ grader** Genie space for\n",
+                "temporal plausibility; reliability after de Vet et al. 2006), then one section per domain. Ask the **EHR DQ grader** Genie space for\n",
                 "anything not shown.\n"
               ]
             }
@@ -423,7 +459,7 @@
             "name": "t_reliability",
             "multilineTextboxSpec": {
               "lines": [
-                "**Reliability** (Liaw)\n",
+                "**Reliability** (de Vet)\n",
                 "\n",
                 "**Not assessed**: needs real reviewers to label charts. Simulated reviewers are a dry run.\n"
               ]
@@ -1286,6 +1322,467 @@
             "y": 34,
             "width": 3,
             "height": 3
+          }
+        }
+      ]
+    },
+    {
+      "name": "records_to_recheck",
+      "displayName": "Records to recheck",
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layout": [
+        {
+          "widget": {
+            "name": "recheck_banner",
+            "multilineTextboxSpec": {
+              "lines": [
+                "## Records to recheck\n",
+                "**Synthetic records**, scored against the generator's truth: **not clinical performance**. Each rule asks whether a\n",
+                "visit's recorded code (the completed diagnosis code) fits the rest of its record. A flag is a record mismatch: a\n",
+                "coding or charting gap, not a clinical error. Precision and recall count only the visits a rule can check\n",
+                "(*checkable*); *only this rule* is how many of its flags no other rule makes. Pick a flagged visit to see its case\n",
+                "profile (spec 026, after KEEPER).\n"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 6,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "f_recheck_clinic",
+            "queries": [
+              {
+                "name": "f_f_recheck_clinic_mismatch_visits",
+                "query": {
+                  "datasetName": "mismatch_visits",
+                  "fields": [
+                    {
+                      "name": "clinic",
+                      "expression": "`clinic`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "clinic",
+                    "displayName": "Clinic",
+                    "queryName": "f_f_recheck_clinic_mismatch_visits"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Clinic"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 3,
+            "width": 2,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "f_rule",
+            "queries": [
+              {
+                "name": "f_f_rule_mismatch_visits",
+                "query": {
+                  "datasetName": "mismatch_visits",
+                  "fields": [
+                    {
+                      "name": "rule",
+                      "expression": "`rule`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              },
+              {
+                "name": "f_f_rule_mismatch_rules",
+                "query": {
+                  "datasetName": "mismatch_rules",
+                  "fields": [
+                    {
+                      "name": "rule",
+                      "expression": "`rule`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "rule",
+                    "displayName": "Rule",
+                    "queryName": "f_f_rule_mismatch_visits"
+                  },
+                  {
+                    "fieldName": "rule",
+                    "displayName": "Rule",
+                    "queryName": "f_f_rule_mismatch_rules"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Rule"
+              }
+            }
+          },
+          "position": {
+            "x": 2,
+            "y": 3,
+            "width": 2,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "f_visit",
+            "queries": [
+              {
+                "name": "f_f_visit_mismatch_visits",
+                "query": {
+                  "datasetName": "mismatch_visits",
+                  "fields": [
+                    {
+                      "name": "visit_id",
+                      "expression": "`visit_id`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              },
+              {
+                "name": "f_f_visit_case_profile",
+                "query": {
+                  "datasetName": "case_profile",
+                  "fields": [
+                    {
+                      "name": "visit_id",
+                      "expression": "`visit_id`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "filter-single-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "visit_id",
+                    "displayName": "Visit",
+                    "queryName": "f_f_visit_mismatch_visits"
+                  },
+                  {
+                    "fieldName": "visit_id",
+                    "displayName": "Visit",
+                    "queryName": "f_f_visit_case_profile"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Visit"
+              }
+            }
+          },
+          "position": {
+            "x": 4,
+            "y": 3,
+            "width": 2,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "tb_rules",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "mismatch_rules",
+                  "fields": [
+                    {
+                      "name": "rule",
+                      "expression": "`rule`"
+                    },
+                    {
+                      "name": "clinic",
+                      "expression": "`clinic`"
+                    },
+                    {
+                      "name": "checkable",
+                      "expression": "`checkable`"
+                    },
+                    {
+                      "name": "flagged",
+                      "expression": "`flagged`"
+                    },
+                    {
+                      "name": "precision_pct",
+                      "expression": "`precision_pct`"
+                    },
+                    {
+                      "name": "recall_pct",
+                      "expression": "`recall_pct`"
+                    },
+                    {
+                      "name": "only_this_rule",
+                      "expression": "`only_this_rule`"
+                    },
+                    {
+                      "name": "injected_caught",
+                      "expression": "`injected_caught`"
+                    },
+                    {
+                      "name": "injected_checkable",
+                      "expression": "`injected_checkable`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "rule",
+                    "displayName": "Rule"
+                  },
+                  {
+                    "fieldName": "clinic",
+                    "displayName": "Clinic"
+                  },
+                  {
+                    "fieldName": "checkable",
+                    "displayName": "Checkable"
+                  },
+                  {
+                    "fieldName": "flagged",
+                    "displayName": "Flagged"
+                  },
+                  {
+                    "fieldName": "precision_pct",
+                    "displayName": "Precision (%)"
+                  },
+                  {
+                    "fieldName": "recall_pct",
+                    "displayName": "Recall (%)"
+                  },
+                  {
+                    "fieldName": "only_this_rule",
+                    "displayName": "Only this rule"
+                  },
+                  {
+                    "fieldName": "injected_caught",
+                    "displayName": "Injected errors caught"
+                  },
+                  {
+                    "fieldName": "injected_checkable",
+                    "displayName": "Injected errors checkable"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Each rule against the truth (synthetic)",
+                "showDescription": true,
+                "description": "All = every clinic; the clinic filter doesn't apply here, so All always shows. Blank precision or recall = the rule flags nothing there. Per-clinic injected-error counts are too few to compare."
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 5,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "tb_flagged",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "mismatch_visits",
+                  "fields": [
+                    {
+                      "name": "visit_id",
+                      "expression": "`visit_id`"
+                    },
+                    {
+                      "name": "clinic",
+                      "expression": "`clinic`"
+                    },
+                    {
+                      "name": "visit_date",
+                      "expression": "`visit_date`"
+                    },
+                    {
+                      "name": "rules_failed",
+                      "expression": "`rules_failed`"
+                    },
+                    {
+                      "name": "rule",
+                      "expression": "`rule`"
+                    },
+                    {
+                      "name": "evidence",
+                      "expression": "`evidence`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "visit_id",
+                    "displayName": "Visit"
+                  },
+                  {
+                    "fieldName": "clinic",
+                    "displayName": "Clinic"
+                  },
+                  {
+                    "fieldName": "visit_date",
+                    "displayName": "Date"
+                  },
+                  {
+                    "fieldName": "rules_failed",
+                    "displayName": "Rules failed"
+                  },
+                  {
+                    "fieldName": "rule",
+                    "displayName": "Rule"
+                  },
+                  {
+                    "fieldName": "evidence",
+                    "displayName": "Evidence"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Flagged visits, most rules failed first",
+                "showDescription": true,
+                "description": "One row per visit and failed rule. Rules failed counts all of the visit's rules, even when the rule filter shows only some of them."
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 11,
+            "width": 3,
+            "height": 9
+          }
+        },
+        {
+          "widget": {
+            "name": "tb_profile",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "case_profile",
+                  "fields": [
+                    {
+                      "name": "visit_id",
+                      "expression": "`visit_id`"
+                    },
+                    {
+                      "name": "category",
+                      "expression": "`category`"
+                    },
+                    {
+                      "name": "item",
+                      "expression": "`item`"
+                    },
+                    {
+                      "name": "shown_value",
+                      "expression": "`shown_value`"
+                    },
+                    {
+                      "name": "unit",
+                      "expression": "`unit`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "visit_id",
+                    "displayName": "Visit"
+                  },
+                  {
+                    "fieldName": "category",
+                    "displayName": "Category"
+                  },
+                  {
+                    "fieldName": "item",
+                    "displayName": "Item"
+                  },
+                  {
+                    "fieldName": "shown_value",
+                    "displayName": "Value"
+                  },
+                  {
+                    "fieldName": "unit",
+                    "displayName": "Unit"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Case profile of the selected visit",
+                "showDescription": true,
+                "description": "Pick a visit in the Visit filter; until then every flagged visit's profile is listed. Structured values only, never note text. Not recorded = the record lacks it."
+              }
+            }
+          },
+          "position": {
+            "x": 3,
+            "y": 11,
+            "width": 3,
+            "height": 9
           }
         }
       ]

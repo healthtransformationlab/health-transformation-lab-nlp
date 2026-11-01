@@ -1,0 +1,1276 @@
+visit_id,rule,rule_label,evidence,related_visit_id,failed_rule_count,clinic,injected_error
+3,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,1,False
+7,code_vs_chart,Code against the chart reading,"code periodontitis_stage_2, chart reading gingivitis",,1,7,True
+8,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,2,7,False
+8,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 7",7,2,7,False
+11,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_3",,2,3,True
+11,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 7.0428 mm, bone loss 47.6131%",,2,3,True
+15,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,4,False
+16,no_periodontal_care,No periodontal care,"code periodontitis_stage_2, no periodontal procedure completed or planned",,1,4,False
+19,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 17",17,1,4,False
+23,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 20",20,1,5,False
+29,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 28",28,1,5,False
+34,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,3,False
+39,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 36",36,1,1,False
+40,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,1,False
+51,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,1,6,False
+52,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,5,False
+53,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,5,False
+55,no_periodontal_care,No periodontal care,"code periodontitis_stage_2, no periodontal procedure completed or planned",,1,5,False
+57,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 55",55,1,5,False
+66,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 65",65,1,3,False
+87,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,8,False
+89,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,2,8,False
+89,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 88",88,2,8,False
+90,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 88",88,1,8,False
+96,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_3",,4,4,False
+96,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 6.66 mm, bone loss 60.1%",,4,4,False
+96,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_3",,4,4,False
+96,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_3 at visit 95",95,4,4,False
+98,stage_drop,Stage drops,"code periodontitis_stage_2, after periodontitis_stage_3 at visit 95",95,1,4,False
+99,stage_drop,Stage drops,"code periodontitis_stage_2, after periodontitis_stage_3 at visit 95",95,1,4,False
+114,code_above_chart,Code higher than the chart,"code periodontitis_stage_3, max CAL 2.17 mm, bone loss 10.4%, max probing depth 2 mm, no tooth lost",,1,6,False
+115,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,2,6,False
+115,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_3 at visit 114",114,2,6,False
+117,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,5,False
+119,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,1,False
+139,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,1,False
+143,stage_drop,Stage drops,"code periodontitis_stage_2, after periodontitis_stage_3 at visit 142",142,1,6,False
+147,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,4,False
+149,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 147",147,1,4,False
+151,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 147",147,1,4,False
+152,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,4,False
+162,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,1,2,False
+166,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,2,False
+169,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 167",167,1,6,False
+171,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_3",,2,6,False
+171,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_3 at visit 170",170,2,6,False
+173,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_3",,1,8,False
+181,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,8,False
+204,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,4,True
+207,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,1,False
+211,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,4,False
+214,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 210",210,1,4,False
+216,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,1,6,False
+220,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,2,6,False
+220,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 219",219,2,6,False
+229,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,6,False
+230,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 229",229,1,6,False
+231,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,6,False
+234,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 233",233,1,2,False
+237,no_periodontal_care,No periodontal care,"code periodontitis_stage_2, no periodontal procedure completed or planned",,1,5,False
+239,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 237",237,1,5,False
+242,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 237",237,1,5,False
+246,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,4,1,False
+246,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.2 mm, bone loss 21.8%",,4,1,False
+246,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,4,1,False
+246,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 245",245,4,1,False
+248,stage_drop,Stage drops,"code periodontitis_stage_2, after periodontitis_stage_3 at visit 247",247,1,4,False
+249,stage_drop,Stage drops,"code periodontitis_stage_2, after periodontitis_stage_3 at visit 247",247,1,4,False
+250,stage_drop,Stage drops,"code periodontitis_stage_2, after periodontitis_stage_3 at visit 247",247,1,4,False
+251,stage_drop,Stage drops,"code periodontitis_stage_2, after periodontitis_stage_3 at visit 247",247,1,4,False
+252,stage_drop,Stage drops,"code periodontitis_stage_2, after periodontitis_stage_3 at visit 247",247,1,4,False
+253,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,2,6,False
+253,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.53 mm, bone loss 22.8%",,2,6,False
+261,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,7,False
+265,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 263",263,1,7,False
+269,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,4,7,False
+269,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.91 mm, bone loss 27%",,4,7,False
+269,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,4,7,False
+269,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 267",267,4,7,False
+272,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,3,False
+274,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,3,False
+275,stage_drop,Stage drops,"code healthy, after periodontitis_stage_1 at visit 272",272,1,3,False
+276,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_3",,2,3,False
+276,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 5.97 mm, bone loss 48.8%",,2,3,False
+283,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 279",279,1,3,False
+299,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,1,False
+306,stage_drop,Stage drops,"code periodontitis_stage_2, after periodontitis_stage_3 at visit 305",305,1,2,False
+307,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_3 at visit 305",305,1,2,False
+308,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_3",,2,2,False
+308,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_3 at visit 305",305,2,2,False
+321,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,4,2,False
+321,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.85 mm, bone loss 34%",,4,2,False
+321,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_3",,4,2,False
+321,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 319",319,4,2,False
+325,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_3",,3,6,False
+325,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 5.52 mm, bone loss 46.2%",,3,6,False
+325,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_3",,3,6,False
+326,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_3",,3,6,False
+326,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 5.53 mm, bone loss 46.3%",,3,6,False
+326,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_3",,3,6,False
+330,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_3",,4,6,False
+330,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 5.57 mm, bone loss 46.5%",,4,6,False
+330,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_3",,4,6,False
+330,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_3 at visit 328",328,4,6,False
+336,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,3,False
+338,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,3,False
+339,no_periodontal_care,No periodontal care,"code periodontitis_stage_2, no periodontal procedure completed or planned",,1,3,False
+340,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,2,3,False
+340,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 339",339,2,3,False
+343,stage_drop,Stage drops,"code periodontitis_stage_2, after periodontitis_stage_3 at visit 342",342,1,1,False
+344,stage_drop,Stage drops,"code periodontitis_stage_2, after periodontitis_stage_3 at visit 342",342,1,1,False
+345,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_3 at visit 342",342,1,1,False
+350,no_periodontal_care,No periodontal care,"code periodontitis_stage_2, no periodontal procedure completed or planned",,1,4,False
+355,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 350",350,1,4,False
+358,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 357",357,1,7,False
+359,no_periodontal_care,No periodontal care,"code periodontitis_stage_2, no periodontal procedure completed or planned",,1,7,False
+363,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,5,False
+367,stage_drop,Stage drops,"code periodontitis_stage_2, after periodontitis_stage_3 at visit 365",365,1,8,False
+385,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,4,False
+388,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,4,False
+389,stage_drop,Stage drops,"code healthy, after periodontitis_stage_1 at visit 388",388,1,4,False
+390,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 388",388,1,4,False
+391,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,8,False
+393,stage_drop,Stage drops,"code healthy, after periodontitis_stage_1 at visit 391",391,1,8,False
+394,stage_drop,Stage drops,"code healthy, after periodontitis_stage_1 at visit 391",391,1,8,False
+395,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 391",391,1,8,False
+397,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,4,3,False
+397,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 4 mm, bone loss 24.8%",,4,3,False
+397,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,4,3,False
+397,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 396",396,4,3,False
+409,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,5,False
+410,stage_drop,Stage drops,"code healthy, after periodontitis_stage_1 at visit 409",409,1,5,False
+419,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,1,1,False
+428,no_periodontal_care,No periodontal care,"code periodontitis_stage_2, no periodontal procedure completed or planned",,1,5,False
+441,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_3",,4,8,False
+441,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 6.35 mm, bone loss 40.2%",,4,8,False
+441,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_3",,4,8,False
+441,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_3 at visit 438",438,4,8,False
+443,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,7,False
+444,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,7,False
+445,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 443",443,1,7,False
+446,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,7,False
+447,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,7,False
+451,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,8,False
+453,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 451",451,1,8,False
+460,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,8,False
+461,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 460",460,1,8,False
+462,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 460",460,1,8,False
+463,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,7,False
+466,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,7,False
+471,code_vs_chart,Code against the chart reading,"code periodontitis_stage_2, chart reading healthy",,1,8,True
+472,no_periodontal_care,No periodontal care,"code periodontitis_stage_2, no periodontal procedure completed or planned",,1,2,False
+473,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 472",472,1,2,False
+474,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 472",472,1,2,False
+487,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 484",484,1,8,False
+494,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,3,False
+502,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_3",,4,8,False
+502,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 4.16 mm, bone loss 27.2%",,4,8,False
+502,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,4,8,False
+502,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_3 at visit 500",500,4,8,False
+503,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_3",,1,5,False
+509,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,3,False
+510,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 509",509,1,3,False
+515,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,7,False
+516,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 515",515,1,7,False
+517,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 515",515,1,7,False
+530,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,3,7,False
+530,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.13 mm, bone loss 16.4%",,3,7,False
+530,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 528",528,3,7,False
+542,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,8,False
+548,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,3,False
+549,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,3,False
+551,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,2,False
+552,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,2,False
+560,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,4,False
+570,stage_drop,Stage drops,"code periodontitis_stage_2, after periodontitis_stage_3 at visit 568",568,1,6,False
+571,stage_drop,Stage drops,"code periodontitis_stage_2, after periodontitis_stage_3 at visit 568",568,1,6,False
+588,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,3,7,False
+588,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.32 mm, bone loss 21%",,3,7,False
+588,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,3,7,False
+592,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,4,False
+594,no_periodontal_care,No periodontal care,"code periodontitis_stage_2, no periodontal procedure completed or planned",,1,4,False
+604,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,3,False
+605,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 604",604,1,3,False
+606,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 604",604,1,3,False
+611,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,4,False
+612,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,4,False
+614,code_vs_chart,Code against the chart reading,"code periodontitis_stage_2, chart reading healthy",,1,4,True
+615,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,3,4,False
+615,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.3 mm, bone loss 31.6%",,3,4,False
+615,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 613",613,3,4,False
+622,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,2,False
+630,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,1,False
+635,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,2,2,False
+635,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.45 mm, bone loss 24%",,2,2,False
+648,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,2,8,False
+648,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.07 mm, bone loss 17.6%",,2,8,False
+651,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 649",649,1,8,False
+655,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,4,6,False
+655,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.5 mm, bone loss 29.5%",,4,6,False
+655,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,4,6,False
+655,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 653",653,4,6,False
+656,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 653",653,1,6,False
+657,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,4,6,False
+657,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.53 mm, bone loss 29.8%",,4,6,False
+657,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,4,6,False
+657,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 653",653,4,6,False
+666,stage_drop,Stage drops,"code periodontitis_stage_2, after periodontitis_stage_3 at visit 665",665,1,4,False
+667,stage_drop,Stage drops,"code periodontitis_stage_2, after periodontitis_stage_3 at visit 665",665,1,4,False
+668,stage_drop,Stage drops,"code periodontitis_stage_2, after periodontitis_stage_3 at visit 665",665,1,4,False
+669,stage_drop,Stage drops,"code periodontitis_stage_2, after periodontitis_stage_3 at visit 665",665,1,4,False
+678,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_3",,4,6,False
+678,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 5.44 mm, bone loss 60.4%",,4,6,False
+678,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_3",,4,6,False
+678,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_3 at visit 677",677,4,6,False
+686,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,8,False
+687,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 686",686,1,8,False
+695,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 694",694,1,3,False
+696,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 694",694,1,3,False
+708,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,2,7,False
+708,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 707",707,2,7,False
+719,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,2,False
+720,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,2,False
+723,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,3,False
+726,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_3",,4,2,False
+726,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 7.87 mm, bone loss 59.2%",,4,2,False
+726,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_3",,4,2,False
+726,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_3 at visit 724",724,4,2,False
+735,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,2,5,False
+735,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 734",734,2,5,False
+736,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 734",734,1,5,False
+737,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 734",734,1,5,False
+738,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 734",734,1,5,False
+739,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,2,5,False
+739,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 734",734,2,5,False
+748,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_3",,4,5,False
+748,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 4.19 mm, bone loss 17%",,4,5,False
+748,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,4,5,False
+748,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_3 at visit 745",745,4,5,False
+754,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,1,False
+755,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 754",754,1,1,False
+763,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 758",758,1,2,False
+770,stage_drop,Stage drops,"code periodontitis_stage_2, after periodontitis_stage_3 at visit 769",769,1,1,False
+771,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_3",,3,1,False
+771,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 7.07 mm, bone loss 50.3%",,3,1,False
+771,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_3 at visit 769",769,3,1,False
+777,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,5,False
+779,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 777",777,1,5,False
+780,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 777",777,1,5,False
+791,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 789",789,1,1,False
+808,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,8,False
+809,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,8,False
+810,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,8,False
+811,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,8,False
+818,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,4,False
+820,stage_drop,Stage drops,"code healthy, after periodontitis_stage_1 at visit 818",818,1,4,False
+827,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 825",825,1,2,False
+828,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,2,False
+842,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,2,False
+844,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 843",843,1,2,False
+856,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_3",,4,1,False
+856,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 6.42 mm, bone loss 52.2%",,4,1,False
+856,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_3",,4,1,False
+856,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_3 at visit 854",854,4,1,False
+859,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,2,4,False
+859,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.92 mm, bone loss 22.5%",,2,4,False
+860,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,1,False
+861,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 860",860,1,1,False
+862,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,1,False
+865,stage_drop,Stage drops,"code periodontitis_stage_2, after periodontitis_stage_3 at visit 864",864,1,1,False
+876,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_3",,3,6,False
+876,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 7.52 mm, bone loss 48%",,3,6,False
+876,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_3 at visit 874",874,3,6,False
+877,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_3",,3,6,False
+877,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 7.57 mm, bone loss 48.2%",,3,6,False
+877,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_3 at visit 874",874,3,6,False
+890,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,8,False
+891,no_periodontal_care,No periodontal care,"code periodontitis_stage_2, no periodontal procedure completed or planned",,1,7,False
+892,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,2,7,False
+892,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 891",891,2,7,False
+894,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 891",891,1,7,False
+896,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 891",891,1,7,False
+898,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,7,False
+903,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,4,False
+904,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 903",903,1,4,False
+906,stage_drop,Stage drops,"code healthy, after periodontitis_stage_1 at visit 903",903,1,4,False
+908,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,1,8,False
+910,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,7,False
+912,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 911",911,1,7,False
+915,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,1,5,False
+916,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,3,5,False
+916,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.82 mm, bone loss 20.6%",,3,5,False
+916,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,3,5,False
+924,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,3,False
+930,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,1,False
+931,stage_drop,Stage drops,"code healthy, after periodontitis_stage_1 at visit 930",930,1,1,False
+932,stage_drop,Stage drops,"code healthy, after periodontitis_stage_1 at visit 930",930,1,1,False
+933,stage_drop,Stage drops,"code healthy, after periodontitis_stage_1 at visit 930",930,1,1,False
+935,stage_drop,Stage drops,"code healthy, after periodontitis_stage_1 at visit 930",930,1,1,False
+939,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,3,5,False
+939,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.54 mm, bone loss 23.8%",,3,5,False
+939,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,3,5,False
+941,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,4,5,False
+941,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.71 mm, bone loss 24.6%",,4,5,False
+941,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,4,5,False
+941,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 940",940,4,5,False
+948,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,8,False
+952,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,4,4,False
+952,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.93 mm, bone loss 24%",,4,4,False
+952,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,4,4,False
+952,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 951",951,4,4,False
+959,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,3,3,False
+959,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.64 mm, bone loss 26.2%",,3,3,False
+959,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_3",,3,3,False
+960,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,4,False
+961,no_periodontal_care,No periodontal care,"code periodontitis_stage_2, no periodontal procedure completed or planned",,1,4,False
+964,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 961",961,1,4,False
+988,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,2,False
+991,stage_drop,Stage drops,"code healthy, after periodontitis_stage_1 at visit 988",988,1,2,False
+995,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 994",994,1,7,False
+1016,stage_drop,Stage drops,"code periodontitis_stage_2, after periodontitis_stage_3 at visit 1013",1013,1,8,False
+1018,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,7,False
+1019,no_periodontal_care,No periodontal care,"code periodontitis_stage_2, no periodontal procedure completed or planned",,1,7,False
+1020,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,2,7,False
+1020,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 1019",1019,2,7,False
+1021,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,1,False
+1023,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,1,False
+1024,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 1021",1021,1,1,False
+1025,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,1,1,False
+1039,stage_drop,Stage drops,"code periodontitis_stage_2, after periodontitis_stage_3 at visit 1038",1038,1,7,False
+1041,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_3",,4,7,False
+1041,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 4.09 mm, bone loss 28.8%",,4,7,False
+1041,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,4,7,False
+1041,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_3 at visit 1038",1038,4,7,False
+1045,no_periodontal_care,No periodontal care,"code periodontitis_stage_2, no periodontal procedure completed or planned",,1,5,False
+1049,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,7,False
+1052,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,2,4,False
+1052,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.76 mm, bone loss 30.7%",,2,4,False
+1054,stage_drop,Stage drops,"code periodontitis_stage_2, after periodontitis_stage_3 at visit 1053",1053,1,4,False
+1055,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,4,4,False
+1055,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.83 mm, bone loss 31.2%",,4,4,False
+1055,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,4,4,False
+1055,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_3 at visit 1053",1053,4,4,False
+1105,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,8,False
+1111,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_4",,3,3,False
+1111,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 8.5 mm, bone loss 74.4%",,3,3,False
+1111,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_3",,3,3,False
+1112,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_4",,2,3,False
+1112,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 8.55 mm, bone loss 74.7%",,2,3,False
+1115,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_3 at visit 1114",1114,1,3,False
+1116,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_4",,4,3,False
+1116,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 8.66 mm, bone loss 75.3%",,4,3,False
+1116,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_3",,4,3,False
+1116,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_3 at visit 1114",1114,4,3,False
+1117,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,7,False
+1121,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,2,False
+1122,stage_drop,Stage drops,"code healthy, after periodontitis_stage_1 at visit 1121",1121,1,2,False
+1124,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,5,False
+1126,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,5,False
+1127,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 1124",1124,1,5,False
+1132,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,2,False
+1133,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 1132",1132,1,2,False
+1137,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,3,False
+1138,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 1137",1137,1,3,False
+1139,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 1137",1137,1,3,False
+1147,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,8,False
+1160,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_3",,4,4,False
+1160,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 5.9 mm, bone loss 36.8%",,4,4,False
+1160,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_3",,4,4,False
+1160,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_3 at visit 1159",1159,4,4,False
+1161,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,2,False
+1165,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,4,False
+1166,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,4,False
+1167,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 1165",1165,1,4,False
+1174,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,4,4,False
+1174,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.67 mm, bone loss 32.9%",,4,4,False
+1174,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,4,4,False
+1174,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 1170",1170,4,4,False
+1193,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,3,False
+1215,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,4,False
+1219,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,2,4,False
+1219,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 1216",1216,2,4,False
+1232,stage_drop,Stage drops,"code periodontitis_stage_2, after periodontitis_stage_3 at visit 1231",1231,1,4,False
+1233,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,4,4,False
+1233,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 4 mm, bone loss 26.3%",,4,4,False
+1233,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_3",,4,4,False
+1233,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_3 at visit 1231",1231,4,4,False
+1249,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,3,4,False
+1249,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.94 mm, bone loss 23.4%",,3,4,False
+1249,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,3,4,False
+1261,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_3",,3,8,False
+1261,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 5.9 mm, bone loss 40.3%",,3,8,False
+1261,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_3 at visit 1256",1256,3,8,False
+1266,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,4,False
+1267,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 1266",1266,1,4,False
+1269,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,7,False
+1270,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 1269",1269,1,7,False
+1277,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 1274",1274,1,8,False
+1281,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,4,False
+1282,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,4,False
+1290,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_3",,2,8,False
+1290,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_3 at visit 1288",1288,2,8,False
+1304,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,2,8,False
+1304,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 1303",1303,2,8,False
+1311,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 1310",1310,1,3,False
+1316,no_periodontal_care,No periodontal care,"code periodontitis_stage_2, no periodontal procedure completed or planned",,1,8,False
+1317,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 1316",1316,1,8,False
+1324,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,6,False
+1326,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,6,False
+1327,stage_drop,Stage drops,"code healthy, after periodontitis_stage_1 at visit 1326",1326,1,6,False
+1328,stage_drop,Stage drops,"code healthy, after periodontitis_stage_1 at visit 1326",1326,1,6,False
+1329,stage_drop,Stage drops,"code healthy, after periodontitis_stage_1 at visit 1326",1326,1,6,False
+1330,stage_drop,Stage drops,"code healthy, after periodontitis_stage_1 at visit 1326",1326,1,6,False
+1337,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 1336",1336,1,2,False
+1339,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 1336",1336,1,2,False
+1341,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 1336",1336,1,2,False
+1349,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,2,8,False
+1349,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.98 mm, bone loss 31.1%",,2,8,False
+1358,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,3,False
+1359,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 1358",1358,1,3,False
+1362,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,4,False
+1366,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,3,4,False
+1366,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.86 mm, bone loss 30.9%",,3,4,False
+1366,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_3",,3,4,False
+1368,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 1367",1367,1,4,False
+1377,no_periodontal_care,No periodontal care,"code periodontitis_stage_2, no periodontal procedure completed or planned",,1,1,False
+1378,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 1376",1376,1,1,False
+1382,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_3",,3,7,False
+1382,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 4.1 mm, bone loss 20.6%",,3,7,False
+1382,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,3,7,False
+1390,no_periodontal_care,No periodontal care,"code periodontitis_stage_2, no periodontal procedure completed or planned",,1,7,False
+1391,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 1390",1390,1,7,False
+1392,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,2,7,False
+1392,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 1390",1390,2,7,False
+1393,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,2,7,False
+1393,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 1390",1390,2,7,False
+1397,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,3,False
+1413,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 1412",1412,1,5,True
+1414,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,2,5,False
+1414,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 1412",1412,2,5,False
+1415,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,2,5,False
+1415,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 1412",1412,2,5,False
+1418,stage_drop,Stage drops,"code periodontitis_stage_2, after periodontitis_stage_3 at visit 1417",1417,1,2,False
+1419,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_3",,2,2,False
+1419,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_3 at visit 1417",1417,2,2,False
+1426,stage_drop,Stage drops,"code periodontitis_stage_2, after periodontitis_stage_3 at visit 1425",1425,1,5,False
+1438,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,7,False
+1439,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 1438",1438,1,7,False
+1449,stage_drop,Stage drops,"code periodontitis_stage_2, after periodontitis_stage_3 at visit 1447",1447,1,4,False
+1450,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,4,False
+1454,no_periodontal_care,No periodontal care,"code periodontitis_stage_2, no periodontal procedure completed or planned",,1,4,False
+1455,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,2,4,False
+1455,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 1453",1453,2,4,False
+1475,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,2,4,False
+1475,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 1474",1474,2,4,False
+1480,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_3",,4,8,False
+1480,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 5.89 mm, bone loss 38.4%",,4,8,False
+1480,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_3",,4,8,False
+1480,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 1478",1478,4,8,False
+1483,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,2,False
+1484,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,3,2,False
+1484,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,3,2,False
+1484,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 1483",1483,3,2,False
+1489,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,7,False
+1490,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 1489",1489,1,7,False
+1494,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,2,False
+1495,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 1494",1494,1,2,False
+1496,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 1494",1494,1,2,False
+1497,stage_drop,Stage drops,"code healthy, after periodontitis_stage_1 at visit 1494",1494,1,2,False
+1505,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,5,False
+1506,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,5,False
+1507,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 1505",1505,1,5,False
+1509,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 1508",1508,1,5,False
+1510,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,2,5,False
+1510,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 1508",1508,2,5,False
+1515,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_3",,1,5,False
+1518,stage_drop,Stage drops,"code periodontitis_stage_2, after periodontitis_stage_3 at visit 1516",1516,1,5,False
+1523,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 1521",1521,1,5,False
+1534,code_vs_chart,Code against the chart reading,"code healthy, chart reading periodontitis_stage_2",,2,3,True
+1534,code_below_chart,Code lower than the chart,"code healthy, max CAL 3.60223 mm, bone loss 31.2495%",,2,3,True
+1539,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_3",,4,8,False
+1539,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 6.16 mm, bone loss 49%",,4,8,False
+1539,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_3",,4,8,False
+1539,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 1538",1538,4,8,False
+1540,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_3",,4,8,False
+1540,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 6.2 mm, bone loss 49.3%",,4,8,False
+1540,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_3",,4,8,False
+1540,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 1538",1538,4,8,False
+1542,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_3",,4,8,False
+1542,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 6.25 mm, bone loss 49.6%",,4,8,False
+1542,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_3",,4,8,False
+1542,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_3 at visit 1541",1541,4,8,False
+1554,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,7,False
+1557,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 1554",1554,1,7,False
+1558,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 1554",1554,1,7,False
+1559,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 1554",1554,1,7,False
+1570,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 1569",1569,1,8,False
+1576,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 1574",1574,1,2,False
+1579,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 1578",1578,1,2,False
+1580,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_4",,2,4,False
+1580,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 6.48 mm, bone loss 71.5%",,2,4,False
+1583,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_3",,2,4,False
+1583,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_3 at visit 1581",1581,2,4,False
+1600,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,4,2,False
+1600,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.76 mm, bone loss 25.9%",,4,2,False
+1600,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,4,2,False
+1600,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 1599",1599,4,2,False
+1603,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,4,2,False
+1603,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.81 mm, bone loss 26.1%",,4,2,False
+1603,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,4,2,False
+1603,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 1599",1599,4,2,False
+1609,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,5,False
+1610,stage_drop,Stage drops,"code healthy, after periodontitis_stage_1 at visit 1609",1609,1,5,False
+1613,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,3,False
+1614,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,3,False
+1616,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 1613",1613,1,3,False
+1617,stage_drop,Stage drops,"code healthy, after periodontitis_stage_1 at visit 1613",1613,1,3,False
+1618,stage_drop,Stage drops,"code healthy, after periodontitis_stage_1 at visit 1613",1613,1,3,False
+1638,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_3",,4,6,False
+1638,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 5.46 mm, bone loss 59.9%",,4,6,False
+1638,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_3",,4,6,False
+1638,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_3 at visit 1637",1637,4,6,False
+1653,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,7,False
+1657,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,7,False
+1659,stage_drop,Stage drops,"code healthy, after periodontitis_stage_1 at visit 1657",1657,1,7,False
+1660,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 1657",1657,1,7,False
+1662,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,7,False
+1663,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,7,False
+1664,no_periodontal_care,No periodontal care,"code periodontitis_stage_2, no periodontal procedure completed or planned",,1,1,False
+1675,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,4,False
+1676,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 1675",1675,1,4,False
+1679,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_4",,3,2,False
+1679,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 6.76 mm, bone loss 47.4%",,3,2,False
+1679,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_3 at visit 1678",1678,3,2,False
+1686,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 1684",1684,1,1,False
+1688,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,2,7,False
+1688,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 1687",1687,2,7,False
+1689,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,8,False
+1697,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_3 at visit 1696",1696,1,6,False
+1700,stage_drop,Stage drops,"code periodontitis_stage_2, after periodontitis_stage_3 at visit 1699",1699,1,8,False
+1701,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,3,8,False
+1701,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.24 mm, bone loss 21.2%",,3,8,False
+1701,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_3 at visit 1699",1699,3,8,False
+1725,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,4,False
+1730,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,1,False
+1731,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 1730",1730,1,1,False
+1732,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 1730",1730,1,1,False
+1748,stage_drop,Stage drops,"code periodontitis_stage_2, after periodontitis_stage_3 at visit 1745",1745,1,2,False
+1771,stage_drop,Stage drops,"code periodontitis_stage_2, after periodontitis_stage_3 at visit 1770",1770,1,8,False
+1773,stage_drop,Stage drops,"code periodontitis_stage_2, after periodontitis_stage_3 at visit 1770",1770,1,8,False
+1780,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,2,False
+1781,stage_drop,Stage drops,"code healthy, after periodontitis_stage_1 at visit 1780",1780,1,2,False
+1783,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,2,8,False
+1783,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 1782",1782,2,8,False
+1817,stage_drop,Stage drops,"code periodontitis_stage_2, after periodontitis_stage_3 at visit 1816",1816,1,8,False
+1818,stage_drop,Stage drops,"code periodontitis_stage_2, after periodontitis_stage_3 at visit 1816",1816,1,8,False
+1819,stage_drop,Stage drops,"code periodontitis_stage_2, after periodontitis_stage_3 at visit 1816",1816,1,8,False
+1820,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_3 at visit 1816",1816,1,8,False
+1823,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,3,7,False
+1823,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.38 mm, bone loss 32.8%",,3,7,False
+1823,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_3 at visit 1822",1822,3,7,False
+1825,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,7,False
+1828,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,2,8,False
+1828,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 1827",1827,2,8,False
+1830,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 1827",1827,1,8,False
+1834,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 1832",1832,1,5,False
+1840,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 1839",1839,1,7,False
+1842,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 1839",1839,1,7,False
+1843,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,7,False
+1852,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,6,False
+1853,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 1852",1852,1,6,False
+1863,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,1,False
+1868,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 1867",1867,1,7,False
+1878,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,4,3,False
+1878,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.46 mm, bone loss 16.8%",,4,3,False
+1878,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,4,3,False
+1878,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 1875",1875,4,3,False
+1880,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,4,3,False
+1880,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.52 mm, bone loss 17.2%",,4,3,False
+1880,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,4,3,False
+1880,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 1875",1875,4,3,False
+1893,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,7,False
+1894,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 1892",1892,1,7,False
+1895,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,7,False
+1903,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,3,5,False
+1903,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.04 mm, bone loss 17.8%",,3,5,False
+1903,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,3,5,False
+1904,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,1,5,False
+1908,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,8,False
+1909,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 1908",1908,1,8,False
+1920,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_3",,2,6,False
+1920,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 7.43 mm, bone loss 35.5%",,2,6,False
+1922,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_3",,3,6,False
+1922,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 7.49 mm, bone loss 35.9%",,3,6,False
+1922,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_3",,3,6,False
+1923,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,5,False
+1929,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,4,False
+1934,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,6,False
+1936,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 1934",1934,1,6,False
+1966,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,2,4,False
+1966,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 1965",1965,2,4,False
+1971,no_periodontal_care,No periodontal care,"code periodontitis_stage_2, no periodontal procedure completed or planned",,1,8,False
+1972,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,2,8,False
+1972,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 1971",1971,2,8,False
+1973,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 1971",1971,1,8,False
+1975,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,2,8,False
+1975,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 1971",1971,2,8,False
+1983,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 1981",1981,1,3,False
+1988,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 1984",1984,1,1,False
+1989,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,4,1,False
+1989,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.86 mm, bone loss 34.6%",,4,1,False
+1989,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,4,1,False
+1989,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 1984",1984,4,1,False
+1993,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,2,6,False
+1993,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.46 mm, bone loss 19.1%",,2,6,False
+1999,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,6,False
+2000,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 1999",1999,1,6,False
+2001,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 1999",1999,1,6,False
+2003,stage_drop,Stage drops,"code healthy, after periodontitis_stage_1 at visit 1999",1999,1,6,False
+2007,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_3",,4,7,False
+2007,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 6.36 mm, bone loss 41%",,4,7,False
+2007,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_3",,4,7,False
+2007,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_3 at visit 2005",2005,4,7,False
+2010,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_3",,2,8,False
+2010,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 8 mm, bone loss 36.9%",,2,8,False
+2012,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_3",,2,8,False
+2012,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 8.18 mm, bone loss 38.2%",,2,8,False
+2013,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_3",,1,8,False
+2019,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_3",,4,4,False
+2019,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 6.54 mm, bone loss 36.6%",,4,4,False
+2019,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_3",,4,4,False
+2019,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_3 at visit 2016",2016,4,4,False
+2027,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 2026",2026,1,5,False
+2030,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 2026",2026,1,5,False
+2035,no_periodontal_care,No periodontal care,"code periodontitis_stage_2, no periodontal procedure completed or planned",,1,8,False
+2037,no_periodontal_care,No periodontal care,"code periodontitis_stage_2, no periodontal procedure completed or planned",,1,8,False
+2038,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 2035",2035,1,8,False
+2045,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,4,6,False
+2045,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.46 mm, bone loss 23.7%",,4,6,False
+2045,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,4,6,False
+2045,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_3 at visit 2044",2044,4,6,False
+2047,stage_drop,Stage drops,"code periodontitis_stage_2, after periodontitis_stage_3 at visit 2044",2044,1,6,False
+2048,code_vs_radiograph,Code against the radiograph,"code healthy, radiograph AI periodontitis_stage_2",,1,2,False
+2053,stage_drop,Stage drops,"code periodontitis_stage_2, after periodontitis_stage_3 at visit 2052",2052,1,6,False
+2054,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,4,6,False
+2054,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.73 mm, bone loss 27.5%",,4,6,False
+2054,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,4,6,False
+2054,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_3 at visit 2052",2052,4,6,False
+2055,stage_drop,Stage drops,"code periodontitis_stage_2, after periodontitis_stage_3 at visit 2052",2052,1,6,False
+2056,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,4,6,False
+2056,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.76 mm, bone loss 27.7%",,4,6,False
+2056,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,4,6,False
+2056,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_3 at visit 2052",2052,4,6,False
+2060,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,4,False
+2061,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 2060",2060,1,4,False
+2062,stage_drop,Stage drops,"code healthy, after periodontitis_stage_1 at visit 2060",2060,1,4,False
+2063,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,4,False
+2068,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_4",,2,2,False
+2068,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 8.79 mm, bone loss 58.3%",,2,2,False
+2078,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,4,4,False
+2078,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.29 mm, bone loss 24.4%",,4,4,False
+2078,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,4,4,False
+2078,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 2076",2076,4,4,False
+2087,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,6,False
+2089,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 2088",2088,1,2,False
+2104,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,8,False
+2106,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,4,6,False
+2106,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.16 mm, bone loss 22.9%",,4,6,False
+2106,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,4,6,False
+2106,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 2105",2105,4,6,False
+2108,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,4,False
+2121,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,7,False
+2127,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_3",,3,8,False
+2127,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 6.96 mm, bone loss 41.5%",,3,8,False
+2127,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_3 at visit 2123",2123,3,8,False
+2129,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,1,3,False
+2136,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,3,8,False
+2136,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.41 mm, bone loss 31%",,3,8,False
+2136,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_3",,3,8,False
+2153,no_periodontal_care,No periodontal care,"code periodontitis_stage_2, no periodontal procedure completed or planned",,1,4,False
+2155,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,2,4,False
+2155,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 2153",2153,2,4,False
+2156,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 2153",2153,1,4,False
+2159,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 2158",2158,1,2,False
+2160,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 2158",2158,1,2,False
+2164,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,8,False
+2165,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,8,False
+2166,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,8,False
+2169,stage_drop,Stage drops,"code periodontitis_stage_2, after periodontitis_stage_3 at visit 2167",2167,1,7,False
+2171,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,4,False
+2173,stage_drop,Stage drops,"code healthy, after periodontitis_stage_1 at visit 2171",2171,1,4,False
+2174,stage_drop,Stage drops,"code healthy, after periodontitis_stage_1 at visit 2171",2171,1,4,False
+2177,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,7,False
+2188,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,1,False
+2190,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 2187",2187,1,1,False
+2194,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 2193",2193,1,1,False
+2195,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,1,False
+2202,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_3",,2,5,False
+2202,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 2200",2200,2,5,False
+2209,no_periodontal_care,No periodontal care,"code periodontitis_stage_2, no periodontal procedure completed or planned",,1,2,False
+2210,no_periodontal_care,No periodontal care,"code periodontitis_stage_2, no periodontal procedure completed or planned",,1,2,False
+2211,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 2209",2209,1,2,False
+2213,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,2,2,False
+2213,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 2209",2209,2,2,False
+2220,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_4",,4,6,False
+2220,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 9.46 mm, bone loss 68.4%",,4,6,False
+2220,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_3",,4,6,False
+2220,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_3 at visit 2219",2219,4,6,False
+2229,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,4,6,False
+2229,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.36 mm, bone loss 25.8%",,4,6,False
+2229,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,4,6,False
+2229,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_3 at visit 2228",2228,4,6,False
+2255,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 2254",2254,1,7,False
+2265,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,2,3,False
+2265,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.15 mm, bone loss 31.1%",,2,3,False
+2278,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,7,False
+2279,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,3,7,False
+2279,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.3 mm, bone loss 24.4%",,3,7,False
+2279,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,3,7,False
+2283,no_periodontal_care,No periodontal care,"code periodontitis_stage_2, no periodontal procedure completed or planned",,1,3,False
+2286,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 2283",2283,1,3,False
+2304,stage_drop,Stage drops,"code periodontitis_stage_2, after periodontitis_stage_3 at visit 2301",2301,1,1,False
+2313,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,1,False
+2318,stage_drop,Stage drops,"code healthy, after periodontitis_stage_1 at visit 2313",2313,1,1,False
+2324,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,6,False
+2325,no_periodontal_care,No periodontal care,"code periodontitis_stage_2, no periodontal procedure completed or planned",,1,6,False
+2327,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 2325",2325,1,6,False
+2329,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 2325",2325,1,6,False
+2334,stage_drop,Stage drops,"code periodontitis_stage_2, after periodontitis_stage_3 at visit 2333",2333,1,3,False
+2335,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,4,3,False
+2335,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.63 mm, bone loss 20%",,4,3,False
+2335,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,4,3,False
+2335,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_3 at visit 2333",2333,4,3,False
+2339,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 2338",2338,1,7,False
+2346,stage_drop,Stage drops,"code periodontitis_stage_2, after periodontitis_stage_3 at visit 2345",2345,1,5,False
+2353,stage_drop,Stage drops,"code periodontitis_stage_2, after periodontitis_stage_3 at visit 2350",2350,1,8,False
+2354,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_3",,2,8,False
+2354,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_3 at visit 2350",2350,2,8,False
+2357,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,2,False
+2359,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,2,2,False
+2359,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 2358",2358,2,2,False
+2361,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,3,1,False
+2361,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.52 mm, bone loss 26.8%",,3,1,False
+2361,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,3,1,False
+2364,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,2,8,False
+2364,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_3 at visit 2363",2363,2,8,False
+2373,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,4,7,False
+2373,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.39 mm, bone loss 19.7%",,4,7,False
+2373,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,4,7,False
+2373,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 2370",2370,4,7,False
+2376,stage_drop,Stage drops,"code periodontitis_stage_2, after periodontitis_stage_3 at visit 2375",2375,1,4,False
+2381,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,3,6,False
+2381,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.9 mm, bone loss 32.4%",,3,6,False
+2381,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,3,6,False
+2389,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,3,5,False
+2389,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.47 mm, bone loss 25.6%",,3,5,False
+2389,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,3,5,False
+2400,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,3,False
+2402,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,3,False
+2404,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,8,False
+2415,stage_drop,Stage drops,"code periodontitis_stage_2, after periodontitis_stage_3 at visit 2413",2413,1,4,False
+2418,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,7,False
+2420,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,7,False
+2421,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,7,False
+2443,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,4,5,False
+2443,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.52 mm, bone loss 25.1%",,4,5,False
+2443,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,4,5,False
+2443,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 2441",2441,4,5,False
+2447,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,2,False
+2448,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 2447",2447,1,2,False
+2450,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 2447",2447,1,2,False
+2459,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,2,False
+2465,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 2464",2464,1,1,True
+2489,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,2,False
+2490,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 2489",2489,1,2,False
+2491,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 2489",2489,1,2,False
+2526,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,4,False
+2528,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 2526",2526,1,4,False
+2529,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,4,False
+2533,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,2,False
+2538,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,3,False
+2541,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,4,1,False
+2541,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.95 mm, bone loss 34.7%",,4,1,False
+2541,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_3",,4,1,False
+2541,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 2540",2540,4,1,False
+2542,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,6,False
+2544,stage_drop,Stage drops,"code healthy, after periodontitis_stage_1 at visit 2542",2542,1,6,False
+2545,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 2542",2542,1,6,False
+2549,code_vs_chart,Code against the chart reading,"code periodontitis_stage_3, chart reading periodontitis_stage_1",,2,5,False
+2549,code_above_chart,Code higher than the chart,"code periodontitis_stage_3, max CAL 1.61 mm, bone loss 1.2%, max probing depth 2.7 mm, no tooth lost",,2,5,False
+2550,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_3 at visit 2549",2549,1,5,False
+2551,stage_drop,Stage drops,"code periodontitis_stage_2, after periodontitis_stage_3 at visit 2549",2549,1,5,False
+2553,stage_drop,Stage drops,"code periodontitis_stage_2, after periodontitis_stage_3 at visit 2552",2552,1,4,False
+2559,no_periodontal_care,No periodontal care,"code periodontitis_stage_2, no periodontal procedure completed or planned",,1,8,False
+2561,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 2559",2559,1,8,False
+2579,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,4,False
+2580,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 2579",2579,1,4,False
+2581,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,4,False
+2589,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,6,False
+2590,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 2589",2589,1,6,False
+2591,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 2589",2589,1,6,False
+2592,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 2589",2589,1,6,False
+2596,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 2594",2594,1,4,False
+2599,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,2,5,False
+2599,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 2598",2598,2,5,False
+2602,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,6,False
+2622,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,2,False
+2625,stage_drop,Stage drops,"code healthy, after periodontitis_stage_1 at visit 2622",2622,1,2,False
+2626,stage_drop,Stage drops,"code healthy, after periodontitis_stage_1 at visit 2622",2622,1,2,False
+2630,stage_drop,Stage drops,"code periodontitis_stage_2, after periodontitis_stage_3 at visit 2628",2628,1,5,False
+2632,stage_drop,Stage drops,"code periodontitis_stage_2, after periodontitis_stage_3 at visit 2628",2628,1,5,False
+2639,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,4,False
+2640,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 2639",2639,1,4,False
+2654,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,6,False
+2656,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 2654",2654,1,6,False
+2657,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,6,False
+2658,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 2654",2654,1,6,False
+2660,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,4,False
+2661,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 2660",2660,1,4,False
+2664,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 2663",2663,1,7,False
+2678,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,3,4,False
+2678,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.42 mm, bone loss 17.9%",,3,4,False
+2678,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,3,4,False
+2698,stage_drop,Stage drops,"code periodontitis_stage_2, after periodontitis_stage_3 at visit 2697",2697,1,7,False
+2707,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,4,False
+2708,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,4,False
+2728,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,1,False
+2738,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,3,7,False
+2738,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.19 mm, bone loss 25%",,3,7,False
+2738,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,3,7,False
+2739,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,2,7,False
+2739,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.21 mm, bone loss 25.1%",,2,7,False
+2745,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,8,False
+2758,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,4,False
+2759,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,6,False
+2760,stage_drop,Stage drops,"code healthy, after periodontitis_stage_1 at visit 2759",2759,1,6,False
+2761,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,6,False
+2792,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,7,False
+2814,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,4,False
+2815,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,1,8,False
+2823,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,7,False
+2827,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,2,7,False
+2827,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 2825",2825,2,7,False
+2838,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 2836",2836,1,3,False
+2840,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,8,False
+2841,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,3,1,False
+2841,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.68 mm, bone loss 20.3%",,3,1,False
+2841,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,3,1,False
+2845,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,2,False
+2846,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,5,False
+2848,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 2846",2846,1,5,False
+2849,stage_drop,Stage drops,"code healthy, after periodontitis_stage_1 at visit 2846",2846,1,5,False
+2850,stage_drop,Stage drops,"code healthy, after periodontitis_stage_1 at visit 2846",2846,1,5,False
+2858,code_vs_radiograph,Code against the radiograph,"code healthy, radiograph AI periodontitis_stage_2",,1,5,False
+2880,stage_drop,Stage drops,"code periodontitis_stage_2, after periodontitis_stage_3 at visit 2879",2879,1,6,False
+2882,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,4,False
+2883,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 2882",2882,1,4,False
+2886,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 2885",2885,1,7,False
+2887,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,2,7,False
+2887,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 2885",2885,2,7,False
+2888,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,4,7,False
+2888,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 2.22 mm, bone loss 16.5%",,4,7,False
+2888,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,4,7,False
+2888,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 2885",2885,4,7,False
+2892,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,4,False
+2894,stage_drop,Stage drops,"code healthy, after periodontitis_stage_1 at visit 2892",2892,1,4,False
+2895,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 2892",2892,1,4,False
+2897,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,1,3,False
+2909,stage_drop,Stage drops,"code periodontitis_stage_2, after periodontitis_stage_3 at visit 2908",2908,1,4,False
+2910,stage_drop,Stage drops,"code periodontitis_stage_2, after periodontitis_stage_3 at visit 2908",2908,1,4,False
+2911,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,4,4,False
+2911,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.99 mm, bone loss 17.4%",,4,4,False
+2911,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,4,4,False
+2911,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_3 at visit 2908",2908,4,4,False
+2914,no_periodontal_care,No periodontal care,"code periodontitis_stage_2, no periodontal procedure completed or planned",,1,4,False
+2924,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,3,6,False
+2924,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.13 mm, bone loss 18.8%",,3,6,False
+2924,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,3,6,False
+2929,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_4",,2,1,False
+2929,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 6.58 mm, bone loss 44.3%",,2,1,False
+2931,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,5,False
+2936,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 2931",2931,1,5,False
+2950,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,8,False
+2951,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 2950",2950,1,8,False
+2960,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,4,2,False
+2960,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 4 mm, bone loss 28.3%",,4,2,False
+2960,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,4,2,False
+2960,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 2958",2958,4,2,False
+2974,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,8,False
+2976,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,1,False
+2978,stage_drop,Stage drops,"code healthy, after periodontitis_stage_1 at visit 2976",2976,1,1,False
+2979,stage_drop,Stage drops,"code healthy, after periodontitis_stage_1 at visit 2976",2976,1,1,False
+2986,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,7,False
+2987,stage_drop,Stage drops,"code healthy, after periodontitis_stage_1 at visit 2986",2986,1,7,False
+2991,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,8,False
+2992,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 2991",2991,1,8,False
+2994,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,4,8,False
+2994,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.7 mm, bone loss 22.2%",,4,8,False
+2994,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,4,8,False
+2994,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 2993",2993,4,8,False
+2995,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,4,8,False
+2995,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.74 mm, bone loss 22.5%",,4,8,False
+2995,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,4,8,False
+2995,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 2993",2993,4,8,False
+2997,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,4,False
+3004,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,4,False
+3010,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,4,False
+3023,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,5,False
+3024,stage_drop,Stage drops,"code healthy, after periodontitis_stage_1 at visit 3023",3023,1,5,False
+3025,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 3023",3023,1,5,False
+3026,stage_drop,Stage drops,"code healthy, after periodontitis_stage_1 at visit 3023",3023,1,5,False
+3027,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 3023",3023,1,5,False
+3028,stage_drop,Stage drops,"code healthy, after periodontitis_stage_1 at visit 3023",3023,1,5,False
+3032,code_above_chart,Code higher than the chart,"code periodontitis_stage_3, max CAL 2.01 mm, bone loss 8.3%, max probing depth 2 mm, no tooth lost",,1,2,False
+3042,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,7,False
+3062,stage_drop,Stage drops,"code periodontitis_stage_2, after periodontitis_stage_3 at visit 3059",3059,1,5,False
+3069,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,4,8,False
+3069,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.54 mm, bone loss 27.9%",,4,8,False
+3069,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,4,8,False
+3069,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 3068",3068,4,8,False
+3070,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 3068",3068,1,8,False
+3085,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,3,7,False
+3085,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.42 mm, bone loss 18.9%",,3,7,False
+3085,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,3,7,False
+3096,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,4,7,False
+3096,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.96 mm, bone loss 30.7%",,4,7,False
+3096,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_3",,4,7,False
+3096,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 3094",3094,4,7,False
+3100,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,4,False
+3102,stage_drop,Stage drops,"code healthy, after periodontitis_stage_1 at visit 3100",3100,1,4,False
+3103,stage_drop,Stage drops,"code healthy, after periodontitis_stage_1 at visit 3100",3100,1,4,False
+3104,stage_drop,Stage drops,"code healthy, after periodontitis_stage_1 at visit 3100",3100,1,4,False
+3107,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,4,False
+3110,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,4,False
+3111,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,2,4,False
+3111,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 3107",3107,2,4,False
+3112,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,4,False
+3115,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_3",,3,4,False
+3115,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 5.28 mm, bone loss 44%",,3,4,False
+3115,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 3114",3114,3,4,False
+3117,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,3,8,False
+3117,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.72 mm, bone loss 27.8%",,3,8,False
+3117,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,3,8,False
+3122,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,7,False
+3123,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,7,False
+3124,stage_drop,Stage drops,"code healthy, after periodontitis_stage_1 at visit 3122",3122,1,7,False
+3137,no_periodontal_care,No periodontal care,"code periodontitis_stage_2, no periodontal procedure completed or planned",,1,5,False
+3148,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,4,False
+3154,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,7,False
+3155,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,7,False
+3173,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,1,False
+3174,stage_drop,Stage drops,"code healthy, after periodontitis_stage_1 at visit 3173",3173,1,1,False
+3175,stage_drop,Stage drops,"code healthy, after periodontitis_stage_1 at visit 3173",3173,1,1,False
+3178,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,3,1,False
+3178,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.56 mm, bone loss 32.1%",,3,1,False
+3178,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_3",,3,1,False
+3180,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,4,1,False
+3180,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.61 mm, bone loss 32.4%",,4,1,False
+3180,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,4,1,False
+3180,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 3179",3179,4,1,False
+3189,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,4,False
+3191,stage_drop,Stage drops,"code healthy, after periodontitis_stage_1 at visit 3189",3189,1,4,False
+3192,stage_drop,Stage drops,"code healthy, after periodontitis_stage_1 at visit 3189",3189,1,4,False
+3195,no_periodontal_care,No periodontal care,"code periodontitis_stage_2, no periodontal procedure completed or planned",,1,4,False
+3196,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 3195",3195,1,4,False
+3197,no_periodontal_care,No periodontal care,"code periodontitis_stage_2, no periodontal procedure completed or planned",,1,4,False
+3198,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 3195",3195,1,4,False
+3199,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 3195",3195,1,4,False
+3200,no_periodontal_care,No periodontal care,"code periodontitis_stage_2, no periodontal procedure completed or planned",,1,4,False
+3204,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,4,False
+3233,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,2,8,False
+3233,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 3231",3231,2,8,False
+3244,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,4,False
+3256,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,8,False
+3261,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,8,False
+3262,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,8,False
+3266,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 3261",3261,1,8,False
+3281,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_3",,3,8,False
+3281,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 4.14 mm, bone loss 35.2%",,3,8,False
+3281,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 3277",3277,3,8,False
+3291,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_3",,4,3,False
+3291,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 4.06 mm, bone loss 20.8%",,4,3,False
+3291,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,4,3,False
+3291,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_3 at visit 3289",3289,4,3,False
+3292,stage_drop,Stage drops,"code periodontitis_stage_2, after periodontitis_stage_3 at visit 3289",3289,1,3,False
+3301,no_periodontal_care,No periodontal care,"code periodontitis_stage_2, no periodontal procedure completed or planned",,1,6,False
+3302,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 3300",3300,1,6,False
+3303,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 3300",3300,1,6,False
+3304,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,2,6,False
+3304,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 3300",3300,2,6,False
+3322,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 3321",3321,1,6,False
+3325,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,6,False
+3344,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,3,False
+3368,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,7,False
+3370,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,2,7,False
+3370,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 3369",3369,2,7,False
+3382,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,1,False
+3383,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,3,1,False
+3383,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.03 mm, bone loss 19%",,3,1,False
+3383,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,3,1,False
+3384,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,3,1,False
+3384,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.05 mm, bone loss 19.1%",,3,1,False
+3384,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,3,1,False
+3387,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,3,3,False
+3387,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.37 mm, bone loss 24%",,3,3,False
+3387,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,3,3,False
+3393,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,4,False
+3394,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,4,False
+3395,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 3393",3393,1,4,False
+3397,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 3393",3393,1,4,False
+3398,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 3393",3393,1,4,False
+3403,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,8,False
+3404,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,8,False
+3405,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 3403",3403,1,8,False
+3407,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 3403",3403,1,8,False
+3409,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,2,False
+3410,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,2,False
+3411,stage_drop,Stage drops,"code healthy, after periodontitis_stage_1 at visit 3409",3409,1,2,False
+3412,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,2,False
+3417,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_3",,3,2,False
+3417,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 7.14 mm, bone loss 48.3%",,3,2,False
+3417,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_3",,3,2,False
+3420,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_3",,4,2,False
+3420,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 7.38 mm, bone loss 49.7%",,4,2,False
+3420,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_3",,4,2,False
+3420,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_3 at visit 3418",3418,4,2,False
+3421,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_3",,2,2,False
+3421,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_3 at visit 3418",3418,2,2,False
+3422,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_3",,3,2,False
+3422,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 7.5 mm, bone loss 50.4%",,3,2,False
+3422,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_3 at visit 3418",3418,3,2,False
+3428,stage_drop,Stage drops,"code periodontitis_stage_2, after periodontitis_stage_3 at visit 3427",3427,1,4,False
+3436,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,4,False
+3438,stage_drop,Stage drops,"code healthy, after periodontitis_stage_1 at visit 3436",3436,1,4,False
+3440,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,8,False
+3448,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,4,False
+3449,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 3448",3448,1,4,False
+3451,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 3448",3448,1,4,False
+3456,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,3,1,False
+3456,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.2 mm, bone loss 19.3%",,3,1,False
+3456,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,3,1,False
+3475,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,4,False
+3476,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 3475",3475,1,4,False
+3477,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 3475",3475,1,4,False
+3478,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_3",,2,2,False
+3478,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 5.34 mm, bone loss 47.5%",,2,2,False
+3495,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,8,False
+3499,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_3",,2,3,False
+3499,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 3497",3497,2,3,False
+3526,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 3525",3525,1,7,False
+3532,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,3,8,False
+3532,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.08 mm, bone loss 21.9%",,3,8,False
+3532,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_3",,3,8,False
+3536,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,2,8,False
+3536,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 3533",3533,2,8,False
+3549,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,4,False
+3550,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,4,False
+3551,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 3549",3549,1,4,False
+3554,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,1,False
+3555,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 3554",3554,1,1,False
+3556,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 3554",3554,1,1,False
+3557,stage_drop,Stage drops,"code healthy, after periodontitis_stage_1 at visit 3554",3554,1,1,False
+3564,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_4",,4,5,False
+3564,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 8.08 mm, bone loss 49.8%",,4,5,False
+3564,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_3",,4,5,False
+3564,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_3 at visit 3561",3561,4,5,False
+3596,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,4,1,False
+3596,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.64 mm, bone loss 32.7%",,4,1,False
+3596,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_3",,4,1,False
+3596,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_3 at visit 3595",3595,4,1,False
+3616,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,2,2,False
+3616,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 3614",3614,2,2,False
+3617,no_periodontal_care,No periodontal care,"code periodontitis_stage_2, no periodontal procedure completed or planned",,1,2,False
+3618,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,2,2,False
+3618,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 3614",3614,2,2,False
+3626,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,6,False
+3627,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 3626",3626,1,6,False
+3628,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 3626",3626,1,6,False
+3631,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,7,False
+3634,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 3631",3631,1,7,False
+3636,no_periodontal_care,No periodontal care,"code periodontitis_stage_2, no periodontal procedure completed or planned",,1,4,False
+3646,stage_drop,Stage drops,"code periodontitis_stage_2, after periodontitis_stage_3 at visit 3642",3642,1,8,False
+3677,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_3 at visit 3674",3674,1,5,False
+3683,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,8,False
+3687,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,4,4,False
+3687,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.11 mm, bone loss 25.7%",,4,4,False
+3687,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,4,4,False
+3687,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 3686",3686,4,4,False
+3699,no_periodontal_care,No periodontal care,"code periodontitis_stage_2, no periodontal procedure completed or planned",,1,2,False
+3722,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_3 at visit 3721",3721,1,7,False
+3733,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 3732",3732,1,7,False
+3734,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,2,7,False
+3734,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 3732",3732,2,7,False
+3740,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,2,False
+3748,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,2,5,False
+3748,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 3747",3747,2,5,False
+3751,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,2,5,False
+3751,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 3747",3747,2,5,False
+3760,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,4,False
+3761,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 3760",3760,1,4,False
+3769,no_periodontal_care,No periodontal care,"code periodontitis_stage_2, no periodontal procedure completed or planned",,1,3,False
+3776,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,4,False
+3778,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,4,False
+3781,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 3780",3780,1,8,False
+3784,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,2,8,False
+3784,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 3780",3780,2,8,False
+3801,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_3",,3,7,False
+3801,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 7.97 mm, bone loss 49.5%",,3,7,False
+3801,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_3",,3,7,False
+3808,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,3,False
+3810,no_periodontal_care,No periodontal care,"code periodontitis_stage_2, no periodontal procedure completed or planned",,1,8,False
+3821,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,7,False
+3826,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,5,False
+3828,stage_drop,Stage drops,"code healthy, after periodontitis_stage_1 at visit 3826",3826,1,5,False
+3829,stage_drop,Stage drops,"code healthy, after periodontitis_stage_1 at visit 3826",3826,1,5,False
+3830,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,5,False
+3831,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 3830",3830,1,5,False
+3856,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,1,False
+3857,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 3856",3856,1,1,True
+3867,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,8,False
+3872,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 3870",3870,1,7,False
+3876,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 3875",3875,1,5,False
+3880,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,5,False
+3881,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 3880",3880,1,5,False
+3884,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,4,4,False
+3884,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.3 mm, bone loss 23.9%",,4,4,False
+3884,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,4,4,False
+3884,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 3883",3883,4,4,False
+3889,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,8,False
+3892,stage_drop,Stage drops,"code healthy, after periodontitis_stage_1 at visit 3889",3889,1,8,False
+3894,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 3889",3889,1,8,False
+3902,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,2,2,False
+3902,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 3901",3901,2,2,False
+3903,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,3,False
+3904,stage_drop,Stage drops,"code healthy, after periodontitis_stage_1 at visit 3903",3903,1,3,False
+3905,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 3903",3903,1,3,False
+3924,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,5,False
+3945,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,6,False
+3946,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 3945",3945,1,6,False
+3947,no_periodontal_care,No periodontal care,"code periodontitis_stage_2, no periodontal procedure completed or planned",,1,6,False
+3949,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,8,False
+3951,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 3949",3949,1,8,False
+3952,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,8,False
+3954,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,3,False
+3955,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 3954",3954,1,3,False
+3958,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,3,6,False
+3958,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.47 mm, bone loss 27.7%",,3,6,False
+3958,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,3,6,False
+3983,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,2,False
+3985,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,2,False
+3988,code_vs_chart,Code against the chart reading,"code periodontitis_stage_2, chart reading gingivitis",,1,6,True
+3991,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,5,False
+3992,stage_drop,Stage drops,"code healthy, after periodontitis_stage_1 at visit 3991",3991,1,5,False
+3993,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_3",,2,2,False
+3993,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 6.44 mm, bone loss 34.2%",,2,2,False
+4003,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,8,False
+4004,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 4003",4003,1,8,False
+4005,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 4003",4003,1,8,False
+4006,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 4003",4003,1,8,False
+4030,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,3,8,False
+4030,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.99 mm, bone loss 16.9%",,3,8,False
+4030,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 4029",4029,3,8,False
+4038,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,4,False
+4039,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 4038",4038,1,4,False
+4040,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,4,False
+4042,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,8,False
+4043,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,8,False
+4046,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,1,7,False
+4051,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,1,2,False
+4052,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,3,2,False
+4052,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.89 mm, bone loss 20.6%",,3,2,False
+4052,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,3,2,False
+4055,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,2,False
+4056,stage_drop,Stage drops,"code healthy, after periodontitis_stage_1 at visit 4055",4055,1,2,False
+4061,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,8,False
+4064,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 4062",4062,1,1,False
+4075,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,3,False
+4076,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,3,False
+4077,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 4072",4072,1,3,False
+4092,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,4,False
+4098,code_vs_chart,Code against the chart reading,"code periodontitis_stage_2, chart reading gingivitis",,1,7,True
+4100,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,2,7,False
+4100,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 4097",4097,2,7,False
+4102,no_periodontal_care,No periodontal care,"code periodontitis_stage_2, no periodontal procedure completed or planned",,1,2,False
+4103,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 4101",4101,1,2,False
+4104,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 4101",4101,1,2,False
+4106,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,2,2,False
+4106,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_3 at visit 4105",4105,2,2,False
+4110,no_periodontal_care,No periodontal care,"code periodontitis_stage_2, no periodontal procedure completed or planned",,1,3,False
+4116,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_3",,3,8,False
+4116,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 8.26 mm, bone loss 43.3%",,3,8,False
+4116,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_3 at visit 4114",4114,3,8,False
+4126,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,2,1,False
+4126,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.6 mm, bone loss 15.6%",,2,1,False
+4130,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,7,False
+4136,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,2,False
+4137,no_periodontal_care,No periodontal care,"code periodontitis_stage_2, no periodontal procedure completed or planned",,1,3,False
+4138,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 4137",4137,1,3,False
+4139,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,2,3,False
+4139,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 4137",4137,2,3,False
+4140,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 4137",4137,1,3,False
+4141,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 4137",4137,1,3,False
+4150,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,3,8,False
+4150,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.65 mm, bone loss 19.2%",,3,8,False
+4150,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,3,8,False
+4154,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 4152",4152,1,8,False
+4180,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,8,False
+4182,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 4180",4180,1,8,False
+4183,stage_drop,Stage drops,"code healthy, after periodontitis_stage_1 at visit 4180",4180,1,8,False
+4184,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,1,4,False
+4187,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,4,4,False
+4187,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.27 mm, bone loss 18.3%",,4,4,False
+4187,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,4,4,False
+4187,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 4186",4186,4,4,False
+4191,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,4,False
+4195,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,4,False
+4196,stage_drop,Stage drops,"code healthy, after periodontitis_stage_1 at visit 4195",4195,1,4,False
+4197,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 4195",4195,1,4,False
+4198,stage_drop,Stage drops,"code healthy, after periodontitis_stage_1 at visit 4195",4195,1,4,False
+4209,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 4208",4208,1,2,False
+4211,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,3,5,False
+4211,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.73 mm, bone loss 19.7%",,3,5,False
+4211,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,3,5,False
+4217,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_3",,3,4,False
+4217,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 4.18 mm, bone loss 17.5%",,3,4,False
+4217,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_3 at visit 4215",4215,3,4,False
+4218,stage_drop,Stage drops,"code periodontitis_stage_2, after periodontitis_stage_3 at visit 4215",4215,1,4,False
+4226,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,7,False
+4227,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 4225",4225,1,7,False
+4229,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 4225",4225,1,7,False
+4233,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,4,7,False
+4233,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.49 mm, bone loss 18%",,4,7,False
+4233,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,4,7,False
+4233,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 4232",4232,4,7,False
+4241,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,4,False
+4243,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 4241",4241,1,4,False
+4247,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,8,False
+4267,stage_drop,Stage drops,"code periodontitis_stage_1, after periodontitis_stage_2 at visit 4266",4266,1,4,False
+4272,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,5,False
+4273,no_periodontal_care,No periodontal care,"code periodontitis_stage_2, no periodontal procedure completed or planned",,1,5,False
+4275,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_3",,3,5,False
+4275,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 7.96 mm, bone loss 39.1%",,3,5,False
+4275,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_3",,3,5,False
+4277,stage_drop,Stage drops,"code periodontitis_stage_2, after periodontitis_stage_3 at visit 4276",4276,1,5,False
+4281,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_4",,4,1,False
+4281,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 9.86 mm, bone loss 57.8%",,4,1,False
+4281,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_3",,4,1,False
+4281,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_3 at visit 4278",4278,4,1,False
+4283,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,7,False
+4284,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 4283",4283,1,7,False
+4288,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 4287",4287,1,1,False
+4289,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 4287",4287,1,1,False
+4293,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_4",,3,7,False
+4293,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 6.33 mm, bone loss 49.1%",,3,7,False
+4293,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_3",,3,7,False
+4294,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_4",,3,7,False
+4294,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 6.37 mm, bone loss 49.3%",,3,7,False
+4294,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_3",,3,7,False
+4301,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_4",,3,3,False
+4301,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 7.17 mm, bone loss 55.3%",,3,3,False
+4301,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_3 at visit 4297",4297,3,3,False
+4306,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,1,False
+4314,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,3,8,False
+4314,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.63 mm, bone loss 24.5%",,3,8,False
+4314,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 4313",4313,3,8,False
+4316,code_vs_chart,Code against the chart reading,"code gingivitis, chart reading periodontitis_stage_2",,4,8,False
+4316,code_below_chart,Code lower than the chart,"code gingivitis, max CAL 3.94 mm, bone loss 26.8%",,4,8,False
+4316,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_2",,4,8,False
+4316,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 4313",4313,4,8,False
+4321,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,2,False
+4324,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_2 at visit 4323",4323,1,2,False
+4326,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,8,False
+4327,stage_drop,Stage drops,"code gingivitis, after periodontitis_stage_1 at visit 4325",4325,1,8,False
+4331,code_vs_radiograph,Code against the radiograph,"code gingivitis, radiograph AI periodontitis_stage_3",,1,3,False
+4338,no_periodontal_care,No periodontal care,"code periodontitis_stage_1, no periodontal procedure completed or planned",,1,2,False

@@ -4,7 +4,7 @@ Every script run is a trace, and every pipeline step is a span inside it, with t
 data label (synthetic, public, simulated), counts and duration. A failure is recorded on its span,
 with the error type and message, and added to a failure counter. Data-quality pass rates go out as
 metrics, one point per check per run. This is the record that failure detection, root-cause
-assessment and recovery (the next spec) are built on. Spec 014.
+assessment and recovery are built on: see [dataops.md](dataops.md), the pipeline doctor (spec 027). Spec 014.
 
 Telemetry never carries note text or row-level data: names, counts, durations, rates and error
 types only.

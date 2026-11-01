@@ -24,3 +24,4 @@ don't rewrite the old one.
 |---|---|---|
 | [0001](0001-synthetic-public-two-languages.md) | Synthetic data, public repo, R and Python against one contract | accepted |
 | [0002](0002-no-feature-store-for-now.md) | No feature store for now | accepted |
+| [0003](0003-static-data-quality-page.md) | The data-quality report is a static page, not a FastAPI app | accepted |

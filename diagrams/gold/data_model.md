@@ -23,6 +23,8 @@ erDiagram
     judge_queue ||--o| fact_corpus_judge_call : "method_name, visit_id"
     dim_grader_question ||--o{ fact_grader_answer : "question_id"
     fact_visit_evidence ||--o{ fact_case_profile_item : "visit_id"
+    fact_visit_evidence ||--o{ fact_record_mismatch : "visit_id"
+    fact_record_mismatch }o..o{ dq_mismatch_rule : "rule_name (scores are per rule and clinic: join on clinic_code too)"
     dim_study_note }o..o{ benchmark_metric : "run_id (its test split)"
     review_key
     dim_result_file
@@ -45,6 +47,8 @@ erDiagram
     fact_visit_evidence
     dq_injected_error
     fact_case_profile_item
+    fact_record_mismatch
+    dq_mismatch_rule
     dim_grader_question
     fact_grader_answer
     dim_study_note
@@ -72,6 +76,8 @@ erDiagram
     judge_queue ||--o| fact_corpus_judge_call : "method_name, visit_id"
     dim_grader_question ||--o{ fact_grader_answer : "question_id"
     fact_visit_evidence ||--o{ fact_case_profile_item : "visit_id"
+    fact_visit_evidence ||--o{ fact_record_mismatch : "visit_id"
+    fact_record_mismatch }o..o{ dq_mismatch_rule : "rule_name (scores are per rule and clinic: join on clinic_code too)"
     dim_study_note }o..o{ benchmark_metric : "run_id (its test split)"
     review_key {
         bigint visit_id PK "review chart (240)"
@@ -345,6 +351,39 @@ erDiagram
         bigint item_order_num "position in the profile"
         string item_value_name "the value as shown: a number, a status code, yes/no, or not recorded"
         string item_unit_name "mm, %, years, teeth; empty when none"
+        string source_files_text "the committed CSVs the table is built from"
+        string file_sha256 "SHA-256 of those files together: the version"
+        string git_commit_sha "commit the job was deployed from"
+        timestamp loaded_ts "when Load results wrote it"
+    }
+    fact_record_mismatch {
+        bigint visit_id PK "visit"
+        string rule_name PK "code_vs_chart · code_above_chart · code_below_chart · no_periodontal_care · code_vs_radiograph · stage_drop"
+        string rule_label_name "the rule in plain words"
+        string mismatch_evidence_text "the values that triggered it"
+        bigint related_visit_id "stage drops: the earlier visit with the higher code; else null"
+        bigint failed_rule_count "how many rules this visit fails: the visits failing most come first"
+        string clinic_code "clinic 1-8"
+        boolean is_injected_error "the visit carries an injected charting error (synthetic answer key)"
+        string source_files_text "the committed CSVs the table is built from"
+        string file_sha256 "SHA-256 of those files together: the version"
+        string git_commit_sha "commit the job was deployed from"
+        timestamp loaded_ts "when Load results wrote it"
+    }
+    dq_mismatch_rule {
+        string rule_name PK "a rule, or any_rule"
+        string rule_label_name "the rule in plain words"
+        string clinic_code PK "clinic 1-8, or All"
+        bigint checkable_count "visits with a code and the evidence the rule needs"
+        bigint not_checkable_count "visits with a code but missing that evidence"
+        bigint flagged_count "checkable visits the rule flags"
+        bigint code_truth_mismatch_count "checkable visits whose code differs from the truth (stage drops: either visit's)"
+        bigint true_flag_count "flags where the code differs from the truth"
+        double precision_ratio "true flags / flags"
+        double recall_ratio "true flags / code-truth mismatches"
+        bigint only_rule_count "flags at visits failing no other rule"
+        bigint injected_checkable_count "checkable visits with an injected charting error"
+        bigint injected_caught_count "of those, flagged"
         string source_files_text "the committed CSVs the table is built from"
         string file_sha256 "SHA-256 of those files together: the version"
         string git_commit_sha "commit the job was deployed from"
@@ -786,6 +825,49 @@ One per (synthetic visit, profile category, item): the visit's structured eviden
 |  | `item_order_num` | bigint | position in the profile |
 |  | `item_value_name` | string | the value as shown: a number, a status code, yes/no, or not recorded |
 |  | `item_unit_name` | string | mm, %, years, teeth; empty when none |
+|  | `source_files_text` | string | the committed CSVs the table is built from |
+|  | `file_sha256` | string | SHA-256 of those files together: the version |
+|  | `git_commit_sha` | string | commit the job was deployed from |
+|  | `loaded_ts` | timestamp | when Load results wrote it |
+
+### `fact_record_mismatch`
+
+One per (synthetic visit, failed record-mismatch rule): a recorded code that doesn't fit the record. Written by: Load results: overwrite.
+
+| Key | Column | Type | Description |
+|---|---|---|---|
+| PK | `visit_id` | bigint | visit |
+| PK | `rule_name` | string | code_vs_chart · code_above_chart · code_below_chart · no_periodontal_care · code_vs_radiograph · stage_drop |
+|  | `rule_label_name` | string | the rule in plain words |
+|  | `mismatch_evidence_text` | string | the values that triggered it |
+|  | `related_visit_id` | bigint | stage drops: the earlier visit with the higher code; else null |
+|  | `failed_rule_count` | bigint | how many rules this visit fails: the visits failing most come first |
+|  | `clinic_code` | string | clinic 1-8 |
+|  | `is_injected_error` | boolean | the visit carries an injected charting error (synthetic answer key) |
+|  | `source_files_text` | string | the committed CSVs the table is built from |
+|  | `file_sha256` | string | SHA-256 of those files together: the version |
+|  | `git_commit_sha` | string | commit the job was deployed from |
+|  | `loaded_ts` | timestamp | when Load results wrote it |
+
+### `dq_mismatch_rule`
+
+One per (record-mismatch rule or any_rule, clinic); clinic_code All = every clinic. Scored against the generator's truth over the visits the rule can check. Written by: Load results: overwrite.
+
+| Key | Column | Type | Description |
+|---|---|---|---|
+| PK | `rule_name` | string | a rule, or any_rule |
+|  | `rule_label_name` | string | the rule in plain words |
+| PK | `clinic_code` | string | clinic 1-8, or All |
+|  | `checkable_count` | bigint | visits with a code and the evidence the rule needs |
+|  | `not_checkable_count` | bigint | visits with a code but missing that evidence |
+|  | `flagged_count` | bigint | checkable visits the rule flags |
+|  | `code_truth_mismatch_count` | bigint | checkable visits whose code differs from the truth (stage drops: either visit's) |
+|  | `true_flag_count` | bigint | flags where the code differs from the truth |
+|  | `precision_ratio` | double | true flags / flags |
+|  | `recall_ratio` | double | true flags / code-truth mismatches |
+|  | `only_rule_count` | bigint | flags at visits failing no other rule |
+|  | `injected_checkable_count` | bigint | checkable visits with an injected charting error |
+|  | `injected_caught_count` | bigint | of those, flagged |
 |  | `source_files_text` | string | the committed CSVs the table is built from |
 |  | `file_sha256` | string | SHA-256 of those files together: the version |
 |  | `git_commit_sha` | string | commit the job was deployed from |

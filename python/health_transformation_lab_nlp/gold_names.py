@@ -10,6 +10,7 @@ is written from, and the gold name of each.
     migration_plan  what databricks/notebooks/11_migrate_gold_names.py does with each old table
     legacy_plan     the same for a table left in an old gold schema (issue #228)
     legacy_schemas  the legacy_gold_schemas setting, parsed and checked
+    merge_key_types the type of the null stand-in for a MERGE_KEYS column a side lacks (issue #248)
 """
 
 from __future__ import annotations
@@ -120,6 +121,17 @@ TABLES |= {
                                "category_order": "category_order_num", "item": "item_name",
                                "item_order": "item_order_num", "value": "item_value_name", "unit": "item_unit_name",
                                **_DQ_PROV},
+    "fact_record_mismatch": {"visit_id": "visit_id", "rule": "rule_name", "rule_label": "rule_label_name",
+                             "evidence": "mismatch_evidence_text", "related_visit_id": "related_visit_id",
+                             "failed_rule_count": "failed_rule_count",
+                             "clinic": "clinic_code", "injected_error": "is_injected_error", **_DQ_PROV},
+    "dq_mismatch_rule": {"rule": "rule_name", "rule_label": "rule_label_name", "clinic": "clinic_code",
+                         "checkable_count": "checkable_count", "not_checkable_count": "not_checkable_count",
+                         "flagged_count": "flagged_count", "code_truth_mismatch_count": "code_truth_mismatch_count",
+                         "true_flag_count": "true_flag_count", "precision": "precision_ratio",
+                         "recall": "recall_ratio", "only_rule_count": "only_rule_count",
+                         "injected_checkable_count": "injected_checkable_count",
+                         "injected_caught_count": "injected_caught_count", **_DQ_PROV},
     # the lab grader: a SIMULATED sample until real runs are committed
     "dim_grader_question": {"question_id": "question_id", "category": "category_name",
                             "category_order": "category_order_num", "level": "level_code",
@@ -131,7 +143,7 @@ TABLES |= {
                            "run_id": "run_id", "simulated": "is_simulated", **_DQ_PROV},
 }
 
-# spec 027: the Benchmark job's tables (01_run_benchmark.py). score()'s own run_id is one model fit (model_run_id);
+# spec 031: the Benchmark job's tables (01_run_benchmark.py). score()'s own run_id is one model fit (model_run_id);
 # run_id is the Databricks job run, the batch key.
 _RUN = {"run_id": "run_id", "run_ts": "run_ts", "git_commit": "git_commit_sha"}
 TABLES |= {
@@ -233,6 +245,15 @@ def legacy_plan(legacy: dict[str, list[str]], current: dict[str, list[str]]) -> 
         else:
             plan.append(("merge" if target in MERGE_KEYS else "stale", name, target))
     return plan
+
+
+@traced
+def merge_key_types(key, src: dict[str, str], current: dict[str, str]) -> dict[str, str]:
+    """For each key column (in key's order), the Spark type its null stand-in takes on a side that lacks it
+    (src, current: column -> type, as DataFrame.dtypes gives them): src's type, else current's, else string when
+    neither has it (run_id on fact_llm_call, issue #248). Nulls match nulls, so a column neither side has never
+    splits or duplicates rows."""
+    return {k: src.get(k) or current.get(k) or "string" for k in key}
 
 
 @traced

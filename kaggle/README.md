@@ -14,6 +14,7 @@ data only, and no token is ever stored in it.
 | Dataset `perio-bench-notes` | Synthetic notes, labels, structured visits, 240-note review set and answer key | *Publish datasets (Kaggle and Hugging Face)* | `publish.py`, `cards/notes.md` |
 | Dataset `perio-bench-results` | Every model's answers on the review set, the leaderboard, the judge scorecard | *Publish datasets (Kaggle and Hugging Face)* | `publish.py`, `cards/results.md` |
 | Notebook `perio-bench-quickstart` (spec 025) | Loads both datasets, trains a baseline on a CPU in about a minute, scores it beside the leaderboard | *Publish datasets (Kaggle and Hugging Face)* | `../notebooks/perio_bench_quickstart.ipynb`, `prepare_kernel.py --job quickstart` |
+| Benchmark task `perio-bench` (Kaggle Benchmarks) | The reader task Kaggle's leaderboard runs: read a note, name the status, quote it; a judge checks it (`docs/kaggle_benchmarks.md`) | *Run PerioBench on Kaggle Benchmarks* | `perio_bench_task.py`, `../python/health_transformation_lab_nlp/kbench.py` |
 | Model `perio-bench-note-classifier` (spec 020 US3) | The top fine-tuned note classifier, ModernBERT-base class-weighted, in transformers format (Apache 2.0) | *Fine-tune the GPU encoders on a free Kaggle GPU* with `save_model` | `publish_model.py`, `cards/model.md` |
 
 The notebook `dental-omop-medgemma-keras-test` was a one-off comparison (MedGemma through Keras vs converted to
@@ -71,9 +72,11 @@ Kaggle, not the workflow artifact. A full run takes hours: to collect it later, 
 
 ## The collection
 
-Kaggle's API can't make collections, so do this once on kaggle.com: your profile → **Collections** → **New
-collection** "Health Transformation Lab: Perio Bench", then add the two notebooks, the two datasets and, later,
-the model `perio-bench-note-classifier` (each page's ⋮ menu → *Add to collection*). Make it public.
+A Kaggle collection is a private list: kaggle.com offers no setting to make one public, and Kaggle's API can't
+make collections. So the shared starting point is the table under [What's on Kaggle](#whats-on-kaggle), and every
+item there is public on its own. For your own list, on kaggle.com: your profile → **Collections** → **New
+collection** "Health Transformation Lab: Perio Bench", then add the three notebooks, the two datasets and the model
+`perio-bench-note-classifier` (each page's ⋮ menu → *Add to collection*). It's optional (issue #270).
 
 ## When something fails
 

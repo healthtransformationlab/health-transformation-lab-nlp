@@ -7,8 +7,9 @@
 #     bronze_perio_bench                     raw tables       (empty for now)
 #     silver_perio_bench                     cleaned tables   (empty for now)
 #     gold_perio_bench                       study tables, results, perio_note_classifier
-#     bronze_/silver_/gold_access_bench      empty until access_bench has a pipeline
 #     bronze_/silver_/gold_oral_health_bench empty until oral_health_bench has a pipeline
+#     bronze_/silver_/gold_access_bench      empty until access_bench has a pipeline
+#     landing_/bronze_/silver_/gold_opendental_perio  spec 029: Open Dental-format extract, tooth-loss model
 #
 # The old schemas (<layer>_${var.legacy_domain}) stay declared in databricks.yml, under the dev target that
 # deployed them, until they are retired (docs/deployment.md).
@@ -59,24 +60,6 @@ resources:
       comment: Study tables, results and perio_note_classifier for perio_bench. Synthetic data only.
       lifecycle:
         prevent_destroy: true
-    access_bench_bronze:
-      catalog_name: ${resources.catalogs.health_transformation_lab.name}
-      name: bronze_access_bench
-      comment: Raw tables for access_bench; empty until it has a pipeline. Synthetic data only.
-      lifecycle:
-        prevent_destroy: true
-    access_bench_silver:
-      catalog_name: ${resources.catalogs.health_transformation_lab.name}
-      name: silver_access_bench
-      comment: Cleaned tables for access_bench; empty until it has a pipeline. Synthetic data only.
-      lifecycle:
-        prevent_destroy: true
-    access_bench_gold:
-      catalog_name: ${resources.catalogs.health_transformation_lab.name}
-      name: gold_access_bench
-      comment: Study tables and results for access_bench; empty until it has a pipeline. Synthetic data only.
-      lifecycle:
-        prevent_destroy: true
     oral_health_bench_bronze:
       catalog_name: ${resources.catalogs.health_transformation_lab.name}
       name: bronze_oral_health_bench
@@ -95,6 +78,48 @@ resources:
       comment: Study tables and results for oral_health_bench; empty until it has a pipeline. Synthetic data only.
       lifecycle:
         prevent_destroy: true
+    access_bench_bronze:
+      catalog_name: ${resources.catalogs.health_transformation_lab.name}
+      name: bronze_access_bench
+      comment: Raw tables for access_bench; empty until it has a pipeline. Synthetic data only.
+      lifecycle:
+        prevent_destroy: true
+    access_bench_silver:
+      catalog_name: ${resources.catalogs.health_transformation_lab.name}
+      name: silver_access_bench
+      comment: Cleaned tables for access_bench; empty until it has a pipeline. Synthetic data only.
+      lifecycle:
+        prevent_destroy: true
+    access_bench_gold:
+      catalog_name: ${resources.catalogs.health_transformation_lab.name}
+      name: gold_access_bench
+      comment: Study tables and results for access_bench; empty until it has a pipeline. Synthetic data only.
+      lifecycle:
+        prevent_destroy: true
+    opendental_perio_landing:
+      catalog_name: ${resources.catalogs.health_transformation_lab.name}
+      name: landing_opendental_perio
+      comment: Landing zone (volumes) for the Open Dental-format extract (spec 029). Synthetic data only.
+      lifecycle:
+        prevent_destroy: true
+    opendental_perio_bronze:
+      catalog_name: ${resources.catalogs.health_transformation_lab.name}
+      name: bronze_opendental_perio
+      comment: Open Dental's tables as generated, one table each (spec 029). Synthetic data only.
+      lifecycle:
+        prevent_destroy: true
+    opendental_perio_silver:
+      catalog_name: ${resources.catalogs.health_transformation_lab.name}
+      name: silver_opendental_perio
+      comment: Open Dental's tables cleaned, the per-tooth table and data-quality checks (spec 029). Synthetic data only.
+      lifecycle:
+        prevent_destroy: true
+    opendental_perio_gold:
+      catalog_name: ${resources.catalogs.health_transformation_lab.name}
+      name: gold_opendental_perio
+      comment: The tooth-loss model's answers (spec 029). Synthetic data only.
+      lifecycle:
+        prevent_destroy: true
 
   volumes:
     perio_bench_data:
@@ -103,5 +128,13 @@ resources:
       name: data
       volume_type: MANAGED
       comment: Files the pipeline writes (DENTAL_DATA_ROOT). Synthetic data only.
+      lifecycle:
+        prevent_destroy: true
+    opendental_perio_data:
+      catalog_name: ${resources.schemas.opendental_perio_landing.catalog_name}
+      schema_name: ${resources.schemas.opendental_perio_landing.name}
+      name: data
+      volume_type: MANAGED
+      comment: The Open Dental-format extract's generated files (spec 029). Synthetic data only.
       lifecycle:
         prevent_destroy: true

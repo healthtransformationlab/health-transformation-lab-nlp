@@ -8,13 +8,14 @@ healthtransformationlab organisation (spec 025). Used by .github/workflows/kaggl
 The files are kaggle/publish.py's (FR-001: one list for both platforms), passed through its check() and copied
 under raw/. The notes also get data/train.csv and data/test.csv with one column set, so the dataset viewer and
 load_dataset() show a train and a test split. README.md is the card: a YAML header (licence, task, tags, configs)
-and the body from huggingface/cards/<name>.md. Uploading needs HF_PUBLISH_TOKEN (a fine-grained token with write
+and the body from huggingface/cards/<name>.md. Uploading needs HF_PUBLISH_TOKEN, or the workflow passes HF_TOKEN in its place (a token with write
 access to the organisation's repositories); check_token() checks it before any upload.
 """
 
 import argparse
 import importlib.util
 import os
+import re
 import shutil
 import sys
 from pathlib import Path
@@ -102,19 +103,41 @@ def org_card() -> str:
         (HERE / "cards" / "org.md").read_text(encoding="utf-8")
 
 
-def check_token(token: str, whoami) -> str:
-    """Fail fast, naming the setting: missing, wrong shape, or unable to write to the organisation. Returns the user."""
+NAME_PREFIX = re.compile(r"^(export\s+)?[A-Za-z_][A-Za-z0-9_]*\s*=\s*")   # a NAME=value line pasted whole
+
+
+def clean_token(raw: str) -> str:
+    """The token without the usual paste mistakes: whitespace or a line break, quotes, a NAME= prefix (issue #255)."""
+    token = NAME_PREFIX.sub("", raw.strip().strip("'\"").strip())   # quotes may wrap the token or the whole line
+    return token.strip().strip("'\"").strip()
+
+
+def describe_token(token: str) -> str:
+    """What a token that isn't hf_... looks like, without any of its characters, so a log can say what went wrong."""
+    shape = f"{len(token)} characters"
+    if re.fullmatch(r"[A-Z][A-Z0-9_]*", token):
+        return shape + ", all capitals: that looks like a secret's name, not its value"
+    if token.lower().startswith("bearer "):
+        return shape + ", starting with 'Bearer ': paste the token alone"
+    return shape + ", not starting with hf_: is it a Hugging Face access token?"
+
+
+def check_token(token: str, whoami, source: str = "HF_PUBLISH_TOKEN or HF_TOKEN") -> str:
+    """Fail fast, naming the setting: missing, wrong shape, or unable to write to the organisation. Returns the user.
+    `source` names the secret the token came from; the workflow passes it as HF_TOKEN_SOURCE."""
+    token = clean_token(token)
     if not token:
-        raise SystemExit("HF_PUBLISH_TOKEN is not set in the GitHub environment 'dev' (huggingface/README.md)")
+        raise SystemExit(f"{source} is not set in the GitHub environment 'dev' (huggingface/README.md)")
     if not token.startswith("hf_"):
-        raise SystemExit("HF_PUBLISH_TOKEN doesn't look like a Hugging Face token (it should start with hf_)")
+        raise SystemExit(f"{source} doesn't look like a Hugging Face token (it should start with hf_): the value "
+                         f"from {source} is {describe_token(token)} (huggingface/README.md)")
     me = whoami(token)                                # one cheap authenticated call
     role = next((o.get("roleInOrg") for o in me.get("orgs", []) if o.get("name") == ORG), None)
     fine = (me.get("auth") or {}).get("accessToken", {}).get("fineGrained")
     scoped = [s for s in (fine or {}).get("scoped", []) if s.get("entity", {}).get("name") == ORG]
     if role not in ("admin", "write", "contributor") or (fine and not any(
             any("write" in p for p in s.get("permissions", [])) for s in scoped)):
-        raise SystemExit(f"HF_PUBLISH_TOKEN can't write to the {ORG} organisation: give it write access to the "
+        raise SystemExit(f"{source} can't write to the {ORG} organisation: give it write access to the "
                          "organisation's repositories (huggingface/README.md)")
     return me["name"]
 
@@ -154,9 +177,10 @@ def main() -> None:
     print(f"prepared {repo} at {a.commit[:12]}")
     if a.upload:
         from huggingface_hub import HfApi
-        token = os.environ.get("HF_PUBLISH_TOKEN", "")
+        token = clean_token(os.environ.get("HF_PUBLISH_TOKEN", ""))
         api = HfApi(token=token or None)
-        check_token(token, whoami=lambda t: api.whoami(token=t))
+        check_token(token, whoami=lambda t: api.whoami(token=t),
+                    source=os.environ.get("HF_TOKEN_SOURCE") or "HF_PUBLISH_TOKEN or HF_TOKEN")
         upload(a.out, repo, f"{a.message} ({a.commit[:12]})", api, kind, **create)
 
 

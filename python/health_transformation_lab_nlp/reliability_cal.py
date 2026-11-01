@@ -1,7 +1,7 @@
 """Reliability of clinical attachment loss (CAL) in repeated charts (spec 013 G5).
 
 Agreement asks how close two measurements of the same site are; reliability asks whether that
-error still lets us tell patients, teeth and sites apart (de Vet et al. 2006; Liaw et al. 2013).
+error still lets us tell patients, teeth and sites apart (de Vet et al. 2006).
 Model: CAL = b0 + b1 * years + patient + tooth(patient) + site(tooth) + error, all random but time.
 
     icc_patient   two sites in the same mouth            var_p / total

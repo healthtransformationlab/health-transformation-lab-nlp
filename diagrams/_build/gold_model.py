@@ -309,6 +309,37 @@ TABLES = {
             C("item_value_name", "string", "the value as shown: a number, a status code, yes/no, or not recorded"),
             C("item_unit_name", "string", "mm, %, years, teeth; empty when none"),
             *DQ_PROV]),
+    "fact_record_mismatch": Table(
+        "dq", "One per (synthetic visit, failed record-mismatch rule): a recorded code that doesn't fit the record",
+        "Load results: overwrite", [
+            C("visit_id", "bigint", "visit", "PK"),
+            C("rule_name", "string", "code_vs_chart · code_above_chart · code_below_chart · no_periodontal_care · "
+              "code_vs_radiograph · stage_drop", "PK"),
+            C("rule_label_name", "string", "the rule in plain words"),
+            C("mismatch_evidence_text", "string", "the values that triggered it"),
+            C("related_visit_id", "bigint", "stage drops: the earlier visit with the higher code; else null"),
+            C("failed_rule_count", "bigint", "how many rules this visit fails: the visits failing most come first"),
+            C("clinic_code", "string", "clinic 1-8"),
+            C("is_injected_error", "boolean", "the visit carries an injected charting error (synthetic answer key)"),
+            *DQ_PROV]),
+    "dq_mismatch_rule": Table(
+        "dq", "One per (record-mismatch rule or any_rule, clinic); clinic_code All = every clinic. Scored against "
+        "the generator's truth over the visits the rule can check", "Load results: overwrite", [
+            C("rule_name", "string", "a rule, or any_rule", "PK"),
+            C("rule_label_name", "string", "the rule in plain words"),
+            C("clinic_code", "string", "clinic 1-8, or All", "PK"),
+            C("checkable_count", "bigint", "visits with a code and the evidence the rule needs"),
+            C("not_checkable_count", "bigint", "visits with a code but missing that evidence"),
+            C("flagged_count", "bigint", "checkable visits the rule flags"),
+            C("code_truth_mismatch_count", "bigint", "checkable visits whose code differs from the truth (stage "
+              "drops: either visit's)"),
+            C("true_flag_count", "bigint", "flags where the code differs from the truth"),
+            C("precision_ratio", "double", "true flags / flags"),
+            C("recall_ratio", "double", "true flags / code-truth mismatches"),
+            C("only_rule_count", "bigint", "flags at visits failing no other rule"),
+            C("injected_checkable_count", "bigint", "checkable visits with an injected charting error"),
+            C("injected_caught_count", "bigint", "of those, flagged"),
+            *DQ_PROV]),
     # spec 019: the lab grader (a SIMULATED sample until real runs exist)
     "dim_grader_question": Table(
         "lab", "One per grader question", "Load results: overwrite", [
@@ -333,7 +364,7 @@ TABLES = {
             C("run_id", "string", "the grading run"),
             C("is_simulated", "boolean", "true for the simulated sample"),
             *DQ_PROV]),
-    # spec 027: the Benchmark job (study_benchmark, 01_run_benchmark.py); synthetic study notes and their scores
+    # spec 031: the Benchmark job (study_benchmark, 01_run_benchmark.py); synthetic study notes and their scores
     "dim_study_note": Table(
         "study", "One per synthetic study note, with its generator label and split", "Benchmark: overwrite", [
             C("note_id", "bigint", "OMOP note_id (= visit_occurrence_id)", "PK"),
@@ -390,6 +421,9 @@ RELATIONSHIPS = [
       "method_name, visit_id", "||--o|"),
     R("dim_grader_question", "fact_grader_answer", ("question_id",), ("question_id",), "question_id"),
     R("fact_visit_evidence", "fact_case_profile_item", ("visit_id",), ("visit_id",), "visit_id"),
+    R("fact_visit_evidence", "fact_record_mismatch", ("visit_id",), ("visit_id",), "visit_id"),
+    R("fact_record_mismatch", "dq_mismatch_rule", ("rule_name",), ("rule_name",),
+      "rule_name (scores are per rule and clinic: join on clinic_code too)", "}o..o{", derived=True),
     R("dim_study_note", "benchmark_metric", ("run_id",), ("run_id",), "run_id (its test split)",
       "}o..o{", derived=True),
 ]
@@ -401,6 +435,6 @@ AREAS = {   # fill, legend label
     "corpus": ("#FDE7F1", "gold · corpus judge (ai_query, notebook 02)"),
     "dq": ("#E1EEF6", "gold · EHR DQ grader (spec 019)"),
     "lab": ("#F6E7DE", "gold · lab grader, simulated sample (spec 019)"),
-    "study": ("#EDEDF7", "gold · Benchmark job, synthetic study notes (spec 027)"),
+    "study": ("#EDEDF7", "gold · Benchmark job, synthetic study notes (spec 031)"),
     "file": ("#E4E7EA", "file in git, not a table"),
 }

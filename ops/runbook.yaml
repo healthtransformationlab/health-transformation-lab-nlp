@@ -1,0 +1,92 @@
+# One entry per failure class (spec 027, `dim_runbook_entry`). The doctor may only recommend an action
+# from `allowed_action_codes`, in order: the first one is tried first; `retry` moves to the next once the
+# pipeline's retry_max_count is spent. Severity and escalation follow AGENTS.md "Alerts and severity".
+# `is_reversible: false` means the class can never graduate to automatic (spec 027 US3).
+#
+# Action codes (the only verbs the doctor knows; code acts, the agent recommends):
+#   retry            run the task again after retry_interval_seconds
+#   rerun            start the run again from the beginning (idempotent writes make this safe)
+#   hold_downstream  pause dependents until the owner clears it
+#   refuse_input     do not load the input; keep the previous good version
+#   merge_schema     append with the merged schema (a data change: never automatic)
+#   fix_setting      the owner fixes the setting or secret; nothing runs until then
+#   page_owner       notify the owner at the entry's severity
+#   investigate      send to the root-cause rung (LLM) and the owner
+
+entries:
+  # Configuration-management classes first: a credential that expired, a vulnerability advisory, a
+  # deprecated model or dependency, a setting that differs between environments. Invisible in logs until
+  # the damage is done; visible in tables (a secrets register with expiry dates, a dependency inventory,
+  # a model inventory, one config declaration per setting) before it.
+  - failure_class_code: credential_expiry
+    description_text: a credential expired or was revoked (401/403, token expired); the register says who renews it
+    allowed_action_codes: [fix_setting, page_owner]
+    is_reversible: true
+    severity_code: SEV2
+    escalate_to_name: repo owner
+  - failure_class_code: vulnerability
+    description_text: a security advisory on a dependency or model the pipeline uses
+    allowed_action_codes: [hold_downstream, page_owner]
+    is_reversible: true
+    severity_code: SEV2
+    escalate_to_name: repo owner
+  - failure_class_code: deprecation
+    description_text: a model, endpoint, API or dependency version is deprecated, retired or no longer found
+    allowed_action_codes: [hold_downstream, page_owner]
+    is_reversible: true
+    severity_code: SEV3
+    escalate_to_name: repo owner
+  - failure_class_code: config_drift
+    description_text: a setting differs between environments (dev, uat, prod) or from its one declaration
+    allowed_action_codes: [fix_setting, hold_downstream, page_owner]
+    is_reversible: true
+    severity_code: SEV2
+    escalate_to_name: repo owner
+  - failure_class_code: platform
+    description_text: the platform failed, not the data (no GPU free, Python died, storage refused)
+    allowed_action_codes: [retry, rerun, page_owner]
+    is_reversible: true
+    severity_code: SEV3
+    escalate_to_name: repo owner
+  - failure_class_code: config
+    description_text: a setting or secret is missing, malformed or expired
+    allowed_action_codes: [fix_setting, page_owner]
+    is_reversible: true
+    severity_code: SEV2
+    escalate_to_name: repo owner
+  - failure_class_code: source_late
+    description_text: an upstream did not arrive inside the SLA
+    allowed_action_codes: [hold_downstream, page_owner]
+    is_reversible: true
+    severity_code: SEV3
+    escalate_to_name: repo owner
+  - failure_class_code: volume_anomaly
+    description_text: row counts far from the trailing median (a partial file, a truncated run)
+    allowed_action_codes: [refuse_input, hold_downstream, page_owner]
+    is_reversible: true
+    severity_code: SEV3
+    escalate_to_name: repo owner
+  - failure_class_code: schema_drift
+    description_text: the output schema changed against the last good run
+    allowed_action_codes: [hold_downstream, merge_schema, page_owner]
+    is_reversible: false
+    severity_code: SEV2
+    escalate_to_name: repo owner
+  - failure_class_code: quality_fail
+    description_text: a data-quality check failed its threshold
+    allowed_action_codes: [hold_downstream, page_owner]
+    is_reversible: true
+    severity_code: SEV3
+    escalate_to_name: repo owner
+  - failure_class_code: cost_anomaly
+    description_text: run cost far above the trailing median (a runaway retry loop, a bigger model)
+    allowed_action_codes: [hold_downstream, page_owner]
+    is_reversible: true
+    severity_code: SEV4
+    escalate_to_name: repo owner
+  - failure_class_code: unknown
+    description_text: no rule fired; the only class the root-cause rung (LLM) sees
+    allowed_action_codes: [investigate, page_owner]
+    is_reversible: false
+    severity_code: SEV2
+    escalate_to_name: repo owner

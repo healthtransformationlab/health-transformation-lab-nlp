@@ -61,7 +61,7 @@ def renamed(old: str, new: str, where: str = ""):
             raise ValueError(f"{old}: {bad} hold values that aren't whole numbers; fix them before migrating")
         for c in counts:
             sdf = sdf.withColumn(c, F.col(c).cast("bigint"))
-    # an old table written from text (benchmark_results.timestamp, ISO 8601) gets a real timestamp (spec 027)
+    # an old table written from text (benchmark_results.timestamp, ISO 8601) gets a real timestamp (spec 031)
     for c in [f.name for f in sdf.schema.fields if f.name.endswith("_ts") and f.dataType.typeName() == "string"]:
         sdf = sdf.withColumn(c, F.to_timestamp(c))
     return sdf
@@ -71,23 +71,31 @@ def rows(name: str) -> int:
     return spark.table(table(name)).count()  # noqa: F821
 
 
-def merge_missing(src, new: str) -> None:
-    """Append src's rows whose MERGE_KEYS the current table new lacks. A key column new doesn't have yet (the
-    reader's run_id, before a reader run) counts as null; mergeSchema adds it."""
+def keyed(src, new: str):
+    """(src with every MERGE_KEYS column, the current table new's distinct keys, the join condition). A key column
+    a side lacks (the reader's run_id, in neither fact_llm_call: issue #248) counts as null on that side, typed by
+    gold_names.merge_key_types; null matches null, so it never adds or splits rows."""
     current = spark.table(table(new))  # noqa: F821
     key = gold_names.MERGE_KEYS[new]
-    have = current.select(*[current[k] if k in current.columns else F.lit(None).cast(src.schema[k].dataType).alias(k)
-                            for k in key]).distinct()
-    cond = [src[k].eqNullSafe(have[k]) for k in key]
-    src.join(have, cond, "left_anti").write.mode("append").option("mergeSchema", "true").saveAsTable(table(new))
+    types = gold_names.merge_key_types(key, dict(src.dtypes), dict(current.dtypes))
+    null = {k: F.lit(None).cast(types[k]).alias(k) for k in key}
+    left = src.select(*src.columns, *[null[k] for k in key if k not in src.columns])
+    have = current.select(*[current[k] if k in current.columns else null[k] for k in key]).distinct()
+    return left, have, [left[k].eqNullSafe(have[k]) for k in key]
+
+
+def merge_missing(src, new: str) -> None:
+    """Append src's rows whose MERGE_KEYS the current table new lacks, with src's own columns only (a stand-in key
+    column is never written); mergeSchema adds a column of src's that new doesn't have yet."""
+    left, have, cond = keyed(src, new)
+    (left.join(have, cond, "left_anti").select(*src.columns)
+     .write.mode("append").option("mergeSchema", "true").saveAsTable(table(new)))
 
 
 def not_carried(src, new: str) -> int:
     """src's rows whose MERGE_KEYS are still missing from the current table new."""
-    current = spark.table(table(new))  # noqa: F821
-    key = gold_names.MERGE_KEYS[new]
-    have = current.select(*key).distinct()
-    return src.join(have, [src[k].eqNullSafe(have[k]) for k in key], "left_anti").count()
+    left, have, cond = keyed(src, new)
+    return left.join(have, cond, "left_anti").count()
 
 
 # Which old tables exist, with their columns; the decision is gold_names.migration_plan (tested).

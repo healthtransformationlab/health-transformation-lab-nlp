@@ -1,4 +1,4 @@
-# Implementation Plan: the study and GPU encoder tables under the gold conventions (spec 027)
+# Implementation Plan: the study and GPU encoder tables under the gold conventions (spec 031)
 
 **Spec**: [spec.md](spec.md) · **Issue**: #233 (US1)
 

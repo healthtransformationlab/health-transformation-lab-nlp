@@ -1,0 +1,124 @@
+# One entry per pipeline (spec 027, `dim_pipeline`). A person reads and changes this; the doctor
+# reads it. Keys are the job names in databricks/resources/jobs.yml plus the local scripts.
+#
+#   owner_name              who is paged (AGENTS.md "Alerts and severity")
+#   sla_seconds             how stale the pipeline's output may be before it is "source late"
+#   schedule_text           when it runs ("on demand" for the GPU jobs)
+#   expectation_names       which dq checks gate it (spec 005 categories)
+#   retry_max_count,        the deterministic rung: what the job itself already does
+#   retry_interval_seconds
+#   runbook_name            which runbook entries apply (ops/runbook.yaml)
+#   data_label_code         synthetic / public / simulated: on every span and row
+#   output_names            what it writes (joined to dim_lineage_edge for impact)
+
+pipelines:
+  study_benchmark:
+    owner_name: repo owner
+    sla_seconds: 604800          # weekly
+    schedule_text: on demand
+    expectation_names: [conformance, completeness, plausibility]
+    retry_max_count: 0
+    retry_interval_seconds: 0
+    runbook_name: default
+    data_label_code: synthetic
+    output_names: [gold_perio_bench.fact_prediction, gold_perio_bench.benchmark_result]
+  load_lakebase:
+    owner_name: repo owner
+    sla_seconds: 604800
+    schedule_text: after benchmark
+    expectation_names: [conformance]
+    retry_max_count: 0
+    retry_interval_seconds: 0
+    runbook_name: default
+    data_label_code: synthetic
+    output_names: [lakebase.perio_chart]
+  judge_scorecard:
+    owner_name: repo owner
+    sla_seconds: 604800
+    schedule_text: after results load
+    expectation_names: [conformance]
+    retry_max_count: 0
+    retry_interval_seconds: 0
+    runbook_name: default
+    data_label_code: synthetic
+    output_names: [gold_perio_bench.judge_metric]
+  llm_judge:
+    owner_name: repo owner
+    sla_seconds: 604800
+    schedule_text: on demand
+    expectation_names: [conformance]
+    retry_max_count: 0
+    retry_interval_seconds: 0
+    runbook_name: default
+    data_label_code: synthetic
+    output_names: [gold_perio_bench.judge_metric]
+  medgemma_reader:
+    owner_name: repo owner
+    sla_seconds: 604800
+    schedule_text: on demand (serverless GPU)
+    expectation_names: [conformance, completeness]
+    retry_max_count: 6
+    retry_interval_seconds: 1800
+    runbook_name: gpu
+    data_label_code: synthetic
+    output_names: [gold_perio_bench.fact_prediction, gold_perio_bench.llm_reader_run]
+  encoder_gpu:
+    owner_name: repo owner
+    sla_seconds: 604800
+    schedule_text: on demand (serverless GPU)
+    expectation_names: [conformance]
+    retry_max_count: 6
+    retry_interval_seconds: 1800
+    runbook_name: gpu
+    data_label_code: synthetic
+    output_names: [gold_perio_bench.encoder_gpu_predictions]
+  deid_ai:
+    owner_name: repo owner
+    sla_seconds: 604800
+    schedule_text: on demand
+    expectation_names: [conformance]
+    retry_max_count: 0
+    retry_interval_seconds: 0
+    runbook_name: default
+    data_label_code: public
+    output_names: [gold_perio_bench.deid_score]
+  nhanes_perio:
+    owner_name: repo owner
+    sla_seconds: 2592000         # monthly
+    schedule_text: on demand
+    expectation_names: [conformance, plausibility]
+    retry_max_count: 0
+    retry_interval_seconds: 0
+    runbook_name: default
+    data_label_code: public
+    output_names: [gold_perio_bench.nhanes_perio]
+  load_results:
+    owner_name: repo owner
+    sla_seconds: 86400           # runs after every deploy
+    schedule_text: after each deploy
+    expectation_names: [conformance]
+    retry_max_count: 0
+    retry_interval_seconds: 0
+    runbook_name: default
+    data_label_code: synthetic
+    output_names: [gold_perio_bench.fact_prediction, gold_perio_bench.result_file]
+  open_dental_load:
+    owner_name: repo owner
+    sla_seconds: 2592000         # on demand: after a deploy finds no bronze tables, or a generator change
+    schedule_text: on demand (deploy starts it when bronze_opendental_perio is empty)
+    expectation_names: [conformance]
+    retry_max_count: 0
+    retry_interval_seconds: 0
+    runbook_name: default
+    data_label_code: synthetic
+    output_names: [bronze_opendental_perio.patient, bronze_opendental_perio.procedurelog, silver_opendental_perio.periomeasure, silver_opendental_perio.tooth_loss_truth, silver_opendental_perio.load_log]
+  kaggle_medgemma:
+    owner_name: repo owner
+    sla_seconds: 604800
+    schedule_text: on demand (GitHub Actions + Kaggle)
+    expectation_names: [conformance]
+    retry_max_count: 0
+    retry_interval_seconds: 0
+    runbook_name: default
+    data_label_code: synthetic
+    output_names: [data/datasets/ai_predictions, data/datasets/llm_details]

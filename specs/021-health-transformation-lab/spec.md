@@ -18,7 +18,7 @@ this spec renames the catalog; spec 022 sets the schema names; every open PR mer
 | Python package | `dental_omop_nlp` (`python/dental_omop_nlp/`) | `health_transformation_lab_nlp` |
 | Bundle | `dental-omop-nlp` | `health-transformation-lab-nlp` (a new deployment: new workspace path and state) |
 | Catalog | `dental_omop` | `health_transformation_lab` |
-| Schemas | `landing_/bronze_/silver_/gold_dental_omop_perio` | unchanged here: spec 022 names them per bench (`<layer>_perio_bench`, `access_bench`, `oral_health_bench`) |
+| Schemas | `landing_/bronze_/silver_/gold_dental_omop_perio` | unchanged here: spec 022 names them per bench (`<layer>_perio_bench`, `oral_health_bench`, `access_bench`) |
 | Secret scope | `dental` | `health_transformation_lab` |
 | Telemetry data product id, `service.namespace` | `dental_omop_perio`, `dental-omop-nlp` | `health_transformation_lab`, `health-transformation-lab-nlp` |
 | Kaggle notebook | `dental-omop-medgemma-reader` | `health-transformation-lab-medgemma-reader` |

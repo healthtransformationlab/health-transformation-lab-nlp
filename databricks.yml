@@ -19,8 +19,8 @@ include:
 
 variables:
   # dev, uat and prod are separate workspaces, so the names are the same in every
-  # target: catalog health_transformation_lab, schemas <layer>_<bench> (spec 022: perio_bench, access_bench,
-  # oral_health_bench; databricks/resources/unity_catalog.yml).
+  # target: catalog health_transformation_lab, schemas <layer>_<bench> (spec 022: perio_bench, oral_health_bench,
+  # access_bench; databricks/resources/unity_catalog.yml).
   catalog:
     description: Unity Catalog catalog the bundle creates
     default: health_transformation_lab

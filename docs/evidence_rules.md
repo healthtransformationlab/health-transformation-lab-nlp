@@ -9,6 +9,8 @@ The worked examples are checked against the code by `python/tests/test_evidence_
 this page and the code can't drift apart. All examples are synthetic.
 
 Where each rule comes from (published or designed here) and how each scores: [algorithms.md](algorithms.md).
+The definitions (2017 AAP/EFP, 2012 CDC/AAP, ACES), sources and orders side by side, and where they disagree:
+[standards.md](standards.md).
 
 | Evidence type (README name) | What it is | Best it can do | Code |
 |---|---|---|---|
@@ -167,11 +169,15 @@ placeholder (spec 003), not taken from a published algorithm.
 
 ### Rules, exam form first (`algorithm_design`)
 
-The study design's starting order, after Patel et al., *Methods Inf Med* 2022
-([references](references.md), item 4): exam form → diagnosis codes (done, then planned) → chart note →
-gum measurements. The exact order, and counting diagnosis codes on planned procedures with completed ones,
-are not yet checked against the paper ([action item A2](action_items.md)). No X-ray floor. It scores lower (72 vs 98 correct per 100 charts): about 85% of
-visits have an exam form, so the form decides most charts, and its checkbox is often stale.
+The study design's starting order (spec 005): exam form → diagnosis codes (done, then planned) → chart note →
+gum measurements. This order is this repo's own. It is not the order in Patel et al., *Methods Inf Med* 2022
+([references](references.md), item 4), checked against the full text
+([action item A2](action_items.md); #389, #204): the paper uses three sources, the structured diagnosis section (the clinician's recorded
+diagnosis), then clinical notes, then periodontal charting, each only filling gaps. It has no exam-form or
+PSR step, no diagnosis codes attached to done or planned procedures, and it never validated the order against
+expert review. The paper's own order will be `algorithm_patel2022` (spec 024, not built yet). No X-ray floor. It scores lower
+(72 vs 98 correct per 100 charts): about 85% of visits have an exam form, so the form decides most charts,
+and its checkbox is often stale.
 
 ## Stage 4 rule (`+rules4`)
 

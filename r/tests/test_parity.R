@@ -159,6 +159,58 @@ if (file.exists("data/datasets/ladder/ladder_vs_truth.csv")) {
   stopifnot(nrow(m) == nrow(py), d < 1e-9, same_na)
 } else cat("ladder vs truth: skipped (run python/scripts/28_ladder_vs_truth.py first)\n")
 
+# 9c'. Spec 030: the same accuracy on charts that can and can't be staged (R by_difficulty == Python).
+sf <- "data/datasets/ladder/ladder_by_stageable.csv"
+if (file.exists(sf)) {
+  source("r/R/10_ladder.R")
+  lp <- read.csv("data/datasets/ladder/ladder_preds.csv", stringsAsFactors = FALSE, check.names = FALSE)
+  rk <- read.csv("data/datasets/answer_key/review_key.csv", stringsAsFactors = FALSE)
+  rad <- suppressWarnings(as.numeric(rk$rad_present))
+  ok <- (!is.na(rk$probing_chart) & rk$probing_chart != "unknown") | (!is.na(rad) & rad == 1)
+  lv <- ifelse(ok, "stageable", "not_stageable")[match(lp$visit_id, rk$visit_id)]
+  rs <- by_difficulty(lp, lv)
+  ps <- read.csv(sf, stringsAsFactors = FALSE)
+  m <- merge(rs, ps, by.x = c("method", "difficulty"), by.y = c("method", "stageable_code"), suffixes = c(".r", ".p"))
+  d <- max(abs(m$accuracy.r - m$accuracy.p), na.rm = TRUE)
+  cat(sprintf("ladder by stageable: %d rows, n equal %s, max |R - Python| = %.2e\n", nrow(m),
+              all(m$n.r == m$n.p), d))
+  stopifnot(nrow(m) == nrow(ps), all(m$n.r == m$n.p), d < 1e-9)
+} else cat("ladder by stageable: skipped (run python/scripts/28_ladder_vs_truth.py first)\n")
+
+# 9e. Spec 030 US2: the same accuracy by age band and by clinic (R by_difficulty == Python):
+#     ladder_by_age.csv, ladder_by_clinic.csv.
+for (grp in c("age", "clinic")) {
+  gf <- sprintf("data/datasets/ladder/ladder_by_%s.csv", grp)
+  if (!file.exists(gf)) { cat(sprintf("ladder by %s: skipped (run 28_ladder_vs_truth.py)\n", grp)); next }
+  source("r/R/10_ladder.R")
+  lp <- read.csv("data/datasets/ladder/ladder_preds.csv", stringsAsFactors = FALSE, check.names = FALSE)
+  rk <- read.csv("data/datasets/answer_key/review_key.csv", stringsAsFactors = FALSE)
+  k <- rk[match(lp$visit_id, rk$visit_id), ]
+  lv <- if (grp == "age") ifelse(k$age < 35, "under_35", ifelse(k$age < 65, "35_64", "65_plus")) else as.character(k$clinic_id)
+  rs <- by_difficulty(lp, lv)
+  ps <- read.csv(gf, stringsAsFactors = FALSE, colClasses = setNames("character", paste0(grp, "_code")))
+  m <- merge(rs, ps, by.x = c("method", "difficulty"), by.y = c("method", paste0(grp, "_code")), suffixes = c(".r", ".p"))
+  d <- max(abs(m$accuracy.r - m$accuracy.p), na.rm = TRUE)
+  cat(sprintf("ladder by %s: %d rows, n equal %s, max |R - Python| = %.2e\n", grp, nrow(m), all(m$n.r == m$n.p), d))
+  stopifnot(nrow(m) == nrow(ps), all(m$n.r == m$n.p), d < 1e-9)
+}
+
+# 9f. Spec 030 US2: each method's spread over seeds (R summary of seed_stability.csv == Python).
+sf2 <- "data/datasets/ladder/seed_stability_summary.csv"
+if (file.exists(sf2)) {
+  st <- read.csv("data/datasets/ladder/seed_stability.csv", stringsAsFactors = FALSE)
+  rs <- do.call(rbind, lapply(split(st, st$method), function(x) data.frame(method = x$method[1],
+    seed_count = nrow(x), mean_accuracy = mean(x$accuracy), sd_accuracy = if (nrow(x) > 1) sd(x$accuracy) else NA,
+    min_accuracy = min(x$accuracy), max_accuracy = max(x$accuracy))))
+  ps <- read.csv(sf2, stringsAsFactors = FALSE)
+  m <- merge(rs, ps, by = "method", suffixes = c(".r", ".p"))
+  cols <- c("mean_accuracy", "sd_accuracy", "min_accuracy", "max_accuracy")
+  d <- max(sapply(cols, function(k) max(abs(m[[paste0(k, ".r")]] - m[[paste0(k, ".p")]]), na.rm = TRUE)))
+  cat(sprintf("seed stability: %d methods, max |R - Python| = %.2e\n", nrow(m), d))
+  stopifnot(nrow(m) == nrow(ps), all(m$seed_count.r == m$seed_count.p), d < 1e-9)
+  cat("parity OK (spec 030 US2)\n")
+} else cat("seed stability: skipped (run python/scripts/49_seed_stability.py)\n")
+
 # 9d. MedGemma vs BERT (spec 004 T018): same point estimates and per-difficulty accuracy.
 # Uses the real runs if present, else the simulated dry run (placeholder reader, not a result).
 for (pfx in c("", "simulated_")) {
@@ -437,3 +489,55 @@ if (file.exists("data/sites/parity_sites.csv") && file.exists("data/sites/derive
   stopifnot(bad == 0)
 } else cat("ACES: skipped (run 22_build_sites.py)\n")
 cat("parity OK (spec 013)\n")
+
+# Spec 026: record-mismatch rules and their scores (R 15_spec026.R vs scripts/45_case_profiles.py).
+cm <- "data/datasets/case_profiles/record_mismatch.csv"
+cs <- "data/datasets/case_profiles/mismatch_rule_score.csv"
+if (file.exists(cm) && file.exists(cs)) {
+  source("r/R/15_spec026.R")
+  v <- read.csv("data/datasets/visits_structured.csv", stringsAsFactors = FALSE)
+  truth <- read.csv("data/datasets/answer_key/visits_truth.csv", stringsAsFactors = FALSE)
+  checks <- check_rules_026(v)
+  key <- function(d) sort(paste(d$visit_id, d$rule, ifelse(is.na(d$related_visit_id), "", d$related_visit_id)))
+  r_fail <- key(checks[checks$outcome == "fail", ])
+  py_fail <- key(read.csv(cm, stringsAsFactors = FALSE))
+  same_flags <- identical(r_fail, py_fail)
+  r_s <- score_rules_026(checks, v, truth)
+  py_s <- read.csv(cs, stringsAsFactors = FALSE)
+  m <- merge(r_s, py_s, by = c("rule", "clinic"), suffixes = c(".r", ".p"))
+  num <- c("checkable_count", "not_checkable_count", "flagged_count", "code_truth_mismatch_count",
+           "true_flag_count", "precision", "recall", "only_rule_count", "injected_checkable_count",
+           "injected_caught_count")
+  diff_of <- function(k) {
+    a <- m[[paste0(k, ".r")]]; b <- m[[paste0(k, ".p")]]
+    if (any(is.na(a) != is.na(b))) return(Inf)
+    if (all(is.na(a))) 0 else max(abs(a - b), na.rm = TRUE)
+  }
+  d <- max(sapply(num, diff_of))
+  cat(sprintf("record mismatches: %d flags (same as Python: %s); %d rule x clinic scores, max |R - Python| = %.2e\n",
+              length(r_fail), same_flags, nrow(m), d))
+  stopifnot(same_flags, nrow(m) == nrow(py_s), nrow(r_s) == nrow(py_s), d < 1e-9)
+  cat("parity OK (spec 026)\n")
+} else cat("record mismatches: skipped (run 45_case_profiles.py)\n")
+
+# Spec 029: tooth statuses and plan-copy counts (R 16_spec029.R vs scripts/47_tooth_table.py).
+td <- "data/datasets/tooth_loss"
+if (file.exists(file.path(td, "patient_tooth.csv"))) {
+  source("r/R/16_spec029.R")
+  rd <- function(n) read.csv(file.path(td, paste0(n, ".csv")), stringsAsFactors = FALSE)
+  pl <- rd("procedurelog"); pc <- rd("procedurecode"); defs <- rd("definition"); ti <- rd("toothinitial")
+  r_t <- tooth_status_029(pl, pc, defs, ti, rd("patient")$patnum)
+  py_t <- rd("patient_tooth")
+  m <- merge(r_t, py_t, by = c("patient_id", "tooth_num"), suffixes = c(".r", ".p"))
+  bad_t <- sum(m$tooth_status_code.r != m$tooth_status_code.p | m$label_source_code.r != m$label_source_code.p)
+  r_p <- planned_extraction_029(pl, pc, defs, rd("proctp"))
+  py_p <- rd("planned_extraction")
+  mp <- merge(r_p, py_p, by = "procedure_id", suffixes = c(".r", ".p"))
+  bad_p <- sum(mp$plan_copy_count.r != mp$plan_copy_count.p |
+               mp$is_completed.r != as.logical(mp$is_completed.p))
+  cat(sprintf("tooth statuses: %d teeth, %d differ; planned extractions: %d, %d differ\n",
+              nrow(m), bad_t, nrow(mp), bad_p))
+  stopifnot(nrow(m) == nrow(py_t), nrow(r_t) == nrow(py_t), bad_t == 0,
+            nrow(mp) == nrow(py_p), nrow(r_p) == nrow(py_p), bad_p == 0)
+  cat("parity OK (spec 029)\n")
+} else cat("tooth statuses: skipped (run 47_tooth_table.py)\n")

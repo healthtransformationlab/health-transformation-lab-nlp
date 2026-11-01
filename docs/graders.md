@@ -7,7 +7,7 @@ exist.
 
 | Grader | Dashboard | Genie space | Tables (`health_transformation_lab.gold_perio_bench`) |
 |---|---|---|---|
-| **EHR DQ grader**: is the dental record fit for periodontal phenotyping? | *EHR DQ grader* | *EHR DQ grader* | `dq_check`, `dq_column_missing`, `dq_prevalence`, `dq_temporal_change`, `dq_stage_transition`, `dq_source_concordance`, `fact_visit_evidence`, `dq_injected_error`, `fact_case_profile_item` |
+| **EHR DQ grader**: is the dental record fit for periodontal phenotyping? | *EHR DQ grader* | *EHR DQ grader* | `dq_check`, `dq_column_missing`, `dq_prevalence`, `dq_temporal_change`, `dq_stage_transition`, `dq_source_concordance`, `fact_visit_evidence`, `dq_injected_error`, `fact_case_profile_item`, `fact_record_mismatch`, `dq_mismatch_rule` |
 | **Lab grader**: do AI answers on medical-dental and access-to-care questions improve with the open agent? | *Lab grader* | *Lab grader* | `dim_grader_question`, `fact_grader_answer` |
 
 ## EHR DQ grader
@@ -20,7 +20,7 @@ Five domain tiles, then one section per domain:
 | Accuracy | Zozus | Rules on the whole record, gum measurements first (`algorithm_v0`), agreeing with the truth; each source's agreement where it answers |
 | Consistency | Zozus | Spread of periodontitis prevalence across the 8 clinics, in points |
 | Temporal plausibility | Kahn | Later visits whose stage improved (design rules); the full stage-to-stage matrix |
-| Reliability | Liaw | **Not assessed**: needs real reviewers |
+| Reliability | de Vet | **Not assessed**: needs real reviewers |
 
 `fact_visit_evidence` holds statuses only (what each evidence source says, and the truth), never note text.
 
@@ -30,7 +30,50 @@ demographics, presentation (the recorded diagnosis codes and exam form), visit c
 imaging, risk factors, treatment, other readings (the note reader and the rule phenotypes), and after the visit (the
 next visit's recorded code and the plausibility checks it fails). A value the record lacks reads "not recorded".
 It is built from `visits_structured.csv` when Load results runs, so it isn't committed twice. Genie can show any
-visit's profile ("Show the case profile of visit 1234."); the Records to recheck page comes with spec 026 US3.
+visit's profile ("Show the case profile of visit 1234.").
+
+**Record mismatches** (spec 026 US2). Six rules ask whether a visit's recorded code (the completed diagnosis code)
+fits the rest of its record. A failed rule is a record to recheck: usually a coding or charting gap, never a
+judgment that a dentist got it wrong. `scripts/45_case_profiles.py` writes them; `r/R/15_spec026.R` is the R twin.
+
+| Rule | Flags a visit when | Threshold source |
+|---|---|---|
+| `code_vs_chart` | the code is more than one step from the probing-chart reading | the study's chart reader |
+| `code_above_chart` | a stage III code, but the chart is within stage I (CAL < 3 mm, bone loss < 15%, no tooth lost, PD < 6 mm) | 2017 AAP/EFP staging |
+| `code_below_chart` | a healthy or gingivitis code, but CAL ≥ 3 mm or bone loss ≥ 15% | 2017 AAP/EFP staging |
+| `no_periodontal_care` | a periodontitis code, and no periodontal procedure completed or planned | study design |
+| `code_vs_radiograph` | a healthy or gingivitis code, and the radiograph AI reads stage II or worse | the study's radiograph AI |
+| `stage_drop` | a code lower than a periodontitis stage the patient had before (a stage never goes down) | 2017 AAP/EFP; spec 005 checks |
+
+Scored on **synthetic records, against the generator's truth**, over the visits each rule can check (all
+clinics; `dq_mismatch_rule`, clinic `All`). A stage drop counts as true when either visit's code is wrong;
+"any rule" uses the visit's own code.
+
+| Rule | Checkable | Flagged | Precision | Recall | Only this rule |
+|---|---:|---:|---:|---:|---:|
+| `code_vs_chart` | 2,429 | 159 | 0.97 | 0.21 | 6 |
+| `code_above_chart` | 2,429 | 3 | 1.00 | 0.00 | 2 |
+| `code_below_chart` | 2,429 | 141 | 0.99 | 0.18 | 0 |
+| `no_periodontal_care` | 3,061 | 353 | 0.56 | 0.21 | 326 |
+| `code_vs_radiograph` | 677 | 141 | 0.99 | 0.48 | 20 |
+| `stage_drop` | 1,065 | 478 | 1.00 | 0.70 | 340 |
+| any rule | 3,061 | 893 | 0.59 | 0.56 | 694 |
+
+What this says, on synthetic data: the measurement rules are precise but each sees a slice of the wrong codes;
+`code_below_chart` adds no flag `code_vs_chart` doesn't already make, though it states a clinical reason; `stage_drop`
+and `no_periodontal_care` find the most on their own, the second with many false flags (a periodontitis code is
+often right with no procedure billed yet). Of the 45 injected charting errors, 34 have a code; the rules catch 11
+of those, where the temporal checks (`dq_injected_error`) catch 15 of all 45. Per-clinic injected-error counts are
+too few to compare.
+
+**Records to recheck** (spec 026 US3) is the EHR DQ grader's second page. It shows:
+
+- each rule's scores against the truth, with how many visits it can check;
+- the flagged visits, most rules failed first, filtered by clinic and rule;
+- the selected visit's case profile beside them.
+
+A banner says the data is synthetic and that a flag is a coding or charting gap, not a clinical error. The page's
+datasets read only `dq_mismatch_rule`, `fact_record_mismatch`, `fact_case_profile_item` and `fact_visit_evidence`.
 
 ## Lab grader
 

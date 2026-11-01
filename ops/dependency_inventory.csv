@@ -1,0 +1,6 @@
+dependency_name,dependency_kind_code,end_of_support_date,support_status_code,used_by_text,owner_name,source_text
+medgemma-1.5-4b-it (google/medgemma-1.5-4b-it),model,,unknown,medgemma_reader kaggle_medgemma,repo owner,no end-of-support date published; built on Gemma 3 (MedGemma technical report)
+gemma-4-e4b-it-qat-w4a16-ct,model,,supported,gemma-developer-agent entry,repo owner,competition model list (Oct 2026)
+Databricks serverless environment version 4,platform,,unknown,medgemma_reader encoder_gpu,repo owner,databricks.yml gpu_environment_version; check the serverless environment release notes for its end of support
+Python 3.12 (CI and local),runtime,2028-10-01,supported,all pipelines,repo owner,"PEP 693: end of life October 2028 (month known; day set to the 1st)"
+Python 3.13 (competition sandbox),runtime,2029-10-01,supported,gemma-developer-agent tasks,repo owner,"PEP 719: end of life October 2029 (month known; day set to the 1st)"

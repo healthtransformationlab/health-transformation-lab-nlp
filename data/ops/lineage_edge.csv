@@ -1,0 +1,14 @@
+upstream_name,downstream_name,edge_kind_code,pipeline_name
+landing_perio_bench.review_notes,gold_perio_bench.fact_prediction,table,medgemma_reader
+landing_perio_bench.review_notes,gold_perio_bench.encoder_gpu_predictions,table,encoder_gpu
+data/datasets/ai_predictions,gold_perio_bench.fact_prediction,file,load_results
+data/datasets/llm_details,gold_perio_bench.llm_reader_run,file,load_results
+gold_perio_bench.fact_prediction,gold_perio_bench.judge_metric,table,judge_scorecard
+gold_perio_bench.fact_prediction,scorecard dashboard,consumer,judge_scorecard
+gold_perio_bench.fact_prediction,lakebase.perio_chart,table,load_lakebase
+gold_perio_bench.judge_metric,lab grader dashboard,consumer,judge_scorecard
+gold_perio_bench.benchmark_result,lab grader dashboard,consumer,study_benchmark
+gold_perio_bench.benchmark_result,docs/edr/README.md leaderboard,consumer,study_benchmark
+gold_perio_bench.deid_score,dq grader dashboard,consumer,deid_ai
+gold_perio_bench.nhanes_perio,prevalence report,consumer,nhanes_perio
+lakebase.perio_chart,perio chart app,consumer,load_lakebase

@@ -15,7 +15,7 @@ collection, per bench.
 > files and model under new names, plus empty schemas for two benches that have no pipeline yet.
 
 The work is framed as three benches: **perio_bench** (periodontal status from charts, everything built so far),
-**access_bench** (whether answers help people get care) and **oral_health_bench** (the umbrella scorecard).
+**oral_health_bench** (the umbrella scorecard) and **access_bench** (whether answers help people get care).
 
 ## User stories
 
@@ -27,8 +27,8 @@ The work is framed as three benches: **perio_bench** (periodontal status from ch
 | `bronze_dental_omop_perio` | `bronze_perio_bench` |
 | `silver_dental_omop_perio` | `silver_perio_bench` |
 | `gold_dental_omop_perio` (tables, `perio_note_classifier`) | `gold_perio_bench` (tables, `perio_note_classifier`) |
-| (none) | `bronze_access_bench`, `silver_access_bench`, `gold_access_bench` (empty) |
 | (none) | `bronze_oral_health_bench`, `silver_oral_health_bench`, `gold_oral_health_bench` (empty) |
+| (none) | `bronze_access_bench`, `silver_access_bench`, `gold_access_bench` (empty) |
 
 - Names are declared once, in `health_transformation_lab_nlp.schemas`, and are the same in every target.
 - Every job, notebook default, dashboard, Genie space, doc and diagram uses them. A test fails if
@@ -60,7 +60,7 @@ files and the registered model (docs/deployment.md, spec 022 section).
 
 ## Out of scope
 
-- Pipelines, tables or questions for access_bench and oral_health_bench.
+- Pipelines, tables or questions for oral_health_bench and access_bench.
 - Publishing the Kaggle model (#122) and deleting the old Kaggle items (an owner step on kaggle.com).
 - Telemetry's data product stays `health_transformation_lab` (spec 021): it names the lab, not a bench.
 - Historical specs and PR reviews keep the names they were written with.

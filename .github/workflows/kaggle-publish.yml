@@ -3,7 +3,8 @@
 # creates each item public (CC BY 4.0); later runs add a version, or a commit on Hugging Face, named after the
 # repository commit. A refused upload fails the run. Settings, in the GitHub environment `dev`:
 #   Kaggle: KAGGLE_USERNAME (variable) and KAGGLE_API_TOKEN (or KAGGLE_KEY) (secret).
-#   Hugging Face: HF_PUBLISH_TOKEN (secret), a fine-grained token with write access to the healthtransformationlab
+#   Hugging Face: HF_PUBLISH_TOKEN (secret), else HF_TOKEN (secret; issue #249), a token with write access to the
+#   healthtransformationlab
 #   organisation's repositories (huggingface/README.md).
 name: Publish datasets (Kaggle and Hugging Face)
 run-name: "Publish: ${{ inputs.dataset }} to ${{ inputs.platform }}"
@@ -103,7 +104,8 @@ jobs:
       # unable to write to the organisation fails here, naming it.
       - name: Check the Hugging Face token (value stays masked)
         env:
-          HF_PUBLISH_TOKEN: ${{ secrets.HF_PUBLISH_TOKEN }}
+          HF_PUBLISH_TOKEN: ${{ secrets.HF_PUBLISH_TOKEN || secrets.HF_TOKEN }}
+          HF_TOKEN_SOURCE: ${{ secrets.HF_PUBLISH_TOKEN != '' && 'HF_PUBLISH_TOKEN' || 'HF_TOKEN' }}   # which one was read (#255)
         run: |
           python - <<'PY'
           import importlib.util, os
@@ -112,7 +114,8 @@ jobs:
           hp = importlib.util.module_from_spec(spec); spec.loader.exec_module(hp)
           token = os.environ.get("HF_PUBLISH_TOKEN", "")
           try:
-              user = hp.check_token(token, whoami=lambda t: HfApi().whoami(token=t))
+              user = hp.check_token(token, whoami=lambda t: HfApi().whoami(token=t),
+                                    source=os.environ["HF_TOKEN_SOURCE"])
           except SystemExit as e:
               print(f"::error::{e}"); raise
           print(f"Hugging Face token OK: {user}, can write to {hp.ORG}")
@@ -120,7 +123,8 @@ jobs:
 
       - name: Build and publish the datasets and the organisation page
         env:
-          HF_PUBLISH_TOKEN: ${{ secrets.HF_PUBLISH_TOKEN }}
+          HF_PUBLISH_TOKEN: ${{ secrets.HF_PUBLISH_TOKEN || secrets.HF_TOKEN }}
+          HF_TOKEN_SOURCE: ${{ secrets.HF_PUBLISH_TOKEN != '' && 'HF_PUBLISH_TOKEN' || 'HF_TOKEN' }}   # which one was read (#255)
           WHICH: ${{ inputs.dataset }}
           MESSAGE: ${{ inputs.message }}
           SHA: ${{ github.sha }}

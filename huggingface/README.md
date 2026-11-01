@@ -24,7 +24,8 @@ edit.
      **Write access to contents/settings of all repos**. Tick nothing else, and nothing for your personal
      repositories.
    - Expiry: 90 days at most.
-2. Copy it once into the GitHub environment **`dev`** as the secret **`HF_PUBLISH_TOKEN`** (repository Settings →
+2. Copy it once into the GitHub environment **`dev`** as the secret **`HF_PUBLISH_TOKEN`**. (A secret named
+   `HF_TOKEN` there is used instead when `HF_PUBLISH_TOKEN` isn't set, if it has the same write access.) (repository Settings →
    Environments → dev → Add environment secret). Never paste it anywhere else.
 3. Write its expiry date in `ops/secrets_register.yaml` ("Hugging Face publish token").
 4. Optional: upload a logo on the organisation's **Settings** page; the card can't set it.
@@ -36,7 +37,9 @@ Actions → **Publish datasets (Kaggle and Hugging Face)** → Run workflow, wit
 notebook.
 
 - **The token is checked first.** If it is missing, isn't a Hugging Face token, or can't write to the
-  organisation, the run stops before any work and names `HF_PUBLISH_TOKEN`.
+  organisation, the run stops before any work and names the secret it read (`HF_PUBLISH_TOKEN`, or `HF_TOKEN`
+  when that isn't set). Spaces, a line break, quotes or a pasted `NAME=` in front are ignored; anything else is
+  described (its length, and whether it looks like a secret's name), never printed.
 - **Each run is one commit per dataset**, named after the repository commit.
 - **Files dropped from the list are deleted** from the dataset.
 

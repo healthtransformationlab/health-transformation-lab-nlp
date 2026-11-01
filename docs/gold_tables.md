@@ -65,7 +65,7 @@ judge's calls) is reported as stale and gets no `DROP`: compare it by hand befor
 A schema that doesn't exist is skipped (uat and prod never had one). The decisions are `gold_names.legacy_plan` (tested).
 
 The Benchmark job (`study_benchmark`, `01_run_benchmark.py`) writes `person`, `visit_occurrence`, `measurement`,
-`note` (OMOP, official names) and, since spec 027, `dim_study_note` (the labelled study notes, overwritten each run)
+`note` (OMOP, official names) and, since spec 031, `dim_study_note` (the labelled study notes, overwritten each run)
 and `benchmark_metric` (the scores, replaced per job run, so a retry adds nothing). They were `labeled_notes` and
 `benchmark_results`; the migration carries those over, keeping every earlier benchmark run. Rows carried from
 `benchmark_results` have no job run, so their `run_id`, `run_ts` and `git_commit_sha` are null; `model_run_id` keys them,

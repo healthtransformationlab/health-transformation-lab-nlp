@@ -7,9 +7,13 @@ Run: python3 gold_erd.py   (then render: render.md)
 """
 import random
 from pathlib import Path
+from types import SimpleNamespace
 from xml.sax.saxutils import escape
 
 from gold_model import AREAS, RELATIONSHIPS, TABLES
+
+# the model a diagram draws: gold by default; silver_erd.py passes others (spec 029)
+GOLD = SimpleNamespace(TABLES=TABLES, RELATIONSHIPS=RELATIONSHIPS, AREAS=AREAS)
 
 OUT = Path(__file__).resolve().parent.parent / "gold"
 SRC = OUT / "source"
@@ -23,11 +27,11 @@ SCHEMA = "health_transformation_lab.gold_perio_bench"
 
 
 # ---------- Mermaid ----------
-def mermaid(full: bool) -> str:
+def mermaid(full: bool, m=GOLD) -> str:
     out = ["erDiagram"]
-    for r in RELATIONSHIPS:
+    for r in m.RELATIONSHIPS:
         out.append(f'    {r.parent} {r.cardinality} {r.child} : "{r.label}"')
-    for name, t in TABLES.items():
+    for name, t in m.TABLES.items():
         if full:
             out.append(f"    {name} {{")
             for c in t.columns:
@@ -88,8 +92,8 @@ ROW = ("shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;co
 CELL = "shape=partialRectangle;connectable=0;fillColor=none;top=0;left=0;bottom=0;right=0;overflow=hidden;fontSize=11;align=left;spacingLeft=5;"
 
 
-def full_size(name):
-    return sum(WIDTHS), HEAD + RH * len(TABLES[name].columns)
+def full_size(name, m=GOLD):
+    return sum(WIDTHS), HEAD + RH * len(m.TABLES[name].columns)
 
 
 # layout: grid positions with the fewest crossings. score = 100 per pair of crossing lines + 150 per line over
@@ -169,9 +173,9 @@ def arrange(names, edges, sizes, seed=7):
     return grid
 
 
-def build(grid, full):
+def build(grid, full, m=GOLD):
     d = Diagram()
-    size = {n: full_size(n) if full else (220, 56) for n in TABLES}
+    size = {n: full_size(n, m) if full else (220, 56) for n in m.TABLES}
     ncol = len(grid[0])
     colw = [max((size[r[c]][0] for r in grid if r[c]), default=220) for c in range(ncol)]
     gapx, gapy = (130, 110) if full else (120, 100)
@@ -180,8 +184,8 @@ def build(grid, full):
         x, rowh = 10, 0
         for c, n in enumerate(row):
             if n:
-                t = TABLES[n]
-                fill = AREAS[t.area][0]
+                t = m.TABLES[n]
+                fill = m.AREAS[t.area][0]
                 w, h = size[n]
                 if full:
                     label = n + f"<br><span style='font-weight:normal;font-size:11px;color:{MUTED}'>{t.description}</span>"
@@ -201,12 +205,12 @@ def build(grid, full):
             x += colw[c] + gapx
         y += rowh + gapy
     er = f"edgeStyle=none;strokeColor={INK};strokeWidth=1.3;endFill=0;startFill=0;fontSize=10;fontColor={MUTED};labelBackgroundColor=#FFFFFF;"
-    for r in RELATIONSHIPS:
+    for r in m.RELATIONSHIPS:
         a, b = r.cardinality[:2], r.cardinality[-2:]
         dash = f"dashed=1;dashPattern=6 4;strokeColor={MUTED};" if r.derived else ""
         d.e(ids[r.parent], ids[r.child], er + dash + f"startArrow={CARD[a]};endArrow={CARD[b]};", r.label)
     lx = 10
-    for fill, text in AREAS.values():
+    for fill, text in m.AREAS.values():
         d.v(text, lx, y - gapy + 30, 270, 22, f"rounded=1;fillColor={fill};strokeColor={INK};fontSize=11;fontColor={INK};")
         lx += 280
     d.v("solid line: key · dashed line: summarised from or matched on, not a key · keys are logical (Delta enforces none)",

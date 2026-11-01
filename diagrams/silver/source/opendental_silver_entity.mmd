@@ -1,0 +1,79 @@
+erDiagram
+    clinic |o--o{ patient : "clinicnum"
+    clinic |o--o{ procedurelog : "clinicnum"
+    patient ||--o{ procedurelog : "patnum"
+    procedurecode ||--o{ procedurelog : "codenum"
+    definition |o--o{ procedurelog : "dx = defnum (diagnosis list)"
+    patient ||--o{ treatplan : "patnum"
+    treatplan ||--o{ proctp : "treatplannum"
+    procedurelog ||--o{ proctp : "procnumorig: one procedure, many copies"
+    definition |o..o{ proctp : "dx text = itemname (name, not a key)"
+    patient ||--o{ perioexam : "patnum"
+    perioexam ||--o{ periomeasure : "perioexamnum"
+    patient ||--o{ toothinitial : "patnum"
+    patient ||--o{ disease : "patnum"
+    diseasedef ||--o{ disease : "diseasedefnum"
+    patient ||--o{ appointment : "patnum"
+    provider ||--o{ appointment : "provnum"
+    clinic |o--o{ appointment : "clinicnum"
+    provider ||--o{ procedurelog : "provnum"
+    patient ||--o{ medicationpat : "patnum"
+    medication ||--o{ medicationpat : "medicationnum"
+    patient ||--o{ allergy : "patnum"
+    allergydef ||--o{ allergy : "allergydefnum"
+    medication |o--o{ allergydef : "medicationnum"
+    patient ||--o{ sheet : "patnum"
+    sheet ||--o{ sheetfield : "sheetnum"
+    patient ||--o{ vitalsign : "patnum"
+    patient ||--o{ patientrace : "patnum"
+    cdcrec ||--o{ patientrace : "cdcreccode"
+    site |o--o{ patient : "sitenum"
+    procedurelog ||--o{ procnote : "procnum"
+    patient ||--o{ document : "patnum"
+    definition ||--o{ document : "defnum = doccategory (category 18)"
+    document ||--o{ radiograph_bone_level : "docnum = document_id (ImgType 1)"
+    patient ||--o{ ehrmeasureevent : "patnum"
+    snomed |o..o{ ehrmeasureevent : "codevalueresult = snomedcode"
+    patient ||--o{ patfield : "patnum"
+    patient ||--o{ patient_tooth : "patnum = patient_id"
+    procedurelog ||--o| planned_extraction : "procnum = procedure_id (procstatus 1)"
+    planned_extraction }o..o| patient_tooth : "labels planned teeth"
+    periomeasure }o..o| patient_tooth : "measures before the loss"
+    patient_tooth ||..o| tooth_loss_truth : "scored against (evaluation only)"
+    proctp }o..o{ tooth_loss_dq_check : "copies checked against the original"
+    perioexam }o..o{ tooth_loss_dq_group : "charts counted by group"
+    patient
+    clinic
+    procedurelog
+    procedurecode
+    treatplan
+    proctp
+    definition
+    perioexam
+    periomeasure
+    toothinitial
+    disease
+    diseasedef
+    provider
+    appointment
+    medication
+    medicationpat
+    allergy
+    allergydef
+    sheet
+    sheetfield
+    vitalsign
+    patientrace
+    cdcrec
+    site
+    procnote
+    document
+    ehrmeasureevent
+    patfield
+    snomed
+    patient_tooth
+    radiograph_bone_level
+    planned_extraction
+    tooth_loss_dq_check
+    tooth_loss_dq_group
+    tooth_loss_truth

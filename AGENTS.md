@@ -43,6 +43,42 @@ docs, decks, dashboards, Genie instructions, table and column names, issues and 
 words is fine. `python/tests/test_wording.py` fails CI on the phrases to avoid in any other tracked file (past PR
 reviews in `pull_requests/` are records and stay as written).
 
+## The benchmarks
+
+Always in this order, wherever two or more are named (prose, lists, tables, decks, cards, schemas, code):
+**PerioBench, then OralHealthBench, then AccessBench**; in code, `perio_bench`, `oral_health_bench`, `access_bench`.
+`python/tests/test_bench_order.py` fails CI on a list out of order.
+
+- **PerioBench: trustworthy records.** Measure the data quality of electronic dental records.
+- **OralHealthBench (planned): accurate AI answers.** Score the AI that millions of people ask on the questions that
+  matter at the seam of medical and dental care: medicines, chronic disease, emergencies.
+- **AccessBench (exploratory): getting care.** Whether an answer helps someone actually get care.
+
+## Sources of truth (the map)
+
+Mental model: **synthetic dental notes go in; a status (healthy to periodontitis stage 4) with a verbatim
+quote comes out; the answer key and a second-model judge score it; the ladder and leaderboards compare
+systems.** Read the file that owns a concern before changing anything that touches it.
+
+| Concern | Lives in |
+|---|---|
+| Labels, the six statuses, grade and extent rules | `python/health_transformation_lab_nlp/labels.py` |
+| Synthetic charts and notes | `synthetic.py`, `notes.py` (seeded; `scripts/10_build_study.py` rebuilds) |
+| Reader prompt, parsing, the quote gate | `llm_reader.py` (`PROMPTS`, `parse_answer`) |
+| Judge prompts and gates | `judge.py`; scorecard in `judge_scorecard.py` (spec 012) |
+| Metrics and the shared Python/R contract | `eval/score.py`, `eval/score.R`, `eval/README.md` |
+| Model ladder and rungs | `models.yaml`, `rungs.py`, `ladder_eval.py` |
+| Answer key and committed data | `data/datasets/answer_key/review_key.csv`; paths only via `paths.py` |
+| Gold table names and column rules | `gold_names.py`, `diagrams/_build/gold_model.py`, "SQL and data names" below |
+| Telemetry (`@traced`, levels) | `telemetry.py`, `telemetry_levels.yaml` |
+| Kaggle: GPUs, datasets, Kaggle Benchmarks task | `kaggle/README.md`, `kaggle/perio_bench_task.py`, `kbench.py`, `docs/kaggle_benchmarks.md` |
+| Settings, secrets, alerts, reruns | `databricks.yml`, `ops/secrets_register.yaml`, `docs/operations.md` |
+| Specs, decisions, PR reviews | `specs/NNN-*/`, `docs/adr/`, `pull_requests/` |
+| The rules every coding agent follows | this file; Claude Code's own workflow in `CLAUDE.md` |
+
+Generated files are never edited by hand: `docs/edr/README.md` and `docs/results.md` come from
+`scripts/35_readme_results.py`, the decks from `docs/build_decks.py`.
+
 ## When a change needs a spec
 
 Anything that changes a dataset, a metric, a label rule or the review workflow gets a spec first:
@@ -148,7 +184,7 @@ A SEV2 that fires every week for the same cause gets its cause fixed or its leve
 ## SQL and data names
 
 New tables and views, in Unity Catalog or Postgres, follow these, and the gold tables do since spec 018
-(adapted from jcbowyer/DE_Assessment; the Benchmark job's tables since spec 027). OMOP CDM tables and columns keep
+(adapted from jcbowyer/DE_Assessment; the Benchmark job's tables since spec 031). OMOP CDM tables and columns keep
 their official names. The Postgres `perio_chart` view doesn't yet, and changes when it's next touched.
 `python/tests/test_sql_conventions.py` checks the gold tables declared in `diagrams/_build/gold_model.py`.
 
@@ -199,6 +235,7 @@ cd python && python scripts/35_readme_results.py  # refresh the results leaderbo
 cd python && python scripts/42_build_dashboards.py  # rebuild the grader dashboards and Genie spaces (spec 019)
 cd python && python scripts/43_simulated_grader.py  # the lab grader's SIMULATED sample (seeded), until real runs exist
 python docs/build_decks.py                        # rebuild the slide decks after editing docs/<deck>/slides/
+cd python && pytest -q tests/test_kbench.py && python ../kaggle/perio_bench_task.py   # PerioBench as a Kaggle Benchmarks task (docs/kaggle_benchmarks.md)
 ```
 
 Full pipeline and dry runs: `README.md`. Study design: `docs/process.md`.
@@ -213,8 +250,9 @@ Full pipeline and dry runs: `README.md`. Study design: `docs/process.md`.
 - Names: simulated files `simulated_*`, simulated methods `sim:<name>`, calibration-only methods `calib:<name>`.
 - R: base R only, matching Python to 1e-9 (`r/tests/test_parity.R`).
 - Databricks names: identical in every target (catalog `health_transformation_lab`, schemas `<layer>_<bench>`:
-  `landing_`/`bronze_`/`silver_`/`gold_perio_bench`, and `bronze_`/`silver_`/`gold_` for `access_bench` and
-  `oral_health_bench`; `health_transformation_lab_nlp.schemas`, spec 022). Never add `dev_`,
+  `landing_`/`bronze_`/`silver_`/`gold_perio_bench`, and `bronze_`/`silver_`/`gold_` for `oral_health_bench` and
+  `access_bench`; `landing_`/`bronze_`/`silver_`/`gold_opendental_perio` for the Open Dental extract, spec 029;
+  `health_transformation_lab_nlp.schemas`, spec 022). Never add `dev_`,
   `[dev <user>]` or per-environment prefixes or suffixes, and never use
   `mode: development` (it adds them): each environment is its own workspace.
   dev is deployed by CI on every merge to `main`; don't `bundle deploy` it from a laptop.
@@ -231,3 +269,4 @@ Full pipeline and dry runs: `README.md`. Study design: `docs/process.md`.
   | Application Insights connection string (telemetry, spec 014) | Azure portal → Application Insights `health-transformation-lab-nlp-appi` → Overview, or `terraform -chdir=infra/azure output -raw connection_string` piped straight into the secret (docs/telemetry.md); also in the git-ignored Terraform state | ingestion only: can send telemetry, can't read; doesn't expire, so rotate by recreating the resource | Databricks secret scope `health_transformation_lab`, key `appinsights_connection_string` |
   | Kaggle API token (MedGemma on Kaggle) | kaggle.com → Settings → API → Generate New Token | the Kaggle account (no narrower scope offered); delete it on Kaggle when not running | GitHub environment `dev` secret `KAGGLE_API_TOKEN` |
   | Hugging Face publish token (spec 025) | huggingface.co → Settings → Access tokens → Fine-grained | write access to the `healthtransformationlab` organisation's repositories only; 90 days at most | GitHub environment `dev` secret `HF_PUBLISH_TOKEN` |
+  | Website push token (deck copies, #374) | github.com → Settings → Developer settings → Personal access tokens → Fine-grained tokens, resource owner `healthtransformationlab` | only the repository `healthtransformationlab/healthtransformationlab.github.io`, Contents read and write; 90 days at most | GitHub repository secret `SITE_PUSH_TOKEN` |

@@ -12,7 +12,7 @@
 # MAGIC 5. Optional: LLM challenger via `ai_query` on a Foundation Model endpoint
 # MAGIC 6. Results and OMOP tables land as Delta in the gold schema; files in the landing volume
 # MAGIC    (`databricks/resources/unity_catalog.yml`). The study notes are `dim_study_note` (overwritten) and the
-# MAGIC    scores `benchmark_metric`, replaced per job run so a retry adds nothing (spec 027)
+# MAGIC    scores `benchmark_metric`, replaced per job run so a retry adds nothing (spec 031)
 # MAGIC
 # MAGIC **Free Edition notes:** serverless is Python/SQL only (no R). Limited serverless GPU is
 # MAGIC available from the notebook compute selector, subject to capacity and fair-use limits
@@ -97,7 +97,7 @@ print(len(train), len(test))
 # COMMAND ----------
 
 # OMOP + labels as Delta, so Genie / SQL / R-via-Connect can read them. The labelled notes go under their gold
-# names (spec 027), each row with this run's key.
+# names (spec 031), each row with this run's key.
 from health_transformation_lab_nlp import gold_names
 from health_transformation_lab_nlp.delta import replace_batch
 
@@ -147,7 +147,7 @@ if run_encoder:
 # COMMAND ----------
 
 all_res = pd.concat(results)
-# One batch per job run: a retry or repair replaces this run's rows instead of adding them again (spec 027).
+# One batch per job run: a retry or repair replaces this run's rows instead of adding them again (spec 031).
 metrics = all_res.astype({"value": "float"}).assign(timestamp=pd.to_datetime(all_res["timestamp"], utc=True),
                                                     job_run_id=run_id, run_ts=batch["run_ts"],
                                                     git_commit=batch["git_commit"])

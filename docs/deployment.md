@@ -31,9 +31,9 @@ schema names are the same everywhere. One catalog, one schema per bench and laye
 | `landing_perio_bench` | the `data` volume: files the pipeline writes (`DENTAL_DATA_ROOT`) |
 | `bronze_perio_bench` | raw tables (empty for now) |
 | `silver_perio_bench` | cleaned tables (empty for now) |
-| `bronze_`/`silver_`/`gold_access_bench` | empty until access_bench has a pipeline |
 | `bronze_`/`silver_`/`gold_oral_health_bench` | empty until oral_health_bench has a pipeline |
-| `gold_perio_bench` | OMOP tables, study tables `dim_study_note` and `benchmark_metric` (spec 027); results `dim_result_file`, `fact_prediction`, `fact_llm_call` (spec 016); judge scorecard `fact_chart_answer`, `fact_judge_call`, `judge_metric`, `judge_agreement`, `judge_cost`, `deid_score` (spec 012); names: spec 018, [gold_tables.md](gold_tables.md), `perio_note_classifier` |
+| `bronze_`/`silver_`/`gold_access_bench` | empty until access_bench has a pipeline |
+| `gold_perio_bench` | OMOP tables, study tables `dim_study_note` and `benchmark_metric` (spec 031); results `dim_result_file`, `fact_prediction`, `fact_llm_call` (spec 016); judge scorecard `fact_chart_answer`, `fact_judge_call`, `judge_metric`, `judge_agreement`, `judge_cost`, `deid_score` (spec 012); names: spec 018, [gold_tables.md](gold_tables.md), `perio_note_classifier` |
 
 The bundle creates the catalog, all the schemas and the volume on deploy
 (`databricks/resources/unity_catalog.yml`), each with `prevent_destroy` so
@@ -76,7 +76,7 @@ target as new and duplicate its jobs. dev is already migrated; uat and prod were
 ### Spec 022: from `<layer>_dental_omop_perio` to the bench schemas
 
 Spec 021 deployed `health_transformation_lab.<layer>_dental_omop_perio` to dev; uat and prod were never
-deployed. Spec 022 renames them to `<layer>_perio_bench` and adds the empty access_bench and oral_health_bench
+deployed. Spec 022 renames them to `<layer>_perio_bench` and adds the empty oral_health_bench and access_bench
 schemas. Like spec 021, it **rebuilds rather than copies**: after the deploy, Load results reloads every
 committed result into `gold_perio_bench`; run *Benchmark*, *Judge scorecard* and *NHANES perio* to regenerate
 the study tables, the volume's files and the registered model.
@@ -129,7 +129,7 @@ Override any variable with `--var name=value`, or the environment variable
 | `llm_judge` | `02_llm_judge.sql`: judge with `ai_query` | SQL warehouse |
 | `load_lakebase` | `04_load_lakebase.py`: OMOP CDM 5.4 + dental extension into Lakebase (Postgres) | serverless |
 | `medgemma_reader` | `03_medgemma_reader.py`: MedGemma note reader, run log to Delta | serverless GPU; retried twice, 2 minutes apart, if the GPU fails to start or Python fails to restart |
-| `encoder_gpu` | `08_encoder_gpu.py`: fine-tunes the encoders that need a GPU (large ModernBERTs, Longformers, GatorTron-base at a lower learning rate; spec 002 T017); predictions to the landing volume and `fact_prediction` (source databricks, replaced per run; spec 027) | serverless GPU; retried like the reader |
+| `encoder_gpu` | `08_encoder_gpu.py`: fine-tunes the encoders that need a GPU (large ModernBERTs, Longformers, GatorTron-base at a lower learning rate; spec 002 T017); predictions to the landing volume and `fact_prediction` (source databricks, replaced per run; spec 031) | serverless GPU; retried like the reader |
 | `deid_ai` (De-id AI methods) | `06_deid_benchmark.py` with the de-identification methods that need Databricks services: `llm` (serving endpoint `deid_llm_endpoint`) and `ai_mask` (the SQL warehouse), each alone and with patterns + guard; result CSVs to the landing volume (`deid_ai/`) | serverless |
 | `nhanes_perio` (NHANES perio) | `09_nhanes_perio.py`: downloads the public NHANES 2009–2014 periodontal files to the landing volume (`nhanes_raw/`), runs `38_nhanes_perio.py` (CDC/AAP 2012 and ACES, survey-weighted) and writes `nhanes/nhanes_prevalence.csv` next to the published figures; copy that CSV to `data/datasets/nhanes/` | serverless |
 

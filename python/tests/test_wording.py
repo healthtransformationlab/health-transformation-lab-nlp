@@ -25,7 +25,8 @@ ALLOWED = {"AGENTS.md", "python/tests/test_wording.py"}
 QUOTED = {"docs/rag_and_vocabulary.md": "MedRAG",
           "specs/013-literature-methods/spec.md": "PheValuator",             # PheValuator's own term
           "specs/011-plain-results-metrics/spec.md": "ncorrect diagnosis",  # the spec's history of renaming it
-          "python/tests/test_readme_results.py": "not in"}                   # checks the old wording is gone
+          "python/tests/test_readme_results.py": "not in",                   # checks the old wording is gone
+          "data/tasks/task_manifest.csv": "htlnlp_"}                         # a record of past PR titles, verbatim (spec 028)
 
 
 def _tracked_files():

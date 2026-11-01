@@ -1,6 +1,6 @@
 # Feature Specification: the study and GPU encoder tables under the gold conventions
 
-**Feature Branch**: `spec/233-026-study-gold-names` (opened before spec 026 was taken; renumbered 027)
+**Feature Branch**: `spec/233-026-study-gold-names` (opened as spec 026; renumbered 031 because 026 to 030 were taken while it was open)
 
 **Created**: 2026-10-28
 

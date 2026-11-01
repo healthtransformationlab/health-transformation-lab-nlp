@@ -1,0 +1,31 @@
+erDiagram
+    care_site |o--o{ person : "care_site_id"
+    care_site |o--o{ visit_occurrence : "care_site_id"
+    person ||--o{ visit_occurrence : "person_id"
+    person ||--o{ procedure_occurrence : "person_id"
+    person ||--o{ condition_occurrence : "person_id"
+    person ||--o{ measurement : "person_id"
+    person ||--o{ observation : "person_id"
+    person ||--o{ site : "person_id"
+    visit_occurrence |o--o{ procedure_occurrence : "visit_occurrence_id"
+    visit_occurrence |o--o{ condition_occurrence : "visit_occurrence_id"
+    visit_occurrence |o--o{ measurement : "visit_occurrence_id"
+    site ||--o{ site_event : "site_id"
+    procedure_occurrence ||..o{ site_event : "event_id (one of three tables)"
+    condition_occurrence ||..o{ site_event : "event_id"
+    measurement ||..o{ site_event : "event_id"
+    concept ||--o{ procedure_occurrence : "procedure_concept_id"
+    concept ||--o{ condition_occurrence : "condition_concept_id"
+    concept ||--o{ measurement : "measurement_concept_id"
+    concept ||--o{ site : "site_concept_id"
+    care_site
+    person
+    visit_occurrence
+    procedure_occurrence
+    condition_occurrence
+    measurement
+    observation
+    site
+    site_event
+    concept
+    not_mapped

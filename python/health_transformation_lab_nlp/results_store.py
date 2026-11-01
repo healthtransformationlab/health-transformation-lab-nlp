@@ -127,7 +127,7 @@ def run_rows(folder: Path, method: str, source: str, run_id: str, git_commit: st
 def run_prediction_rows(path: Path, method: str, source: str, run_id: str, git_commit: str,
                         run_ts: pd.Timestamp) -> pd.DataFrame:
     """fact_prediction rows (analysis names) for one job run's ai_predictions_<method>.csv: the file's SHA-256
-    (its version) and the run's key. The reader job (03) and the GPU encoder job (08, spec 027) write these."""
+    (its version) and the run's key. The reader job (03) and the GPU encoder job (08, spec 031) write these."""
     path = Path(path)
     preds = pd.read_csv(path).assign(method=method, sha256=_sha256(path), source=source, run_id=run_id,
                                      run_ts=run_ts, git_commit=git_commit)

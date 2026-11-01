@@ -9,6 +9,18 @@
         ]
       },
       {
+        "id": "127393bdd2f47a1cef4861a8ee7da1f7",
+        "question": [
+          "Which record-mismatch rule adds the most flags no other rule makes?"
+        ]
+      },
+      {
+        "id": "1c243ea5786086a2ec445162dc79c0c6",
+        "question": [
+          "Which visits have a stage III code but max CAL under 3 mm?"
+        ]
+      },
+      {
         "id": "3df2333643248623a58a764d571b8825",
         "question": [
           "Which clinic has the highest periodontitis prevalence, and what is its 95% interval?"
@@ -58,6 +70,9 @@
         "identifier": "health_transformation_lab.gold_perio_bench.dq_injected_error"
       },
       {
+        "identifier": "health_transformation_lab.gold_perio_bench.dq_mismatch_rule"
+      },
+      {
         "identifier": "health_transformation_lab.gold_perio_bench.dq_prevalence"
       },
       {
@@ -73,6 +88,9 @@
         "identifier": "health_transformation_lab.gold_perio_bench.fact_case_profile_item"
       },
       {
+        "identifier": "health_transformation_lab.gold_perio_bench.fact_record_mismatch"
+      },
+      {
         "identifier": "health_transformation_lab.gold_perio_bench.fact_visit_evidence"
       }
     ]
@@ -80,9 +98,9 @@
   "instructions": {
     "text_instructions": [
       {
-        "id": "d178b2a39d8912cc0565c1a88b493054",
+        "id": "da6df0a656e8773a8844531f6333f597",
         "content": [
-          "Every table holds synthetic data from the study's generator, scored against its own truth. Start every answer that gives a number with 'On synthetic data:' and never call a figure clinical performance.\n\nfact_visit_evidence has one row per visit: clinic_code, visit_date, each evidence source's status and truth_status_code. The *_status_code columns hold statuses (healthy, gingivitis, periodontitis_stage_1 to 4, or unknown when the source is missing), never note text; note_status_code is the status read from the note.\n\nCompleteness: share of visits where exam_form_status_code, dx_completed_status_code and probing_chart_status_code are all not 'unknown', from fact_visit_evidence. Missingness by column is dq_column_missing.missing_pct.\n\nAccuracy: share of visits where a source equals truth_status_code, from fact_visit_evidence. The headline uses rules_v0_status_code (rules, gum measurements first). For a single evidence source, report both the share of visits it answers (not 'unknown') and its agreement with the truth where it answers.\n\nConsistency: the spread of periodontitis prevalence across clinics, MAX minus MIN of dq_prevalence.periodontitis_ratio where level_code = 'clinic' and method_name = 'algorithm_design', in percentage points.\n\nTemporal plausibility: dq_temporal_change.better_ratio for method_name 'algorithm_design', the share of visit pairs 1 to 2 years apart with no treatment between (visit_pair_count) whose stage improved, which is implausible; lower is better. Use visit_pair_count as the denominator, not later_visit_count. dq_stage_transition has the full matrix: row_pct is the share of the earlier stage's pairs that moved to each stage.\n\nReliability (Liaw): not assessed. It needs real reviewers to label charts; the study's reviewers are simulated, so never report a reliability figure.\n\ndq_check holds each check per clinic; clinic_code = 'All' is every clinic together. Do not add the clinic rows to the 'All' rows.\n\nfact_case_profile_item is each visit's case profile (spec 026, after KEEPER): one row per visit and item, grouped by category_name in category_order_num order, items in item_order_num order. item_value_name is the value as shown, with item_unit_name; 'not recorded' means the record lacks it, 'not taken' means no probing chart, 'no later visit' means the patient's last visit. The item \"next visit's plausibility flags\" lists the checks the next visit fails, or 'none': cal_drop (max CAL fell by more than 1.5 mm), rbl_drop (bone loss fell by more than 5 points), teeth_regained (fewer teeth lost than before), perio_resolved (periodontitis before, not now), stage_drop (a lower stage than before). Structured values only, never note text. To show a visit's profile, list category_name, item_name, item_value_name and item_unit_name for its visit_id in order. Recorded diagnosis codes are what the dentist recorded; we find gum disease in records, we don't diagnose."
+          "Every table holds synthetic data from the study's generator, scored against its own truth. Start every answer that gives a number with 'On synthetic data:' and never call a figure clinical performance.\n\nfact_visit_evidence has one row per visit: clinic_code, visit_date, each evidence source's status and truth_status_code. The *_status_code columns hold statuses (healthy, gingivitis, periodontitis_stage_1 to 4, or unknown when the source is missing), never note text; note_status_code is the status read from the note.\n\nCompleteness: share of visits where exam_form_status_code, dx_completed_status_code and probing_chart_status_code are all not 'unknown', from fact_visit_evidence. Missingness by column is dq_column_missing.missing_pct.\n\nAccuracy: share of visits where a source equals truth_status_code, from fact_visit_evidence. The headline uses rules_v0_status_code (rules, gum measurements first). For a single evidence source, report both the share of visits it answers (not 'unknown') and its agreement with the truth where it answers.\n\nConsistency: the spread of periodontitis prevalence across clinics, MAX minus MIN of dq_prevalence.periodontitis_ratio where level_code = 'clinic' and method_name = 'algorithm_design', in percentage points.\n\nTemporal plausibility: dq_temporal_change.better_ratio for method_name 'algorithm_design', the share of visit pairs 1 to 2 years apart with no treatment between (visit_pair_count) whose stage improved, which is implausible; lower is better. Use visit_pair_count as the denominator, not later_visit_count. dq_stage_transition has the full matrix: row_pct is the share of the earlier stage's pairs that moved to each stage.\n\nReliability (de Vet et al. 2006: whether independent reviewers reach the same answer): not assessed. It needs real reviewers to label charts; the study's reviewers are simulated, so never report a reliability figure.\n\ndq_check holds each check per clinic; clinic_code = 'All' is every clinic together. Do not add the clinic rows to the 'All' rows.\n\nfact_case_profile_item is each visit's case profile (spec 026, after KEEPER): one row per visit and item, grouped by category_name in category_order_num order, items in item_order_num order. item_value_name is the value as shown, with item_unit_name; 'not recorded' means the record lacks it, 'not taken' means no probing chart, 'no later visit' means the patient's last visit. The item \"next visit's plausibility flags\" lists the checks the next visit fails, or 'none': cal_drop (max CAL fell by more than 1.5 mm), rbl_drop (bone loss fell by more than 5 points), teeth_regained (fewer teeth lost than before), perio_resolved (periodontitis before, not now), stage_drop (a lower stage than before). Structured values only, never note text. To show a visit's profile, list category_name, item_name, item_value_name and item_unit_name for its visit_id in order. Recorded diagnosis codes are what the dentist recorded; we find gum disease in records, we don't diagnose.\n\nfact_record_mismatch has one row per visit and failed rule: a record mismatch, where the recorded code (the completed diagnosis code) doesn't fit the rest of the record. Call it a record mismatch or a record to recheck: it is usually a coding or charting gap, never a judgment that a dentist got it wrong. rule_name is code_vs_chart, code_above_chart, code_below_chart, no_periodontal_care, code_vs_radiograph or stage_drop; mismatch_evidence_text gives the values; for stage_drop, related_visit_id is the earlier visit with the higher code; failed_rule_count is how many rules the visit fails (list visits with most first). dq_mismatch_rule scores each rule, and any_rule, against the generator's truth over the visits it can check (checkable_count), overall (clinic_code = 'All') and per clinic: precision_ratio, recall_ratio, only_rule_count (flags no other rule makes), injected_caught_count of injected_checkable_count. Always give checkable_count with a rule's precision or recall. Per-clinic injected-error counts are too few to compare."
         ]
       }
     ]

@@ -6,12 +6,17 @@ A personal idea, not affiliated with or endorsed by any organization. Built from
 Shark Tank pitch · October 2026
 AI passes the dental exam.
 It fails the real patient.
-And no test we found checks whether it links the mouth to the rest of the body, or helps people get care. Oral health for all means fixing the test.
+Most benchmarks test exam knowledge. Studies of real patient cases, including drug interactions, have found AI falling short. Oral health for all means fixing the test.
 Health Transformation Lab
 A personal idea
+Two open benchmarks:
+PerioBench
+, finding gum disease in dental records, built and tested on synthetic records; and
+OralHealthBench
+, AI answers on oral health and getting care, planned on top of GlobalDentBench.
 John Bowyer · personal project, not affiliated with any organization
 
-**Speaker notes:** AI passes the dental exam, and it fails the real patient. And no test we found checks whether it connects oral health to the rest of a person's health, or whether it helps people actually get care. I am proposing an independent, open lab, called the Health Transformation Lab for now. Its mission: better oral health for millions of Americans, and better overall health through the links between medical and dental care. It does that by making AI accurate on two things today's tests leave out. One is where medicine meets dentistry: medicines, chronic disease such as diabetes, and emergencies. The other is the social factors that decide whether people get care: cost, coverage, distance and transportation, what researchers call the social determinants of health. This is a personal idea: nothing has been registered or built, no organization is behind it, and no partner has agreed to anything.
+**Speaker notes:** AI passes the dental exam, and it fails the real patient. Most AI benchmarks test exam knowledge, and published studies of real patient cases have found AI falling short. On real hospital cases, AI models didn't follow the clinical guidelines doctors use (Hager and colleagues, Nature Medicine, 2024). Members of the public using AI did no better than those using a source of their choice (Bean and colleagues, Nature Medicine, 2026). And on drug interactions, chatbots were often wrong where a standard interaction checker was right (Al-Ashwal and colleagues, 2023). I am proposing an independent, open lab, called the Health Transformation Lab. Its mission: better oral health for millions of Americans, and better overall health through the links between medical and dental care. It does that by making AI accurate on two things today's tests leave out. One is where medicine meets dentistry: medicines, chronic disease such as diabetes, and emergencies. The other is the social factors that decide whether people get care: cost, coverage, distance and transportation, what researchers call the social determinants of health. This is a personal idea: nothing has been registered or built, no organization is behind it, and no partner has agreed to anything.
 
 ## Slide 2 — problem
 
@@ -19,10 +24,10 @@ How AI is graded today
 Exam: pass. Patient: fail. Social factors: untested.
 The exam
 81%
-AI’s score on the dental licensing exam.
+AI’s score on dental licensing-exam questions.
 Real patients
 22%
-Its score on real patient cases.
+Its score on questions built from published patient cases.
 Safety
 1 in 3
 answers was rated unsafe. Where medicines are involved, 1 in 7 risked harm that cannot be undone.
@@ -33,7 +38,7 @@ AI is graded on public scorecards
 (called benchmarks), and AI companies compete on the scores. The first one for dentistry came out this year, so the questions are being written now.
 Averages for 12 AI models, from OpenAI, Google, Anthropic, xAI and others · GlobalDentBench 2026; first search Oct 2026 · 2
 
-**Speaker notes:** First, how AI gets graded. Independent researchers publish tests and score every major AI on them, like a public report card. The technical word is benchmark. AI companies compete to raise those scores, so what is on the scorecard is what gets better. Now four facts from the first dental scorecard. One: AI scores 81 percent on the dental licensing exam. Two: on real patient cases, the score falls to 22 percent. Three: nearly one in three of those answers was rated unsafe, and about one in twenty risked harm that cannot be undone. Four, and this is the one we can change: we found nothing that tests the social side. No scorecard we found checks whether AI answers accurately on the social factors that decide whether people get care: cost, coverage, distance and transportation. US emergency rooms see about 1.9 million visits a year for tooth problems, and Medicaid is the most common payer for them (CDC, NCHS Data Brief 531, 2025); for people without a dentist, the untested questions are the ones that matter most. Why now: the first global dental scorecard for AI was published this year, so the questions are being written right now, and the people who show up shape them. If asked for detail: the first three are from GlobalDentBench, published in 2026: 12 leading AI models, from OpenAI, Google, Anthropic, xAI and others, 8,978 questions from 88 countries; the scores are averages across all 12, not one company's product, and Google's model scored highest overall; 31 percent of case answers were unsafe and 4.5 percent carried a risk of irreversible harm. The fourth is from a first search of benchmarks, not a full review: existing tests check whether AI can spot social factors in medical records, or whether answers are biased, but none we found checks accuracy on access to care. If asked whether anyone has studied AI in dentistry: yes. A systematic review of 38 studies (Kaplan and Akyol, Japanese Dental Science Review, 2026; literature searched January 2025) found no universally accepted framework for evaluating AI in dentistry, test methods and sizes that vary widely, mostly simulated scenarios rather than real-world use, and limited evidence on how patients interpret and act on AI answers. Its categories are patient questions about treatment, diagnosis, model comparisons and decision support; none is access to care. The authors also say continuous monitoring is essential because new models keep appearing. Sources: https://doi.org/10.1016/j.jdsr.2026.01.002 (open access: https://pmc.ncbi.nlm.nih.gov/articles/PMC12865642/); https://www.cdc.gov/nchs/products/databriefs/db531.htm
+**Speaker notes:** First, how AI gets graded. Independent researchers publish tests and score every major AI on them, like a public report card. The technical word is benchmark. AI companies compete to raise those scores, so what is on the scorecard is what gets better. Now four facts from the first dental scorecard. One: AI scores 81 percent on multiple-choice questions from dental licensing exams. Two: on questions built from published patient case reports, the score falls to 22 percent. Three: nearly one in three of those answers was rated unsafe, and about one in twenty risked harm that cannot be undone. Four, and this is the one we can change: we found nothing that tests the social side. No scorecard we found checks whether AI answers accurately on the social factors that decide whether people get care: cost, coverage, distance and transportation. US emergency rooms see about 1.9 million visits a year for tooth problems, and Medicaid is the most common payer for them (CDC, NCHS Data Brief 531, 2025); for people without a dentist, the untested questions are the ones that matter most. Why now: the first global dental scorecard for AI was published this year, so the questions are being written right now, and the people who show up shape them. If asked for detail: the first three are from GlobalDentBench, published in 2026: 12 leading AI models, from OpenAI, Google, Anthropic, xAI and others, 8,978 questions from 88 countries; the scores are averages across all 12, not one company's product, and Google's model scored highest overall; 31 percent of case answers were unsafe and 4.5 percent carried a risk of irreversible harm. The fourth is from a first search of benchmarks, not a full review: existing tests check whether AI can spot social factors in medical records, or whether answers are biased, but none we found checks accuracy on access to care. If asked whether anyone has studied AI in dentistry: yes. A systematic review of 38 studies (Kaplan and Akyol, Japanese Dental Science Review, 2026; literature searched January 2025) found no universally accepted framework for evaluating AI in dentistry, test methods and sizes that vary widely, mostly simulated scenarios rather than real-world use, and limited evidence on how patients interpret and act on AI answers. Its categories are patient questions about treatment, diagnosis, model comparisons and decision support; none is access to care. The authors also say continuous monitoring is essential because new models keep appearing. Sources: https://doi.org/10.1016/j.jdsr.2026.01.002 (open access: https://pmc.ncbi.nlm.nih.gov/articles/PMC12865642/); https://www.cdc.gov/nchs/products/databriefs/db531.htm
 
 ## Slide 3 — harm
 
@@ -58,7 +63,7 @@ The example illustrates a harm GlobalDentBench (2026) names. The 3 in 4 is from 
 ## Slide 4 — mdi
 
 Where oral health meets overall health
-The mouth is part of the body. The tests treat it as separate.
+The mouth is part of the body. Real patient questions cross that line.
 Emergency rooms
 1.9M
 visits a year to US emergency rooms for tooth problems. Medicaid is the most common payer.
@@ -69,17 +74,17 @@ Medicines
 Ask first
 A bone-strengthening medicine can change whether a tooth extraction is safe. The answer has to ask.
 The biggest lift is at the seam.
-The ER doctor sees the tooth; the dentist sees the medicine list. Both now ask AI, and no test checks whether it connects the two.
+The ER doctor sees the tooth; the dentist sees the medicine list. Both now ask AI, and studies have found AI falling short on questions like drug interactions.
 CDC NCHS Data Brief 531 (2025; visits 2020–2022) · EFP and IDF consensus report on periodontitis and diabetes (Sanz et al., 2018) · GlobalDentBench 2026 · 4
 
-**Speaker notes:** This is where the biggest health gain is: the seam between medical and dental care. Three facts. One: US emergency rooms see about 1.9 million visits a year for tooth problems, on average over 2020 to 2022, and Medicaid is the most common payer; an emergency room can relieve pain and infection but rarely treats the tooth, so many people come back. Two: diabetes and gum disease are linked in both directions. A joint consensus report from the European Federation of Periodontology and the International Diabetes Federation asks doctors and dentists to screen for and manage the two together. Three: medicines change dental care; a bone-strengthening medicine can make an extraction unsafe, which is the harm on the previous slide. In each case the doctor holds half the picture and the dentist holds the other half, and both now ask AI. No public test checks whether AI connects the two, so that is where the questions go first, alongside the social factors that decide whether the person gets care at all. If asked for sources: CDC, NCHS Data Brief 531, Emergency Department Visits for Tooth Disorders: United States, 2020-2022 (June 2025), https://www.cdc.gov/nchs/products/databriefs/db531.htm; Sanz et al., Scientific evidence on the links between periodontal diseases and diabetes, EFP and IDF consensus report, Journal of Clinical Periodontology 2018, https://doi.org/10.1111/jcpe.12808. The visit count is a national survey estimate, and the diabetes link is an association described by the consensus, not a promise that treating one cures the other.
+**Speaker notes:** This is where the biggest health gain is: the seam between medical and dental care. Three facts. One: US emergency rooms see about 1.9 million visits a year for tooth problems, on average over 2020 to 2022, and Medicaid is the most common payer; an emergency room can relieve pain and infection but rarely treats the tooth, so many people come back. Two: diabetes and gum disease are linked in both directions. A joint consensus report from the European Federation of Periodontology and the International Diabetes Federation asks doctors and dentists to screen for and manage the two together. Three: medicines change dental care; a bone-strengthening medicine can make an extraction unsafe, which is the harm on the previous slide. In each case the doctor holds half the picture and the dentist holds the other half, and both now ask AI. Studies of real patient cases have found AI falling short on questions like these, drug interactions among them, so that is where the questions go first, alongside the social factors that decide whether the person gets care at all. If asked for sources: CDC, NCHS Data Brief 531, Emergency Department Visits for Tooth Disorders: United States, 2020-2022 (June 2025), https://www.cdc.gov/nchs/products/databriefs/db531.htm; Sanz et al., Scientific evidence on the links between periodontal diseases and diabetes, EFP and IDF consensus report, Journal of Clinical Periodontology 2018, https://doi.org/10.1111/jcpe.12808. The visit count is a national survey estimate, and the diabetes link is an association described by the consensus, not a promise that treating one cures the other.
 
 ## Slide 5 — reach
 
 Where the impact is
 From thousands, indirectly, to millions, directly
 How oral health research reaches people today
-What the lab adds
+What OralHealthBench adds
 Who it reaches
 Thousands of experts
 Millions: 40 million a day ask OpenAI’s AI about health
@@ -96,7 +101,7 @@ The main move.
 Put the medical-dental link and the social factors of care on AI’s public scorecards, each question traced to published evidence. An open AI agent then shows the lift.
 Research keeps its place. This adds a public channel · Source: OpenAI, Jan 2026 (global) · 5
 
-**Speaker notes:** Today, oral health research reaches thousands of experts, indirectly: they find the papers, reports and data portals, and each study measures its own impact. That work stays. What the lab adds reaches millions, directly, in public, with third parties verifying it. The main move is this: put the medical-dental link and the social factors of care on the public scorecards that grade AI. Every question traces back to published evidence, so anyone can drill down from the test to the science behind it. Once the questions are on the scorecard, every AI model tested on that scorecard is graded on them, and AI companies work to improve what they are graded on. An open AI agent is the second step: it shows how much better the answers get with the evidence. If asked about the numbers: thousands is my description of the research audience, not a measured figure. Millions is the audience of the public AI tools: OpenAI reported in January 2026 that more than 40 million people a day ask its AI assistant health questions, worldwide, including 1.6 to 1.9 million health insurance questions a week; Google reported 950 million monthly users of its AI assistant in July 2026. That is the reach available, not a promise. Nobody publishes how many of those questions are dental; measuring that could be an early result of the 180 days. If asked whether the people who run the scorecards will accept the questions: it is their decision, so we ask as partners.
+**Speaker notes:** Today, oral health research reaches thousands of experts, indirectly: they find the papers, reports and data portals, and each study measures its own impact. That work stays. What OralHealthBench adds reaches millions, directly, in public, with third parties verifying it. The main move is this: put the medical-dental link and the social factors of care on the public scorecards that grade AI. Every question traces back to published evidence, so anyone can drill down from the test to the science behind it. Once the questions are on the scorecard, every AI model tested on that scorecard is graded on them, and AI companies work to improve what they are graded on. An open AI agent is the second step: it shows how much better the answers get with the evidence. If asked about the numbers: thousands is my description of the research audience, not a measured figure. Millions is the audience of the public AI tools: OpenAI reported in January 2026 that more than 40 million people a day ask its AI assistant health questions, worldwide, including 1.6 to 1.9 million health insurance questions a week; Google reported 950 million monthly users of its AI assistant in July 2026. That is the reach available, not a promise. We found no published count of how many of those questions are dental; measuring that could be an early result of the 180 days. If asked whether the people who run the scorecards will accept the questions: it is their decision, so we ask as partners.
 
 ## Slide 6 — ask
 
@@ -111,10 +116,10 @@ AI graded on the medical-dental link and the social factors of care, not only cl
 Public evidence as the source behind every question
 The major AI models held publicly accountable for accuracy, for the size of a small marketing budget
 The ask:
-a small team, 5 to 10 hours a week each, for 180 days; $50,000; and partners: the owners of the public dental benchmarks, and the Stanford-led ARISE network, which ranks AI on patient harm.
-Health Transformation Lab · 6
+a small team, 5 to 10 hours a week each, for 180 days; $50,000; and partners: the owners of the public dental benchmarks, the Stanford-led ARISE network, which ranks AI on patient harm; and, for the data platform, Databricks for Good as a candidate.
+Databricks for Good: databricks.com, Data + AI Summit session · Health Transformation Lab · 6
 
-**Speaker notes:** The ask has three parts. One: a small team, each giving 5 to 10 hours a week for 180 days. Two: 50 thousand dollars. That is the size of a small marketing budget, and it buys something marketing cannot: a public, accurate way to hold the major AI models accountable on oral health. Three: partners. The people who run the public dental benchmarks, because the questions belong on their scorecards. And the ARISE network, led from Stanford, which ranks AI on patient harm and has no oral health cases; we would offer them ours. If asked why ARISE would work with us: their cases come from primary care and emergency rooms, which is where a patient with a toothache and no dentist ends up, and they have found that most harmful errors are things AI leaves out. We bring oral health cases, the medical-dental questions and the social-factors questions they lack. Nobody has been contacted yet, no partner has agreed to anything, and it is their decision. If asked what the 50 thousand dollars pays for: AI usage for the testing, clinician time to write and check the questions, and publishing the results; a line-by-line budget is not set yet. The team needs at least one clinician or scientist, to write and judge the questions, and one engineer, to build the agent and the test harness. In that time we do three things. We write the missing scorecard questions on the medical-dental link and the social factors of care, each linked to the published evidence behind it. We test the major AI models on them, with and without an open agent, and publish the results. And with partners, we take those results to the AI companies and the people who run the scorecards, and ask for change. Publishing is what creates the pressure: a public result is harder for the AI companies to ignore. Nobody has measured this, so the gain could be large or small. 180 days tells us. If asked what the questions cover: what a doctor, a dentist or a person with no dentist asks where medical meets dental, and about getting care, such as when to go, where to go and how to pay, judged on whether the answer works given their circumstances. If asked what the agent is built on: published research, public clinical guidelines and public data, plus synthetic patient records whose right answers are known. If asked about safety: the agent is built to point people toward care, not to diagnose, and an answer that would delay urgent care is scored as unsafe. If asked about sample size: about 25 questions per round is a pilot, enough to see direction. If asked why 180 days: at 5 to 10 hours a week each, the work needs the time, and nobody is pulled off their main job. If asked how this holds anyone accountable: the scores are public and checked by third parties, so when a major AI model answers poorly, anyone can see it, and the companies have a reason to fix it. That depends on the scorecard owners accepting the questions; if they do not, we can still publish our own results. If asked what happens if there is no uplift: we learned it at small cost, and the questions are still a contribution. If asked about the moonshot: AI that works for everyone on oral health and connects it to the rest of their health, reached one public, measured step at a time.
+**Speaker notes:** The ask has three parts. One: a small team, each giving 5 to 10 hours a week for 180 days. Two: 50 thousand dollars. That is the size of a small marketing budget, and it buys something marketing cannot: a public, accurate way to hold the major AI models accountable on oral health. Three: partners. The people who run the public dental benchmarks, because the questions belong on their scorecards. And the ARISE network, led from Stanford, which ranks AI on patient harm and has no oral health cases; we would offer them ours. For the data platform, the candidate is Databricks for Good, which, in Databricks' own words, helps mission-driven organizations through nonprofit pricing, technical enablement and hands-on support from Databricks experts. It has not been contacted, and whether a personal project qualifies has not been checked. If asked why ARISE would work with us: their cases come from primary care and emergency rooms, which is where a patient with a toothache and no dentist ends up, and they have found that most harmful errors are things AI leaves out. We bring oral health cases, the medical-dental questions and the social-factors questions they lack. Nobody has been contacted yet, no partner has agreed to anything, and it is their decision. If asked what the 50 thousand dollars pays for: AI usage for the testing, clinician time to write and check the questions, and publishing the results; a line-by-line budget is not set yet. The team needs at least one clinician or scientist, to write and judge the questions, and one engineer, to build the agent and the software that runs the tests. In that time we do three things. We write the missing scorecard questions on the medical-dental link and the social factors of care, each linked to the published evidence behind it. We test the major AI models on them, with and without an open agent, and publish the results. And with partners, we take those results to the AI companies and the people who run the scorecards, and ask for change. Publishing is what creates the pressure: a public result is harder for the AI companies to ignore. We found no measurement of this, so the gain could be large or small. 180 days tells us. If asked what the questions cover: what a doctor, a dentist or a person with no dentist asks where medical meets dental, and about getting care, such as when to go, where to go and how to pay, judged on whether the answer works given their circumstances. If asked what the agent is built on: published research, public clinical guidelines and public data, plus synthetic patient records whose right answers are known. If asked about safety: the agent is built to point people toward care, not to replace a dentist or doctor, and an answer that would delay urgent care is scored as unsafe. If asked about sample size: about 25 questions per round is a pilot, enough to see direction. If asked why 180 days: at 5 to 10 hours a week each, the work needs the time, and nobody is pulled off their main job. If asked how this holds anyone accountable: the scores are public and checked by third parties, so when a major AI model answers poorly, anyone can see it, and the companies have a reason to fix it. That depends on the scorecard owners accepting the questions; if they do not, we can still publish our own results. If asked what happens if there is no uplift: we learned it at small cost, and the questions are still a contribution. If asked about the moonshot: AI that works for everyone on oral health and connects it to the rest of their health, reached one public, measured step at a time.
 
 ## Slide 7 — drill
 
@@ -166,7 +171,7 @@ Health Transformation Lab · Drill-down
 ## Slide 10 — workflow
 
 How the agent works
-One question, and where the lab fits
+One question, and where the open agent fits
 1
 Someone asks
 A person with no dentist, a doctor or a policymaker asks an oral health question.
@@ -249,7 +254,7 @@ A UK public health guidance test with 8,000 questions, and a government policy t
 Nothing on oral health policy
 arXiv 2605.24636, 2603.08281, 2505.06046, 2511.04705, 2406.06056, 2403.12025. A first search, not a full review · Drill-down
 
-**Speaker notes:** Someone may ask whether public AI tests exist beyond clinical dentistry. From a first search: partly, and nothing specific to oral health. For medical-dental integration, the closest is one category of the global dental test, covering systemic health, medicines and safety. For the social side of health, often called social determinants or SDOH, the existing tests mostly check whether AI can spot social factors, such as housing or transport, inside medical records. Google has also published health equity question sets that check for biased answers. I found none that tests whether an AI answer actually works for a person given their circumstances, such as no coverage, no car, or no dentist nearby, and none for oral health. That is the test most worth writing, and it is the same ground as the access-to-care questions. For education, there are many tests built from licensing exams, but they measure what the AI knows, not whether a professional learned anything. For grants, I found one 2026 study that had AI review six UK research grant proposals; it is a method, not a standing test, and nothing covers philanthropic grantmaking. For policy and advocacy, there is a UK public health guidance test called PubHealthBench, with over eight thousand questions, and a government policy test called POLIS-Bench; nothing covers oral health policy. So the gap is the opening: where no test exists, the lab can help write one with partners. This was a first search, not a full review, so say that if pressed.
+**Speaker notes:** Someone may ask whether public AI tests exist beyond clinical dentistry. From a first search: partly, and nothing specific to oral health. For medical-dental integration, the closest is one category of the global dental test, covering systemic health, medicines and safety. For the social side of health, often called social determinants or SDOH, the existing tests mostly check whether AI can spot social factors, such as housing or transport, inside medical records. Google has also published health equity question sets that check for biased answers. I found none that tests whether an AI answer actually works for a person given their circumstances, such as no coverage, no car, or no dentist nearby, and none for oral health. That is the test most worth writing, and it is the same ground as the access-to-care questions. For education, there are many tests built from licensing exams, but they measure what the AI knows, not whether a professional learned anything. For grants, I found one 2026 study that had AI review six UK research grant proposals; it is a method, not a standing test, and nothing covers philanthropic grantmaking. For policy and advocacy, there is a UK public health guidance test called PubHealthBench, with over eight thousand questions, and a government policy test called POLIS-Bench; nothing covers oral health policy. So the gap is the opening: where no test exists, OralHealthBench can help write one with partners. This was a first search, not a full review, so say that if pressed.
 
 ## Slide 13 — leaderboard
 
@@ -326,10 +331,10 @@ It reads medical images, and Google’s list does not include dental. A dental v
 What it takes
 De-identified data, a privacy and legal review, and modest computing.
 Today most health AI is rented. This would be an open model anyone can check.
-Google says MedGemma is not yet clinical-grade, so this supports research and tools, not diagnosis.
+Google says MedGemma is not yet clinical-grade, so this supports research and tools, not clinical decisions.
 Source: Google Health AI Developer Foundations, MedGemma (page updated Jan 13, 2026) · Drill-down
 
-**Speaker notes:** Use this if someone asks whether there could be an open oral health model. Nobody at this size builds a frontier model. But Google publishes MedGemma, a family of open medical AI models that anyone can download and adapt. It handles medical text and images such as CT, MRI and pathology slides. Dental imaging is not on Google's list, so a version tuned on dental data would be a real contribution. It would come after the 180-day first step, and only with de-identified or synthetic data and a privacy and legal review, because a tuned model can memorize what it was trained on. Google states MedGemma is not yet clinical-grade and needs validation for each use. Check Google's current terms of use before publishing a tuned version.
+**Speaker notes:** Use this if someone asks whether there could be an open oral health model. A project this size doesn't build a frontier model. But Google publishes MedGemma, a family of open medical AI models that anyone can download and adapt. It handles medical text and images such as CT, MRI and pathology slides. Dental imaging is not on Google's list, so a version tuned on dental data would be a real contribution. It would come after the 180-day first step, and only with de-identified or synthetic data and a privacy and legal review, because a tuned model can memorize what it was trained on. Google states MedGemma is not yet clinical-grade and needs validation for each use. Check Google's current terms of use before publishing a tuned version.
 
 ## Slide 17 — trajectory
 
@@ -361,7 +366,7 @@ Request access
 4
 Learn the tool, run the analysis
 A trusted answer, for those who finish the path
-What the lab adds: the research goes to them
+The open agent: the research goes to them
 1
 Ask in the AI tool they already use
 2
@@ -371,7 +376,7 @@ The answer comes with the story and the numbers
 A trusted answer, in the moment they ask
 Today's path stays. Agreements remain for sensitive data · Health Transformation Lab · Drill-down
 
-**Speaker notes:** One question, two paths. Today, someone finds a data portal or a report, requests access, learns the tool and runs the analysis. That works for researchers, and it stays. On the right is what the lab adds: they ask in the tool they already use, and the answer is built on published science. If asked: data use agreements stay in place for sensitive data.
+**Speaker notes:** One question, two paths. Today, someone finds a data portal or a report, requests access, learns the tool and runs the analysis. That works for researchers, and it stays. On the right is what the open agent adds: they ask in the tool they already use, and the answer is built on published science. If asked: data use agreements stay in place for sensitive data.
 
 ## Slide 19 — doubleclick
 
@@ -399,7 +404,7 @@ Open
 Anyone. Benchmarks, definitions, model cards and aggregate, de-identified measures under an open license.
 Path 2
 Registered
-Sign in and accept terms of use. The lab’s models and agents, called through MCP or an API, with usage limits and logging.
+Sign in and accept terms of use. The models and agents behind PerioBench and OralHealthBench, called through MCP or an API, with usage limits and logging.
 Path 3
 Agreement
 A signed data use agreement, reviewed and approved, for detailed or licensed data in a secure environment.
@@ -432,7 +437,7 @@ REDCap
 Started:
 2004, a data tool for Vanderbilt's own researchers.
 Became:
-free to nonprofits; nearly 8,000 institutions in 163 countries.
+free to nonprofits; over 8,500 institutions in 167 countries.
 OHDSI
 Started:
 a narrow drug-safety research project.
@@ -462,14 +467,14 @@ Phase 3
 Later.
 Publish it after privacy and legal review, open it to partners with safeguards, and report whether it helped people.
 The ask covers phase 1 only:
-a small team at 5 to 10 hours a week each for 180 days, $50,000, and a data-platform partner.
+a small team at 5 to 10 hours a week each for 180 days, $50,000, and a data-platform partner to approach: Databricks for Good, a candidate, not yet contacted.
 Health Transformation Lab · Drill-down
 
 **Speaker notes:** Each phase starts only if the one before it earned it. Phase 1 is deliberately small because it is part-time work alongside other priorities. The dates for phases 2 and 3 are set after phase 1 reports.
 
 ## Slide 24 — close
 
-Health Transformation Lab
+Health Transformation Lab · PerioBench and OralHealthBench
 Oral health for all.
 Millions, directly, in public, and verified.
 Give us 180 days to measure it.

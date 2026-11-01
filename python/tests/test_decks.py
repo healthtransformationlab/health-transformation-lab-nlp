@@ -79,3 +79,24 @@ def test_deck_has_labelled_previous_and_next_buttons(deck):
     assert re.search(r"\.reveal \.controls\{[^}]*font-size", html)
     # PR #211 review: on a phone the labels and the GitHub link give way, so the pager and Notes stay on screen
     assert re.search(r"@media \(max-width:560px\)\{[^}]*\.topnav \.pager \.lbl[^}]*display:none", html)
+
+
+@pytest.mark.parametrize("deck", sorted(build_decks.DECKS))
+def test_slides_name_the_benchmark_not_the_lab(deck):
+    # issue #264: "the lab" alone doesn't tell a reader what it is; a slide or its notes names the benchmark
+    # (PerioBench, OralHealthBench) or the agent it means. "Health Transformation Lab", the name, is fine.
+    for sid, section, notes in build_decks.slides(REPO_ROOT / "docs" / deck):
+        text = " ".join(build_decks.visible_text(section)) + " " + notes
+        hit = re.search(r"\bthe lab\b", text, re.IGNORECASE)
+        assert not hit, f"{deck}/{sid}: '{text[max(0, hit.start() - 40):hit.end() + 40]}'"
+
+
+def test_no_overstated_absolutes_about_the_world():
+    # issue #274: gum disease is hard to count consistently, not impossible; claims are scoped ("we found no ...")
+    import re
+    files = [*(REPO_ROOT / "docs").glob("*/slides/*.html"), REPO_ROOT / "README.md"]
+    for f in files:
+        text = f.read_text(encoding="utf-8")
+        for phrase in (r"nobody can (count|study)", r"nobody publishes", r"nobody has measured",
+                       r"nobody at this size", r"can't be linked to diabetes"):
+            assert not re.search(phrase, text, flags=re.I), (f.name, phrase)

@@ -150,3 +150,11 @@ def test_datasets_and_collection_are_named_for_the_bench():
                                                                    "results": "perio-bench-results"}
     readme = (REPO_ROOT / "kaggle" / "README.md").read_text()
     assert '"Health Transformation Lab: Perio Bench"' in readme and "perio-bench-note-classifier" in readme
+
+
+def test_the_readme_does_not_ask_for_a_public_collection():
+    """Issue #270: Kaggle offers no public setting for a collection; the README's table is the shared index."""
+    readme = (REPO_ROOT / "kaggle" / "README.md").read_text()
+    section = readme.split("## The collection", 1)[1].split("\n## ", 1)[0]
+    assert "Make it public" not in section and "private" in section
+    assert "What's on Kaggle" in section

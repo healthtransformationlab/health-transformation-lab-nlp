@@ -3,7 +3,7 @@
     lab_tables  the lab grader: questions and answers, real when committed, else a seeded SIMULATED sample
     dq_tables   the EHR DQ grader: data-quality checks, completeness, prevalence, temporal plausibility,
                 transitions, concordance, per-visit evidence with its truth (statuses only, never note text),
-                and each visit's case profile (spec 026)
+                each visit's case profile, and the record-mismatch rules with their scores (spec 026)
 
 Each dict is keyed by the gold table name; the frames keep their analysis column names, and the Load results job
 renames them with gold_names.to_gold before writing (AGENTS.md "SQL and data names").
@@ -94,6 +94,14 @@ def dq_tables(datasets_dir: Path) -> dict[str, pd.DataFrame]:
     # only), so the 100k-row long form isn't committed as a second copy of the same evidence
     f = ["visits_structured.csv"]
     out["fact_case_profile_item"] = _with_provenance(case_profile.build_profiles(_read(d, f[0])), d, f)
+
+    # spec 026 US2: record mismatches (failed rules only) and each rule's scores, from scripts/45_case_profiles.py
+    f = ["case_profiles/record_mismatch.csv"]
+    m = _read(d, f[0]).assign(clinic=lambda x: x.clinic.astype(str), evidence=lambda x: x.evidence.fillna(""),
+                              related_visit_id=lambda x: x.related_visit_id.astype("Int64"))
+    out["fact_record_mismatch"] = _with_provenance(m, d, f)
+    f = ["case_profiles/mismatch_rule_score.csv"]
+    out["dq_mismatch_rule"] = _with_provenance(_read(d, f[0]).assign(clinic=lambda x: x.clinic.astype(str)), d, f)
     return out
 
 
