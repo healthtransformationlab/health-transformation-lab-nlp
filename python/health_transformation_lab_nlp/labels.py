@@ -175,3 +175,33 @@ def label_row(row) -> str:
         teeth_lost_perio=int(row.get("teeth_lost_perio", 0) or 0),
     )
     return label_chart(chart).value
+
+
+# Spec 029 US3 (#371): teeth lost to periodontitis, counted four ways, decide stage III vs IV (>= 5 teeth -> IV).
+# A missing tooth seldom says why it was lost; `expected_perio_loss` counts the recorded periodontal losses plus the
+# model's probability for each missing tooth with no recorded reason (specs/029-tooth-loss/analysis_plan.md, s. 10).
+# R twin: r/R/16_spec029.R.
+STAGE4_COUNT_RULES = ("recorded_only", "every_missing", "expected_perio_loss", "truth")
+STAGE4_TEETH = 5
+
+
+@traced
+def expected_perio_loss(recorded_perio: int, unlabelled_probs) -> float:
+    """Recorded periodontal losses plus the sum of P(lost to periodontitis) over the unlabelled missing teeth."""
+    return float(recorded_perio) + float(sum(float(p) for p in unlabelled_probs))
+
+
+@traced
+def stage4_rule(rule: str, recorded_perio: int, missing: int, unlabelled_probs=(), true_perio: int | None = None
+                ) -> bool:
+    """Stage IV by tooth loss under one counting rule (STAGE4_COUNT_RULES): the count is 5 teeth or more.
+    recorded_only: extractions with a periodontal diagnosis; every_missing: every missing tooth; expected_perio_loss:
+    recorded plus the model's probabilities; truth: the synthetic answer key (never available on real records)."""
+    if rule not in STAGE4_COUNT_RULES:
+        raise ValueError(f"unknown stage IV counting rule {rule!r}; one of {STAGE4_COUNT_RULES}")
+    if rule == "truth" and true_perio is None:
+        raise ValueError("the truth rule needs true_perio")
+    count = {"recorded_only": lambda: recorded_perio, "every_missing": lambda: missing,
+             "expected_perio_loss": lambda: expected_perio_loss(recorded_perio, unlabelled_probs),
+             "truth": lambda: true_perio}[rule]()
+    return bool(count >= STAGE4_TEETH)
