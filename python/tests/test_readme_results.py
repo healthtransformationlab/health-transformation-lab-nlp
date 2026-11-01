@@ -304,16 +304,16 @@ def test_readme_phenotype_table_answers_three_questions(inp, summary):
     assert systems[questions.index(rr.PHENOTYPE_QUESTIONS[2])] == "probing_chart"
     shown = [_cell(r, 1) for r in rows]                               # question named once, on its first row
     assert [q for q in shown if q] == list(rr.PHENOTYPE_QUESTIONS)
-    preds, key = inp["preds"], inp["key"].reindex(inp["preds"].index)
+    truth, pred_of, _ = rr.phenotype_predictions(inp)
     for r, s in zip(rows, systems):
         assert _cell(r, 2) == rr.readme_label(s)
-        nums = [int(_cell(r, i).split(" of ")[0]) for i in (3, 4, 5, 6, 7)]   # "219 of 240", "4 of 84 (...)"
+        nums = [int(_cell(r, i).split(" of ")[0]) for i in (3, 4, 5, 6, 7)]   # "215 of 221", "4 of 75 (...)"
         total = int(_cell(r, 3).split(" of ")[1])
-        assert total == len(preds) == 240 and sum(nums) == total, r
-        pred = preds[s] if s in preds else key[s]
-        b = rr.breakdown(preds["truth"], pred.where(pred.isin(rr.LABELS)))
+        # spec 032 US8: the review charts that count (adults, visits from the start date), at five status groups
+        assert total == len(inp["preds"]) == len(truth) < 240 and sum(nums) == total, r
+        b = rr.breakdown(truth, pred_of[s])
         assert nums == [round(total * b[k]) for k in ("correct", "dx_said_yes", "dx_said_no", "stage", "no_answer")]
-        yn = rr.yes_no(preds["truth"], pred.where(pred.isin(rr.LABELS)))
+        yn = rr.yes_no(truth, pred_of[s])
         assert f"({rr._pct(yn['specificity'])} correctly ruled out)" in _cell(r, 4), r
         assert f"({rr._pct(yn['sensitivity'])} correctly assigned)" in _cell(r, 5), r
 
@@ -445,8 +445,11 @@ def test_judge_section_says_in_plain_words_whose_mistakes_the_judge_misses():
 
 def test_not_run_reasons_are_accurate(md):
     not_run = _section(md, rr.PHENOTYPE_TITLE).split(rr.NOT_RUN, 1)[1]
-    gatortron = not_run.split("`gatortron-base`", 1)[1].split(";", 1)[0]
-    assert "diverged" in gatortron and "not scheduled" not in gatortron      # it ran on CPU and failed
+    if "`gatortron-base`" in not_run:          # the CPU run diverged; the GPU rerun (lr 2e-05) takes it off the list
+        gatortron = not_run.split("`gatortron-base`", 1)[1].split(";", 1)[0]
+        assert "diverged" in gatortron and "not scheduled" not in gatortron
+    else:
+        assert "`gatortron-base+lr2e-05`" in _section(md, rr.PHENOTYPE_TITLE)
     for m in ("sapbert", "gte-moderncolbert"):
         reason = not_run.split(f"`{m}`", 1)[1].split(";", 1)[0]
         assert "no scorer" in reason and "scored on its own task" not in reason, m

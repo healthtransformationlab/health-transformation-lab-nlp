@@ -22,6 +22,8 @@ from .paths import DATASETS_DIR, REPO_ROOT
 from .telemetry import traced
 
 OUT = REPO_ROOT / "docs" / "site" / "data-quality.json"
+REPORT_CAL_ICC = True        # spec 032 US8 (#448): the reliability section reports the CAL ICC (spec 013)
+CAL_RELIABILITY = DATASETS_DIR / "reliability_cal" / "simulated_cal_reliability.csv"   # scripts/37_cal_reliability.py
 SOURCES = {"exam_form": "Exam form", "proc_dx_completed": "Diagnosis codes, done",
            "proc_dx_planned": "Diagnosis codes, planned", "notes": "Chart note", "probing_chart": "Gum measurements",
            "algorithm_v0": "Rules, measurements first", "algorithm_design": "Rules, exam form first"}
@@ -138,6 +140,18 @@ def _group_label(gtype: str, name: str, tables: dict) -> str:
 
 
 @traced
+def cal_reliability(path=CAL_RELIABILITY) -> list[dict]:
+    """The reliability of clinical attachment loss in repeated charts (spec 013, scripts/37_cal_reliability.py), one
+    row per probing error: ICCs for the same patient, tooth and site, the SEM, and how often the stage band flips.
+    SIMULATED: placeholder variance components, not an estimate from any record."""
+    r = pd.read_csv(path)
+    return [{"probing_error_sd_mm": float(x.sd_error_true), "icc_patient": round(float(x.icc_patient), 3),
+             "icc_tooth": round(float(x.icc_tooth), 3), "icc_site": round(float(x.icc_site), 3),
+             "sem_mm": round(float(x.sem_mm), 2), "stage_band_flip_pct": _pct(x.flip_rate),
+             "patient_count": int(x.n_patients), "is_simulated": True} for x in r.itertuples()]
+
+
+@traced
 def build() -> dict:
     """The page's data: one section per grader dataset, then the Open Dental profile."""
     t = grader_tables.dq_tables(DATASETS_DIR)
@@ -147,10 +161,9 @@ def build() -> dict:
     clin["is_outlier"] = flag_outliers(clin["periodontitis"])
     tc = t["dq_temporal_change"].set_index("method")
     complete = (v["exam_form"] != "unknown") & (v["proc_dx_completed"] != "unknown") & (v["probing_chart"] != "unknown")
+    # every table of the extract, the four insurance tables (spec 032 US6) included since spec 032 US8 (#448), so the
+    # chart-consistency split has insurance type
     tables, _, readings = open_dental.build_with_readings(open_dental.Params(), seed=42)
-    # the page checks the tables it checked before the insurance tables came in (spec 032 US6, #445), so it stays as
-    # published; spec 032 US8 (#448) adds them, and the insurance split, when it reruns every result
-    tables = {name: df for name, df in tables.items() if name not in open_dental.INSURANCE_TABLES}
     prof = open_dental.realism_profile(tables, readings)
     checks, groups = tooth_loss_dq.run_checks(tables), tooth_loss_dq.group_consistency(tables)
     inj = t["dq_injected_error"].iloc[0]
@@ -213,6 +226,8 @@ def build() -> dict:
                             "rest_pct": None if pd.isna(r.rest_mean_ratio) else _pct(r.rest_mean_ratio),
                             "is_flagged": bool(r.is_flagged)} for r in groups.itertuples()],
     }
+    if REPORT_CAL_ICC:
+        sections["cal_reliability"] = cal_reliability()
     return {
         "title": "EHR DQ grader: is this dental record fit for finding gum disease?",
         "is_synthetic": True,
@@ -222,6 +237,7 @@ def build() -> dict:
                   "plausibility; de Vet reliability",
         "sources": ["grader_tables.dq_tables(data/datasets/)",
                     "open_dental.realism_profile (seed 42, default settings)",
-                    "tooth_loss_dq.run_checks and group_consistency (the same extract)"],
+                    "tooth_loss_dq.run_checks and group_consistency (the same extract)",
+                    "reliability_cal (scripts/37_cal_reliability.py, SIMULATED variance components)"],
         "sections": sections,
     }

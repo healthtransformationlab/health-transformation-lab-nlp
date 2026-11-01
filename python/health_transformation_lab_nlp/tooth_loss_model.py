@@ -72,16 +72,17 @@ DATA_LABEL = "synthetic"
 
 @dataclass(frozen=True)
 class ModelParams:
-    """The analysis plan's fixed choices, and the open decisions with their defaults."""
-    test_share: float = 0.3
+    """The analysis plan's fixed choices, and the open decisions with their defaults (spec 032 US8, #448: an 80/20
+    split by patient, 5-fold tuning of XGBoost, teeth from 2018-01-01; repo_v1 had 70/30, no tuning, every year)."""
+    test_share: float = 0.2
     seed: int = 42                         # split, models and bootstrap
     min_age: int | None = 18               # analysis plan s. 3: adults; sensitivity none (None) and 30
     include_third_molars: bool = False     # sensitivity analysis when True
-    start_date: str | None = None          # spec 032 US2: ISO date; teeth lost (or first charted) before it are out
+    start_date: str | None = "2018-01-01"  # spec 032 US2: ISO date; teeth lost (or first charted) before it are out
     n_boot: int = 1000
     threshold: float = 0.5
     split_unit: str = "person"             # spec 032 US5: SPLIT_UNITS; visit reports the patients in both
-    cv_folds: int | None = None            # spec 032 US5: tune XGBoost over XGB_GRID by k-fold CV when set
+    cv_folds: int | None = 5               # spec 032 US5: tune XGBoost over XGB_GRID by k-fold CV when set
 
 
 DEFAULT = ModelParams()
@@ -122,6 +123,15 @@ def eligible(teeth: pd.DataFrame, params: ModelParams = DEFAULT) -> pd.DataFrame
     if params.start_date is not None:
         t = t[_ref_date(t) >= pd.Timestamp(params.start_date)]
     return t
+
+
+@traced
+def stage_teeth(teeth: pd.DataFrame, params: ModelParams = DEFAULT) -> pd.DataFrame:
+    """The teeth whose loss counts toward stage III vs IV: every tooth in the table, third molars out unless included.
+    The minimum age and the start date choose the teeth that train and score the model (`eligible`; their labels come
+    from the newer code list), not how many teeth a patient has lost: a tooth lost before the start date still
+    counts."""
+    return teeth if params.include_third_molars else teeth[~teeth["tooth_num"].isin(THIRD_MOLARS)]
 
 
 @traced
@@ -553,7 +563,9 @@ def _age_at_loss(teeth: pd.DataFrame, x: dict[str, pd.DataFrame]) -> pd.Series:
 def run(x: dict[str, pd.DataFrame], truth: pd.DataFrame, params: ModelParams = DEFAULT,
         generator_seed: int = 42) -> dict[str, pd.DataFrame]:
     """Fit and score every model on both label sets (module docstring). Returns frames: scores, calibration,
-    stage_recount, patient_stage, predictions, missing, eval_rows, and validation (how it was validated: the split,
+    stage_recount, patient_stage, stage_probabilities (P(lost to periodontitis) for every unlabelled missing tooth
+    the stage recount counts, inside the model's teeth or not), predictions, missing, eval_rows, and validation (how it
+    was validated: the split,
     the patients in both parts, the XGBoost settings). Every row is labelled synthetic."""
     check_params(params)
     teeth = tl.tooth_table(x)
@@ -561,6 +573,10 @@ def run(x: dict[str, pd.DataFrame], truth: pd.DataFrame, params: ModelParams = D
     if params.start_date is not None:
         teeth = with_first_exam_date(teeth, x)
     el = eligible(teeth, params).reset_index(drop=True)
+    # every missing tooth counts toward the stage, the model's filters aside; the model gives the unlabelled ones
+    # outside `el` a probability too, so every rule counts the same teeth (they never train or score it)
+    st = stage_teeth(teeth, params).reset_index(drop=True)
+    X_stage = design_matrix(st, "shared")
     true = el.merge(truth, on=["patient_id", "tooth_num"], how="left")["true_reason_code"]
     if params.split_unit == "person":
         test_pats = split_patients(label_set(el, "completed_planned"), params.test_share, params.seed)
@@ -578,6 +594,8 @@ def run(x: dict[str, pd.DataFrame], truth: pd.DataFrame, params: ModelParams = D
     worst_cal = patient_worst_cal(x)
     tag = {"generator_seed": generator_seed}
     scores, cals, preds, eval_rows, stage_parts, missing, validation = [], [], [], [], [], [], []
+    stage_probs = []
+    st_unlabelled = st["tooth_status_code"].isin(APPLIED_STATUSES).to_numpy()
 
     def score(ls, fs, model, ev, p, thresholds, boot):
         m = eval_masks[ev]
@@ -640,7 +658,14 @@ def run(x: dict[str, pd.DataFrame], truth: pd.DataFrame, params: ModelParams = D
                     "predicted_perio": p[rows] >= params.threshold, "generator_seed": generator_seed,
                     "synthetic": True}))
                 if fs == "shared":
-                    ps = patient_stage(el, pd.Series(p, index=el.index), truth, worst_cal, chart=teeth)
+                    p_stage = fitted.predict(X_stage)
+                    ps = patient_stage(st, pd.Series(p_stage, index=st.index), truth, worst_cal, chart=teeth)
+                    stage_probs.append(pd.DataFrame({         # what the stage recount reads (the R twin too)
+                        **tag, "label_set": ls, "model": model,
+                        "patient_id": st.loc[st_unlabelled, "patient_id"].astype("int64").to_numpy(),
+                        "tooth_num": st.loc[st_unlabelled, "tooth_num"].astype("int64").to_numpy(),
+                        "tooth_status_code": st.loc[st_unlabelled, "tooth_status_code"].to_numpy(),
+                        "probability": p_stage[st_unlabelled]}))
                     stage_parts.append(ps.assign(**tag, label_set=ls, model=model))
         rate = float(y_train.mean())
         for model, value in (("baseline_all_perio", 1.0), ("baseline_outcome_rate", rate),
@@ -662,6 +687,7 @@ def run(x: dict[str, pd.DataFrame], truth: pd.DataFrame, params: ModelParams = D
         return df.assign(data_label=DATA_LABEL).reset_index(drop=True)
     return {"scores": label(pd.DataFrame(scores)), "calibration": label(pd.concat(cals, ignore_index=True)),
             "stage_recount": label(pd.DataFrame(recount)), "patient_stage": label(ps_all),
+            "stage_probabilities": label(pd.concat(stage_probs, ignore_index=True)),
             "predictions": pd.concat(preds, ignore_index=True), "missing": label(pd.DataFrame(missing)),
             "eval_rows": label(pd.concat(eval_rows, ignore_index=True)),
             "validation": label(pd.DataFrame(validation))}

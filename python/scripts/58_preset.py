@@ -1,13 +1,14 @@
-"""Run every analysis part under a named preset and under repo_v1, side by side (spec 032 US7, #446).
+"""Run every analysis part under a named preset and under the defaults (repo_v2), side by side (spec 032 US7, #446).
 
     python scripts/58_preset.py [--preset exploratory_1] [--people 1200] [--patients 6000] [--seed 42] [--n-boot 0]
 
-Presets live in health_transformation_lab_nlp/analysis_presets.yaml (docs/presets.md): `repo_v1` is today's defaults,
-`exploratory_1` turns common choices of published record studies on together. For the preset and for repo_v1 this
+Presets live in health_transformation_lab_nlp/analysis_presets.yaml (docs/presets.md): `repo_v2` is the code's defaults
+(spec 032 US8, #448), `repo_v1` the defaults before it, `exploratory_1` common choices of published record studies turned
+on together (repo_v2 with a split by visit). For the preset and for repo_v2 this
 generates the synthetic visit-level study set (`--people`) and the synthetic Open Dental extract (`--patients`, one
 generator seed), runs every part (presets.run_preset) and writes, one file per part, to data/datasets/presets/:
 
-    synthetic_preset_<name>_settings.csv                 every setting: repo_v1's value, the preset's, changed or not
+    synthetic_preset_<name>_settings.csv                 every setting: the default (repo_v2), the preset's, changed or not
     synthetic_preset_<name>_visits_left_out.csv          visits left out of the study set, by reason
     synthetic_preset_<name>_visits_agreement.csv         each source's agreement with the synthetic truth (score())
     synthetic_preset_<name>_prevalence.csv               share in each status group by clinic, at each grouping
@@ -66,7 +67,7 @@ def side_by_side(part: str, keys: list[str], value: str) -> pd.DataFrame:
 print(f"\nSYNTHETIC: {args.people} people (visits), {args.patients} patients (tooth loss), generator seed {args.seed}, "
       f"{args.n_boot} bootstrap resamples")
 s = runs[args.preset]["settings"]
-print("\nSettings (repo_v1 -> preset):")
+print(f"\nSettings ({presets.BASE_PRESET} -> preset):")
 print(s.assign(is_changed=s["is_changed"].map({True: "yes", False: "no"}))
       .drop(columns=["preset_name", "data_label"]).to_string(index=False))
 

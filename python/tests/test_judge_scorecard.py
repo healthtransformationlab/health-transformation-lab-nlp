@@ -1,4 +1,5 @@
-"""Spec 012: judge-backed scorecard. Every system's answer on the 240 review charts, the judge's
+"""Spec 012: judge-backed scorecard. Every system's answer on the scored review charts (221 of the 240 since spec 032
+US8, at five status groups: rr.phenotype_predictions), the judge's
 queue, a resumable judge run (simulated here, no network), and every README phenotyping metric
 against the truth and against the judge."""
 
@@ -9,7 +10,10 @@ import pytest
 
 from health_transformation_lab_nlp import judge_scorecard as js
 from health_transformation_lab_nlp import readme_results as rr
-from health_transformation_lab_nlp.labels import LABELS
+from health_transformation_lab_nlp.labels import DEFAULT_GROUPING, GROUPINGS, LABELS
+from health_transformation_lab_nlp.ladder_eval import grouped
+
+GROUPS = GROUPINGS[DEFAULT_GROUPING]
 
 
 @pytest.fixture(scope="module")
@@ -25,8 +29,9 @@ def answers(inp):
 def test_chart_answers_cover_every_readme_system_on_every_review_chart(inp, answers):
     truth, pred, _ = rr.phenotype_predictions(inp)
     assert set(answers["system"]) == set(pred)
-    assert len(answers) == 240 * len(pred) and not answers.duplicated(["visit_id", "system"]).any()
-    assert set(answers["answer"].dropna()) <= set(LABELS)
+    n = len(truth)
+    assert len(answers) == n * len(pred) and not answers.duplicated(["visit_id", "system"]).any()
+    assert set(answers["answer"].dropna()) <= set(GROUPS)
     assert set(answers["difficulty"]) == {"L1", "L2", "L3"}
     one = answers[answers.system == "algorithm_v0"].set_index("visit_id")["answer"]
     pd.testing.assert_series_equal(one.reindex(truth.index), pred["algorithm_v0"], check_names=False)
@@ -35,9 +40,10 @@ def test_chart_answers_cover_every_readme_system_on_every_review_chart(inp, answ
 def test_queue_has_one_status_call_per_chart_and_one_verdict_per_distinct_answer(inp, answers):
     q = js.judge_queue(answers, inp["key"])
     status, verdict = q[q.kind == "status"], q[q.kind == "verdict"]
-    assert len(status) == 240 and status["answer"].isna().all()
+    n = answers["visit_id"].nunique()
+    assert len(status) == n and status["answer"].isna().all()
     distinct = answers.dropna(subset=["answer"]).drop_duplicates(["visit_id", "answer"])
-    assert len(verdict) == len(distinct) < 240 * 6
+    assert len(verdict) == len(distinct) < n * len(GROUPS)
     assert not q.duplicated(["visit_id", "kind", "answer"]).any()
     notes = inp["key"]["note_text"]
     assert (q["note_text"].to_numpy() == notes.reindex(q["visit_id"]).to_numpy()).all()
@@ -198,7 +204,7 @@ METRICS = ["correct", "incorrectly_assigned", "incorrectly_ruled_out", "incorrec
 def _perfect_judgments(inp, answers):
     """A judge that always knows the truth: its status is the truth, its verdict is right."""
     q = js.judge_queue(answers, inp["key"])
-    truth = inp["key"]["truth_status"]
+    truth = grouped(inp["key"]["truth_status"])          # the status groups the answers are in
     t = truth.reindex(q["visit_id"]).to_numpy()
     out = q[["visit_id", "kind", "answer"]].copy()
     out["verdict"] = [None if k == "status" else ("correct" if a == x else "incorrect")
@@ -231,10 +237,11 @@ def test_a_judge_that_knows_the_truth_scores_every_system_exactly_as_the_truth(i
     m = js.judge_metrics(inp, answers, _perfect_judgments(inp, answers), n_boot=50)
     both = m.dropna(subset=["vs_truth"])
     assert (both["vs_judge"] - both["vs_truth"]).abs().max() < 1e-12
-    assert both["difference"].abs().max() < 1e-12 and (m["n_judged"] == 240).all()
+    assert both["difference"].abs().max() < 1e-12 and (m["n_judged"] == answers["visit_id"].nunique()).all()
     ex = m[m.metric == "correct"].set_index("system")
     answered = answers.dropna(subset=["answer"]).groupby("system").size()
-    right = answers.assign(ok=answers["answer"] == inp["key"]["truth_status"].reindex(answers["visit_id"]).to_numpy()
+    truth = grouped(inp["key"]["truth_status"])
+    right = answers.assign(ok=answers["answer"] == truth.reindex(answers["visit_id"]).to_numpy()
                            ).groupby("system")["ok"].sum()
     assert ex["corrected_accuracy"].to_numpy() == pytest.approx((right / answered).reindex(ex.index).to_numpy())
     assert (ex["ci_low"] <= ex["corrected_accuracy"] + 1e-12).all() and (ex["corrected_accuracy"] <= ex["ci_high"] + 1e-12).all()
@@ -243,7 +250,7 @@ def test_a_judge_that_knows_the_truth_scores_every_system_exactly_as_the_truth(i
 def test_judge_agreement_with_the_truth(inp, answers):
     a = js.judge_agreement(inp, _perfect_judgments(inp, answers), n_boot=50).set_index(["group", "value"])
     assert a.loc[("all", "all"), "agreement"] == 1 and a.loc[("all", "all"), "kappa"] == 1
-    assert a.loc[("all", "all"), "coverage"] == 1 and a.loc[("all", "all"), "n"] == 240
+    assert a.loc[("all", "all"), "coverage"] == 1 and a.loc[("all", "all"), "n"] == answers["visit_id"].nunique()
     assert {"truth_status", "difficulty"} <= set(a.index.get_level_values("group"))
 
 
@@ -314,7 +321,7 @@ def test_kappa_is_blank_where_the_truth_doesnt_vary(inp, answers):
     """Within one true status kappa is undefined, not 0."""
     j = _perfect_judgments(inp, answers)
     st = j.index[j["kind"] == "status"][::3]
-    j.loc[st, "judge_status"] = "gingivitis"            # a judge that errs, so its status varies within a group
+    j.loc[st, "judge_status"] = "periodontitis_stage_1"   # a judge that errs, so its status varies within a group
     a = js.judge_agreement(inp, j, n_boot=20)
     assert a.loc[a.group == "truth_status", "kappa"].isna().all()
     assert a.loc[a.group == "difficulty", "kappa"].notna().all()

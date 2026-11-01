@@ -7,6 +7,10 @@ Gradient-boosted trees (XGBoost, the `ml` extra), people split 80/20, hyperparam
 cross-validation, one-vs-rest metrics, exact TreeSHAP on the held-out visits. SYNTHETIC: the labels come from
 the AAP rules on the same chart, so the SHAP ranking checks the pipeline; it says nothing about real patients.
 Writes data/datasets/classify_status/<outcome>_<scheme>_*.csv and a SHAP summary figure.
+
+Since spec 032 US8 (#448) on the visits that count (adults, visits from 2021-04-01: study.visits_in_study), the
+algorithm_design outcome read with a plan that has no gum-disease code as healthy or gingivitis
+(study.reread_absent_code); the split stays by person.
 """
 
 import argparse
@@ -16,6 +20,7 @@ import numpy as np
 import pandas as pd
 
 from health_transformation_lab_nlp import classify_status as cs
+from health_transformation_lab_nlp import study
 from health_transformation_lab_nlp.paths import DATASETS_DIR
 
 ap = argparse.ArgumentParser()
@@ -29,7 +34,7 @@ ap.add_argument("--test-share", type=float, default=0.2, help="held-out share")
 ap.add_argument("--cv-folds", type=int, default=5, help="cross-validation folds for the hyperparameters")
 a = ap.parse_args()
 
-v = pd.read_csv(DATASETS_DIR / "visits_structured.csv")
+v = study.visits_in_study(study.reread_absent_code(pd.read_csv(DATASETS_DIR / "visits_structured.csv")))
 if a.outcome == "truth_status":
     v = v.merge(pd.read_csv(DATASETS_DIR / "answer_key" / "visits_truth.csv")[["visit_id", "truth_status"]],
                 on="visit_id")

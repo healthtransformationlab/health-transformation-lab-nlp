@@ -68,6 +68,7 @@ PATEL2022_SECTIONS = {"M1": ["proc_dx_completed", "proc_dx_planned"], "M2": ["pe
 # written is "healthy", one of the six statuses, standing for healthy or gingivitis (the five-level grouping merges
 # them; read_proc_codes reads a prophy alone the same way).
 ABSENT_CODE_RULES = ("no_answer", "healthy_or_gingivitis")
+DEFAULT_ABSENT_CODE = "healthy_or_gingivitis"   # spec 032 US8 (#448); the benchmark build keeps "no_answer"
 ABSENT_CODE_STATUS = "healthy"
 DX_CODE_METHODS = ("proc_dx_completed", "proc_dx_planned")
 GUM_DISEASE_CODE_PREFIX = "K05"
@@ -84,7 +85,7 @@ def _check_absent_code(absent_code: str) -> None:
 
 
 @traced
-def read_dx_code(dx: str | None, plan: str | None, absent_code: str = "no_answer") -> str:
+def read_dx_code(dx: str | None, plan: str | None, absent_code: str = DEFAULT_ABSENT_CODE) -> str:
     """One visit's diagnosis code as a status under the absent-code rule (ABSENT_CODE_RULES). A code that reads as
     a status is read as before; a gum-disease code that can't be read stays no answer under either rule."""
     _check_absent_code(absent_code)
@@ -96,9 +97,9 @@ def read_dx_code(dx: str | None, plan: str | None, absent_code: str = "no_answer
 
 
 @traced
-def with_absent_code(df: pd.DataFrame, absent_code: str = "no_answer") -> pd.DataFrame:
+def with_absent_code(df: pd.DataFrame, absent_code: str = DEFAULT_ABSENT_CODE) -> pd.DataFrame:
     """The visits with proc_dx_completed and proc_dx_planned re-read from their raw codes under the absent-code
-    rule. The default returns the frame itself, unchanged. Needs the raw columns (`<method>_raw`, PLAN_COLUMN)."""
+    rule. "no_answer" returns the frame itself, unchanged. Needs the raw columns (`<method>_raw`, PLAN_COLUMN)."""
     _check_absent_code(absent_code)
     if absent_code == "no_answer":
         return df

@@ -26,8 +26,9 @@ from .telemetry import traced
 
 MIN_GAP = 0.05                       # a flagged group also differs from the rest by at least 5 points
 MIN_CHARTS = 30                      # groups with fewer charts are reported, never flagged or used as the rest
-GROUP_TYPES = ("office", "provider", "sex", "race", "exam_year", "age_band")     # the default split
-ALL_GROUP_TYPES = (*GROUP_TYPES, "insurance_type")   # spec 032 US6 (#445): private, public or none, when asked
+# the default split; insurance_type (spec 032 US6, #445: private, public or none) is in it since spec 032 US8 (#448)
+GROUP_TYPES = ("office", "provider", "sex", "race", "exam_year", "age_band", "insurance_type")
+ALL_GROUP_TYPES = GROUP_TYPES
 RESULT_COLUMNS = ["check_num", "domain_code", "check_name", "table_name", "checked_count", "found_count",
                   "found_ratio", "is_flagged"]
 GROUP_COLUMNS = ["group_type_code", "group_name", "metric_name", "chart_count", "value_ratio", "rest_mean_ratio",
@@ -236,8 +237,8 @@ def _age_band(age: float) -> str:
 
 @traced
 def group_consistency(tables: dict[str, pd.DataFrame], group_types: tuple = GROUP_TYPES) -> pd.DataFrame:
-    """For each group of each type (by default office, provider, sex, race, exam year, age band; `insurance_type`,
-    spec 032 US6, when asked): how many of its perio charts have no gum-margin readings (so no attachment loss), and
+    """For each group of each type (by default office, provider, sex, race, exam year, age band and, since spec 032
+    US8, `insurance_type`, which needs the insurance tables): how many of its perio charts have no gum-margin readings (so no attachment loss), and
     how many are incomplete in any way (partial, buccal only, no margin or no bleeding), each against the rest of its
     type (`flag_against_rest`)."""
     unknown = [g for g in group_types if g not in ALL_GROUP_TYPES]

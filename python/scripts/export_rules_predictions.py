@@ -29,6 +29,11 @@ from health_transformation_lab_nlp.prevalence import prevalence_by_group
 visits = pd.read_csv(DATASETS_DIR / "visits_structured.csv")
 pd.concat([prevalence_by_group(visits, "algorithm_design", grouping=g, by="clinic_id")
            for g in ("six", "five", "three")]).to_csv(LABELS_DIR / "python_prevalence_by_group.csv", index=False)
+# Spec 032 US8: the visits scripts/19_prevalence.py counts (adults from the start date, codes re-read under the default
+# absent-code rule from the seeded raw codes, which R can't regenerate), so R recomputes the committed prevalence.
+from health_transformation_lab_nlp import study
+
+study.visits_in_study(study.reread_absent_code(visits)).to_csv(LABELS_DIR / "python_scored_visits.csv", index=False)
 
 # AAP worksheet edge cases (CAL missing, tooth loss, complexity) for the R twin of label_chart
 import itertools

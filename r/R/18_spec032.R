@@ -24,7 +24,7 @@ read_proc_dx_032 <- function(v) {
   out
 }
 
-read_dx_code_032 <- function(dx, plan, absent_code = "no_answer") {
+read_dx_code_032 <- function(dx, plan, absent_code = "healthy_or_gingivitis") {
   stopifnot(absent_code %in% ABSENT_CODE_RULES_032)
   out <- read_proc_dx_032(dx)
   if (absent_code == "no_answer") return(out)

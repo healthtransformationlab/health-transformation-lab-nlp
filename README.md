@@ -26,13 +26,14 @@ time, and hard to link to diabetes care. A tool that reads the whole record and 
 it in the record; agreement with gum specialists reviewing the same record is how that is checked, not the goal.
 It runs end to end on **synthetic** records:
 
-- the whole record, by rules that read the gum measurements first: **234 of 240** (flattering: the key uses the same rules);
-- the free-text note alone, read by a small trained model with a stage 4 rule: **219 of 240**;
-- a bigger medical AI used as is, with the same rule: **196 of 240** (MedGemma 4B; the newer MedGemma 1.5 4B got 185).
+- the whole record, by rules that read the gum measurements first: **215 of 221** (flattering: the key uses the same rules);
+- the free-text note alone, read by a small trained model with a stage 4 rule: **201 of 221**;
+- a bigger medical AI used as is, with the same rule: **181 of 221** (MedGemma 4B; the newer MedGemma 1.5 4B got 177).
 
 Synthetic charts, scored against the generator's answer key: agreement with it, not accuracy on real patients ([how
-scoring works](docs/scoring.md)). **Order matters:** when the measurements, exam form, codes and note disagree, rules must
-pick one to believe first. Measurements first gives 234; exam form first (the study design's order) gives 173.
+scoring works](docs/scoring.md)), on the 221 of the 240 review charts from adults' visits since April 2021, with healthy
+and gingivitis counted as one group (the defaults: [presets](docs/presets.md)). **Order matters:** when the measurements, exam form, codes and note disagree, rules must
+pick one to believe first. Measurements first gives 215; exam form first (the study design's order) gives 163.
 
 | For | Go to |
 |---|---|

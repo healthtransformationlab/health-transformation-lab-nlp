@@ -89,45 +89,46 @@ edr:
   solution:
     - value: "240"
       kind: measured
-      file: docs/edr/README.md
-      match: "the 240 review charts"
+      file: data/datasets/build_summary.json
+      match: "\"review_visits\": 240"
       covers: synthetic review charts that periodontists (simulated so far) label
   results:
-    - value: "234"
+    # spec 032 US8 (#448): scored at five status groups on the 221 of the 240 review charts from 2021-04-01
+    - value: "215"
       kind: measured
       file: docs/edr/README.md
-      match: "234 of 240"
-      covers: synthetic charts the whole-record rules (gum measurements first) got right
-    - value: "219"
+      match: "215 of 221"
+      covers: synthetic charts the whole-record rules (gum measurements first) got right, at five status groups
+    - value: "201"
       kind: measured
       file: docs/edr/README.md
-      match: "219 of 240"
-      covers: synthetic charts ModernBERT on the note, plus the stage 4 rule, got right
-    - value: "196"
+      match: "201 of 221"
+      covers: synthetic charts ModernBERT on the note, plus the stage 4 rule, got right, at five status groups
+    - value: "181"
       kind: measured
       file: docs/edr/README.md
-      match: "Medical AI, untrained (MedGemma 4B) + stage 4 rule | 196 of 240"
-      covers: synthetic charts MedGemma 4B (v1, untrained) plus the stage 4 rule got right
-    - value: "185"
+      match: "Medical AI, untrained (MedGemma 4B) + stage 4 rule | 181 of 221"
+      covers: synthetic charts MedGemma 4B (v1, untrained) plus the stage 4 rule got right, at five status groups
+    - value: "177"
       kind: measured
       file: data/datasets/ladder/ladder_vs_truth.csv
-      match: "medgemma-1.5-4b-it+rules4,240,0.7708333333333334,"
-      covers: synthetic charts MedGemma 1.5 4B (untrained) plus the stage 4 rule got right (accuracy 185/240 = 0.7708333)
-    - value: "189"
+      match: "medgemma-1.5-4b-it+rules4,221,0.8009049773755657,"
+      covers: synthetic charts MedGemma 1.5 4B (untrained) plus the stage 4 rule got right (accuracy 177/221 = 0.8009050), and the gum measurements alone (177 of 221)
+    - value: "179"
       kind: measured
       file: docs/edr/README.md
-      match: "189 of 240"
-      covers: synthetic charts the keyword rules got right
-    - value: "193"
+      match: "179 of 221"
+      covers: synthetic charts the keyword rules got right, at five status groups
+    - value: "221"
       kind: measured
       file: docs/edr/README.md
-      match: "193 of 240"
-      covers: synthetic charts the gum measurements alone got right
+      match: "the 221 review charts"
+      covers: synthetic review charts scored (the 240 less the 19 visits before 2021-04-01)
     - value: "240"
       kind: measured
-      file: docs/edr/README.md
-      match: "the 240 review charts"
-      covers: synthetic review charts scored
+      file: data/datasets/build_summary.json
+      match: "\"review_visits\": 240"
+      covers: synthetic review charts in the review set, of which 221 are scored
   economics:
     - value: "33,333 h"
       kind: derived
@@ -174,24 +175,24 @@ edr:
       from: "tiers.frontier_llm_whole_record ($1,200,000)"
       covers: frontier commercial LLM, whole record with examples and reasoning, three calls a visit (assumed tokens)
   evidence:
-    - value: "234"
+    - value: "215"
       kind: measured
       file: docs/edr/README.md
-      match: "234 of 240"
-      covers: synthetic charts right with the gum measurements read first
-    - value: "240"
+      match: "215 of 221"
+      covers: synthetic charts right with the gum measurements read first, at five status groups
+    - value: "221"
       kind: measured
       file: docs/edr/README.md
-      match: "the 240 review charts"
+      match: "the 221 review charts"
       covers: synthetic review charts scored
-    - value: "72%"
+    - value: "74%"
       kind: measured
       file: docs/results.md
-      match: "`algorithm_design` | whole record | rules, study-design order: exam form, diagnosis codes, note, chart † | **72.1**"
-      covers: synthetic charts right with the study design's source order (72.1%)
-    - value: "173"
+      match: "`algorithm_design` | whole record | rules, study-design order: exam form, diagnosis codes, note, chart † | **73.8**"
+      covers: synthetic charts right with the study design's source order (73.8%), at five status groups
+    - value: "163"
       kind: derived
-      from: "72.1% x 240 (docs/results.md, algorithm_design)"
+      from: "73.8% x 221 (docs/results.md, algorithm_design)"
       covers: synthetic charts right with the study design's source order
     - value: "4×"
       kind: derived

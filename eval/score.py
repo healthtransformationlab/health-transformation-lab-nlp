@@ -26,11 +26,12 @@ _GROUP_OF = {"six": {},
 
 
 def score(y_true, y_pred, proba: np.ndarray | None, model_id: str,
-          language: str = "python", run_id: str | None = None, grouping: str = "six") -> pd.DataFrame:
+          language: str = "python", run_id: str | None = None, grouping: str = "five") -> pd.DataFrame:
     """proba: (n, 6) in LABEL_ORDER, or None.
 
-    grouping (spec 032 US1): `six` (default) scores the six statuses; `five` or `three` scores at that status
-    grouping (labels.GROUPINGS): the F1 rows are per group and macro F1 averages the groups. Periodontitis yes/no
+    grouping (spec 032 US1): `five` (the default since spec 032 US8: healthy and gingivitis merged), `six` (the six
+    statuses) or `three` scores at that status grouping (labels.GROUPINGS): the F1 rows are per group and macro F1
+    averages the groups. Periodontitis yes/no
     (sensitivity, specificity, PPV, NPV, AUROC) is the same at every grouping."""
     y_true, y_pred = list(y_true), list(y_pred)
     if grouping not in GROUPINGS:

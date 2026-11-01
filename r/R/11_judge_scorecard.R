@@ -110,8 +110,15 @@ read_judge_inputs <- function(prefix = "") {
   judgments <- read.csv(paste0(dir, prefix, "judgments.csv"), stringsAsFactors = FALSE, na.strings = na)
   key <- read.csv("data/datasets/answer_key/review_key.csv", stringsAsFactors = FALSE)
   key <- key[key$visit_id %in% answers$visit_id, ]
+  truth <- key$truth_status
+  # spec 032 US8: a scorecard written at the five status groups has grouped answers; group the truth and the judge's
+  # status the same way (a run committed before it stays at six statuses)
+  if (any(answers$answer %in% "healthy_or_gingivitis")) {
+    truth <- .score_group(truth, "five")
+    judgments$judge_status <- .score_group(judgments$judge_status, "five")
+  }
   list(answers = answers, judgments = judgments,
-       truth = setNames(key$truth_status, key$visit_id), level = setNames(key$difficulty, key$visit_id))
+       truth = setNames(truth, key$visit_id), level = setNames(key$difficulty, key$visit_id))
 }
 
 if (sys.nframe() == 0) {

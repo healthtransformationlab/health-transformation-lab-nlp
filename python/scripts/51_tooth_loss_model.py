@@ -3,7 +3,8 @@
 
     python scripts/51_tooth_loss_model.py [--patients 6000] [--seed 42] [--stability-seeds 5] [--n-boot 1000]
                                           [--min-age N] [--third-molars]
-                                          [--split-unit person|visit] [--test-share 0.3] [--cv-folds K]
+                                          [--split-unit person|visit] [--test-share 0.2] [--cv-folds K]
+                                          [--start-date 2018-01-01]
 
 For the main generator seed and each further stability seed (seed + 1, ...): builds the extract (open_dental), cleans
 it as silver, fits logistic regression and XGBoost on both label sets (tooth_loss_model.run) and scores them on the
@@ -21,6 +22,10 @@ a diagnosis. Bootstrap intervals are computed for the main seed only. Writes to 
 
 Every number is SYNTHETIC: agreement with a synthetic answer key, not a finding about any practice. Needs the `ml`
 extra (xgboost). Adults only by default (analysis plan s. 3): --min-age 18; --min-age 0 for no cut-off.
+
+Defaults (spec 032 US8, #448; preset repo_v2): an 80/20 split by patient, 5-fold tuning of XGBoost, and teeth lost (or
+first charted) from 2018-01-01. The defaults before it (preset repo_v1): --test-share 0.3 --cv-folds 0 --start-date ""
+(those results are then written beside these, with their own prefix).
 
 Validation settings (spec 032 US5): --split-unit visit holds out random teeth instead of patients and reports how many
 patients fall in both parts (a leak that flatters the score; never the default); --cv-folds K tunes XGBoost by K-fold
@@ -47,8 +52,10 @@ ap.add_argument("--third-molars", action="store_true", help="include third molar
 ap.add_argument("--split-unit", default=tlm.DEFAULT.split_unit, choices=tlm.SPLIT_UNITS,
                 help="hold out patients (default) or random teeth (reports the patients in both parts)")
 ap.add_argument("--test-share", type=float, default=tlm.DEFAULT.test_share, help="held-out share")
-ap.add_argument("--cv-folds", type=int, default=0, help="tune XGBoost by K-fold cross-validation; 0 for no tuning")
-ap.add_argument("--start-date", default=None, help="ISO date: leave out teeth lost (or first charted) before it")
+ap.add_argument("--cv-folds", type=int, default=tlm.DEFAULT.cv_folds or 0,
+                help="tune XGBoost by K-fold cross-validation; 0 for no tuning")
+ap.add_argument("--start-date", default=tlm.DEFAULT.start_date,
+                help='ISO date: leave out teeth lost (or first charted) before it; "" for every year')
 args = ap.parse_args()
 validation = {"split_unit": args.split_unit, "test_share": args.test_share, "cv_folds": args.cv_folds or None}
 changed = any(getattr(tlm.DEFAULT, k) != v for k, v in validation.items())
@@ -63,7 +70,8 @@ for k in range(max(1, args.stability_seeds)):
     tables, truth, readings = open_dental.build_with_readings(open_dental.Params(n_patients=args.patients), gen_seed)
     x = {**open_dental.clean(tables), "radiograph_bone_level": readings}   # the reading is SIMULATED (#385)
     params = tlm.ModelParams(n_boot=args.n_boot if k == 0 else 0, min_age=args.min_age or None,
-                             include_third_molars=args.third_molars, start_date=args.start_date, **validation)
+                             include_third_molars=args.third_molars, start_date=args.start_date or None,
+                             **validation)
     out = tlm.run(x, truth, params, generator_seed=gen_seed)
     if k == 0:                     # who was left out, and why (a tooth with no recorded age, once a cut-off applies)
         teeth = tlm.with_first_exam_date(tooth_loss.tooth_table(x), x)

@@ -1,17 +1,17 @@
-setting_name,repo_v1_value_text,preset_value_text,is_changed,preset_name,data_label
-grouping,six,five,True,exploratory_1,synthetic
-also_reported_groupings,none,three,True,exploratory_1,synthetic
-visit_min_age,none,18,True,exploratory_1,synthetic
-visit_start_date,none,2021-04-01,True,exploratory_1,synthetic
-absent_code,no_answer,healthy_or_gingivitis,True,exploratory_1,synthetic
+setting_name,default_value_text,preset_value_text,is_changed,preset_name,data_label
+grouping,five,five,False,exploratory_1,synthetic
+also_reported_groupings,three,three,False,exploratory_1,synthetic
+visit_min_age,18,18,False,exploratory_1,synthetic
+visit_start_date,2021-04-01,2021-04-01,False,exploratory_1,synthetic
+absent_code,healthy_or_gingivitis,healthy_or_gingivitis,False,exploratory_1,synthetic
 stage4_rules,"recorded_only, every_missing, expected_perio_loss, truth, teeth_lt_20, pairs_lt_10","recorded_only, every_missing, expected_perio_loss, truth, teeth_lt_20, pairs_lt_10",False,exploratory_1,synthetic
 tooth_loss_min_age,18,18,False,exploratory_1,synthetic
-tooth_loss_start_date,none,2018-01-01,True,exploratory_1,synthetic
+tooth_loss_start_date,2018-01-01,2018-01-01,False,exploratory_1,synthetic
 tooth_loss_split_unit,person,visit,True,exploratory_1,synthetic
-tooth_loss_test_share,0.3,0.2,True,exploratory_1,synthetic
-tooth_loss_cv_folds,none,5,True,exploratory_1,synthetic
+tooth_loss_test_share,0.2,0.2,False,exploratory_1,synthetic
+tooth_loss_cv_folds,5,5,False,exploratory_1,synthetic
 classifier_split_unit,person,visit,True,exploratory_1,synthetic
 classifier_test_share,0.2,0.2,False,exploratory_1,synthetic
 classifier_cv_folds,5,5,False,exploratory_1,synthetic
-consistency_groups,"office, provider, sex, race, exam_year, age_band","office, provider, sex, race, exam_year, age_band, insurance_type",True,exploratory_1,synthetic
-cal_icc,no,yes,True,exploratory_1,synthetic
+consistency_groups,"office, provider, sex, race, exam_year, age_band, insurance_type","office, provider, sex, race, exam_year, age_band, insurance_type",False,exploratory_1,synthetic
+cal_icc,yes,yes,False,exploratory_1,synthetic

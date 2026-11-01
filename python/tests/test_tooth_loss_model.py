@@ -67,10 +67,12 @@ def test_the_two_label_sets_completed_and_completed_plus_planned():
 def test_third_molars_are_left_out_by_default_and_the_minimum_age_is_a_parameter():
     t = _teeth([(1, 1, "extracted_perio", 15), (1, 3, "extracted_perio", 15), (2, 3, "extracted_other", 40),
                 (2, 32, "missing_at_entry", 40)])
-    assert len(tm.eligible(t, tm.ModelParams(min_age=None, include_third_molars=True))) == 4
+    every_year = tm.ModelParams(start_date=None)               # these teeth carry no dates
+    assert len(tm.eligible(t, tm.ModelParams(min_age=None, include_third_molars=True, start_date=None))) == 4
     assert tm.ModelParams().min_age == 18                      # adults only (analysis plan s. 3)
-    assert tm.eligible(t, tm.ModelParams())["patient_id"].tolist() == [2]       # the 15-year-old is out
-    assert sorted(tm.eligible(t, tm.ModelParams(min_age=None))["tooth_num"]) == [3, 3]   # sensitivity: no cut-off
+    assert tm.eligible(t, every_year)["patient_id"].tolist() == [2]       # the 15-year-old is out
+    no_cut = tm.ModelParams(min_age=None, start_date=None)
+    assert sorted(tm.eligible(t, no_cut)["tooth_num"]) == [3, 3]   # sensitivity: no cut-off
 
 
 
@@ -78,11 +80,12 @@ def test_the_teeth_left_out_are_counted_by_reason_including_an_unknown_age():
     # a tooth whose age isn't recorded is left out once a cut-off applies: say how many, so a real run reports it
     t = _teeth([(1, 1, "extracted_perio", 40), (1, 3, "extracted_perio", 15), (2, 3, "extracted_other", 40),
                 (3, 4, "missing_at_entry", None)])
-    out = tm.exclusions(t, tm.ModelParams())
+    every_year = tm.ModelParams(start_date=None)               # these teeth carry no dates
+    out = tm.exclusions(t, every_year)
     assert out == {"third_molar_count": 1, "under_min_age_count": 1, "unknown_age_count": 1,
                    "before_start_date_count": 0, "unknown_date_count": 0, "eligible_count": 1}
-    assert tm.exclusions(t, tm.ModelParams(min_age=None))["unknown_age_count"] == 0
-    assert out["eligible_count"] == len(tm.eligible(t, tm.ModelParams()))
+    assert tm.exclusions(t, tm.ModelParams(min_age=None, start_date=None))["unknown_age_count"] == 0
+    assert out["eligible_count"] == len(tm.eligible(t, every_year))
 
 
 def test_a_start_date_leaves_out_teeth_lost_or_first_charted_before_it():
@@ -91,15 +94,18 @@ def test_a_start_date_leaves_out_teeth_lost_or_first_charted_before_it():
                 (3, 3, "missing_at_entry", 40), (4, 3, "missing_at_entry", 40)])
     t["loss_date"] = pd.to_datetime(["2019-06-01", "2021-03-01", None, None, None])
     t["first_exam_date"] = pd.to_datetime(["2018-01-01", "2018-01-01", "2019-12-31", "2020-01-01", None])
-    assert tm.ModelParams().start_date is None                 # default: every year
-    assert len(tm.eligible(t)) == 5
+    assert tm.ModelParams().start_date == "2018-01-01"         # the default since spec 032 US8 (#448)
+    every_year = tm.ModelParams(start_date=None)
+    assert len(tm.eligible(t, every_year)) == 5
     params = tm.ModelParams(start_date="2020-01-01")
     kept = tm.eligible(t, params)
     assert list(zip(kept["patient_id"], kept["tooth_num"])) == [(1, 4), (3, 3)]
     out = tm.exclusions(t, params)
     assert out["before_start_date_count"] == 2 and out["unknown_date_count"] == 1
     assert out["eligible_count"] == 2 == len(kept)
-    assert tm.exclusions(t)["before_start_date_count"] == 0 and tm.exclusions(t)["unknown_date_count"] == 0
+    none = tm.exclusions(t, every_year)
+    assert none["before_start_date_count"] == 0 and none["unknown_date_count"] == 0
+    assert tm.exclusions(t)["unknown_date_count"] == 1          # the default date: the undated tooth is out
 
 
 def test_the_start_date_applies_after_the_age_cut_and_counts_each_tooth_once():
@@ -366,3 +372,48 @@ def test_the_predictions_reach_gold_under_the_declared_names(small_run):
     rows = small_run["predictions"].assign(run_id="1", run_ts=pd.Timestamp("2026-11-01"), git_commit="abc")
     out = gold_names.to_gold(rows, "fact_tooth_loss_prediction")
     assert list(out.columns) == [c.name for c in gm.TABLES["fact_tooth_loss_prediction"].columns]
+
+
+# ---------- the stage recount counts every lost tooth, whatever the model's filters (#468 review)
+
+def test_teeth_lost_before_the_start_date_still_count_toward_stage_iv():
+    # the start date and the minimum age choose the teeth that train and score the model, not the teeth a patient
+    # has lost: five periodontal losses in 2015 make stage IV with a 2018 start date; third molars stay out
+    t = _teeth([(1, n, "extracted_perio", 40) for n in (3, 4, 5, 12, 13)] + [(1, 1, "extracted_perio", 40)]
+               + [(1, n, "present", 40) for n in (6, 7, 8)])
+    t["loss_date"] = pd.to_datetime(["2015-06-01"] * 6 + [None] * 3)
+    t["first_exam_date"] = pd.to_datetime(["2014-01-01"] * 9)
+    params = tm.ModelParams(start_date="2018-01-01", min_age=50)
+    assert tm.eligible(t, params).empty                          # none of them trains or scores the model
+    counted = tm.stage_teeth(t, params)
+    assert sorted(counted.loc[counted["tooth_status_code"] == "extracted_perio", "tooth_num"]) == [3, 4, 5, 12, 13]
+    truth = counted[["patient_id", "tooth_num"]].assign(true_reason_code="perio")
+    ps = tm.patient_stage(counted, pd.Series(0.0, index=counted.index), truth, pd.Series({1: 6.0}), chart=t)
+    row = ps.iloc[0]
+    assert row["recorded_perio_count"] == 5 and row["is_stage3_4"]
+    for rule in ("recorded_only", "truth", "every_missing"):
+        assert row[f"is_stage4_{rule}"], rule
+
+
+def test_a_run_with_a_start_date_counts_every_lost_tooth_in_the_stage_recount():
+    pytest.importorskip("xgboost")
+    tables, truth, reads = od.build_with_readings(od.Params(n_patients=300), seed=5)
+    x = {**od.clean(tables), "radiograph_bone_level": reads}
+    params = tm.ModelParams(n_boot=0, cv_folds=None, start_date="2018-01-01")
+    out = tm.run(x, truth, params, generator_seed=5)
+    teeth = tl.tooth_table(x)
+    teeth = teeth[~teeth["tooth_num"].isin(tm.THIRD_MOLARS)]
+    want = teeth[teeth["tooth_status_code"] == "extracted_perio"].groupby("patient_id").size()
+    ps = out["patient_stage"]
+    one = ps[(ps["label_set"] == "completed") & (ps["model"] == tm.MODELS[0])].set_index("patient_id")
+    got = one["recorded_perio_count"]
+    assert (got.reindex(want.index) == want).all() and got.sum() == want.sum()
+    unlabelled = teeth[teeth["tooth_status_code"].isin(tm.APPLIED_STATUSES)].groupby("patient_id").size()
+    assert (one["unlabelled_tooth_count"].reindex(unlabelled.index) == unlabelled).all()
+    assert len(tm.eligible(tm.with_first_exam_date(teeth, x), params)) < len(teeth)   # the model's set is smaller
+    assert one["unlabelled_prob_sum"].gt(0).any()                # the model gives every unlabelled tooth a probability
+    sp = out["stage_probabilities"]                              # what the R twin reads for the recount
+    sp = sp[(sp["label_set"] == "completed") & (sp["model"] == tm.MODELS[0])]
+    assert len(sp) == unlabelled.sum()
+    assert sp.groupby("patient_id")["probability"].sum().reindex(one.index, fill_value=0.0).to_numpy() == \
+        pytest.approx(one["unlabelled_prob_sum"].to_numpy())

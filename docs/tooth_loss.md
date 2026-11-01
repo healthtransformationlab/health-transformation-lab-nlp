@@ -45,8 +45,9 @@ stores the image, not a reading of it.
 
 - **Teeth:** third molars are left out by default. Only adults are included: the minimum age
   (`ModelParams.min_age`, `--min-age`) is 18 by default; no cut-off and 30 and over are sensitivity analyses.
-  A start date (`ModelParams.start_date`, `--start-date`, spec 032; none by default, so every year counts) keeps
-  the teeth lost on or after it, or first charted on or after it when the loss date isn't recorded.
+  A start date (`ModelParams.start_date`, `--start-date`, spec 032; 2018-01-01 by default since spec 032 US8, `""`
+  for every year) keeps the teeth lost on or after it, or first charted on or after it when the loss date isn't
+  recorded.
   `tooth_loss_model.exclusions` counts the teeth left out by each reason.
 - **Two label sets** (FR-010): completed extractions only, and completed plus planned extractions (one per planned
   procedure, however many plan copies; a tooth planned then extracted counts once, as completed).
@@ -55,7 +56,8 @@ stores the image, not a reading of it.
   last measures and how good that chart was, and is shown beside it.
 - **Models:** logistic regression (L2, C = 1, standardised, median imputation and missing indicators) and XGBoost
   (depth 3, 200 trees, learning rate 0.05, subsample 0.8), with three baselines.
-- **Validation:** 70/30 split by patient, stratified on the outcome, seed 42. Both label sets are scored on the same
+- **Validation:** 80/20 split by patient, stratified on the outcome, seed 42, with XGBoost tuned by 5-fold
+  cross-validation (the defaults since spec 032 US8; before it, 70/30 with fixed settings, the `repo_v1` preset). Both label sets are scored on the same
   held-out extractions. The applied sets (teeth missing at entry, extractions without a diagnosis) are scored
   against the synthetic answer key, which is never a feature. Options (spec 032): `--test-share`; `--split-unit
   visit` holds out random teeth instead of patients, so one patient's teeth can be on both sides, which flatters the
@@ -78,6 +80,27 @@ These options can also be run together as a named preset, beside today's default
 ```bash
 cd python && python scripts/51_tooth_loss_model.py --patients 6000 --stability-seeds 5 --n-boot 1000
 ```
+
+**Under the defaults since spec 032 US8** (#448; [presets](presets.md), `repo_v2`): teeth lost (or first charted)
+from 2018-01-01, an 80/20 split by patient and XGBoost tuned by 5-fold cross-validation. The start date leaves out
+88,744 of the 168,000 non-third-molar teeth (79,256 left), so every set is smaller and the intervals wider.
+Generator seed 42, shared predictors, AUC (95% CI):
+
+| Teeth scored | completed: logistic | completed: XGBoost | completed + planned: logistic | completed + planned: XGBoost |
+|---|---|---|---|---|
+| held-out extractions (91 teeth, 84 patients) | 0.81 (0.63-0.96) | 0.82 (0.69-0.94) | 0.74 (0.56-0.90) | 0.78 (0.63-0.91) |
+| missing at the first exam (3,594 teeth, 1,452 patients) | 0.91 (0.89-0.93) | 0.89 (0.86-0.91) | 0.93 (0.92-0.95) | 0.94 (0.92-0.95) |
+| extractions without a diagnosis (84 teeth) | 0.99 (0.97-1.00) | 1.00 (0.99-1.00) | 0.97 (0.92-1.00) | 1.00 (0.99-1.00) |
+
+Across the 5 generator seeds the held-out AUC of the shared models ranges from 0.72 to 0.88. The start date and the
+minimum age choose the teeth that train and score the model, not how many teeth a patient has lost: the stage recount
+still counts every missing tooth but third molars (`tooth_loss_model.stage_teeth`), and the fitted model gives the
+unlabelled ones outside its own teeth a probability too. So stage IV, all 2,411 patients at stage III-IV by worst
+CAL, is as before: 273 by every missing tooth, 46 by fewer than 20 teeth, 181 by fewer than 10 occluding pairs, 97 by
+the synthetic truth; by the expected count (shared predictors) 33 / 36 (completed, logistic / XGBoost) and 83 / 94
+(completed + planned), against 21 / 27 and 85 / 84 before, as the model itself changed. The detailed tables below are the run before spec 032 US8 (every year,
+70/30, fixed XGBoost settings: `--start-date "" --test-share 0.3 --cv-folds 0`, the `repo_v1` preset); they are kept
+because they describe the whole extract.
 
 Synthetic extract of 6,000 patients, generator seed 42 (generator seeds 42-46 for the spread). Files in
 `data/results/synthetic_tooth_loss_*.csv` (not committed; the command rebuilds them).

@@ -41,9 +41,9 @@ SCORE_GROUPINGS <- list(
   (sum(r[seq_along(pos)]) - length(pos) * (length(pos) + 1) / 2) / (length(pos) * length(neg))
 }
 
-score_run <- function(y_true, y_pred, proba = NULL, model_id, language = "r", run_id = NULL, grouping = "six") {
+score_run <- function(y_true, y_pred, proba = NULL, model_id, language = "r", run_id = NULL, grouping = "five") {
   # proba: n x 6 matrix in PERIO_LABELS column order, or NULL.
-  # grouping (spec 032 US1): six (default), five or three; F1 per group, periodontitis yes/no unchanged.
+  # grouping (spec 032 US1): five (default since US8), six or three; F1 per group, periodontitis yes/no unchanged.
   if (!grouping %in% names(SCORE_GROUPINGS))
     stop("unknown status grouping '", grouping, "'; one of ", paste(names(SCORE_GROUPINGS), collapse = ", "))
   y_true <- .score_group(as.character(y_true), grouping); y_pred <- .score_group(as.character(y_pred), grouping)

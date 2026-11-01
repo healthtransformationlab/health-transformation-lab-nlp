@@ -6,7 +6,10 @@ setting, the primary score with a 95% CI, and a 95% rank range (where the system
 instead of a single rank. There is no overall rank across capabilities.
 
 - Phenotyping: every system that assigns a periodontal status (note-reading models, the rule
-  phenotypes, each evidence type alone) on the same 240 review charts against the same truth.
+  phenotypes, each evidence type alone) on the same review charts against the same truth, scored
+  under the spec 032 US8 defaults: five status groups (healthy and gingivitis together), the review
+  charts that count (adults, visits from 2021-04-01) and the diagnosis codes read with a treatment
+  plan that has no gum-disease code as healthy or gingivitis (study.scored_review).
   Rank ranges come from a paired bootstrap: the same chart resamples as the accuracy CIs
   (ladder_eval.ladder_table), each system ranked within each resample.
 - De-identification: per-identifier results aren't saved, so no bootstrap; the rank range is
@@ -30,8 +33,8 @@ import numpy as np
 import pandas as pd
 import yaml
 
-from . import ladder_eval
-from .labels import LABELS
+from . import ladder_eval, study
+from .labels import DEFAULT_GROUPING, GROUPINGS, LABELS
 from .paths import DATASETS_DIR, DEID_DIR, EXTERNAL_DIR, JUDGE_DIR, MODELS_YAML, REPO_ROOT
 from .telemetry import traced
 
@@ -140,7 +143,7 @@ def readme_phenotype_rows(inp: dict) -> list[tuple[str, str]]:
     acc = inp["ladder"].set_index("method")["accuracy"]
     key, truth = inp["key"].reindex(inp["preds"].index), inp["preds"]["truth"]
     for s in (*PHENOTYPES, *EVIDENCE):
-        acc[s] = (key[s] == truth).mean()
+        acc[s] = (ladder_eval.grouped(key[s]) == truth).mean()
     acc = acc.sort_values(ascending=False, kind="stable")
     note = [s for s in acc.index if s in set(inp["ladder"]["method"])]
     trained = next(s for s in note if phenotype_group(s) in PHENOTYPE_GROUPS[1:3])
@@ -236,8 +239,9 @@ def load_inputs() -> dict:
 
 
 def _key() -> pd.DataFrame:
-    """The review key, with algorithm_patel2022 from its own file (spec 024 FR-010: the key stays unchanged)."""
-    key = pd.read_csv(DATASETS_DIR / "answer_key" / "review_key.csv").set_index("visit_id")
+    """The review key, with algorithm_patel2022 from its own file (spec 024 FR-010: the key stays unchanged), and
+    the diagnosis codes and rule phenotypes read under the default absent-code rule (spec 032 US8)."""
+    key = study.reread_absent_code(pd.read_csv(DATASETS_DIR / "answer_key" / "review_key.csv")).set_index("visit_id")
     f = DATASETS_DIR / "periodx_visits.csv"
     if f.exists():
         key["algorithm_patel2022"] = pd.read_csv(f).set_index("visit_id")["algorithm_patel2022"].reindex(key.index)
@@ -308,7 +312,7 @@ def yes_no(truth: pd.Series, pred: pd.Series, score=None) -> dict:
 def breakdown(truth: pd.Series, pred: pd.Series) -> dict:
     """Share of charts in each box (they add to 1): correct; wrong about periodontitis
     yes/no, split by what the system said; incorrect stage (right about periodontitis,
-    wrong status otherwise: stage, or healthy vs gingivitis); no answer."""
+    wrong status group otherwise: the stage); no answer."""
     answered = pred.notna()
     perio_t = truth.str.startswith("periodontitis")
     perio_p = pred.fillna("").str.startswith("periodontitis")
@@ -337,11 +341,11 @@ def _bullets(terms) -> str:
 
 
 PHENOTYPE_TERMS = [
-    ("Correct", "the right status (healthy, gingivitis, or periodontitis stage 1–4)."),
+    ("Correct", "the right status group: healthy or gingivitis (one group since spec 032 US8), or periodontitis "
+                "stage 1–4."),
     ("Periodontitis incorrectly assigned", "said periodontitis, but the patient doesn't have it."),
     ("Periodontitis incorrectly ruled out", "the patient has periodontitis, but the method said they don't."),
-    ("Incorrect stage", "right that it is or isn't periodontitis, but the wrong stage (1 mild to 4 most severe), "
-                        "or healthy and gingivitis mixed up."),
+    ("Incorrect stage", "right that it is or isn't periodontitis, but the wrong stage (1 mild to 4 most severe)."),
     ("No answer (evidence not available)", "the method gave no status because what it reads wasn't in the record, "
                                            "e.g. no probing chart was taken."),
 ]
@@ -398,11 +402,14 @@ def phenotype_systems(inp) -> dict:
 
 @traced
 def phenotype_predictions(inp) -> tuple[pd.Series, dict, pd.Series]:
-    """(truth, {system: status per review chart, NaN = no status}, note difficulty), indexed by visit_id.
-    The one place the leaderboard's inputs are assembled; the judge scorecard (spec 012) reuses it."""
+    """(truth, {system: status group per review chart, NaN = no status}, note difficulty), indexed by visit_id.
+    The one place the leaderboard's inputs are assembled; the judge scorecard (spec 012) reuses it. The review charts
+    are those scripts/28_ladder_vs_truth.py scored (ladder_preds.csv), every answer at the default grouping."""
     preds = inp["preds"]
     key = inp["key"].reindex(preds.index)
-    pred = {s: (preds[s] if s in preds else key[s]).where(lambda x: x.isin(LABELS)) for s in phenotype_systems(inp)}
+    groups = GROUPINGS[DEFAULT_GROUPING]
+    pred = {s: ladder_eval.grouped(preds[s] if s in preds else key[s]).where(lambda x: x.isin(groups))
+            for s in phenotype_systems(inp)}
     return preds["truth"], pred, key["difficulty"]
 
 
@@ -417,8 +424,10 @@ def _phenotyping(inp) -> tuple[str, pd.DataFrame]:
     bd = {s: breakdown(truth, pred[s]) for s in systems}
     links = {m["id"]: f"https://huggingface.co/{m['hf']}" for m in reg["models"] if m.get("hf")}
     out = [PHENOTYPE_TITLE, "",
-           "Every method that assigns one of the six periodontal statuses, on the same 240 synthetic review "
-           "charts against the generator's truth: models that read only the chart note, the rule phenotypes "
+           f"Every method that assigns a periodontal status, scored at five status groups (healthy and gingivitis "
+           f"together, then stage I to IV) on the same {len(truth)} synthetic review charts (adults, visits from "
+           f"{study.ANALYSIS_START_DATE}: the defaults since spec 032 US8, [presets](presets.md)) against the "
+           "generator's truth: models that read only the chart note, the rule phenotypes "
            "that combine the whole record, and each evidence type alone. **Rank** is the 95% range of the "
            "method's rank by exact status, over the same chart resamples as its CI (paired bootstrap): \"1–3\" "
            "means it plausibly ranks anywhere from 1st to 3rd. How each part of the record is turned into a "

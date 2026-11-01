@@ -80,11 +80,14 @@ def test_score_rejects_an_unknown_grouping():
         score(Y_TRUE, Y_PRED, None, "t", grouping="two")
 
 
-def test_score_default_is_the_six_status_score():
+def test_score_default_is_the_five_group_score():
+    # spec 032 US8 (#448): five groups by default; six stays available
     a = score(Y_TRUE, Y_PRED, None, "t", run_id="r")
-    b = score(Y_TRUE, Y_PRED, None, "t", run_id="r", grouping="six")
+    b = score(Y_TRUE, Y_PRED, None, "t", run_id="r", grouping="five")
     pd.testing.assert_frame_equal(a.drop(columns="timestamp"), b.drop(columns="timestamp"))
-    assert list(a.loc[a.metric == "f1", "class"]) == list(LABELS)
+    assert list(a.loc[a.metric == "f1", "class"]) == list(GROUPINGS["five"])
+    six = score(Y_TRUE, Y_PRED, None, "t", run_id="r", grouping="six")
+    assert list(six.loc[six.metric == "f1", "class"]) == list(LABELS)
 
 
 def test_score_at_five_and_three_groups():
@@ -98,7 +101,7 @@ def test_score_at_five_and_three_groups():
     assert _f1(three)["mild"] == 1.0 and _f1(three)["severe"] == 1.0
     assert three.loc[three.metric == "macro_f1", "value"].item() == pytest.approx((0.8 + 1 + 1) / 3)
     # periodontitis yes/no is the same at every grouping
-    six = score(Y_TRUE, Y_PRED, None, "t")
+    six = score(Y_TRUE, Y_PRED, None, "t", grouping="six")
     for k in ("sensitivity", "specificity", "ppv", "npv"):
         assert _binary(five)[k] == _binary(six)[k] == _binary(three)[k]
 
@@ -116,7 +119,8 @@ def test_prevalence_by_group_at_three_groups():
     assert t["share_ci_low"].le(t["share"]).all() and t["share_ci_high"].ge(t["share"]).all()
     c = prevalence_by_group(v, "status", grouping="five", by="clinic_id")
     assert set(c["clinic_id"]) == {1, 2} and len(c) == 2 * 5
-    six = prevalence_by_group(v, "status").set_index("status_group")
+    assert prevalence_by_group(v, "status").equals(prevalence_by_group(v, "status", grouping="five"))   # US8
+    six = prevalence_by_group(v, "status", grouping="six").set_index("status_group")
     assert list(six.index) == list(LABELS)
     # at six, a source that only says "healthy or gingivitis" counts as known but in neither group
     assert six.loc[H, "share"] == 0.25 and six.loc[G, "share"] == 0

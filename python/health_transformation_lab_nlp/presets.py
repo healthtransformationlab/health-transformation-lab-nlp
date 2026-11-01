@@ -36,7 +36,7 @@ from .sources import READERS
 from .telemetry import traced
 
 PRESETS_FILE = Path(__file__).with_name("analysis_presets.yaml")
-BASE_PRESET = "repo_v1"
+BASE_PRESET = "repo_v2"           # the code's defaults (spec 032 US8)
 DATA_LABEL = "synthetic"
 
 # Every setting a preset must give, in the order the settings table lists them, with what it means.
@@ -177,9 +177,9 @@ def _text(v) -> str:
 
 @traced
 def settings_table(name: str, path: Path = PRESETS_FILE) -> pd.DataFrame:
-    """One row per setting: its repo_v1 value, the preset's value, and whether the preset changes it."""
+    """One row per setting: its default (BASE_PRESET), the preset's value, and whether the preset changes it."""
     base, p = load_preset(BASE_PRESET, path), load_preset(name, path)
-    return pd.DataFrame([{"setting_name": s, "repo_v1_value_text": _text(base[s]), "preset_value_text": _text(p[s]),
+    return pd.DataFrame([{"setting_name": s, "default_value_text": _text(base[s]), "preset_value_text": _text(p[s]),
                           "is_changed": base[s] != p[s]} for s in PRESET_SETTINGS])
 
 

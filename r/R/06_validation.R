@@ -68,7 +68,7 @@ prevalence_by <- function(visits, status_col, by = NULL) {
 
 # Spec 032 US1 (#440): twin of prevalence.prevalence_by_group. Person-level share in each status group of
 # `grouping`, Wilson 95% interval, one row per group (and per <by> value). Uses group_status from r/R/labels.R.
-prevalence_by_group <- function(visits, status_col, grouping = "six", by = NULL) {
+prevalence_by_group <- function(visits, status_col, grouping = "five", by = NULL) {
   known <- c(PERIO_LABELS6, "healthy_gingivitis")
   groups_of <- STATUS_GROUPINGS[[grouping]]
   v <- visits[order(visits$person_id, as.character(visits$visit_date)), ]

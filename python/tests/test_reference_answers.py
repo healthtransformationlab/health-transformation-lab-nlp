@@ -116,11 +116,13 @@ def test_committed_per_field_table_matches_the_committed_runs():
     for run, got in out.groupby("run"):
         want = ra.field_accuracy(pd.read_csv(DATASETS_DIR / f"llm_details_{run}.csv"), ref)
         pd.testing.assert_frame_equal(got.drop(columns="run").reset_index(drop=True), want, check_dtype=False)
-    # the status row is the rung's headline accuracy (pred, after fallback), as in medgemma_vs_bert.csv
-    head = pd.read_csv(DATASETS_DIR / "ladder" / "medgemma_vs_bert.csv").set_index("method")["accuracy"]
+    # the status row is the rung's accuracy (pred, after fallback) at the six statuses on all 240 review charts: the
+    # reader's fields are scored as read, not at the scoring defaults of medgemma_vs_bert.csv (spec 032 US8)
+    key = pd.read_csv(DATASETS_DIR / "answer_key" / "review_key.csv").set_index("visit_id")["truth_status"]
     st = out[out.field == "status"].set_index("run")["accuracy"]
     for run in st.index:
-        assert st[run] == pytest.approx(head[run])
+        pred = pd.read_csv(DATASETS_DIR / f"ai_predictions_{run}.csv").set_index("visit_id")["pred"].reindex(key.index)
+        assert st[run] == pytest.approx((pred == key).mean())
 
 
 def test_mlflow_metrics_name_each_field():

@@ -1,0 +1,10 @@
+generator_seed,label_set,model,rule,patient_count,stage3_count,stage4_count,agree_truth_count,false_iv_count,missed_iv_count,to_iv_vs_recorded_count,to_iii_vs_recorded_count,preset_name,data_label
+42,all,none,recorded_only,2411,2411,0,2314,0,97,0,0,repo_v2,synthetic
+42,all,none,every_missing,2411,2138,273,2235,176,0,273,0,repo_v2,synthetic
+42,all,none,truth,2411,2314,97,2411,0,0,97,0,repo_v2,synthetic
+42,all,none,teeth_lt_20,2411,2365,46,2336,12,63,46,0,repo_v2,synthetic
+42,all,none,pairs_lt_10,2411,2230,181,2241,127,43,181,0,repo_v2,synthetic
+42,completed,logistic,expected_perio_loss,2411,2378,33,2331,8,72,33,0,repo_v2,synthetic
+42,completed,xgboost,expected_perio_loss,2411,2375,36,2330,10,71,36,0,repo_v2,synthetic
+42,completed_planned,logistic,expected_perio_loss,2411,2328,83,2343,27,41,83,0,repo_v2,synthetic
+42,completed_planned,xgboost,expected_perio_loss,2411,2317,94,2346,31,34,94,0,repo_v2,synthetic

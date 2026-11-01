@@ -104,9 +104,10 @@ side).
   **stage 1**, moderate **stage 2**, severe **stage 3**. The codes have no stage 4.
 - **No answer** when the practice doesn't attach diagnosis codes, or for any other code.
 - A setting changes that last rule (spec 032, `absent_code` in `phenotype.py`, also taken by
-  `study.read_methods`). `no_answer`, the default, is the rule above. With `healthy_or_gingivitis`, a visit with a
-  treatment plan but no gum-disease code (no K05 code) reads as **healthy**, which here stands for healthy or
-  gingivitis: the code list can't tell the two apart, and the five-level grouping merges them. A visit with no
+  `study.read_methods`). `no_answer` is the rule above, and how the benchmark note set is built
+  (`scripts/10_build_study.py`, the answer key). With `healthy_or_gingivitis`, the default when results are scored since
+  spec 032 US8 ([presets](presets.md)), a visit with a treatment plan but no gum-disease code (no K05 code) reads as
+  **healthy**, which here stands for healthy or gingivitis: the code list can't tell the two apart, and the five-level grouping merges them. A visit with no
   plan still has no answer, and a K05 code the rule can't read stays no answer.
 
 | Evidence | Input | Status |

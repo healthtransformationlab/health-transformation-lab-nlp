@@ -10,6 +10,8 @@ from health_transformation_lab_nlp.note_reader import read_note, read_stated_dx
 from health_transformation_lab_nlp.reliability import consensus, fleiss_kappa, weighted_kappa
 from health_transformation_lab_nlp.sources import read_proc_codes, read_proc_dx
 from health_transformation_lab_nlp.study import (
+    ANALYSIS_MIN_AGE,
+    ANALYSIS_START_DATE,
     build_study,
     generate_visits,
     visit_exclusions,
@@ -95,10 +97,20 @@ def _visits():
                                         dt.date(2021, 1, 1)]})
 
 
-def test_by_default_every_visit_counts():
+def test_with_no_filter_every_visit_counts():
     v = _visits()
-    assert visits_in_study(v).equals(v)
-    assert visit_exclusions(v) == {"under_min_age_count": 0, "before_start_date_count": 0, "eligible_count": 4}
+    assert visits_in_study(v, None, None).equals(v)
+    assert visit_exclusions(v, None, None) == {"under_min_age_count": 0, "before_start_date_count": 0,
+                                               "eligible_count": 4}
+
+
+def test_by_default_adults_from_the_start_date_count():
+    # spec 032 US8 (#448): the scoring defaults; study.build_study still keeps every visit
+    v = _visits().assign(visit_date=[dt.date(2021, 6, 1), dt.date(2021, 2, 1), dt.date(2021, 4, 1),
+                                     dt.date(2022, 1, 1)])
+    assert (ANALYSIS_MIN_AGE, ANALYSIS_START_DATE) == (18, "2021-04-01")
+    assert list(visits_in_study(v)["visit_id"]) == [3, 4]
+    assert visit_exclusions(v) == {"under_min_age_count": 1, "before_start_date_count": 1, "eligible_count": 2}
 
 
 def test_a_minimum_age_and_a_start_date_leave_visits_out_counted_once_by_first_reason():
@@ -108,8 +120,8 @@ def test_a_minimum_age_and_a_start_date_leave_visits_out_counted_once_by_first_r
     # visit 1 is both under 18 and before the start date: counted under age, the first reason
     assert visit_exclusions(v, min_age=18, start_date="2021-01-01") == {
         "under_min_age_count": 1, "before_start_date_count": 1, "eligible_count": 2}
-    assert list(visits_in_study(v, min_age=18)["visit_id"]) == [2, 3, 4]
-    assert list(visits_in_study(v, start_date="2021-01-01")["visit_id"]) == [2, 4]
+    assert list(visits_in_study(v, min_age=18, start_date=None)["visit_id"]) == [2, 3, 4]
+    assert list(visits_in_study(v, min_age=None, start_date="2021-01-01")["visit_id"]) == [2, 4]
 
 
 def test_the_study_build_reports_visits_left_out_only_when_a_filter_is_set(tmp_path):

@@ -1,0 +1,3 @@
+scheme,outcome,split_unit,test_share,cv_folds,train_visit_count,test_visit_count,test_people_count,people_in_both_count,accuracy,macro_f1,cv_macro_f1,params_text,preset_name,data_label
+5level,algorithm_design,person,0.2,5,2431,567,212,0,0.7954144621,0.7508479545,0.7295517926,"{'max_depth': 3, 'learning_rate': 0.05, 'reg_lambda': 10.0, 'min_child_weight': 1, 'class_weight': 'balanced'}",repo_v2,synthetic
+3level,algorithm_design,person,0.2,5,2431,567,212,0,0.8818342152,0.8684661612,0.8305624562,"{'max_depth': 3, 'learning_rate': 0.05, 'reg_lambda': 10.0, 'min_child_weight': 1, 'class_weight': None}",repo_v2,synthetic
