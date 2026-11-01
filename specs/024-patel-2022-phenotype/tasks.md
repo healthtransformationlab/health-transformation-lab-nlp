@@ -33,4 +33,4 @@ Implementation starts after this spec, plan and tasks are reviewed.
 - [x] T011 [US4] Failing test: `test_rule_order_citation.py` with the corrected wording
 - [x] T012 [US4] References item 4 (full citation, implementation, inconsistencies); evidence rules,
   walkthrough, `phenotype.py` comment, action item A2
-- [ ] T013 Full test suite, `ruff`, R parity; review file for each implementation PR
+- [x] T013 Full test suite, `ruff`, R parity; review file for each implementation PR
