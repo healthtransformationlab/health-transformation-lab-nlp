@@ -43,7 +43,9 @@ def test_open_dental_tables_are_the_ones_spec_029_researched():
                            "sheetfield", "vitalsign", "patientrace", "cdcrec", "site", "procnote", "ehrmeasureevent",
                            "patfield", "snomed",
                            # #385: radiographs
-                           "document"}
+                           "document",
+                           # spec 032 US6 (#445): insurance
+                           "carrier", "insplan", "inssub", "patplan"}
     assert "language" not in OD.TABLES          # Open Dental's language table is screen translations
     for name in source:
         allowed = _research_columns(name)
@@ -156,7 +158,7 @@ def test_the_open_dental_areas_sit_in_the_reference_layout():
         cols.setdefault(c, []).append(title)
     assert cols[0] == ["Medication + Allergy", "Socio-Demographic", "Patient Health"]
     assert cols[1] == ["Provider", "Research Authorization", "Patient", "Initial Odontogram"]
-    assert cols[2] == ["Appointment", "Misc Definitions", "Location"]
+    assert cols[2] == ["Appointment", "Misc Definitions", "Location", "Insurance"]   # Insurance: spec 032 US6
     assert cols[3] == ["Perio Charting", "Treatment Planning", "Procedures"]
     assert cols[4] == ["Tooth loss (spec 029)", "Data quality", "Answer key (evaluation only)"]
     tables = {title: t for title, _, t in OD.GROUPS}

@@ -26,6 +26,8 @@ from .telemetry import traced
 
 MIN_GAP = 0.05                       # a flagged group also differs from the rest by at least 5 points
 MIN_CHARTS = 30                      # groups with fewer charts are reported, never flagged or used as the rest
+GROUP_TYPES = ("office", "provider", "sex", "race", "exam_year", "age_band")     # the default split
+ALL_GROUP_TYPES = (*GROUP_TYPES, "insurance_type")   # spec 032 US6 (#445): private, public or none, when asked
 RESULT_COLUMNS = ["check_num", "domain_code", "check_name", "table_name", "checked_count", "found_count",
                   "found_ratio", "is_flagged"]
 GROUP_COLUMNS = ["group_type_code", "group_name", "metric_name", "chart_count", "value_ratio", "rest_mean_ratio",
@@ -233,10 +235,14 @@ def _age_band(age: float) -> str:
 
 
 @traced
-def group_consistency(tables: dict[str, pd.DataFrame]) -> pd.DataFrame:
-    """For each group of each type (office, provider, sex, race, exam year, age band): how many of its perio charts
-    have no gum-margin readings (so no attachment loss), and how many are incomplete in any way (partial, buccal
-    only, no margin or no bleeding), each against the rest of its type (`flag_against_rest`)."""
+def group_consistency(tables: dict[str, pd.DataFrame], group_types: tuple = GROUP_TYPES) -> pd.DataFrame:
+    """For each group of each type (by default office, provider, sex, race, exam year, age band; `insurance_type`,
+    spec 032 US6, when asked): how many of its perio charts have no gum-margin readings (so no attachment loss), and
+    how many are incomplete in any way (partial, buccal only, no margin or no bleeding), each against the rest of its
+    type (`flag_against_rest`)."""
+    unknown = [g for g in group_types if g not in ALL_GROUP_TYPES]
+    if unknown:
+        raise ValueError(f"unknown group type {unknown}: choose from {ALL_GROUP_TYPES}")
     q = od.chart_quality(tables)
     ex = tables["perioexam"][["perioexamnum", "provnum"]].assign(perioexamnum=lambda x: _num(x["perioexamnum"]))
     q = q.merge(ex, on="perioexamnum", how="left")
@@ -252,10 +258,13 @@ def group_consistency(tables: dict[str, pd.DataFrame]) -> pd.DataFrame:
     q["exam_year"] = q["examdate"].dt.year
     born = pd.to_datetime(q["patnum"].map(dict(zip(pat["patnum"], pat["birthdate"]))), errors="coerce")
     q["age_band"] = ((q["examdate"] - born).dt.days / 365.25).map(_age_band)
+    if "insurance_type" in group_types:
+        kind = od.insurance_type(tables)
+        q["insurance_type"] = q["patnum"].map(dict(zip(kind.index, kind)))
     q["no_margin_chart"] = ~q["has_margin"]
     q["incomplete_chart"] = q["is_partial"] | q["is_buccal_only"] | ~q["has_margin"] | ~q["has_bleeding"]
     rows = []
-    for gtype in ["office", "provider", "sex", "race", "exam_year", "age_band"]:
+    for gtype in group_types:
         key = q[gtype].map(lambda x: "unknown" if pd.isna(x) else str(int(x)) if isinstance(x, float) else str(x))
         for metric in ["no_margin_chart", "incomplete_chart"]:
             g = q.groupby(key)[metric]

@@ -425,6 +425,71 @@ image: a dentist's reading is free text in a note, and a reading tool keeps its 
 | `SnomedCode` | string | the code |
 | `Description` | string |  |
 
+## Insurance (spec 032 US6, #445)
+Checked in the same source (`24_3`, `d804c19`, `OpenDentBusiness/TableTypes/`) on 2026-11-01. A patient's coverage
+is `patplan` (one row per plan covering them, ordered by `Ordinal`), which points to a subscription (`inssub`: who
+holds the plan), which points to the plan (`insplan`), which points to its carrier (`carrier`). Open Dental stores
+no "private or public" type: the plan's `FilingCode` (an e-claims filing code in its own table) or the carrier is
+what a practice reads it from. The synthetic extract reads it from the carrier through a declared lookup
+(`open_dental.CARRIER_INSURANCE_TYPE`); `FilingCode` and its table are left out.
+
+### `carrier`
+*(Carrier.cs)*
+
+| Column | Type | Meaning |
+|---|---|---|
+| `CarrierNum` | bigint | primary key |
+| `CarrierName` | string | name of the carrier |
+| `Address` | string |  |
+| `Address2` | string | second line of address |
+| `City` | string |  |
+| `State` | string | 2 characters in the US |
+| `Zip` | string | postcode |
+| `Phone` | string |  |
+| `ElectID` | string | electronic payer ID for e-claims |
+| `IsHidden` | bool | hidden from the pick list |
+
+### `insplan`
+*(InsPlan.cs)*
+
+| Column | Type | Meaning |
+|---|---|---|
+| `PlanNum` | bigint | primary key |
+| `GroupName` | string | optional |
+| `GroupNum` | string | optional |
+| `PlanType` | string | blank percentage (default), `p` PPO percentage, `f` flat copay, `c` capitation |
+| `CarrierNum` | bigint | FK to `carrier` |
+| `IsMedical` | bool | medical rather than dental insurance |
+| `IsHidden` | bool | hidden from the pick list |
+| `MonthRenew` | byte | month 1–12 the plan renews; 0 calendar year |
+
+### `inssub`
+*(InsSub.cs)*
+
+| Column | Type | Meaning |
+|---|---|---|
+| `InsSubNum` | bigint | primary key |
+| `PlanNum` | bigint | FK to `insplan` |
+| `Subscriber` | bigint | FK to `patient.PatNum`: who holds the plan |
+| `DateEffective` | date | when the plan took effect; 0001-01-01 if not set |
+| `DateTerm` | date | when it ended; 0001-01-01 if not set |
+| `ReleaseInfo` | bool | release of information signature on file |
+| `AssignBen` | bool | assignment of benefits signature on file |
+| `SubscriberID` | string | the number the insurer assigned |
+
+### `patplan`
+*(PatPlan.cs)*
+
+| Column | Type | Meaning |
+|---|---|---|
+| `PatPlanNum` | bigint | primary key |
+| `PatNum` | bigint | FK to `patient`: who is covered |
+| `Ordinal` | byte | 1 primary, 2 secondary, ...; 0 is not used |
+| `IsPending` | bool | coverage pending |
+| `Relationship` | int | Relat enum: 0 self, 1 spouse, 2 child, ... (the enum's own file was not read; the extract uses 0 and 1 only) |
+| `PatID` | string | optional patient ID that overrides the subscriber ID on e-claims |
+| `InsSubNum` | bigint | FK to `inssub` |
+
 ## Treatment plans: one planned procedure, many copies (added for #377)
 
 From the same classes:

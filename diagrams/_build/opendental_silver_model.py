@@ -292,6 +292,49 @@ TABLES = {
         C("snomedcode", "string", "the code"),
         C("description", "string", "name"),
     ]),
+    # spec 032 US6 (#445): insurance. A patient's insurance type (private, public, none) is read from the carrier of
+    # the primary plan through a declared lookup (open_dental.CARRIER_INSURANCE_TYPE); Open Dental stores no such type
+    "carrier": Table("source", "One per insurance carrier (name and address)", "tooth_loss_load: overwrite per run", [
+        C("carriernum", "bigint", "carrier key", "PK"),
+        C("carriername", "string", "carrier name (synthetic); mapped to private or public by a declared lookup"),
+        C("address", "string", "street address"),
+        C("address2", "string", "second address line"),
+        C("city", "string", "city"),
+        C("state", "string", "state"),
+        C("zip", "string", "postcode"),
+        C("phone", "string", "phone"),
+        C("electid", "string", "electronic payer ID for claims"),
+        C("ishidden", "boolean", "hidden from the pick list"),
+    ]),
+    "insplan": Table("source", "One per insurance plan; subscribers share plans through inssub", "tooth_loss_load: overwrite per run", [
+        C("plannum", "bigint", "plan key", "PK"),
+        C("groupname", "string", "the group, e.g. an employer's plan; optional"),
+        C("groupnum", "string", "group number; optional"),
+        C("plantype", "string", "blank percentage · p PPO percentage · f flat copay · c capitation"),
+        C("carriernum", "bigint", "the carrier", "FK"),
+        C("ismedical", "boolean", "medical rather than dental insurance"),
+        C("ishidden", "boolean", "hidden from the pick list"),
+        C("monthrenew", "int", "month the plan renews, 1–12; 0 calendar year"),
+    ]),
+    "inssub": Table("source", "One per subscriber to a plan: who holds it", "tooth_loss_load: overwrite per run", [
+        C("inssubnum", "bigint", "subscription key", "PK"),
+        C("plannum", "bigint", "the plan", "FK"),
+        C("subscriber", "bigint", "the patient who holds it (patient.patnum), not always the one covered", "FK"),
+        C("dateeffective", "date", "when the plan took effect"),
+        C("dateterm", "date", "when it ended; null when not set (Open Dental itself stores 0001-01-01)"),
+        C("releaseinfo", "boolean", "release of information signed"),
+        C("assignben", "boolean", "assignment of benefits signed"),
+        C("subscriberid", "string", "the insurer's ID for the subscriber"),
+    ]),
+    "patplan": Table("source", "One per patient and plan covering them: what determines a patient's coverage", "tooth_loss_load: overwrite per run", [
+        C("patplannum", "bigint", "key", "PK"),
+        C("patnum", "bigint", "the patient covered", "FK"),
+        C("ordinal", "int", "1 primary · 2 secondary · ...; 0 is not used"),
+        C("ispending", "boolean", "coverage pending"),
+        C("relationship", "int", "Relat enum: 0 self · 1 spouse · 2 child · ..."),
+        C("patid", "string", "optional patient ID overriding the subscriber ID on claims"),
+        C("inssubnum", "bigint", "the subscription", "FK"),
+    ]),
     # ---------- derived by spec 029 ----------
     "patient_tooth": Table("derived", "One per patient and tooth (1–32): how it was lost, and what was charted before", "tooth_loss.tooth_table; overwrite per run, logged in load_log", [
         C("patient_id", "bigint", "patient.patnum", "PK,FK"),
@@ -353,7 +396,7 @@ TABLES = {
         C("git_commit_sha", "string", "commit the job was deployed from"),
     ]),
     "tooth_loss_dq_group": Table("dq", "One per group, measure and run: is the perio chart kept as well for every group of patients?", "tooth_loss_dq.group_consistency; delete-then-append by run_id", [
-        C("group_type_code", "string", "office · provider · sex · race · exam_year · age_band", "PK"),
+        C("group_type_code", "string", "office · provider · sex · race · exam_year · age_band; insurance_type when asked (spec 032)", "PK"),
         C("group_name", "string", "the group, e.g. office 2, female, 45–64", "PK"),
         C("metric_name", "string", "no_margin_chart · incomplete_chart", "PK"),
         C("run_id", "string", "Databricks job run id", "PK"),
@@ -410,6 +453,12 @@ RELATIONSHIPS = [
     R("patient", "ehrmeasureevent", ("patnum",), ("patnum",), "patnum"),
     R("snomed", "ehrmeasureevent", ("snomedcode",), ("codevalueresult",), "codevalueresult = snomedcode", "|o..o{", derived=True),
     R("patient", "patfield", ("patnum",), ("patnum",), "patnum"),
+    # spec 032 US6 (#445): insurance
+    R("carrier", "insplan", ("carriernum",), ("carriernum",), "carriernum"),
+    R("insplan", "inssub", ("plannum",), ("plannum",), "plannum"),
+    R("patient", "inssub", ("patnum",), ("subscriber",), "subscriber = patnum (who holds the plan)"),
+    R("inssub", "patplan", ("inssubnum",), ("inssubnum",), "inssubnum"),
+    R("patient", "patplan", ("patnum",), ("patnum",), "patnum (who is covered)"),
     R("patient", "patient_tooth", ("patnum",), ("patient_id",), "patnum = patient_id"),
     R("procedurelog", "planned_extraction", ("procnum",), ("procedure_id",), "procnum = procedure_id (procstatus 1)", "||--o|"),
     R("planned_extraction", "patient_tooth", ("patient_id", "tooth_num"), ("patient_id", "tooth_num"),
@@ -442,6 +491,7 @@ GROUPS = [
     ("Appointment", 2, ["appointment"]),
     ("Misc Definitions", 2, ["definition"]),
     ("Location", 2, ["clinic", "site"]),
+    ("Insurance", 2, ["patplan", "inssub", "insplan", "carrier"]),
     ("Perio Charting", 3, ["perioexam", "periomeasure"]),
     ("Treatment Planning", 3, ["proctp", "treatplan"]),
     ("Procedures", 3, ["procedurelog", "procedurecode", "procnote", "document"]),
@@ -454,15 +504,15 @@ KINDS = {t: "fact" for t in ("procedurelog", "treatplan", "proctp", "perioexam",
                              "tooth_loss_truth",
                              "document", "radiograph_bone_level")}
 KINDS |= {t: "fact" for t in ("appointment", "medicationpat", "allergy", "sheet", "sheetfield", "vitalsign",
-                              "patientrace", "procnote", "ehrmeasureevent", "patfield")}
+                              "patientrace", "procnote", "ehrmeasureevent", "patfield", "patplan", "inssub")}
 KINDS |= {t: "dimension" for t in ("patient", "clinic", "procedurecode", "definition", "diseasedef", "provider",
-                                   "medication", "allergydef", "cdcrec", "site", "snomed")}
+                                   "medication", "allergydef", "cdcrec", "site", "snomed", "insplan", "carrier")}
 # columns that would hold PHI in a real extract (synthetic here): de-identify before anything leaves the source
 PHI = {("patient", "birthdate"), ("patient", "zip"), ("patient", "medurgnote"), ("patient", "datetimedeceased"),
        ("proctp", "descript"), ("treatplan", "signature"), ("disease", "patnote"),
        ("medicationpat", "patnote"), ("allergy", "reaction"), ("sheetfield", "fieldvalue"), ("procnote", "note"),
        ("ehrmeasureevent", "moreinfo"), ("site", "note"),
-       ("document", "description"), ("document", "filename")}
+       ("document", "description"), ("document", "filename"), ("inssub", "subscriberid"), ("patplan", "patid")}
 # open questions and issues, shown in red: what to check before trusting the column
 QUESTIONS = {
     ("procedurelog", "diagnosticcode"): "rare: only on medical claims; never the label",
@@ -474,4 +524,6 @@ QUESTIONS = {
     ("toothinitial", "initialtype"): "missing teeth carry no date and no reason",
     ("patientrace", "cdcreccode"): "codes form a hierarchy: a patient can pick a group or a sub-group",
     ("snomed", "snomedcode"): "a licensed list: an extract may hold only the codes it uses",
+    ("carrier", "carriername"): "no insurance type is stored: private or public comes from a declared carrier lookup",
+    ("patplan", "ordinal"): "the primary plan (lowest ordinal) gives the patient's insurance type; no row is none",
 }

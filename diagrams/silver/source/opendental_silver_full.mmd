@@ -35,6 +35,11 @@ erDiagram
     patient ||--o{ ehrmeasureevent : "patnum"
     snomed |o..o{ ehrmeasureevent : "codevalueresult = snomedcode"
     patient ||--o{ patfield : "patnum"
+    carrier ||--o{ insplan : "carriernum"
+    insplan ||--o{ inssub : "plannum"
+    patient ||--o{ inssub : "subscriber = patnum (who holds the plan)"
+    inssub ||--o{ patplan : "inssubnum"
+    patient ||--o{ patplan : "patnum (who is covered)"
     patient ||--o{ patient_tooth : "patnum = patient_id"
     procedurelog ||--o| planned_extraction : "procnum = procedure_id (procstatus 1)"
     planned_extraction }o..o| patient_tooth : "labels planned teeth"
@@ -318,6 +323,47 @@ erDiagram
         string snomedcode "the code"
         string description "name"
     }
+    carrier {
+        bigint carriernum PK "carrier key"
+        string carriername "carrier name (synthetic); mapped to private or public by a declared lookup"
+        string address "street address"
+        string address2 "second address line"
+        string city "city"
+        string state "state"
+        string zip "postcode"
+        string phone "phone"
+        string electid "electronic payer ID for claims"
+        boolean ishidden "hidden from the pick list"
+    }
+    insplan {
+        bigint plannum PK "plan key"
+        string groupname "the group, e.g. an employer's plan; optional"
+        string groupnum "group number; optional"
+        string plantype "blank percentage · p PPO percentage · f flat copay · c capitation"
+        bigint carriernum FK "the carrier"
+        boolean ismedical "medical rather than dental insurance"
+        boolean ishidden "hidden from the pick list"
+        int monthrenew "month the plan renews, 1–12; 0 calendar year"
+    }
+    inssub {
+        bigint inssubnum PK "subscription key"
+        bigint plannum FK "the plan"
+        bigint subscriber FK "the patient who holds it (patient.patnum), not always the one covered"
+        date dateeffective "when the plan took effect"
+        date dateterm "when it ended; null when not set (Open Dental itself stores 0001-01-01)"
+        boolean releaseinfo "release of information signed"
+        boolean assignben "assignment of benefits signed"
+        string subscriberid "the insurer's ID for the subscriber"
+    }
+    patplan {
+        bigint patplannum PK "key"
+        bigint patnum FK "the patient covered"
+        int ordinal "1 primary · 2 secondary · ...; 0 is not used"
+        boolean ispending "coverage pending"
+        int relationship "Relat enum: 0 self · 1 spouse · 2 child · ..."
+        string patid "optional patient ID overriding the subscriber ID on claims"
+        bigint inssubnum FK "the subscription"
+    }
     patient_tooth {
         bigint patient_id PK, FK "patient.patnum"
         bigint tooth_num PK "universal tooth number 1–32"
@@ -378,7 +424,7 @@ erDiagram
         string git_commit_sha "commit the job was deployed from"
     }
     tooth_loss_dq_group {
-        string group_type_code PK "office · provider · sex · race · exam_year · age_band"
+        string group_type_code PK "office · provider · sex · race · exam_year · age_band; insurance_type when asked (spec 032)"
         string group_name PK "the group, e.g. office 2, female, 45–64"
         string metric_name PK "no_margin_chart · incomplete_chart"
         string run_id PK "Databricks job run id"

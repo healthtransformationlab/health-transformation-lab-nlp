@@ -23,7 +23,10 @@ What the extract carries, as Open Dental records it:
   `NO_MESS` turns them all off. `realism_profile` measures the same rates from any extract in this format;
 - radiographs are procedures (D0210, D0274, D0330) with a `document` row each (ImgType 1). Open Dental stores no
   reading of the image, so `build_with_readings` also returns a SIMULATED reading per tooth on each radiograph
-  (`radiograph_bone_level`), standing in for a radiograph-reading tool; it is never an Open Dental table.
+  (`radiograph_bone_level`), standing in for a radiograph-reading tool; it is never an Open Dental table;
+- insurance (spec 032 US6, #445) is Open Dental's `carrier`, `insplan`, `inssub` and `patplan`, drawn on a random
+  stream of its own after every other table, so adding it changed no other row. Each patient is `private`, `public` or
+  `none` at SYNTHETIC placeholder shares (`Params.insurance_shares`), read back by `insurance_type`.
 
 Why each tooth was lost (`tooth_loss_truth`) is returned apart from the extract and written to another folder: the
 evaluation reads it, the extract never carries it. Teeth missing at the first visit are lost to periodontitis (the
@@ -88,10 +91,17 @@ TABLES = {
     "patfield": ["patfieldnum", "patnum", "fieldname", "fieldvalue"],
     "document": ["docnum", "patnum", "datecreated", "doccategory", "imgtype", "toothnumbers", "description", "filename"],
     "snomed": ["snomednum", "snomedcode", "description"],
+    # spec 032 US6 (#445): insurance, drawn on a random stream of its own
+    "carrier": ["carriernum", "carriername", "address", "address2", "city", "state", "zip", "phone", "electid",
+                "ishidden"],
+    "insplan": ["plannum", "groupname", "groupnum", "plantype", "carriernum", "ismedical", "ishidden", "monthrenew"],
+    "inssub": ["inssubnum", "plannum", "subscriber", "dateeffective", "dateterm", "releaseinfo", "assignben",
+               "subscriberid"],
+    "patplan": ["patplannum", "patnum", "ordinal", "ispending", "relationship", "patid", "inssubnum"],
 }
 DATES = {"datecreated", "birthdate", "datefirstvisit", "admitdate", "datetimedeceased", "procdate", "datetp", "datecomplete",
          "examdate", "datestart", "datestop", "aptdatetime", "datetimesheet", "datetaken", "entrydatetime",
-         "datetevent", "datestarttobacco"}
+         "datetevent", "datestarttobacco", "dateeffective", "dateterm"}
 
 # Open Dental enum values (OpenDentBusiness, release 24_3): DefCat, ProcStat, SheetTypeEnum, EhrMeasureEventType,
 # SnomedAllergy, PlaceOfService, PerioSequenceType
@@ -139,6 +149,16 @@ MEDICATIONS = [("Metformin", 6809), ("Lisinopril", 29046), ("Amlodipine", 17767)
 CDCREC = [("1002-5", "R1", "American Indian or Alaska Native"), ("2028-9", "R2", "Asian"),
           ("2054-5", "R3", "Black or African American"), ("2076-8", "R4", "Native Hawaiian or Other Pacific Islander"),
           ("2106-3", "R5", "White"), ("2135-2", "E1", "Hispanic or Latino"), ("2186-5", "E2", "Not Hispanic or Latino")]
+
+# spec 032 US6 (#445): the insurance tables, and the carriers invented here with the insurance type each stands for
+# (the declared lookup silver uses, as DIAGNOSIS_LOOKUP is for diagnoses). A patient's insurance type is that of the
+# carrier of their primary plan (patplan ordinal 1); a patient with no patplan row has none.
+INSURANCE_TABLES = ("carrier", "insplan", "inssub", "patplan")
+INSURANCE_TYPES = ("private", "public", "none")
+CARRIER_INSURANCE_TYPE = {"Synthetic Dental Benefits Co": "private", "Example Mutual Dental": "private",
+                          "Sample Employer Dental Trust": "private", "Synthetic State Medicaid Dental": "public",
+                          "Synthetic Managed Care Dental Plan": "public"}
+RELAT_SELF, RELAT_SPOUSE = 0, 1                 # patplan.Relationship (Relat enum)
 
 # spec 029 US7 (#429): the share of extracted teeth lost to periodontal disease, by age band (lower bound, years),
 # third molars aside: Suzuki et al., Int Dent J 2022;72(3):366-372, Table 2, men and women pooled, impacted teeth left
@@ -202,6 +222,10 @@ class Params:
     # adjusted OR; an upper bound for loss to other reasons (Suzuki et al. 2021 find none for caries)
     entry_other_diabetes_ratio: float = 1.20
     entry_other_norm_draws: int = 20000       # patients drawn to find the mean ratio that keeps each band's mean
+    # spec 032 US6 (#445): each patient's insurance type. SYNTHETIC placeholders, not estimates of any population
+    insurance_shares: tuple = (("private", 0.55), ("public", 0.30), ("none", 0.15))
+    secondary_plan: float = 0.05              # a privately insured patient also has a second private plan
+    spouse_subscriber: float = 0.25           # a private plan held by a spouse (another patient), not the patient
 
 
 # every mess rate at zero: a complete chart at every visit, every radiograph read
@@ -652,12 +676,61 @@ def build_with_readings(p: Params | None = None, seed: int = 42) -> tuple[dict[s
                           note=f"Tooth #{o['tooth']} extracted. Recorded diagnosis: {o['dx_name'] or 'none'}. "
                                "Post-operative instructions given.")
 
+    _insurance(r, p, random.Random(f"{seed}:open_dental:insurance"))
     frames = _frames(r)
     t = pd.DataFrame([(pat, tooth, reason) for (pat, tooth), reason in sorted(truth.items())],
                      columns=["patient_id", "tooth_num", "true_reason_code"])
     reads = pd.DataFrame(readings, columns=READING_COLUMNS).astype({"bone_loss_pct": "float64", "is_simulated": bool})
     reads["image_date"] = pd.to_datetime(reads["image_date"])
     return frames, t, reads
+
+
+def _insurance(r: _Rows, p: Params, rng: random.Random) -> None:
+    """carrier, insplan, inssub and patplan for the patients already drawn, from their own random stream, so no other
+    table changes (spec 032 US6, #445). Each patient's insurance type is drawn at Params.insurance_shares."""
+    names, shares = zip(*p.insurance_shares)
+    if set(names) != set(INSURANCE_TYPES) or abs(sum(shares) - 1) > 1e-9:
+        raise ValueError(f"insurance_shares must give a share to each of {INSURANCE_TYPES}, summing to 1")
+    plans: dict[str, list[int]] = {"private": [], "public": []}
+    for i, (name, kind) in enumerate(CARRIER_INSURANCE_TYPE.items()):
+        carrier = r("carrier", carriername=name, address=f"{500 + 10 * i} Example Road", address2="",
+                    city="Exampletown", state="ZZ", zip=f"0020{i}", phone="", electid=f"SYN{i:02d}", ishidden=False)
+        for g in range(2 if kind == "private" else 1):
+            plans[kind].append(r("insplan", groupname=f"Synthetic Group {i}{g}" if kind == "private" else "",
+                                 groupnum=f"G{i}{g:03d}", plantype="p" if kind == "private" else "",
+                                 carriernum=carrier, ismedical=False, ishidden=False,
+                                 monthrenew=rng.choice([0, 1, 7]) if kind == "private" else 0))
+    patients = [(row["patnum"], row["datefirstvisit"]) for row in r.rows["patient"]]
+    for pat, first in patients:
+        kind = rng.choices(names, weights=shares)[0]
+        if kind == "none":
+            continue
+        for ordinal in (1, 2) if kind == "private" and rng.random() < p.secondary_plan else (1,):
+            spouse = kind == "private" and rng.random() < p.spouse_subscriber
+            holder = rng.choice(patients)[0] if spouse else pat
+            sub = r("inssub", plannum=rng.choice(plans[kind]), subscriber=holder,
+                    dateeffective=first - timedelta(days=rng.randint(0, 3000)), dateterm=None, releaseinfo=True,
+                    assignben=rng.random() < 0.9, subscriberid=f"SYN{rng.randint(10 ** 7, 10 ** 8 - 1)}")
+            r("patplan", patnum=pat, ordinal=ordinal, ispending=False,
+              relationship=RELAT_SPOUSE if spouse else RELAT_SELF, patid="", inssubnum=sub)
+
+
+@traced
+def insurance_type(tables: dict[str, pd.DataFrame]) -> pd.Series:
+    """Each patient's insurance type, one per `patient` row (same order, indexed by patnum): `private` or `public` by
+    the carrier of the primary plan (the lowest patplan ordinal, through inssub and insplan to
+    CARRIER_INSURANCE_TYPE), `none` with no patplan row; `unknown` for a carrier missing from the lookup."""
+    num = pd.to_numeric
+    pp = tables["patplan"].assign(patnum=lambda x: num(x["patnum"]), ordinal=lambda x: num(x["ordinal"]),
+                                  inssubnum=lambda x: num(x["inssubnum"]))
+    primary = pp.sort_values(["patnum", "ordinal"]).drop_duplicates("patnum")
+    sub = dict(zip(num(tables["inssub"]["inssubnum"]), num(tables["inssub"]["plannum"])))
+    plan = dict(zip(num(tables["insplan"]["plannum"]), num(tables["insplan"]["carriernum"])))
+    carrier = dict(zip(num(tables["carrier"]["carriernum"]), tables["carrier"]["carriername"]))
+    kind = primary["inssubnum"].map(sub).map(plan).map(carrier).map(CARRIER_INSURANCE_TYPE).fillna("unknown")
+    by_patient = dict(zip(primary["patnum"], kind))
+    pats = num(tables["patient"]["patnum"])
+    return pd.Series([by_patient.get(x, "none") for x in pats], index=pats.to_numpy(), name="insurance_type_code")
 
 
 @traced
