@@ -57,7 +57,10 @@ stores the image, not a reading of it.
   (depth 3, 200 trees, learning rate 0.05, subsample 0.8), with three baselines.
 - **Validation:** 70/30 split by patient, stratified on the outcome, seed 42. Both label sets are scored on the same
   held-out extractions. The applied sets (teeth missing at entry, extractions without a diagnosis) are scored
-  against the synthetic answer key, which is never a feature.
+  against the synthetic answer key, which is never a feature. Options (spec 032): `--test-share`; `--split-unit
+  visit` holds out random teeth instead of patients, so one patient's teeth can be on both sides, which flatters the
+  score: the run prints how many patients that is, and it is never the default; `--cv-folds K` tunes XGBoost by
+  K-fold cross-validation over a small fixed grid, folds grouped by patient unless the split is by visit.
 - **Measures:** AUC, Brier score, calibration intercept and slope, a 10-bin calibration table, and sensitivity,
   specificity and predictive values at 0.5 and at the Youden threshold chosen on the training teeth. 95% intervals
   from 1,000 bootstrap resamples of patients. The run is repeated on 5 generator seeds.
