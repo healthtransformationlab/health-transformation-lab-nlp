@@ -14,7 +14,7 @@ validated, and a consistency split by insurance.
 
 > Personal learning project; synthetic data only. US1-US7 add each option with today's default, so those pull
 > requests change no committed result. US8 then makes the `exploratory_1` settings the defaults (the owner's
-> decision, 2026-11-01) and reruns every result; today's defaults stay available as the `repo_v1` preset.
+> decision, 2026-11-01), keeping the split by person, and reruns every result; today's defaults stay available as the `repo_v1` preset.
 
 ## User stories
 
@@ -69,10 +69,11 @@ validated, and a consistency split by insurance.
 ### US8 - exploratory_1's settings become the defaults (P1) #448
 
 - The defaults become the `exploratory_1` values: five-level grouping (three also reported), adults 18+, the start
-  date, the healthy-or-gingivitis code rule, the 20-teeth and 10-pairs rules reported beside the others, an 80/20
-  random split by visit, 5-fold tuning, insurance in the consistency split, and the CAL ICC.
-- The split by visit lets one person's visits sit in training and test, which usually flatters a score: the count
-  of people in both parts is reported beside every model score, and the split by person is reported beside it.
+  date, the healthy-or-gingivitis code rule, the 20-teeth and 10-pairs rules reported beside the others, a 20% test
+  share, 5-fold tuning, insurance in the consistency split, and the CAL ICC.
+- One exception: the split stays by person. A random split by visit lets one person's visits sit in both training
+  and test, which overstates accuracy, so it stays an option (`split_unit=visit`, reporting the overlap) and is
+  never the default.
 - Today's defaults become the `repo_v1` preset. Every committed result is rerun and recommitted (study build,
   leaderboards, dashboards, decks, tooth-loss results); R parity passes; the docs say what changed and why.
 
