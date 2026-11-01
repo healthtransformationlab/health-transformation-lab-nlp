@@ -35,6 +35,11 @@ erDiagram
     patient ||--o{ ehrmeasureevent : "patnum"
     snomed |o..o{ ehrmeasureevent : "codevalueresult = snomedcode"
     patient ||--o{ patfield : "patnum"
+    carrier ||--o{ insplan : "carriernum"
+    insplan ||--o{ inssub : "plannum"
+    patient ||--o{ inssub : "subscriber = patnum (who holds the plan)"
+    inssub ||--o{ patplan : "inssubnum"
+    patient ||--o{ patplan : "patnum (who is covered)"
     patient ||--o{ patient_tooth : "patnum = patient_id"
     procedurelog ||--o| planned_extraction : "procnum = procedure_id (procstatus 1)"
     planned_extraction }o..o| patient_tooth : "labels planned teeth"
@@ -71,6 +76,10 @@ erDiagram
     ehrmeasureevent
     patfield
     snomed
+    carrier
+    insplan
+    inssub
+    patplan
     patient_tooth
     radiograph_bone_level
     planned_extraction

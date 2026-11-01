@@ -3,7 +3,8 @@
 # MAGIC # Load the synthetic Open Dental extract (spec 029 T007; #369, #370, #381)
 # MAGIC
 # MAGIC Generates the seeded synthetic extract (`open_dental.write`) into the landing volume, then loads it:
-# MAGIC - **bronze** (`bronze_opendental_perio`): every Open Dental table as generated, one table each;
+# MAGIC - **bronze** (`bronze_opendental_perio`): every Open Dental table as generated, one table each, the insurance
+# MAGIC   tables `carrier`, `insplan`, `inssub` and `patplan` among them (spec 032 US6, #445);
 # MAGIC - **silver** (`silver_opendental_perio`): the same tables read the way Open Dental means them
 # MAGIC   (`open_dental.clean`: -1 is null, gingival margins of 100+ are negative), the tooth tables derived from
 # MAGIC   them (`tooth_loss.tooth_table` → `patient_tooth`, `tooth_loss.planned_extraction` → `planned_extraction`), the
@@ -11,7 +12,8 @@
 # MAGIC   and the answer key `tooth_loss_truth`, which only the evaluation reads;
 # MAGIC - **data-quality checks** (`tooth_loss_dq`, spec 029 FR-009 after Kookal et al. 2024): one row per check
 # MAGIC   (`tooth_loss_dq_check`) and one per group of patients and measure (`tooth_loss_dq_group`: is the perio chart
-# MAGIC   kept as well at every office, by every provider, for every sex, race, exam year and age band?). They run on
+# MAGIC   kept as well at every office, by every provider, for every sex, race, exam year and age band? A split by
+# MAGIC   insurance type is an option, `tooth_loss_dq.ALL_GROUP_TYPES`, off by default until spec 032 US8). They run on
 # MAGIC   the bronze extract, report what they find and fix nothing; each run replaces its own rows (delete by run_id);
 # MAGIC - **gold** (`gold_opendental_perio.fact_tooth_loss_prediction`, spec 029 US3): P(the tooth was lost to
 # MAGIC   periodontitis) for every missing or labelled tooth, from logistic regression and XGBoost on both label sets

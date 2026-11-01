@@ -79,6 +79,38 @@ def test_groups_cover_office_provider_sex_race_year_and_age(clean):
     assert (per == n).all(), per
 
 
+def test_insurance_type_is_a_group_type_when_asked(clean):
+    # spec 032 US6 (#445): the split by insurance (private, public, none) is an option; the default stays as it was
+    assert "insurance_type" not in tooth_loss_dq.GROUP_TYPES
+    assert tooth_loss_dq.ALL_GROUP_TYPES == (*tooth_loss_dq.GROUP_TYPES, "insurance_type")
+    g = tooth_loss_dq.group_consistency(clean, group_types=tooth_loss_dq.ALL_GROUP_TYPES)
+    ins = g[g["group_type_code"] == "insurance_type"]
+    assert set(ins["group_name"]) <= {"private", "public", "none"} and len(set(ins["group_name"])) >= 2
+    per = ins.groupby("metric_name")["chart_count"].sum()
+    assert (per == len(clean["perioexam"])).all(), per
+    default = tooth_loss_dq.group_consistency(clean)
+    pd.testing.assert_frame_equal(default, g[g["group_type_code"] != "insurance_type"].reset_index(drop=True))
+    with pytest.raises(ValueError, match="group type"):
+        tooth_loss_dq.group_consistency(clean, group_types=("payer",))
+    without = {n: df for n, df in clean.items() if n != "patplan"}
+    with pytest.raises(ValueError, match="insurance tables"):
+        tooth_loss_dq.group_consistency(without, group_types=("insurance_type",))
+
+
+def test_charts_kept_worse_for_one_insurance_type_are_flagged():
+    tables, _ = open_dental.build(open_dental.Params(n_patients=600, **open_dental.NO_MESS), seed=11)
+    kind = open_dental.insurance_type(tables)
+    public = set(kind[kind == "public"].index)
+    ex = tables["perioexam"]
+    skip = set(ex.loc[ex["patnum"].isin(public), "perioexamnum"])
+    pm = tables["periomeasure"]
+    tables = {**tables, "periomeasure": pm[~(pm["perioexamnum"].isin(skip)
+                                             & (pm["sequencetype"] == open_dental.SEQ_MARGIN))]}
+    g = tooth_loss_dq.group_consistency(tables, group_types=("insurance_type",))
+    m = g[g["metric_name"] == "no_margin_chart"].set_index("group_name")
+    assert m.loc["public", "value_ratio"] == 1.0 and m.loc["public", "is_flagged"]
+
+
 def test_a_provider_who_skips_margins_is_flagged():
     tables, _ = open_dental.build(open_dental.Params(n_patients=300, **open_dental.NO_MESS), seed=11)
     ex = tables["perioexam"]

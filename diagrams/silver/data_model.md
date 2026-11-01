@@ -46,6 +46,11 @@ erDiagram
     patient ||--o{ ehrmeasureevent : "patnum"
     snomed |o..o{ ehrmeasureevent : "codevalueresult = snomedcode"
     patient ||--o{ patfield : "patnum"
+    carrier ||--o{ insplan : "carriernum"
+    insplan ||--o{ inssub : "plannum"
+    patient ||--o{ inssub : "subscriber = patnum (who holds the plan)"
+    inssub ||--o{ patplan : "inssubnum"
+    patient ||--o{ patplan : "patnum (who is covered)"
     patient ||--o{ patient_tooth : "patnum = patient_id"
     procedurelog ||--o| planned_extraction : "procnum = procedure_id (procstatus 1)"
     planned_extraction }o..o| patient_tooth : "labels planned teeth"
@@ -82,6 +87,10 @@ erDiagram
     ehrmeasureevent
     patfield
     snomed
+    carrier
+    insplan
+    inssub
+    patplan
     patient_tooth
     radiograph_bone_level
     planned_extraction
@@ -511,6 +520,67 @@ One per SNOMED code (a licensed list; an extract may hold only the codes it uses
 |  | `snomedcode` | string | the code |
 |  | `description` | string | name |
 
+### `carrier`
+
+One per insurance carrier (name and address). tooth_loss_load: overwrite per run.
+
+| Key | Column | Type | Description |
+|---|---|---|---|
+| PK | `carriernum` | bigint | carrier key |
+|  | `carriername` | string | carrier name (synthetic); mapped to private or public by a declared lookup |
+|  | `address` | string | street address |
+|  | `address2` | string | second address line |
+|  | `city` | string | city |
+|  | `state` | string | state |
+|  | `zip` | string | postcode |
+|  | `phone` | string | phone |
+|  | `electid` | string | electronic payer ID for claims |
+|  | `ishidden` | boolean | hidden from the pick list |
+
+### `insplan`
+
+One per insurance plan; subscribers share plans through inssub. tooth_loss_load: overwrite per run.
+
+| Key | Column | Type | Description |
+|---|---|---|---|
+| PK | `plannum` | bigint | plan key |
+|  | `groupname` | string | the group, e.g. an employer's plan; optional |
+|  | `groupnum` | string | group number; optional |
+|  | `plantype` | string | blank percentage · p PPO percentage · f flat copay · c capitation |
+| FK | `carriernum` | bigint | the carrier |
+|  | `ismedical` | boolean | medical rather than dental insurance |
+|  | `ishidden` | boolean | hidden from the pick list |
+|  | `monthrenew` | int | month the plan renews, 1–12; 0 calendar year |
+
+### `inssub`
+
+One per subscriber to a plan: who holds it. tooth_loss_load: overwrite per run.
+
+| Key | Column | Type | Description |
+|---|---|---|---|
+| PK | `inssubnum` | bigint | subscription key |
+| FK | `plannum` | bigint | the plan |
+| FK | `subscriber` | bigint | the patient who holds it (patient.patnum), not always the one covered |
+|  | `dateeffective` | date | when the plan took effect |
+|  | `dateterm` | date | when it ended; null when not set (Open Dental itself stores 0001-01-01) |
+|  | `releaseinfo` | boolean | release of information signed |
+|  | `assignben` | boolean | assignment of benefits signed |
+|  | `subscriberid` | string | the insurer's ID for the subscriber |
+
+### `patplan`
+
+One per patient and plan covering them: what determines a patient's coverage. tooth_loss_load: overwrite per run.
+
+| Key | Column | Type | Description |
+|---|---|---|---|
+| PK | `patplannum` | bigint | key |
+| FK | `patnum` | bigint | the patient covered |
+|  | `ordinal` | int | 1 primary · 2 secondary · ...; 0 is not used |
+|  | `ispending` | boolean | coverage pending |
+|  | `relationship` | int | Relat enum: 0 self · 1 spouse · 2 child · ... |
+|  | `patid` | string | optional patient ID overriding the subscriber ID on claims |
+| FK | `inssubnum` | bigint | the subscription |
+
 ### `patient_tooth`
 
 One per patient and tooth (1–32): how it was lost, and what was charted before. tooth_loss.tooth_table; overwrite per run, logged in load_log.
@@ -596,7 +666,7 @@ One per group, measure and run: is the perio chart kept as well for every group 
 
 | Key | Column | Type | Description |
 |---|---|---|---|
-| PK | `group_type_code` | string | office · provider · sex · race · exam_year · age_band |
+| PK | `group_type_code` | string | office · provider · sex · race · exam_year · age_band; insurance_type when asked (spec 032) |
 | PK | `group_name` | string | the group, e.g. office 2, female, 45–64 |
 | PK | `metric_name` | string | no_margin_chart · incomplete_chart |
 | PK | `run_id` | string | Databricks job run id |

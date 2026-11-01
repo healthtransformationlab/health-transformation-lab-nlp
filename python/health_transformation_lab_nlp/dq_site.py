@@ -148,6 +148,9 @@ def build() -> dict:
     tc = t["dq_temporal_change"].set_index("method")
     complete = (v["exam_form"] != "unknown") & (v["proc_dx_completed"] != "unknown") & (v["probing_chart"] != "unknown")
     tables, _, readings = open_dental.build_with_readings(open_dental.Params(), seed=42)
+    # the page checks the tables it checked before the insurance tables came in (spec 032 US6, #445), so it stays as
+    # published; spec 032 US8 (#448) adds them, and the insurance split, when it reruns every result
+    tables = {name: df for name, df in tables.items() if name not in open_dental.INSURANCE_TABLES}
     prof = open_dental.realism_profile(tables, readings)
     checks, groups = tooth_loss_dq.run_checks(tables), tooth_loss_dq.group_consistency(tables)
     inj = t["dq_injected_error"].iloc[0]

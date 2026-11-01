@@ -388,3 +388,48 @@ def test_non_periodontal_losses_at_entry_rise_with_smoking_and_diabetes(large):
     assert observed_over_expected(df["smoking"] == "daily") > 1.08
     assert observed_over_expected(df["diabetes"]) > 1.05
     assert observed_over_expected((df["smoking"] == "never") & ~df["diabetes"]) < 1.0
+
+
+# ---------- spec 032 US6 (#445): insurance, Open Dental's carrier, insplan, inssub and patplan ----------
+INSURANCE = ("carrier", "insplan", "inssub", "patplan")
+
+
+def test_the_extract_holds_open_dentals_insurance_tables(built):
+    t, _ = built
+    assert set(INSURANCE) <= set(t) and set(od.INSURANCE_TABLES) == set(INSURANCE)
+    pats = set(t["patient"]["patnum"])
+    assert set(t["patplan"]["patnum"]) <= pats
+    assert set(t["inssub"]["subscriber"]) <= pats
+    assert set(t["patplan"]["inssubnum"]) <= set(t["inssub"]["inssubnum"])
+    assert set(t["inssub"]["plannum"]) <= set(t["insplan"]["plannum"])
+    assert set(t["insplan"]["carriernum"]) <= set(t["carrier"]["carriernum"])
+    assert (t["patplan"]["ordinal"] >= 1).all()                          # 1 primary, 2 secondary; 0 is not used
+    assert not t["patplan"].duplicated(["patnum", "ordinal"]).any()
+    held = t["patplan"].merge(t["inssub"], on="inssubnum")
+    spouse = held["relationship"] == od.RELAT_SPOUSE
+    assert spouse.any() and (held.loc[spouse, "subscriber"] != held.loc[spouse, "patnum"]).all()
+    assert (held.loc[~spouse, "subscriber"] == held.loc[~spouse, "patnum"]).all()
+    assert set(t["carrier"]["carriername"]) == set(od.CARRIER_INSURANCE_TYPE)
+    assert set(od.CARRIER_INSURANCE_TYPE.values()) == {"private", "public"}
+
+
+def test_each_patient_has_one_insurance_type_at_the_declared_synthetic_shares():
+    p = od.Params(n_patients=3000)
+    tables, _ = od.build(p, seed=3)
+    kind = od.insurance_type(tables)
+    assert list(kind.index) == list(tables["patient"]["patnum"]) and kind.name == "insurance_type_code"
+    assert set(kind) == set(od.INSURANCE_TYPES) == {"private", "public", "none"}
+    for name, share in p.insurance_shares:
+        assert abs((kind == name).mean() - share) < 0.03, name
+    covered = set(tables["patplan"]["patnum"])
+    assert ((kind == "none") == ~kind.index.isin(covered)).all()        # none: no patplan row at all
+
+
+def test_insurance_has_its_own_random_stream_so_no_other_table_changes(built):
+    tables, truth = built
+    shares = (("private", 0.1), ("public", 0.1), ("none", 0.8))
+    other, truth2 = od.build(od.Params(n_patients=120, insurance_shares=shares), seed=7)
+    for name in set(od.TABLES) - set(INSURANCE):
+        pd.testing.assert_frame_equal(tables[name], other[name], obj=name)
+    pd.testing.assert_frame_equal(truth, truth2)
+    assert not tables["patplan"].equals(other["patplan"])
