@@ -70,22 +70,22 @@ Synthetic patient records · Health Transformation Lab · the dental record (EDR
 What it shows so far (synthetic)
 The whole record answers it. The note alone nearly does.
 Whole record, rules
-234 of 240
+215 of 221
 charts given the right status, combining the evidence, gum measurements first.
 Note only, trained AI
-219 of 240
+201 of 221
 right from the free-text note alone (ModernBERT, with a rule for the most severe stage).
 Note only, medical AI as is
-196 of 240
-for MedGemma 4B untrained, with the same stage 4 rule; the newer MedGemma 1.5 4B got 185. Both close to keyword rules (189).
+181 of 221
+for MedGemma 4B untrained, with the same stage 4 rule; the newer MedGemma 1.5 4B got 177. Both close to keyword rules (179).
 Gum measurements alone
-193 of 240
-right, but 45 charts had no measurements to read: one piece of evidence is not enough.
+177 of 221
+right, but 42 charts had no measurements to read: one piece of evidence is not enough.
 Training beats size:
 a small model trained on dental notes beat a bigger medical AI used as is. Synthetic notes are easier than real ones, so expect the gaps to widen.
-Synthetic charts, scored against the generator's truth: not clinical performance · real model runs on CPU and Kaggle GPUs, 2026-10-26 to 2026-10-28 · 4
+Synthetic charts, scored against the generator's truth at five status groups (healthy and gingivitis together), adults from 2021-04-01: 221 of the 240 review charts · real model runs, 2026-10-26 to 2026-10-28 · 4
 
-**Speaker notes:** These are real model runs, on synthetic charts, scored against the generator's truth; they are not clinical performance, and agreement with simulated reviewers is a dry run we do not show. Four numbers out of 240 review charts. Rules that combine the whole record, reading the gum measurements first, got 234 right. Reading only the free-text note, a small model trained on dental notes, ModernBERT with a keyword rule for the most severe stage, got 219. A bigger medical AI used as is, without training and with the same stage 4 rule: MedGemma 4B got 196, and the newer MedGemma 1.5 4B got 185. Both are close to simple keyword rules at 189; on 240 charts neither can be told apart from them. Alone they get about 187 and 182. And any single piece of evidence falls short: the gum measurements alone got 193 right, because 45 of the 240 charts had no measurements at all. Two lessons: combine the evidence, and train on the domain. If asked about uncertainty: every number has a 95 percent bootstrap interval on the full results page; on 240 charts, many methods cannot be told apart. If asked whether MedGemma can improve: few-shot and fine-tuned runs are next, on a GPU. If asked why synthetic: no identifiable patient data may be used here; synthetic data lets us build and test everything, including the privacy checks, before any approvals.
+**Speaker notes:** These are real model runs, on synthetic charts, scored against the generator's truth; they are not clinical performance, and agreement with simulated reviewers is a dry run we do not show. Four numbers out of 221 review charts: the 240 review charts less the 19 visits before April 2021, the start date the scores use, with healthy and gingivitis counted as one group. Rules that combine the whole record, reading the gum measurements first, got 215 right. Reading only the free-text note, a small model trained on dental notes, ModernBERT with a keyword rule for the most severe stage, got 201. A bigger medical AI used as is, without training and with the same stage 4 rule: MedGemma 4B got 181, and the newer MedGemma 1.5 4B got 177. Both are close to simple keyword rules at 179; on 221 charts neither can be told apart from them. Alone they each get about 174. And any single piece of evidence falls short: the gum measurements alone got 177 right, because 42 of the 221 charts had no measurements at all. Two lessons: combine the evidence, and train on the domain. If asked about uncertainty: every number has a 95 percent bootstrap interval on the full results page; on 221 charts, many methods cannot be told apart. If asked whether MedGemma can improve: few-shot and fine-tuned runs are next, on a GPU. If asked why synthetic: no identifiable patient data may be used here; synthetic data lets us build and test everything, including the privacy checks, before any approvals.
 
 ## Slide 5 — economics
 
@@ -152,11 +152,11 @@ How this path feeds the other: test questions with known right answers
 The order matters
 Same evidence, read in a different order: a different answer
 Gum measurements first
-234 of 240
+215 of 221
 right: then the note, exam form and codes fill the gaps (the first rule set, v0).
 Exam form first
-173 of 240
-right (72%): the study design's order, exam form, diagnosis codes, note, then measurements.
+163 of 221
+right (74%): the study design's order, exam form, diagnosis codes, note, then measurements.
 Orders to test
 24
 four sources can be ranked 4×3×2×1 ways; each ranking is scored against the specialists.
@@ -164,7 +164,7 @@ So the order is a finding, not a setting:
 the ranking that agrees best with the specialists is the one to keep. Procedure codes are a rough guess from the treatment, so they are compared, not used.
 Synthetic charts, scored against the generator's truth · 2017 AAP/EFP classification · rules and worked examples: docs/evidence_rules.md · 8
 
-**Speaker notes:** A dental chart holds seven kinds of evidence: the clinician's note; the exam form, with a gum score and a status checkbox; the procedure codes done and planned; the diagnosis codes on those procedures, done and planned; and the probing chart of gum measurements, turned into a stage with the 2017 American Academy of Periodontology and European Federation of Periodontology worksheet. Procedure codes are only a rough guess from the treatment, so they are compared, not used. When the other sources disagree, the rules take the first one, in a fixed order, that gives a status. The order matters a lot. Reading the gum measurements first, the first rule set, gets 234 of 240 synthetic charts right; it is the 234 on the results slide. The study design's order, exam form first, then diagnosis codes, the note, and the measurements last, gets about 173, 72 percent. On synthetic charts the measurements are the generator's own evidence, which flatters reading them first; on real charts the answer may differ. Four sources can be ranked 24 ways; each ranking is scored against the specialists, and the one that agrees best is kept. A radiograph reading can only raise the stage.
+**Speaker notes:** A dental chart holds seven kinds of evidence: the clinician's note; the exam form, with a gum score and a status checkbox; the procedure codes done and planned; the diagnosis codes on those procedures, done and planned; and the probing chart of gum measurements, turned into a stage with the 2017 American Academy of Periodontology and European Federation of Periodontology worksheet. Procedure codes are only a rough guess from the treatment, so they are compared, not used. When the other sources disagree, the rules take the first one, in a fixed order, that gives a status. The order matters a lot. Reading the gum measurements first, the first rule set, gets 215 of 221 synthetic charts right; it is the 215 on the results slide. The study design's order, exam form first, then diagnosis codes, the note, and the measurements last, gets about 163, 74 percent. On synthetic charts the measurements are the generator's own evidence, which flatters reading them first; on real charts the answer may differ. Four sources can be ranked 24 ways; each ranking is scored against the specialists, and the one that agrees best is kept. A radiograph reading can only raise the stage.
 
 ## Slide 9 — acceptance
 

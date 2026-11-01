@@ -1,2 +1,2 @@
 scheme,n_train,n_test,people_test,accuracy,macro_f1,cv_macro_f1,cv_folds_used,params,outcome,synthetic
-3level,2724,713,229,0.9971949509116409,0.9950403798811954,0.9992791333400831,5,"{""max_depth"": 3, ""learning_rate"": 0.05, ""reg_lambda"": 1.0, ""min_child_weight"": 1, ""class_weight"": ""balanced""}",truth_status,True
+3level,2431,567,212,0.9964726631393298,0.9938928736891993,1.0,5,"{""max_depth"": 3, ""learning_rate"": 0.05, ""reg_lambda"": 1.0, ""min_child_weight"": 1, ""class_weight"": ""balanced""}",truth_status,True

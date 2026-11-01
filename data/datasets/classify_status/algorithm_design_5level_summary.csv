@@ -1,2 +1,2 @@
 scheme,n_train,n_test,people_test,accuracy,macro_f1,cv_macro_f1,cv_folds_used,params,outcome,synthetic
-5level,2724,713,229,0.7966339410939691,0.7456807792317686,0.7307147978540317,5,"{""max_depth"": 3, ""learning_rate"": 0.05, ""reg_lambda"": 10.0, ""min_child_weight"": 5, ""class_weight"": ""balanced""}",algorithm_design,True
+5level,2431,567,212,0.7954144620811288,0.750847954492307,0.7295517926193902,5,"{""max_depth"": 3, ""learning_rate"": 0.05, ""reg_lambda"": 10.0, ""min_child_weight"": 1, ""class_weight"": ""balanced""}",algorithm_design,True
