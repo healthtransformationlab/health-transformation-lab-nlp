@@ -131,7 +131,9 @@ for name, df in (("tooth_loss_dq_check", checks), ("tooth_loss_dq_group", groups
 # Gold (spec 029 US3, #371): the tooth-loss model's answers, synthetic only. Fitted here without the bootstrap; the
 # scores, calibration and stage recount come from scripts/51_tooth_loss_model.py. Delete this run's rows, then append
 # (idempotent on retry; earlier runs are kept).
-model = tooth_loss_model.run(clean_read, truth, tooth_loss_model.ModelParams(n_boot=0), generator_seed=seed)
+model_params = tooth_loss_model.ModelParams(n_boot=0)
+print("tooth-loss model, teeth:", tooth_loss_model.exclusions(silver_tables["patient_tooth"], model_params))
+model = tooth_loss_model.run(clean_read, truth, model_params, generator_seed=seed)
 pred = gold_names.to_gold(model["predictions"].assign(run_id=run_id, run_ts=run_ts, git_commit=git_commit),
                           "fact_tooth_loss_prediction")
 full = f"{catalog}.{gold}.fact_tooth_loss_prediction"
