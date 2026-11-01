@@ -85,6 +85,6 @@ Implementation starts after this spec, plan and tasks are reviewed.
 - [x] T024 [US8] `open_dental.py`: `Params.entry_other_smoking_ratios`, `entry_other_diabetes_ratio`,
   `entry_other_norm_draws`; `entry_other_rate_ratio`, `entry_other_rate_norm`; the Poisson mean scaled on the same
   stream
-- [ ] T025 [US8] Regenerate with the scripts (tooth table, model results, ERD dictionary, website JSON);
+- [x] T025 [US8] Regenerate with the scripts (tooth table, model results, ERD dictionary, website JSON);
   `docs/tooth_loss.md` with before/after AUC and specificity on teeth missing at entry and the stage recount,
   labelled synthetic; the analysis plan's change log; R parity and the full suite
