@@ -107,3 +107,10 @@ def test_the_truth_table_on_a_hand_case():
     assert r["answered_count"] == 3 and r["agree_pct"] == round(100 / 3, 1)
     assert r["sensitivity_pct"] == 50.0 and r["specificity_pct"] == 0.0     # perio yes/no among answered
     assert r["ppv_pct"] == 50.0 and r["npv_pct"] == 0.0
+
+
+def test_reliability_is_credited_to_a_paper_that_defines_it(d):
+    # #405: Liaw et al. 2013 reviews data-quality definitions but doesn't define reliability; de Vet et al. 2006 does
+    text = json.dumps(d) + json.dumps(dashboards.dq_grader())
+    assert "Liaw" not in text
+    assert "de Vet" in text

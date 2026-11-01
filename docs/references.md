@@ -133,6 +133,13 @@ Everything this repo relies on, and what it's used for.
     between the bronze extract and the silver tooth table (FR-009). Checked on PubMed and the PMC full text. The
     abstract says benefits "between 2014–2108", a typo for 2014–2018 as the Methods give it. Published figures
     only: the paper's data is not public and never comes in.
+62. **de Vet HCW, Terwee CB, Knol DL, Bouter LM.** *When to use agreement versus reliability measures.*
+    J Clin Epidemiol 2006;59(10):1033–1039. [doi:10.1016/j.jclinepi.2005.10.015](https://doi.org/10.1016/j.jclinepi.2005.10.015).
+    Agreement is how close repeated measurements are; reliability is whether, despite that error, people (or
+    teeth, or sites) can still be told apart. → the grader's reliability domain (`dashboards.dq_grader`,
+    `docs/graders.md`) and `reliability_cal.py`. The grader once credited this domain to Liaw et al. 2013
+    (Int J Med Inform 82(1):10–24), a review whose most common data-quality dimensions are completeness,
+    accuracy, correctness, consistency and timeliness, not reliability (#405).
 
 58. **Open Dental Software.** *Open Dental* source code, `OpenDentBusiness/TableTypes` (one class per database
     table). [github.com/OpenDental/OpenDental](https://github.com/OpenDental/OpenDental), branch `24_3`, commit
