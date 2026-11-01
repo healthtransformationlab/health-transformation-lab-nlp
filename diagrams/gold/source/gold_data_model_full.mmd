@@ -418,6 +418,23 @@ erDiagram
         timestamp loaded_ts "when it wrote it"
         string doctor_git_commit_sha "commit the doctor was deployed from"
     }
+    fact_tooth_loss_prediction {
+        bigint patient_id PK "Open Dental PatNum (synthetic)"
+        bigint tooth_num PK "universal tooth number 1-32"
+        string tooth_status_code "how the tooth left the record (silver patient_tooth)"
+        string label_set_code PK "completed · completed_planned (FR-010)"
+        string feature_set_code PK "shared (applied model) · own (with the tooth's own measures)"
+        string model_name PK "logistic · xgboost"
+        string split_code "train · test (held-out patients) · applied (no recorded reason)"
+        double perio_loss_probability_ratio "P(lost to periodontitis), 0 to 1"
+        double threshold_ratio "the fixed threshold, 0.5"
+        boolean is_predicted_perio_loss "probability at or above the threshold"
+        bigint generator_seed_num "seed of the synthetic extract"
+        boolean is_synthetic "always true: synthetic data only"
+        string run_id PK "Databricks job run id: the batch key"
+        timestamp run_ts "when the job ran"
+        string git_commit_sha "commit the job was deployed from"
+    }
     dim_study_note {
         bigint note_id PK "OMOP note_id (= visit_occurrence_id)"
         bigint person_id "OMOP person_id; the split is by person"

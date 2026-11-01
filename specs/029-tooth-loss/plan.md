@@ -1,6 +1,6 @@
 # Implementation Plan: tooth lost to periodontitis (spec 029)
 
-**Spec**: [spec.md](spec.md) · **Issues**: #369 (US1), #370 (US2), #371 (US3); #377 (diagnoses and treatment plans)
+**Spec**: [spec.md](spec.md) · **Issues**: #369 (US1), #370 (US2), #371 (US3); #377 (diagnoses and treatment plans); #429 (US7)
 
 ## Approach
 
@@ -78,6 +78,21 @@
    - the results, labelled synthetic;
    - what a real extract can and can't check.
 
+8. **Why teeth are missing at entry (US7, #429).**
+   - Sources first: published shares of reasons for extraction by age band go in [research.md](research.md) ("Why
+     teeth are missing"), each with its citation and population; `docs/references.md` gains the sources.
+   - `open_dental.ENTRY_PERIO_SHARE_BY_AGE`: the periodontal share by age band (Suzuki et al. 2022, impacted teeth
+     left out). `Params.entry_other_teeth_by_age`: the mean number of non-periodontal teeth missing at entry per
+     patient, by age band, set so the generated shares match it; `Params.entry_other_tooth_weights`: which teeth
+     (molars, premolars, front teeth).
+   - In `build_with_readings`, after `draw_mouth_columns` and before the teeth are written: a second stream
+     `random.Random(f"{seed}:open_dental:entry_reason")` draws the count (Poisson) and the teeth; the teeth holding
+     the worst CAL and probing depth stay; a mouth below stage IV keeps 20 teeth. The main stream is untouched by
+     these draws, though the extract downstream changes because fewer teeth are present.
+   - Regenerate with the scripts: `47_tooth_table.py` (parity inputs), `51_tooth_loss_model.py` (results,
+     `docs/tooth_loss.md` by hand from them), `diagrams/_build/silver_erd.py` (dictionary counts),
+     `50_dq_site.py` (website JSON); R parity. The analysis plan's change log records the change.
+
 ## Tests first
 
 - `test_open_dental.py`:
@@ -100,6 +115,9 @@
   - both label sets built from the same extract.
 - `test_schemas.py` and `test_bundle.py`: the new bench and its three schemas.
 - `r/tests/test_parity.R`: statuses, the stage rule and the metrics.
+- US7: `test_open_dental.py` (the periodontal share at entry by age band recovered within 0.05 on a large seeded
+  extract and lower when young; non-periodontal counts not correlated with worst CAL; own stream, seeded);
+  `test_tooth_loss_model.py` (the missing-at-entry evaluation holds both classes; AUC and specificity are numbers).
 
 ## Environments
 

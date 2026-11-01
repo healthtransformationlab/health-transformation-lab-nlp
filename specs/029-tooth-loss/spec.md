@@ -234,6 +234,44 @@ uniform), so the model can learn when to trust which.
 3. **Given** a radiograph before the loss with a reading for the tooth, **Then** `last_rbl_pct` is that reading;
    with none, it is null and the tooth still has a row.
 
+### US7 - Teeth missing at the first visit have a realistic mix of reasons, not only periodontitis (Priority: P1) #429
+
+The model answers one question per missing tooth: lost to periodontitis, or to something else? Until now, every tooth
+the synthetic extract lists as missing at the first visit was lost to periodontitis, third molars aside, because
+`sites.draw_mouth_columns` gives another reason only to third molars. So, on those teeth:
+- the evaluation has no negatives, and AUC and specificity can't be computed;
+- "count every missing tooth" looks nearly right only because of this;
+- nobody can see whether the model calls a non-periodontal loss periodontal, the error that would push a patient
+  wrongly into stage IV.
+
+Real patients lose teeth to caries, fracture, orthodontic extraction and failed treatment as well as to
+periodontitis, and the mix changes with age. The generator now adds, at the first visit, teeth missing for another
+reason, drawn by age band so that the share lost to periodontitis among teeth missing at entry (third molars
+left out) follows a published mix by age ([research.md](research.md), "Why teeth are missing"). They are drawn
+from age and tooth type only, never from the tooth's or the mouth's attachment loss, and the teeth that carry the
+mouth's worst CAL and probing depth are kept, so the patient's charted measures stay those of the synthetic chart.
+
+**Why this priority**: without negatives the model's scores on teeth never extracted in the record, the set it is
+built for, mean nothing.
+
+**Independent Test**: on a large seeded extract, the periodontal share among teeth missing at entry is within
+tolerance of the declared share in each age band, and falls with younger age; the number of non-periodontal teeth
+missing at entry doesn't follow the patient's worst CAL; the model's missing-at-entry scores hold both classes, with
+AUC and specificity reported.
+
+**Acceptance Scenarios**:
+
+1. **Given** the default parameters and a large seeded extract, **When** the teeth missing at entry (third molars
+   left out) are grouped by the patient's age band, **Then** the periodontal share in each band is within 0.05 of
+   `ENTRY_PERIO_SHARE_BY_AGE`, and it is lower under 45 than over 55.
+2. **Given** the same extract, **Then** the count of non-periodontal teeth missing at entry per patient is not
+   correlated with the patient's worst CAL within an age band (|r| < 0.05), while the periodontal count is (r > 0.1).
+3. **Given** the same seed twice, **Then** the extract and the answer key are identical; the reasons draw on their
+   own stream (`f"{seed}:open_dental:entry_reason"`), and the study datasets don't change.
+4. **Given** a model run, **Then** the missing-at-entry evaluation has periodontal and non-periodontal teeth, and
+   its AUC and specificity are numbers, labelled synthetic.
+5. **Given** the truth, **Then** the reason lives only in `tooth_loss_truth`; no extract column carries it.
+
 ### Edge Cases
 
 - **Third molars:** they are often missing for other reasons (the synthetic mouths already treat them so), so
@@ -340,6 +378,19 @@ uniform), so the model can learn when to trust which.
   `open_dental.plant_faults` plants a known number of each kind of fault (`FAULTS`) on a generated extract, so
   each check is tested against what it should find. It is applied in the tests only: the default extract, and every
   result committed from it, keeps only the messiness of US6. Results go to a silver `tooth_loss_dq_check` table (one row per check and run).
+- **FR-011** (US7, #429) Teeth missing at the first visit get a reason drawn from an age-dependent mix:
+  - for each patient, a number of non-periodontal teeth missing at entry is drawn (Poisson, a mean per age band,
+    `Params.entry_other_teeth_by_age`), on its own seeded stream `f"{seed}:open_dental:entry_reason"`;
+  - the means are set so that the periodontal share among teeth missing at entry, third molars left out, matches
+    `ENTRY_PERIO_SHARE_BY_AGE`, the published shares by age band in [research.md](research.md) (Suzuki et al. 2022);
+  - the teeth are chosen by tooth type (`Params.entry_other_tooth_weights`), never by attachment loss; the teeth
+    holding the mouth's worst CAL and probing depth stay; a mouth below stage IV keeps at least 20 teeth, as in
+    `sites.draw_mouth_columns`;
+  - they are listed missing like any other tooth missing at entry (`toothinitial`, or `procedurelog` ProcStatus 4),
+    with no reason; `tooth_loss_truth` holds `other` for them.
+
+  `sites.draw_mouth_columns` is unchanged, so the study datasets don't change. The extract and everything built from
+  it (tooth table, model results, ERD counts, website data-quality JSON) is regenerated.
 
 ### Key Entities
 
@@ -363,6 +414,8 @@ uniform), so the model can learn when to trust which.
 - **SC-006** Every planted fault is found by its check, and the clean rows pass every check.
 - **SC-008** The realism profile of a generated extract matches its declared rates, and the model's scores are
   reported at the default (messy) rates and with every mess rate at zero, so the cost of messy records is shown.
+- **SC-009** The model's AUC and specificity on teeth missing at entry are reported (both classes present), and the
+  stage III/IV recount is shown with non-periodontal losses at entry, all labelled synthetic (US7).
 - **SC-007** Both label sets are scored on the same held-out and missing-at-entry teeth, and every planned
   extraction counts once however many plan copies carry it.
 
@@ -375,7 +428,7 @@ uniform), so the model can learn when to trust which.
 - The diagnosis lists, the adoption date and lag, and the planning rates are invented parameters with fixed
   defaults, not observations of any practice.
 - The synthetic mouths of spec 006 are the source of truth. Their loss process (`draw_mouth`) is reused, not
-  changed.
+  changed. US7 adds non-periodontal teeth missing at entry after it, in `open_dental.py` only.
 
 ## Out of scope
 

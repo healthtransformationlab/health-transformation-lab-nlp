@@ -24,6 +24,7 @@ def test_the_model_declares_the_gold_tables_the_jobs_write():
                     "fact_case_profile_item", "fact_record_mismatch", "dq_mismatch_rule",   # spec 026
                     "dim_grader_question", "fact_grader_answer",
                     "fact_pipeline_run", "fact_pipeline_signal", "fact_remediation_decision",   # spec 027
+                    "fact_tooth_loss_prediction",                                              # spec 029
                     # spec 031: the Benchmark job's tables
                     "dim_study_note", "benchmark_metric"}
 

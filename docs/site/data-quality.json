@@ -6156,86 +6156,86 @@
    {
     "metric": "charted_visit_office_share",
     "label": "Office visits with a perio chart",
-    "pct": 75.4,
-    "numerator": 6936,
-    "denominator": 9202
+    "pct": 74.1,
+    "numerator": 6841,
+    "denominator": 9236
    },
    {
     "metric": "charted_visit_site_share",
     "label": "Mobile and nursing-home visits with a perio chart",
-    "pct": 30.3,
-    "numerator": 219,
-    "denominator": 722
+    "pct": 32.3,
+    "numerator": 251,
+    "denominator": 777
    },
    {
     "metric": "partial_chart_share",
     "label": "Charts covering only some teeth",
-    "pct": 19.7,
-    "numerator": 1412,
-    "denominator": 7155
+    "pct": 20.1,
+    "numerator": 1424,
+    "denominator": 7092
    },
    {
     "metric": "buccal_only_chart_share",
     "label": "Charts with cheek-side readings only",
-    "pct": 10.4,
-    "numerator": 747,
-    "denominator": 7155
+    "pct": 10.2,
+    "numerator": 720,
+    "denominator": 7092
    },
    {
     "metric": "uniform_chart_share",
     "label": "Charts with one depth everywhere",
-    "pct": 3.6,
-    "numerator": 260,
-    "denominator": 7155
+    "pct": 3.5,
+    "numerator": 249,
+    "denominator": 7092
    },
    {
     "metric": "no_margin_chart_share",
     "label": "Charts without gum-margin readings (no attachment loss)",
-    "pct": 24.7,
-    "numerator": 1769,
-    "denominator": 7155
+    "pct": 24.2,
+    "numerator": 1716,
+    "denominator": 7092
    },
    {
     "metric": "no_bleeding_chart_share",
     "label": "Charts without bleeding",
-    "pct": 14.5,
-    "numerator": 1036,
-    "denominator": 7155
+    "pct": 14.3,
+    "numerator": 1017,
+    "denominator": 7092
    },
    {
     "metric": "copied_chart_share",
     "label": "Charts copied from the last visit",
-    "pct": 5.7,
-    "numerator": 300,
-    "denominator": 5218
+    "pct": 5.0,
+    "numerator": 258,
+    "denominator": 5141
    },
    {
     "metric": "out_of_range_site_share",
     "label": "Pocket readings over 15 mm",
     "pct": 0.2,
-    "numerator": 2251,
-    "denominator": 1097451
+    "numerator": 2075,
+    "denominator": 1052643
    },
    {
     "metric": "charted_after_loss_chart_share",
     "label": "Charts that include an extracted tooth",
     "pct": 0.3,
-    "numerator": 24,
-    "denominator": 7155
+    "numerator": 21,
+    "denominator": 7092
    },
    {
     "metric": "radiograph_visit_share",
     "label": "Visits with an X-ray",
-    "pct": 40.4,
-    "numerator": 4007,
-    "denominator": 9924
+    "pct": 41.6,
+    "numerator": 4167,
+    "denominator": 10013
    },
    {
     "metric": "unread_tooth_share",
     "label": "Teeth on an X-ray with no bone-loss reading",
-    "pct": 14.9,
-    "numerator": 12148,
-    "denominator": 81266
+    "pct": 14.8,
+    "numerator": 11988,
+    "denominator": 80741
    }
   ],
   "extract_checks": [
@@ -6252,7 +6252,7 @@
     "check": "values_as_declared",
     "domain": "completeness",
     "text": "dates parse and coded fields hold declared values",
-    "checked_count": 831272,
+    "checked_count": 805495,
     "found_count": 0,
     "found_pct": 0.0,
     "is_flagged": false
@@ -6261,7 +6261,7 @@
     "check": "one_value_per_field",
     "domain": "completeness",
     "text": "a tooth field holds one tooth",
-    "checked_count": 6145,
+    "checked_count": 8432,
     "found_count": 0,
     "found_pct": 0.0,
     "is_flagged": false
@@ -6270,16 +6270,16 @@
     "check": "missing_value_share",
     "domain": "completeness",
     "text": "null, blank or unknown cells, as a share (reported)",
-    "checked_count": 8982508,
-    "found_count": 36722,
-    "found_pct": 0.41,
+    "checked_count": 8698134,
+    "found_count": 39367,
+    "found_pct": 0.45,
     "is_flagged": null
    },
    {
     "check": "duplicate_row",
     "domain": "completeness",
     "text": "rows the same in every column but the key",
-    "checked_count": 25657,
+    "checked_count": 26695,
     "found_count": 0,
     "found_pct": 0.0,
     "is_flagged": false
@@ -6288,7 +6288,7 @@
     "check": "duplicate_key",
     "domain": "completeness",
     "text": "a patient, procedure or tooth key used twice",
-    "checked_count": 30892,
+    "checked_count": 33270,
     "found_count": 0,
     "found_pct": 0.0,
     "is_flagged": false
@@ -6297,7 +6297,7 @@
     "check": "tooth_table_value_missing",
     "domain": "completeness",
     "text": "an extraction the tooth table needs lacks its tooth, or a completed one its date",
-    "checked_count": 427,
+    "checked_count": 462,
     "found_count": 0,
     "found_pct": 0.0,
     "is_flagged": false
@@ -6306,16 +6306,16 @@
     "check": "probing_out_of_range",
     "domain": "accuracy",
     "text": "a probing depth over 15 mm or below -1",
-    "checked_count": 1097451,
-    "found_count": 2251,
-    "found_pct": 0.21,
+    "checked_count": 1052643,
+    "found_count": 2075,
+    "found_pct": 0.2,
     "is_flagged": true
    },
    {
     "check": "mobility_out_of_range",
     "domain": "accuracy",
     "text": "a mobility grade outside 0\u20133",
-    "checked_count": 194966,
+    "checked_count": 186556,
     "found_count": 0,
     "found_pct": 0.0,
     "is_flagged": false
@@ -6324,7 +6324,7 @@
     "check": "tooth_number_out_of_range",
     "domain": "accuracy",
     "text": "a tooth number outside 1\u201332",
-    "checked_count": 710289,
+    "checked_count": 682623,
     "found_count": 0,
     "found_pct": 0.0,
     "is_flagged": false
@@ -6333,7 +6333,7 @@
     "check": "dates_out_of_order",
     "domain": "accuracy",
     "text": "completed before it was planned",
-    "checked_count": 342,
+    "checked_count": 343,
     "found_count": 0,
     "found_pct": 0.0,
     "is_flagged": false
@@ -6351,7 +6351,7 @@
     "check": "diagnosis_not_in_lists",
     "domain": "accuracy",
     "text": "a diagnosis item in neither declared list",
-    "checked_count": 366,
+    "checked_count": 392,
     "found_count": 0,
     "found_pct": 0.0,
     "is_flagged": false
@@ -6360,7 +6360,7 @@
     "check": "icd_not_valid",
     "domain": "accuracy",
     "text": "an ICD-10 code not in ICD-10-CM form",
-    "checked_count": 11,
+    "checked_count": 18,
     "found_count": 0,
     "found_pct": 0.0,
     "is_flagged": false
@@ -6369,7 +6369,7 @@
     "check": "plan_copy_without_original",
     "domain": "plan_copy",
     "text": "a plan copy whose procedure is gone",
-    "checked_count": 1108,
+    "checked_count": 1355,
     "found_count": 0,
     "found_pct": 0.0,
     "is_flagged": false
@@ -6378,25 +6378,25 @@
     "check": "plan_copy_differs",
     "domain": "plan_copy",
     "text": "a plan copy whose code, tooth or diagnosis text differs from its procedure",
-    "checked_count": 1108,
-    "found_count": 33,
-    "found_pct": 2.98,
+    "checked_count": 1355,
+    "found_count": 35,
+    "found_pct": 2.58,
     "is_flagged": true
    },
    {
     "check": "older_item_after_switch",
     "domain": "list_in_use",
     "text": "an older-list item after the switch date",
-    "checked_count": 366,
-    "found_count": 38,
-    "found_pct": 10.38,
+    "checked_count": 392,
+    "found_count": 37,
+    "found_pct": 9.44,
     "is_flagged": true
    },
    {
     "check": "newer_item_before_switch",
     "domain": "list_in_use",
     "text": "a 2017-list item before the switch date",
-    "checked_count": 366,
+    "checked_count": 392,
     "found_count": 0,
     "found_pct": 0.0,
     "is_flagged": false
@@ -6417,9 +6417,9 @@
     "group": "1",
     "label": "Synthetic Dental Clinic A",
     "metric": "no_margin_chart",
-    "chart_count": 1782,
-    "pct": 24.6,
-    "rest_pct": 24.8,
+    "chart_count": 1820,
+    "pct": 23.1,
+    "rest_pct": 24.5,
     "is_flagged": false
    },
    {
@@ -6427,9 +6427,9 @@
     "group": "2",
     "label": "Synthetic Dental Clinic B",
     "metric": "no_margin_chart",
-    "chart_count": 1681,
-    "pct": 24.5,
-    "rest_pct": 24.8,
+    "chart_count": 1655,
+    "pct": 23.0,
+    "rest_pct": 24.6,
     "is_flagged": false
    },
    {
@@ -6437,9 +6437,9 @@
     "group": "3",
     "label": "Synthetic Dental Clinic C",
     "metric": "no_margin_chart",
-    "chart_count": 1939,
-    "pct": 24.0,
-    "rest_pct": 25.0,
+    "chart_count": 1748,
+    "pct": 25.9,
+    "rest_pct": 23.6,
     "is_flagged": false
    },
    {
@@ -6447,9 +6447,9 @@
     "group": "4",
     "label": "Synthetic Dental Clinic D",
     "metric": "no_margin_chart",
-    "chart_count": 1753,
-    "pct": 25.8,
-    "rest_pct": 24.4,
+    "chart_count": 1869,
+    "pct": 24.7,
+    "rest_pct": 24.0,
     "is_flagged": false
    },
    {
@@ -6457,7 +6457,7 @@
     "group": "1",
     "label": "Synthetic Dental Clinic A",
     "metric": "incomplete_chart",
-    "chart_count": 1782,
+    "chart_count": 1820,
     "pct": 51.7,
     "rest_pct": 53.9,
     "is_flagged": false
@@ -6467,9 +6467,9 @@
     "group": "2",
     "label": "Synthetic Dental Clinic B",
     "metric": "incomplete_chart",
-    "chart_count": 1681,
-    "pct": 53.5,
-    "rest_pct": 53.3,
+    "chart_count": 1655,
+    "pct": 54.2,
+    "rest_pct": 53.1,
     "is_flagged": false
    },
    {
@@ -6477,9 +6477,9 @@
     "group": "3",
     "label": "Synthetic Dental Clinic C",
     "metric": "incomplete_chart",
-    "chart_count": 1939,
-    "pct": 54.1,
-    "rest_pct": 53.1,
+    "chart_count": 1748,
+    "pct": 56.1,
+    "rest_pct": 52.4,
     "is_flagged": false
    },
    {
@@ -6487,9 +6487,9 @@
     "group": "4",
     "label": "Synthetic Dental Clinic D",
     "metric": "incomplete_chart",
-    "chart_count": 1753,
-    "pct": 54.2,
-    "rest_pct": 53.1,
+    "chart_count": 1869,
+    "pct": 51.4,
+    "rest_pct": 54.0,
     "is_flagged": false
    },
    {
@@ -6497,9 +6497,9 @@
     "group": "10",
     "label": "H000 (RDH)",
     "metric": "no_margin_chart",
-    "chart_count": 1099,
-    "pct": 24.3,
-    "rest_pct": 24.8,
+    "chart_count": 997,
+    "pct": 24.4,
+    "rest_pct": 24.2,
     "is_flagged": false
    },
    {
@@ -6507,9 +6507,9 @@
     "group": "11",
     "label": "H001 (RDH)",
     "metric": "no_margin_chart",
-    "chart_count": 1215,
-    "pct": 25.1,
-    "rest_pct": 24.6,
+    "chart_count": 1233,
+    "pct": 23.4,
+    "rest_pct": 24.4,
     "is_flagged": false
    },
    {
@@ -6517,9 +6517,9 @@
     "group": "12",
     "label": "H002 (RDH)",
     "metric": "no_margin_chart",
-    "chart_count": 1267,
-    "pct": 24.5,
-    "rest_pct": 24.8,
+    "chart_count": 1185,
+    "pct": 25.9,
+    "rest_pct": 23.9,
     "is_flagged": false
    },
    {
@@ -6527,9 +6527,9 @@
     "group": "13",
     "label": "H003 (RDH)",
     "metric": "no_margin_chart",
-    "chart_count": 1202,
-    "pct": 23.5,
-    "rest_pct": 25.0,
+    "chart_count": 1187,
+    "pct": 23.4,
+    "rest_pct": 24.4,
     "is_flagged": false
    },
    {
@@ -6537,9 +6537,9 @@
     "group": "14",
     "label": "H004 (RDH)",
     "metric": "no_margin_chart",
-    "chart_count": 1229,
-    "pct": 25.3,
-    "rest_pct": 24.6,
+    "chart_count": 1246,
+    "pct": 25.4,
+    "rest_pct": 24.0,
     "is_flagged": false
    },
    {
@@ -6547,9 +6547,9 @@
     "group": "15",
     "label": "H005 (RDH)",
     "metric": "no_margin_chart",
-    "chart_count": 1143,
-    "pct": 25.5,
-    "rest_pct": 24.6,
+    "chart_count": 1244,
+    "pct": 22.7,
+    "rest_pct": 24.5,
     "is_flagged": false
    },
    {
@@ -6557,8 +6557,8 @@
     "group": "10",
     "label": "H000 (RDH)",
     "metric": "incomplete_chart",
-    "chart_count": 1099,
-    "pct": 53.2,
+    "chart_count": 997,
+    "pct": 53.0,
     "rest_pct": 53.4,
     "is_flagged": false
    },
@@ -6567,8 +6567,8 @@
     "group": "11",
     "label": "H001 (RDH)",
     "metric": "incomplete_chart",
-    "chart_count": 1215,
-    "pct": 52.6,
+    "chart_count": 1233,
+    "pct": 52.1,
     "rest_pct": 53.5,
     "is_flagged": false
    },
@@ -6577,9 +6577,9 @@
     "group": "12",
     "label": "H002 (RDH)",
     "metric": "incomplete_chart",
-    "chart_count": 1267,
-    "pct": 53.0,
-    "rest_pct": 53.4,
+    "chart_count": 1185,
+    "pct": 55.4,
+    "rest_pct": 52.9,
     "is_flagged": false
    },
    {
@@ -6587,9 +6587,9 @@
     "group": "13",
     "label": "H003 (RDH)",
     "metric": "incomplete_chart",
-    "chart_count": 1202,
-    "pct": 53.8,
-    "rest_pct": 53.3,
+    "chart_count": 1187,
+    "pct": 52.2,
+    "rest_pct": 53.5,
     "is_flagged": false
    },
    {
@@ -6597,9 +6597,9 @@
     "group": "14",
     "label": "H004 (RDH)",
     "metric": "incomplete_chart",
-    "chart_count": 1229,
-    "pct": 55.6,
-    "rest_pct": 52.9,
+    "chart_count": 1246,
+    "pct": 54.0,
+    "rest_pct": 53.2,
     "is_flagged": false
    },
    {
@@ -6607,9 +6607,9 @@
     "group": "15",
     "label": "H005 (RDH)",
     "metric": "incomplete_chart",
-    "chart_count": 1143,
-    "pct": 52.0,
-    "rest_pct": 53.7,
+    "chart_count": 1244,
+    "pct": 53.1,
+    "rest_pct": 53.3,
     "is_flagged": false
    },
    {
@@ -6617,9 +6617,9 @@
     "group": "female",
     "label": "female",
     "metric": "no_margin_chart",
-    "chart_count": 3514,
-    "pct": 25.2,
-    "rest_pct": 24.3,
+    "chart_count": 3538,
+    "pct": 23.5,
+    "rest_pct": 24.9,
     "is_flagged": false
    },
    {
@@ -6627,9 +6627,9 @@
     "group": "male",
     "label": "male",
     "metric": "no_margin_chart",
-    "chart_count": 3641,
-    "pct": 24.3,
-    "rest_pct": 25.2,
+    "chart_count": 3554,
+    "pct": 24.9,
+    "rest_pct": 23.5,
     "is_flagged": false
    },
    {
@@ -6637,9 +6637,9 @@
     "group": "female",
     "label": "female",
     "metric": "incomplete_chart",
-    "chart_count": 3514,
-    "pct": 53.9,
-    "rest_pct": 52.9,
+    "chart_count": 3538,
+    "pct": 53.2,
+    "rest_pct": 53.4,
     "is_flagged": false
    },
    {
@@ -6647,9 +6647,9 @@
     "group": "male",
     "label": "male",
     "metric": "incomplete_chart",
-    "chart_count": 3641,
-    "pct": 52.9,
-    "rest_pct": 53.9,
+    "chart_count": 3554,
+    "pct": 53.4,
+    "rest_pct": 53.2,
     "is_flagged": false
    },
    {
@@ -6657,9 +6657,9 @@
     "group": "American Indian or Alaska Native",
     "label": "American Indian or Alaska Native",
     "metric": "no_margin_chart",
-    "chart_count": 1355,
-    "pct": 25.4,
-    "rest_pct": 24.6,
+    "chart_count": 1442,
+    "pct": 24.5,
+    "rest_pct": 24.1,
     "is_flagged": false
    },
    {
@@ -6667,9 +6667,9 @@
     "group": "Asian",
     "label": "Asian",
     "metric": "no_margin_chart",
-    "chart_count": 1531,
-    "pct": 23.1,
-    "rest_pct": 25.1,
+    "chart_count": 1524,
+    "pct": 24.4,
+    "rest_pct": 24.1,
     "is_flagged": false
    },
    {
@@ -6677,9 +6677,9 @@
     "group": "Black or African American",
     "label": "Black or African American",
     "metric": "no_margin_chart",
-    "chart_count": 1528,
-    "pct": 25.4,
-    "rest_pct": 24.6,
+    "chart_count": 1370,
+    "pct": 25.0,
+    "rest_pct": 24.0,
     "is_flagged": false
    },
    {
@@ -6687,9 +6687,9 @@
     "group": "Native Hawaiian or Other Pacific Islander",
     "label": "Native Hawaiian or Other Pacific Islander",
     "metric": "no_margin_chart",
-    "chart_count": 1436,
-    "pct": 25.9,
-    "rest_pct": 24.4,
+    "chart_count": 1328,
+    "pct": 24.2,
+    "rest_pct": 24.2,
     "is_flagged": false
    },
    {
@@ -6697,9 +6697,9 @@
     "group": "White",
     "label": "White",
     "metric": "no_margin_chart",
-    "chart_count": 1305,
-    "pct": 23.8,
-    "rest_pct": 25.0,
+    "chart_count": 1428,
+    "pct": 22.9,
+    "rest_pct": 24.5,
     "is_flagged": false
    },
    {
@@ -6707,9 +6707,9 @@
     "group": "American Indian or Alaska Native",
     "label": "American Indian or Alaska Native",
     "metric": "incomplete_chart",
-    "chart_count": 1355,
-    "pct": 51.7,
-    "rest_pct": 53.8,
+    "chart_count": 1442,
+    "pct": 50.9,
+    "rest_pct": 53.9,
     "is_flagged": false
    },
    {
@@ -6717,8 +6717,8 @@
     "group": "Asian",
     "label": "Asian",
     "metric": "incomplete_chart",
-    "chart_count": 1531,
-    "pct": 53.7,
+    "chart_count": 1524,
+    "pct": 53.5,
     "rest_pct": 53.3,
     "is_flagged": false
    },
@@ -6727,9 +6727,9 @@
     "group": "Black or African American",
     "label": "Black or African American",
     "metric": "incomplete_chart",
-    "chart_count": 1528,
-    "pct": 53.1,
-    "rest_pct": 53.4,
+    "chart_count": 1370,
+    "pct": 52.2,
+    "rest_pct": 53.6,
     "is_flagged": false
    },
    {
@@ -6737,9 +6737,9 @@
     "group": "Native Hawaiian or Other Pacific Islander",
     "label": "Native Hawaiian or Other Pacific Islander",
     "metric": "incomplete_chart",
-    "chart_count": 1436,
-    "pct": 55.2,
-    "rest_pct": 52.9,
+    "chart_count": 1328,
+    "pct": 56.1,
+    "rest_pct": 52.6,
     "is_flagged": false
    },
    {
@@ -6747,9 +6747,9 @@
     "group": "White",
     "label": "White",
     "metric": "incomplete_chart",
-    "chart_count": 1305,
-    "pct": 53.2,
-    "rest_pct": 53.4,
+    "chart_count": 1428,
+    "pct": 54.0,
+    "rest_pct": 53.2,
     "is_flagged": false
    },
    {
@@ -6757,9 +6757,9 @@
     "group": "2012",
     "label": "2012",
     "metric": "no_margin_chart",
-    "chart_count": 199,
-    "pct": 26.6,
-    "rest_pct": 24.7,
+    "chart_count": 200,
+    "pct": 24.5,
+    "rest_pct": 24.0,
     "is_flagged": false
    },
    {
@@ -6767,9 +6767,9 @@
     "group": "2013",
     "label": "2013",
     "metric": "no_margin_chart",
-    "chart_count": 404,
-    "pct": 26.5,
-    "rest_pct": 24.7,
+    "chart_count": 414,
+    "pct": 25.6,
+    "rest_pct": 23.9,
     "is_flagged": false
    },
    {
@@ -6777,9 +6777,9 @@
     "group": "2014",
     "label": "2014",
     "metric": "no_margin_chart",
-    "chart_count": 563,
-    "pct": 26.1,
-    "rest_pct": 24.7,
+    "chart_count": 533,
+    "pct": 22.5,
+    "rest_pct": 24.1,
     "is_flagged": false
    },
    {
@@ -6787,9 +6787,9 @@
     "group": "2015",
     "label": "2015",
     "metric": "no_margin_chart",
-    "chart_count": 671,
-    "pct": 22.5,
-    "rest_pct": 25.0,
+    "chart_count": 634,
+    "pct": 25.4,
+    "rest_pct": 23.9,
     "is_flagged": false
    },
    {
@@ -6797,9 +6797,9 @@
     "group": "2016",
     "label": "2016",
     "metric": "no_margin_chart",
-    "chart_count": 695,
-    "pct": 24.6,
-    "rest_pct": 24.9,
+    "chart_count": 611,
+    "pct": 24.2,
+    "rest_pct": 24.0,
     "is_flagged": false
    },
    {
@@ -6807,9 +6807,9 @@
     "group": "2017",
     "label": "2017",
     "metric": "no_margin_chart",
-    "chart_count": 737,
-    "pct": 23.1,
-    "rest_pct": 25.0,
+    "chart_count": 603,
+    "pct": 22.2,
+    "rest_pct": 24.2,
     "is_flagged": false
    },
    {
@@ -6817,19 +6817,19 @@
     "group": "2018",
     "label": "2018",
     "metric": "no_margin_chart",
-    "chart_count": 661,
-    "pct": 26.3,
-    "rest_pct": 24.7,
-    "is_flagged": false
+    "chart_count": 660,
+    "pct": 29.5,
+    "rest_pct": 23.6,
+    "is_flagged": true
    },
    {
     "group_type": "exam_year",
     "group": "2019",
     "label": "2019",
     "metric": "no_margin_chart",
-    "chart_count": 608,
-    "pct": 24.5,
-    "rest_pct": 24.9,
+    "chart_count": 683,
+    "pct": 23.4,
+    "rest_pct": 24.1,
     "is_flagged": false
    },
    {
@@ -6837,9 +6837,9 @@
     "group": "2020",
     "label": "2020",
     "metric": "no_margin_chart",
-    "chart_count": 616,
-    "pct": 26.0,
-    "rest_pct": 24.7,
+    "chart_count": 669,
+    "pct": 24.1,
+    "rest_pct": 24.0,
     "is_flagged": false
    },
    {
@@ -6847,9 +6847,9 @@
     "group": "2021",
     "label": "2021",
     "metric": "no_margin_chart",
-    "chart_count": 594,
-    "pct": 26.1,
-    "rest_pct": 24.7,
+    "chart_count": 664,
+    "pct": 23.8,
+    "rest_pct": 24.0,
     "is_flagged": false
    },
    {
@@ -6857,9 +6857,9 @@
     "group": "2022",
     "label": "2022",
     "metric": "no_margin_chart",
-    "chart_count": 644,
-    "pct": 25.2,
-    "rest_pct": 24.8,
+    "chart_count": 668,
+    "pct": 20.4,
+    "rest_pct": 24.3,
     "is_flagged": false
    },
    {
@@ -6867,9 +6867,9 @@
     "group": "2023",
     "label": "2023",
     "metric": "no_margin_chart",
-    "chart_count": 434,
-    "pct": 20.7,
-    "rest_pct": 25.1,
+    "chart_count": 449,
+    "pct": 25.8,
+    "rest_pct": 23.9,
     "is_flagged": false
    },
    {
@@ -6877,9 +6877,9 @@
     "group": "2024",
     "label": "2024",
     "metric": "no_margin_chart",
-    "chart_count": 223,
-    "pct": 24.2,
-    "rest_pct": 24.9,
+    "chart_count": 215,
+    "pct": 24.7,
+    "rest_pct": 24.0,
     "is_flagged": false
    },
    {
@@ -6887,9 +6887,9 @@
     "group": "2025",
     "label": "2025",
     "metric": "no_margin_chart",
-    "chart_count": 95,
-    "pct": 25.3,
-    "rest_pct": 24.8,
+    "chart_count": 79,
+    "pct": 20.3,
+    "rest_pct": 24.3,
     "is_flagged": false
    },
    {
@@ -6897,8 +6897,8 @@
     "group": "2026",
     "label": "2026",
     "metric": "no_margin_chart",
-    "chart_count": 11,
-    "pct": 18.2,
+    "chart_count": 10,
+    "pct": 30.0,
     "rest_pct": null,
     "is_flagged": false
    },
@@ -6907,9 +6907,9 @@
     "group": "2012",
     "label": "2012",
     "metric": "incomplete_chart",
-    "chart_count": 199,
-    "pct": 54.8,
-    "rest_pct": 52.9,
+    "chart_count": 200,
+    "pct": 51.5,
+    "rest_pct": 53.5,
     "is_flagged": false
    },
    {
@@ -6917,9 +6917,9 @@
     "group": "2013",
     "label": "2013",
     "metric": "incomplete_chart",
-    "chart_count": 404,
-    "pct": 55.7,
-    "rest_pct": 52.8,
+    "chart_count": 414,
+    "pct": 56.0,
+    "rest_pct": 53.2,
     "is_flagged": false
    },
    {
@@ -6927,9 +6927,9 @@
     "group": "2014",
     "label": "2014",
     "metric": "incomplete_chart",
-    "chart_count": 563,
-    "pct": 55.1,
-    "rest_pct": 52.8,
+    "chart_count": 533,
+    "pct": 51.4,
+    "rest_pct": 53.5,
     "is_flagged": false
    },
    {
@@ -6937,9 +6937,9 @@
     "group": "2015",
     "label": "2015",
     "metric": "incomplete_chart",
-    "chart_count": 671,
-    "pct": 52.8,
-    "rest_pct": 53.0,
+    "chart_count": 634,
+    "pct": 53.9,
+    "rest_pct": 53.3,
     "is_flagged": false
    },
    {
@@ -6947,9 +6947,9 @@
     "group": "2016",
     "label": "2016",
     "metric": "incomplete_chart",
-    "chart_count": 695,
-    "pct": 54.0,
-    "rest_pct": 52.9,
+    "chart_count": 611,
+    "pct": 53.2,
+    "rest_pct": 53.4,
     "is_flagged": false
    },
    {
@@ -6957,9 +6957,9 @@
     "group": "2017",
     "label": "2017",
     "metric": "incomplete_chart",
-    "chart_count": 737,
-    "pct": 53.6,
-    "rest_pct": 53.0,
+    "chart_count": 603,
+    "pct": 52.9,
+    "rest_pct": 53.4,
     "is_flagged": false
    },
    {
@@ -6967,9 +6967,9 @@
     "group": "2018",
     "label": "2018",
     "metric": "incomplete_chart",
-    "chart_count": 661,
-    "pct": 53.3,
-    "rest_pct": 53.0,
+    "chart_count": 660,
+    "pct": 55.9,
+    "rest_pct": 53.2,
     "is_flagged": false
    },
    {
@@ -6977,9 +6977,9 @@
     "group": "2019",
     "label": "2019",
     "metric": "incomplete_chart",
-    "chart_count": 608,
-    "pct": 53.3,
-    "rest_pct": 53.0,
+    "chart_count": 683,
+    "pct": 54.0,
+    "rest_pct": 53.3,
     "is_flagged": false
    },
    {
@@ -6987,9 +6987,9 @@
     "group": "2020",
     "label": "2020",
     "metric": "incomplete_chart",
-    "chart_count": 616,
-    "pct": 53.9,
-    "rest_pct": 52.9,
+    "chart_count": 669,
+    "pct": 52.0,
+    "rest_pct": 53.5,
     "is_flagged": false
    },
    {
@@ -6997,9 +6997,9 @@
     "group": "2021",
     "label": "2021",
     "metric": "incomplete_chart",
-    "chart_count": 594,
-    "pct": 53.2,
-    "rest_pct": 53.0,
+    "chart_count": 664,
+    "pct": 51.5,
+    "rest_pct": 53.5,
     "is_flagged": false
    },
    {
@@ -7007,9 +7007,9 @@
     "group": "2022",
     "label": "2022",
     "metric": "incomplete_chart",
-    "chart_count": 644,
-    "pct": 52.5,
-    "rest_pct": 53.0,
+    "chart_count": 668,
+    "pct": 51.3,
+    "rest_pct": 53.5,
     "is_flagged": false
    },
    {
@@ -7017,8 +7017,8 @@
     "group": "2023",
     "label": "2023",
     "metric": "incomplete_chart",
-    "chart_count": 434,
-    "pct": 50.9,
+    "chart_count": 449,
+    "pct": 55.7,
     "rest_pct": 53.2,
     "is_flagged": false
    },
@@ -7027,9 +7027,9 @@
     "group": "2024",
     "label": "2024",
     "metric": "incomplete_chart",
-    "chart_count": 223,
-    "pct": 53.8,
-    "rest_pct": 52.9,
+    "chart_count": 215,
+    "pct": 53.5,
+    "rest_pct": 53.4,
     "is_flagged": false
    },
    {
@@ -7037,18 +7037,18 @@
     "group": "2025",
     "label": "2025",
     "metric": "incomplete_chart",
-    "chart_count": 95,
-    "pct": 45.3,
-    "rest_pct": 53.6,
-    "is_flagged": true
+    "chart_count": 79,
+    "pct": 54.4,
+    "rest_pct": 53.3,
+    "is_flagged": false
    },
    {
     "group_type": "exam_year",
     "group": "2026",
     "label": "2026",
     "metric": "incomplete_chart",
-    "chart_count": 11,
-    "pct": 54.5,
+    "chart_count": 10,
+    "pct": 60.0,
     "rest_pct": null,
     "is_flagged": false
    },
@@ -7057,9 +7057,9 @@
     "group": "30\u201344",
     "label": "30\u201344",
     "metric": "no_margin_chart",
-    "chart_count": 1748,
-    "pct": 25.5,
-    "rest_pct": 24.3,
+    "chart_count": 1779,
+    "pct": 24.0,
+    "rest_pct": 24.9,
     "is_flagged": false
    },
    {
@@ -7067,9 +7067,9 @@
     "group": "45\u201364",
     "label": "45\u201364",
     "metric": "no_margin_chart",
-    "chart_count": 2387,
-    "pct": 24.5,
-    "rest_pct": 24.6,
+    "chart_count": 2304,
+    "pct": 24.6,
+    "rest_pct": 24.7,
     "is_flagged": false
    },
    {
@@ -7077,9 +7077,9 @@
     "group": "65 and over",
     "label": "65 and over",
     "metric": "no_margin_chart",
-    "chart_count": 2551,
-    "pct": 24.6,
-    "rest_pct": 24.5,
+    "chart_count": 2559,
+    "pct": 23.6,
+    "rest_pct": 25.0,
     "is_flagged": false
    },
    {
@@ -7087,9 +7087,9 @@
     "group": "under 30",
     "label": "under 30",
     "metric": "no_margin_chart",
-    "chart_count": 469,
-    "pct": 23.7,
-    "rest_pct": 24.9,
+    "chart_count": 450,
+    "pct": 26.4,
+    "rest_pct": 24.1,
     "is_flagged": false
    },
    {
@@ -7097,9 +7097,9 @@
     "group": "30\u201344",
     "label": "30\u201344",
     "metric": "incomplete_chart",
-    "chart_count": 1748,
-    "pct": 54.0,
-    "rest_pct": 52.7,
+    "chart_count": 1779,
+    "pct": 52.6,
+    "rest_pct": 53.7,
     "is_flagged": false
    },
    {
@@ -7107,9 +7107,9 @@
     "group": "45\u201364",
     "label": "45\u201364",
     "metric": "incomplete_chart",
-    "chart_count": 2387,
-    "pct": 53.9,
-    "rest_pct": 52.7,
+    "chart_count": 2304,
+    "pct": 54.1,
+    "rest_pct": 53.2,
     "is_flagged": false
    },
    {
@@ -7117,9 +7117,9 @@
     "group": "65 and over",
     "label": "65 and over",
     "metric": "incomplete_chart",
-    "chart_count": 2551,
-    "pct": 52.8,
-    "rest_pct": 53.1,
+    "chart_count": 2559,
+    "pct": 53.0,
+    "rest_pct": 53.6,
     "is_flagged": false
    },
    {
@@ -7127,9 +7127,9 @@
     "group": "under 30",
     "label": "under 30",
     "metric": "incomplete_chart",
-    "chart_count": 469,
-    "pct": 51.4,
-    "rest_pct": 53.6,
+    "chart_count": 450,
+    "pct": 54.0,
+    "rest_pct": 53.2,
     "is_flagged": false
    }
   ]
