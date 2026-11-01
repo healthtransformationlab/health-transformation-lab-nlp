@@ -19,7 +19,7 @@ No code changes.
 - **Defaults kept:** SC-001 says every committed result stays byte-identical at the defaults.
 - **Parity:** the stories that touch labels, scoring or the stage rule (US1, US3, US4) name their R twins.
 - **No organisation, person or study named:** the presets name settings only, and the out-of-scope section says so.
-- **Wording:** the spec says "status grouping" and "case finding" terms, never "diagnose".
+- **Wording:** "diagnosis" appears only as "diagnosis code" (what a dentist recorded), as AGENTS.md allows.
 - **Benchmark order:** no benchmarks are named.
 
 ## Verdict
