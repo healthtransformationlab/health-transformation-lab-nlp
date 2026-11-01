@@ -28,7 +28,7 @@
 
 | # | Use | How | Effort | Fits with |
 |---|-----|-----|--------|-----------|
-| 1 | **Note reader (LLM rung)** | Zero-/few-shot prompt: note in, JSON status / stage / grade / extent out, same schema and quote gate as the judge. 4B and 27B-text as two rungs | Low | Model ladder; difficulty levels; cost frontier |
+| 1 | **Note reader (LLM rung)** | Zero-/few-shot prompt: note in, JSON status / stage / grade / extent out, same schema as the judge; quote gate as the judge's, but ignoring capitals and whitespace (#134). 4B and 27B-text as two rungs | Low | Model ladder; difficulty levels; cost frontier |
 | 2 | **Fine-tuned note reader ("extend")** | Parameter-efficient fine-tuning (e.g. LoRA) of the 4B model on `train.csv` (synthetic labels), structured JSON output. Compare against the BERT ladder: does a 4B generative model beat a fine-tuned 150M encoder enough to justify its cost? | Medium; needs a GPU | BERT ladder; harm-weighted errors |
 | 3 | **Judge candidate** | Add to the judge bake-off. The same-family rule applies: if a MedGemma model is being graded, the judge must be from a different family, and vice versa | Low | `15_judge.py` bake-off |
 | 4 | **Note paraphraser for synthetic data** | Rewrite generated notes in varied clinical phrasing while keeping the label (as the UTHealth team did with GPT-4), then check with the reader and judge that the label survived. Reduces the "same author wrote notes and rules" problem | Medium | Spec 001 note realism |
@@ -72,6 +72,36 @@ notes, not evidence about either model on real records.
 MedGemma 1.5 opens with a `<unused94>thought ... <unused95>` block; the hf backend
 suppresses it (it otherwise used up the 300 new tokens before the JSON) and
 `parse_answer` strips one if present.
+
+### Why some answers fell back (#134)
+
+An answer falls back to `note_rules` when it fails the gate: bad JSON, a status outside the six, or a
+quote that isn't the note's own words. Every fallback in the two committed runs (240 synthetic review
+notes each, `data/datasets/llm_details_medgemma-4b-it.csv` and `llm_details_medgemma-1.5-4b-it.csv`) was
+read against its note:
+
+| Why the gate failed | 4B v1 | 1.5 | Verdict |
+|---|---:|---:|---|
+| Quote differs from the note only in capitals (an upper-case diagnosis line copied in lower case) | 3 | 0 | **Gate bug, fixed**: the gate now ignores capitals and runs of whitespace (`quote_in_note`) |
+| "Localized" shortened to "Local" or "Localize" | 8 | 0 | Model changed a word: correct to reject |
+| "Localized" respelled "Localised" | 1 | 2 | Model changed a word: correct to reject |
+| A misspelling in the note ("generlized", "locallized") corrected in the quote | 2 | 0 | Correct to reject (the quote must match the record as written) |
+| Quote stitched from separate places in the note, or with words added | 0 | 2 | Correct to reject |
+| Diagnosis text put in the `status` field instead of one of the six labels | 0 | 1 | Correct to reject |
+| **Total fallbacks** | **14** | **5** | |
+
+No answer failed for malformed JSON, a missing field, an out-of-range grade or extent, or output cut off
+at the token limit. So the 4B v1 run's fallbacks are mostly the model rewriting the word "Localized"
+rather than copying it; a future prompt version could say "copy the words character for character, even
+misspellings", which needs a new prompt version and a re-run to measure.
+
+**What a re-run would show.** MedGemma was not re-run (no GPU). Re-parsing the committed raw outputs
+with the fixed gate turns 3 of the 4B v1 run's 14 fallbacks into passes (visits 776, 3689, 4218): gate
+pass 94.2% to 95.4%, fallback 5.8% to 4.6%. Accuracy against generator truth goes from 0.779 to 0.775,
+because in one of the three (4218) MedGemma's own answer (stage II) was further from the generator's
+label than the note rules' fallback was. The 1.5 run and the Llama 3.3 70B run are unchanged (no
+case-only quotes). The committed files keep the gate as it ran. All of this is synthetic notes, not
+evidence about either model on real records.
 
 | Piece | Where |
 |---|---|
