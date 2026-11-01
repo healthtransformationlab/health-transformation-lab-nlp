@@ -680,8 +680,20 @@ For a patient with rate ratio `r` (smoking ratio × diabetes ratio), the Poisson
 `r̄` is the mean of `r` over `Params.entry_other_norm_draws` (20,000) patients drawn by `synthetic.draw_risk` on
 its own fixed stream. Smoking and diabetes are drawn independently of age, so `r̄` is the same in every band, and
 dividing by it keeps each band's mean count, and so its periodontal share (US7), where it was. With the defaults
-`r̄` is about 1.04. An OR is used as a rate ratio: for a common outcome the OR overstates the risk ratio, which
-here works against the small effects found, so the generator is, if anything, generous to the shared risk.
+`r̄` is 1.040 (`entry_other_rate_norm`). An OR is used as a rate ratio: for a common outcome the OR overstates the
+risk ratio, which here works against the small effects found, so the generator is, if anything, generous to the
+shared risk.
+
+**Checked on generated extracts (SYNTHETIC).** Pooled over generator seeds 13 and 101-107 at 6,000 patients each
+(48,000 patients), the mean non-periodontal count per patient by band is 3.61, 0.96, 0.55, 0.33, 0.27 and 0.35
+(declared 3.61, 0.96, 0.54, 0.33, 0.28, 0.35), and the periodontal share is 0.062, 0.194, 0.332, 0.490, 0.534 and
+0.474 against the targets 0.064, 0.209, 0.329, 0.480, 0.500, 0.470 (before US8, the same seeds: 0.055, 0.188, 0.344,
+0.483, 0.536, 0.470). One 6,000-patient extract is noisier: at seed 13 the 65-74 and 75+ bands sit 0.07 from target
+after the change, because the periodontal counts are heavy-tailed and the extract is a fresh sample (the main stream
+moves with the number of teeth present), so `test_open_dental.py` pools seeds 13-15 (within 0.03). On the seed 13
+extract, the non-periodontal count against the age band's mean (observed / expected) is 1.13 for daily smokers, 1.06
+for occasional smokers, 1.15 for patients with diabetes listed and 0.97 for never-smokers without it; the defaults
+give 1.20, 1.03, 1.18 and 0.96 in expectation.
 
 ### Caveats
 
