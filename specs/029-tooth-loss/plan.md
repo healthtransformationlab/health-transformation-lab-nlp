@@ -93,6 +93,20 @@
      `docs/tooth_loss.md` by hand from them), `diagrams/_build/silver_erd.py` (dictionary counts),
      `50_dq_site.py` (website JSON); R parity. The analysis plan's change log records the change.
 
+9. **Shared risk factors for non-periodontal loss (US8, #433).**
+   - Sources first: published effects of smoking and diabetes (and, where a source gives one, dental attendance or
+     socioeconomic status) on tooth loss for reasons other than periodontitis go in [research.md](research.md)
+     ("Shared risk factors"), each checked against the paper; `docs/references.md` gains the sources.
+   - `Params.entry_other_smoking_ratios` (cigarettes a day, lower bound → rate ratio) and
+     `Params.entry_other_diabetes_ratio` (HbA1c 6.5% or more), fixed defaults citing research.md.
+     `open_dental.entry_other_rate_ratio(risk, p)` multiplies them; `open_dental.entry_other_rate_norm(p)` is its mean
+     over `Params.entry_other_norm_draws` patients from `synthetic.draw_risk` on the stream
+     `"open_dental:entry_reason:norm"` (no seed: the same for every extract). The patient's Poisson mean is the
+     band's mean × ratio / norm, so each band's mean count, and its periodontal share, is unchanged.
+   - Same entry stream; `sites.draw_mouth_columns` untouched; teeth still chosen by tooth type.
+   - Regenerate as in step 8, and give `docs/tooth_loss.md` the before/after missing-at-entry AUC and specificity and
+     the stage recount, labelled synthetic.
+
 ## Tests first
 
 - `test_open_dental.py`:
@@ -118,6 +132,9 @@
 - US7: `test_open_dental.py` (the periodontal share at entry by age band recovered within 0.05 on a large seeded
   extract and lower when young; non-periodontal counts not correlated with worst CAL; own stream, seeded);
   `test_tooth_loss_model.py` (the missing-at-entry evaluation holds both classes; AUC and specificity are numbers).
+- US8: `test_open_dental.py` (the rate ratio and its norm on hand-built risks; observed/expected non-periodontal
+  count above 1 for daily smokers and for diabetes, below 1 for the rest, on a large seeded extract; age-band shares
+  still within 0.05; no link to worst CAL within age band and risk group; neutral ratios give US7's means; seeded).
 
 ## Environments
 
