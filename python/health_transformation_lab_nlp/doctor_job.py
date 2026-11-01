@@ -192,7 +192,7 @@ def diagnose(runs: pd.DataFrame, config: pd.DataFrame, runbook: pd.DataFrame, li
     graduation. `decisions` (run_id -> action code) records the owner's approvals; an action off the runbook's
     list for that run's class, or a run that isn't a failure being diagnosed, raises ValueError."""
     now = pd.Timestamp.now(tz="UTC") if now is None else doctor._ts(now)
-    decisions = decisions or {}
+    decisions = dict(decisions or {})      # a copy: approvals are ticked off as their runs are found
     runs = runs[runs["pipeline_name"] != SELF]
     recent = runs[doctor._ts(runs["started_ts"]) >= doctor._ts(since)]
     previous = previous if previous is not None and len(previous) else pd.DataFrame(columns=_cols(
