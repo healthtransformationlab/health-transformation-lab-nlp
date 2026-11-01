@@ -1,8 +1,8 @@
 """Build `tasks.jsonl` from the task manifest, in the competition's format (spec 028, US3, #354).
 
-    python scripts/52_build_tasks.py                 # data/tasks/tasks.jsonl (git-ignored), tasks_excluded.csv,
+    python scripts/55_build_tasks.py                 # data/tasks/tasks.jsonl (git-ignored), tasks_excluded.csv,
                                                      # tasks_sample.jsonl, and the manifest's base commits
-    python scripts/52_build_tasks.py --sample 3
+    python scripts/55_build_tasks.py --sample 3
 
 For each candidate in data/tasks/task_manifest.csv: `base_commit` is the parent of a squash or direct commit, or
 the PR's merge base for a merge commit (recorded in the manifest as `base_commit_source_code`); the diff from
@@ -138,7 +138,7 @@ def main() -> int:
     a = ap.parse_args()
     check_settings()
     telemetry.setup()
-    telemetry.start_script("52_build_tasks", data_label="public")
+    telemetry.start_script("55_build_tasks", data_label="public")
 
     manifest = pd.read_csv(MANIFEST, dtype={"spec_number": "string", "issue_number": "Int64", "pr_number": "Int64"})
     if "base_commit_source_code" not in manifest:
