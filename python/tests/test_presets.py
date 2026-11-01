@@ -1,4 +1,5 @@
-"""Spec 032 US7 (#446): named presets of the analysis settings, and one run of every part under a preset."""
+"""Spec 032 US7 (#446): named presets of the analysis settings, and one run of every part under a preset. Spec 032 US8
+(#448): repo_v2 is the code's defaults; repo_v1 keeps the defaults before it."""
 
 import importlib.util
 import inspect
@@ -8,6 +9,7 @@ import yaml
 
 from health_transformation_lab_nlp import classify_status as cs
 from health_transformation_lab_nlp import (
+    dq_site,
     labels,
     phenotype,
     presets,
@@ -30,17 +32,20 @@ def _score_fn():
     return mod.score
 
 
-# Where each setting's default lives in the code today. repo_v1 must equal every one of them, so a later change of a
-# default (spec 032 US8) shows up as a failing test until repo_v1 or the code is put right.
+# Where each setting's default lives in the code. repo_v2 must equal every one of them (spec 032 US8), so a later
+# change of a default shows up as a failing test until repo_v2 or the code is put right. The visit filters are the
+# scoring-time defaults (study.visits_in_study); study.build_study keeps every visit, because it builds the benchmark
+# note set the committed model runs were scored on.
 CODE_DEFAULTS = {
     "grouping": lambda: {_default(_score_fn(), "grouping"), _default(prevalence.prevalence_by_group, "grouping"),
-                         _default(labels.group_status, "grouping")},
-    "also_reported_groupings": lambda: {()},
-    "visit_min_age": lambda: {_default(study.visits_in_study, "min_age"), _default(study.build_study, "min_age")},
+                         _default(labels.group_status, "grouping"), labels.DEFAULT_GROUPING},
+    "also_reported_groupings": lambda: {tuple(labels.ALSO_REPORTED_GROUPINGS)},
+    "visit_min_age": lambda: {_default(study.visits_in_study, "min_age"), _default(study.visit_exclusions, "min_age")},
     "visit_start_date": lambda: {_default(study.visits_in_study, "start_date"),
-                                 _default(study.build_study, "start_date")},
+                                 _default(study.visit_exclusions, "start_date")},
     "absent_code": lambda: {_default(study.read_methods, "absent_code"),
-                            _default(phenotype.with_absent_code, "absent_code")},
+                            _default(phenotype.with_absent_code, "absent_code"),
+                            _default(phenotype.read_dx_code, "absent_code")},
     "stage4_rules": lambda: {tuple(labels.STAGE4_COUNT_RULES)},      # tooth_loss_model.run reports all of them
     "tooth_loss_min_age": lambda: {tlm.DEFAULT.min_age},
     "tooth_loss_start_date": lambda: {tlm.DEFAULT.start_date},
@@ -52,8 +57,16 @@ CODE_DEFAULTS = {
     "classifier_cv_folds": lambda: {_default(cs.train_eval, "folds")},
     "consistency_groups": lambda: {tuple(_default(tooth_loss_dq.group_consistency, "group_types")),
                                    tuple(tooth_loss_dq.GROUP_TYPES)},
-    "cal_icc": lambda: {False},
+    "cal_icc": lambda: {dq_site.REPORT_CAL_ICC},                   # the data-quality page's reliability tile
 }
+
+# repo_v1: the defaults before spec 032 US8, kept as they were so `--preset repo_v1` gives the old behaviour.
+REPO_V1 = {"grouping": "six", "also_reported_groupings": [], "visit_min_age": None, "visit_start_date": None,
+           "absent_code": "no_answer", "stage4_rules": list(labels.STAGE4_COUNT_RULES), "tooth_loss_min_age": 18,
+           "tooth_loss_start_date": None, "tooth_loss_split_unit": "person", "tooth_loss_test_share": 0.3,
+           "tooth_loss_cv_folds": None, "classifier_split_unit": "person", "classifier_test_share": 0.2,
+           "classifier_cv_folds": 5,
+           "consistency_groups": ["office", "provider", "sex", "race", "exam_year", "age_band"], "cal_icc": False}
 
 
 def test_every_setting_has_a_code_default_checked_here():
@@ -61,16 +74,26 @@ def test_every_setting_has_a_code_default_checked_here():
 
 
 @pytest.mark.parametrize("setting", list(CODE_DEFAULTS))
-def test_repo_v1_is_every_current_default(setting):
+def test_repo_v2_is_every_current_default(setting):
     found = CODE_DEFAULTS[setting]()
     assert len(found) == 1, f"{setting}: the code has more than one default {found}"
-    value = presets.load_preset("repo_v1")[setting]
+    value = presets.load_preset("repo_v2")[setting]
     assert (tuple(value) if isinstance(value, list) else value) == next(iter(found)), setting
 
 
-def test_both_presets_load_and_name_every_setting():
-    assert set(presets.preset_names()) >= {"repo_v1", "exploratory_1"}
-    for name in ("repo_v1", "exploratory_1"):
+def test_repo_v1_keeps_the_old_defaults():
+    assert presets.load_preset("repo_v1") == REPO_V1
+
+
+def test_exploratory_1_differs_from_repo_v2_only_in_the_split():
+    v2, e1 = presets.load_preset("repo_v2"), presets.load_preset("exploratory_1")
+    assert {s for s in presets.PRESET_SETTINGS if v2[s] != e1[s]} == {"tooth_loss_split_unit", "classifier_split_unit"}
+    assert v2["tooth_loss_split_unit"] == v2["classifier_split_unit"] == "person"
+
+
+def test_every_preset_loads_and_names_every_setting():
+    assert set(presets.preset_names()) >= {"repo_v1", "repo_v2", "exploratory_1"}
+    for name in ("repo_v1", "repo_v2", "exploratory_1"):
         p = presets.load_preset(name)
         assert list(p) == list(presets.PRESET_SETTINGS)
 
@@ -123,13 +146,16 @@ def test_no_preset_names_a_study_person_or_organisation():
 
 
 def test_settings_table_says_what_changed():
-    t = presets.settings_table("exploratory_1")
-    assert list(t.columns) == ["setting_name", "repo_v1_value_text", "preset_value_text", "is_changed"]
+    assert presets.BASE_PRESET == "repo_v2"           # the code's defaults
+    t = presets.settings_table("repo_v1")
+    assert list(t.columns) == ["setting_name", "default_value_text", "preset_value_text", "is_changed"]
     assert list(t["setting_name"]) == list(presets.PRESET_SETTINGS)
     row = t.set_index("setting_name")
-    assert row.loc["grouping", "repo_v1_value_text"] == "six" and row.loc["grouping", "preset_value_text"] == "five"
+    assert row.loc["grouping", "default_value_text"] == "five" and row.loc["grouping", "preset_value_text"] == "six"
     assert bool(row.loc["grouping", "is_changed"]) and not bool(row.loc["tooth_loss_min_age", "is_changed"])
-    assert not presets.settings_table("repo_v1")["is_changed"].any()
+    changed = presets.settings_table("exploratory_1").query("is_changed")["setting_name"]
+    assert set(changed) == {"tooth_loss_split_unit", "classifier_split_unit"}
+    assert not presets.settings_table("repo_v2")["is_changed"].any()
 
 
 def test_a_small_run_writes_every_part_labelled_synthetic(monkeypatch):

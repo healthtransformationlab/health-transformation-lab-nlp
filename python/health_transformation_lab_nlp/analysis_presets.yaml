@@ -1,10 +1,11 @@
 # Spec 032 US7 (#446): named sets of analysis settings (presets.py loads them; scripts/58_preset.py runs one).
+# repo_v2 is the code's defaults (spec 032 US8, #448); repo_v1 the defaults before it; exploratory_1 a study design.
 # Every preset writes out every setting. Settings are generic design choices of dental-record studies; no preset
 # names a study, a person or an organisation. Everything run with them is SYNTHETIC.
 
 repo_v1:
-  # Today's defaults, written out explicitly (tests/test_presets.py checks each against the code's default, so a
-  # later change of default shows up here).
+  # The defaults before spec 032 US8 (#448), written out explicitly; `--preset repo_v1` gives the old behaviour.
+  # Its values are kept as they were (tests/test_presets.py checks them).
   grouping: six                       # status grouping for scores and prevalence (labels.GROUPINGS)
   also_reported_groupings: []         # further groupings reported beside the main one
   visit_min_age: null                 # visit-level study set: minimum age at the visit (null: every age)
@@ -42,3 +43,26 @@ exploratory_1:
   classifier_cv_folds: 5              # 5-fold tuning
   consistency_groups: [office, provider, sex, race, exam_year, age_band, insurance_type]   # insurance added
   cal_icc: true                       # report the CAL reliability ICC (spec 013, reliability_cal)
+
+repo_v2:
+  # The code's defaults since spec 032 US8 (#448): exploratory_1 with the split kept by person for both models. A
+  # random split by visit puts one person's visits on both sides, which overstates accuracy, so it stays an option,
+  # never a default. tests/test_presets.py checks each value against the code's default. The visit filters, the
+  # grouping and the absent-code rule apply when results are scored: the benchmark note set (scripts/10_build_study.py,
+  # the review set, the answer key) is built as before, so every committed model prediction stays valid.
+  grouping: five                      # healthy and gingivitis merged; stage I to IV kept apart
+  also_reported_groupings: [three]    # also healthy-or-gingivitis, mild (stage I-II), severe (stage III-IV)
+  visit_min_age: 18                   # adults only
+  visit_start_date: "2021-04-01"      # synthetic stand-in for the date a newer classification was adopted
+  absent_code: healthy_or_gingivitis  # a treatment plan with no gum-disease code reads as healthy or gingivitis
+  stage4_rules: [recorded_only, every_missing, expected_perio_loss, truth, teeth_lt_20, pairs_lt_10]  # all six reported
+  tooth_loss_min_age: 18              # adults only
+  tooth_loss_start_date: "2018-01-01" # synthetic stand-in for the date a newer classification was adopted
+  tooth_loss_split_unit: person       # whole patients held out (a split by visit stays an option, never the default)
+  tooth_loss_test_share: 0.2          # 80/20
+  tooth_loss_cv_folds: 5              # 5-fold tuning of XGBoost
+  classifier_split_unit: person       # whole people held out (a split by visit stays an option, never the default)
+  classifier_test_share: 0.2          # 80/20
+  classifier_cv_folds: 5              # 5-fold tuning
+  consistency_groups: [office, provider, sex, race, exam_year, age_band, insurance_type]   # insurance added
+  cal_icc: true                       # report the CAL reliability ICC (spec 013) where a report has a place for it
