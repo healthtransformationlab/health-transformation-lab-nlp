@@ -695,6 +695,20 @@ if (file.exists(pvf) && file.exists(pcf) && file.exists(pkf)) {
   stopifnot(bad_chart == 0, bad_merge == 0, nrow(mk) == nrow(py_k), dk < 1e-9, nrow(mc) == nrow(py_c), dc < 1e-9)
   cat("parity OK (spec 024 US3)\n")
 } else cat("PerioDx visits: skipped (run 10_build_study.py and 52_patel2022.py)\n")
+# Spec 032 US4: the teeth-left stage IV rules on the hand-worked cases of python/tests/test_tooth_loss_model.py
+local({
+  source("r/R/16_spec029.R")
+  stopifnot(all(stage4_tooth_counts_029(1:32) == c(28, 14)), all(stage4_tooth_counts_029(integer(0)) == c(0, 0)),
+            all(stage4_tooth_counts_029(c(1, 3, 14, 16, 17, 19, 30, 32)) == c(4, 2)),
+            all(stage4_tooth_counts_029(2:5) == c(4, 0)))
+  twenty <- c(2:11, 33 - 2:11); nineteen <- twenty[-20]; one_arch <- c(2:15, 18:23)
+  r <- function(rule, teeth) stage4_rule_029(rule, 0, 0, teeth_present = teeth)
+  stopifnot(!r("teeth_lt_20", twenty), !r("pairs_lt_10", twenty), r("teeth_lt_20", nineteen),
+            r("pairs_lt_10", nineteen), !r("teeth_lt_20", one_arch), r("pairs_lt_10", one_arch),
+            !r("teeth_lt_20", c(twenty, 1, 16)), r("teeth_lt_20", c(nineteen, 1)),
+            stage4_rule_029("every_missing", 0, 5, teeth_present = integer(0)))
+  cat("parity OK (spec 032 US4: teeth-left stage rules, hand-worked cases)\n")
+})
 # Spec 029 US3: the tooth-loss model's metrics and the stage IV counting rules (R 16_spec029.R vs
 # tooth_loss_model.py / labels.py, from scripts/51_tooth_loss_model.py's outputs). Model fitting is Python only.
 rt <- "data/results"
@@ -751,11 +765,17 @@ if (file.exists(file.path(rt, "synthetic_tooth_loss_eval_rows.csv"))) {
       probs <- sums[[as.character(grp$patient_id[i])]]
       if (is.null(probs)) probs <- numeric(0)
       e <- expected_perio_loss_029(grp$recorded_perio_count[i], probs)
+      # spec 032 US4: the teeth left, as charted (third molars too); the counts leave third molars out
+      txt <- as.character(grp$present_tooth_text[i])
+      left <- if (is.na(txt) || !nzchar(txt)) integer(0) else as.integer(strsplit(txt, " ", fixed = TRUE)[[1]])
+      cnt <- stage4_tooth_counts_029(left)
       iv <- sapply(STAGE4_COUNT_RULES_029, function(rule) stage4_rule_029(rule, grp$recorded_perio_count[i],
-                   grp$missing_count[i], probs, grp$true_perio_count[i]))
+                   grp$missing_count[i], probs, grp$true_perio_count[i], teeth_present = left))
       py_iv <- as.logical(unlist(grp[i, paste0("is_stage4_", STAGE4_COUNT_RULES_029)]))
       at_edge <- abs(e - 5) < 1e-9                       # summation order may differ at exactly five teeth
-      if (abs(e - grp$expected_perio_loss[i]) >= 1e-9 || (!at_edge && any(iv != py_iv))) bad_stage <- bad_stage + 1
+      edge_ok <- if (at_edge) all(iv[c("teeth_lt_20", "pairs_lt_10")] == py_iv[c(5, 6)]) else all(iv == py_iv)
+      counts_ok <- cnt[["teeth"]] == grp$teeth_present_count[i] && cnt[["pairs"]] == grp$occluding_pair_count[i]
+      if (abs(e - grp$expected_perio_loss[i]) >= 1e-9 || !edge_ok || !counts_ok) bad_stage <- bad_stage + 1
     }
   }
   cat(sprintf("tooth-loss metrics: %d sets of teeth, %d values checked, %d sets differ; stage rule: %d patient rows, %d differ\n",
