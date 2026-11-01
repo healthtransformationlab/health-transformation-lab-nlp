@@ -5,6 +5,7 @@ perio-bench/index.html and docs/pitch/deck.html as oral-health-bench/index.html,
 only change to a deck is the icon links after <title>. .github/workflows/copy-decks-to-site.yml runs this on every
 push to main that touches a deck or a cover, then commits to the site only when something changed.
 
+    python .github/scripts/copy_decks_to_site.py check-auth         # SITE_DEPLOY_KEY, else SITE_PUSH_TOKEN (#464)
     python .github/scripts/copy_decks_to_site.py check-token        # SITE_PUSH_TOKEN present and fine-grained
     python .github/scripts/copy_decks_to_site.py build --site DIR   # write the copies into a site checkout
 
@@ -20,6 +21,7 @@ import sys
 from pathlib import Path
 
 TOKEN_NAME = "SITE_PUSH_TOKEN"
+KEY_NAME = "SITE_DEPLOY_KEY"   # an SSH deploy key with write access to the site; never expires (#464)
 SITE_REPO = "healthtransformationlab/healthtransformationlab.github.io"
 
 # source in this repo -> path in the site repo
@@ -75,14 +77,50 @@ def check_token_shape(token: str) -> None:
                          "only, Contents read and write, 90 days at most (ops/secrets_register.yaml).")
 
 
+def check_key_shape(key: str) -> None:
+    """Fail at once, naming the secret, when it isn't an OpenSSH private key. Never echoes it."""
+    k = key.strip()
+    if not (k.startswith("-----BEGIN OPENSSH PRIVATE KEY-----") and k.endswith("-----END OPENSSH PRIVATE KEY-----")):
+        raise ValueError(f"{KEY_NAME} is not an OpenSSH private key (-----BEGIN OPENSSH PRIVATE KEY----- ... END). "
+                         "Save the private half of the key pair, not the .pub file (ops/secrets_register.yaml).")
+
+
+def auth_method(env) -> str:
+    """"key" when SITE_DEPLOY_KEY is set (checked), else "token" when SITE_PUSH_TOKEN is (checked). With neither,
+    fail naming both, the deploy key first: it never expires (#464)."""
+    if (env.get(KEY_NAME) or "").strip():
+        check_key_shape(env[KEY_NAME])
+        return "key"
+    if (env.get(TOKEN_NAME) or "").strip():
+        check_token_shape(env[TOKEN_NAME])
+        return "token"
+    raise ValueError(f"Neither {KEY_NAME} nor {TOKEN_NAME} is set. Preferred: a deploy key, which never expires. Run "
+                     f"ssh-keygen -t ed25519 -N '' -f site_deploy_key, add site_deploy_key.pub to {SITE_REPO} -> "
+                     f"Settings -> Deploy keys with Allow write access, and save site_deploy_key as the repository "
+                     f"secret {KEY_NAME} (ops/secrets_register.yaml).")
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = parser.add_subparsers(dest="command", required=True)
+    sub.add_parser("check-auth", help=f"check {KEY_NAME}, else {TOKEN_NAME}; write method=key|token to GITHUB_OUTPUT")
     sub.add_parser("check-token", help=f"check {TOKEN_NAME} is present and fine-grained")
     b = sub.add_parser("build", help="write the site copies into a checkout of the site")
     b.add_argument("--site", required=True, type=Path, help="the site checkout")
     b.add_argument("--repo", type=Path, default=Path(__file__).resolve().parents[2], help="this repository")
     args = parser.parse_args(argv)
+
+    if args.command == "check-auth":
+        try:
+            method = auth_method(os.environ)
+        except ValueError as e:
+            print(f"::error::{e}")
+            return 1
+        if os.environ.get("GITHUB_OUTPUT"):
+            with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as f:
+                f.write(f"method={method}\n")
+        print(f"Pushing to the site with {KEY_NAME if method == 'key' else TOKEN_NAME}.")
+        return 0
 
     if args.command == "check-token":
         try:

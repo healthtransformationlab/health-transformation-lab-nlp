@@ -5,9 +5,12 @@
 # or a cover, and by hand from the Actions tab. Commits to the site's main only when something changed, naming
 # the source commit.
 #
-# Setting: the repository secret SITE_PUSH_TOKEN, a fine-grained token for the website repository only, Contents
-# read and write, 90 days at most (ops/secrets_register.yaml). Missing, the wrong shape, or unable to push: the
-# run fails before any work, naming it.
+# Settings (ops/secrets_register.yaml), checked before any work:
+#   SITE_DEPLOY_KEY (preferred, #464): the private half of an SSH deploy key that the website repository grants
+#     write access to. It works for that repository only and never expires.
+#   SITE_PUSH_TOKEN (fallback): a fine-grained token for the website repository only, Contents read and write,
+#     90 days at most.
+# Neither set, the wrong shape, or unable to push: the run fails before building anything, naming both.
 name: Copy the decks to the website
 on:
   push:
@@ -38,35 +41,51 @@ jobs:
       - uses: actions/checkout@v6
         with:
           persist-credentials: false   # this repo's token stays out of git; only SITE_PUSH_TOKEN talks to the site
-      - name: Check the site token (value stays masked)
+      - name: Check the site credential (values stay masked)
+        id: auth
         env:
+          SITE_DEPLOY_KEY: ${{ secrets.SITE_DEPLOY_KEY }}
           SITE_PUSH_TOKEN: ${{ secrets.SITE_PUSH_TOKEN }}
-        run: python3 .github/scripts/copy_decks_to_site.py check-token
-      - name: Clone the site and check the token can push to it
+        run: python3 .github/scripts/copy_decks_to_site.py check-auth
+      - name: Set up access to the site
         env:
+          SITE_DEPLOY_KEY: ${{ secrets.SITE_DEPLOY_KEY }}
           SITE_PUSH_TOKEN: ${{ secrets.SITE_PUSH_TOKEN }}
+          METHOD: ${{ steps.auth.outputs.method }}
         run: |
-          # The token goes in an HTTP header from the environment, never into a URL or .git/config
-          auth=$(printf 'x-access-token:%s' "$SITE_PUSH_TOKEN" | base64 -w0)
-          echo "::add-mask::$auth"
-          export GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0="http.https://github.com/.extraheader" \
-                 GIT_CONFIG_VALUE_0="AUTHORIZATION: basic $auth"
-          git clone --quiet --depth 1 --branch main "https://github.com/$SITE_REPO.git" site || {
-            echo "::error::SITE_PUSH_TOKEN can't read $SITE_REPO: make a fine-grained token for that repository, Contents read and write, and replace the secret."
+          if [ "$METHOD" = key ]; then
+            # GitHub's published ed25519 host key, pinned, and checked against GitHub's own list so a rotation fails loudly
+            pinned="github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl"
+            curl -fsS https://api.github.com/meta | python3 -c 'import json,sys; print("\n".join(json.load(sys.stdin)["ssh_keys"]))' \
+              | grep -qxF "${pinned#github.com }" || {
+              echo "::error::GitHub's SSH host key isn't the pinned one any more: update it in copy-decks-to-site.yml from api.github.com/meta."
+              exit 1; }
+            echo "$pinned" > "$RUNNER_TEMP/known_hosts"
+            umask 077
+            printf '%s\n' "$SITE_DEPLOY_KEY" > "$RUNNER_TEMP/site_key"
+            chmod 600 "$RUNNER_TEMP/site_key"
+            echo "GIT_SSH_COMMAND=ssh -i $RUNNER_TEMP/site_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$RUNNER_TEMP/known_hosts" >> "$GITHUB_ENV"
+            echo "SITE_URL=git@github.com:$SITE_REPO.git" >> "$GITHUB_ENV"
+          else
+            # The token goes in an HTTP header from the environment, never into a URL or .git/config
+            auth=$(printf 'x-access-token:%s' "$SITE_PUSH_TOKEN" | base64 -w0)
+            echo "::add-mask::$auth"
+            { echo "GIT_CONFIG_COUNT=1"; echo "GIT_CONFIG_KEY_0=http.https://github.com/.extraheader"
+              echo "GIT_CONFIG_VALUE_0=AUTHORIZATION: basic $auth"; } >> "$GITHUB_ENV"
+            echo "SITE_URL=https://github.com/$SITE_REPO.git" >> "$GITHUB_ENV"
+          fi
+      - name: Clone the site and check the credential can push to it
+        run: |
+          git clone --quiet --depth 1 --branch main "$SITE_URL" site || {
+            echo "::error::Can't read $SITE_REPO with SITE_DEPLOY_KEY or SITE_PUSH_TOKEN: check the deploy key is added to that repository, or the token covers it."
             exit 1; }
-          # Asking for the push refs needs write access, so this fails on a read-only token without pushing anything
+          # Asking for the push refs needs write access, so this fails on a read-only credential without pushing anything
           git -C site push --dry-run --quiet origin HEAD:main || {
-            echo "::error::SITE_PUSH_TOKEN can't push to $SITE_REPO: it needs Contents read and write on that repository."
+            echo "::error::Can't push to $SITE_REPO: the deploy key (SITE_DEPLOY_KEY) needs Allow write access, or the token (SITE_PUSH_TOKEN) Contents read and write."
             exit 1; }
-          echo "SITE_PUSH_TOKEN can push to $SITE_REPO."
+          echo "Can push to $SITE_REPO."
       - name: Build the site's copies and commit them if anything changed
-        env:
-          SITE_PUSH_TOKEN: ${{ secrets.SITE_PUSH_TOKEN }}
         run: |
-          auth=$(printf 'x-access-token:%s' "$SITE_PUSH_TOKEN" | base64 -w0)
-          echo "::add-mask::$auth"
-          export GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0="http.https://github.com/.extraheader" \
-                 GIT_CONFIG_VALUE_0="AUTHORIZATION: basic $auth"
           python3 .github/scripts/copy_decks_to_site.py build --site site
           cd site
           git add -A perio-bench/index.html oral-health-bench/index.html img/edr_deck_cover.png img/pitch_deck_cover.png
@@ -80,3 +99,6 @@ jobs:
             -m "Built by .github/workflows/copy-decks-to-site.yml from ${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}"
           git push --quiet origin HEAD:main
           echo "Pushed: $(git rev-parse HEAD)"
+      - name: Remove the deploy key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/site_key"
