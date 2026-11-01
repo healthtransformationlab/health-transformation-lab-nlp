@@ -18,6 +18,7 @@ python scripts/54_medgemma_field_accuracy.py           # spec 004 US6: per field
 python scripts/54_medgemma_field_accuracy.py --simulated
 python scripts/19_prevalence.py
 python scripts/20_data_quality.py
+python scripts/44_medical_features.py --metrics-only   # spec 023: per-class metrics on committed predictions + seeded cases (no xgboost)
 python scripts/52_patel2022.py          # spec 024: Patel et al. 2022 completeness and confusion scores (read by the R parity test)
 python scripts/45_case_profiles.py      # spec 026: record-mismatch rules and scores (read by the R parity test)
 python scripts/47_tooth_table.py        # spec 029: tooth statuses on a seeded synthetic Open Dental extract

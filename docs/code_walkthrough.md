@@ -292,17 +292,22 @@ through; it says nothing about real patients.
   `dental_medical` (adds hypertension, CKD, cardiovascular disease, COPD and blood pressure); `medical` (the
   medical record and age, no chart).
 - **Method:** the same 70/30 split for every set, stratified by class and kept by person; XGBoost tuned by grouped
-  5-fold cross-validation inside the training people; per-class one-vs-rest metrics; mean |SHAP| per feature.
+  5-fold cross-validation inside the training people; mean |SHAP| per feature.
+- **Metrics** (`classify_status.class_metrics`, as Table 2 of the paper reports them): per class, one-vs-rest,
+  sensitivity and specificity of the most likely class, AUC (by ranks, ties averaged; missing, not zero, for a
+  class with no test visits) and Brier score (the mean squared gap between that class's probability and 1 or 0;
+  lower is better); then each averaged over the classes present. Scoring is in Python and base R
+  ([`13_spec023.R`](../r/R/13_spec023.R)), equal to 1e-9 in `r/tests/test_parity.R`; fitting stays Python only.
 - Run: `python scripts/44_medical_features.py` (seed 0, outcome `algorithm_design`; about 3 minutes on a laptop CPU).
 
 **SYNTHETIC run (seed 0, 1,145 people, 343 held out), averages over the 4 classes:**
 
-| Feature set | Sensitivity | Specificity | AUC |
-|---|---|---|---|
-| dental | 0.723 | 0.925 | 0.931 |
-| dental_no_asa | 0.725 | 0.925 | 0.931 |
-| dental_medical | 0.719 | 0.922 | 0.921 |
-| medical | 0.295 | 0.764 | 0.532 |
+| Feature set | Sensitivity | Specificity | AUC | Brier score |
+|---|---|---|---|---|
+| dental | 0.723 | 0.925 | 0.931 | 0.077 |
+| dental_no_asa | 0.725 | 0.925 | 0.931 | 0.078 |
+| dental_medical | 0.719 | 0.922 | 0.921 | 0.089 |
+| medical | 0.295 | 0.764 | 0.532 | 0.199 |
 
 *For reference only, not a target or a replication:* Patel et al. 2026, Table 2 (real linked records of 20,946
 adults; averages over 4 classes, sensitivity/specificity/AUC): dental records only 66/86/84%, dental and medical

@@ -101,12 +101,13 @@ def test_comparison_rows_one_per_feature_set_and_class(people):
     small = people.groupby("y").head(60).reset_index(drop=True)
     res = cs.compare_feature_sets(small, seed=2, grid=SMALL, folds=3)
     m = res["metrics"]
-    assert len(m) == len(cs.FEATURE_SETS) * 4
+    assert len(m) == len(cs.FEATURE_SETS) * 5                     # 4 classes and their mean (US3)
+    assert list(m.loc[m["feature_set"] == "medical", "class"]) == [*cs.CLASS_NAMES["four"], "mean"]
     assert set(m["feature_set"]) == set(cs.FEATURE_SETS)
     assert m["is_synthetic"].all() and (m["seed"] == 2).all()
     for name, cols in cs.FEATURE_SETS.items():
         assert set(m.loc[m["feature_set"] == name, "features"]) == {" ".join(cols)}
-    for col in ("n_test", "sensitivity", "specificity", "auc"):
+    for col in ("n_test", "sensitivity", "specificity", "auc", "brier", "classes_averaged"):
         assert col in m.columns
     p = res["predictions"]
     assert set(p["feature_set"]) == set(cs.FEATURE_SETS)
