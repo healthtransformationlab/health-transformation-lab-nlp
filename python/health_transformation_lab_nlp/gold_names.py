@@ -143,6 +143,23 @@ TABLES |= {
                            "run_id": "run_id", "simulated": "is_simulated", **_DQ_PROV},
 }
 
+# spec 027 US5: the pipeline doctor's frames are built under their gold names already (doctor.RUN_COLUMNS,
+# doctor_job.TABLES), so each maps to itself; to_gold still fails on a column nobody declared.
+_DOCTOR_PROV = ("doctor_run_id", "loaded_ts", "doctor_git_commit_sha")
+TABLES |= {
+    "fact_pipeline_run": {c: c for c in (
+        "pipeline_name", "step_name", "run_id", "started_ts", "ended_ts", "run_status_code", "row_in_count",
+        "row_out_count", "schema_sha256", "check_passed_count", "check_failed_count", "error_type_name", "error_text",
+        "duration_seconds", "cost_usd", "git_commit_sha", "data_label_code", *_DOCTOR_PROV)},
+    "fact_pipeline_signal": {c: c for c in (
+        "pipeline_name", "step_name", "run_id", "started_ts", "run_status_code", "freshness_seconds", "sla_seconds",
+        "volume_ratio", "is_schema_changed", "quality_ratio", "duration_ratio", "cost_ratio", *_DOCTOR_PROV)},
+    "fact_remediation_decision": {c: c for c in (
+        "pipeline_name", "run_id", "run_started_ts", "failure_class_code", "rule_name", "recommended_action_code",
+        "is_reversible", "severity_code", "owner_name", "impact_text", "notification_text", "run_mode_code",
+        "decided_action_code", "decided_by_name", "decided_ts", "is_match", *_DOCTOR_PROV)},
+}
+
 RENAMED = {"result_files": "dim_result_file", "ai_predictions": "fact_prediction", "llm_reader_runs": "fact_llm_call",
            "chart_answers": "fact_chart_answer", "judgments": "fact_judge_call", "judge_metrics": "judge_metric",
            "judge_agreement": "judge_agreement", "judge_run": "judge_cost", "deid_scores": "deid_score"}

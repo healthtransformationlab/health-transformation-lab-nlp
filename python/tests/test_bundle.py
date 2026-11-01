@@ -422,3 +422,65 @@ def test_a_new_gpu_run_does_not_queue_behind_an_old_one_waiting_to_retry():
     _, jobs = _load()
     for name in ("medgemma_reader", "encoder_gpu"):
         assert jobs[name][0].get("max_concurrent_runs") == 2, name
+
+
+# --- spec 027 US5: the pipeline doctor job ---------------------------------------------------------
+
+DOCTOR_NB = ROOT / "databricks" / "notebooks" / "13_pipeline_doctor.py"
+
+
+def test_pipeline_doctor_job_runs_the_doctor_notebook_with_its_settings():
+    """One task on serverless CPU, the gold schema, the bundle's judge endpoint and the scorecard's budget; every
+    setting is a bundle variable (declared once, same name in every target), and no target overrides the job."""
+    root, jobs = _load()
+    j, _ = jobs["pipeline_doctor"]
+    assert j["name"] == "Pipeline doctor" and j["tags"]["data"] == "synthetic"
+    (t,) = j["tasks"]
+    assert t["notebook_task"]["notebook_path"] == "../notebooks/13_pipeline_doctor.py"
+    assert "compute" not in t and "job_cluster_key" not in t and "existing_cluster_id" not in t
+    p = t["notebook_task"]["base_parameters"]
+    assert (p["catalog"], p["schema"]) == (GOLD_CATALOG, GOLD_SCHEMA)
+    assert p["judge_endpoint"] == "${var.judge_endpoint}"
+    assert p["max_usd"] == "${var.judge_max_usd}"
+    assert p["lookback_days"] == "${var.doctor_lookback_days}" and p["span_table"] == "${var.doctor_span_table}"
+    assert p["run_id"] == "{{job.run_id}}"                    # the batch key every row carries
+    assert p["decisions"] == "" and p["decided_by"] == ""      # approval is a run parameter until an approval UI
+    v = root["variables"]
+    assert v["judge_max_usd"]["default"] == "5" and v["doctor_lookback_days"]["default"].isdigit()
+    assert v["doctor_span_table"]["default"] == "none"
+    for env, tgt in root["targets"].items():
+        assert "pipeline_doctor" not in tgt.get("resources", {}).get("jobs", {}), env
+        assert not {"judge_max_usd", "doctor_lookback_days", "doctor_span_table"} & set(tgt.get("variables", {})), env
+
+
+def test_the_scorecard_and_the_doctor_share_one_budget_setting():
+    _, jobs = _load()
+    p = jobs["judge_scorecard"][0]["tasks"][0]["notebook_task"]["base_parameters"]
+    assert p["max_usd"] == "${var.judge_max_usd}"
+
+
+def test_pipeline_doctor_is_created_paused_and_does_not_retry():
+    """A deploy creates the job; running it is the owner's decision, so its schedule is paused in every target
+    (uat and prod are mode: production, which would otherwise unpause it). No retries: its failures are a bad
+    setting, a missing grant or a deliberate page for a new SEV1/SEV2 decision, none of which pass on their own,
+    and a retry would swallow the page."""
+    _, jobs = _load()
+    j, _ = jobs["pipeline_doctor"]
+    assert j["schedule"]["pause_status"] == "PAUSED" and j["schedule"]["quartz_cron_expression"]
+    assert j.get("max_concurrent_runs", 1) == 1
+    (t,) = j["tasks"]
+    assert t["max_retries"] == 0 and t["timeout_seconds"] <= 3600
+
+
+def test_doctor_notebook_checks_settings_first_and_writes_by_run_id():
+    text = "\n".join(line for line in DOCTOR_NB.read_text().splitlines() if not line.startswith("# MAGIC"))
+    check = text.index("doctor_job.check_settings(")
+    assert check < text.index("system.lakeflow.job_run_timeline") and check < text.index("replace_keys(")
+    for table in ("fact_pipeline_run", "fact_pipeline_signal", "fact_remediation_decision"):
+        assert f'write("{table}",' in text, table
+    # one writer: delete-then-append by run_id, under the declared gold columns and types
+    assert 'delta.replace_keys(spark, doctor_job.rows(df, name, **batch), table(name), "run_id",' in text
+    assert "schema=doctor_job.ddl(name)" in text
+    assert '.mode("append")' not in text and "saveAsTable" not in text and "mode(\"overwrite\")" not in text
+    assert "DATABRICKS_TOKEN" not in text and "note_text" not in text
+    assert "doctor_job.notifications(" in text and "raise RuntimeError" in text

@@ -22,7 +22,8 @@ def test_the_model_declares_the_gold_tables_the_jobs_write():
                     "dq_check", "dq_column_missing", "dq_prevalence", "dq_temporal_change", "dq_stage_transition",
                     "dq_source_concordance", "fact_visit_evidence", "dq_injected_error",
                     "fact_case_profile_item", "fact_record_mismatch", "dq_mismatch_rule",   # spec 026
-                    "dim_grader_question", "fact_grader_answer"}
+                    "dim_grader_question", "fact_grader_answer",
+                    "fact_pipeline_run", "fact_pipeline_signal", "fact_remediation_decision"}   # spec 027
 
 
 def test_every_relationship_joins_declared_columns():

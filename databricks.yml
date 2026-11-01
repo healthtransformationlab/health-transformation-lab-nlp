@@ -45,6 +45,15 @@ variables:
   judge_usd_per_million_out:
     description: Judge endpoint list price, US$ per 1M output tokens (21.429 DBU x US$0.07)
     default: "1.50"
+  judge_max_usd:
+    description: Budget per run, US$, for judge endpoint calls; the judge scorecard stops above it and the pipeline doctor's root-cause rung shares it (spec 027 US5)
+    default: "5"
+  doctor_lookback_days:
+    description: Days of job runs the pipeline doctor diagnoses on each run (1-30; it reads 60 days for the trailing ok runs)
+    default: "7"
+  doctor_span_table:
+    description: Unity Catalog table (catalog.schema.table) holding the span export, one row per run in fact_pipeline_run's columns; none = job run timeline only
+    default: none
   judge_sample_rate:
     description: Share of live traces the LLM judges score in production monitoring (the PHI scan scores all)
     default: "0.1"

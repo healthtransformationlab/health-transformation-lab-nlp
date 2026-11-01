@@ -22,7 +22,7 @@ notifications.
 | Incident set: the repo's own incidents as run rows with the action taken | `data/ops/incident.csv` |
 | `load_config`, `load_runbook`, `signals`, `classify`, `recommend`, `graduation`, `evaluate` | `python/health_transformation_lab_nlp/doctor.py` |
 | Tests | `python/tests/test_doctor.py` |
-| Job `pipeline_doctor` (serverless CPU), run after a pipeline fails or daily (US5) | `databricks/resources/jobs.yml`, `databricks/notebooks/12_pipeline_doctor.py` |
+| Job `pipeline_doctor` (serverless CPU), daily once the owner unpauses it (US5); notebook 13 because 12 was taken by `12_load_open_dental.py` | `databricks/resources/jobs.yml`, `databricks/notebooks/13_pipeline_doctor.py`, `python/health_transformation_lab_nlp/doctor_job.py` |
 | Judge on root-cause answers (US6) | `mlflow_judge.py` (existing pattern) |
 | Docs: the four tables, the ladder, how to add an incident | `docs/dataops.md` |
 

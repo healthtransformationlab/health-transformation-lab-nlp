@@ -72,8 +72,38 @@ Both live in the shared package (`pipeline-doctor` `forecast.py`, `digest.py`); 
 files. The inventory has no invented dates: a model or platform without a published end-of-support date
 says `unknown`.
 
+## The job
+
+`Pipeline doctor` (bundle key `pipeline_doctor`, notebook `databricks/notebooks/13_pipeline_doctor.py`,
+logic in `doctor_job.py`) is deployed to dev, uat and prod **paused**: running or unpausing it is the
+owner's decision. Each run:
+
+1. checks its settings first and fails naming a bad one; then checks it can read `system.lakeflow` (the
+   job's identity needs `USE CATALOG` on `system` and `SELECT` on `system.lakeflow`);
+2. reads 60 days of this workspace's job runs from `system.lakeflow.job_run_timeline` (names from
+   `system.lakeflow.jobs`), keeps this bundle's jobs, and fills counts, schema hash, checks and cost from the
+   span export when `doctor_span_table` names one (one row per run, `fact_pipeline_run`'s columns; the export
+   from Application Insights isn't built yet, so without it most failures carry only a termination code and
+   often classify as `unknown`);
+3. writes `fact_pipeline_run`, `fact_pipeline_signal` (the six signals for each run in the last
+   `doctor_lookback_days`) and `fact_remediation_decision` (one per failed run), each delete-then-append by
+   `run_id`, every row stamped with the doctor's own `doctor_run_id`;
+4. fails with the drafted notification when there is a **new** SEV1 or SEV2 decision, so the job's failure
+   notification reaches the owner; SEV3 and SEV4 wait in the table for the digests. It never pages twice for
+   the same run, and it never diagnoses its own runs.
+
+Settings (bundle variables, the same names in every target): `judge_endpoint` and `judge_max_usd` (the
+root-cause rung, shared with the judge scorecard's budget; the rung itself is US6 and isn't called yet),
+`doctor_lookback_days` (7) and `doctor_span_table` (`none`). Approval is a run parameter until an approval
+UI exists: run the job with `decisions` = `run_id=action_code,...` and `decided_by`; an action off the
+runbook's list for that run's class fails the run. Decisions are carried forward and decide graduation. The
+job acts on nothing.
+
+The **Pipeline doctor** dashboard (built by `python/scripts/42_build_dashboards.py`) shows each pipeline's
+latest signals, runs by status, failures by class and every recommendation with its decision.
+
 ## Next
 
-The job (`pipeline_doctor`, after a failed run), the root-cause rung with its judge, and extracting the
-module into its own package so a second project of a different shape can adopt it and report the same
-metrics (spec 027 US5-US7).
+The root-cause rung with its judge, the span export, the digest job, and extracting the module into its own
+package so a second project of a different shape can adopt it and report the same metrics (spec 027 US6,
+US7, T023).

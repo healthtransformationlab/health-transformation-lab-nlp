@@ -122,3 +122,13 @@ pipelines:
     runbook_name: default
     data_label_code: synthetic
     output_names: [data/datasets/ai_predictions, data/datasets/llm_details]
+  pipeline_doctor:               # spec 027 US5: reads run metadata only; never diagnoses its own runs
+    owner_name: repo owner
+    sla_seconds: 172800          # daily once the owner unpauses it; created paused
+    schedule_text: daily, paused until the owner unpauses it
+    expectation_names: [conformance]
+    retry_max_count: 0
+    retry_interval_seconds: 0
+    runbook_name: default
+    data_label_code: synthetic
+    output_names: [gold_perio_bench.fact_pipeline_run, gold_perio_bench.fact_pipeline_signal, gold_perio_bench.fact_remediation_decision]

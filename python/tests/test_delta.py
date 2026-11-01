@@ -5,7 +5,7 @@ import types
 import pandas as pd
 import pytest
 
-from health_transformation_lab_nlp.delta import replace_batch
+from health_transformation_lab_nlp.delta import replace_batch, replace_keys
 
 
 class _Col:
@@ -53,8 +53,8 @@ class _Spark:
         self.log, self.existing = [], existing or {}
         self.catalog = types.SimpleNamespace(tableExists=lambda t: t in self.existing)
 
-    def createDataFrame(self, pdf):
-        self.log.append(("create", list(pdf.columns), len(pdf)))
+    def createDataFrame(self, pdf, schema=None):
+        self.log.append(("create", list(pdf.columns), len(pdf)) + ((schema,) if schema else ()))
         return _DF(pdf, self.log)
 
     def table(self, t):
@@ -101,3 +101,30 @@ def test_a_table_without_the_key_columns_gets_them_but_loses_nothing():
 def test_batch_key_values_are_checked(bad):
     with pytest.raises(ValueError, match="batch key"):
         replace_batch(_Spark(), ROWS, "c.s.t", {**KEY, "run_id": bad})
+
+
+# spec 027 US5: the pipeline doctor rewrites the runs it read, keyed by run_id, whichever doctor run read them first
+def test_replace_keys_deletes_the_rows_of_these_keys_then_appends_with_the_given_schema():
+    s = _Spark({"c.s.fact_pipeline_run": {"run_id": "string", "pipeline_name": "string"}})
+    rows = pd.DataFrame({"run_id": ["11", "12", "11"], "pipeline_name": ["a", "a", "b"]})
+    ddl = "run_id string, pipeline_name string"
+    assert replace_keys(s, rows, "c.s.fact_pipeline_run", "run_id", schema=ddl) == 3
+    sql = [e[1] for e in s.log if e[0] == "sql"]
+    assert sql == ["DELETE FROM c.s.fact_pipeline_run WHERE run_id IN ('11', '12')"]
+    assert s.log.index(("sql", sql[0])) < s.log.index(("save", "c.s.fact_pipeline_run"))
+    assert ("mode", "append") in s.log and ("create", ["run_id", "pipeline_name"], 3, ddl) in s.log
+
+
+def test_replace_keys_on_a_new_table_or_an_empty_batch_deletes_nothing():
+    s = _Spark()
+    replace_keys(s, pd.DataFrame({"run_id": ["1"]}), "c.s.t", "run_id")
+    assert not [e for e in s.log if e[0] == "sql"] and ("save", "c.s.t") in s.log
+    s = _Spark({"c.s.t": {"run_id": "string"}})
+    assert replace_keys(s, pd.DataFrame({"run_id": []}), "c.s.t", "run_id") == 0
+    assert s.log == []
+
+
+@pytest.mark.parametrize("bad", ["x' OR '1'='1", "a;b", ""])
+def test_replace_keys_checks_its_key_values(bad):
+    with pytest.raises(ValueError, match="key"):
+        replace_keys(_Spark(), pd.DataFrame({"run_id": [bad]}), "c.s.t", "run_id")

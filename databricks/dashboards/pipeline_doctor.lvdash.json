@@ -1,0 +1,899 @@
+{
+  "datasets": [
+    {
+      "name": "tiles",
+      "displayName": "tiles",
+      "queryLines": [
+        "SELECT COUNT(DISTINCT pipeline_name) AS pipelines, COUNT(*) AS runs,\n",
+        "  SUM(CASE WHEN run_status_code <> 'ok' THEN 1 ELSE 0 END) AS failed_runs,\n",
+        "  (SELECT COUNT(*) FROM health_transformation_lab.gold_perio_bench.fact_remediation_decision WHERE decided_action_code IS NULL) AS awaiting_decision\n",
+        "FROM health_transformation_lab.gold_perio_bench.fact_pipeline_signal\n"
+      ]
+    },
+    {
+      "name": "latest_signals",
+      "displayName": "latest_signals",
+      "queryLines": [
+        "WITH ranked AS (\n",
+        "  SELECT pipeline_name, run_id, started_ts, run_status_code, freshness_seconds, sla_seconds, volume_ratio,\n",
+        "    is_schema_changed, quality_ratio, duration_ratio, cost_ratio,\n",
+        "    ROW_NUMBER() OVER (PARTITION BY pipeline_name ORDER BY started_ts DESC) AS run_rank\n",
+        "  FROM health_transformation_lab.gold_perio_bench.fact_pipeline_signal)\n",
+        "SELECT pipeline_name AS pipeline, run_id, started_ts AS started, run_status_code AS status,\n",
+        "  ROUND(freshness_seconds / 3600, 1) AS freshness_hours, ROUND(sla_seconds / 3600, 1) AS sla_hours,\n",
+        "  ROUND(volume_ratio, 2) AS volume_ratio, CASE WHEN is_schema_changed THEN 'changed' WHEN NOT is_schema_changed THEN 'same' ELSE 'unknown' END AS schema_state,\n",
+        "  ROUND(100 * quality_ratio, 1) AS quality_pct, ROUND(duration_ratio, 2) AS duration_ratio,\n",
+        "  ROUND(cost_ratio, 2) AS cost_ratio\n",
+        "FROM ranked\n",
+        "WHERE run_rank = 1\n",
+        "ORDER BY pipeline_name\n"
+      ]
+    },
+    {
+      "name": "runs_by_status",
+      "displayName": "runs_by_status",
+      "queryLines": [
+        "SELECT pipeline_name AS pipeline, run_status_code AS status, COUNT(*) AS runs\n",
+        "FROM health_transformation_lab.gold_perio_bench.fact_pipeline_signal\n",
+        "GROUP BY pipeline_name, run_status_code\n"
+      ]
+    },
+    {
+      "name": "signal_history",
+      "displayName": "signal_history",
+      "queryLines": [
+        "SELECT pipeline_name AS pipeline, run_id, started_ts AS started, run_status_code AS status,\n",
+        "  ROUND(freshness_seconds / 3600, 1) AS freshness_hours, ROUND(volume_ratio, 2) AS volume_ratio,\n",
+        "  CASE WHEN is_schema_changed THEN 'changed' WHEN NOT is_schema_changed THEN 'same' ELSE 'unknown' END AS schema_state, ROUND(100 * quality_ratio, 1) AS quality_pct,\n",
+        "  ROUND(duration_ratio, 2) AS duration_ratio, ROUND(cost_ratio, 2) AS cost_ratio\n",
+        "FROM health_transformation_lab.gold_perio_bench.fact_pipeline_signal\n",
+        "ORDER BY started_ts DESC\n"
+      ]
+    },
+    {
+      "name": "decisions",
+      "displayName": "decisions",
+      "queryLines": [
+        "SELECT pipeline_name AS pipeline, run_id, run_started_ts AS started, failure_class_code AS failure_class,\n",
+        "  rule_name AS rule, recommended_action_code AS recommended, severity_code AS severity, run_mode_code AS run_mode,\n",
+        "  decided_action_code AS decided,\n",
+        "  CASE WHEN decided_action_code IS NULL THEN 'awaiting decision' WHEN is_match THEN 'matched'\n",
+        "    ELSE 'overridden' END AS match_state,\n",
+        "  impact_text AS impact\n",
+        "FROM health_transformation_lab.gold_perio_bench.fact_remediation_decision\n",
+        "ORDER BY run_started_ts DESC\n"
+      ]
+    },
+    {
+      "name": "by_class",
+      "displayName": "by_class",
+      "queryLines": [
+        "SELECT failure_class_code AS failure_class, severity_code AS severity, COUNT(*) AS failures,\n",
+        "  SUM(CASE WHEN decided_action_code IS NOT NULL THEN 1 ELSE 0 END) AS decided,\n",
+        "  SUM(CASE WHEN is_match THEN 1 ELSE 0 END) AS matched\n",
+        "FROM health_transformation_lab.gold_perio_bench.fact_remediation_decision\n",
+        "GROUP BY failure_class_code, severity_code\n",
+        "ORDER BY failures DESC, failure_class_code\n"
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "name": "pipeline_doctor",
+      "displayName": "Pipeline doctor",
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layout": [
+        {
+          "widget": {
+            "name": "banner",
+            "multilineTextboxSpec": {
+              "lines": [
+                "## Pipeline doctor: what ran, what failed, and what it recommends\n",
+                "Each of this bundle's jobs, from the job run timeline: six signals per run against the pipeline's runs before\n",
+                "it, and for each failed run a failure class, the first allowed runbook action, its severity and its impact. Run\n",
+                "metadata only (names, states, times, counts, error types), never note text. The doctor recommends; the owner\n",
+                "decides (the job's `decisions` parameter) and nothing acts on its own. Empty until the job has run.\n"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 6,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "c_pipelines",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "tiles",
+                  "fields": [
+                    {
+                      "name": "pipelines",
+                      "expression": "`pipelines`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "pipelines",
+                  "displayName": "Pipelines"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Pipelines",
+                "showDescription": true,
+                "description": "Bundle jobs with a run in the lookback window."
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 3,
+            "width": 1,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "c_runs",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "tiles",
+                  "fields": [
+                    {
+                      "name": "runs",
+                      "expression": "`runs`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "runs",
+                  "displayName": "Runs"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Runs",
+                "showDescription": true,
+                "description": "Finished runs in the window."
+              }
+            }
+          },
+          "position": {
+            "x": 1,
+            "y": 3,
+            "width": 1,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "c_failed",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "tiles",
+                  "fields": [
+                    {
+                      "name": "failed_runs",
+                      "expression": "`failed_runs`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "failed_runs",
+                  "displayName": "Failed runs"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Failed runs",
+                "showDescription": true,
+                "description": "Failed or timed out: each has a decision row."
+              }
+            }
+          },
+          "position": {
+            "x": 2,
+            "y": 3,
+            "width": 1,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "c_awaiting",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "tiles",
+                  "fields": [
+                    {
+                      "name": "awaiting_decision",
+                      "expression": "`awaiting_decision`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "awaiting_decision",
+                  "displayName": "Awaiting a decision"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Awaiting a decision",
+                "showDescription": true,
+                "description": "Recommendations the owner hasn't decided yet."
+              }
+            }
+          },
+          "position": {
+            "x": 3,
+            "y": 3,
+            "width": 1,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "f_pipeline",
+            "queries": [
+              {
+                "name": "f_f_pipeline_latest_signals",
+                "query": {
+                  "datasetName": "latest_signals",
+                  "fields": [
+                    {
+                      "name": "pipeline",
+                      "expression": "`pipeline`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              },
+              {
+                "name": "f_f_pipeline_signal_history",
+                "query": {
+                  "datasetName": "signal_history",
+                  "fields": [
+                    {
+                      "name": "pipeline",
+                      "expression": "`pipeline`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              },
+              {
+                "name": "f_f_pipeline_decisions",
+                "query": {
+                  "datasetName": "decisions",
+                  "fields": [
+                    {
+                      "name": "pipeline",
+                      "expression": "`pipeline`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "pipeline",
+                    "displayName": "Pipeline",
+                    "queryName": "f_f_pipeline_latest_signals"
+                  },
+                  {
+                    "fieldName": "pipeline",
+                    "displayName": "Pipeline",
+                    "queryName": "f_f_pipeline_signal_history"
+                  },
+                  {
+                    "fieldName": "pipeline",
+                    "displayName": "Pipeline",
+                    "queryName": "f_f_pipeline_decisions"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Pipeline"
+              }
+            }
+          },
+          "position": {
+            "x": 4,
+            "y": 3,
+            "width": 2,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "s_signals",
+            "multilineTextboxSpec": {
+              "lines": [
+                "### Signals, latest run per pipeline\n"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 6,
+            "width": 6,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "tb_latest",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "latest_signals",
+                  "fields": [
+                    {
+                      "name": "pipeline",
+                      "expression": "`pipeline`"
+                    },
+                    {
+                      "name": "status",
+                      "expression": "`status`"
+                    },
+                    {
+                      "name": "started",
+                      "expression": "`started`"
+                    },
+                    {
+                      "name": "freshness_hours",
+                      "expression": "`freshness_hours`"
+                    },
+                    {
+                      "name": "sla_hours",
+                      "expression": "`sla_hours`"
+                    },
+                    {
+                      "name": "volume_ratio",
+                      "expression": "`volume_ratio`"
+                    },
+                    {
+                      "name": "schema_state",
+                      "expression": "`schema_state`"
+                    },
+                    {
+                      "name": "quality_pct",
+                      "expression": "`quality_pct`"
+                    },
+                    {
+                      "name": "duration_ratio",
+                      "expression": "`duration_ratio`"
+                    },
+                    {
+                      "name": "cost_ratio",
+                      "expression": "`cost_ratio`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "pipeline",
+                    "displayName": "Pipeline"
+                  },
+                  {
+                    "fieldName": "status",
+                    "displayName": "Status"
+                  },
+                  {
+                    "fieldName": "started",
+                    "displayName": "Started"
+                  },
+                  {
+                    "fieldName": "freshness_hours",
+                    "displayName": "Freshness (h)"
+                  },
+                  {
+                    "fieldName": "sla_hours",
+                    "displayName": "SLA (h)"
+                  },
+                  {
+                    "fieldName": "volume_ratio",
+                    "displayName": "Volume ×"
+                  },
+                  {
+                    "fieldName": "schema_state",
+                    "displayName": "Schema"
+                  },
+                  {
+                    "fieldName": "quality_pct",
+                    "displayName": "Checks passed (%)"
+                  },
+                  {
+                    "fieldName": "duration_ratio",
+                    "displayName": "Duration ×"
+                  },
+                  {
+                    "fieldName": "cost_ratio",
+                    "displayName": "Cost ×"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Freshness, volume, schema, quality, duration and cost",
+                "showDescription": true,
+                "description": "Freshness: hours since the last ok run ended, against the SLA. Volume, duration and cost: this run over the median of the pipeline's last 5 ok runs (1 = usual). Blank = the run table has no count, check or cost for it (the span export isn't set)."
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 7,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "b_status",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "runs_by_status",
+                  "fields": [
+                    {
+                      "name": "pipeline",
+                      "expression": "`pipeline`"
+                    },
+                    {
+                      "name": "status",
+                      "expression": "`status`"
+                    },
+                    {
+                      "name": "runs",
+                      "expression": "`runs`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "pipeline",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "Pipeline"
+                },
+                "y": {
+                  "fieldName": "runs",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Runs"
+                },
+                "color": {
+                  "fieldName": "status",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "status"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Runs by pipeline and status"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 13,
+            "width": 3,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "tb_class",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "by_class",
+                  "fields": [
+                    {
+                      "name": "failure_class",
+                      "expression": "`failure_class`"
+                    },
+                    {
+                      "name": "severity",
+                      "expression": "`severity`"
+                    },
+                    {
+                      "name": "failures",
+                      "expression": "`failures`"
+                    },
+                    {
+                      "name": "decided",
+                      "expression": "`decided`"
+                    },
+                    {
+                      "name": "matched",
+                      "expression": "`matched`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "failure_class",
+                    "displayName": "Failure class"
+                  },
+                  {
+                    "fieldName": "severity",
+                    "displayName": "Severity"
+                  },
+                  {
+                    "fieldName": "failures",
+                    "displayName": "Failures"
+                  },
+                  {
+                    "fieldName": "decided",
+                    "displayName": "Decided"
+                  },
+                  {
+                    "fieldName": "matched",
+                    "displayName": "Matched the recommendation"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Failures by class",
+                "showDescription": true,
+                "description": "A reversible class may run on its own only after 5 decisions in a row matched; two misses send it back (ops/runbook.yaml)."
+              }
+            }
+          },
+          "position": {
+            "x": 3,
+            "y": 13,
+            "width": 3,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "s_decisions",
+            "multilineTextboxSpec": {
+              "lines": [
+                "### Recommendations and decisions\n"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 19,
+            "width": 6,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "tb_decisions",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "decisions",
+                  "fields": [
+                    {
+                      "name": "pipeline",
+                      "expression": "`pipeline`"
+                    },
+                    {
+                      "name": "run_id",
+                      "expression": "`run_id`"
+                    },
+                    {
+                      "name": "started",
+                      "expression": "`started`"
+                    },
+                    {
+                      "name": "failure_class",
+                      "expression": "`failure_class`"
+                    },
+                    {
+                      "name": "rule",
+                      "expression": "`rule`"
+                    },
+                    {
+                      "name": "recommended",
+                      "expression": "`recommended`"
+                    },
+                    {
+                      "name": "severity",
+                      "expression": "`severity`"
+                    },
+                    {
+                      "name": "run_mode",
+                      "expression": "`run_mode`"
+                    },
+                    {
+                      "name": "decided",
+                      "expression": "`decided`"
+                    },
+                    {
+                      "name": "match_state",
+                      "expression": "`match_state`"
+                    },
+                    {
+                      "name": "impact",
+                      "expression": "`impact`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "pipeline",
+                    "displayName": "Pipeline"
+                  },
+                  {
+                    "fieldName": "run_id",
+                    "displayName": "Run"
+                  },
+                  {
+                    "fieldName": "started",
+                    "displayName": "Started"
+                  },
+                  {
+                    "fieldName": "failure_class",
+                    "displayName": "Failure class"
+                  },
+                  {
+                    "fieldName": "rule",
+                    "displayName": "Rule"
+                  },
+                  {
+                    "fieldName": "recommended",
+                    "displayName": "Recommended"
+                  },
+                  {
+                    "fieldName": "severity",
+                    "displayName": "Severity"
+                  },
+                  {
+                    "fieldName": "run_mode",
+                    "displayName": "Mode"
+                  },
+                  {
+                    "fieldName": "decided",
+                    "displayName": "Decided"
+                  },
+                  {
+                    "fieldName": "match_state",
+                    "displayName": "Match"
+                  },
+                  {
+                    "fieldName": "impact",
+                    "displayName": "Impact"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "One row per failed run",
+                "showDescription": true,
+                "description": "SEV1 and SEV2 reach the owner when first seen; SEV3 and SEV4 wait for the digests."
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 20,
+            "width": 6,
+            "height": 7
+          }
+        },
+        {
+          "widget": {
+            "name": "s_history",
+            "multilineTextboxSpec": {
+              "lines": [
+                "### Every run in the window\n"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 27,
+            "width": 6,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "tb_history",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "signal_history",
+                  "fields": [
+                    {
+                      "name": "pipeline",
+                      "expression": "`pipeline`"
+                    },
+                    {
+                      "name": "run_id",
+                      "expression": "`run_id`"
+                    },
+                    {
+                      "name": "started",
+                      "expression": "`started`"
+                    },
+                    {
+                      "name": "status",
+                      "expression": "`status`"
+                    },
+                    {
+                      "name": "freshness_hours",
+                      "expression": "`freshness_hours`"
+                    },
+                    {
+                      "name": "volume_ratio",
+                      "expression": "`volume_ratio`"
+                    },
+                    {
+                      "name": "schema_state",
+                      "expression": "`schema_state`"
+                    },
+                    {
+                      "name": "quality_pct",
+                      "expression": "`quality_pct`"
+                    },
+                    {
+                      "name": "duration_ratio",
+                      "expression": "`duration_ratio`"
+                    },
+                    {
+                      "name": "cost_ratio",
+                      "expression": "`cost_ratio`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "pipeline",
+                    "displayName": "Pipeline"
+                  },
+                  {
+                    "fieldName": "run_id",
+                    "displayName": "Run"
+                  },
+                  {
+                    "fieldName": "started",
+                    "displayName": "Started"
+                  },
+                  {
+                    "fieldName": "status",
+                    "displayName": "Status"
+                  },
+                  {
+                    "fieldName": "freshness_hours",
+                    "displayName": "Freshness (h)"
+                  },
+                  {
+                    "fieldName": "volume_ratio",
+                    "displayName": "Volume ×"
+                  },
+                  {
+                    "fieldName": "schema_state",
+                    "displayName": "Schema"
+                  },
+                  {
+                    "fieldName": "quality_pct",
+                    "displayName": "Checks passed (%)"
+                  },
+                  {
+                    "fieldName": "duration_ratio",
+                    "displayName": "Duration ×"
+                  },
+                  {
+                    "fieldName": "cost_ratio",
+                    "displayName": "Cost ×"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Signals per run, newest first"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 28,
+            "width": 6,
+            "height": 7
+          }
+        }
+      ]
+    }
+  ]
+}

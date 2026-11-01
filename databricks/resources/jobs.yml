@@ -59,7 +59,7 @@ resources:
               experiment_id: ${resources.experiments.dental_experiment.id}
               usd_per_million_in: ${var.judge_usd_per_million_in}
               usd_per_million_out: ${var.judge_usd_per_million_out}
-              max_usd: "5"
+              max_usd: ${var.judge_max_usd}
 
     llm_judge:
       name: LLM judge
@@ -234,3 +234,37 @@ resources:
               catalog: ${resources.schemas.perio_bench_gold.catalog_name}
               schema: ${resources.schemas.perio_bench_gold.name}
               experiment_name: ${resources.experiments.dental_experiment.name}
+
+    # Spec 027 US5: the pipeline doctor. Reads the job run timeline (and the span export, when one is set) into
+    # fact_pipeline_run, classifies each failed run with rules, recommends the first allowed runbook action and
+    # writes fact_pipeline_signal and fact_remediation_decision, delete-then-append by run_id. A new SEV1/SEV2
+    # decision fails the run with the drafted notification; SEV3/SEV4 wait in the table for the digest. It acts
+    # on nothing. Created paused in every target: running it is the owner's decision. Serverless CPU.
+    pipeline_doctor:
+      name: Pipeline doctor
+      max_concurrent_runs: 1
+      tags:
+        project: health-transformation-lab-nlp
+        data: synthetic
+        git_commit: ${bundle.git.commit}   # the commit this job was deployed from
+      schedule:
+        quartz_cron_expression: "0 17 7 * * ?"   # daily 07:17 UTC once unpaused
+        timezone_id: UTC
+        pause_status: PAUSED                     # uat and prod are mode: production, which would unpause it
+      tasks:
+        - task_key: diagnose
+          max_retries: 0          # its failures (a bad setting, a missing grant, a deliberate page) don't pass on
+          timeout_seconds: 1800   # their own, and a retry would swallow the page
+          notebook_task:
+            notebook_path: ../notebooks/13_pipeline_doctor.py
+            base_parameters:
+              git_commit: ${bundle.git.commit}   # shown on every run
+              run_id: "{{job.run_id}}"           # batch key on every row it writes
+              catalog: ${resources.schemas.perio_bench_gold.catalog_name}
+              schema: ${resources.schemas.perio_bench_gold.name}
+              judge_endpoint: ${var.judge_endpoint}   # the root-cause rung (US6), not called yet
+              max_usd: ${var.judge_max_usd}
+              lookback_days: ${var.doctor_lookback_days}
+              span_table: ${var.doctor_span_table}
+              decisions: ""     # set per run: run_id=action_code,... the owner's approvals until an approval UI
+              decided_by: ""    # who decided, required with decisions

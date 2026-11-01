@@ -34,9 +34,9 @@
 - [ ] T023 This repo installs `pipeline-doctor` and drops its own `doctor.py` copy (US7 T018); a `pipeline_forecast` job runs the forecaster and writes the digests
 
 ## US5 - The doctor runs as a job and writes its decisions
-- [ ] T010 Failing bundle tests: job `pipeline_doctor` runs `12_pipeline_doctor.py` with catalog, schema, judge endpoint and `max_usd`; writes are delete-then-append by `run_id`
-- [ ] T011 Notebook: read `system.lakeflow.job_run_timeline` and the span export into `fact_pipeline_run`; call the module; write `fact_remediation_decision`; notification at the runbook severity
-- [ ] T012 Grader dashboard: the five signals per pipeline (spec 019 pattern)
+- [x] T010 Failing bundle tests: job `pipeline_doctor` runs `13_pipeline_doctor.py` (12 was taken by `12_load_open_dental.py`) with catalog, schema, judge endpoint and `max_usd`; writes are delete-then-append by `run_id` (`test_bundle.py`, `test_delta.py`)
+- [x] T011 Notebook: read `system.lakeflow.job_run_timeline` and the span export into `fact_pipeline_run`; call the module; write `fact_remediation_decision`; notification at the runbook severity. The decisions live in `doctor_job.py` (`test_doctor_job.py`); the notebook only reads and writes. Also writes `fact_pipeline_signal` for the dashboard
+- [x] T012 Grader dashboard: the signals per pipeline (spec 019 pattern; six since cost was added): `dashboards.doctor_dashboard`, `databricks/dashboards/pipeline_doctor.lvdash.json`
 
 ## US6 - The LLM rung is evaluated like any other model here
 - [ ] T013 Root-cause prompt (run row + last N runs + lineage one hop + runbook; never note text); `make_judge` Guidelines scorer on the runbook rules; no-PHI scorer on every trace

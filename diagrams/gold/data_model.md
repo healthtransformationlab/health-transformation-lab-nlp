@@ -25,6 +25,8 @@ erDiagram
     fact_visit_evidence ||--o{ fact_case_profile_item : "visit_id"
     fact_visit_evidence ||--o{ fact_record_mismatch : "visit_id"
     fact_record_mismatch }o..o{ dq_mismatch_rule : "rule_name (scores are per rule and clinic: join on clinic_code too)"
+    fact_pipeline_run ||--o| fact_pipeline_signal : "run_id"
+    fact_pipeline_run ||--o| fact_remediation_decision : "run_id (failed runs)"
     review_key
     dim_result_file
     fact_prediction
@@ -50,6 +52,9 @@ erDiagram
     dq_mismatch_rule
     dim_grader_question
     fact_grader_answer
+    fact_pipeline_run
+    fact_pipeline_signal
+    fact_remediation_decision
 ```
 
 ## Every column (full)
@@ -75,6 +80,8 @@ erDiagram
     fact_visit_evidence ||--o{ fact_case_profile_item : "visit_id"
     fact_visit_evidence ||--o{ fact_record_mismatch : "visit_id"
     fact_record_mismatch }o..o{ dq_mismatch_rule : "rule_name (scores are per rule and clinic: join on clinic_code too)"
+    fact_pipeline_run ||--o| fact_pipeline_signal : "run_id"
+    fact_pipeline_run ||--o| fact_remediation_decision : "run_id (failed runs)"
     review_key {
         bigint visit_id PK "review chart (240)"
         string truth_status "the generator's truth"
@@ -413,6 +420,66 @@ erDiagram
         string file_sha256 "SHA-256 of those files together: the version"
         string git_commit_sha "commit the job was deployed from"
         timestamp loaded_ts "when Load results wrote it"
+    }
+    fact_pipeline_run {
+        string pipeline_name FK "the job's key in the bundle (ops/pipeline_config.yaml)"
+        string step_name "job (the whole run), or a step from the span export"
+        string run_id PK "Databricks job run id"
+        timestamp started_ts "run start (UTC)"
+        timestamp ended_ts "run end (UTC)"
+        string run_status_code "ok · failed · timed_out"
+        bigint row_in_count "rows read (span export)"
+        bigint row_out_count "rows written (span export)"
+        string schema_sha256 "hash of the output schema (span export)"
+        bigint check_passed_count "data-quality checks passed (span export)"
+        bigint check_failed_count "data-quality checks failed (span export)"
+        string error_type_name "exception type (span export), else the run's termination code"
+        string error_text "first line of the error (span export); never row data"
+        double duration_seconds "run length"
+        double cost_usd "run cost (span export)"
+        string git_commit_sha "commit the pipeline ran (span export)"
+        string data_label_code "synthetic · public · simulated, from the pipeline's config"
+        string doctor_run_id "the Pipeline doctor run that wrote the row (batch key)"
+        timestamp loaded_ts "when it wrote it"
+        string doctor_git_commit_sha "commit the doctor was deployed from"
+    }
+    fact_pipeline_signal {
+        string pipeline_name FK "pipeline"
+        string step_name "as fact_pipeline_run"
+        string run_id PK, FK "Databricks job run id"
+        timestamp started_ts "run start (UTC)"
+        string run_status_code "ok · failed · timed_out"
+        double freshness_seconds "seconds since the pipeline's last ok run ended"
+        double sla_seconds "how stale its output may be (ops/pipeline_config.yaml)"
+        double volume_ratio "rows out / trailing median of the last 5 ok runs"
+        boolean is_schema_changed "schema hash differs from the last ok run; null when unknown"
+        double quality_ratio "share of data-quality checks passed"
+        double duration_ratio "duration / trailing median"
+        double cost_ratio "cost / trailing median"
+        string doctor_run_id "the Pipeline doctor run that wrote the row (batch key)"
+        timestamp loaded_ts "when it wrote it"
+        string doctor_git_commit_sha "commit the doctor was deployed from"
+    }
+    fact_remediation_decision {
+        string pipeline_name FK "pipeline"
+        string run_id PK, FK "the failed run"
+        timestamp run_started_ts "when that run started"
+        string failure_class_code "credential_expiry · platform · schema_drift · ... · unknown (ops/runbook.yaml)"
+        string rule_name "the rule that fired (doctor.classify)"
+        string recommended_action_code "first allowed runbook action for the class"
+        boolean is_reversible "the runbook entry is reversible: it can graduate to automatic"
+        string severity_code "SEV1-SEV4 from the runbook"
+        string owner_name "who is told (ops/pipeline_config.yaml)"
+        string impact_text "outputs and consumers one hop down the lineage"
+        string notification_text "templated notification: names and codes, no row data"
+        string run_mode_code "recommend_only · automatic (doctor.graduation on past decisions)"
+        string decided_action_code "the owner's decision (job parameter); null until given"
+        string decided_by_name "who decided"
+        timestamp decided_ts "when the decision was recorded"
+        boolean is_match "decided = recommended; null until decided"
+        string doctor_run_id "the Pipeline doctor run that wrote the row (batch key)"
+        timestamp loaded_ts "when it wrote it"
+        string doctor_git_commit_sha "commit the doctor was deployed from"
     }
 ```
 
@@ -879,3 +946,78 @@ One per (question, model, with or without the agent, run). Written by: Load resu
 |  | `file_sha256` | string | SHA-256 of those files together: the version |
 |  | `git_commit_sha` | string | commit the job was deployed from |
 |  | `loaded_ts` | timestamp | when Load results wrote it |
+
+### `fact_pipeline_run`
+
+One per finished run of a bundle job (step_name job), from system.lakeflow.job_run_timeline and the span export. Written by: Pipeline doctor: delete-then-append by run_id.
+
+| Key | Column | Type | Description |
+|---|---|---|---|
+| FK | `pipeline_name` | string | the job's key in the bundle (ops/pipeline_config.yaml) |
+|  | `step_name` | string | job (the whole run), or a step from the span export |
+| PK | `run_id` | string | Databricks job run id |
+|  | `started_ts` | timestamp | run start (UTC) |
+|  | `ended_ts` | timestamp | run end (UTC) |
+|  | `run_status_code` | string | ok · failed · timed_out |
+|  | `row_in_count` | bigint | rows read (span export) |
+|  | `row_out_count` | bigint | rows written (span export) |
+|  | `schema_sha256` | string | hash of the output schema (span export) |
+|  | `check_passed_count` | bigint | data-quality checks passed (span export) |
+|  | `check_failed_count` | bigint | data-quality checks failed (span export) |
+|  | `error_type_name` | string | exception type (span export), else the run's termination code |
+|  | `error_text` | string | first line of the error (span export); never row data |
+|  | `duration_seconds` | double | run length |
+|  | `cost_usd` | double | run cost (span export) |
+|  | `git_commit_sha` | string | commit the pipeline ran (span export) |
+|  | `data_label_code` | string | synthetic · public · simulated, from the pipeline's config |
+|  | `doctor_run_id` | string | the Pipeline doctor run that wrote the row (batch key) |
+|  | `loaded_ts` | timestamp | when it wrote it |
+|  | `doctor_git_commit_sha` | string | commit the doctor was deployed from |
+
+### `fact_pipeline_signal`
+
+One per run in the doctor's lookback window: its six signals against the pipeline's runs before it. Written by: Pipeline doctor: delete-then-append by run_id.
+
+| Key | Column | Type | Description |
+|---|---|---|---|
+| FK | `pipeline_name` | string | pipeline |
+|  | `step_name` | string | as fact_pipeline_run |
+| PK,FK | `run_id` | string | Databricks job run id |
+|  | `started_ts` | timestamp | run start (UTC) |
+|  | `run_status_code` | string | ok · failed · timed_out |
+|  | `freshness_seconds` | double | seconds since the pipeline's last ok run ended |
+|  | `sla_seconds` | double | how stale its output may be (ops/pipeline_config.yaml) |
+|  | `volume_ratio` | double | rows out / trailing median of the last 5 ok runs |
+|  | `is_schema_changed` | boolean | schema hash differs from the last ok run; null when unknown |
+|  | `quality_ratio` | double | share of data-quality checks passed |
+|  | `duration_ratio` | double | duration / trailing median |
+|  | `cost_ratio` | double | cost / trailing median |
+|  | `doctor_run_id` | string | the Pipeline doctor run that wrote the row (batch key) |
+|  | `loaded_ts` | timestamp | when it wrote it |
+|  | `doctor_git_commit_sha` | string | commit the doctor was deployed from |
+
+### `fact_remediation_decision`
+
+One per failed run: the doctor's recommendation and, once given, the owner's decision. Written by: Pipeline doctor: delete-then-append by run_id, decisions carried forward.
+
+| Key | Column | Type | Description |
+|---|---|---|---|
+| FK | `pipeline_name` | string | pipeline |
+| PK,FK | `run_id` | string | the failed run |
+|  | `run_started_ts` | timestamp | when that run started |
+|  | `failure_class_code` | string | credential_expiry · platform · schema_drift · ... · unknown (ops/runbook.yaml) |
+|  | `rule_name` | string | the rule that fired (doctor.classify) |
+|  | `recommended_action_code` | string | first allowed runbook action for the class |
+|  | `is_reversible` | boolean | the runbook entry is reversible: it can graduate to automatic |
+|  | `severity_code` | string | SEV1-SEV4 from the runbook |
+|  | `owner_name` | string | who is told (ops/pipeline_config.yaml) |
+|  | `impact_text` | string | outputs and consumers one hop down the lineage |
+|  | `notification_text` | string | templated notification: names and codes, no row data |
+|  | `run_mode_code` | string | recommend_only · automatic (doctor.graduation on past decisions) |
+|  | `decided_action_code` | string | the owner's decision (job parameter); null until given |
+|  | `decided_by_name` | string | who decided |
+|  | `decided_ts` | timestamp | when the decision was recorded |
+|  | `is_match` | boolean | decided = recommended; null until decided |
+|  | `doctor_run_id` | string | the Pipeline doctor run that wrote the row (batch key) |
+|  | `loaded_ts` | timestamp | when it wrote it |
+|  | `doctor_git_commit_sha` | string | commit the doctor was deployed from |
