@@ -49,6 +49,19 @@ not selected. Families come from `models.yaml`.
 A LoRA script trains MedGemma on `train.csv` in the reader's prompt/answer
 format, saving an adapter that the `hf` backend can load.
 
+### User Story 5 - Reference answers per field (P1) #130
+
+As the data scientist, I want the correct answer for every field the reader returns (status, grade, extent) on
+every review visit, so each field can be scored. The synthetic generator already decides these before writing
+the note, so the reference comes from its truth (no manual review, no anchoring on the model's answers).
+
+**Independent Test**: `53_reference_answers.py` writes `answer_key/reference_answers.csv`; a test checks one row
+per review visit, grade and extent `NA` unless periodontitis, and that the committed file matches the answer key.
+
+1. **Given** the answer key, **Then** the table has one row per `visit_id` and one column per reader field, with its source on every row.
+2. **Given** a note whose stated status differs from the truth, **Then** the reference keeps the truth and `note_stated_status` shows the note's.
+3. **Given** a field the reader doesn't return (pocket depths, bleeding), **Then** the table has no column for it.
+
 ### Edge Cases
 
 - Model wraps JSON in prose or code fences: parse the first `{...}`.
@@ -65,6 +78,7 @@ format, saving an adapter that the `hf` backend can load.
 - **FR-006**: `17_medgemma_lora.py` + `llm_reader.sft_records`.
 - **FR-007**: Databricks notebook running the reader on Free Edition serverless GPU.
 - **FR-008**: R parity unaffected: predictions are CSV in the existing format.
+- **FR-009**: `reference_answers.py` + `53_reference_answers.py`: reference answers per reader field from the generator's truth (US5).
 
 ## Success Criteria
 
