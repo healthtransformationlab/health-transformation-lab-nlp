@@ -212,3 +212,33 @@ def agreement_vs_humans(wide: pd.DataFrame, compare: dict[str, pd.Series], n_boo
                      "margin": margin, "verdict": verdict})
     return pd.DataFrame(rows, columns=["rater", "kind", "mean_kappa_vs_humans", "diff_vs_human_bar",
                                        "ci_low", "ci_high", "margin", "verdict"])
+
+
+def _prf(tp: int, fp: int, fn: int) -> tuple[float, float, float]:
+    p = tp / (tp + fp) if tp + fp else float("nan")
+    r = tp / (tp + fn) if tp + fn else float("nan")
+    f1 = 2 * tp / (2 * tp + fp + fn) if tp + fp + fn else float("nan")
+    return p, r, f1
+
+
+@traced
+def confusion_scores(truth: pd.Series, pred: pd.Series, classes: list[str] | None = None) -> pd.DataFrame:
+    """Confusion counts with precision, recall and F1 per class, one-vs-rest, and pooled over the classes (spec 024
+    FR-006, as Patel et al. 2022 Table 1 reports them). 'Positive' is the truth's class; a prediction outside
+    `classes` (no answer, 'no diagnosis') is a negative prediction for every class. F1 = 2TP / (2TP + FP + FN)."""
+    classes = classes or ORDER
+    t = np.asarray(truth, dtype=object)
+    p = np.asarray(pred, dtype=object)
+    rows, tot = [], np.zeros(4, dtype=int)
+    for c in classes:
+        tp = int(((t == c) & (p == c)).sum())
+        fp = int(((t != c) & (p == c)).sum())
+        fn = int(((t == c) & (p != c)).sum())
+        tn = len(t) - tp - fp - fn
+        tot += (tp, fp, fn, tn)
+        rows.append({"class": c, "tp": tp, "fp": fp, "fn": fn, "tn": tn, **dict(zip(("precision", "recall", "f1"),
+                                                                                  _prf(tp, fp, fn)))})
+    tp, fp, fn, tn = (int(x) for x in tot)
+    rows.append({"class": "pooled", "tp": tp, "fp": fp, "fn": fn, "tn": tn,
+                 **dict(zip(("precision", "recall", "f1"), _prf(tp, fp, fn)))})
+    return pd.DataFrame(rows, columns=["class", "tp", "fp", "fn", "tn", "precision", "recall", "f1"])

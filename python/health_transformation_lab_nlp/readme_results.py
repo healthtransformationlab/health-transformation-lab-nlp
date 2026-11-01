@@ -53,7 +53,9 @@ COURSE_TITLE = "#### A trained PHI tagger on the University of Michigan course f
 N_BOOT, SEED = 1000, 0   # as 28_ladder_vs_truth.py, so the CIs match data/datasets/ladder/
 
 PHENOTYPES = {"algorithm_v0": ("whole record", "rules, probing chart first (current phenotype, v0.1)"),
-              "algorithm_design": ("whole record", "rules, study-design order: exam form, diagnosis codes, note, chart")}
+              "algorithm_design": ("whole record", "rules, study-design order: exam form, diagnosis codes, note, chart"),
+              "algorithm_patel2022": ("whole record", ("rules, order of Patel et al. 2022: diagnosis codes, PerioDx note "
+                                                       "reading, PerioDx chart rules (spec 024)"))}
 # "notes" (the chart note's regex reader) gives the same predictions as note_rules, so it isn't repeated.
 EVIDENCE = {"probing_chart": ("probing chart", "staged from the measurements"),
             "exam_form": ("exam form", "status field as entered"),
@@ -71,6 +73,7 @@ DEID_GROUPS = ("Several tools combined", "One AI tool", "Pattern matching only")
 
 # Plain names for the README; the full table keeps the code names.
 _PLAIN = {"algorithm_v0": "Gum measurements first", "algorithm_design": "Exam form first",
+          "algorithm_patel2022": "Patel et al. 2022 order",
           "probing_chart": "Gum measurements (probing chart)", "exam_form": "Exam form",
           "proc_dx_planned": "Diagnosis codes, planned treatment", "proc_dx_completed": "Diagnosis codes, done treatment",
           "proc_codes_planned": "Procedure codes, planned", "proc_codes_completed": "Procedure codes, done",
@@ -114,6 +117,8 @@ def readme_label(system: str) -> str:
         return "Rules, gum measurements first"
     if system == "algorithm_design":
         return "Rules, exam form first"
+    if system == "algorithm_patel2022":
+        return "Rules, Patel et al. 2022 order (codes, note, chart)"
     if b == "note_rules":
         return "Keyword rules (simple baseline)"
     if b.startswith("medgemma"):
@@ -218,7 +223,7 @@ def load_inputs() -> dict:
     return {"ladder": pd.read_csv(lad / "ladder_vs_truth.csv"),
             "preds": pd.read_csv(lad / "ladder_preds.csv").set_index("visit_id"),
             "by_diff": pd.read_csv(lad / "medgemma_vs_bert_by_difficulty.csv"),
-            "key": pd.read_csv(DATASETS_DIR / "answer_key" / "review_key.csv").set_index("visit_id"),
+            "key": _key(),
             "registry": yaml.safe_load(MODELS_YAML.read_text()),
             "maccrobat_not_run": pd.read_csv(DEID_DIR / "maccrobat_not_run.csv"),
             "deid": deid, "n_decoys": _n_decoys(deid)["all"], "n_decoys_by_tier": _n_decoys(deid),
@@ -228,6 +233,15 @@ def load_inputs() -> dict:
             "deid_not_run": pd.read_csv(DEID_DIR / "not_run.csv"),
             "maccrobat": pd.read_csv(DEID_DIR / "maccrobat_scores.csv"),
             "judge": _load_judge()}
+
+
+def _key() -> pd.DataFrame:
+    """The review key, with algorithm_patel2022 from its own file (spec 024 FR-010: the key stays unchanged)."""
+    key = pd.read_csv(DATASETS_DIR / "answer_key" / "review_key.csv").set_index("visit_id")
+    f = DATASETS_DIR / "periodx_visits.csv"
+    if f.exists():
+        key["algorithm_patel2022"] = pd.read_csv(f).set_index("visit_id")["algorithm_patel2022"].reindex(key.index)
+    return key
 
 
 def _load_judge() -> dict | None:

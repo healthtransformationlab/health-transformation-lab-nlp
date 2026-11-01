@@ -26,7 +26,9 @@ STATUS_ORDER = ["healthy_gingivitis", "periodontitis_stage_1", "periodontitis_st
                 "periodontitis_stage_4"]
 # the evidence sources the DQ grader scores against the truth, in the study's terms (evidence_rules.md)
 EVIDENCE = ["notes", "exam_form", "proc_dx_completed", "proc_dx_planned", "probing_chart", "algorithm_v0",
-            "algorithm_design"]
+            "algorithm_design", "algorithm_patel2022"]
+# spec 024 (FR-010): these come from periodx_visits.csv, not visits_structured.csv
+PERIODX_EVIDENCE = ["algorithm_patel2022"]
 
 
 def _with_provenance(df: pd.DataFrame, folder: Path, files: list[str]) -> pd.DataFrame:
@@ -80,9 +82,11 @@ def dq_tables(datasets_dir: Path) -> dict[str, pd.DataFrame]:
     f = ["method_agreement.csv"]
     out["dq_source_concordance"] = _with_provenance(_read(d, f[0]), d, f)
 
-    f = ["visits_structured.csv", "answer_key/visits_truth.csv"]
-    v = _read(d, f[0])[["visit_id", "person_id", "clinic_id", "visit_date", "visit_seq", "in_review", *EVIDENCE]]
+    f = ["visits_structured.csv", "answer_key/visits_truth.csv", "periodx_visits.csv"]
+    structured = [c for c in EVIDENCE if c not in PERIODX_EVIDENCE]
+    v = _read(d, f[0])[["visit_id", "person_id", "clinic_id", "visit_date", "visit_seq", "in_review", *structured]]
     truth = _read(d, f[1])[["visit_id", "truth_status"]]
+    v = v.merge(_read(d, f[2])[["visit_id", *PERIODX_EVIDENCE]], on="visit_id", validate="one_to_one")
     v = v.merge(truth, on="visit_id", validate="one_to_one").assign(
         clinic=lambda x: x.clinic_id.astype(str), visit_date=lambda x: pd.to_datetime(x.visit_date).dt.date)
     out["fact_visit_evidence"] = _with_provenance(v.drop(columns="clinic_id"), d, f)

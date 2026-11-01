@@ -111,7 +111,7 @@ code → note NLP → periodontal chart) as `algorithm_design`, and the earlier 
 radiograph as a lower bound) as `algorithm_v0`. Neither is the order in Patel et al., *Methods Inf Med* 2022
 ([references](references.md), item 4; checked against the full text, action item A2): the structured
 diagnosis section, then clinical notes, then periodontal charting, with no exam-form or PSR step. That order
-will be `algorithm_patel2022` (spec 024, not built yet).
+is `algorithm_patel2022` (spec 024; [periodx.md](periodx.md)).
 
 - Code: `phenotype.RULES_DESIGN`, `RULES_V0`, `phenotype()`.
 - Output: `algorithm_design`, `algorithm_v0` columns. Differences: [action_items.md](action_items.md) A2–A6.
@@ -276,6 +276,44 @@ and every charted visit has CAL. One oddity it surfaces: older age pulls *away* 
   [`scripts/40_classify_status.py`](../python/scripts/40_classify_status.py). Needs the `ml` extra
   (`pip install -e "python[ml]"`). No R twin (spec 013 FR-007: model outputs are outside label/scoring parity).
 - Output: `data/datasets/classify_status/`.
+
+### Dental and medical-record features (spec 023)
+
+**Question:** does adding medical-record features to dental-record features help the status classifier? Patel et
+al. 2026 asked it of real linked records [[53]](references.md); here it runs end to end on **synthetic** people,
+whose medical records (`data/datasets/medical_record.csv`, spec 023 US1) are linked to periodontitis by published
+odds ratios built into the generator. So this checks the pipeline and shows how those built-in links come
+through; it says nothing about real patients.
+
+- **Unit and classes:** one row per person, their latest charted visit; Patel's 4 classes, healthy (gingivitis
+  counted as healthy, this repo's choice), stage I, stage II, stages III+IV (`SCHEMES["four"]`).
+- **Feature sets** (`classify_status.FEATURE_SETS`): `dental` (chart, age, smoking, diabetes, HbA1c, prior
+  treatment, ASA class); `dental_no_asa` (the same without ASA class, which follows from the medical conditions);
+  `dental_medical` (adds hypertension, CKD, cardiovascular disease, COPD and blood pressure); `medical` (the
+  medical record and age, no chart).
+- **Method:** the same 70/30 split for every set, stratified by class and kept by person; XGBoost tuned by grouped
+  5-fold cross-validation inside the training people; per-class one-vs-rest metrics; mean |SHAP| per feature.
+- Run: `python scripts/44_medical_features.py` (seed 0, outcome `algorithm_design`; about 3 minutes on a laptop CPU).
+
+**SYNTHETIC run (seed 0, 1,145 people, 343 held out), averages over the 4 classes:**
+
+| Feature set | Sensitivity | Specificity | AUC |
+|---|---|---|---|
+| dental | 0.723 | 0.925 | 0.931 |
+| dental_no_asa | 0.725 | 0.925 | 0.931 |
+| dental_medical | 0.719 | 0.922 | 0.921 |
+| medical | 0.295 | 0.764 | 0.532 |
+
+*For reference only, not a target or a replication:* Patel et al. 2026, Table 2 (real linked records of 20,946
+adults; averages over 4 classes, sensitivity/specificity/AUC): dental records only 66/86/84%, dental and medical
+records 66/86/86% (experiment 1), medical records only 43/70/57% (experiment 5).
+
+Reading it: the dental sets score high because the label is the AAP rules on the same chart (declared in
+[probast_tripod_ai.md](probast_tripod_ai.md)). Adding the medical record doesn't help, and ASA class changes
+nothing. Medical-only is near chance: the built-in odds ratios (1.2 to 2.1) are too weak to separate 4 classes,
+and its largest SHAP values go to age (the generator gives older people more disease) and blood pressure (which
+follows hypertension, but its spread within each band is noise a tree can overfit). Per class and per feature: `data/datasets/classify_status/synthetic_medical_feature_sets.csv`,
+`_shap.csv`, and the held-out probabilities in `_predictions.csv`.
 
 ## 13. Site-level charts, both classifications
 
