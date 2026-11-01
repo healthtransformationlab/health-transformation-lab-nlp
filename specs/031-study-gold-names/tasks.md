@@ -7,3 +7,4 @@
 - [x] T005 [US1] GPU encoder notebook writes `fact_prediction` by `replace_batch`; `results_store.prediction_rows`
 - [x] T006 [US1] Migration turns string `_ts` columns into timestamps
 - [x] T007 Regenerate the gold diagrams; update docs; full test suite
+- [x] T008 [US1] Pipeline doctor config and lineage edges (spec 027) name the new tables; legacy-schema carry tested (#228)
