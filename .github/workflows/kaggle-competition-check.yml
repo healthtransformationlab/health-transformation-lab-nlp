@@ -1,0 +1,51 @@
+# Compare spec 028's task set with the Gemma 4 Developer Agent competition's own files (#439): the snapshot layout,
+# graph and embedding formats, and where the harness gets swegemma. Start it from the Actions tab:
+# "Check the task set against the competition's files" -> Run workflow.
+#
+# Downloads only the small files (python/scripts/56_competition_check.py picks them), prints the comparison to the
+# log and keeps nothing: no artifact, because this repo is public and the competition data has its own rules.
+#
+# Needs, in the GitHub environment `dev`: KAGGLE_USERNAME (variable or secret) and KAGGLE_API_TOKEN or KAGGLE_KEY
+# (secret), the same as the other Kaggle workflows; and that Kaggle account must have joined the competition
+# (kaggle.com/competitions/gemma-4-developer-agent -> Join Competition), or Kaggle refuses the listing.
+name: Check the task set against the competition's files
+run-name: "Competition check (gemma-4-developer-agent)"
+
+on:
+  workflow_dispatch:
+
+concurrency: kaggle-competition-check
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    environment: dev
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with: {python-version: "3.12"}
+      - run: pip install --quiet "kaggle==2.2.5" -e ./python
+
+      - name: Kaggle credentials (values stay masked)
+        env:
+          U: ${{ vars.KAGGLE_USERNAME || secrets.KAGGLE_USERNAME }}
+          T: ${{ secrets.KAGGLE_API_TOKEN }}
+          K: ${{ secrets.KAGGLE_KEY }}
+        run: |
+          [ -n "$U" ] || { echo "::error::KAGGLE_USERNAME is not set in the GitHub environment 'dev' (variable or secret)"; exit 1; }
+          echo "KAGGLE_USERNAME=$U" >> "$GITHUB_ENV"
+          tok="${T:-$K}"
+          [ -n "$tok" ] || { echo "::error::Set KAGGLE_API_TOKEN (or KAGGLE_KEY) in the GitHub environment 'dev'"; exit 1; }
+          echo "KAGGLE_API_TOKEN=$tok" >> "$GITHUB_ENV"
+          [ -n "$K" ] && echo "KAGGLE_KEY=$K" >> "$GITHUB_ENV"
+
+      - name: Download the small files and compare formats
+        working-directory: python
+        run: python scripts/56_competition_check.py --out "$RUNNER_TEMP/competition"
+
+      - name: Delete the downloads
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/competition"
