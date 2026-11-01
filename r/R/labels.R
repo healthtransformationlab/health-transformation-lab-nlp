@@ -11,6 +11,29 @@
 PERIO_LABELS <- c("healthy", "gingivitis", "periodontitis_stage_1",
                   "periodontitis_stage_2", "periodontitis_stage_3", "periodontitis_stage_4")
 
+# Spec 032 US1 (#440): status groupings, twin of labels.GROUPINGS / group_status. `six` the six statuses (default),
+# `five` healthy and gingivitis merged, `three` that merge plus stage I-II as `mild` and III-IV as `severe`.
+# Anything that is not a status (no answer, NA, "unknown", a group name already) keeps its value.
+STATUS_GROUPINGS <- list(
+  six = PERIO_LABELS,
+  five = c("healthy_or_gingivitis", PERIO_LABELS[3:6]),
+  three = c("healthy_or_gingivitis", "mild", "severe"))
+.status_group_of <- function(grouping) {
+  hg <- c(healthy = "healthy_or_gingivitis", gingivitis = "healthy_or_gingivitis",
+          healthy_gingivitis = "healthy_or_gingivitis")
+  switch(grouping, six = character(0), five = hg,
+         three = c(hg, setNames(c("mild", "mild", "severe", "severe"), PERIO_LABELS[3:6])),
+         stop("unknown status grouping '", grouping, "'; one of ", paste(names(STATUS_GROUPINGS), collapse = ", ")))
+}
+group_status <- function(status, grouping = "six") {
+  # Vectorised. The group each status falls in under `grouping`.
+  m <- .status_group_of(grouping)
+  out <- as.character(status)
+  hit <- !is.na(out) & out %in% names(m)
+  out[hit] <- unname(m[out[hit]])
+  out
+}
+
 label_chart <- function(max_probing_depth_mm, bop_pct, max_cal_mm, rbl_pct, teeth_lost_perio = 0,
                         vertical_defect_mm = 0, furcation_class = 0, mobility_degree = 0,
                         remaining_teeth = NA, complex_rehab = FALSE) {
