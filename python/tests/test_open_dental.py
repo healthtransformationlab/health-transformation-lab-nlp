@@ -279,9 +279,19 @@ def large():
     return od.build(od.Params(n_patients=6000), seed=13)     # heavy-tailed periodontal counts need many patients
 
 
-def test_the_periodontal_share_at_entry_follows_the_published_mix_by_age(large):
-    tables, truth = large
-    entry = od.entry_reasons(tables, truth)
+@pytest.fixture(scope="module")
+def pooled_entry(large):
+    """Teeth missing at entry from three 6,000-patient extracts (seeds 13-15). The periodontal counts are heavy-tailed
+    (a stage IV mouth loses many teeth at once), so one extract's share in a band can sit 0.07 from the target; three
+    pooled sit within about 0.03 (specs/029-tooth-loss/research.md, "How the generator applies them")."""
+    parts = [od.entry_reasons(*large)]
+    for seed in (14, 15):
+        parts.append(od.entry_reasons(*od.build(od.Params(n_patients=6000), seed=seed)))
+    return pd.concat(parts, ignore_index=True)
+
+
+def test_the_periodontal_share_at_entry_follows_the_published_mix_by_age(pooled_entry):
+    entry = pooled_entry
     assert list(entry.columns) == ["patient_id", "tooth_num", "age_band_num", "true_reason_code"]
     assert not entry["tooth_num"].isin(od.THIRD_MOLARS).any()          # left out of the label, as in the model
     assert set(entry["true_reason_code"]) == {"perio", "other"}
@@ -302,12 +312,14 @@ def test_non_periodontal_losses_at_entry_dont_follow_attachment_loss(large):
                          "age_band_num": od.age_band(od.patient_age(tables)).to_numpy()})
     df = pats.merge(counts, left_on="patient_id", right_index=True, how="left").fillna({"perio": 0, "other": 0})
     df["worst_cal"] = df["patient_id"].map(tm.patient_worst_cal(od.clean(tables)))
-    df = df.dropna(subset=["worst_cal"])
+    df = df.dropna(subset=["worst_cal"]).merge(_risk_groups(tables), on=["patient_id", "age_band_num"])
     cols = ["perio", "other", "worst_cal"]
     resid = df[cols] - df.groupby("age_band_num")[cols].transform("mean")
     # worst CAL in the record (messy charts included) against each count, within age bands
-    assert abs(resid["other"].corr(resid["worst_cal"])) < 0.05        # chosen by age and tooth type, not by CAL
     assert resid["perio"].corr(resid["worst_cal"]) > 0.1               # periodontal losses do follow CAL
+    # since US8 (#433) smoking and diabetes raise both, so compare within age band and risk group
+    within = df[cols] - df.groupby(["age_band_num", "smoking", "diabetes"])[cols].transform("mean")
+    assert abs(within["other"].corr(within["worst_cal"])) < 0.05      # chosen by tooth type, never by CAL
 
 
 def test_the_reasons_draw_on_their_own_stream():
@@ -320,3 +332,59 @@ def test_the_reasons_draw_on_their_own_stream():
     t0, truth0 = od.build(od.Params(n_patients=60, entry_other_teeth_by_age=zero), seed=21)
     assert set(od.entry_reasons(t0, truth0)["true_reason_code"]) == {"perio"}   # no rate: only periodontal again
     assert (truth1["true_reason_code"] == "other").sum() > (truth0["true_reason_code"] == "other").sum()
+
+
+# ---------- US8 (#433): teeth lost for other reasons share risk factors with periodontal losses ----------
+
+def _risk_groups(tables: dict[str, pd.DataFrame]) -> pd.DataFrame:
+    """Per patient, from the extract only: age band, smoking status (never, occasional, daily) and listed diabetes."""
+    pat = tables["patient"]
+    t2 = tables["diseasedef"].loc[tables["diseasedef"]["diseasename"] == "Type 2 diabetes mellitus", "diseasedefnum"]
+    diabetic = set(tables["disease"].loc[tables["disease"]["diseasedefnum"].isin(t2), "patnum"])
+    smoking = pat["smokingsnomed"].map({"449868002": "daily", "428041000124106": "occasional"}).fillna("never")
+    return pd.DataFrame({"patient_id": pat["patnum"].to_numpy(),
+                         "age_band_num": od.age_band(od.patient_age(tables)).to_numpy(),
+                         "smoking": smoking.to_numpy(), "diabetes": pat["patnum"].isin(diabetic).to_numpy()})
+
+
+def test_the_rate_ratio_multiplies_the_cited_smoking_and_diabetes_ratios():
+    from health_transformation_lab_nlp.synthetic import RiskFactors
+    p = od.Params()
+    assert p.entry_other_smoking_ratios == ((1, 1.05), (20, 1.38))   # Mai et al. 2013, research.md
+    assert p.entry_other_diabetes_ratio == 1.20                        # Ahmadinia et al. 2022, research.md
+    assert od.entry_other_rate_ratio(RiskFactors(0, None), p) == 1.0
+    assert od.entry_other_rate_ratio(RiskFactors(0, 6.4), p) == 1.0     # below 6.5%: not diabetes
+    assert od.entry_other_rate_ratio(RiskFactors(5, None), p) == pytest.approx(1.05)
+    assert od.entry_other_rate_ratio(RiskFactors(19, 6.5), p) == pytest.approx(1.05 * 1.20)
+    assert od.entry_other_rate_ratio(RiskFactors(25, 8.1), p) == pytest.approx(1.38 * 1.20)
+
+
+def test_the_norm_keeps_each_age_bands_mean():
+    from health_transformation_lab_nlp.synthetic import RiskFactors, draw_risk
+    p = od.Params()
+    rng = random.Random("an independent check")
+    ratios = [od.entry_other_rate_ratio(draw_risk(rng), p) for _ in range(20000)]
+    assert od.entry_other_rate_norm(p) == pytest.approx(sum(ratios) / len(ratios), abs=0.01)
+    assert 1.0 < od.entry_other_rate_norm(p) < 1.1
+    # the band's mean over patients is the US7 mean: a never-smoker without diabetes sits a little under it
+    assert od.entry_other_mean(30, RiskFactors(0, None), p) == pytest.approx(3.61 / od.entry_other_rate_norm(p))
+    neutral = od.Params(entry_other_smoking_ratios=((1, 1.0), (20, 1.0)), entry_other_diabetes_ratio=1.0)
+    assert od.entry_other_rate_norm(neutral) == 1.0
+    for low, mean in neutral.entry_other_teeth_by_age:                  # neutral ratios: exactly US7's means
+        assert od.entry_other_mean(low, RiskFactors(25, 9.0), neutral) == mean
+
+
+def test_non_periodontal_losses_at_entry_rise_with_smoking_and_diabetes(large):
+    tables, truth = large
+    entry = od.entry_reasons(tables, truth)
+    other = entry[entry["true_reason_code"] == "other"].groupby("patient_id").size()
+    df = _risk_groups(tables)
+    df["other"] = df["patient_id"].map(other).fillna(0)
+    df["expected"] = df.groupby("age_band_num")["other"].transform("mean")    # standardised by age band
+
+    def observed_over_expected(mask):
+        return df.loc[mask, "other"].sum() / df.loc[mask, "expected"].sum()
+
+    assert observed_over_expected(df["smoking"] == "daily") > 1.08
+    assert observed_over_expected(df["diabetes"]) > 1.05
+    assert observed_over_expected((df["smoking"] == "never") & ~df["diabetes"]) < 1.0

@@ -79,10 +79,10 @@ Implementation starts after this spec, plan and tasks are reviewed.
 - [x] T022 [US8] Sources: published effects of smoking and diabetes (and attendance or socioeconomic status, if a
   source gives one) on tooth loss for reasons other than periodontitis, verified against each paper, in
   [research.md](research.md) ("Shared risk factors") and `docs/references.md`
-- [ ] T023 [US8] Failing tests (`test_open_dental.py`): the rate ratio and its norm; observed/expected
+- [x] T023 [US8] Failing tests (`test_open_dental.py`): the rate ratio and its norm; observed/expected
   non-periodontal count by smoking and diabetes; age-band shares still hold; no link to worst CAL within age band
   and risk group; neutral ratios give US7's means; seeded
-- [ ] T024 [US8] `open_dental.py`: `Params.entry_other_smoking_ratios`, `entry_other_diabetes_ratio`,
+- [x] T024 [US8] `open_dental.py`: `Params.entry_other_smoking_ratios`, `entry_other_diabetes_ratio`,
   `entry_other_norm_draws`; `entry_other_rate_ratio`, `entry_other_rate_norm`; the Poisson mean scaled on the same
   stream
 - [ ] T025 [US8] Regenerate with the scripts (tooth table, model results, ERD dictionary, website JSON);
