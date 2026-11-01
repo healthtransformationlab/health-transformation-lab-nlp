@@ -27,6 +27,7 @@ import pandas as pd
 from .clinical_notes import render_clinical_note
 from .deid import deidentify, leak_check, residual_scan, score_deid
 from .labels import PerioChart, Status, extent_of, grade_of, label_chart
+from .medical_record import medical_records, people_from_visits
 from .note_reader import read_note
 from .phenotype import RULES_DESIGN, RULES_V0, agreement_matrix, coverage, phenotype, phenotype_v0
 from .phi import fake_person, fake_provider
@@ -222,6 +223,8 @@ def label_studio_tasks(review: pd.DataFrame) -> list[dict]:
 def build_study(out_dir: Path, raw_dir: Path, n_people: int = 1200, review_n: int = 240,
                 seed: int = 42, engine: str = "regex") -> dict:
     df = generate_visits(n_people, seed)
+    # Spec 023: the synthetic medical record, on its own random stream after every study draw, so no other file changes.
+    medical = medical_records(people_from_visits(df), seed)
     for c in READERS:
         df = df.rename(columns={c: c + "_raw"})
     raw_dir.mkdir(parents=True, exist_ok=True)
@@ -255,6 +258,7 @@ def build_study(out_dir: Path, raw_dir: Path, n_people: int = 1200, review_n: in
     df[["visit_id", "person_id", "truth_status", "truth_grade", "truth_extent", "record_error",
         "max_cal_mm", "rbl_pct", "teeth_lost_perio"]].to_csv(out_dir / "answer_key" / "visits_truth.csv", index=False)
     clinic_profiles(seed).to_csv(out_dir / "answer_key" / "clinic_profiles.csv", index=False)
+    medical.to_csv(out_dir / "medical_record.csv", index=False)
     methods = ["notes", *READERS, "probing_chart", "radiograph_ai"]
     agree = pd.concat([agreement_matrix(df, methods, "status").assign(level="status"),
                        agreement_matrix(df, methods, "perio").assign(level="perio")])

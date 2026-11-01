@@ -56,6 +56,23 @@ memory.
 | ASA class | American Society of Anesthesiologists, *ASA Physical Status Classification System* |
 | Respiratory, haematologic, other endocrine | named in Patel et al. 2026's results as contributing; a rate source is needed, or they're left out |
 
+**Checked for US1 (#198).** Each figure below was read from the source's abstract or key findings (PubMed or the
+CDC page) before it went into `CONDITIONS` in `medical_record.py`, which carries the full citations:
+
+| Link or rate | Used | Figure |
+|---|---|---|
+| Hypertension ↔ periodontitis | Muñoz Aguilera et al. 2020, PMID 31549149 | moderate–severe OR 1.22 (1.10–1.35), applied to stages II–IV |
+| CKD ↔ periodontitis | Kapellas K et al., Nephrology 2019;24(2):202–212 (in place of Chambrone 2013, which was not checked: Kapellas gives a pooled odds ratio in its abstract) | pooled OR 1.60 (1.44–1.79) |
+| Cardiovascular disease ↔ periodontitis | Janket SJ et al. 2003, PMID 12738947 (in place of the Sanz 2020 consensus report, which was not checked for a pooled figure) | summary RR 1.19 (1.08–1.32), used as an odds ratio |
+| COPD (respiratory) ↔ periodontitis | Zeng XT et al., PLoS One 2012;7(10):e46508 | pooled OR 2.08 (1.48–2.91) |
+| Hypertension by age; its definition and control | NCHS Data Brief 289 (2017) | 7.5 / 33.2 / 63.1% at 18–39 / 40–59 / 60+; ≥ 140/90 or medication; controlled 32.5 / 50.8 / 49.4% |
+| CKD by age | CDC, *Chronic Kidney Disease in the United States*, 2026 (NHANES 2021–2023) | 6 / 13 / 34% at 18–44 / 45–64 / 65+ |
+| Heart disease by age | NCHS QuickStats, MMWR 2022;71(23) (NHIS 2020) | 0.9 / 5.9 / 18.2% at 18–44 / 45–64 / 65+ |
+| COPD by age | NCHS Data Brief 529 (2025) | 0.4 / 1.4 / 2.9 / 7.4 / 8.9 / 10.5% at 18–24 … 75+ |
+| ASA class | ASA Physical Status Classification System (amended 2020), read from secondary copies: the ASA's own page was not reachable from the build session | definitions and adult examples for I–IV |
+| Diabetes | the generator's HbA1c ≥ 6.5 (not drawn; reported, not tested against a source) | |
+| Haematologic, other endocrine | no source checked | left out for now |
+
 ## Tests first
 
 - `test_medical_record.py`:
