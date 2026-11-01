@@ -28,7 +28,7 @@
 
 | # | Use | How | Effort | Fits with |
 |---|-----|-----|--------|-----------|
-| 1 | **Note reader (LLM rung)** | Zero-/few-shot prompt: note in, JSON status / stage / grade / extent out, same schema and quote gate as the judge. 4B and 27B-text as two rungs | Low | Model ladder; difficulty levels; cost frontier |
+| 1 | **Note reader (LLM rung)** | Zero-/few-shot prompt: note in, JSON status / stage / grade / extent out, same schema as the judge; quote gate as the judge's, but ignoring capitals and whitespace (#134). 4B and 27B-text as two rungs | Low | Model ladder; difficulty levels; cost frontier |
 | 2 | **Fine-tuned note reader ("extend")** | Parameter-efficient fine-tuning (e.g. LoRA) of the 4B model on `train.csv` (synthetic labels), structured JSON output. Compare against the BERT ladder: does a 4B generative model beat a fine-tuned 150M encoder enough to justify its cost? | Medium; needs a GPU | BERT ladder; harm-weighted errors |
 | 3 | **Judge candidate** | Add to the judge bake-off. The same-family rule applies: if a MedGemma model is being graded, the judge must be from a different family, and vice versa | Low | `15_judge.py` bake-off |
 | 4 | **Note paraphraser for synthetic data** | Rewrite generated notes in varied clinical phrasing while keeping the label (as the UTHealth team did with GPT-4), then check with the reader and judge that the label survived. Reduces the "same author wrote notes and rules" problem | Medium | Spec 001 note realism |
@@ -73,6 +73,36 @@ MedGemma 1.5 opens with a `<unused94>thought ... <unused95>` block; the hf backe
 suppresses it (it otherwise used up the 300 new tokens before the JSON) and
 `parse_answer` strips one if present.
 
+### Why some answers fell back (#134)
+
+An answer falls back to `note_rules` when it fails the gate: bad JSON, a status outside the six, or a
+quote that isn't the note's own words. Every fallback in the two committed runs (240 synthetic review
+notes each, `data/datasets/llm_details_medgemma-4b-it.csv` and `llm_details_medgemma-1.5-4b-it.csv`) was
+read against its note:
+
+| Why the gate failed | 4B v1 | 1.5 | Verdict |
+|---|---:|---:|---|
+| Quote differs from the note only in capitals (an upper-case diagnosis line copied in lower case) | 3 | 0 | **Gate bug, fixed**: the gate now ignores capitals and runs of whitespace (`quote_in_note`) |
+| "Localized" shortened to "Local" or "Localize" | 8 | 0 | Model changed a word: correct to reject |
+| "Localized" respelled "Localised" | 1 | 2 | Model changed a word: correct to reject |
+| A misspelling in the note ("generlized", "locallized") corrected in the quote | 2 | 0 | Correct to reject (the quote must match the record as written) |
+| Quote stitched from separate places in the note, or with words added | 0 | 2 | Correct to reject |
+| Diagnosis text put in the `status` field instead of one of the six labels | 0 | 1 | Correct to reject |
+| **Total fallbacks** | **14** | **5** | |
+
+No answer failed for malformed JSON, a missing field, an out-of-range grade or extent, or output cut off
+at the token limit. So the 4B v1 run's fallbacks are mostly the model rewriting the word "Localized"
+rather than copying it; a future prompt version could say "copy the words character for character, even
+misspellings", which needs a new prompt version and a re-run to measure.
+
+**What a re-run would show.** MedGemma was not re-run (no GPU). Re-parsing the committed raw outputs
+with the fixed gate turns 3 of the 4B v1 run's 14 fallbacks into passes (visits 776, 3689, 4218): gate
+pass 94.2% to 95.4%, fallback 5.8% to 4.6%. Accuracy against generator truth goes from 0.779 to 0.775,
+because in one of the three (4218) MedGemma's own answer (stage II) was further from the generator's
+label than the note rules' fallback was. The 1.5 run and the Llama 3.3 70B run are unchanged (no
+case-only quotes). The committed files keep the gate as it ran. All of this is synthetic notes, not
+evidence about either model on real records.
+
 | Piece | Where |
 |---|---|
 | Note reader rung: prompt shares the judge's AAP/EFP criteria; JSON status/grade/extent + verbatim quote; falls back to `note_rules` and flags the row on any failure; never sends a note the residual PHI scan flags | `python/health_transformation_lab_nlp/llm_reader.py` |
@@ -83,6 +113,38 @@ suppresses it (it otherwise used up the 300 new tokens before the JSON) and
 | Databricks | `databricks/notebooks/03_medgemma_reader.py` (Free Edition serverless GPU) |
 | Costs | `costs.yaml`: assumed GPU throughput, ILLUSTRATIVE; measure and replace |
 | Compare with BERT | `python scripts/29_medgemma_vs_bert.py [--bert modernbert-base]`: each MedGemma run minus the encoder, paired bootstrap CI, stage IV recall, by difficulty, fallback rate; R twin in `10_ladder.R`. Notebook 03 runs it after the reader (set `limit` 0, `lora_train` > 0 for the fine-tuned version) |
+
+**Reference answers per field (#130).** The reader returns three fields: status, grade and extent. Their
+correct answers per review visit are in `data/datasets/answer_key/reference_answers.csv` (`53_reference_answers.py`),
+taken from the generator's truth: the synthetic generator decides each visit's status, grade and extent before it
+writes the note, so no reviewer had to fill them in. Grade and extent are `NA` unless the truth is periodontitis.
+Where the note states something else (a copied-forward or miscoded record), the reference keeps the truth and
+`note_stated_status` shows the note. The reader returns no pocket depths or bleeding, so they have no reference
+column. Synthetic truth, not a clinician's reading.
+
+**Accuracy per field (#132).** `python scripts/54_medgemma_field_accuracy.py` scores each committed MedGemma run
+against those reference answers, one row per field, and writes `data/datasets/ladder/medgemma_field_accuracy.csv`
+(R twin `r/R/17_spec004.R`, checked by the parity test). It logs `field_accuracy_<field>` and `field_n_<field>` to
+MLflow, and `11_ai_predict.py` logs the same metrics after a complete reader run. How each field is scored:
+
+- **status**: the rung's answer after any fallback to note_rules, on all 240 visits. This is the headline accuracy above.
+- **grade** and **extent**: only the 156 visits whose truth is periodontitis, and only answers that passed the
+  quote gate. note_rules reads neither field, so a fallback row counts as wrong. A grade can be right while the stage is wrong.
+
+| Run | Field | n | Accuracy (95% Wilson CI) |
+|---|---|---|---|
+| `medgemma-4b-it` | status | 240 | 0.779 (0.723-0.827) |
+| | grade | 156 | 0.795 (0.725-0.851) |
+| | extent | 156 | 0.679 (0.603-0.748) |
+| `medgemma-1.5-4b-it` | status | 240 | 0.758 (0.700-0.808) |
+| | grade | 156 | 0.801 (0.732-0.856) |
+| | extent | 156 | 0.833 (0.767-0.884) |
+
+So the two models read grade about equally well. On extent, 1.5 does better than 4B and their intervals don't
+overlap: 4B called 26 of the 65 localized cases generalized (1.5 called 6). These are measurements on synthetic notes against
+the generator's truth, not evidence about either model on real records. The simulated dry run
+(`simulated_medgemma_field_accuracy.csv`) has no grade or extent at all, because the placeholder reader returns
+none.
 
 Per-note details (gate pass, fallback, tokens, latency) go to
 `data/datasets/llm_details_<rung><tag>.csv`; the tag (`+lora`, `+k<shots>`, `+terse`) keeps

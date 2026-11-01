@@ -7,7 +7,8 @@ Per-note details (raw output, quote, gate, tokens, latency, fallback) are kept i
 
 Safeguards
   - Residual PHI scan before anything is sent; a flagged note is never sent.
-  - Quote gate (shared with the judge): the answer must quote the note verbatim.
+  - Quote gate: the answer must quote the note's own words (capitals and runs of
+    whitespace may differ, #134; the judge's gates in judge.py still match exactly).
   - Any failure (bad JSON, unknown status, failed gate, backend error) falls back
     to the note_rules prediction and is flagged, so scores stay comparable and the
     failure rate is visible.
@@ -130,6 +131,19 @@ def sft_records(train: pd.DataFrame, variant: str = DEFAULT_VARIANT) -> list[dic
 THOUGHT_START, THOUGHT_END = "<unused94>", "<unused95>"  # MedGemma 1.5 thinking markers
 
 
+def _fold(text: str) -> str:
+    return " ".join(text.split()).casefold()
+
+
+@traced
+def quote_in_note(quote: str, note: str) -> bool:
+    """The quote is a run of the note's own words: capitals and runs of whitespace may differ, nothing else
+    (#134: a lower-case copy of an upper-case diagnosis line is still the note's words). A respelled,
+    shortened or corrected word, or a quote stitched from separate places, still fails."""
+    q = _fold(quote or "")
+    return bool(q) and q in _fold(note)
+
+
 @traced
 def parse_answer(raw: str, note: str) -> dict:
     out = {"status": None, "grade": "NA", "extent": "NA", "quote": "", "gate_ok": False, "error": ""}
@@ -153,7 +167,7 @@ def parse_answer(raw: str, note: str) -> dict:
     if status.startswith("periodontitis"):
         out["grade"] = d.get("grade") if d.get("grade") in GRADES else "NA"
         out["extent"] = d.get("extent") if d.get("extent") in EXTENTS else "NA"
-    if not quote or quote not in note:
+    if not quote_in_note(quote, note):
         out["error"] = "quote not in note"
         return out
     out["gate_ok"] = True

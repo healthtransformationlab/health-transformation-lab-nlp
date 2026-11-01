@@ -31,3 +31,11 @@
   Kaggle, 2026-10-28, 10 synthetic notes, bfloat16 on one T4: same prediction on 10/10 notes, gate pass 100% for
   both, agreement with the answer key 7/10 for both, 35.5 s/note keras vs 28.3 hf. Kept the converted-HF path
   (one backend, faster); the KerasHub backend was not merged. Ten notes only: not a result.
+
+## Phase 5: Per-field accuracy (#130, #132)
+- [x] T021 [US5] Reference answers per reader field (status, grade, extent) from the generator's truth:
+  `reference_answers.py`, `53_reference_answers.py`, `answer_key/reference_answers.csv`; test first (#130).
+  The reader returns no pocket depths or bleeding, so there is nothing to score them against.
+- [x] T022 [US6] Accuracy per field (n, accuracy, 95% Wilson CI) for each committed MedGemma run:
+  `reference_answers.field_accuracy`, `54_medgemma_field_accuracy.py`, `ladder/medgemma_field_accuracy.csv`;
+  R twin `r/R/17_spec004.R` + parity check 9e; MLflow metrics from the script and from `11_ai_predict.py` (#132)

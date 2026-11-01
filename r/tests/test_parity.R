@@ -242,6 +242,27 @@ for (pfx in c("", "simulated_")) {
   stopifnot(nrow(m) == nrow(py), d < 1e-9, nrow(ml) == nrow(pl), dl < 1e-9)
 }
 
+# 9e. MedGemma accuracy per field (spec 004 US6, #132): R 17_spec004.R vs scripts/54_medgemma_field_accuracy.py.
+# The committed real runs, and the simulated dry run (placeholder reader, not a result).
+ref_file <- "data/datasets/answer_key/reference_answers.csv"
+for (pfx in c("", "simulated_")) {
+  f <- sprintf("data/datasets/ladder/%smedgemma_field_accuracy.csv", pfx)
+  if (!file.exists(f) || !file.exists(ref_file)) next
+  source("r/R/17_spec004.R")
+  ref <- read.csv(ref_file, stringsAsFactors = FALSE, na.strings = "")
+  py <- read.csv(f, stringsAsFactors = FALSE)
+  r <- do.call(rbind, lapply(unique(py$run), function(run) {
+    det <- read.csv(sprintf("data/datasets/%sllm_details_%s.csv", pfx, run), stringsAsFactors = FALSE)
+    cbind(run = run, field_accuracy_004(det, ref), stringsAsFactors = FALSE)
+  }))
+  m <- merge(r, py, by = c("run", "field"), suffixes = c(".r", ".p"))
+  cols <- c("n", "correct", "accuracy", "ci_lo", "ci_hi")
+  d <- max(sapply(cols, function(k) max(abs(m[[paste0(k, ".r")]] - m[[paste0(k, ".p")]]))))
+  cat(sprintf("%smedgemma per field: %d runs x %d fields, max |R - Python| = %.2e\n",
+              pfx, length(unique(py$run)), length(FIELDS_004), d))
+  stopifnot(nrow(m) == nrow(py), nrow(r) == nrow(py), d < 1e-9)
+}
+
 # 10. Spec 005 twins: evidence-order search, data quality, progression (R 09_spec005.R).
 sp <- "data/review/simulated_reliability_5cat/phenotype_orders_split.csv"
 if (file.exists(sp) && file.exists("data/review/simulated_reviewer_labels.csv") &&
