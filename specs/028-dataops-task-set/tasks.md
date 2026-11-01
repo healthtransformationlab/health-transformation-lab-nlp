@@ -16,9 +16,9 @@
 - [ ] T007 Gates with the competition's evaluator (`swegemma eval --skip-agent-patch`, then with `patch`); drop and list failures. Blocked (Nov 1, 2026): `swegemma` is not on PyPI; it ships only in the competition's Kaggle wheelhouse, which a cloud session can't download without a Kaggle token
 
 ## US4 - Snapshots, graphs, embeddings, wheels #355
-- [ ] T008 Snapshots by `git fast-export` to `base_commit` → fresh repo on `main` → `.tgz`
-- [ ] T009 AST graph → NetworkX node-link JSON with the dataset's keys; compare one of the competition's files first
-- [ ] T010 Embeddings with EmbeddingGemma at 256 dims (named; parity unverified); wheels for the 3.13 sandbox
+- [x] T008 Snapshots by `git fast-export` to `base_commit` → fresh repo on `main` → `.tgz` (`task_graph.snapshot`, `51_build_tasks.py --snapshots N`; ~35 MB each, git-ignored; `snapshot_index.csv` committed). The tree always equals the base's (checked); the head SHA does too only where git supports `--signed-commits=verbatim` (2.46+): with git 2.43 GitHub's signatures are dropped and the SHAs change, so the index maps `base_commit` to `snapshot_head_sha`
+- [x] T009 AST graph → NetworkX node-link JSON with the dataset's keys (`task_graph.build_graph`, `--graphs`; 116 graphs, median 488 nodes and 397 `calls` edges, 49 MB, git-ignored; the package is found per base, since it was renamed). Keys follow gemma-developer-agent `docs/dataset-format.md`; no competition graph file was compared (Kaggle download not possible from a cloud session), so the node-id form and tgz layout are unverified
+- [ ] T010 Embeddings with EmbeddingGemma at 256 dims (named; parity unverified); wheels for the 3.13 sandbox. Blocked (Nov 1, 2026): `google/embeddinggemma-300m` is gated on Hugging Face and the session's token has not accepted the Gemma licence (403); wheels can be downloaded from PyPI but belong with the embeddings run
 
 ## US5 - Published as a dataset and scored with the competition's own evaluator #356
 - [ ] T011 Kaggle dataset publish (spec 025 workflow); `swegemma eval` run with the agent in gemma-developer-agent
