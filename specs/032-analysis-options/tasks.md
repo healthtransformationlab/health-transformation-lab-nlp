@@ -1,6 +1,6 @@
 # Tasks: analysis options (spec 032)
 
-- [ ] T001 [US1] failing tests for `group_status` and scoring at five and three levels; implement; R twin; parity
+- [x] T001 [US1] failing tests for `group_status` and scoring at five and three levels; implement; R twin; parity
 - [x] T002 [US2] failing tests for `min_age` / `start_date` filters and their exclusion counts; implement
 - [ ] T003 [US3] failing test for `absent_code=healthy_or_gingivitis`; implement in Python and R
 - [x] T004 [US4] failing tests for `teeth_lt_20` and `pairs_lt_10`; implement; R twin; parity

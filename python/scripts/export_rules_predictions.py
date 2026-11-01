@@ -17,6 +17,18 @@ notes[["note_id", "pred"]].to_csv(LABELS_DIR / "python_rules_predictions.csv", i
 test = notes.merge(pd.read_csv(LABELS_DIR / "split.csv"), on="person_id").query("split == 'test'")
 score(test["label"], test["pred"], None, "rules_baseline", run_id="parity").to_csv(
     LABELS_DIR / "python_rules_score.csv", index=False)
+# Spec 032 US1: the same predictions scored at the five and three status groupings, and person-level prevalence
+# per status group by clinic, for the R twins (eval/score.R, r/R/06_validation.R). data/labels/ is not committed.
+for grouping in ("five", "three"):
+    score(test["label"], test["pred"], None, "rules_baseline", run_id="parity", grouping=grouping).to_csv(
+        LABELS_DIR / f"python_rules_score_{grouping}.csv", index=False)
+
+from health_transformation_lab_nlp.paths import DATASETS_DIR
+from health_transformation_lab_nlp.prevalence import prevalence_by_group
+
+visits = pd.read_csv(DATASETS_DIR / "visits_structured.csv")
+pd.concat([prevalence_by_group(visits, "algorithm_design", grouping=g, by="clinic_id")
+           for g in ("six", "five", "three")]).to_csv(LABELS_DIR / "python_prevalence_by_group.csv", index=False)
 
 # AAP worksheet edge cases (CAL missing, tooth loss, complexity) for the R twin of label_chart
 import itertools

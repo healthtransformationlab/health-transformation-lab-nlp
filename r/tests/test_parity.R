@@ -55,6 +55,30 @@ if (file.exists(py_res_file)) {
   stopifnot(max(diff) < 1e-9)
 } else cat("scorer:  skipped (python score file not found)\n")
 
+# 3b. Spec 032 US1: status groupings (same as labels.GROUPINGS; tests/test_status_grouping.py has the Python side),
+# then the same predictions scored at the five and three status groupings.
+stopifnot(identical(group_status(c(PERIO_LABELS, NA, "unknown", "healthy_gingivitis"), "three"),
+                    c(rep("healthy_or_gingivitis", 2), rep("mild", 2), rep("severe", 2), NA, "unknown",
+                      "healthy_or_gingivitis")),
+          identical(group_status(PERIO_LABELS, "five"), c(rep("healthy_or_gingivitis", 2), PERIO_LABELS[3:6])),
+          identical(group_status(PERIO_LABELS), PERIO_LABELS),
+          identical(STATUS_GROUPINGS, SCORE_GROUPINGS),
+          inherits(try(group_status("healthy", "four"), silent = TRUE), "try-error"))
+for (grouping in c("five", "three")) {
+  f <- sprintf("data/labels/python_rules_score_%s.csv", grouping)
+  if (!file.exists(f)) { cat(sprintf("scorer %s: skipped (run export_rules_predictions.py)\n", grouping)); next }
+  py <- read.csv(f, stringsAsFactors = FALSE)
+  rg <- score_run(test$label, rules_predict(test$note_text), NULL, "rules_baseline", run_id = "parity",
+                  grouping = grouping)
+  key <- function(d) paste(d$metric, ifelse(is.na(d$class), "", d$class))
+  both <- merge(data.frame(k = key(rg), r = rg$value), data.frame(k = key(py), p = py$value))
+  diff <- abs(both$r - both$p); diff[is.na(diff)] <- 0
+  stopifnot(nrow(both) == nrow(py), nrow(rg) == nrow(py),
+            identical(rg$class[rg$metric == "f1"], STATUS_GROUPINGS[[grouping]]))
+  cat(sprintf("scorer %s: max |R - Python| = %.2e over %d metrics\n", grouping, max(diff), nrow(both)))
+  stopifnot(max(diff) < 1e-9)
+}
+
 } else cat("labels/rules/scorer: skipped (run python scripts 01 + 02 + export_rules_predictions first)\n")
 
 # 4. Reliability: R 04_reliability.R == Python reliability.py (needs a simulated or real review run).
@@ -450,6 +474,21 @@ if (file.exists(vs) && file.exists(pp)) {
   cat(sprintf("prevalence:   max |R - Python| = %.2e over %d clinics\n", d, nrow(m)))
   stopifnot(nrow(m) == nrow(py), d < 1e-9)
 } else cat("prevalence: skipped (run 19_prevalence.py)\n")
+
+# Spec 032 US1: prevalence per status group at the six, five and three groupings.
+pg <- "data/labels/python_prevalence_by_group.csv"
+if (file.exists(vs) && file.exists(pg)) {
+  v <- read.csv(vs, stringsAsFactors = FALSE)
+  py <- read.csv(pg, stringsAsFactors = FALSE)
+  r <- do.call(rbind, lapply(c("six", "five", "three"),
+                             function(g) prevalence_by_group(v, "algorithm_design", grouping = g, by = "clinic_id")))
+  stopifnot(nrow(r) == nrow(py), all(r$clinic_id == py$clinic_id), all(r$grouping == py$grouping),
+            all(r$status_group == py$status_group))
+  num <- c("n_people", "n_unknown", "n_in_group", "share", "share_ci_low", "share_ci_high")
+  d <- max(abs(as.matrix(r[num]) - as.matrix(py[num])), na.rm = TRUE)
+  cat(sprintf("prevalence by group: max |R - Python| = %.2e over %d rows\n", d, nrow(py)))
+  stopifnot(d < 1e-9)
+} else cat("prevalence by group: skipped (run export_rules_predictions.py)\n")
 cat("parity OK (spec 005)\n")
 
 # 7. Spec 006: derived measures and CDC/AAP from site-level charts.
