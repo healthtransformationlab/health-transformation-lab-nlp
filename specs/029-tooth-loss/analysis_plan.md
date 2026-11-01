@@ -35,8 +35,8 @@ This estimates why a tooth already lost was lost. It doesn't predict future loss
 ## 3. Participants and teeth
 
 - **Decision (age):**
-  - default: no cut-off;
-  - sensitivity: 18 and over, and 30 and over (the national survey's adults).
+  - default: 18 and over (adults);
+  - sensitivity: no cut-off, and 30 and over (the national survey's adults).
   - Age is measured at the tooth's loss, or at the first visit for a tooth missing at entry.
   - Children's teeth are mostly baby teeth or orthodontic extractions, not periodontitis.
 - **Fixed:** third molars are excluded from the label and the stage count by default ([spec.md](spec.md), edge cases).
@@ -146,7 +146,7 @@ Subgroups with fewer than 30 labelled teeth are reported as counts only.
 **Planned**, each a single change from the main analysis:
 - label set (completed vs completed plus planned);
 - diagnosis list (older vs 2017 items only);
-- age cut-off (none, 18+, 30+);
+- age cut-off (18+, none, 30+);
 - third molars included;
 - shared vs own predictors;
 - messy vs `NO_MESS` records (synthetic);
@@ -196,3 +196,4 @@ stated plainly:
 | 2026-11-01 | s. 6: the synthetic run uses 6,000 patients per extract (`scripts/51_tooth_loss_model.py --patients`) | With the default 2,000 there are too few labelled teeth (third molars excluded) for narrow intervals |
 | 2026-11-01 | s. 2 (synthetic data): teeth missing at the first visit now include non-periodontal losses, by age band (US7, #429); the missing-at-entry set has both classes, so its AUC, specificity and calibration are reported, and every synthetic result was rerun | Before, every tooth missing at entry (third molars aside) was periodontal, so that set had no negatives. The shares follow Suzuki et al. 2022 ([research.md](research.md)); the analysis itself is unchanged |
 | 2026-11-01 | s. 2 (synthetic data): the number of non-periodontal teeth missing at entry now rises with smoking and diabetes (US8, #433), rescaled so each age band keeps its US7 share; every synthetic result was rerun, and `docs/tooth_loss.md` gives the missing-at-entry AUC, specificity and stage recount before and after | Before, non-periodontal and periodontal losses shared no risk factor. The effects are those published for tooth loss other than periodontitis (Mai et al. 2013; Ahmadinia et al. 2022 as an upper bound; [research.md](research.md)); they are small, and the AUC moved by about 0.01, inside the seed spread. The analysis itself is unchanged |
+| 2026-11-01 | s. 3: the default is 18 and over (adults); no cut-off becomes a sensitivity analysis beside 30 and over (#437) | Children's missing teeth are mostly baby teeth or orthodontic extractions, and 2018 staging is applied to adults. The synthetic patients are all 25 or older, so no synthetic result changes |

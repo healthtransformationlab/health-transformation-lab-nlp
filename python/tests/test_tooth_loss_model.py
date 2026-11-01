@@ -67,10 +67,10 @@ def test_the_two_label_sets_completed_and_completed_plus_planned():
 def test_third_molars_are_left_out_by_default_and_the_minimum_age_is_a_parameter():
     t = _teeth([(1, 1, "extracted_perio", 15), (1, 3, "extracted_perio", 15), (2, 3, "extracted_other", 40),
                 (2, 32, "missing_at_entry", 40)])
-    assert sorted(tm.eligible(t, tm.ModelParams())["tooth_num"]) == [3, 3]
-    assert len(tm.eligible(t, tm.ModelParams(include_third_molars=True))) == 4
-    assert tm.ModelParams().min_age is None                    # the study lead's decision: no cut-off until then
-    assert tm.eligible(t, tm.ModelParams(min_age=18))["patient_id"].tolist() == [2]
+    assert len(tm.eligible(t, tm.ModelParams(min_age=None, include_third_molars=True))) == 4
+    assert tm.ModelParams().min_age == 18                      # adults only (analysis plan s. 3)
+    assert tm.eligible(t, tm.ModelParams())["patient_id"].tolist() == [2]       # the 15-year-old is out
+    assert sorted(tm.eligible(t, tm.ModelParams(min_age=None))["tooth_num"]) == [3, 3]   # sensitivity: no cut-off
 
 
 # ---------- the split (section 9)

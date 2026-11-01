@@ -4,8 +4,8 @@ Follows the pre-specified analysis plan, specs/029-tooth-loss/analysis_plan.md (
 are given below. Reads the silver tooth table (`tooth_loss.tooth_table`); the answer key (`tooth_loss_truth`) is read
 only to score the teeth that have no recorded reason, never as a feature. Synthetic data only.
 
-- Who (s. 3): every tooth, third molars left out by default; a minimum age is a parameter (`ModelParams.min_age`,
-  default none: the study lead's decision is open). Age is at the tooth's loss, or at the first exam when the
+- Who (s. 3): every tooth, third molars left out by default; adults only: a minimum age (`ModelParams.min_age`,
+  default 18; None for no cut-off, a sensitivity analysis). Age is at the tooth's loss, or at the first exam when the
   loss date isn't recorded (teeth missing at entry, planned extractions).
 - Label (s. 4, FR-010): 1 = the extraction's diagnosis item is periodontal, 0 = another reason. Two label sets:
   `completed` (completed extractions) and `completed_planned` (plus planned ones; the tooth table already counts a
@@ -65,7 +65,7 @@ class ModelParams:
     """The analysis plan's fixed choices, and the open decisions with their defaults."""
     test_share: float = 0.3
     seed: int = 42                         # split, models and bootstrap
-    min_age: int | None = None             # open decision (analysis plan s. 3): none; sensitivity 18, 30
+    min_age: int | None = 18               # analysis plan s. 3: adults; sensitivity none (None) and 30
     include_third_molars: bool = False     # sensitivity analysis when True
     n_boot: int = 1000
     threshold: float = 0.5

@@ -43,8 +43,8 @@ stores the image, not a reading of it.
 
 ## How it is built
 
-- **Teeth:** third molars are left out by default. A minimum age is a parameter (`ModelParams.min_age`,
-  `--min-age`); the study lead hasn't decided it yet, so the default is none.
+- **Teeth:** third molars are left out by default. Only adults are included: the minimum age
+  (`ModelParams.min_age`, `--min-age`) is 18 by default; no cut-off and 30 and over are sensitivity analyses.
 - **Two label sets** (FR-010): completed extractions only, and completed plus planned extractions (one per planned
   procedure, however many plan copies; a tooth planned then extracted counts once, as completed).
 - **Two predictor sets:** *shared* (what every missing tooth has: tooth type, neighbours' worst CAL, the mouth at
