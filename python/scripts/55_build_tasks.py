@@ -3,6 +3,9 @@
     python scripts/55_build_tasks.py                 # data/tasks/tasks.jsonl (git-ignored), tasks_excluded.csv,
                                                      # tasks_sample.jsonl, and the manifest's base commits
     python scripts/55_build_tasks.py --sample 3
+    python scripts/55_build_tasks.py --graphs        # also data/tasks/graphs/<instance_id>.json (US4, T009)
+    python scripts/55_build_tasks.py --snapshots 2   # also the first N snapshots/<instance_id>.tgz (US4, T008;
+                                                     # each holds the whole history to its base, ~90 MB)
 
 For each candidate in data/tasks/task_manifest.csv: `base_commit` is the parent of a squash or direct commit, or
 the PR's merge base for a merge commit (recorded in the manifest as `base_commit_source_code`); the diff from
@@ -24,6 +27,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
 import subprocess
 import sys
 import urllib.error
@@ -31,6 +35,7 @@ import urllib.request
 
 import pandas as pd
 
+from health_transformation_lab_nlp import task_graph as tg
 from health_transformation_lab_nlp import task_mine as tm
 from health_transformation_lab_nlp import telemetry
 from health_transformation_lab_nlp.paths import REPO_ROOT
@@ -42,6 +47,10 @@ OUT = TASKS_DIR / "tasks.jsonl"               # git-ignored: full patches, tens 
 EXCLUDED = TASKS_DIR / "tasks_excluded.csv"
 SAMPLE = TASKS_DIR / "tasks_sample.jsonl"     # committed: the smallest few rows, to show the format
 REVIEWS = REPO_ROOT / "pull_requests"
+GRAPHS = TASKS_DIR / "graphs"                 # git-ignored
+SNAPSHOTS = TASKS_DIR / "snapshots"           # git-ignored
+SNAPSHOT_INDEX = TASKS_DIR / "snapshot_index.csv"   # committed: base commit -> the snapshot's own head
+PACKAGE, SOURCE_ROOT = "health_transformation_lab_nlp", "python/"
 
 
 def git(*args: str) -> str:
@@ -132,9 +141,51 @@ def text_for(row: pd.Series, items: dict[int, dict]) -> dict:
                                   story=story, plan=files["plan"], tasks=files["tasks"])
 
 
+def package_sources(sha: str) -> tuple[str, dict[str, str]]:
+    """The package's name and every .py file of it as they stood at `sha` (it was renamed during the history)."""
+    paths = git("ls-tree", "-r", "--name-only", sha, SOURCE_ROOT).split()
+    package = tg.package_name(paths, SOURCE_ROOT) or PACKAGE
+    prefix = f"{SOURCE_ROOT}{package}/"
+    return package, {p: show(sha, p) or "" for p in paths if p.startswith(prefix) and p.endswith(".py")}
+
+
+def write_graphs(rows: list[dict]) -> None:
+    GRAPHS.mkdir(parents=True, exist_ok=True)
+    sizes = []
+    for r in rows:
+        package, sources = package_sources(r["base_commit"])
+        g = tg.build_graph(sources, package, SOURCE_ROOT,
+                           {"repo": r["repo"], "base_commit": r["base_commit"], "instance_id": r["instance_id"],
+                            "builder": "ast walk, spec 028 (55_build_tasks.py)"})
+        path = GRAPHS / f"{r['instance_id']}.json"
+        path.write_text(json.dumps(g))
+        sizes.append((len(g["nodes"]), len(g["edges"]), path.stat().st_size))
+    n = len(sizes)
+    print(f"{n} graphs -> {GRAPHS.relative_to(REPO_ROOT)}; median nodes {sorted(s[0] for s in sizes)[n // 2]}, "
+          f"edges {sorted(s[1] for s in sizes)[n // 2]}, {sum(s[2] for s in sizes) / 1e6:.0f} MB in all")
+
+
+def write_snapshots(rows: list[dict], limit: int) -> None:
+    out = []
+    for r in rows[:limit]:
+        info = tg.snapshot(REPO_ROOT, r["base_commit"], SNAPSHOTS / f"{r['instance_id']}.tgz",
+                           work_dir=SNAPSHOTS / "_work")
+        out.append({"instance_id": r["instance_id"], **info})
+        print(f"  snapshot {r['instance_id']}: {info['commit_count']} commits, {info['size_bytes'] / 1e6:.0f} MB, "
+              f"head {'= base' if info['snapshot_head_sha'] == info['base_commit'] else 'differs (signatures dropped)'}")
+    shutil.rmtree(SNAPSHOTS / "_work", ignore_errors=True)
+    new = pd.DataFrame(out)
+    if SNAPSHOT_INDEX.exists():   # keyed by instance_id: re-runs replace their own rows
+        old = pd.read_csv(SNAPSHOT_INDEX)
+        new = pd.concat([old[~old["instance_id"].isin(new["instance_id"])], new])
+    new.sort_values("instance_id").to_csv(SNAPSHOT_INDEX, index=False)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--sample", type=int, default=3, help="rows in the committed tasks_sample.jsonl (smallest first)")
+    ap.add_argument("--graphs", action="store_true", help="write one code graph per task (US4)")
+    ap.add_argument("--snapshots", type=int, default=0, help="write snapshots for the first N tasks (US4)")
     a = ap.parse_args()
     check_settings()
     telemetry.setup()
@@ -175,6 +226,11 @@ def main() -> int:
           f"{EXCLUDED.relative_to(REPO_ROOT)}; {len(rows) - len(clean)} rows name the organisation in a patch "
           f"(redact before publishing); sample {len(sample)} -> {SAMPLE.relative_to(REPO_ROOT)}")
     print("gates NOT run (T007): needs `swegemma eval --skip-agent-patch`; rows are candidates, not verified tasks")
+    if a.graphs:
+        write_graphs(rows)
+    if a.snapshots:
+        write_snapshots(rows, a.snapshots)
+    print("embeddings and wheels NOT built (T010): EmbeddingGemma is a gated model this session can't download")
     telemetry.end_script()
     return 0
 
