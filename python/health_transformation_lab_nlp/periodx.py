@@ -11,6 +11,7 @@ nothing more.
 
     chart_status(chart, age, ...)   the Diagnoser: Fig. 2 as drawn, top to bottom
     chart_from_summary(...)         the repo's summary chart (worst-site values) as the figure's inputs
+    note_status(note, negation=False)   the Extractor: keyword reading of a note, two steps, as the paper describes
 
 Every threshold is a named constant citing "Patel et al. 2022, Fig. 2" (FR-002). Where the figure's arrows leave
 a step open, the step is a named parameter whose default is the reading spec 024 records. A missing input uses
@@ -22,8 +23,12 @@ r/R/14_spec024.R is the base-R twin; r/tests/test_parity.R checks it.
 
 from __future__ import annotations
 
+import difflib
+import functools
 import math
+import re
 from dataclasses import dataclass, field
+from typing import NamedTuple
 
 from .telemetry import traced
 
@@ -89,12 +94,14 @@ GINGIVAL_INFLAMMATION = "gingival_inflammation_past_periodontitis"
 LOCALIZED_GINGIVITIS = "localized_gingivitis"
 GENERALIZED_GINGIVITIS = "generalized_gingivitis"
 PERIODONTITIS = "periodontitis"
+GINGIVITIS = "gingivitis"            # the Extractor, when the note gives no extent
+NO_DIAGNOSIS = "no_diagnosis"        # the Extractor, when the note names no periodontal diagnosis
 NOT_ASSESSABLE = "not_assessable"
 UNKNOWN = "unknown"
 # The figure's boxes in the six labels the benchmark scores. A reduced periodontium that is healthy, or inflamed,
 # is periodontal health or gingivitis on a reduced periodontium in the 2017 classification (Chapple et al. 2018).
 STATUS_TO_LABEL = {HEALTH: "healthy", REDUCED_HEALTHY: "healthy", GINGIVAL_INFLAMMATION: "gingivitis",
-                   LOCALIZED_GINGIVITIS: "gingivitis", GENERALIZED_GINGIVITIS: "gingivitis"}
+                   LOCALIZED_GINGIVITIS: "gingivitis", GENERALIZED_GINGIVITIS: "gingivitis", GINGIVITIS: "gingivitis"}
 
 TEETH_FULL = 28   # the summary chart's dentition: 28 teeth, third molars left out (this repo's assumption)
 
@@ -353,6 +360,191 @@ def chart_from_row(row) -> PerioDxChart | None:
         return None
     return chart_from_summary(pd_, bop, _opt(row.get("rec_max_cal_mm")), _opt(row.get("rec_rbl_pct")),
                               int(_opt(row.get("rec_teeth_lost_perio")) or 0), _opt(row.get("rec_pct_teeth_involved")))
+
+
+# ================================================================ the PerioDx Extractor (notes)
+# Patel et al. 2022, Methods: a two-step keyword program. (1) Normalize the note (case, special characters, stop
+# words) and keep it only if it mentions a periodontal diagnosis, from a bag of the 2017 classification's extent,
+# stage, grade and severity terms. (2) Read extent, stage and grade with stemming and string similarity against
+# that word list. The paper used gensim word vectors for similarity; here difflib's ratio at SIMILARITY stands in,
+# so no new dependency (spec 024 plan). Negation is off by default, as published: the paper names missed negation
+# ("not the presence of bone loss") and abbreviations ("ging", "st. 2 perio") as its error sources.
+
+
+class Term(NamedTuple):
+    term: str      # normalized words
+    field: str     # disease | extent | severity | stage_cue | grade_cue
+    value: str     # what the term means in that field
+    source: str    # one of TERM_SOURCES
+
+
+TERM_SOURCES = {
+    "2017 classification": "Tonetti, Greenwell & Kornman 2018; Chapple et al. 2018 (health and gingivitis terms)",
+    "1999 classification": "Armitage 1999: severity of chronic periodontitis, read as the paper's severity terms",
+    "Patel et al. 2022": "terms the paper's own error analysis shows the program reading ('bone loss')",
+    "synthetic notes": "abbreviations the repo's synthetic note templates write (clinical_notes.py, dx_patterns.py)",
+}
+# The word list (FR-003): 2017 classification terms and the repo's synthetic abbreviations, never real notes.
+PERIODX_TERMS = (
+    Term("periodontitis", "disease", PERIODONTITIS, "2017 classification"),
+    Term("gingivitis", "disease", GINGIVITIS, "2017 classification"),
+    Term("periodontal health", "disease", HEALTH, "2017 classification"),
+    Term("gingival health", "disease", HEALTH, "2017 classification"),
+    Term("bone loss", "disease", PERIODONTITIS, "Patel et al. 2022"),
+    Term("ging", "disease", GINGIVITIS, "synthetic notes"),
+    Term("perio health", "disease", HEALTH, "synthetic notes"),
+    Term("periodontium wnl", "disease", HEALTH, "synthetic notes"),
+    Term("perio wnl", "disease", HEALTH, "synthetic notes"),
+    Term("generalized", "extent", "generalized", "2017 classification"),
+    Term("localized", "extent", "localized", "2017 classification"),
+    Term("molar incisor", "extent", "molar_incisor", "2017 classification"),
+    Term("gen", "extent", "generalized", "synthetic notes"),
+    Term("loc", "extent", "localized", "synthetic notes"),
+    Term("stage", "stage_cue", "", "2017 classification"),
+    Term("st", "stage_cue", "", "synthetic notes"),
+    Term("perio", "stage_cue", "", "synthetic notes"),
+    Term("grade", "grade_cue", "", "2017 classification"),
+    Term("gr", "grade_cue", "", "synthetic notes"),
+    Term("slight", "severity", "1", "1999 classification"),
+    Term("mild", "severity", "1", "1999 classification"),
+    Term("moderate", "severity", "2", "1999 classification"),
+    Term("severe", "severity", "3", "1999 classification"),
+    Term("advanced", "severity", "3", "1999 classification"),
+)
+STOP_WORDS = frozenset(["a", "an", "the", "of", "on", "in", "at", "to", "for", "with", "and", "or", "is", "was", "are", "be", "by", "as", "from", "this", "that", "pt"])
+NEGATION_CUES = frozenset(["no", "not", "without", "denies", "negative", "absent", "absence", "free"])   # minimal NegEx-style list
+NEGATION_WINDOW = 5            # a cue negates the next 5 words of its clause
+NEGATION_DEFAULT = False       # as published
+SIMILARITY = 0.85              # difflib ratio for a word of 5+ letters to match a term; shorter words match exactly
+SEVERITY_WINDOW = 3            # a severity word counts when "periodontitis" follows within 3 words
+MULTIPLE_RULES = ("most_severe_current", "most_severe")
+MULTIPLE_DEFAULT = "most_severe_current"   # spec 024 edge case: several diagnoses, the most severe current one
+_ROMAN = {"i": 1, "ii": 2, "iii": 3, "iv": 4, "1": 1, "2": 2, "3": 3, "4": 4}
+_GRADE = {"a": "A", "b": "B", "c": "C", "i": "A", "ii": "B", "iii": "C"}
+_NUMERAL = re.compile(r"^(iv|iii|ii|i|[1-4])([abc])?$")
+_DISEASE_RANK = {HEALTH: 0, GINGIVITIS: 1, PERIODONTITIS: 2}
+_EXTENT_RANK = {"localized": 1, "molar_incisor": 2, "generalized": 3}
+_SUFFIXES = ("izing", "ising", "ized", "ised", "ize", "ise", "ation", "ing", "ed", "es", "s")
+_COPIED = re.compile(r"--\s*copied from visit", re.IGNORECASE)
+
+
+@functools.lru_cache(maxsize=65536)
+def _stem(word: str) -> str:
+    for s in _SUFFIXES:
+        if word.endswith(s) and len(word) - len(s) >= 4:
+            return word[: -len(s)]
+    return word
+
+
+@functools.lru_cache(maxsize=262144)
+def _similar(word: str, term: str) -> bool:
+    if word == term:
+        return True
+    if min(len(word), len(term)) < 5:
+        return False
+    ratio = max(difflib.SequenceMatcher(None, word, term).ratio(),
+                difflib.SequenceMatcher(None, _stem(word), _stem(term)).ratio())
+    return ratio >= SIMILARITY
+
+
+@traced
+def stem(word: str) -> str:
+    """A small suffix stripper: 'generalized', 'generalised' -> 'general'."""
+    return _stem(word)
+
+
+@traced
+def similar(word: str, term: str) -> bool:
+    """Does a word match a term? Exact for short words; otherwise difflib ratio >= SIMILARITY, raw or stemmed.
+    (The per-word helpers note_status uses are cached and untraced: they run millions of times per build.)"""
+    return _similar(word, term)
+
+
+def _clauses(text: str) -> list[list[str]]:
+    """Step 1, normalize: lowercase, abbreviation dots kept with their word, split into clauses, special
+    characters to spaces. Each clause is a list of words."""
+    t = re.sub(r"\b(st|gr|gen|loc|dx)\.", r"\1 ", text.lower())
+    out = []
+    for clause in re.split(r"[;,\n]|\.(?=\s|$)", t):
+        words = re.sub(r"[^a-z0-9]+", " ", clause).split()
+        if words:
+            out.append(words)
+    return out
+
+
+def _negated(words: list[str], on: bool) -> list[bool]:
+    neg, left = [], 0
+    for w in words:
+        if on and w in NEGATION_CUES:
+            neg.append(True)
+            left = NEGATION_WINDOW
+            continue
+        neg.append(left > 0)
+        left = max(left - 1, 0)
+    return neg
+
+
+def _match(words: list[str], field_: str) -> list[tuple[int, Term]]:
+    """Terms of one field found in a clause (stop words dropped first): (position of the first word, term)."""
+    kept = [(i, w) for i, w in enumerate(words) if w not in STOP_WORDS]
+    hits = []
+    for j, (i, w) in enumerate(kept):
+        for t in PERIODX_TERMS:
+            if t.field != field_:
+                continue
+            parts = t.term.split()
+            if len(parts) == 1 and _similar(w, parts[0]) or len(parts) == 2 and j + 1 < len(kept) and _similar(w, parts[0]) and _similar(kept[j + 1][1], parts[1]):
+                hits.append((i, t))
+    return hits
+
+
+@traced
+def note_status(note: str, negation: bool = NEGATION_DEFAULT, multiple: str = MULTIPLE_DEFAULT) -> PerioDxFinding:
+    """The PerioDx Extractor: the most specific periodontal status the note's words support, or 'no_diagnosis'.
+
+    A stage, grade or severity term implies periodontitis; several diagnoses give the most severe (status, then
+    stage, grade and extent each at their worst); multiple='most_severe_current' leaves out copied-forward text."""
+    if multiple not in MULTIPLE_RULES:
+        raise ValueError(f"multiple must be one of {MULTIPLE_RULES}")
+    text = _COPIED.split(note or "")[0] if multiple == "most_severe_current" else (note or "")
+    disease, stages, grades, extents = [], [], [], []
+    for words in _clauses(text):
+        neg = _negated(words, negation)
+        ok = [not n for n in neg]
+        for i, t in _match(words, "disease"):
+            if ok[i]:
+                disease.append(t.value)
+        for i, t in _match(words, "extent"):
+            if ok[i]:
+                extents.append(t.value)
+        for i, t in _match(words, "severity"):
+            if ok[i] and any(_similar(w, "periodontitis") for w in words[i + 1: i + 1 + SEVERITY_WINDOW]):
+                stages.append(int(t.value))
+        for i, t in _match(words, "stage_cue") + _match(words, "grade_cue"):
+            if not ok[i]:
+                continue
+            nxt = next((w for w in words[i + 1:] if w not in ("st", "stage")), None) if t.field == "stage_cue" \
+                else (words[i + 1] if i + 1 < len(words) else None)
+            m = _NUMERAL.match(nxt or "")
+            if t.field == "stage_cue" and m:
+                stages.append(_ROMAN[m.group(1)])
+                if m.group(2):
+                    grades.append(_GRADE[m.group(2)])
+            elif t.field == "grade_cue" and nxt in _GRADE:
+                grades.append(_GRADE[nxt])
+    if stages or grades:
+        disease.append(PERIODONTITIS)
+    if not disease:
+        return PerioDxFinding(NO_DIAGNOSIS, section="M2")
+    status = max(disease, key=_DISEASE_RANK.__getitem__)
+    extent = max(extents, key=_EXTENT_RANK.__getitem__) if extents else NOT_ASSESSABLE
+    if status == HEALTH:
+        return PerioDxFinding(HEALTH, section="M2")
+    if status == GINGIVITIS:
+        box = {"localized": LOCALIZED_GINGIVITIS, "generalized": GENERALIZED_GINGIVITIS}.get(extent, GINGIVITIS)
+        return PerioDxFinding(box, extent=extent if box != GINGIVITIS else "NA", section="M2")
+    return PerioDxFinding(PERIODONTITIS, max(stages) if stages else None, extent,
+                          max(grades) if grades else NOT_ASSESSABLE, "M2")
 
 
 # ---------------------------------------------------------------- parity inputs for the R twin
