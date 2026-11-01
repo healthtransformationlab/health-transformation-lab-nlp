@@ -7,7 +7,14 @@ import pytest
 import yaml
 
 from health_transformation_lab_nlp import classify_status as cs
-from health_transformation_lab_nlp import labels, phenotype, prevalence, presets, study, tooth_loss_dq
+from health_transformation_lab_nlp import (
+    labels,
+    phenotype,
+    presets,
+    prevalence,
+    study,
+    tooth_loss_dq,
+)
 from health_transformation_lab_nlp import tooth_loss_model as tlm
 from health_transformation_lab_nlp.paths import REPO_ROOT
 
