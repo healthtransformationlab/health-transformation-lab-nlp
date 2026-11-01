@@ -220,14 +220,17 @@ Everything this repo relies on, and what it's used for.
     Expert Determination). [hhs.gov](https://www.hhs.gov/hipaa/for-professionals/special-topics/de-identification/index.html)
     → The PHI categories in the challenge set.
 38. **Stubbs A, Uzuner Ö.** *Annotating longitudinal clinical narratives for de-identification: the 2014
-    i2b2/UTHealth corpus.* J Biomed Inform 2015;58(Suppl):S20–S29. Challenge page:
+    i2b2/UTHealth corpus.* J Biomed Inform 2015;58(Suppl):S20–S29.
+    [doi:10.1016/j.jbi.2015.07.020](https://doi.org/10.1016/j.jbi.2015.07.020). Challenge page:
     [n2c2](https://n2c2.dbmi.hms.harvard.edu/challenge/2014-deidentification-heart-disease)
-    → Annotation categories (patient, doctor, relative, profession, organization ...). The corpus itself
+    → Annotation categories: NAME (patient, doctor, username), PROFESSION, LOCATION (room, department,
+    hospital, organization, street, city, state, country, zip, other), AGE, DATE, CONTACT, ID. The corpus itself
     needs a data use agreement and isn't used here.
 39. **Microsoft.** *De-identification service in Azure Health Data Services* (TAG, REDACT, SURROGATE; 27 PHI
     categories). [learn.microsoft.com](https://learn.microsoft.com/en-us/azure/healthcare-apis/deidentification/overview);
     pricing: [azure.microsoft.com](https://azure.microsoft.com/pricing/details/health-data-services/)
-40. **Microsoft.** *Azure AI Language: PII detection* (healthcare / PHI domain). Pricing:
+40. **Microsoft.** *Azure Language in Foundry Tools* (formerly Azure AI Language): PII detection, PHI domain
+    (`domain=phi`). Pricing:
     [azure.microsoft.com](https://azure.microsoft.com/pricing/details/cognitive-services/text-analytics/)
 41. **Microsoft Presidio** — open-source PII detection (spaCy NER and pattern recognizers).
     [github.com/microsoft/presidio](https://github.com/microsoft/presidio)
@@ -235,10 +238,10 @@ Everything this repo relies on, and what it's used for.
 42. **Weatherhead J.** *ASQ-PHI: an adversarial synthetic benchmark for clinical de-identification and search
     utility.* Mendeley Data, 2025, [doi:10.17632/csz5dzp7nx.1](https://data.mendeley.com/datasets/csz5dzp7nx/1)
     (MIT). 1,051 fully synthetic clinical search queries, 2,973 tagged PHI elements, 219 hard negatives.
-43. **Posada JD, Datta S, Love D, Desai P.** *SHIELD: a diverse clinical note dataset and distilled small
+43. **Posada JD, Love D, Datta S, Desai P.** *SHIELD: a diverse clinical note dataset and distilled small
     language models for enterprise-scale de-identification.* [arXiv:2605.03301](https://arxiv.org/abs/2605.03301);
-    access: [github.com/susom/shield_dataset](https://github.com/susom/shield_dataset). Real notes with surrogate
-    PHI, 10,229 adjudicated spans.
+    access: [github.com/susom/shield_dataset](https://github.com/susom/shield_dataset) (data on Stanford Medicine
+    Redivis). 1,381 notes with identifiers replaced, 10,229 adjudicated PHI spans in 9 categories.
 44. **presidio-evaluator** (presidio-research, MIT) — fake-PII sentence generator from templates, and
     evaluation of PII detectors. [pypi.org/project/presidio-evaluator](https://pypi.org/project/presidio-evaluator/)
 45. **John Snow Labs.** *Clinical de-identification at scale: pipeline design and speed–accuracy trade-offs
@@ -247,7 +250,7 @@ Everything this repo relies on, and what it's used for.
 
 46. **Chambon PJ, Wu C, Steinkamp JM, Adleberg J, Cook TS, Langlotz CP.** *Automated deidentification of
     radiology reports combining transformer and "hide in plain sight" rule-based methods.* J Am Med Inform
-    Assoc, [doi:10.1093/jamia/ocac219](https://doi.org/10.1093/jamia/ocac219). Model:
+    Assoc 2023;30(2):318–328, [doi:10.1093/jamia/ocac219](https://doi.org/10.1093/jamia/ocac219). Model:
     [StanfordAIMI/stanford-deidentifier-base](https://huggingface.co/StanfordAIMI/stanford-deidentifier-base) (MIT).
 47. **Robust DeID** (OBI) — package [robust-deid](https://pypi.org/project/robust-deid/); model [obi/deid_roberta_i2b2](https://huggingface.co/obi/deid_roberta_i2b2)
     (RoBERTa trained on i2b2 2014; MIT).
