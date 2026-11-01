@@ -12,7 +12,11 @@
 # MAGIC - **data-quality checks** (`tooth_loss_dq`, spec 029 FR-009 after Kookal et al. 2024): one row per check
 # MAGIC   (`tooth_loss_dq_check`) and one per group of patients and measure (`tooth_loss_dq_group`: is the perio chart
 # MAGIC   kept as well at every office, by every provider, for every sex, race, exam year and age band?). They run on
-# MAGIC   the bronze extract, report what they find and fix nothing; each run replaces its own rows (delete by run_id).
+# MAGIC   the bronze extract, report what they find and fix nothing; each run replaces its own rows (delete by run_id);
+# MAGIC - **gold** (`gold_opendental_perio.fact_tooth_loss_prediction`, spec 029 US3): P(the tooth was lost to
+# MAGIC   periodontitis) for every missing or labelled tooth, from logistic regression and XGBoost on both label sets
+# MAGIC   (`tooth_loss_model.run`, no bootstrap here; the scored results come from `scripts/51_tooth_loss_model.py`).
+# MAGIC   Each run replaces its own rows (delete by run_id), every row carrying `run_id`, `run_ts`, `git_commit_sha`.
 # MAGIC
 # MAGIC Every table is overwritten per run (idempotent) and keeps Open Dental's columns only. Each run appends one
 # MAGIC row per table written to `silver_opendental_perio.load_log`, with `run_id`, `run_ts` and `git_commit_sha`.
@@ -20,7 +24,7 @@
 
 # COMMAND ----------
 
-# MAGIC %pip install -q -e ../../python
+# MAGIC %pip install -q -e "../../python[ml]"
 
 # COMMAND ----------
 
@@ -32,7 +36,14 @@ import time
 from pathlib import Path
 
 import pandas as pd
-from health_transformation_lab_nlp import open_dental, tooth_loss, tooth_loss_dq
+
+from health_transformation_lab_nlp import (
+    gold_names,
+    open_dental,
+    tooth_loss,
+    tooth_loss_dq,
+    tooth_loss_model,
+)
 from health_transformation_lab_nlp import tracking as _tracking
 
 dbutils.widgets.text("git_commit", "")  # noqa: F821  set by the job: the commit it was deployed from
@@ -41,6 +52,7 @@ dbutils.widgets.text("run_id", "")  # noqa: F821  the job run ({{job.run_id}}): 
 dbutils.widgets.text("od_catalog", "health_transformation_lab")  # noqa: F821
 dbutils.widgets.text("bronze_schema", "bronze_opendental_perio")  # noqa: F821
 dbutils.widgets.text("silver_schema", "silver_opendental_perio")  # noqa: F821
+dbutils.widgets.text("gold_schema", "gold_opendental_perio")  # noqa: F821
 dbutils.widgets.text("landing_dir", "/Volumes/health_transformation_lab/landing_opendental_perio/data")  # noqa: F821
 dbutils.widgets.text("seed", "42")  # noqa: F821
 dbutils.widgets.text("n_patients", "2000")  # noqa: F821
@@ -48,10 +60,12 @@ dbutils.widgets.text("n_patients", "2000")  # noqa: F821
 w = dbutils.widgets.get  # noqa: F821
 git_commit = w("git_commit") or "unknown"
 run_id = w("run_id") or f"manual-{time.strftime('%Y%m%dT%H%M%S')}"
-catalog, bronze, silver, landing = w("od_catalog"), w("bronze_schema"), w("silver_schema"), w("landing_dir")
+catalog, bronze, silver, gold = w("od_catalog"), w("bronze_schema"), w("silver_schema"), w("gold_schema")
+landing = w("landing_dir")
 seed, params = int(w("seed")), open_dental.Params(n_patients=int(w("n_patients")))
 # a bad setting fails before any work (AGENTS.md "Configuration and secrets")
-for name, value in (("od_catalog", catalog), ("bronze_schema", bronze), ("silver_schema", silver)):
+for name, value in (("od_catalog", catalog), ("bronze_schema", bronze), ("silver_schema", silver),
+                    ("gold_schema", gold)):
     if not value or not value.replace("_", "").isalnum():
         raise ValueError(f"{name} is not a plain name: {value!r}")
 if not landing.startswith("/Volumes/"):
@@ -111,3 +125,16 @@ for name, df in (("tooth_loss_dq_check", checks), ("tooth_loss_dq_group", groups
     if spark.catalog.tableExists(full):  # noqa: F821
         spark.sql(f"DELETE FROM {full} WHERE run_id = '{run_id}'")  # noqa: F821
     save(df, silver, name, mode="append")
+
+# COMMAND ----------
+
+# Gold (spec 029 US3, #371): the tooth-loss model's answers, synthetic only. Fitted here without the bootstrap; the
+# scores, calibration and stage recount come from scripts/51_tooth_loss_model.py. Delete this run's rows, then append
+# (idempotent on retry; earlier runs are kept).
+model = tooth_loss_model.run(clean_read, truth, tooth_loss_model.ModelParams(n_boot=0), generator_seed=seed)
+pred = gold_names.to_gold(model["predictions"].assign(run_id=run_id, run_ts=run_ts, git_commit=git_commit),
+                          "fact_tooth_loss_prediction")
+full = f"{catalog}.{gold}.fact_tooth_loss_prediction"
+if spark.catalog.tableExists(full):  # noqa: F821
+    spark.sql(f"DELETE FROM {full} WHERE run_id = '{run_id}'")  # noqa: F821
+save(pred, gold, "fact_tooth_loss_prediction", mode="append")
