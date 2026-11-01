@@ -1,3 +1,4 @@
+import datetime as dt
 import json
 
 import pandas as pd
@@ -8,7 +9,7 @@ from health_transformation_lab_nlp.labelstudio import parse_export
 from health_transformation_lab_nlp.note_reader import read_note, read_stated_dx
 from health_transformation_lab_nlp.reliability import consensus, fleiss_kappa, weighted_kappa
 from health_transformation_lab_nlp.sources import read_proc_codes, read_proc_dx
-from health_transformation_lab_nlp.study import generate_visits
+from health_transformation_lab_nlp.study import build_study, generate_visits, visit_exclusions, visits_in_study
 
 
 def test_deid_removes_every_injected_phi_value():
@@ -79,3 +80,40 @@ def test_parse_label_studio_export():
     labels, spans = parse_export(export)
     assert labels.iloc[0]["status"] == "periodontitis_stage_2" and labels.iloc[0]["confidence"] == 4
     assert spans.iloc[0]["label"] == "BOP"
+
+
+# ---------- which visits count (spec 032 US2, #441)
+
+def _visits():
+    return pd.DataFrame({"visit_id": [1, 2, 3, 4], "person_id": [1, 1, 2, 3], "age": [17, 18, 40, 70],
+                         "visit_date": [dt.date(2020, 6, 1), dt.date(2021, 2, 1), dt.date(2020, 12, 31),
+                                        dt.date(2021, 1, 1)]})
+
+
+def test_by_default_every_visit_counts():
+    v = _visits()
+    assert visits_in_study(v).equals(v)
+    assert visit_exclusions(v) == {"under_min_age_count": 0, "before_start_date_count": 0, "eligible_count": 4}
+
+
+def test_a_minimum_age_and_a_start_date_leave_visits_out_counted_once_by_first_reason():
+    v = _visits()
+    kept = visits_in_study(v, min_age=18, start_date="2021-01-01")
+    assert list(kept["visit_id"]) == [2, 4]
+    # visit 1 is both under 18 and before the start date: counted under age, the first reason
+    assert visit_exclusions(v, min_age=18, start_date="2021-01-01") == {
+        "under_min_age_count": 1, "before_start_date_count": 1, "eligible_count": 2}
+    assert list(visits_in_study(v, min_age=18)["visit_id"]) == [2, 3, 4]
+    assert list(visits_in_study(v, start_date="2021-01-01")["visit_id"]) == [2, 4]
+
+
+def test_the_study_build_reports_visits_left_out_only_when_a_filter_is_set(tmp_path):
+    plain = build_study(tmp_path / "a", tmp_path / "ra", n_people=40, review_n=10, seed=5)
+    assert "visits_left_out" not in plain                  # the default summary is unchanged
+    s = build_study(tmp_path / "b", tmp_path / "rb", n_people=40, review_n=10, seed=5, min_age=40,
+                    start_date="2021-07-01")
+    out = s["visits_left_out"]
+    assert out["under_min_age_count"] > 0 and out["before_start_date_count"] > 0
+    assert out["eligible_count"] == s["visits"]
+    structured = pd.read_csv(tmp_path / "b" / "visits_structured.csv")
+    assert (structured["age"] >= 40).all() and (structured["visit_date"] >= "2021-07-01").all()
