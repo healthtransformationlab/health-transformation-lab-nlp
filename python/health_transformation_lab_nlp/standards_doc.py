@@ -117,8 +117,8 @@ def markdown() -> str:
         ("| **Patel et al. 2022** | Published ([PMC9788909](https://pmc.ncbi.nlm.nih.gov/articles/PMC9788909); "
         "[references](references.md) item 4) | the clinician's recorded diagnosis → notes → gum chart; each only fills "
         "gaps | No: only the chart and note methods were checked, not the order |"),
-        ("| **The study design's** (`algorithm_design`) | After Patel et al. 2022, adding diagnosis codes "
-        "([action item A2](action_items.md)) | exam form → diagnosis codes (done, then planned) → note → gum "
+        ("| **The study design's** (`algorithm_design`) | This repo's own (spec 005): Patel et al. 2022 has no "
+        "exam-form step ([action item A2](action_items.md)) | exam form → diagnosis codes (done, then planned) → note → gum "
         "measurements | Not yet |"),
         ("| **This repo's** (`algorithm_v0`) | Its own placeholder | gum measurements → note → diagnosis codes → exam "
         "form → procedure codes; the X-ray reading can only raise the stage | Not yet |"),
@@ -147,8 +147,8 @@ def markdown() -> str:
         "",
         "From [action_items.md](action_items.md), for the study lead:",
         "",
-        ("- **A2:** keep the diagnosis-codes step (Patel et al. 2022 has none), and whether codes on planned "
-        "treatment count with done treatment."),
+        ("- **A2:** keep the exam-form and procedure diagnosis-codes steps (Patel et al. 2022 has neither), and "
+        "whether codes on planned treatment count with done treatment."),
         "- **A3:** which order to use on real records, chosen with real reviewers, not simulated ones.",
         "- **A5, A6:** whether procedure codes stay out, and whether the X-ray reading comes in.",
         "- **B6, F5:** report prevalence under CDC/AAP next to 2017, so it can be compared with NHANES.",
