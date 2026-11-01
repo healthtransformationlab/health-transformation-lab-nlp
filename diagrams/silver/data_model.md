@@ -52,6 +52,7 @@ erDiagram
     periomeasure }o..o| patient_tooth : "measures before the loss"
     patient_tooth ||..o| tooth_loss_truth : "scored against (evaluation only)"
     proctp }o..o{ tooth_loss_dq_check : "copies checked against the original"
+    perioexam }o..o{ tooth_loss_dq_group : "charts counted by group"
     patient
     clinic
     procedurelog
@@ -85,6 +86,7 @@ erDiagram
     radiograph_bone_level
     planned_extraction
     tooth_loss_dq_check
+    tooth_loss_dq_group
     tooth_loss_truth
 ```
 
@@ -576,14 +578,33 @@ One per data-quality check and run (Kookal et al. 2024, plus plan-copy checks). 
 
 | Key | Column | Type | Description |
 |---|---|---|---|
-| PK | `check_name` | string | e.g. proctp_code_differs, dx_item_from_retired_list |
+| PK | `check_name` | string | e.g. plan_copy_differs, older_item_after_switch |
 | PK | `run_id` | string | Databricks job run id |
 |  | `domain_code` | string | completeness · accuracy · consistency · plan_copy · list_in_use |
 |  | `check_num` | bigint | check number after Kookal et al. 2024; null for checks added here |
-|  | `table_name` | string | the Open Dental table checked |
-|  | `found_count` | bigint | rows found |
-|  | `found_ratio` | double | share of rows, 0–1 |
-|  | `is_flagged` | boolean | beyond its threshold |
+|  | `table_name` | string | the Open Dental tables checked |
+|  | `checked_count` | bigint | rows, cells or offices checked |
+|  | `found_count` | bigint | found by the check |
+|  | `found_ratio` | double | found / checked, 0–1 |
+|  | `is_flagged` | boolean | anything found; null for the missing-value share, which is reported |
+|  | `run_ts` | timestamp | when the check ran |
+|  | `git_commit_sha` | string | commit the job was deployed from |
+
+### `tooth_loss_dq_group`
+
+One per group, measure and run: is the perio chart kept as well for every group of patients?. tooth_loss_dq.group_consistency; delete-then-append by run_id.
+
+| Key | Column | Type | Description |
+|---|---|---|---|
+| PK | `group_type_code` | string | office · provider · sex · race · exam_year · age_band |
+| PK | `group_name` | string | the group, e.g. office 2, female, 45–64 |
+| PK | `metric_name` | string | no_margin_chart · incomplete_chart |
+| PK | `run_id` | string | Databricks job run id |
+|  | `chart_count` | bigint | perio charts in the group |
+|  | `value_ratio` | double | share of the group's charts, 0–1 |
+|  | `rest_mean_ratio` | double | mean of the other groups of its type |
+|  | `rest_sd_ratio` | double | SD of the other groups |
+|  | `is_flagged` | boolean | beyond 2 SD of the rest and 5+ points apart; 30+ charts |
 |  | `run_ts` | timestamp | when the check ran |
 |  | `git_commit_sha` | string | commit the job was deployed from |
 

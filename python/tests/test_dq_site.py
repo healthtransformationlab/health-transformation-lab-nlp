@@ -128,3 +128,16 @@ def test_the_extract_checks_and_groups_are_the_modules_own(d):
     assert len(s["chart_by_group"]) == len(groups)
     assert {r["group_type"] for r in s["chart_by_group"]} == set(groups["group_type_code"])
     assert all(0 <= r["pct"] <= 100 for r in s["chart_by_group"])
+
+
+def test_every_clinic_and_office_has_a_name(d):
+    # people read names, not numbers; the study's clinics are synthetic, so the names are invented and say so
+    s = d["sections"]
+    names = {c["clinic"]: c["name"] for c in s["clinics"]}
+    assert set(names) == {r["clinic"] for r in s["prevalence_clinic"]}
+    assert len(set(names.values())) == len(names) and all(n.strip() for n in names.values())
+    assert all(r["name"] == names[r["clinic"]] for r in s["prevalence_clinic"])
+    offices = [r for r in s["chart_by_group"] if r["group_type"] == "office"]
+    assert offices and all(r["label"].startswith("Synthetic Dental Clinic") for r in offices)
+    providers = [r for r in s["chart_by_group"] if r["group_type"] == "provider"]
+    assert all(r["label"] != r["group"] for r in providers)
