@@ -16,6 +16,7 @@ erDiagram
     fact_visit_evidence ||--o{ fact_case_profile_item : "visit_id"
     fact_visit_evidence ||--o{ fact_record_mismatch : "visit_id"
     fact_record_mismatch }o..o{ dq_mismatch_rule : "rule_name (scores are per rule and clinic: join on clinic_code too)"
+    dim_study_note }o..o{ benchmark_metric : "run_id (its test split)"
     review_key
     dim_result_file
     fact_prediction
@@ -42,3 +43,5 @@ erDiagram
     dim_grader_question
     fact_grader_answer
     fact_tooth_loss_prediction
+    dim_study_note
+    benchmark_metric

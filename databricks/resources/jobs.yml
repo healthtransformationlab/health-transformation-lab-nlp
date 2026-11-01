@@ -23,6 +23,7 @@ resources:
               run_encoder: ${var.run_encoder}
               leak_assessment: "false"
               experiment_id: ${resources.experiments.dental_experiment.id}
+              run_id: "{{job.run_id}}"   # batch key for benchmark_metric: the same for every retry of this run
 
     load_lakebase:
       name: Load Lakebase
@@ -142,6 +143,7 @@ resources:
               schema: ${resources.schemas.perio_bench_gold.name}
               landing_schema: ${resources.volumes.perio_bench_data.schema_name}
               telemetry: ${var.telemetry_exporter}
+              run_id: "{{job.run_id}}"   # batch key for its fact_prediction rows: the same for every retry
 
     # De-identification methods that need Databricks services (spec 007 T012b, T016): the LLM via a
     # serving endpoint and ai_mask via the SQL warehouse. Serverless CPU; results to the landing volume.

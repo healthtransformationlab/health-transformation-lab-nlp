@@ -4,12 +4,12 @@ Implementation starts after this spec, plan and tasks are reviewed.
 
 ## US1 #198: the synthetic visits carry seeded medical-record features
 
-- [ ] T001 [US1] Research: check each candidate source in plan.md against its paper; fill `CONDITIONS` with
+- [x] T001 [US1] Research: check each candidate source in plan.md against its paper; fill `CONDITIONS` with
   cited numbers only
-- [ ] T002 [US1] Failing tests: `test_medical_record.py` (seed, byte-identical rebuild, sources, diabetes =
+- [x] T002 [US1] Failing tests: `test_medical_record.py` (seed, byte-identical rebuild, sources, diabetes =
   HbA1c, odds ratios within tolerance, ranges, column names)
-- [ ] T003 [US1] `medical_record.py`: `CONDITIONS`, `draw_medical_record`, own random stream; `@traced`
-- [ ] T004 [US1] `study.py` writes `medical_record.csv` (a new file; existing files unchanged); the data card says synthetic
+- [x] T003 [US1] `medical_record.py`: `CONDITIONS`, `draw_medical_record`, own random stream; `@traced`
+- [x] T004 [US1] `study.py` writes `medical_record.csv` (a new file; existing files unchanged); the data card says synthetic
 
 ## US2 #199: dental-only, dental+medical and medical-only
 

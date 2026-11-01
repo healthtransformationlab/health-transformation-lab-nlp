@@ -18,7 +18,7 @@ class Column:
 
 @dataclass(frozen=True)
 class Table:
-    area: str                # results · judge · deid · corpus · file
+    area: str                # results · judge · deid · corpus · dq · lab · study · file
     description: str         # the grain: one row per ...
     writer: str              # the job and how it writes
     columns: list = field(default_factory=list)
@@ -386,6 +386,38 @@ TABLES = {
             C("run_ts", "timestamp", "when the job ran"),
             C("git_commit_sha", "string", "commit the job was deployed from"),
         ]),
+    # spec 031: the Benchmark job (study_benchmark, 01_run_benchmark.py); synthetic study notes and their scores
+    "dim_study_note": Table(
+        "study", "One per synthetic study note, with its generator label and split", "Benchmark: overwrite", [
+            C("note_id", "bigint", "OMOP note_id (= visit_occurrence_id)", "PK"),
+            C("person_id", "bigint", "OMOP person_id; the split is by person"),
+            C("note_text", "string", "the synthetic SOAP note"),
+            C("truth_status_code", "string", "the generator's label, one of six"),
+            C("max_probing_depth_mm", "double", "deepest probing depth on the chart"),
+            C("bop_pct", "double", "sites bleeding on probing"),
+            C("max_cal_mm", "double", "greatest clinical attachment loss"),
+            C("rbl_pct", "double", "radiographic bone loss"),
+            C("perio_lost_tooth_count", "bigint", "teeth lost to periodontitis"),
+            C("split_code", "string", "train · test"),
+            C("run_id", "string", "Databricks job run that built it"),
+            C("run_ts", "timestamp", "when that run wrote it"),
+            C("git_commit_sha", "string", "commit the job was deployed from"),
+        ]),
+    "benchmark_metric": Table(
+        "study", "One per job run, model fit, metric and class (class empty for overall metrics)",
+        "Benchmark: replace by run_id (delete-then-append)", [
+            C("model_run_id", "string", "one model fit (eval/score.py run_id)", "PK"),
+            C("method_name", "string", "method (rung), e.g. tfidf_logreg"),
+            C("language_code", "string", "python · r"),
+            C("metric_code", "string", "macro_f1 · f1 · sensitivity · specificity · ppv · npv · auroc", "PK"),
+            C("class_status_code", "string", "the status an f1 row is for; empty for the others", "PK"),
+            C("metric_ratio", "double", "the metric's value, 0 to 1; null when undefined"),
+            C("test_note_count", "bigint", "notes in the test split"),
+            C("scored_ts", "timestamp", "when the fit was scored"),
+            C("run_id", "string", "Databricks job run: the batch key", "PK"),
+            C("run_ts", "timestamp", "when that run wrote it"),
+            C("git_commit_sha", "string", "commit the job was deployed from"),
+        ]),
 }
 
 R = Relationship
@@ -414,6 +446,8 @@ RELATIONSHIPS = [
     R("fact_visit_evidence", "fact_record_mismatch", ("visit_id",), ("visit_id",), "visit_id"),
     R("fact_record_mismatch", "dq_mismatch_rule", ("rule_name",), ("rule_name",),
       "rule_name (scores are per rule and clinic: join on clinic_code too)", "}o..o{", derived=True),
+    R("dim_study_note", "benchmark_metric", ("run_id",), ("run_id",), "run_id (its test split)",
+      "}o..o{", derived=True),
 ]
 
 AREAS = {   # fill, legend label
@@ -424,5 +458,6 @@ AREAS = {   # fill, legend label
     "dq": ("#E1EEF6", "gold · EHR DQ grader (spec 019)"),
     "lab": ("#F6E7DE", "gold · lab grader, simulated sample (spec 019)"),
     "tooth": ("#E8F0DC", "gold_opendental_perio · tooth-loss model, synthetic (spec 029)"),
+    "study": ("#EDEDF7", "gold · Benchmark job, synthetic study notes (spec 031)"),
     "file": ("#E4E7EA", "file in git, not a table"),
 }
