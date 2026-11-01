@@ -12,7 +12,7 @@ from health_transformation_lab_nlp.paths import REPO_ROOT
 from health_transformation_lab_nlp.prevalence import prevalence_by_group
 
 sys.path.insert(0, str(REPO_ROOT / "eval"))
-from score import score  # noqa: E402
+from score import score
 
 H, G, S1, S2, S3, S4 = LABELS
 
