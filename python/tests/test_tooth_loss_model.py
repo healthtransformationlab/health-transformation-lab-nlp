@@ -372,3 +372,43 @@ def test_the_predictions_reach_gold_under_the_declared_names(small_run):
     rows = small_run["predictions"].assign(run_id="1", run_ts=pd.Timestamp("2026-11-01"), git_commit="abc")
     out = gold_names.to_gold(rows, "fact_tooth_loss_prediction")
     assert list(out.columns) == [c.name for c in gm.TABLES["fact_tooth_loss_prediction"].columns]
+
+
+# ---------- the stage recount counts every lost tooth, whatever the model's filters (#468 review)
+
+def test_teeth_lost_before_the_start_date_still_count_toward_stage_iv():
+    # the start date and the minimum age choose the teeth that train and score the model, not the teeth a patient
+    # has lost: five periodontal losses in 2015 make stage IV with a 2018 start date; third molars stay out
+    t = _teeth([(1, n, "extracted_perio", 40) for n in (3, 4, 5, 12, 13)] + [(1, 1, "extracted_perio", 40)]
+               + [(1, n, "present", 40) for n in (6, 7, 8)])
+    t["loss_date"] = pd.to_datetime(["2015-06-01"] * 6 + [None] * 3)
+    t["first_exam_date"] = pd.to_datetime(["2014-01-01"] * 9)
+    params = tm.ModelParams(start_date="2018-01-01", min_age=50)
+    assert tm.eligible(t, params).empty                          # none of them trains or scores the model
+    counted = tm.stage_teeth(t, params)
+    assert sorted(counted.loc[counted["tooth_status_code"] == "extracted_perio", "tooth_num"]) == [3, 4, 5, 12, 13]
+    truth = counted[["patient_id", "tooth_num"]].assign(true_reason_code="perio")
+    ps = tm.patient_stage(counted, pd.Series(0.0, index=counted.index), truth, pd.Series({1: 6.0}), chart=t)
+    row = ps.iloc[0]
+    assert row["recorded_perio_count"] == 5 and row["is_stage3_4"]
+    for rule in ("recorded_only", "truth", "every_missing"):
+        assert row[f"is_stage4_{rule}"], rule
+
+
+def test_a_run_with_a_start_date_counts_every_lost_tooth_in_the_stage_recount():
+    pytest.importorskip("xgboost")
+    tables, truth, reads = od.build_with_readings(od.Params(n_patients=300), seed=5)
+    x = {**od.clean(tables), "radiograph_bone_level": reads}
+    params = tm.ModelParams(n_boot=0, cv_folds=None, start_date="2018-01-01")
+    out = tm.run(x, truth, params, generator_seed=5)
+    teeth = tl.tooth_table(x)
+    teeth = teeth[~teeth["tooth_num"].isin(tm.THIRD_MOLARS)]
+    want = teeth[teeth["tooth_status_code"] == "extracted_perio"].groupby("patient_id").size()
+    ps = out["patient_stage"]
+    one = ps[(ps["label_set"] == "completed") & (ps["model"] == tm.MODELS[0])].set_index("patient_id")
+    got = one["recorded_perio_count"]
+    assert (got.reindex(want.index) == want).all() and got.sum() == want.sum()
+    unlabelled = teeth[teeth["tooth_status_code"].isin(tm.APPLIED_STATUSES)].groupby("patient_id").size()
+    assert (one["unlabelled_tooth_count"].reindex(unlabelled.index) == unlabelled).all()
+    assert len(tm.eligible(tm.with_first_exam_date(teeth, x), params)) < len(teeth)   # the model's set is smaller
+    assert one["unlabelled_prob_sum"].gt(0).any()                # the model gives every unlabelled tooth a probability
