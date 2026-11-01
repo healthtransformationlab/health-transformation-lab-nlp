@@ -575,3 +575,122 @@ can sit 0.03-0.05 from the target; `test_open_dental.py` checks a 6,000-patient 
   choice, not a cited figure. Suzuki et al. give reasons by tooth type only as a figure (in the text: the lower first
   molar is most often extracted for fracture, 34.7%; the upper third molar for caries, 51.1%), with no table to set
   the weights from.
+
+## Shared risk factors: smoking and diabetes on tooth loss for other reasons (US8, #433)
+
+US7 drew the non-periodontal teeth missing at entry from age and tooth type only. The generator needs, for a
+patient who smokes or has diabetes, how much more often teeth are lost for reasons other than periodontitis
+(caries and its sequelae, fracture, failed treatment). Every figure below was checked against the paper (PubMed
+record, and the PMC full text where named) on 2026-11-01; none is invented. References items 68-71 in
+[docs/references.md](../../docs/references.md).
+
+**What the sources say, in one line:** smoking and diabetes raise tooth loss overall, but nearly all of that excess
+is periodontal; for caries-related loss the published effects are small and not statistically significant. The
+generator uses the point estimates, so non-periodontal loss rises a little with smoking and diabetes, as the
+sources say, and no more.
+
+### Smoking: Mai et al. 2013 (Buffalo OsteoPerio Study), the one cause-specific source
+
+Mai X, Wactawski-Wende J, Hovey KM, LaMonte MJ, Chen C, Tezal M, Genco RJ. *Associations between smoking and tooth
+loss according to the reason for tooth loss: the Buffalo OsteoPerio Study.* J Am Dent Assoc 2013;144(3):252-265.
+doi:10.14219/jada.archive.2013.0112, PMID 23449901, PMC3842224.
+
+- **Population:** 1,106 postmenopausal women (Women's Health Initiative, Buffalo, NY), oral examination for missing
+  teeth (third molars aside) and self-reported reason for each loss; smoking by questionnaire.
+- **Outcome groups:** 206 women with no tooth loss (reference), 108 with any loss to periodontal disease, 792 with
+  loss to caries and none to periodontal disease (methods: "those who lost any teeth due to caries (but none due to
+  PD)"), so the caries group is exactly a non-periodontal-loss group.
+- **Table 3, multivariable-adjusted ORs** (age, education, income, BMI, diabetes history, calcium supplement use,
+  dental visit frequency), tooth loss due to caries against no tooth loss:
+
+| Exposure | OR (95% CI), caries loss | OR (95% CI), periodontal loss, for contrast |
+|---|---|---|
+| current smoker (n = 23 in the caries group) | 0.91 (0.38-2.18) | 4.07 (1.27-13.03) |
+| ever smoker | 1.19 (0.86-1.65) | 3.09 (1.78-5.34) |
+| packs a day < 1 | 1.05 (0.72-1.55) | 2.24 (1.15-4.37) |
+| packs a day 1 to < 2 | 1.38 (0.86-2.21) | 3.17 (1.56-6.45) |
+| packs a day 2 or more | 1.41 (0.59-3.39) | 10.39 (3.41-31.68) |
+| pack-years 26 or more | 1.46 (0.87-2.44) | 6.83 (3.40-13.72) |
+
+  P for trend over packs a day, caries: 0.220. The authors: "no significant associations between smoking and tooth
+  loss due to caries".
+- **What the generator takes:** the packs-a-day ORs, since `synthetic.draw_risk` gives cigarettes a day:
+  `Params.entry_other_smoking_ratios = ((1, 1.05), (20, 1.38))`, i.e. 1-19 cigarettes a day (under a pack) 1.05, 20
+  or more (a pack or more; the synthetic maximum is 30, so the 2-pack category doesn't arise) 1.38. Current smokers
+  only; the synthetic patient has no former-smoker history for the rate (the extract's ex-smoker SNOMED code is
+  drawn for display only).
+
+**Other smoking sources, all-cause, for context.**
+- Ojima M, Hanioka T, Tanaka K, Aoyama H. *Cigarette smoking and tooth loss experience among young adults: a
+  national record linkage study.* BMC Public Health 2007;7:313. doi:10.1186/1471-2458-7-313, PMID 17976246,
+  PMC2186324. Japan, 1999 national surveys linked, 1,314 adults aged 20-39: current smoking and 1+ tooth lost,
+  adjusted OR 2.21 (1.40-3.50) in men and 1.70 (1.13-2.55) in women; current smoking and decayed teeth 1.67
+  (1.28-2.20) (abstract). At these ages most tooth loss is not periodontal (Suzuki 2022, Table 2: 6% periodontal at
+  25-34), so this points to a larger smoking effect on non-periodontal loss in young adults than Mai et al. found
+  in older women. It is all-cause and cross-sectional, so it is recorded, not used; a larger ratio is a parameter
+  away.
+- Hanioka T, Ojima M, Tanaka K, Matsuo K, Sato F, Tanaka H. *Causal assessment of smoking and tooth loss: a
+  systematic review of observational studies.* BMC Public Health 2011;11:221. doi:10.1186/1471-2458-11-221, PMID
+  21477320. 8 high-quality studies, 58,755 people: all reported significant, usually moderate, associations with
+  all-cause tooth loss (abstract). No cause-specific figure.
+
+### Diabetes: no cause-specific incidence ratio found; the all-cause adjusted OR is used
+
+- **Cause-specific, within extractions:** Suzuki S, Sugihara N, Kamijo H, Morita M, Kawato T, Tsuneishi M, Kobayashi
+  K, Hasuike Y, Sato T. *Self-reported diabetes mellitus and tooth extraction due to periodontal disease and dental
+  caries in the Japanese population.* Int J Environ Res Public Health 2021;18(17):9024. doi:10.3390/ijerph18179024,
+  PMID 34501613, PMC8430558. The 2018 Japanese survey (the same as Suzuki 2022, US7), patients over 40: 4,625
+  extracted teeth, 3,750 patients, third molars left out. Table 4, OR that an extracted tooth was extracted for
+  caries, diabetes against none: 0.70 (0.58-0.86) unadjusted; 0.85 (0.68-1.06) adjusted for sex, age, location,
+  number of teeth, tooth type and smoking (Model 4). For periodontal disease: 1.42 (1.17-1.72) and 1.23 (1.01-1.50).
+  The authors: "an association with dental caries was not observed". This compares reasons among extracted teeth,
+  not the rate of loss per patient, so it can't be used as a rate ratio; it says the extra extractions in diabetes
+  are mostly periodontal.
+- **All-cause, adjusted:** Ahmadinia AR, Rahebi D, Mohammadi M, Ghelichi-Ghojogh M, Jafari A, Esmaielzadeh F,
+  Rajabi A. *Association between type 2 diabetes (T2D) and tooth loss: a systematic review and meta-analysis.* BMC
+  Endocr Disord 2022;22(1):100. doi:10.1186/s12902-022-01012-8, PMID 35418054, PMC9006550. 22 studies: pooled OR
+  1.87 (1.62-2.13) unadjusted and 1.20 (1.10-1.30) adjusted; cohort studies 1.29 (1.07-1.51), cross-sectional 1.15
+  (1.06-1.23) (abstract).
+- **All-cause, unadjusted:** Weijdijk LPM, Ziukaite L, Van der Weijden GAF, Bakker EWP, Slot DE. *The risk of tooth
+  loss in patients with diabetes: a systematic review and meta-analysis.* Int J Dent Hyg 2022;20(1):145-166.
+  doi:10.1111/idh.12512, PMID 33973353. 10 studies, risk ratio 1.63; higher with poor control (abstract).
+- **What the generator takes, and why:** `Params.entry_other_diabetes_ratio = 1.20`, the adjusted all-cause OR, for
+  HbA1c 6.5% or more (the extract's own rule for listing type 2 diabetes). No source gives the rate of
+  non-periodontal tooth loss per patient by diabetes. The all-cause figure includes periodontal loss, which diabetes
+  raises (Suzuki 2021), so 1.20 is an upper bound for non-periodontal loss; Suzuki 2021's within-extraction OR of
+  0.85 for caries says the true ratio is lower, possibly near 1. The upper bound is used because the point of US8 is
+  that the two kinds of loss can share patients; 1.0 is a parameter away. One ratio for controlled and uncontrolled
+  diabetes: no source gives a cause-specific split by control.
+
+### Dental attendance and socioeconomic status: recorded, not modelled
+
+- Akhter R, Hassan NM, Aida J, Zaman KU, Morita M. *Risk indicators for tooth loss due to caries and periodontal
+  disease in recipients of free dental treatment in an adult population in Bangladesh.* Oral Health Prev Dent
+  2008;6(3):199-207. PMID 19119574. 868 teeth, 582 patients: extraction for caries associated with dental attendance
+  pattern (P = 0.004); for periodontal disease with education (P = 0.018) and smoking (P = 0.032) (abstract). The
+  abstract gives P values, not effect sizes, and the full text wasn't available here.
+- Mai et al. 2013 adjust for dental visit frequency and income but don't report their own ORs.
+- The synthetic patient has no attendance or deprivation attribute (`synthetic.draw_risk` gives cigarettes a day and
+  HbA1c only), so neither enters the rate. Adding one means a new seeded patient attribute and a source with an
+  effect size; it is left for a follow-up.
+
+### How the generator applies them
+
+For a patient with rate ratio `r` (smoking ratio × diabetes ratio), the Poisson mean is `mean_band × r / r̄`, where
+`r̄` is the mean of `r` over `Params.entry_other_norm_draws` (20,000) patients drawn by `synthetic.draw_risk` on
+its own fixed stream. Smoking and diabetes are drawn independently of age, so `r̄` is the same in every band, and
+dividing by it keeps each band's mean count, and so its periodontal share (US7), where it was. With the defaults
+`r̄` is about 1.04. An OR is used as a rate ratio: for a common outcome the OR overstates the risk ratio, which
+here works against the small effects found, so the generator is, if anything, generous to the shared risk.
+
+### Caveats
+
+- **Weak, not significant.** None of the non-periodontal effects used is statistically significant on its own; they
+  are the best point estimates available, not established effects.
+- **Women over 50, USA (smoking); Japan (diabetes within extractions); pooled, mostly Asian and European (diabetes
+  all-cause).** Applied to synthetic patients aged 25-85 of both sexes.
+- **Prevalence ORs as rate ratios on a count.** Mai et al. model any caries loss against none; the generator scales
+  the mean count.
+- **Expected effect on the model:** small. The non-periodontal teeth still come mostly in young mouths (US7's
+  shares), and smoking and diabetes are uncommon in the synthetic patients (about 8% smoke 10 or more a day; about
+  8% have HbA1c 6.5% or more), so the missing-at-entry AUC is expected to fall only a little.

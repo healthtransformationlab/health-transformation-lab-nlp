@@ -76,7 +76,7 @@ Implementation starts after this spec, plan and tasks are reviewed.
 
 ## US8 #433: teeth lost for other reasons share risk factors with periodontal loss
 
-- [ ] T022 [US8] Sources: published effects of smoking and diabetes (and attendance or socioeconomic status, if a
+- [x] T022 [US8] Sources: published effects of smoking and diabetes (and attendance or socioeconomic status, if a
   source gives one) on tooth loss for reasons other than periodontitis, verified against each paper, in
   [research.md](research.md) ("Shared risk factors") and `docs/references.md`
 - [ ] T023 [US8] Failing tests (`test_open_dental.py`): the rate ratio and its norm; observed/expected
