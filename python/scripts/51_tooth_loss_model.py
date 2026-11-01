@@ -47,6 +47,7 @@ ap.add_argument("--split-unit", default=tlm.DEFAULT.split_unit, choices=tlm.SPLI
                 help="hold out patients (default) or random teeth (reports the patients in both parts)")
 ap.add_argument("--test-share", type=float, default=tlm.DEFAULT.test_share, help="held-out share")
 ap.add_argument("--cv-folds", type=int, default=0, help="tune XGBoost by K-fold cross-validation; 0 for no tuning")
+ap.add_argument("--start-date", default=None, help="ISO date: leave out teeth lost (or first charted) before it")
 args = ap.parse_args()
 validation = {"split_unit": args.split_unit, "test_share": args.test_share, "cv_folds": args.cv_folds or None}
 changed = any(getattr(tlm.DEFAULT, k) != v for k, v in validation.items())
@@ -61,10 +62,11 @@ for k in range(max(1, args.stability_seeds)):
     tables, truth, readings = open_dental.build_with_readings(open_dental.Params(n_patients=args.patients), gen_seed)
     x = {**open_dental.clean(tables), "radiograph_bone_level": readings}   # the reading is SIMULATED (#385)
     params = tlm.ModelParams(n_boot=args.n_boot if k == 0 else 0, min_age=args.min_age or None,
-                             include_third_molars=args.third_molars, **validation)
+                             include_third_molars=args.third_molars, start_date=args.start_date, **validation)
     out = tlm.run(x, truth, params, generator_seed=gen_seed)
     if k == 0:                     # who was left out, and why (a tooth with no recorded age, once a cut-off applies)
-        print(f"generator seed {gen_seed}: teeth {tlm.exclusions(tooth_loss.tooth_table(x), params)}")
+        teeth = tlm.with_first_exam_date(tooth_loss.tooth_table(x), x)
+        print(f"generator seed {gen_seed}: teeth {tlm.exclusions(teeth, params)}")
         print(f"generator seed {gen_seed}: validation\n"
               f"{out['validation'].drop(columns=['data_label']).to_string(index=False)}")
     if not changed:                # the default results keep their files; the validation is printed above

@@ -6,7 +6,9 @@ only to score the teeth that have no recorded reason, never as a feature. Synthe
 
 - Who (s. 3): every tooth, third molars left out by default; adults only: a minimum age (`ModelParams.min_age`,
   default 18; None for no cut-off, a sensitivity analysis). Age is at the tooth's loss, or at the first exam when the
-  loss date isn't recorded (teeth missing at entry, planned extractions).
+  loss date isn't recorded (teeth missing at entry, planned extractions). Optionally from a start date
+  (`ModelParams.start_date`, default None: every year; spec 032 US2): a tooth counts when its loss date, or its
+  patient's first exam date when the loss date isn't recorded, is on or after it.
 - Label (s. 4, FR-010): 1 = the extraction's diagnosis item is periodontal, 0 = another reason. Two label sets:
   `completed` (completed extractions) and `completed_planned` (plus planned ones; the tooth table already counts a
   tooth planned then completed once, as completed).
@@ -75,6 +77,7 @@ class ModelParams:
     seed: int = 42                         # split, models and bootstrap
     min_age: int | None = 18               # analysis plan s. 3: adults; sensitivity none (None) and 30
     include_third_molars: bool = False     # sensitivity analysis when True
+    start_date: str | None = None          # spec 032 US2: ISO date; teeth lost (or first charted) before it are out
     n_boot: int = 1000
     threshold: float = 0.5
     split_unit: str = "person"             # spec 032 US5: SPLIT_UNITS; visit reports the patients in both
@@ -102,27 +105,56 @@ def _age(t: pd.DataFrame) -> pd.Series:
                          errors="coerce")
 
 
+def _ref_date(t: pd.DataFrame) -> pd.Series:
+    """The date a start date is compared with: the loss date, else the first exam date (when the frame has one)."""
+    on = pd.to_datetime(t["loss_date"])
+    return on.fillna(pd.to_datetime(t["first_exam_date"])) if "first_exam_date" in t else on
+
+
 @traced
 def eligible(teeth: pd.DataFrame, params: ModelParams = DEFAULT) -> pd.DataFrame:
     """The teeth in the analysis: third molars out unless included; at least `min_age` when one is set (a tooth
-    whose age isn't recorded is then left out too: `exclusions` counts them)."""
+    whose age isn't recorded is then left out too: `exclusions` counts them); on or after `start_date` when one is
+    set (a tooth with no date is then left out too)."""
     t = teeth if params.include_third_molars else teeth[~teeth["tooth_num"].isin(THIRD_MOLARS)]
     if params.min_age is not None:
         t = t[_age(t) >= params.min_age]
+    if params.start_date is not None:
+        t = t[_ref_date(t) >= pd.Timestamp(params.start_date)]
     return t
 
 
 @traced
 def exclusions(teeth: pd.DataFrame, params: ModelParams = DEFAULT) -> dict[str, int]:
-    """How many teeth `eligible` leaves out, by reason, in the order it applies them, and how many it keeps."""
+    """How many teeth `eligible` leaves out, by reason, in the order it applies them (each tooth counted once, under
+    the first reason), and how many it keeps."""
     molar = pd.Series(False, index=teeth.index) if params.include_third_molars else \
         teeth["tooth_num"].isin(THIRD_MOLARS)
     age = _age(teeth)
     cut = params.min_age is not None
     unknown = ~molar & age.isna() & cut
     young = ~molar & ~age.isna() & (age < params.min_age if cut else False)
+    left = ~molar & ~unknown & ~young
+    on = _ref_date(teeth)
+    dated = params.start_date is not None
+    no_date = left & on.isna() & dated
+    early = left & on.notna() & ((on < pd.Timestamp(params.start_date)) if dated else False)
     return {"third_molar_count": int(molar.sum()), "under_min_age_count": int(young.sum()),
-            "unknown_age_count": int(unknown.sum()), "eligible_count": int((~molar & ~unknown & ~young).sum())}
+            "unknown_age_count": int(unknown.sum()), "before_start_date_count": int(early.sum()),
+            "unknown_date_count": int(no_date.sum()), "eligible_count": int((left & ~no_date & ~early).sum())}
+
+
+@traced
+def with_first_exam_date(teeth: pd.DataFrame, x: dict[str, pd.DataFrame]) -> pd.DataFrame:
+    """The tooth table plus `first_exam_date`: each patient's first perio exam, else their first visit date (the
+    same date the age at first exam uses). Added only when a start date is set, so the default run is unchanged."""
+    exams = x["perioexam"]
+    first = pd.to_datetime(exams["examdate"]).groupby(pd.to_numeric(exams["patnum"], errors="coerce")).min()
+    pat = x["patient"]
+    visit = pd.Series(pd.to_datetime(pat["datefirstvisit"], errors="coerce").to_numpy(),
+                      index=pd.to_numeric(pat["patnum"], errors="coerce"))
+    on = teeth["patient_id"].map(first).astype("datetime64[ns]")
+    return teeth.assign(first_exam_date=on.fillna(teeth["patient_id"].map(visit).astype("datetime64[ns]")))
 
 
 @traced
@@ -515,6 +547,8 @@ def run(x: dict[str, pd.DataFrame], truth: pd.DataFrame, params: ModelParams = D
     check_params(params)
     teeth = tl.tooth_table(x)
     teeth["age_at_loss_num"] = _age_at_loss(teeth, x)
+    if params.start_date is not None:
+        teeth = with_first_exam_date(teeth, x)
     el = eligible(teeth, params).reset_index(drop=True)
     true = el.merge(truth, on=["patient_id", "tooth_num"], how="left")["true_reason_code"]
     if params.split_unit == "person":

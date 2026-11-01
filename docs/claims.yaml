@@ -103,6 +103,11 @@ edr:
       file: docs/edr/README.md
       match: "219 of 240"
       covers: synthetic charts ModernBERT on the note, plus the stage 4 rule, got right
+    - value: "196"
+      kind: measured
+      file: docs/edr/README.md
+      match: "Medical AI, untrained (MedGemma 4B) + stage 4 rule | 196 of 240"
+      covers: synthetic charts MedGemma 4B (v1, untrained) plus the stage 4 rule got right
     - value: "185"
       kind: measured
       file: data/datasets/ladder/ladder_vs_truth.csv
