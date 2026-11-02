@@ -65,3 +65,10 @@ def test_read_methods_takes_the_rule_and_defaults_to_healthy_or_gingivitis():
     assert no_code.any() and (plain.loc[no_code, "proc_dx_completed"] == UNKNOWN).all()
     assert (ruled.loc[no_code, "proc_dx_completed"] == "healthy").all()    # every synthetic visit has a plan
     assert ruled.loc[~no_code, "proc_dx_completed"].equals(plain.loc[~no_code, "proc_dx_completed"])
+
+
+def test_a_k05_3_code_with_an_unknown_severity_digit_reads_as_unknown():
+    # #471: the last digit of K05.3xx is the severity (1-3); any other digit is unreadable, as the R twin says
+    for code in ("K05.314", "K05.320", "K05.319"):
+        assert read_proc_dx(code) == UNKNOWN
+    assert read_proc_dx("K05.313") != UNKNOWN
