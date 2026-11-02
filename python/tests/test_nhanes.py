@@ -72,8 +72,8 @@ def test_classify_people_end_to_end_on_nhanes_shaped_tables():
     for t in (3, 8):                                   # person 2: interproximal CAL 6 on two teeth, PD 5
         per.loc[1, f"OHX{t:02d}LAS"] = 6.0
         per.loc[1, f"OHX{t:02d}PCS"] = 5.0
-    den = pd.DataFrame([{"SEQN": s, **{f"OHX{t:02d}TC": 2.0 for t in range(1, 33)}} for s in (1, 2, 3)])
-    den.loc[2, [c for c in den if c != "SEQN"]] = 4.0  # person 3: no teeth
+    den = pd.DataFrame([{"SEQN": s, "OHDDESTS": 1, **{f"OHX{t:02d}TC": 2.0 for t in range(1, 33)}} for s in (1, 2, 3)])
+    den.loc[2, [c for c in den if c.endswith("TC")]] = 4.0  # person 3: no teeth
     demo = pd.DataFrame({"SEQN": [1, 2, 3], "RIDAGEYR": [40, 55, 70], "WTMEC2YR": [1e4] * 3,
                          "SDMVSTRA": [1, 1, 2], "SDMVPSU": [1, 2, 1]})
     p = classify_people(per, den, demo, labels).set_index("SEQN")
@@ -81,6 +81,30 @@ def test_classify_people_end_to_end_on_nhanes_shaped_tables():
     assert p.loc[2, "cdc_aap"] == "severe"
     assert p.loc[2, "aces"] == "periodontitis_stage_3" and p.loc[2, "aces_no_complexity"] == "periodontitis_stage_3_4"
     assert p.loc[3, "edentulous"] and p.loc[3, "aces"] == "edentulous"
+
+
+def test_no_dentition_exam_is_not_edentulous():
+    """OHDDESTS 3 (exam not done) leaves every tooth code blank: that is missing, not zero teeth.
+    Counting them doubled edentulous prevalence (16% vs Tay 2025's 6.7%)."""
+    from health_transformation_lab_nlp.nhanes import classify_people
+    labels = {"OHX03PCD": "Pocket depth: tooth 3, distofacial"}
+    per = pd.DataFrame({"SEQN": [9], "OHDPDSTS": [3], "OHX03PCD": [np.nan]})
+    tc = {f"OHX{t:02d}TC": np.nan for t in range(1, 33)}
+    den = pd.DataFrame([{"SEQN": 9, "OHDDESTS": 3, **tc}, {"SEQN": 10, "OHDDESTS": 1, **tc, "OHX08TC": 4.0}])
+    demo = pd.DataFrame({"SEQN": [9, 10], "RIDAGEYR": [60, 60], "WTMEC2YR": [1e4] * 2,
+                         "SDMVSTRA": [1, 1], "SDMVPSU": [1, 2]})
+    p = classify_people(per, den, demo, labels).set_index("SEQN")
+    assert not p.loc[9, "edentulous"]
+    assert not p.loc[10, "edentulous"]     # exam done but teeth not all recorded: unknown, not edentulous
+
+
+def test_dentition_exam_status_is_required():
+    from health_transformation_lab_nlp.nhanes import classify_people
+    per = pd.DataFrame({"SEQN": [1], "OHDPDSTS": [1], "OHX03PCD": [2.0]})
+    den = pd.DataFrame({"SEQN": [1], "OHX03TC": [2.0]})
+    demo = pd.DataFrame({"SEQN": [1], "RIDAGEYR": [40], "WTMEC2YR": [1e4], "SDMVSTRA": [1], "SDMVPSU": [1]})
+    with pytest.raises(KeyError, match="OHDDESTS"):
+        classify_people(per, den, demo, {"OHX03PCD": "Pocket depth: tooth 3, distofacial"})
 
 
 def test_xpt_names_and_labels_are_text_even_when_pandas_gives_bytes(monkeypatch, tmp_path):

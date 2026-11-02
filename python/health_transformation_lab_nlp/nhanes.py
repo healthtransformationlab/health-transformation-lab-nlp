@@ -10,8 +10,8 @@ loudly. Values 99 (not assessable) are missing. Teeth: tooth-count codes 2 (perm
 5 (permanent root fragment) count as present.
 
 Prevalence is survey-weighted (six-year MEC weight = two-year weight / 3, as in Tay et al. 2025) with
-Taylor-linearized standard errors over strata and PSUs and a Wald 95% interval. Domain (adults 30+,
-complete exam) is kept inside the full design.
+Taylor-linearized standard errors over strata and PSUs and a Wald 95% interval. Domain (adults 30+
+with a complete periodontal exam, or edentulous) is kept inside the full design.
 
 The files are downloaded at run time (scripts/38_nhanes_perio.py, or the Databricks job
 `nhanes_perio`); only the aggregate table is committed.
@@ -179,12 +179,19 @@ def classify_people(per: pd.DataFrame, den: pd.DataFrame, demo: pd.DataFrame, la
 
     if "OHDPDSTS" not in per:
         raise KeyError("OHXPER has no OHDPDSTS (periodontal exam status)")
+    if "OHDDESTS" not in den:
+        raise KeyError("OHXDEN has no OHDDESTS (dentition exam status)")
     sites, teeth = to_site_tables(per, den, labels)
     natural = teeth[~teeth["tooth"].isin({1, 16, 17, 32})]
     n_teeth = natural[natural["present"]].groupby("SEQN").size()
     p = demo[["SEQN", "RIDAGEYR", "WTMEC2YR", "SDMVSTRA", "SDMVPSU"]].copy()
     p["perio_complete"] = p["SEQN"].map(per.set_index("SEQN")["OHDPDSTS"]).eq(1)
-    p["edentulous"] = p["SEQN"].isin(natural["SEQN"]) & p["SEQN"].map(n_teeth).fillna(0).eq(0)
+    # edentulous only when the dentition exam was done (OHDDESTS 1), every natural tooth has a code and none
+    # is 2 or 5 (present): a skipped exam leaves the codes blank, which is missing, not zero teeth
+    tc = [c for c in den if TOOTH_COUNT.match(c) and int(c[3:5]) not in (1, 16, 17, 32)]
+    recorded = den.set_index("SEQN")[tc].notna().all(axis=1) & den.set_index("SEQN")["OHDDESTS"].eq(1)
+    p["edentulous"] = (p["SEQN"].map(recorded).fillna(False).astype(bool)
+                       & p["SEQN"].map(n_teeth).fillna(0).eq(0))
     d = derive_all(sites, teeth, key="SEQN")
     p["cdc_aap"] = p["SEQN"].map({k: cdc_aap(r) for k, r in d.to_dict("index").items()})
     five = {"healthy": "healthy_gingivitis", "gingivitis": "healthy_gingivitis"}   # no bleeding in 2009-2014
