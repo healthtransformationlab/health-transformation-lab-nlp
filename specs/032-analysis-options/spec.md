@@ -4,7 +4,7 @@
 
 **Created**: 2026-11-01
 
-**Status**: specified
+**Status**: implemented (US1 #460, US2 #459, US3 #462, US4 #461, US5 #458, US6 #463, US7 #466, US8 #468)
 
 **Input**: the owner asked that the common design choices of published dental-record studies be settings here, so
 a study laid out differently from this repo's defaults can be reproduced on the synthetic data and the effect of
@@ -82,6 +82,12 @@ validated, and a consistency split by insurance.
   (`study.scored_review`, `study.reread_absent_code`): the benchmark note set itself (study build, review set,
   answer key, Kaggle and Hugging Face task data) is built as before, because external model runs were scored on
   those exact notes. Rebuilding it for adults from the start date, and rerunning those model runs, is tracked in #467.
+
+## Follow-ups
+
+- #467: rebuild the benchmark note set itself for adults from the start date, then rerun the external model runs
+  (US8 applies the age and start-date defaults when results are scored).
+- #472: move seed stability (script 49) to the new defaults.
 
 ## Out of scope
 
