@@ -145,10 +145,11 @@ def read_proc_dx(v: str) -> str:
         return UNKNOWN
     if v == "Z01.20":
         return Status.HEALTHY.value
-    if v.startswith("K05.0") or v.startswith("K05.1"):
+    if v.startswith(("K05.0", "K05.1")):
         return Status.GINGIVITIS.value
     if v.startswith("K05.3") and len(v) == 7:   # K05.3 + extent digit + severity digit
-        return {"1": Status.P1, "2": Status.P2, "3": Status.P3}[v[-1]].value
+        stage = {"1": Status.P1, "2": Status.P2, "3": Status.P3}.get(v[-1])   # another digit: unreadable (#471)
+        return stage.value if stage else UNKNOWN
     return UNKNOWN
 
 
