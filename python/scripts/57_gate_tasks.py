@@ -95,7 +95,7 @@ def main() -> int:
         gates = pd.read_csv(OUT, keep_default_na=False).to_dict("records")
         ungated = {t["instance_id"] for t in tasks} - {g["instance_id"] for g in gates}
         if ungated:   # a stale gate file would silently drop tasks
-            sys.exit(f"{len(ungated)} task(s) have no gate row (e.g. {sorted(ungated)[0]}): gate them first")
+            sys.exit(f"{len(ungated)} task(s) have no gate row (e.g. {min(ungated)}): gate them first")
         apply_gates(tasks, gates)
         telemetry.end_script()
         return 0
