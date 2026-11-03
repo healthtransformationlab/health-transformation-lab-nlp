@@ -3,7 +3,7 @@
 # MAGIC # Judge scorecard (spec 012)
 # MAGIC
 # MAGIC Every README phenotyping metric for every system, against the generator's truth and against an
-# MAGIC LLM judge's own reading of the same 240 synthetic review charts, plus how often the judge agrees
+# MAGIC LLM judge's own reading of the same synthetic review charts, plus how often the judge agrees
 # MAGIC with the truth. Metrics are computed in code (`health_transformation_lab_nlp.judge_scorecard`), never by the LLM.
 # MAGIC
 # MAGIC * Notes: `data/datasets/answer_key/review_key.csv`: synthetic, de-identified, through the leak gate.

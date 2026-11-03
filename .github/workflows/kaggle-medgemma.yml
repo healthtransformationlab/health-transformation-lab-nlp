@@ -5,13 +5,13 @@
 # or KAGGLE_KEY (secret). No Hugging Face token: a pushed notebook can't read Kaggle Secrets, so MedGemma is
 # attached from Kaggle Models (models.yaml `kaggle:`, kernel-metadata.json model_sources) and converted there.
 name: Run MedGemma on a free Kaggle GPU
-run-name: "MedGemma on Kaggle: ${{ inputs.rung }}, ${{ inputs.limit == '0' && 'all 240 notes' || format('{0}-note test', inputs.limit) }}${{ inputs.collect_only && ' (collect results only)' || '' }}"
+run-name: "MedGemma on Kaggle: ${{ inputs.rung }}, ${{ inputs.limit == '0' && 'all review notes' || format('{0}-note test', inputs.limit) }}${{ inputs.collect_only && ' (collect results only)' || '' }}"
 
 on:
   workflow_dispatch:
     inputs:
       limit:
-        description: "Review notes to read: 10 for a test, 0 for all 240 (a few hours: set wait off)"
+        description: "Review notes to read: 10 for a test, 0 for every review note (a few hours: set wait off)"
         default: "10"
       shots:
         description: "Few-shot examples per status (0 = zero-shot)"

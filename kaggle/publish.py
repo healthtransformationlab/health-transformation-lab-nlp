@@ -35,7 +35,7 @@ DATASETS = {
                         ("answer_key/clinic_profiles.csv", "clinic_profiles.csv"),
                         ("review_tasks.json", "review_tasks.json")]},
     "results": {"slug": "perio-bench-results", "title": "Dental Perio Note Classifier Benchmark",
-                "subtitle": "What rules, encoders and LLMs answered on 240 synthetic dental review notes",
+                "subtitle": "What rules, encoders and LLMs answered on synthetic dental review notes",
                 "keywords": ["nlp", "health", "medicine"],
                 "globs": [("", "ai_predictions_*.csv"), ("", "llm_details_*.csv"), ("ladder", "*.csv"),
                           ("judge", "*.csv")]},

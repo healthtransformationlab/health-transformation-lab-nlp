@@ -9,8 +9,8 @@ synthetic and CC BY 4.0. The files are the same as on Kaggle: `huggingface/publi
 
 | On Hugging Face | What it is | Files here |
 |---|---|---|
-| Dataset [`perio-bench-notes`](https://huggingface.co/datasets/healthtransformationlab/perio-bench-notes) | 3,484 training and 240 test notes, labelled with periodontal status; a `train` and a `test` split in the viewer, plus the review key, visits and clinics as extra configs | `publish.py`, `cards/notes.md`, `notebooks/perio_bench_quickstart.ipynb` |
-| Dataset [`perio-bench-results`](https://huggingface.co/datasets/healthtransformationlab/perio-bench-results) | Every method's answers on the 240 test notes; opens on the leaderboard | `publish.py`, `cards/results.md` |
+| Dataset [`perio-bench-notes`](https://huggingface.co/datasets/healthtransformationlab/perio-bench-notes) | 3,016 training and 223 test notes, labelled with periodontal status; a `train` and a `test` split in the viewer, plus the review key, visits and clinics as extra configs | `publish.py`, `cards/notes.md`, `notebooks/perio_bench_quickstart.ipynb` |
+| Dataset [`perio-bench-results`](https://huggingface.co/datasets/healthtransformationlab/perio-bench-results) | Every method's answers on the 223 test notes; opens on the leaderboard | `publish.py`, `cards/results.md` |
 | Organisation page (the `README` Space) | The lab's goal, the three benchmarks, where to start | `cards/org.md` |
 
 The cards in `cards/` become the pages. Edit them here, not on huggingface.co, or the next version overwrites your

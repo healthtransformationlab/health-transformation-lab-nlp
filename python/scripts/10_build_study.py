@@ -1,6 +1,6 @@
 """Build the training set, the chart-review set (Label Studio tasks) and the answer key.
 
-    python scripts/10_build_study.py                       # 1200 people, 240 review charts, adults from 2021-04-01
+    python scripts/10_build_study.py                       # 1200 people, up to 240 review charts (223 at seed 42), adults from 2021-04-01
     python scripts/10_build_study.py --n-people 600 --review-n 120
     python scripts/10_build_study.py --deid-engine presidio   # needs presidio + Python <= 3.12
     python scripts/10_build_study.py --min-age 40 --start-date 2021-07-01   # which visits count (spec 032 US2)

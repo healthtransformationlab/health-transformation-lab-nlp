@@ -14,7 +14,7 @@ on:
   workflow_dispatch:
     inputs:
       limit:
-        description: "Review notes to predict: 10 for a test (1 epoch), 0 for the full run (all 240, a few hours: set wait off)"
+        description: "Review notes to predict: 10 for a test (1 epoch), 0 for the full run (every review note, a few hours: set wait off)"
         default: "10"
       rungs:
         description: "Encoders to fine-tune, comma-separated (models.yaml)"
