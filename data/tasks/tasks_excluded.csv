@@ -1,2 +1,3 @@
 instance_id,tier_code,reason_text
+htlnlp_127,A,fails our gate (T007a): tests fail with the fix
 htlnlp_91,A,patch names the organisation CLAUDE.md forbids; a patch can't be redacted (#435)

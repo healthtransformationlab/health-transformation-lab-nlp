@@ -215,3 +215,30 @@ def gate_task(task: dict, repo: Path, timeout: int = DEFAULT_TIMEOUT, python: st
         _git(repo, "worktree", "remove", "--force", str(workdir))
         shutil.rmtree(parent, ignore_errors=True)
         _git(repo, "worktree", "prune")
+
+
+# --- T007a (#502): gate failures stay out of the published set ---------------------------------------------
+
+GATE_EXCLUSION_PREFIX = "fails our gate (T007a): "   # marks the tasks_excluded.csv rows this module owns
+
+
+@traced
+def passing_tasks(tasks: list[dict], gates: list[dict]) -> list[dict]:
+    """The tasks that passed both gates, in their order; a task with no gate row is not kept."""
+    valid = {g["instance_id"] for g in gates if g["is_valid"] is True or str(g["is_valid"]) == "True"}
+    return [t for t in tasks if t["instance_id"] in valid]
+
+
+@traced
+def gate_exclusions(gates: list[dict], tiers: dict[str, str]) -> list[dict]:
+    """One tasks_excluded.csv row per task that failed a gate, with its tier and the gate's reason."""
+    return [{"instance_id": g["instance_id"], "tier_code": tiers.get(g["instance_id"], ""),
+             "reason_text": GATE_EXCLUSION_PREFIX + (g["reason_text"] or "invalid")}
+            for g in gates if not (g["is_valid"] is True or str(g["is_valid"]) == "True")]
+
+
+@traced
+def merge_exclusions(existing: list[dict], gate_rows: list[dict]) -> list[dict]:
+    """Replace the gate's earlier rows with this run's, keep every other exclusion, sorted by instance id."""
+    kept = [r for r in existing if not str(r["reason_text"]).startswith(GATE_EXCLUSION_PREFIX)]
+    return sorted(kept + gate_rows, key=lambda r: r["instance_id"])

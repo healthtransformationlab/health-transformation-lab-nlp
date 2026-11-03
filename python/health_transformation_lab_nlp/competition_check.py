@@ -34,6 +34,16 @@ OUR_EDGE_KEYS = ["key", "source", "target", "type"]
 OUR_VECTOR = ("(256,)", "float32")
 
 
+# The Kaggle token's names, in order: the GitHub workflows' two, then the cloud environment's (#502).
+KAGGLE_TOKEN_NAMES = ("KAGGLE_API_TOKEN", "KAGGLE_KEY", "KAGGLE_API_KEY")
+
+
+@traced
+def kaggle_token(env) -> str | None:
+    """The Kaggle token from the first of KAGGLE_TOKEN_NAMES that is set and not empty, or None."""
+    return next((env[n] for n in KAGGLE_TOKEN_NAMES if env.get(n)), None)
+
+
 @traced
 def select_files(listing: list[tuple[str, int]]) -> list[str]:
     """From (name, bytes) pairs, the files to download, sorted: the small files and folders, harness wheels, and the
