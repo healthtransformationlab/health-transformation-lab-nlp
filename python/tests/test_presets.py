@@ -164,7 +164,8 @@ def test_a_small_run_writes_every_part_labelled_synthetic(monkeypatch):
                                      "min_child_weight": [1], "class_weight": [None]})
     monkeypatch.setattr(tlm, "XGB_GRID", {"max_depth": [2], "n_estimators": [20], "learning_rate": [0.1],
                                           "subsample": [1.0], "min_child_weight": [1]})
-    out = presets.run_preset("exploratory_1", n_people=150, n_patients=300, seed=42, n_boot=0)
+    # 600 patients: enough labelled teeth for 5-fold tuning once planned teeth still in the mouth no longer count (#507)
+    out = presets.run_preset("exploratory_1", n_people=150, n_patients=600, seed=42, n_boot=0)
     assert set(out) == set(presets.PARTS)
     for part, df in out.items():
         assert len(df), part
