@@ -1,0 +1,10 @@
+# The libraries the Databricks serverless runtime ships, so CI can test on them (issue #478).
+# Databricks serverless environment version 4 (databricks.yml gpu_environment_version; the CPU notebook jobs name
+# none and get the workspace's default, where #476 failed on pandas 2): Python 3.12.3. Source: the release notes,
+# https://docs.databricks.com/aws/en/release-notes/serverless/environment-version/four
+# The notebooks `%pip install -e ../../python[...]`, and pyproject's `pandas>=2.0` keeps the runtime's copy, so
+# these are the versions the jobs really run with. Change them when the environment version changes.
+pandas==2.2.3
+numpy==2.1.3
+pyarrow==19.0.1
+scikit-learn==1.6.1
