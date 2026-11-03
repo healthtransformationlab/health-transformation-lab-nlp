@@ -25,3 +25,11 @@ another session's duplicate work first.
 2. The exception for rule changes covers this PR too, so it waits for the owner's "merge".
 
 Verdict: ready to merge on the owner's "merge".
+
+## Added after CI: a register fix (main was red)
+
+The `python-databricks-runtime` job failed on `test_hf_publish.py`. PR #496 had written `(set 2026-11-03, #495)` in a
+register value. In YAML, a space and then `#` starts a comment, so the rest of the value, including `HF_TOKEN`, was
+dropped. #496 only changed the register, so the Python jobs didn't run on it. Three older values had the same cut,
+two of them from #465. This PR now writes `issue 495` instead, fixes all four, and adds
+`test_no_register_value_is_cut_short_by_a_yaml_comment`. Full suite: 1644 passed, 15 skipped.
