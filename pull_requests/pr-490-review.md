@@ -22,7 +22,7 @@ the secrets register didn't name the token's new use. Both are fixed in `2cb0a2f
 four nits. What remains are nits, so the verdict is approve-with-nits.
 
 ## Scope of Change
-- Files changed: 7 (+208 / -11), no generated data committed
+- Files changed: 7 (+208 / -8), no generated data committed
 - Areas touched: python, docs, specs, ops
 - Commits:
   - 53b5721 028 US4: node embeddings with EmbeddingGemma and the Python 3.13 sandbox wheels (T010)
