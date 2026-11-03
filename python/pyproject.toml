@@ -41,7 +41,8 @@ otlp = ["opentelemetry-exporter-otlp-proto-http>=1.25"]
 tasks = ["networkx>=3.4"]
 # Node embeddings for the task set (spec 028 T010): encode_document needs sentence-transformers 5+
 embeddings = ["sentence-transformers>=5", "torch>=2.2"]
-dev = ["pytest>=8", "ruff>=0.5", "duckdb>=1.0"]   # duckdb runs the dashboards' SQL in tests (spec 019)
+# duckdb runs the dashboards' SQL in tests (spec 019); pytest-xdist runs the suite in parallel in CI (#510)
+dev = ["pytest>=8", "pytest-xdist>=3.5", "ruff>=0.5", "duckdb>=1.0"]
 # PerioBench as a Kaggle Benchmarks task (health_transformation_lab_nlp.kbench, kaggle/perio_bench_task.py)
 kbench = ["kaggle-benchmarks>=0.6", "pydantic>=2"]
 
