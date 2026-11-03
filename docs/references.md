@@ -214,6 +214,57 @@ Everything this repo relies on, and what it's used for.
     Japanese adults aged 20–39: current smoking and 1+ tooth lost, adjusted OR 2.21 (1.40–3.50) in men and 1.70
     (1.13–2.55) in women; and decayed teeth 1.67 (1.28–2.20). → spec 029 US8: all-cause, recorded as the source
     that points to a larger smoking effect in young adults than item 68 (research.md). Checked in the abstract.
+72. **VanFrank B, Malarcher A, Cornelius ME, Schecter A, Jamal A, Tynan M.** *Adult smoking cessation — United
+    States, 2022.* MMWR Morb Mortal Wkly Rep 2024;73(29):633–641.
+    [doi:10.15585/mmwr.mm7329a1](https://doi.org/10.15585/mmwr.mm7329a1), PMC11290909. National Health Interview
+    Survey 2022, 27,651 adults 18 and over: 11.6% (95% CI 11.1–12.1%; about 28.8 million) currently smoked
+    cigarettes (at least 100 in their life, and now every day or some days). → spec 033: the US adult smoking share
+    the synthetic `synthetic.draw_risk` is compared with ([synthetic_data.md](synthetic_data.md)). Checked in the
+    PMC full text. The CDC page *Current Cigarette Smoking Among Adults in the United States* gives the figure in a
+    chart only.
+73. **Gwira JA, Fryar CD, Gu Q.** *Prevalence of total, diagnosed, and undiagnosed diabetes in adults: United
+    States, August 2021–August 2023.* NCHS Data Brief No. 516, November 2024.
+    [cdc.gov/nchs/products/databriefs/db516.htm](https://www.cdc.gov/nchs/products/databriefs/db516.htm),
+    PMID 40085919. NHANES, adults 20 and over: total diabetes 15.8% (diagnosed 11.3%, undiagnosed 4.5%), 3.6% at
+    20–39, 17.7% at 40–59, 27.3% at 60 and over. Undiagnosed is no reported diagnosis with fasting plasma glucose
+    >= 126 mg/dL or HbA1c >= 6.5%. → spec 033: the diabetes share and the HbA1c >= 6.5 definition
+    ([synthetic_data.md](synthetic_data.md)). Checked in the full text on cdc.gov. CDC's *National Diabetes
+    Statistics Report* gives 12.0% of the whole US population (children included) for 2023.
+74. **Schätzle M, Löe H, Lang NP, Heitz-Mayfield LJ, Bürgin W, Anerud A, Boysen H.** *Clinical course of chronic
+    periodontitis. III. Patterns, variations and risks of attachment loss.* J Clin Periodontol 2003;30(10):909–918.
+    [doi:10.1034/j.1600-051x.2003.00401.x](https://doi.org/10.1034/j.1600-051x.2003.00401.x), PMID 14710771.
+    A 26-year cohort of 565 Norwegian men with regular dental care, ages 16–59: mean attachment loss 0.05 mm a year,
+    highest before 35 (0.08–0.1 mm a year), then about 0.04–0.06; 75% had slight to moderate progression at
+    0.02–0.1 mm a year. → spec 033: a published rate beside `synthetic.BASE_CAL_MM_PER_YEAR`, which is
+    the worst site's, not the whole mouth's. Checked in the abstract. (PMID 11063391, sometimes given for this
+    figure, is Reddy et al. 2000, a different study.)
+75. **Löe H, Anerud A, Boysen H, Morrison E.** *Natural history of periodontal disease in man. Rapid, moderate and
+    no loss of attachment in Sri Lankan laborers 14 to 46 years of age.* J Clin Periodontol 1986;13(5):431–445.
+    [doi:10.1111/j.1600-051x.1986.tb01487.x](https://doi.org/10.1111/j.1600-051x.1986.tb01487.x), PMID 3487557.
+    480 men with no dental care, 1970–1985: rapid progression in about 8% (0.1–1.0 mm a year), moderate in 81%
+    (0.05–0.5), none beyond gingivitis in 11% (0.05–0.09). → spec 033: the range the synthetic progression
+    rates sit in. Checked in the abstract.
+76. **Mullins J, Yansane A, Kumar SV, Bangar S, Neumann A, Johnson TR, Olson GW, Kookal KK, Sedlock E, Kim A,
+    Mertz E, Brandon R, Simmons K, White JM, Kalenderian E, Walji MF.** *Assessing the completeness of periodontal
+    disease documentation in the EHR: a first step in measuring the quality of care.* BMC Oral Health 2021;21:282.
+    [doi:10.1186/s12903-021-01633-w](https://doi.org/10.1186/s12903-021-01633-w), PMID 34051781, PMC8164293.
+    Four institutions on one EHR (three dental schools and a large dental group), patients 16 and over with an
+    exam, 2015–2018. Table 2: a periodontal chart for 32.7–69.6% of patients at the schools and 99.3–99.7% at the
+    group; a periodontal diagnosis for 3.3–48.6% and 99.9%. → spec 033: what the synthetic charting and
+    no-diagnosis rates are compared with ([synthetic_data.md](synthetic_data.md)). Checked in the PMC full text
+    (the Results text gives one school's 2017 row as its 2018 one; the table is used).
+77. **White JM, Kalenderian E, Stark PC, Ramoni RL, Vaderhobli R, Walji MF.** *Evaluating a dental diagnostic
+    terminology in an electronic health record.* J Dent Educ 2011;75(5):605–615. PMID 21546594, PMC3119719.
+    One dental school's predoctoral clinics, July 2007–June 2008: 27,973 diagnoses entered against 71,951
+    treatment procedures; 76.7% (21,463) were valid for the procedure, by three calibrated faculty reviewers.
+    → spec 033: beside `open_dental.Params.dx_correct` and `dx_mismatch`. Checked in the PMC full text.
+78. **Kalenderian E, Tokede B, Ramoni R, Khan M, Kimmes N, White J, Vaderhobli R, Yansane A, Feilzer A, Walji M.**
+    *Dental clinical research: an illustration of the value of standardized diagnostic terms.* J Public Health
+    Dent 2016;76(2):152–156. [doi:10.1111/jphd.12124](https://doi.org/10.1111/jphd.12124), PMID 26517578,
+    PMC5019247. 1,866 patients with generalized chronic moderate periodontitis at three dental schools
+    (diagnoses July 2011–June 2012, treatment to June 2013). Table 3: 927 (49.7%) had scaling and root planing
+    (D4341 or D4342). → spec 033: beside the synthetic treatment rates (`synthetic.TREAT_PROB`). Checked in the
+    PMC full text.
 
 58. **Open Dental Software.** *Open Dental* source code, `OpenDentBusiness/TableTypes` (one class per database
     table). [github.com/OpenDental/OpenDental](https://github.com/OpenDental/OpenDental), branch `24_3`, commit
