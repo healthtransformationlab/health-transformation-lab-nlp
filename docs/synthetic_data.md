@@ -129,12 +129,24 @@ One synthetic medical record per study person, on its own random stream. Each ra
 | `medical_record.UNCONTROLLED_HBA1C` | 7 | poorly controlled diabetes, for the ASA class | cited in `medical_record.py` (`ASA_SOURCE`, a repo choice there) | none | no |
 | `medical_record.OR_TOLERANCE_LOG` | 0.25 | how close a recovered odds ratio must be, on the log scale | placeholder (test tolerance) | none | `tests/test_medical_record.py` |
 
+## Known gaps: what the generators don't model
+
+Neither is a parameter today, so neither has a row above. Both are tracked in #500 (spec 033 US4); this card
+changes no generator.
+
+| What | In the synthetic data now | Published figure | Source | Checked by |
+|---|---|---|---|---|
+| complete tooth loss (edentulism) | none: no patient of the 6,000-patient Open Dental extract (seed 42) has lost every tooth, and the study-visit charts don't track a total tooth count | 12.9% of US adults 65 and over, NHANES 2015-2018 (8.9% at 65-69, 10.6% at 70-74, 17.8% at 75+); age-adjusted 12.6% in 2017-2018 against 29.3% in 1999-2000; this repo's own NHANES 2009-2014 run gives 6.9% of adults 30+ (`data/datasets/nhanes/nhanes_prevalence.csv`; Tay et al. 2025: 6.7%) | items 79 and 80; `scripts/38_nhanes_perio.py` | no |
+| geography (state) | clinics have a placeholder state (`ZZ`) and random ZIP codes, so no variation by state can be shown | adults 65+ with all teeth removed, by state (BRFSS, as reported by America's Health Rankings: 11.4% nationally, 5.4% to 21.4% across states); that page could not be opened from this environment, so the figures are not checked and not cited | placeholder (unchecked) | no |
+
 ## Sources checked for this card
 
-Items 72 to 78 of [references.md](references.md) were added for this card, each checked against its full text or,
-where the item says so, its abstract. Two candidate sources were not used:
+Items 72 to 80 of [references.md](references.md) were added for this card, each checked against its full text or,
+where the item says so, its abstract. Three candidate sources were not used:
 
 - **Dental coverage, ADA Health Policy Institute (2022)**: the HPI pages and the news report of them could not be
   opened from this environment, so the figures were not checked. `Params.insurance_shares` stays a placeholder.
+- **America's Health Rankings (BRFSS teeth extractions by state)**: the page could not be opened from this
+  environment, so its state figures were not checked or cited (see "Known gaps").
 - **Open Dentistry Journal 2019;13:520** (an EDR audit at one dental school): the article could not be opened, so its
   charting figures were not checked or cited.

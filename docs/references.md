@@ -265,6 +265,17 @@ Everything this repo relies on, and what it's used for.
     (diagnoses July 2011–June 2012, treatment to June 2013). Table 3: 927 (49.7%) had scaling and root planing
     (D4341 or D4342). → spec 033: beside the synthetic treatment rates (`synthetic.TREAT_PROB`). Checked in the
     PMC full text.
+79. **Fleming E, Afful J, Griffin SO.** *Prevalence of tooth loss among older adults: United States, 2015–2018.*
+    NCHS Data Brief No. 368, June 2020. [stacks.cdc.gov/view/cdc/89421](https://stacks.cdc.gov/view/cdc/89421).
+    NHANES 2015–2018: complete tooth loss in 12.9% of adults 65 and over (8.9% at 65–69, 10.6% at 70–74, 17.8% at
+    75 and over); the age-adjusted prevalence fell from 1999–2000 to 2017–2018. → spec 033: the edentulism the
+    synthetic extract lacks ([synthetic_data.md](synthetic_data.md), "Known gaps"; #500). Checked in the full text on
+    stacks.cdc.gov.
+80. **NCHS.** *QuickStats: prevalence of complete tooth loss among adults aged 65 years or older, by federal poverty
+    level — National Health and Nutrition Examination Survey, United States, 1999–2018.* 18 September 2020.
+    [cdc.gov/nchs/blog/posts/2020/09/18.html](https://www.cdc.gov/nchs/blog/posts/2020/09/18.html). Age-adjusted
+    complete tooth loss at 65 and over fell from 29.3% in 1999–2000 to 12.6% in 2017–2018 (42.1% to 23.5% below 200%
+    of the poverty level, 17.7% to 8.5% above it). → spec 033: the same gap, over time. Checked on cdc.gov.
 
 58. **Open Dental Software.** *Open Dental* source code, `OpenDentBusiness/TableTypes` (one class per database
     table). [github.com/OpenDental/OpenDental](https://github.com/OpenDental/OpenDental), branch `24_3`, commit
