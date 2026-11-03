@@ -27,6 +27,17 @@ def task(iid, base, statement="Fix the gate"):
             "problem_statement": statement, "hints_text": "", "created_at": "2026-11-01T00:00:00Z"}
 
 
+def _tgz(path, files):
+    import io
+    import tarfile
+    with tarfile.open(path, "w:gz") as t:
+        for name, text in files.items():
+            data = text.encode()
+            info = tarfile.TarInfo(name)
+            info.size = len(data)
+            t.addfile(info, io.BytesIO(data))
+
+
 @pytest.fixture
 def task_dir(tmp_path):
     d = tmp_path / "tasks"
@@ -36,7 +47,7 @@ def task_dir(tmp_path):
     (d / "tasks_gated.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows))
     (d / "tasks.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows + [task("htlnlp_9", BASE_B)]))
     for r in rows + [task("htlnlp_9", BASE_B)]:
-        (d / "snapshots" / f"{r['instance_id']}.tgz").write_bytes(b"tgz " + r["instance_id"].encode())
+        _tgz(d / "snapshots" / f"{r['instance_id']}.tgz", {"README.md": r["instance_id"]})
         (d / "graphs" / f"{r['instance_id']}.json").write_text(json.dumps({"nodes": [], "id": r["instance_id"]}))
         (d / "embeddings" / f"{r['instance_id']}.npz").write_bytes(b"npz " + r["instance_id"].encode())
     (d / "wheels" / "pandas-2.2.3-cp313-cp313-manylinux_2_17_x86_64.whl").write_bytes(b"wheel")
@@ -188,3 +199,17 @@ def test_upload_sends_the_built_folder_with_the_commit_in_the_message(task_dir, 
     monkeypatch.setattr(pt.publish, "upload", lambda folder, ref, message, api: calls.append((folder, ref, message)))
     run_main(monkeypatch, task_dir, tmp_path / "out", "--upload", "--message", "First version")
     assert calls == ["auth", (tmp_path / "out", "someone/" + pt.SLUG, "First version (abc1234def56)")]
+
+
+def test_refuses_a_snapshot_holding_withheld_files(task_dir):   # PR #515: the course files
+    _tgz(task_dir / "snapshots" / "htlnlp_2.tgz", {"data/external/maccrobat/course/train.txt": "received as is"})
+    with pytest.raises(SystemExit, match="withheld"):
+        pt.check(task_dir)
+
+
+def test_refuses_a_row_whose_patch_carries_withheld_files(task_dir):
+    rows = [json.loads(line) for line in (task_dir / "tasks_gated.jsonl").read_text().splitlines()]
+    rows[0]["patch"] = "diff --git a/data/external/maccrobat/course/a.txt b/data/external/maccrobat/course/a.txt\n+x\n"
+    (task_dir / "tasks_gated.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows))
+    with pytest.raises(SystemExit, match="withheld"):
+        pt.check(task_dir)

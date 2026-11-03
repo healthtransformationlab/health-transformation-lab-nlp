@@ -8,13 +8,15 @@ The layout is the Gemma 4 Developer Agent competition's, checked against all 129
 (the harness finds them by `task.repo`; ours are built per instance id, so they are renamed here, one per base).
 Only the gated set goes: `tasks_gated.jsonl` becomes `tasks.jsonl`, never the ungated candidates. No wheels:
 they are third-party packages under their own licences (the card says how to download them). check() refuses a
-task that didn't pass the gate, a task missing a file, and any row or graph naming the organisation CLAUDE.md forbids.
+task that didn't pass the gate, a task missing a file, any row or graph naming the organisation CLAUDE.md forbids, and any row or snapshot carrying a withheld file
+(task_graph.WITHHELD_PATHS: no stated licence).
 """
 
 import argparse
 import json
 import shutil
 import sys
+import tarfile
 from pathlib import Path
 
 import pandas as pd
@@ -25,6 +27,7 @@ sys.path.insert(0, str(HERE))
 
 import publish  # kaggle/publish.py: the same upload, create-public-then-version
 
+from health_transformation_lab_nlp import task_graph as tg
 from health_transformation_lab_nlp import task_mine as tm
 from health_transformation_lab_nlp.paths import TASKS_DIR
 
@@ -72,6 +75,15 @@ def check(task_dir: Path) -> None:
     if missing:
         raise SystemExit(f"{len(missing)} file(s) missing, e.g. {missing[0]}: build them with 55_build_tasks.py "
                          "--snapshots N --graphs --embeddings")
+    held = [r["instance_id"] for r in rows if tm.withheld_exclusion_reason(r, tg.WITHHELD_PATHS)]
+    for dest, src in files_of(task_dir).items():   # files without a stated licence never go out (PR #515)
+        if dest.startswith("snapshots/"):
+            with tarfile.open(src) as t:
+                if any(n.removeprefix("./").startswith(tg.WITHHELD_PATHS) for n in t.getnames()):
+                    held.append(dest)
+    if held:
+        raise SystemExit(f"{len(held)} row(s) or snapshot(s) carry withheld files ({', '.join(tg.WITHHELD_PATHS)}): "
+                         f"{', '.join(held[:5])}")
     named = [r["instance_id"] for r in rows if tm.names_org(json.dumps(r))]
     named += [dest for dest, src in files_of(task_dir).items()   # graph node text is unredacted source (PR #515)
               if dest.startswith("graphs/") and tm.names_org(src.read_text())]

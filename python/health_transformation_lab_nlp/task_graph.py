@@ -203,14 +203,19 @@ def _blobs(cwd: Path, rev: str) -> dict[str, str]:
     return blobs
 
 
+# Files left out of every snapshot: received with no stated redistribution licence, so not republished outside the
+# repository (owner's decision, PR #515). The course's BIO files; MACCROBAT itself (CC BY 4.0) stays.
+WITHHELD_PATHS = ("data/external/maccrobat/course/",)
+
+
 @traced
 def snapshot(repo: Path, base_commit: str, out_tgz: Path, work_dir: Path) -> dict:
     """The files at `base_commit` as one commit in a fresh repo on `main`, packed as a `.tgz` with one
     repository's files and `.git` at the archive root, as the competition's are: the harness unpacks each one
     straight into /workspace (#452). No history: earlier commit messages and files stay behind. Text files that name the
     organisation CLAUDE.md forbids have the name replaced with `[org]`, as the statements and hints are, byte for
-    byte elsewhere (line endings and non-UTF-8 bytes kept); every other file is the base's, mode and content
-    (checked), and the redacted paths are returned (#435). The commit's author, date (the base's committer date)
+    byte elsewhere (line endings and non-UTF-8 bytes kept); files under WITHHELD_PATHS are left out (PR #515); every
+    other file is the base's, mode and content (checked), and the redacted and withheld paths are returned (#435). The commit's author, date (the base's committer date)
     and message ("Snapshot of <base_commit>") are fixed, so a rebuild gives the same head SHA; it differs from
     `base_commit`, which is why the head is returned. The work folder is removed whatever happens."""
     dest = work_dir / "workspace"
@@ -220,7 +225,14 @@ def snapshot(repo: Path, base_commit: str, out_tgz: Path, work_dir: Path) -> dic
         dest.mkdir(parents=True)
         with tarfile.open(fileobj=io.BytesIO(_git(repo, "archive", "--format=tar", base_commit))) as t:
             t.extractall(dest, filter="tar")
-        named = files_naming_org(repo, base_commit)
+        withheld = sorted(p for p in _blobs(repo, base_commit) if p.startswith(WITHHELD_PATHS))
+        for rel in withheld:
+            (dest / rel).unlink()
+            parent = (dest / rel).parent
+            while parent != dest and not any(parent.iterdir()):   # no empty folder left in the archive
+                parent.rmdir()
+                parent = parent.parent
+        named = [p for p in files_naming_org(repo, base_commit) if p not in withheld]
         for rel in named:
             f = dest / rel
             f.write_bytes(task_mine.redact(_decode(f.read_bytes())).encode("utf-8", errors="surrogateescape"))
@@ -235,7 +247,7 @@ def snapshot(repo: Path, base_commit: str, out_tgz: Path, work_dir: Path) -> dic
         head = _git(dest, "rev-parse", "HEAD").decode().strip()
         base_blobs, snap_blobs = _blobs(repo, base_commit), _blobs(dest, "HEAD")
         changed = sorted(p for p in base_blobs.keys() | snap_blobs.keys() if base_blobs.get(p) != snap_blobs.get(p))
-        if changed != named:   # only the redacted files may differ from the base, and nothing may be added or lost
+        if changed != sorted(named + withheld):   # only redacted or withheld files may differ; nothing added
             raise RuntimeError(f"snapshot differs from {base_commit} beyond the redacted files: {changed[:5]}")
         if files_naming_org(dest, "HEAD"):
             raise RuntimeError(f"snapshot of {base_commit} still names the organisation CLAUDE.md forbids")
@@ -252,7 +264,8 @@ def snapshot(repo: Path, base_commit: str, out_tgz: Path, work_dir: Path) -> dic
     finally:
         shutil.rmtree(dest, ignore_errors=True)
     return {"base_commit": base_commit, "snapshot_head_sha": head, "tree_sha": tree, "commit_count": count,
-            "redacted_paths": ";".join(named), "size_bytes": out_tgz.stat().st_size}
+            "redacted_paths": ";".join(named), "withheld_paths": ";".join(withheld),
+            "size_bytes": out_tgz.stat().st_size}
 
 
 @traced

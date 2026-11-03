@@ -24,7 +24,9 @@ competition's sandbox (spec 028 in the repository).
   request, C from the commit message.
 - **Snapshots** are the files at `base_commit` as a single commit in a fresh repository on `main`, so no later
   history comes along. Text naming one organisation the repository's rules forbid is replaced with `[org]`, and a
-  task whose patch names it is left out.
+  task whose patch names it is left out. `data/external/maccrobat/course/` (a course's preprocessed files, received
+  with no stated redistribution licence) is withheld from every snapshot, and the one task that added those files
+  is left out; `withheld_paths` in the repository's `data/tasks/snapshot_index.csv` lists them.
 - **Graphs and embeddings** are named `<repo name>_<base_commit>`, as the competition's are. The graphs come from
   an AST walk of the package (NetworkX node-link JSON, `calls` edges). The embeddings give one 256-float vector per
   graph node, made with EmbeddingGemma (`google/embeddinggemma-300m`, cut from 768 dimensions and renormalised).
@@ -41,7 +43,8 @@ are under its MIT licence, and third-party files keep their own licences, named 
 
 - `data/external/maccrobat/` (in most snapshots): MACCROBAT, 200 published, de-identified clinical case reports
   from PubMed Central. **Not synthetic.** CC BY 4.0, Caufield, J. Harry (2019), *MACCROBAT*, figshare,
-  https://doi.org/10.6084/m9.figshare.9764942.v2. Its README lists the changes made.
+  https://doi.org/10.6084/m9.figshare.9764942.v2. Its README lists the changes made. Its `course/` folder is
+  withheld (above).
 - `diagrams/_build/dbx_icons/`: an icon set under the MIT licence, with its own copyright in its `LICENSE`.
 
 Please cite: Bowyer J., *health-transformation-lab-nlp*,

@@ -231,9 +231,14 @@ def write_snapshots(rows: list[dict], limit: int) -> None:
               f"{len([x for x in info['redacted_paths'].split(';') if x])} files redacted")
     shutil.rmtree(SNAPSHOTS / "_work", ignore_errors=True)
     new = pd.DataFrame(out)
-    if SNAPSHOT_INDEX.exists():   # keyed by instance_id: re-runs replace their own rows
-        old = pd.read_csv(SNAPSHOT_INDEX)
-        new = pd.concat([old[~old["instance_id"].isin(new["instance_id"])], new])
+    built = {r["instance_id"] for r in rows}
+    for old_tgz in SNAPSHOTS.glob("*.tgz"):   # a task no longer built leaves no snapshot behind
+        if old_tgz.stem not in built:
+            old_tgz.unlink()
+    if SNAPSHOT_INDEX.exists():   # keyed by instance_id: re-runs replace their own rows; dropped tasks go
+        old = pd.read_csv(SNAPSHOT_INDEX, keep_default_na=False)
+        old = old[old["instance_id"].isin(built) & ~old["instance_id"].isin(new["instance_id"])]
+        new = pd.concat([old, new])
     new.sort_values("instance_id").to_csv(SNAPSHOT_INDEX, index=False)
 
 
@@ -267,8 +272,8 @@ def main() -> int:
             excluded.append({"instance_id": row["instance_id"], "tier_code": row["tier_code"], "reason_text": reason})
             continue
         task = tm.task_row(row["instance_id"], REPO, base, text_for(row, items), split)
-        reason = tm.org_exclusion_reason(task)
-        if reason:   # CLAUDE.md: a published task never carries the organisation name (#435)
+        reason = tm.org_exclusion_reason(task) or tm.withheld_exclusion_reason(task, tg.WITHHELD_PATHS)
+        if reason:   # CLAUDE.md: never the organisation name (#435); no withheld file either (PR #515)
             excluded.append({"instance_id": row["instance_id"], "tier_code": row["tier_code"], "reason_text": reason})
             continue
         rows.append(task)

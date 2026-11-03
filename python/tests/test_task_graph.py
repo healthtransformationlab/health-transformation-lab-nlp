@@ -288,3 +288,24 @@ def test_two_nodes_with_the_same_source_text_are_encoded_once_and_share_a_vector
                    {"id": "pkg.b.f", "name": "pkg.b.f", "text": same}], "edges": []}
     v = tg.embed_graph(g, _fake_encode(calls))
     assert calls == [[same]] and np.array_equal(v["pkg.a.f"], v["pkg.b.f"])
+
+
+def test_snapshot_withholds_files_without_a_redistribution_licence(tmp_path, monkeypatch):   # PR #515, owner's call
+    src, base = _three_commits(tmp_path)
+    (src / "data" / "external" / "x" / "course").mkdir(parents=True)
+    (src / "data" / "external" / "x" / "course" / "train.txt").write_text("received as is\n")
+    (src / "data" / "external" / "x" / "README.md").write_text("kept\n")
+    _git(src, "add", ".")
+    _git(src, "commit", "-q", "-m", "c3")
+    head = _git(src, "rev-parse", "HEAD").strip()
+    monkeypatch.setattr(tg, "WITHHELD_PATHS", ("data/external/x/course/",))
+    info = tg.snapshot(src, head, tmp_path / "s.tgz", work_dir=tmp_path / "w")
+    assert info["withheld_paths"] == "data/external/x/course/train.txt"
+    with tarfile.open(tmp_path / "s.tgz") as t:
+        names = t.getnames()
+    assert "data/external/x/README.md" in names and not [n for n in names if "/course" in n]
+    assert tg.snapshot(src, base, tmp_path / "b.tgz", work_dir=tmp_path / "wb")["withheld_paths"] == ""
+
+
+def test_the_course_files_are_withheld():
+    assert tg.WITHHELD_PATHS == ("data/external/maccrobat/course/",)
