@@ -6272,8 +6272,8 @@
     "domain": "completeness",
     "text": "null, blank or unknown cells, as a share (reported)",
     "checked_count": 8575633,
-    "found_count": 40500,
-    "found_pct": 0.47,
+    "found_count": 222095,
+    "found_pct": 2.59,
     "is_flagged": null
    },
    {
