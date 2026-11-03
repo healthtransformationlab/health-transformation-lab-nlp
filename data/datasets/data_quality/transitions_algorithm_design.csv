@@ -1,6 +1,6 @@
 from_status,healthy_gingivitis,periodontitis_stage_1,periodontitis_stage_2,periodontitis_stage_3,periodontitis_stage_4
-healthy_gingivitis,615,110,6,3,1
-periodontitis_stage_1,87,98,57,10,0
-periodontitis_stage_2,3,34,75,31,0
-periodontitis_stage_3,2,1,35,41,7
-periodontitis_stage_4,0,0,0,6,8
+healthy_gingivitis,516,55,9,3,1
+periodontitis_stage_1,65,72,55,4,0
+periodontitis_stage_2,2,43,74,49,1
+periodontitis_stage_3,2,3,16,53,4
+periodontitis_stage_4,0,0,0,1,5

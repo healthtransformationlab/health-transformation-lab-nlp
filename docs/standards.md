@@ -20,19 +20,19 @@ Finding gum disease in dental records (phenotyping) means making three choices, 
 
 ### Where they disagree, on the same synthetic visits
 
-Every one of the 3,437 synthetic visits with a gum chart, out of the full synthetic set, classified both ways. This is a larger set than the 240 review charts the methods are scored on, because the definitions need only the chart. 2017 AAP/EFP (rows) against 2012 CDC/AAP (columns), from `data/sites/aap_vs_cdc.csv`:
+Every one of the 2,990 synthetic visits with a gum chart, out of the full synthetic set, classified both ways. This is a larger set than the 240 review charts the methods are scored on, because the definitions need only the chart. 2017 AAP/EFP (rows) against 2012 CDC/AAP (columns), from `data/sites/aap_vs_cdc.csv`:
 
 | 2017 ↓ / CDC/AAP → | none | mild | moderate | severe |
 |---|---:|---:|---:|---:|
-| Healthy | 911 | 0 | 0 | 0 |
-| Gingivitis | 776 | 0 | 0 | 0 |
-| Stage I | 742 | 0 | 0 | 0 |
-| Stage II | 433 | 157 | 7 | 0 |
-| Stage III | 16 | 4 | 155 | 152 |
-| Stage IV | 0 | 0 | 27 | 57 |
+| Healthy | 808 | 0 | 0 | 0 |
+| Gingivitis | 604 | 1 | 0 | 0 |
+| Stage I | 613 | 0 | 0 | 0 |
+| Stage II | 469 | 106 | 7 | 0 |
+| Stage III | 15 | 2 | 178 | 149 |
+| Stage IV | 0 | 0 | 13 | 25 |
 
 - **Stage I never meets CDC/AAP:** 100% of stage I visits are "none" under CDC/AAP, because it needs attachment loss of 3 mm or more on two teeth. So 2017 counts more people as having gum disease, and prevalence from the two can't be compared directly ([action item B6](action_items.md)).
-- **ACES agrees with the 2017 worksheet on 3,210 of 3,437 charted visits** (`data/sites/aap_vs_aces.csv`). It moves some stage III to II, and some stage IV to III when teeth are lost but enough opposing pairs remain.
+- **ACES agrees with the 2017 worksheet on 2,788 of 2,990 charted visits** (`data/sites/aap_vs_aces.csv`). It moves some stage III to II, and some stage IV to III when teeth are lost but enough opposing pairs remain.
 
 ## 2. The sources
 
@@ -48,7 +48,7 @@ When sources disagree, a rule set takes the first one, in a fixed order, that gi
 | **The study design's** (`algorithm_design`) | This repo's own (spec 005): Patel et al. 2022 has no exam-form step ([action item A2](action_items.md)) | exam form → diagnosis codes (done, then planned) → note → gum measurements | Not yet |
 | **This repo's** (`algorithm_v0`) | Its own placeholder | gum measurements → note → diagnosis codes → exam form → procedure codes; the X-ray reading can only raise the stage | Not yet |
 
-On the 240 synthetic review charts, measurements first agrees with the answer key on 234 and exam form first on 173. That gap flatters measurements first: the answer key was made from the measurements ([how scoring works](scoring.md)). On real records, which order is best is an open question.
+On the 223 synthetic review charts, measurements first agrees with the answer key on 205 and exam form first on 169. That gap flatters measurements first: the answer key was made from the measurements ([how scoring works](scoring.md)). On real records, which order is best is an open question.
 
 ## 4. Where the sources disagree
 
@@ -56,34 +56,34 @@ Each pair of sources, on the synthetic visits where both give a status, least ag
 
 | Source A | Source B | Visits both answer | Agree | Kappa |
 |---|---|---:|---:|---:|
-| Procedure codes, done | X-ray AI reading | 714 | 61% | 0.20 |
-| Procedure codes, planned | X-ray AI reading | 912 | 62% | 0.21 |
-| Diagnosis codes, done | X-ray AI reading | 677 | 53% | 0.27 |
-| Chart note | X-ray AI reading | 933 | 57% | 0.29 |
-| Exam form | X-ray AI reading | 780 | 63% | 0.34 |
-| Diagnosis codes, planned | X-ray AI reading | 677 | 66% | 0.39 |
-| Procedure codes, planned | Diagnosis codes, done | 2,820 | 55% | 0.43 |
-| Gum measurements (probing chart) | X-ray AI reading | 749 | 69% | 0.45 |
-| Exam form | Procedure codes, done | 3,039 | 57% | 0.45 |
-| Exam form | Procedure codes, planned | 3,375 | 57% | 0.45 |
-| Exam form | Diagnosis codes, done | 2,570 | 57% | 0.46 |
-| Chart note | Diagnosis codes, done | 3,061 | 58% | 0.47 |
-| Chart note | Procedure codes, done | 3,604 | 61% | 0.49 |
-| Chart note | Procedure codes, planned | 4,016 | 60% | 0.49 |
-| Procedure codes, done | Diagnosis codes, planned | 2,536 | 61% | 0.49 |
-| Procedure codes, planned | Diagnosis codes, planned | 2,820 | 60% | 0.50 |
-| Diagnosis codes, done | Diagnosis codes, planned | 3,061 | 61% | 0.50 |
-| Procedure codes, done | Diagnosis codes, done | 2,536 | 61% | 0.50 |
-| Chart note | Diagnosis codes, planned | 3,061 | 63% | 0.53 |
-| Chart note | Exam form | 3,648 | 63% | 0.53 |
-| Exam form | Diagnosis codes, planned | 2,570 | 64% | 0.55 |
-| Diagnosis codes, done | Gum measurements (probing chart) | 2,429 | 69% | 0.61 |
-| Procedure codes, done | Gum measurements (probing chart) | 2,856 | 71% | 0.61 |
-| Procedure codes, planned | Gum measurements (probing chart) | 3,183 | 70% | 0.61 |
-| Exam form | Gum measurements (probing chart) | 2,867 | 74% | 0.68 |
-| Diagnosis codes, planned | Gum measurements (probing chart) | 2,429 | 77% | 0.71 |
-| Chart note | Gum measurements (probing chart) | 3,437 | 78% | 0.72 |
-| Procedure codes, done | Procedure codes, planned | 3,604 | 100% | 1.00 |
+| Procedure codes, done | X-ray AI reading | 688 | 57% | 0.16 |
+| Procedure codes, planned | X-ray AI reading | 857 | 56% | 0.16 |
+| Exam form | X-ray AI reading | 754 | 57% | 0.25 |
+| Diagnosis codes, done | X-ray AI reading | 608 | 52% | 0.27 |
+| Chart note | X-ray AI reading | 881 | 57% | 0.30 |
+| Diagnosis codes, planned | X-ray AI reading | 608 | 63% | 0.35 |
+| Procedure codes, planned | Diagnosis codes, done | 2,467 | 54% | 0.42 |
+| Gum measurements (probing chart) | X-ray AI reading | 702 | 68% | 0.43 |
+| Exam form | Procedure codes, done | 2,679 | 57% | 0.45 |
+| Exam form | Diagnosis codes, done | 2,245 | 56% | 0.45 |
+| Exam form | Procedure codes, planned | 2,970 | 57% | 0.45 |
+| Chart note | Procedure codes, done | 3,182 | 60% | 0.48 |
+| Chart note | Procedure codes, planned | 3,518 | 60% | 0.48 |
+| Procedure codes, done | Diagnosis codes, done | 2,231 | 60% | 0.48 |
+| Procedure codes, done | Diagnosis codes, planned | 2,231 | 60% | 0.49 |
+| Chart note | Diagnosis codes, done | 2,657 | 59% | 0.49 |
+| Procedure codes, planned | Diagnosis codes, planned | 2,467 | 60% | 0.49 |
+| Diagnosis codes, done | Diagnosis codes, planned | 2,657 | 61% | 0.50 |
+| Chart note | Exam form | 3,203 | 61% | 0.51 |
+| Chart note | Diagnosis codes, planned | 2,657 | 64% | 0.54 |
+| Exam form | Diagnosis codes, planned | 2,245 | 64% | 0.55 |
+| Procedure codes, done | Gum measurements (probing chart) | 2,511 | 71% | 0.61 |
+| Procedure codes, planned | Gum measurements (probing chart) | 2,763 | 71% | 0.62 |
+| Diagnosis codes, done | Gum measurements (probing chart) | 2,094 | 70% | 0.63 |
+| Exam form | Gum measurements (probing chart) | 2,516 | 75% | 0.68 |
+| Chart note | Gum measurements (probing chart) | 2,990 | 78% | 0.72 |
+| Diagnosis codes, planned | Gum measurements (probing chart) | 2,094 | 78% | 0.73 |
+| Procedure codes, done | Procedure codes, planned | 3,182 | 100% | 1.00 |
 
 ## 5. Decisions still open
 
