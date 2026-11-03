@@ -91,34 +91,38 @@ cd python && python scripts/51_tooth_loss_model.py --patients 6000 --stability-s
 **Under the planned-extraction rule since 029 US9** (#507; the defaults, SYNTHETIC). A planned extraction now counts
 only when the tooth is recorded missing at a later visit within 365 days; the earlier rule (every planned extraction
 with a diagnosis counts) is run beside it with `--planned-window-days none`. Same command, same five generator seeds
-and 1,000 bootstrap resamples. The start date leaves out 89,986 of the 168,000 non-third-molar teeth (78,014 left).
-Generator seed 42, shared predictors, AUC (95% CI); the completed + planned columns are where the rule changes:
+and 1,000 bootstrap resamples, on the extract as spec 033 US2 draws it. The start date leaves out 89,505 of the
+168,000 non-third-molar teeth (78,495 left). Generator seed 42, shared predictors, AUC (95% CI); the completed +
+planned columns are where the rule changes:
 
 | Teeth scored | completed: logistic | completed: XGBoost | completed + planned: logistic | completed + planned: XGBoost |
 |---|---|---|---|---|
-| held-out extractions (96 teeth, 89 patients) | 0.83 (0.69-0.93) | 0.86 (0.75-0.95) | 0.84 (0.70-0.94) | 0.84 (0.72-0.94) |
-| missing at the first exam (3,519 teeth, 1,447 patients) | 0.93 (0.91-0.94) | 0.94 (0.92-0.96) | 0.92 (0.90-0.94) | 0.93 (0.91-0.95) |
-| extractions without a diagnosis (102 teeth) | 0.97 (0.91-1.00) | 0.98 (0.94-1.00) | 0.94 (0.86-0.99) | 0.96 (0.92-0.99) |
-| *earlier rule, held-out extractions* | 0.79 (0.63-0.93) | 0.85 (0.73-0.95) | 0.80 (0.63-0.94) | 0.84 (0.70-0.94) |
-| *earlier rule, missing at the first exam* | 0.93 (0.91-0.95) | 0.93 (0.91-0.95) | 0.95 (0.93-0.96) | 0.96 (0.95-0.97) |
+| held-out extractions (97 teeth, 91 patients) | 0.81 (0.68-0.91) | 0.78 (0.61-0.93) | 0.81 (0.64-0.93) | 0.75 (0.55-0.91) |
+| missing at the first exam (3,715 teeth, 1,481 patients) | 0.90 (0.88-0.92) | 0.92 (0.90-0.94) | 0.92 (0.90-0.94) | 0.94 (0.93-0.95) |
+| extractions without a diagnosis (92 teeth) | 0.86 (0.58-1.00) | 0.92 (0.75-1.00) | 0.96 (0.90-1.00) | 0.93 (0.84-1.00) |
+| *earlier rule, held-out extractions* | 0.86 (0.75-0.95) | 0.84 (0.71-0.94) | 0.85 (0.74-0.94) | 0.81 (0.65-0.94) |
+| *earlier rule, missing at the first exam* | 0.94 (0.92-0.95) | 0.95 (0.94-0.96) | 0.93 (0.90-0.95) | 0.96 (0.95-0.97) |
 
-The completed + planned set now trains on 424 teeth, not 506: planned extractions whose tooth stayed in the mouth no
-longer count. (The completed columns move a little too: teeth that go missing later leave the chart, which changes the
-synthetic extract.) Across the 5 generator seeds the held-out AUC of the shared models ranges from 0.76 to 0.89 (0.69
-to 0.85 under the earlier rule). The AUC hardly moves; the stage recount does. Of the 2,374 patients at stage III-IV
-by worst CAL, the synthetic truth puts 103 at stage IV:
+The completed + planned set now trains on 410 teeth, not 493: planned extractions whose tooth stayed in the mouth no
+longer count. The completed columns move too, because teeth that go missing later leave the chart and so change the
+extract the completed model reads. Across the 5 generator seeds the held-out AUC of the shared models ranges from
+0.55 to 0.86 (0.59 to 0.95 under the earlier rule); with about 100 held-out teeth the intervals overlap throughout,
+so the change in AUC is within the noise. Of the 2,419 patients at stage III-IV by worst CAL, the synthetic truth puts
+103 at stage IV:
 
 | Expected count, shared predictors | stage IV | wrongly called IV | IV missed |
 |---|---|---|---|
-| completed + planned, logistic / XGBoost: new rule | 63 / 59 | 10 / 12 | 50 / 56 |
-| completed + planned, logistic / XGBoost: earlier rule | 95 / 92 | 25 / 25 | 33 / 36 |
-| completed, logistic / XGBoost: new rule | 37 / 25 | 3 / 2 | 69 / 80 |
+| completed + planned, logistic / XGBoost: new rule | 102 / 81 | 26 / 22 | 27 / 44 |
+| completed + planned, logistic / XGBoost: earlier rule | 104 / 85 | 28 / 18 | 27 / 36 |
+| completed, logistic / XGBoost: new rule | 86 / 44 | 19 / 7 | 36 / 66 |
 
-Counting planned extractions still in the mouth as tooth loss called 25 patients stage IV whom the synthetic truth
-puts at stage III; the new rule calls 10-12, and misses more stage IV patients in exchange. Every missing tooth
-(289 stage IV, 186 wrongly) and recorded extractions only (0) bracket it. These are agreement with a synthetic answer
-key, whose planned-then-missing share (`Params.planned_then_missing`, 0.5) is a placeholder; a real extract decides
-how much this matters.
+On this extract the rule changes the stage recount little: two to four fewer patients called stage IV, about as many
+wrongly. (Before spec 033 US2 changed the extract, the same comparison moved 25 wrong stage IV calls to 10-12, so the
+size of the effect depends on how many planned teeth stay in the mouth.) Every missing tooth (291 stage IV, 188
+wrongly) and recorded extractions only (0) bracket it. The rule is there because a planned extraction that never
+happens isn't tooth loss, not because it scores better here. These are agreement with a synthetic answer key, whose
+planned-then-missing share (`Params.planned_then_missing`, 0.5) is a placeholder; a real extract decides how much
+this matters.
 
 The tables from here down are runs before 029 US9.
 
