@@ -31,7 +31,7 @@ Dental's source ([research.md](../specs/029-tooth-loss/research.md); references 
 
 | Table | What the model takes from it | Open Dental source |
 |---|---|---|
-| `procedurelog` | extractions (D7140, D7210): completed, planned, or done elsewhere; the diagnosis item (`Dx`) | [Procedure.cs](https://github.com/OpenDental/OpenDental/blob/24_3/OpenDentBusiness/TableTypes/Procedure.cs) |
+| `procedurelog` | extractions (D7140, D7210): completed, planned, or done elsewhere (at the first visit, or dated at a later one); the diagnosis item (`Dx`) | [Procedure.cs](https://github.com/OpenDental/OpenDental/blob/24_3/OpenDentBusiness/TableTypes/Procedure.cs) |
 | `definition` | the practice's own diagnosis lists (older and 2017), mapped to periodontal / other | [Def.cs](https://github.com/OpenDental/OpenDental/blob/24_3/OpenDentBusiness/TableTypes/Def.cs) |
 | `toothinitial` | teeth missing at the first exam | [ToothInitial.cs](https://github.com/OpenDental/OpenDental/blob/24_3/OpenDentBusiness/TableTypes/ToothInitial.cs) |
 | `perioexam`, `periomeasure` | probing depth, gingival margin (CAL is computed), bleeding, mobility | [PerioExam.cs](https://github.com/OpenDental/OpenDental/blob/24_3/OpenDentBusiness/TableTypes/PerioExam.cs), [PerioMeasure.cs](https://github.com/OpenDental/OpenDental/blob/24_3/OpenDentBusiness/TableTypes/PerioMeasure.cs) |
@@ -50,7 +50,14 @@ stores the image, not a reading of it.
   recorded.
   `tooth_loss_model.exclusions` counts the teeth left out by each reason.
 - **Two label sets** (FR-010): completed extractions only, and completed plus planned extractions (one per planned
-  procedure, however many plan copies; a tooth planned then extracted counts once, as completed).
+  procedure, however many plan copies; a tooth planned then extracted counts once, as completed). Since 029 US9
+  (#507) a planned extraction counts only when the tooth is **recorded missing at a later visit within 365 days of
+  the plan** (`ModelParams.planned_window_days`, `--planned-window-days`): a planned extraction often never happens,
+  so one whose tooth is still in the mouth isn't tooth loss. One still in the mouth, or missing after the window, has
+  no label. The earlier rule (every planned extraction with a diagnosis counts) is kept as a sensitivity setting,
+  `--planned-window-days none`. In the synthetic extract the later loss is an extraction by another provider dated
+  at that visit; on a real extract the date may come from a dated `toothinitial`. Every tooth recorded missing later
+  counts as missing in the stage recount, with the model's probability.
 - **Two predictor sets:** *shared* (what every missing tooth has: tooth type, neighbours' worst CAL, the mouth at
   the first exam, teeth missing at entry, age, smoking, diabetes) is the applied model; *own* adds the tooth's own
   last measures and how good that chart was, and is shown beside it.
