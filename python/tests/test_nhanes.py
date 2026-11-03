@@ -143,3 +143,23 @@ def test_sites_are_read_from_the_abbreviations_in_the_real_nhanes_labels():
         ("02", "PC", "D"): "DB", ("02", "PC", "M"): "B", ("02", "PC", "S"): "MB",     # DF is inside MdF: whole tokens
         ("02", "PC", "P"): "DL", ("02", "PC", "L"): "L", ("02", "PC", "A"): "ML",
         ("02", "LA", "D"): "DB"}
+
+
+def test_edentulism_by_age_band_is_weighted_within_each_band():
+    """Spec 033 US4 (#500): the share with no natural teeth per age band, in the same domain as adults30_all
+    (a complete periodontal exam, or edentulous)."""
+    from health_transformation_lab_nlp.nhanes import EDENTULOUS_AGE_BANDS, edentulous_by_age
+
+    people = pd.DataFrame({"RIDAGEYR": [32, 33, 40, 41, 70, 71, 72, 29],
+                           "perio_complete": [True, True, True, False, True, False, False, True],
+                           "edentulous": [False, True, False, False, False, True, True, True],
+                           "w": [1.0, 3.0, 1.0, 1.0, 2.0, 1.0, 1.0, 5.0],
+                           "strata": [1, 1, 1, 1, 2, 2, 2, 1], "psu": [1, 2, 1, 2, 1, 2, 1, 2]})
+    out = edentulous_by_age(people).set_index("age_band_low_num")
+    assert list(out.index) == [low for low, _ in EDENTULOUS_AGE_BANDS]
+    assert out.loc[30, "edentulous_pct"] == pytest.approx(75.0)      # weights 1 and 3; the 29-year-old is out
+    assert out.loc[35, "edentulous_pct"] == pytest.approx(0.0)       # the 41-year-old has no exam: out
+    assert out.loc[35, "n_domain"] == 1
+    assert out.loc[65, "edentulous_pct"] == pytest.approx(50.0)
+    assert out.loc[30, "age_band_high_num"] == 34 and pd.isna(out.loc[75, "age_band_high_num"])
+    assert out.loc[75, "n_domain"] == 0 and pd.isna(out.loc[75, "edentulous_pct"])

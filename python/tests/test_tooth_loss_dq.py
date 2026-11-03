@@ -67,6 +67,19 @@ def test_shares_are_found_over_checked(planted):
     assert r["is_flagged"].dtype == "boolean"
 
 
+def test_a_chart_for_a_patient_with_no_teeth_is_found_and_no_chart_there_is_not_a_fault(clean, planted):
+    # spec 033 US4 (#500): an edentulous patient has every tooth missing at entry and no perio chart, which is right;
+    # a chart for one means the tooth record or the chart is wrong
+    assert open_dental.edentulous_patients(clean)                      # the clean extract has some, with no chart
+    found = _found(tooth_loss_dq.run_checks(clean, switch_date=CLEAN.list_switch_date))
+    assert found["chart_without_teeth"] == 0
+    tables, faults = planted
+    assert faults["chart_without_teeth"] == 1
+    r = tooth_loss_dq.run_checks(tables, switch_date=CLEAN.list_switch_date).set_index("check_name")
+    assert r.loc["chart_without_teeth", "found_count"] == 1
+    assert r.loc["chart_without_teeth", "checked_count"] == len(open_dental.edentulous_patients(tables))
+
+
 # ---------- consistency by group: is the record kept as well for every group of patients? ----------
 def test_groups_cover_office_provider_sex_race_year_age_and_insurance(clean):
     g = tooth_loss_dq.group_consistency(clean)

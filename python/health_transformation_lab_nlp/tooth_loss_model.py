@@ -8,7 +8,9 @@ only to score the teeth that have no recorded reason, never as a feature. Synthe
   default 18; None for no cut-off, a sensitivity analysis). Age is at the tooth's loss, or at the first exam when the
   loss date isn't recorded (teeth missing at entry, planned extractions). Optionally from a start date
   (`ModelParams.start_date`, default None: every year; spec 032 US2): a tooth counts when its loss date, or its
-  patient's first exam date when the loss date isn't recorded, is on or after it.
+  patient's first exam date when the loss date isn't recorded, is on or after it. Patients with no natural teeth
+  (every tooth missing at the first visit; spec 033 US4) are left out of the model and of the stage recount: the 2018
+  classification can't stage a mouth with no teeth, and why they lost their teeth isn't recorded.
 - Label (s. 4, FR-010): 1 = the extraction's diagnosis item is periodontal, 0 = another reason. Two label sets:
   `completed` (completed extractions) and `completed_planned` (plus planned ones; the tooth table already counts a
   tooth planned then completed once, as completed). Since 029 US9 (#507) a planned extraction counts only when the
@@ -126,10 +128,21 @@ def _ref_date(t: pd.DataFrame) -> pd.Series:
 
 
 @traced
+def edentulous(teeth: pd.DataFrame) -> pd.Series:
+    """True for each tooth of a patient with no natural teeth: every tooth 1-32 in the table missing at the first visit
+    (spec 033 US4). The 2018 classification can't stage a mouth with no teeth, and why those teeth were lost isn't
+    recorded, so these patients neither train nor score the model nor count in the stage recount."""
+    entry = teeth["tooth_status_code"].eq("missing_at_entry")
+    n = teeth.assign(entry=entry).groupby("patient_id")["entry"].transform("sum")
+    return n.eq(32)
+
+
+@traced
 def eligible(teeth: pd.DataFrame, params: ModelParams = DEFAULT) -> pd.DataFrame:
-    """The teeth in the analysis: third molars out unless included; at least `min_age` when one is set (a tooth
-    whose age isn't recorded is then left out too: `exclusions` counts them); on or after `start_date` when one is
-    set (a tooth with no date is then left out too)."""
+    """The teeth in the analysis: patients with no natural teeth out (`edentulous`); third molars out unless included;
+    at least `min_age` when one is set (a tooth whose age isn't recorded is then left out too: `exclusions` counts
+    them); on or after `start_date` when one is set (a tooth with no date is then left out too)."""
+    teeth = teeth[~edentulous(teeth)]
     t = teeth if params.include_third_molars else teeth[~teeth["tooth_num"].isin(THIRD_MOLARS)]
     if params.min_age is not None:
         t = t[_age(t) >= params.min_age]
@@ -143,7 +156,8 @@ def stage_teeth(teeth: pd.DataFrame, params: ModelParams = DEFAULT) -> pd.DataFr
     """The teeth whose loss counts toward stage III vs IV: every tooth in the table, third molars out unless included.
     The minimum age and the start date choose the teeth that train and score the model (`eligible`; their labels come
     from the newer code list), not how many teeth a patient has lost: a tooth lost before the start date still
-    counts."""
+    counts. Patients with no natural teeth are left out (`edentulous`): stage III vs IV needs teeth to stage."""
+    teeth = teeth[~edentulous(teeth)]
     return teeth if params.include_third_molars else teeth[~teeth["tooth_num"].isin(THIRD_MOLARS)]
 
 
@@ -151,18 +165,20 @@ def stage_teeth(teeth: pd.DataFrame, params: ModelParams = DEFAULT) -> pd.DataFr
 def exclusions(teeth: pd.DataFrame, params: ModelParams = DEFAULT) -> dict[str, int]:
     """How many teeth `eligible` leaves out, by reason, in the order it applies them (each tooth counted once, under
     the first reason), and how many it keeps."""
-    molar = pd.Series(False, index=teeth.index) if params.include_third_molars else \
-        teeth["tooth_num"].isin(THIRD_MOLARS)
+    none = edentulous(teeth)
+    molar = ~none & (pd.Series(False, index=teeth.index) if params.include_third_molars else
+                     teeth["tooth_num"].isin(THIRD_MOLARS))
     age = _age(teeth)
     cut = params.min_age is not None
-    unknown = ~molar & age.isna() & cut
-    young = ~molar & ~age.isna() & (age < params.min_age if cut else False)
-    left = ~molar & ~unknown & ~young
+    unknown = ~none & ~molar & age.isna() & cut
+    young = ~none & ~molar & ~age.isna() & (age < params.min_age if cut else False)
+    left = ~none & ~molar & ~unknown & ~young
     on = _ref_date(teeth)
     dated = params.start_date is not None
     no_date = left & on.isna() & dated
     early = left & on.notna() & ((on < pd.Timestamp(params.start_date)) if dated else False)
-    return {"third_molar_count": int(molar.sum()), "under_min_age_count": int(young.sum()),
+    return {"edentulous_count": int(none.sum()), "third_molar_count": int(molar.sum()),
+            "under_min_age_count": int(young.sum()),
             "unknown_age_count": int(unknown.sum()), "before_start_date_count": int(early.sum()),
             "unknown_date_count": int(no_date.sum()), "eligible_count": int((left & ~no_date & ~early).sum())}
 

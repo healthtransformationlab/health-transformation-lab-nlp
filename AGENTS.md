@@ -127,7 +127,8 @@ Every user story is a GitHub issue, and every branch and pull request belongs to
 6. **An agent merges its own PR when it's ready, without waiting to be told** (the owner's standing rule,
    #497). Ready means every check is green on the latest commit, there's no merge conflict, and its
    `pull_requests/pr-<n>-review.md` finds nothing blocking. These still wait for the owner to say "merge":
-   - a PR that starts a paid run (a Databricks job, a GPU, a paid endpoint);
+   - a PR that starts a run on limited compute (a Databricks job on Free Edition, a Kaggle GPU) or a paid endpoint:
+     nothing is billed, but the allowance is shared and a long run can use it up and block other jobs;
    - one that publishes outside this repo (Kaggle, Hugging Face, the website);
    - one that deletes data, tables or branches, or changes these rules;
    - one the owner has said to hold.
@@ -277,7 +278,7 @@ Full pipeline and dry runs: `README.md`. Study design: `docs/process.md`.
   | `gh` login for `gh secret set` / `gh variable set` | `gh auth login` | `repo` (classic), or fine-grained: this repo, Secrets, Variables and Environments read and write | your laptop only |
   | Hugging Face token for MedGemma | huggingface.co → Settings → Access tokens | Read | Databricks secret scope `health_transformation_lab`, key `hf_token` |
   | Application Insights connection string (telemetry, spec 014) | Azure portal → Application Insights `health-transformation-lab-nlp-appi` → Overview, or `terraform -chdir=infra/azure output -raw connection_string` piped straight into the secret (docs/telemetry.md); also in the git-ignored Terraform state | ingestion only: can send telemetry, can't read; doesn't expire, so rotate by recreating the resource | Databricks secret scope `health_transformation_lab`, key `appinsights_connection_string` |
-  | Kaggle API token (MedGemma on Kaggle) | kaggle.com → Settings → API → Generate New Token | the Kaggle account (no narrower scope offered); delete it on Kaggle when not running | GitHub environment `dev` secret `KAGGLE_API_TOKEN` |
+  | Kaggle API token (MedGemma on Kaggle) | kaggle.com → Settings → API → Generate New Token | the Kaggle account (no narrower scope offered); delete it on Kaggle when not running | GitHub environment `dev` secret `KAGGLE_API_TOKEN`; for a cloud session, cloud environment variable `KAGGLE_API_KEY` (read by `56_competition_check.py`, #502) |
   | Hugging Face publish token (spec 025) | huggingface.co → Settings → Access tokens → Fine-grained | write access to the `healthtransformationlab` organisation's repositories only; 90 days at most | GitHub environment `dev` secret `HF_PUBLISH_TOKEN` |
   | Website deploy key (deck copies, #464; preferred, never expires) | `ssh-keygen -t ed25519 -N '' -f site_deploy_key` on your laptop; the `.pub` half goes in healthtransformationlab.github.io → Settings → Deploy keys | that one repository, Allow write access | GitHub repository secret `SITE_DEPLOY_KEY` (the private half) |
   | Website push token (deck copies, #374) | github.com → Settings → Developer settings → Personal access tokens → Fine-grained tokens, resource owner `healthtransformationlab` | only the repository `healthtransformationlab/healthtransformationlab.github.io`, Contents read and write; 90 days at most | GitHub repository secret `SITE_PUSH_TOKEN` |

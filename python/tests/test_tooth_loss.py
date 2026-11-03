@@ -174,8 +174,17 @@ def test_on_the_synthetic_extract_the_labels_agree_with_the_truth_at_the_declare
     labelled = t.dropna(subset=["is_perio_loss"])
     agree = (labelled["is_perio_loss"] == (labelled["true_reason_code"] == "perio")).mean()
     assert agree > 0.85                                   # dx_correct 0.80 of all, ~0.94 of those with a diagnosis
-    missing = t[t["tooth_status_code"] == "missing_at_entry"]
+    missing = t[(t["tooth_status_code"] == "missing_at_entry") & ~t["patient_id"].isin(od.edentulous_patients(tables))]
     assert missing["true_reason_code"].notna().all()     # every tooth the model is applied to has a known answer
+
+
+def test_a_patient_with_no_natural_teeth_has_every_tooth_missing_at_entry_and_no_chart_features():
+    # spec 033 US4 (#500): the tooth table holds the edentulous patient as 32 teeth missing at entry; the model and
+    # the stage recount leave them out (tooth_loss_model.edentulous)
+    t = tl.tooth_table(_extract(initial=range(1, 33)))
+    assert len(t) == 32 and (t["tooth_status_code"] == "missing_at_entry").all()
+    assert (t["teeth_missing_at_entry_count"] == 32).all() and t["mouth_max_pd_mm"].isna().all()
+    assert t["is_perio_loss"].isna().all() and (t["age_at_first_exam_num"] == 60).all()
 
 
 def test_a_planned_extraction_never_completed_is_one_row_with_its_copies_counted():

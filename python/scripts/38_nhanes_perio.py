@@ -6,7 +6,9 @@ Real, public-domain charts (CDC/NCHS). Adults 30+ with a complete periodontal ex
 edentulous; survey-weighted (six-year weights) with linearized 95% CIs. Compared with the published
 figures (Eke 2018; Tay 2025): close agreement checks this repo's case definitions and survey code,
 it is not a new finding. cdc.gov is not reachable from every environment: the Databricks job
-`nhanes_perio` runs this with --download. Writes nhanes_prevalence.csv (aggregates only).
+`nhanes_perio` runs this with --download. Writes nhanes_prevalence.csv and, since spec 033 US4 (#500),
+nhanes_edentulous_by_age.csv: complete tooth loss by age band, which sets the synthetic Open Dental extract's
+edentulous share below 65 (aggregates only).
 """
 
 import argparse
@@ -19,6 +21,7 @@ from health_transformation_lab_nlp.nhanes import (
     CYCLES,
     classify_people,
     download,
+    edentulous_by_age,
     nhanes_cdc_aap_published,
     read_xpt,
     weighted_prevalence,
@@ -56,8 +59,12 @@ for label, dom in {"adults30_all": adults & (people["perio_complete"] | people["
         rows.append(p.assign(population=label, classification=c, n_domain=int(dom.sum())))
 res = pd.concat(rows, ignore_index=True)
 res.to_csv(args.out / "nhanes_prevalence.csv", index=False)
+by_age = edentulous_by_age(people)
+by_age.to_csv(args.out / "nhanes_edentulous_by_age.csv", index=False)
 nhanes_cdc_aap_published().to_csv(args.out / "nhanes_published.csv", index=False)
 print("NHANES 2009-2014, adults 30+ (REAL public data; weighted %, 95% CI):")
 print(res.round(1).to_string(index=False))
+print("\ncomplete tooth loss by age band, adults 30+ (REAL public data; weighted %, 95% CI):")
+print(by_age.round(1).to_string(index=False))
 print("\npublished, for comparison:")
 print(nhanes_cdc_aap_published().to_string(index=False))

@@ -30,7 +30,12 @@ What the extract carries, as Open Dental records it:
   stream of its own after every other table, so adding it changed no other row. Each patient is `private`, `public` or
   `none` at SYNTHETIC placeholder shares (`Params.insurance_shares`), read back by `insurance_type`;
 - smoking and diabetes follow published US shares (spec 033 US2, #485: `Params.smoking_share`, `diabetes_share`),
-  where the study's notes keep the older placeholders (docs/synthetic_data.md).
+  where the study's notes keep the older placeholders (docs/synthetic_data.md);
+- some patients have no natural teeth (spec 033 US4, #500), at published US shares by age band
+  (`Params.edentulous_share_by_age`), drawn on a stream of their own: every tooth is a `toothinitial` row, and they
+  have no perio chart, radiograph, hygiene visit or extraction, and no answer-key rows. Their mouth and visits are still
+  drawn on the main stream and thrown away, so patients with teeth keep their rows (keys after them shift). Optional
+  geography (`Params.clinic_states`, default none) gives each clinic a US state and scales the share to its rate.
 
 Why each tooth was lost (`tooth_loss_truth`) is returned apart from the extract and written to another folder: the
 evaluation reads it, the extract never carries it. Teeth missing at the first visit are lost to periodontitis (the
@@ -170,6 +175,17 @@ RELAT_SELF, RELAT_SPOUSE = 0, 1                 # patplan.Relationship (Relat en
 # out (specs/029-tooth-loss/research.md, "Why teeth are missing"; docs/references.md item 63)
 ENTRY_PERIO_SHARE_BY_AGE = ((25, 0.064), (35, 0.209), (45, 0.329), (55, 0.480), (65, 0.500), (75, 0.470))
 DIABETES_HBA1C = 6.5          # HbA1c (%) at which a synthetic patient has type 2 diabetes listed
+NO_STATE = "ZZ"               # clinic.state when the extract has no geography (Params.clinic_states empty)
+# spec 033 US4 (#500): all teeth lost among adults 65 and over, crude prevalence %, BRFSS 2022, by state (50 states and
+# DC) and for the United States ("US"), as CDC's U.S. Chronic Disease Indicators report it (indicator ORH03; data.cdc.gov
+# dataset hksd-2xuw, read 2026-11-03; docs/references.md item 81). Only a state's ratio to "US" is used
+STATE_EDENTULOUS_65_PCT = {
+    "AL": 16.6, "AK": 11.8, "AZ": 10.2, "AR": 22.1, "CA": 6.9, "CO": 7.5, "CT": 10.0, "DE": 11.0, "DC": 11.6,
+    "FL": 12.2, "GA": 15.8, "HI": 5.4, "ID": 13.3, "IL": 8.8, "IN": 18.6, "IA": 10.6, "KS": 11.2, "KY": 22.5,
+    "LA": 17.0, "ME": 15.3, "MD": 8.7, "MA": 10.7, "MI": 10.0, "MN": 8.1, "MS": 19.0, "MO": 15.3, "MT": 12.0,
+    "NE": 9.5, "NV": 12.1, "NH": 10.7, "NJ": 10.1, "NM": 11.8, "NY": 11.9, "NC": 16.5, "ND": 11.8, "OH": 15.6,
+    "OK": 16.9, "OR": 10.1, "PA": 13.1, "RI": 11.4, "SC": 12.9, "SD": 10.3, "TN": 18.2, "TX": 13.0, "UT": 8.6,
+    "VT": 13.3, "VA": 10.8, "WA": 8.5, "WV": 25.1, "WI": 9.0, "WY": 13.5, "US": 12.1}
 _TOOTH_KIND = {**{t: "incisor" for t in (7, 8, 9, 10, 23, 24, 25, 26)}, **{t: "canine" for t in (6, 11, 22, 27)},
                **{t: "premolar" for t in (4, 5, 12, 13, 20, 21, 28, 29)}, **{t: "molar" for t in MOLARS}}
 
@@ -242,6 +258,18 @@ class Params:
     insurance_shares: tuple = (("private", 0.55), ("public", 0.30), ("none", 0.15))
     secondary_plan: float = 0.05              # a privately insured patient also has a second private plan
     spouse_subscriber: float = 0.25           # a private plan held by a spouse (another patient), not the patient
+    # spec 033 US4 (#500): the share of patients with no natural teeth (edentulous), by age band (lower bound, years).
+    # 65-69, 70-74 and 75+: Fleming et al., NCHS Data Brief 368, NHANES 2015-2018 (docs/references.md item 79).
+    # 35-44, 45-54, 55-64: this repo's NHANES 2009-2014 run (scripts/38_nhanes_perio.py,
+    # data/datasets/nhanes/nhanes_edentulous_by_age.csv; real public data), rounded; its 30-34 rate (0.8%) stands in
+    # for 25-34, as NHANES examined adults 30 and over. The 2009-2014 rates are older than 2015-2018 ones, and
+    # edentulism is falling (item 80), so they may run a little high
+    edentulous_share_by_age: tuple = ((25, 0.008), (35, 0.013), (45, 0.037), (55, 0.079), (65, 0.089), (70, 0.106),
+                                      (75, 0.178))
+    # optional geography: one US state (postal code, a key of STATE_EDENTULOUS_65_PCT) per clinic, in clinic order.
+    # Empty (the default): clinics have no state (NO_STATE) and the national shares above hold. Set: each share for a
+    # clinic's patients is scaled by its state's rate over the US rate (all teeth lost at 65 and over, BRFSS 2022)
+    clinic_states: tuple = ()
 
 
 # every mess rate at zero: a complete chart at every visit, every radiograph read
@@ -362,6 +390,72 @@ def _entry_other_teeth(age: int, risk: RiskFactors, chart, site_cols: dict, teet
     return sorted(chosen)
 
 
+@traced
+def check_states(p: Params | None = None) -> None:
+    """Fails at once on a geography setting the extract can't use: one state per clinic, each in the table."""
+    p = p or Params()
+    if not p.clinic_states:
+        return
+    if len(p.clinic_states) != p.n_clinics:
+        raise ValueError(f"clinic_states gives {len(p.clinic_states)} states for {p.n_clinics} clinics (n_clinics)")
+    unknown = [s for s in p.clinic_states if s not in STATE_EDENTULOUS_65_PCT or s == "US"]
+    if unknown:
+        raise ValueError(f"clinic_states: no state rate for {unknown}; use a key of STATE_EDENTULOUS_65_PCT")
+
+
+@traced
+def edentulous_share(age: int, state: str | None = None, p: Params | None = None) -> float:
+    """The chance a patient of this age has no natural teeth (spec 033 US4): the age band's share
+    (`Params.edentulous_share_by_age`), times the state's rate over the US rate when the clinic has a state, at most 1."""
+    p = p or Params()
+    share = dict(p.edentulous_share_by_age)[_band(age, p.edentulous_share_by_age)]
+    if state is None:
+        return share
+    if state not in STATE_EDENTULOUS_65_PCT:
+        raise ValueError(f"no state rate for {state!r}")
+    return min(1.0, share * STATE_EDENTULOUS_65_PCT[state] / STATE_EDENTULOUS_65_PCT["US"])
+
+
+def _edentulous_rows(r: _Rows, rng: random.Random, *, pat, dates, clinic, dentist, site, exam_codes, fees,
+                     tobacco) -> None:
+    """An edentulous patient's own rows (spec 033 US4): every tooth missing at entry (`toothinitial`, InitialType 0),
+    and at each visit an appointment, the oral exam, the exam form and sometimes vital signs. No perio chart, no
+    radiograph, no hygiene and no extraction: there are no teeth. Drawn from the edentulous stream only."""
+    for t in range(1, 33):
+        r("toothinitial", patnum=pat, toothnum=str(t), initialtype=0, movement=0.0)
+    for k, d in enumerate(dates):
+        apt = r("appointment", patnum=pat, provnum=dentist, provhyg=0,
+                aptdatetime=datetime.combine(d, datetime.min.time()) + timedelta(hours=rng.randint(8, 16)),
+                pattern="/XXXX/", clinicnum=clinic, ishygiene=False, procdescript="CompEx" if k == 0 else "PerEx")
+        r("procedurelog", patnum=pat, procstatus=COMPLETE, procdate=d, datetp=None, datecomplete=d,
+          codenum=exam_codes[0 if k == 0 else 1], toothnum="", surf="", dx=0, prognosis=0, diagnosticcode="",
+          icdversion=0, provnum=dentist, clinicnum=clinic, aptnum=apt, procfee=fees[0 if k == 0 else 1], toothrange="",
+          priority=0, placeservice=POS_MOBILE if site else POS_OFFICE, prosthesis="", medicalcode="", unitqty=1,
+          sitenum=site)
+        sheet = r("sheet", sheettype=SHEET_EXAM, patnum=pat, datetimesheet=datetime.combine(d, datetime.min.time()),
+                  description="Oral Exam Form", clinicnum=clinic)
+        for group, value in (("Tobacco", tobacco), ("Bleeding", ""), ("Plaque", ""), ("Calculus", "")):
+            r("sheetfield", sheetnum=sheet, fieldname=group, fieldvalue=value, radiobuttongroup=group,
+              reportablename=group)
+        if rng.random() < 0.6:
+            r("vitalsign", patnum=pat, bpsystolic=rng.randint(105, 160), bpdiastolic=rng.randint(60, 100),
+              pulse=rng.randint(55, 100), datetaken=d)
+
+
+@traced
+def edentulous_patients(tables: dict[str, pd.DataFrame]) -> set:
+    """The patients the record says have no natural teeth: every tooth 1-32 missing at the first visit (a
+    `toothinitial` row of InitialType 0, or an extraction done elsewhere, ProcStatus 4). Read from the extract alone,
+    so it works on any extract in this format (spec 033 US4)."""
+    ti = _numeric(tables["toothinitial"], ["patnum", "toothnum", "initialtype"])
+    pl = _numeric(tables["procedurelog"], ["patnum", "procstatus", "codenum", "toothnum"])
+    elsewhere = pl[(pl["procstatus"] == EXISTING_OTHER) & pl["codenum"].isin(extraction_codenums(tables))]
+    entry = pd.concat([ti.loc[ti["initialtype"] == 0, ["patnum", "toothnum"]], elsewhere[["patnum", "toothnum"]]])
+    entry = entry[entry["toothnum"].between(1, 32)].drop_duplicates()
+    n = entry.groupby("patnum")["toothnum"].nunique()
+    return {int(x) for x in n.index[n == 32]}
+
+
 def _adoption(d: date, p: Params) -> float:
     """Share of new diagnoses drawn from the 2017 list on day d: 0 before the switch, rising to 1 over the lag."""
     years = (d - p.list_switch_date).days / 365.25
@@ -384,6 +478,8 @@ def build_with_readings(p: Params | None = None, seed: int = 42) -> tuple[dict[s
     rng = random.Random(f"{seed}:open_dental")
     entry_rng = random.Random(f"{seed}:open_dental:entry_reason")     # why teeth are missing at entry (US7)
     later_rng = random.Random(f"{seed}:open_dental:planned_then_missing")   # planned, then missing later (029 US9)
+    edent_rng = random.Random(f"{seed}:open_dental:edentulous")       # who has no natural teeth (spec 033 US4)
+    check_states(p)
     r = _Rows()
     truth: dict[tuple[int, int], str] = {}
 
@@ -406,8 +502,10 @@ def build_with_readings(p: Params | None = None, seed: int = 42) -> tuple[dict[s
                          proccat=proccat[cat], isprosth=False, ishygiene=hyg, medicalcode="", isradiology=c in RADIOGRAPHS),
                    desc, abbr, fee)
     clinics = [r("clinic", description=f"Synthetic Dental Clinic {chr(65 + i)}", abbr=f"Clinic {chr(65 + i)}",
-                     address=f"{100 + 10 * i} Example Avenue", address2="", city="Exampletown", state="ZZ",
-                     zip=f"0000{i}", phone="", fax="") for i in range(p.n_clinics)]
+                     address=f"{100 + 10 * i} Example Avenue", address2="", city="Exampletown",
+                     state=p.clinic_states[i] if p.clinic_states else NO_STATE, zip=f"0000{i}", phone="", fax="")
+               for i in range(p.n_clinics)]
+    clinic_state = {c: (p.clinic_states[i] if p.clinic_states else None) for i, c in enumerate(clinics)}
     sites = [r("site", description=name, note="", zip=f"0010{i}", placeservice=pos)
              for i, (name, pos) in enumerate(p.sites)]
     dentists = [r("provider", suffix=rng.choice(["DDS", "DMD"]), specialty=specialty["General"],
@@ -496,6 +594,11 @@ def build_with_readings(p: Params | None = None, seed: int = 42) -> tuple[dict[s
             r("allergy", allergydefnum=rng.choice(allergens), patnum=pat, reaction=rng.choice(["rash", "hives", ""]),
                   statusisactive=True)
 
+        # ---- spec 033 US4 (#500): no natural teeth. Drawn on a stream of its own; the mouth and visits below are still
+        # drawn for an edentulous patient, into rows that are thrown away, so every other patient keeps theirs
+        edentulous = edent_rng.random() < edentulous_share(age, clinic_state[clinic], p)
+        w, w_truth, w_reads = (_Rows(), {}, []) if edentulous else (r, truth, readings)
+
         # ---- the mouth at the first exam: who is missing, and why (the truth)
         chart0 = hist[0].chart
         site_cols, teeth = draw_mouth_columns(chart0, draw_pct_teeth_involved(chart0, rng), rng)
@@ -510,15 +613,15 @@ def build_with_readings(p: Params | None = None, seed: int = 42) -> tuple[dict[s
         for t, reason in zip(teeth["tooth"], teeth["missing_reason"]):
             if not reason:
                 continue
-            truth[(pat, t)] = reason
+            w_truth[(pat, t)] = reason
             if rng.random() < p.entry_as_existing:
-                r("procedurelog", patnum=pat, procstatus=EXISTING_OTHER, procdate=None, datetp=None,
+                w("procedurelog", patnum=pat, procstatus=EXISTING_OTHER, procdate=None, datetp=None,
                       datecomplete=None, codenum=code["D7140"][0], toothnum=str(t), surf="", dx=0, prognosis=0,
                       diagnosticcode="", icdversion=0, provnum=0, clinicnum=clinic, aptnum=0, procfee=0.0,
                       toothrange="", priority=0, placeservice=POS_OFFICE, prosthesis="", medicalcode="", unitqty=1,
                       sitenum=0)
             else:
-                r("toothinitial", patnum=pat, toothnum=str(t), initialtype=0, movement=0.0)
+                w("toothinitial", patnum=pat, toothnum=str(t), initialtype=0, movement=0.0)
 
         cal_tooth = {t: max(base[(t, s)][1] for s in SITES) for t in present}
         planned_open: list[dict] = []       # planned extractions not completed yet, with what a copy needs
@@ -532,21 +635,21 @@ def build_with_readings(p: Params | None = None, seed: int = 42) -> tuple[dict[s
                 planned_open.remove(o)
                 if o["tooth"] not in present:      # already extracted on a later plan: nothing more to record
                     continue
-                r("procedurelog", patnum=pat, procstatus=EXISTING_OTHER, procdate=d, datetp=None, datecomplete=None,
+                w("procedurelog", patnum=pat, procstatus=EXISTING_OTHER, procdate=d, datetp=None, datecomplete=None,
                       codenum=code["D7140"][0], toothnum=str(o["tooth"]), surf="", dx=0, prognosis=0,
                       diagnosticcode="", icdversion=0, provnum=0, clinicnum=clinic, aptnum=0, procfee=0.0,
                       toothrange="", priority=0, placeservice=POS_OFFICE, prosthesis="", medicalcode="", unitqty=1,
                       sitenum=0)
                 present.discard(o["tooth"])
                 extracted.add(o["tooth"])
-            apt = r("appointment", patnum=pat, provnum=dentist, provhyg=hyg,
+            apt = w("appointment", patnum=pat, provnum=dentist, provhyg=hyg,
                         aptdatetime=datetime.combine(d, datetime.min.time()) + timedelta(hours=rng.randint(8, 16)),
                         pattern="/XXXXXX/" if k else "/XXXXXXXXX/", clinicnum=clinic, ishygiene=True,
                         procdescript="CompEx, Pro" if k == 0 else "PerEx, Pro")
 
             def done(c, tooth="", fee_scale=1.0, dx=0, prog=0, on=d, pat=pat, dentist=dentist, clinic=clinic,
-                     apt=apt, site=site):
-                return r("procedurelog", patnum=pat, procstatus=COMPLETE, procdate=on, datetp=None,
+                     apt=apt, site=site, w=w):
+                return w("procedurelog", patnum=pat, procstatus=COMPLETE, procdate=on, datetp=None,
                              datecomplete=on, codenum=code[c][0], toothnum=tooth, surf="", dx=dx, prognosis=prog,
                              diagnosticcode="", icdversion=0, provnum=dentist, clinicnum=clinic, aptnum=apt,
                              procfee=round(code[c][3] * fee_scale, 2), toothrange="", priority=0,
@@ -585,7 +688,7 @@ def build_with_readings(p: Params | None = None, seed: int = 42) -> tuple[dict[s
 
             # perio chart, as messy as real ones (#385): not done, partial, copied, uniform, out of range
             if rng.random() < (p.chart_site if site else p.chart_office):
-                exam = r("perioexam", patnum=pat, examdate=d, provnum=hyg)
+                exam = w("perioexam", patnum=pat, examdate=d, provnum=hyg)
                 charted = sorted(present)
                 if rng.random() < p.partial_chart and len(charted) > 4:
                     charted = sorted(rng.sample(charted, max(1, round(len(charted) * rng.uniform(0.4, 0.8)))))
@@ -613,13 +716,13 @@ def build_with_readings(p: Params | None = None, seed: int = 42) -> tuple[dict[s
                     rows = [(SEQ_PROBING, probing)] + ([(SEQ_MARGIN, margin)] if margins else []) + \
                         ([(SEQ_BLEEDING, bleed)] if bleeding else [])
                     for seq, vals in rows:
-                        r("periomeasure", perioexamnum=exam, sequencetype=seq, inttooth=t, toothvalue=-1,
+                        w("periomeasure", perioexamnum=exam, sequencetype=seq, inttooth=t, toothvalue=-1,
                               **dict(zip(SITE_VALUES, vals)))
-                    r("periomeasure", perioexamnum=exam, sequencetype=SEQ_MOBILITY, inttooth=t,
+                    w("periomeasure", perioexamnum=exam, sequencetype=SEQ_MOBILITY, inttooth=t,
                           toothvalue=int(mobility.get(t, 0)), mbvalue=-1, bvalue=-1, dbvalue=-1, mlvalue=-1,
                           lvalue=-1, dlvalue=-1)
                     if t in MOLARS and furcation.get(t, 0):
-                        r("periomeasure", perioexamnum=exam, sequencetype=SEQ_FURCATION, inttooth=t, toothvalue=-1,
+                        w("periomeasure", perioexamnum=exam, sequencetype=SEQ_FURCATION, inttooth=t, toothvalue=-1,
                               mbvalue=-1, bvalue=int(furcation[t]), dbvalue=-1, mlvalue=-1, lvalue=-1, dlvalue=-1)
                 last_chart = recorded
 
@@ -631,24 +734,24 @@ def build_with_readings(p: Params | None = None, seed: int = 42) -> tuple[dict[s
             on_image = sorted(present & BITEWING_TEETH) if kind == "D0274" else sorted(present)
             if kind and on_image:
                 done(kind)
-                docnum = r("document", patnum=pat, datecreated=datetime.combine(d, datetime.min.time()) +
+                docnum = w("document", patnum=pat, datecreated=datetime.combine(d, datetime.min.time()) +
                            timedelta(hours=9), doccategory=image_cat["Radiographs"], imgtype=IMG_RADIOGRAPH,
                            toothnumbers=",".join(map(str, on_image)), description=code[kind][1],
                            filename=f"img_{pat}_{k}.dcm")
                 for t in on_image:
                     bone = None if rng.random() < p.reading_missing else \
                         round(min(95.0, max(0.0, (true_cal[t] - 1.5) / 12 * 100 + rng.gauss(0, 6))), 1)
-                    readings.append((docnum, t, pat, d, bone, True))
+                    w_reads.append((docnum, t, pat, d, bone, True))
 
-            sheet = r("sheet", sheettype=SHEET_EXAM, patnum=pat,
+            sheet = w("sheet", sheettype=SHEET_EXAM, patnum=pat,
                           datetimesheet=datetime.combine(d, datetime.min.time()), description="Oral Exam Form",
                           clinicnum=clinic)
             for group, value in (("Tobacco", "Y" if cigs else "N"), ("Bleeding", "X" if chart.bop_pct >= 10 else ""),
                                  ("Plaque", "X" if rng.random() < 0.4 else ""), ("Calculus", "X" if rng.random() < 0.3 else "")):
-                r("sheetfield", sheetnum=sheet, fieldname=group, fieldvalue=value, radiobuttongroup=group,
+                w("sheetfield", sheetnum=sheet, fieldname=group, fieldvalue=value, radiobuttongroup=group,
                       reportablename=group)
             if rng.random() < 0.6:
-                r("vitalsign", patnum=pat, bpsystolic=rng.randint(105, 160), bpdiastolic=rng.randint(60, 100),
+                w("vitalsign", patnum=pat, bpsystolic=rng.randint(105, 160), bpdiastolic=rng.randint(60, 100),
                       pulse=rng.randint(55, 100), datetaken=d)
 
             # extractions planned today: periodontal losses before the next visit, another reason now and then,
@@ -668,12 +771,12 @@ def build_with_readings(p: Params | None = None, seed: int = 42) -> tuple[dict[s
                 if left:
                     new_plans.append((max(left, key=lambda t: cal_tooth.get(t, 0)), "perio", None))
             for t, kind, completes in new_plans:
-                truth[(pat, t)] = kind
+                w_truth[(pat, t)] = kind
                 dx, dx_name, _ = diagnosis(kind, d)
                 c = "D7210" if rng.random() < 0.2 else "D7140"
                 prog = prognosis["Hopeless" if kind == "perio" else "Poor"]
                 icd = rng.random() < p.icd_share
-                proc = r("procedurelog", patnum=pat, procstatus=PLANNED, procdate=d, datetp=d, datecomplete=None,
+                proc = w("procedurelog", patnum=pat, procstatus=PLANNED, procdate=d, datetp=d, datecomplete=None,
                              codenum=code[c][0], toothnum=str(t), surf="", dx=dx, prognosis=prog,
                              diagnosticcode=("K05.30" if kind == "perio" else "K02.9") if icd else "",
                              icdversion=10 if icd else 0, provnum=dentist, clinicnum=clinic, aptnum=apt,
@@ -683,7 +786,7 @@ def build_with_readings(p: Params | None = None, seed: int = 42) -> tuple[dict[s
                 if completes is None and k + 1 < n_vis and later_rng.random() < p.planned_then_missing:
                     missing_on = dates[later_rng.randint(k + 1, n_vis - 1)]
                 planned_open.append({"proc": proc, "tooth": t, "code": c, "dx_name": dx_name, "kind": kind,
-                                     "completes": completes, "row": r.rows["procedurelog"][-1],
+                                     "completes": completes, "row": w.rows["procedurelog"][-1],
                                      "prognosis": "Hopeless" if kind == "perio" else "Poor",
                                      "missing_on": missing_on})
 
@@ -691,7 +794,7 @@ def build_with_readings(p: Params | None = None, seed: int = 42) -> tuple[dict[s
             today = [o for o in planned_open if o["row"]["datetp"] == d or rng.random() < p.replan]
             if today:
                 for _ in range(rng.randint(*p.plans_per_exam)):
-                    plan = r("treatplan", patnum=pat, datetp=d, tpstatus=0, signature="")
+                    plan = w("treatplan", patnum=pat, datetp=d, tpstatus=0, signature="")
                     for i, o in enumerate(today):
                         tooth, pcode, dx_text = str(o["tooth"]), o["code"], o["dx_name"]
                         if rng.random() < p.edited_copy:         # a copy edited by hand: it no longer matches
@@ -699,11 +802,11 @@ def build_with_readings(p: Params | None = None, seed: int = 42) -> tuple[dict[s
                             pcode = "D7210" if which == "code" and pcode == "D7140" else pcode
                             tooth = str(o["tooth"] + 1) if which == "tooth" and o["tooth"] < 32 else tooth
                             dx_text = "See chart" if which == "dx" else dx_text
-                        r("proctp", treatplannum=plan, patnum=pat, procnumorig=o["proc"], toothnumtp=tooth,
+                        w("proctp", treatplannum=plan, patnum=pat, procnumorig=o["proc"], toothnumtp=tooth,
                               proccode=pcode, descript=code[o["code"]][1], dx=dx_text, prognosis=o["prognosis"],
                               itemorder=i, priority=priority["1"], surf="", procabbr=code[o["code"]][2],
                               provnum=dentist, datetp=d, clinicnum=clinic)
-                last_plan = r.rows["treatplan"][-1]
+                last_plan = w.rows["treatplan"][-1]
                 if rng.random() < 0.5:
                     last_plan["signature"], last_plan["tpstatus"] = "signed", 1
 
@@ -714,10 +817,15 @@ def build_with_readings(p: Params | None = None, seed: int = 42) -> tuple[dict[s
                 extracted.add(o["tooth"])
                 planned_open.remove(o)
                 if rng.random() < 0.7:
-                    r("procnote", patnum=pat, procnum=o["proc"],
+                    w("procnote", patnum=pat, procnum=o["proc"],
                           entrydatetime=datetime.combine(o["completes"], datetime.min.time()) + timedelta(hours=10),
                           note=f"Tooth #{o['tooth']} extracted. Recorded diagnosis: {o['dx_name'] or 'none'}. "
                                "Post-operative instructions given.")
+
+        if edentulous:
+            _edentulous_rows(r, edent_rng, pat=pat, dates=dates, clinic=clinic, dentist=dentist, site=site,
+                             exam_codes=(code["D0150"][0], code["D0120"][0]), fees=(code["D0150"][3], code["D0120"][3]),
+                             tobacco="Y" if cigs else "N")
 
     _insurance(r, p, random.Random(f"{seed}:open_dental:insurance"))
     frames = _frames(r)
@@ -828,7 +936,8 @@ def _recorded_later(away: pd.DataFrame, patient: pd.DataFrame) -> pd.Series:
 def entry_reasons(tables: dict[str, pd.DataFrame], truth: pd.DataFrame) -> pd.DataFrame:
     """One row per tooth missing at the first visit (`toothinitial`, or an extraction done elsewhere, ProcStatus 4),
     third molars left out: patient, tooth, the patient's age band and the true reason from the answer key. For checking
-    the generator against ENTRY_PERIO_SHARE_BY_AGE (US7); the evaluation alone reads the truth."""
+    the generator against ENTRY_PERIO_SHARE_BY_AGE (US7); the evaluation alone reads the truth. Patients with no natural
+    teeth (`edentulous_patients`, spec 033 US4) are left out: why they lost their teeth isn't modelled."""
     ti = tables["toothinitial"]
     pl = tables["procedurelog"]
     done_elsewhere = pl[(pl["procstatus"] == EXISTING_OTHER) & pl["codenum"].isin(extraction_codenums(tables))]
@@ -836,7 +945,7 @@ def entry_reasons(tables: dict[str, pd.DataFrame], truth: pd.DataFrame) -> pd.Da
     entry = pd.concat([ti.loc[ti["initialtype"] == 0, ["patnum", "toothnum"]], done_elsewhere[["patnum", "toothnum"]]])
     entry = pd.DataFrame({"patient_id": entry["patnum"].astype(int).to_numpy(),
                           "tooth_num": entry["toothnum"].astype(int).to_numpy()}).drop_duplicates()
-    entry = entry[~entry["tooth_num"].isin(THIRD_MOLARS)]
+    entry = entry[~entry["tooth_num"].isin(THIRD_MOLARS) & ~entry["patient_id"].isin(edentulous_patients(tables))]
     band = pd.Series(age_band(patient_age(tables)).to_numpy(), index=tables["patient"]["patnum"].astype(int))
     entry["age_band_num"] = entry["patient_id"].map(band).astype(int)
     out = entry.merge(truth, on=["patient_id", "tooth_num"], how="left")
@@ -957,10 +1066,14 @@ def chart_quality(tables: dict[str, pd.DataFrame]) -> pd.DataFrame:
 @traced
 def realism_profile(tables: dict[str, pd.DataFrame], readings: pd.DataFrame | None = None) -> pd.DataFrame:
     """How messy an extract is, as the shares `Params` sets: one row per metric, counts only (no row-level data), so it
-    can be run on a real extract in this format and its numbers used as the generator's parameters."""
+    can be run on a real extract in this format and its numbers used as the generator's parameters. Visits of patients
+    with no natural teeth (`edentulous_patients`, spec 033 US4) are left out of the per-visit shares: no chart because
+    no teeth is not a missing chart. Their share of patients is the last metric."""
     q = chart_quality(tables)
     pat = _numeric(tables["patient"], ["patnum", "sitenum"])
+    none = edentulous_patients(tables)
     apt = _numeric(tables["appointment"], ["patnum"])
+    apt = apt[~apt["patnum"].isin(none)]
     apt["day"] = pd.to_datetime(apt["aptdatetime"]).dt.normalize()
     charted = set(zip(q["patnum"], q["examdate"].dt.normalize()))
     apt["charted"] = [k in charted for k in zip(apt["patnum"], apt["day"])]
@@ -980,10 +1093,12 @@ def realism_profile(tables: dict[str, pd.DataFrame], readings: pd.DataFrame | No
     add("copied_chart_share", q["is_copied"].sum(), q["has_previous"].sum())
     add("out_of_range_site_share", q["out_of_range_count"].sum(), q["site_count"].sum())
     add("charted_after_loss_chart_share", (q["charted_after_loss_count"] > 0).sum(), len(q))
-    docs = tables["document"]
-    add("radiograph_visit_share", (_numeric(docs, ["imgtype"])["imgtype"] == IMG_RADIOGRAPH).sum(), len(apt))
+    docs = _numeric(tables["document"], ["imgtype", "patnum"])
+    docs = docs[~docs["patnum"].isin(none)]
+    add("radiograph_visit_share", (docs["imgtype"] == IMG_RADIOGRAPH).sum(), len(apt))
     if readings is not None:
         add("unread_tooth_share", readings["bone_loss_pct"].isna().sum(), len(readings))
+    add("edentulous_patient_share", len(none & set(pat["patnum"].dropna().astype(int))), pat["patnum"].nunique())
     return pd.DataFrame(rows, columns=["metric_name", "value_ratio", "numerator_count", "denominator_count"])
 
 
@@ -1008,7 +1123,7 @@ FAULTS = {"duplicate_row": 4, "duplicate_key": 2, "one_value_per_field": 2, "too
           "probing_out_of_range": 5, "mobility_out_of_range": 3, "tooth_number_out_of_range": 2,
           "dates_out_of_order": 2, "procedure_code_not_cdt": 1, "diagnosis_not_in_lists": 3, "icd_not_valid": 2,
           "plan_copy_without_original": 2, "plan_copy_differs": 3, "older_item_after_switch": 2,
-          "newer_item_before_switch": 2, "office_missing_share": 1}
+          "newer_item_before_switch": 2, "office_missing_share": 1, "chart_without_teeth": 1}
 
 
 @traced
@@ -1082,6 +1197,18 @@ def plant_faults(tables: dict[str, pd.DataFrame], seed: int = 0, switch_date: da
     # consistency: one office leaves more fields blank
     office = pl["clinicnum"] == FAULT_OFFICE
     pl.loc[office, ["procfee", "provnum", "aptnum"]] = None
+    # spec 033 US4: a charted patient (outside that office) recorded with every tooth missing at entry
+    ti = t["toothinitial"]
+    entry = set(zip(pd.to_numeric(ti["patnum"], errors="coerce"), pd.to_numeric(ti["toothnum"], errors="coerce")))
+    charted = sorted(set(t["perioexam"]["patnum"]) - set(t["patient"].loc[t["patient"]["clinicnum"] == FAULT_OFFICE,
+                                                                          "patnum"]))
+    for pat in rng.sample(charted, f["chart_without_teeth"]):
+        add = [n for n in range(1, 33) if (pat, n) not in entry]
+        start = int(ti["toothinitialnum"].max()) + 1
+        ti = pd.concat([ti, pd.DataFrame({"toothinitialnum": range(start, start + len(add)), "patnum": pat,
+                                          "toothnum": [str(n) for n in add], "initialtype": 0, "movement": 0.0})],
+                       ignore_index=True)
+    t["toothinitial"] = ti
     dup = pl.loc[dup_rows].copy()
     dup["procnum"] = range(int(pl["procnum"].max()) + 1, int(pl["procnum"].max()) + 1 + len(dup))
     t["procedurelog"] = pd.concat([pl, dup], ignore_index=True)

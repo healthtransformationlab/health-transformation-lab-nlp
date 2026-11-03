@@ -63,14 +63,14 @@ The start dates are synthetic stand-ins for "the date a newer classification was
 | rules phenotype (`algorithm_design`): macro F1 at the main grouping | 0.739 (six) | 0.740 (five); 0.843 (three) | 0.740 (five); 0.843 (three) |
 | rules phenotype: periodontitis sensitivity / specificity | 0.973 / 0.878 | 0.925 / 0.889 | 0.925 / 0.889 |
 | the note's stated status: macro F1 at the main grouping | 0.788 (six) | 0.803 (five) | 0.803 (five) |
-| tooth loss, held-out teeth (completed label set, shared features) | 266 | 95 | 95 |
-| tooth loss: AUC, logistic / XGBoost | 0.842 / 0.782 | 0.868 / 0.823 | 0.838 / 0.865 |
-| tooth loss: patients in both the training and the test part | 0 | 0 | 9 |
+| tooth loss, held-out teeth (completed label set, shared features) | 223 | 89 | 87 |
+| tooth loss: AUC, logistic / XGBoost | 0.808 / 0.799 | 0.719 / 0.749 | 0.878 / 0.834 |
+| tooth loss: patients in both the training and the test part | 0 | 0 | 12 |
 | status classifier, 5level: accuracy / macro F1 | 0.797 / 0.746 | 0.795 / 0.751 | 0.768 / 0.716 |
 | status classifier, 3level: accuracy / macro F1 | 0.881 / 0.864 | 0.882 / 0.868 | 0.867 / 0.846 |
 | status classifier: people in both the training and the test part | 0 | 0 | 405 |
-| stage IV, all patients at stage III-IV: every missing tooth / fewer than 20 teeth / fewer than 10 pairs / truth | 280 / 52 / 180 / 115 | 280 / 52 / 180 / 115 | 280 / 52 / 180 / 115 |
-| stage IV by the expected count, completed + planned, logistic / XGBoost | 98 / 94 | 91 / 84 | 99 / 84 |
+| stage IV, all patients at stage III-IV: every missing tooth / fewer than 20 teeth / fewer than 10 pairs / truth | 261 / 49 / 171 / 98 | 261 / 49 / 171 / 98 | 261 / 49 / 171 / 98 |
+| stage IV by the expected count, completed + planned, logistic / XGBoost | 94 / 89 | 92 / 80 | 86 / 84 |
 | CAL reliability: ICC for the same site charted again (SEM) | not run | 0.683 (0.82 mm) | 0.683 (0.82 mm) |
 
 How to read it:
@@ -124,15 +124,16 @@ Headline numbers before and after (SYNTHETIC: agreement with the generator's ans
 | prevalence of periodontitis, rules exam form first (people) | 56.3% of 1,200 | 53.8% of 1,119 |
 | prevalence from the done-treatment diagnosis codes alone | 46.4% of 1,131 answered | 32.0% of 1,119 answered |
 | status classifier, 5level / 3level accuracy | 0.797 / 0.881 | 0.795 / 0.882 |
-| tooth loss, held-out extractions: AUC logistic / XGBoost (shared, completed) | 0.84 / 0.78 (266 teeth) | 0.87 / 0.82 (95 teeth) |
-| tooth loss: stage IV by every missing tooth / fewer than 20 teeth / fewer than 10 pairs / truth | 280 / 52 / 180 / 115 | 280 / 52 / 180 / 115 (the start date chooses the model's teeth, not the teeth counted) |
-| tooth loss: stage IV by the expected count, completed + planned, logistic / XGBoost | 98 / 94 | 91 / 84 |
+| tooth loss, held-out extractions: AUC logistic / XGBoost (shared, completed) | 0.81 / 0.80 (223 teeth) | 0.72 / 0.75 (89 teeth) |
+| tooth loss: stage IV by every missing tooth / fewer than 20 teeth / fewer than 10 pairs / truth | 261 / 49 / 171 / 98 | 261 / 49 / 171 / 98 (the start date chooses the model's teeth, not the teeth counted) |
+| tooth loss: stage IV by the expected count, completed + planned, logistic / XGBoost | 94 / 89 | 92 / 80 |
 | data-quality page: chart consistency split by | six group types | the same plus insurance type (and the four insurance tables are checked) |
 | data-quality page: CAL reliability | not reported | ICC per probing error (SIMULATED variance components) |
 
 The tooth-loss rows of both tables are from the extract with the published smoking and diabetes shares (spec 033
-US2, #485): a fresh synthetic sample, so they moved within the seed-to-seed spread
-([tooth loss](tooth_loss.md), "Before and after spec 033 US2"); the visit rows did not change.
+US2, #485) and, since spec 033 US4 (#500), patients with no natural teeth, whom the model and the stage recount leave
+out: a fresh synthetic sample each time, so they moved within the seed-to-seed spread
+([tooth loss](tooth_loss.md), "Before and after spec 033 US2" and "... US4"); the visit rows did not change.
 
 The ladder also gains the committed GPU GatorTron run (learning rate 2e-05), which the old ladder file predated. The
 plan with no gum-disease code read as healthy or gingivitis turns many "no answer" readings of the diagnosis codes

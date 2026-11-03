@@ -112,10 +112,25 @@ def test_the_teeth_left_out_are_counted_by_reason_including_an_unknown_age():
                 (3, 4, "missing_at_entry", None)])
     every_year = tm.ModelParams(start_date=None)               # these teeth carry no dates
     out = tm.exclusions(t, every_year)
-    assert out == {"third_molar_count": 1, "under_min_age_count": 1, "unknown_age_count": 1,
+    assert out == {"edentulous_count": 0, "third_molar_count": 1, "under_min_age_count": 1, "unknown_age_count": 1,
                    "before_start_date_count": 0, "unknown_date_count": 0, "eligible_count": 1}
     assert tm.exclusions(t, tm.ModelParams(min_age=None, start_date=None))["unknown_age_count"] == 0
     assert out["eligible_count"] == len(tm.eligible(t, every_year))
+
+
+def test_patients_with_no_natural_teeth_are_left_out_of_the_model_and_the_stage_recount():
+    # spec 033 US4 (#500): the 2018 classification can't stage a mouth with no teeth, and why they lost their teeth
+    # isn't recorded, so all 32 of an edentulous patient's teeth are out, counted first
+    t = _teeth([(1, n, "missing_at_entry", 70) for n in range(1, 33)] +
+               [(2, 3, "extracted_perio", 70), (2, 8, "missing_at_entry", 70), (2, 9, "present", 70)])
+    every_year = tm.ModelParams(start_date=None)
+    assert tm.edentulous(t).tolist() == [True] * 32 + [False] * 3
+    assert set(tm.eligible(t, every_year)["patient_id"]) == {2}
+    assert set(tm.stage_teeth(t, every_year)["patient_id"]) == {2}
+    out = tm.exclusions(t, every_year)
+    assert out["edentulous_count"] == 32 and out["third_molar_count"] == 0 and out["eligible_count"] == 3
+    nearly = _teeth([(3, n, "missing_at_entry", 70) for n in range(1, 32)] + [(3, 32, "present", 70)])
+    assert not tm.edentulous(nearly).any()                         # one tooth left: staged as usual
 
 
 def test_a_start_date_leaves_out_teeth_lost_or_first_charted_before_it():
@@ -434,7 +449,9 @@ def test_a_run_with_a_start_date_counts_every_lost_tooth_in_the_stage_recount():
     params = tm.ModelParams(n_boot=0, cv_folds=None, start_date="2018-01-01")
     out = tm.run(x, truth, params, generator_seed=5)
     teeth = tl.tooth_table(x)
-    teeth = teeth[~teeth["tooth_num"].isin(tm.THIRD_MOLARS)]
+    assert tm.edentulous(teeth).any()                            # spec 033 US4: some have no teeth, and are out
+    assert not set(out["patient_stage"]["patient_id"]) & set(teeth.loc[tm.edentulous(teeth), "patient_id"])
+    teeth = teeth[~teeth["tooth_num"].isin(tm.THIRD_MOLARS) & ~tm.edentulous(teeth)]
     want = teeth[teeth["tooth_status_code"] == "extracted_perio"].groupby("patient_id").size()
     ps = out["patient_stage"]
     one = ps[(ps["label_set"] == "completed") & (ps["model"] == tm.MODELS[0])].set_index("patient_id")
