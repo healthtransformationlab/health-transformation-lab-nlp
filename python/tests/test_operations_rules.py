@@ -65,3 +65,14 @@ def test_chart_review_agent_notebook_number_is_free():
     # 10_load_results.py took number 10 (spec 016)
     text = (REPO_ROOT / "databricks" / "agents" / "chart_review" / "AGENTS.md").read_text()
     assert "10_chart_review_agent.py" not in text
+
+
+def test_no_register_value_is_cut_short_by_a_hash():
+    # In YAML a space then '#' starts a comment, so "(issue #249)" in an unquoted value silently drops the rest of the
+    # line. Write "issue 249" (or quote the value).
+    cut = []
+    for n, line in enumerate(REGISTER.read_text().splitlines(), 1):
+        m = re.match(r"^\s*(?:- )?[a-z_]+: (.*)$", line)
+        if m and not m.group(1).startswith(("'", '"', "#")) and " #" in m.group(1):
+            cut.append(f"line {n}: {line.strip()[:80]}")
+    assert not cut, cut
