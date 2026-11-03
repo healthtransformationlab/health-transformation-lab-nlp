@@ -60,6 +60,8 @@ databricks secrets put-acl "$scope" "$sp_app" READ
 # don't create the catalog here, or the deploy fails on "already exists"
 metastore=$(databricks metastores current -o json | json_field metastore_id)
 databricks grants update metastore "$metastore" --json "{\"changes\": [{\"principal\": \"$group\", \"add\": [\"CREATE_CATALOG\"]}]}" > /dev/null
+# the pipeline doctor reads system.lakeflow (spec 027): the same group gets read access to it
+"$root/databricks/setup/grant_system_tables.sh" "$target"
 if [ -n "$endpoint" ]; then   # the LLM judge's serving endpoint (bundle variable judge_endpoint)
   ep_id=$(databricks serving-endpoints get "$endpoint" -o json | json_field id)
   databricks serving-endpoints update-permissions "$ep_id" \
