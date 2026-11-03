@@ -65,3 +65,12 @@ def test_chart_review_agent_notebook_number_is_free():
     # 10_load_results.py took number 10 (spec 016)
     text = (REPO_ROOT / "databricks" / "agents" / "chart_review" / "AGENTS.md").read_text()
     assert "10_chart_review_agent.py" not in text
+
+
+def test_no_register_value_is_cut_short_by_a_yaml_comment():
+    """In YAML, a space and then # starts a comment, so `(issue #495)` silently drops the rest of the value (#499)."""
+    from health_transformation_lab_nlp.paths import REPO_ROOT
+    lines = (REPO_ROOT / "ops" / "secrets_register.yaml").read_text().splitlines()
+    cut = [f"line {n}: {line.strip()[:80]}" for n, line in enumerate(lines, 1)
+           if " #" in line and not line.lstrip().startswith("#")]
+    assert not cut, "write 'issue 495', not '#495', inside a register value:\n" + "\n".join(cut)
