@@ -16,8 +16,8 @@ environment 4: pandas 2.2.3, NumPy 2.1.3, PyArrow 19.0.1, scikit-learn 1.6.1, Py
 `python/constraints/databricks_serverless.txt`, with the release notes cited. The pandas 3 `python` job is
 unchanged. The job does what it is for: on this branch before #477 it reproduces #476 (17 `ValueError: setting an
 array element with a sequence` in `test_tooth_loss_dq` and `test_dq_site`). It also found a second case the
-runtime breaks: a fold test that only worked with newer scikit-learn, fixed here. Approve. The new job turns green
-once #477 is merged and main is merged into this branch.
+runtime breaks: a fold test that only worked with newer scikit-learn, fixed here. Approve. With #477 merged and main
+merged in, every check is green.
 
 ## Scope of Change
 - Files changed: 5 (+81 / -2, excluding this review)
@@ -31,7 +31,7 @@ once #477 is merged and main is merged into this branch.
 | check (PR conventions) | ✅ |
 | changes, postgres, azure-infra, bundle | ✅ |
 | python (pandas 3) | ✅ |
-| python-databricks-runtime (pandas 2) | ❌ as expected until #477 merges: 4 failed, 13 errors, all #476's `ValueError` in `test_tooth_loss_dq` / `test_dq_site`; 1628 passed |
+| python-databricks-runtime (pandas 2) | ✅ on `474bf71` (main merged in after #477). Before #477 it failed as intended: 4 failed, 13 errors, all #476's `ValueError` in `test_tooth_loss_dq` / `test_dq_site`; 1628 passed |
 | r-parity | ✅ |
 
 ## Secrets, PHI and Claims Scan
@@ -86,5 +86,4 @@ Run locally on the branch:
 - `ruff check` is clean on the changed Python files.
 
 ## Verdict
-Approve with nits. Merge #477 first, then merge main into this branch, so `python-databricks-runtime` goes green
-before this PR merges.
+Approve with nits. #477 is merged and main is merged into this branch; every check is green on `474bf71`.
