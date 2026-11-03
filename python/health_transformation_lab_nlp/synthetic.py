@@ -29,12 +29,38 @@ class RiskFactors:
     hba1c: float | None          # None = not measured; >= 6.5 diabetes, 5.8-6.4 pre-diabetes
 
 
+DIABETES_HBA1C = 6.5     # HbA1c (%) at which a synthetic person has diabetes, the NHANES laboratory cut-off
+# Of the people with an HbA1c on record, the share at or above 6.5: half are drawn from 5.8-6.9 (rounded to 0.1, so
+# 6.45 and up count) and half from 7.0-10.5.
+DIABETES_OF_HBA1C = 0.5 + 0.5 * (6.9 - 6.45) / (6.9 - 5.8)
+
+
 @traced
-def draw_risk(rng: random.Random) -> RiskFactors:
-    smoke = rng.choices([0, rng.randint(1, 9), rng.randint(10, 30)], weights=[0.82, 0.10, 0.08])[0]
+def draw_risk(rng: random.Random, light_smoker_share: float = 0.10, heavy_smoker_share: float = 0.08,
+              hba1c_share: float = 0.12) -> RiskFactors:
+    """Cigarettes a day (1-9 for a light smoker, 10-30 for a heavy one) and HbA1c (None for not on record).
+
+    The defaults are the study's SYNTHETIC placeholders, kept because its benchmark notes were scored by external
+    model runs (spec 033 US3); `risk_kwargs` gives the arguments for published shares (spec 033 US2)."""
+    weights = [round(1 - light_smoker_share - heavy_smoker_share, 12), light_smoker_share, heavy_smoker_share]
+    smoke = rng.choices([0, rng.randint(1, 9), rng.randint(10, 30)], weights=weights)[0]
     hba1c = rng.choice([round(rng.uniform(5.8, 6.9), 1), round(rng.uniform(7.0, 10.5), 1)]) \
-        if rng.random() < 0.12 else None
+        if rng.random() < hba1c_share else None
     return RiskFactors(smoke, hba1c)
+
+
+@traced
+def risk_kwargs(smoking_share: float, heavy_smoking_fraction: float, diabetes_share: float) -> dict[str, float]:
+    """`draw_risk`'s arguments for a share of smokers (of whom a fraction smoke 10 or more a day) and a share with
+    diabetes (HbA1c >= DIABETES_HBA1C). Fails at once on a share no draw can reach."""
+    if not 0 <= smoking_share <= 1 or not 0 <= heavy_smoking_fraction <= 1:
+        raise ValueError(f"smoking_share and heavy_smoking_fraction must be in [0, 1], got {smoking_share}, "
+                         f"{heavy_smoking_fraction}")
+    hba1c_share = diabetes_share / DIABETES_OF_HBA1C
+    if not 0 <= hba1c_share <= 1:
+        raise ValueError(f"diabetes_share must be in [0, {DIABETES_OF_HBA1C:.3f}], got {diabetes_share}")
+    heavy = smoking_share * heavy_smoking_fraction
+    return {"light_smoker_share": smoking_share - heavy, "heavy_smoker_share": heavy, "hba1c_share": hba1c_share}
 
 
 @traced

@@ -26,7 +26,9 @@ What the extract carries, as Open Dental records it:
   (`radiograph_bone_level`), standing in for a radiograph-reading tool; it is never an Open Dental table;
 - insurance (spec 032 US6, #445) is Open Dental's `carrier`, `insplan`, `inssub` and `patplan`, drawn on a random
   stream of its own after every other table, so adding it changed no other row. Each patient is `private`, `public` or
-  `none` at SYNTHETIC placeholder shares (`Params.insurance_shares`), read back by `insurance_type`.
+  `none` at SYNTHETIC placeholder shares (`Params.insurance_shares`), read back by `insurance_type`;
+- smoking and diabetes follow published US shares (spec 033 US2, #485: `Params.smoking_share`, `diabetes_share`),
+  where the study's notes keep the older placeholders (docs/synthetic_data.md).
 
 Why each tooth was lost (`tooth_loss_truth`) is returned apart from the extract and written to another folder: the
 evaluation reads it, the extract never carries it. Teeth missing at the first visit are lost to periodontitis (the
@@ -48,6 +50,7 @@ import pandas as pd
 from .labels import label_chart
 from .sites import MOLARS, SITES, THIRD_MOLARS, draw_mouth_columns
 from .synthetic import RiskFactors, draw_history, draw_pct_teeth_involved, draw_risk
+from .synthetic import risk_kwargs as synthetic_risk_kwargs
 from .telemetry import traced
 
 TABLES = {
@@ -222,6 +225,14 @@ class Params:
     # adjusted OR; an upper bound for loss to other reasons (Suzuki et al. 2021 find none for caries)
     entry_other_diabetes_ratio: float = 1.20
     entry_other_norm_draws: int = 20000       # patients drawn to find the mean ratio that keeps each band's mean
+    # spec 033 US2 (#485): smoking and diabetes, drawn by synthetic.draw_risk at these shares (docs/synthetic_data.md).
+    # US adults who smoke cigarettes, 2022: VanFrank et al., MMWR 2024;73(29):633-641, NHIS (docs/references.md item 72)
+    smoking_share: float = 0.116
+    # of them, the share at 10 or more a day: the study's split (0.08 of 0.18), a placeholder
+    heavy_smoking_fraction: float = 0.44
+    # US adults 20 and over with diabetes, August 2021-August 2023: Gwira et al., NCHS Data Brief 516, NHANES (item 73);
+    # here every one of them has HbA1c >= DIABETES_HBA1C, the NHANES laboratory cut-off
+    diabetes_share: float = 0.158
     # spec 032 US6 (#445): each patient's insurance type. SYNTHETIC placeholders, not estimates of any population
     insurance_shares: tuple = (("private", 0.55), ("public", 0.30), ("none", 0.15))
     secondary_plan: float = 0.05              # a privately insured patient also has a second private plan
@@ -286,18 +297,27 @@ def entry_other_rate_ratio(risk: RiskFactors, p: Params | None = None) -> float:
     return (smoking[-1] if smoking else 1.0) * (p.entry_other_diabetes_ratio if diabetic else 1.0)
 
 
+@traced
+def risk_kwargs(p: Params | None = None) -> dict[str, float]:
+    """`synthetic.draw_risk`'s arguments for the extract's smoking and diabetes shares (spec 033 US2)."""
+    p = p or Params()
+    return synthetic_risk_kwargs(p.smoking_share, p.heavy_smoking_fraction, p.diabetes_share)
+
+
 _NORMS: dict[tuple, float] = {}
 
 
 @traced
 def entry_other_rate_norm(p: Params | None = None) -> float:
-    """The mean rate ratio over the patients `synthetic.draw_risk` makes: `entry_other_norm_draws` draws on a fixed
-    stream of its own (the same for every extract seed). Dividing by it keeps each age band's mean (US8)."""
+    """The mean rate ratio over the patients `synthetic.draw_risk` makes at the extract's shares (`risk_kwargs`):
+    `entry_other_norm_draws` draws on a fixed stream of its own (the same for every extract seed). Dividing by it keeps
+    each age band's mean (US8)."""
     p = p or Params()
-    key = (p.entry_other_smoking_ratios, p.entry_other_diabetes_ratio, p.entry_other_norm_draws)
+    kw = risk_kwargs(p)
+    key = (p.entry_other_smoking_ratios, p.entry_other_diabetes_ratio, p.entry_other_norm_draws, *kw.values())
     if key not in _NORMS:
         rng = random.Random("open_dental:entry_reason:norm")
-        ratios = [entry_other_rate_ratio(draw_risk(rng), p) for _ in range(p.entry_other_norm_draws)]
+        ratios = [entry_other_rate_ratio(draw_risk(rng, **kw), p) for _ in range(p.entry_other_norm_draws)]
         _NORMS[key] = sum(ratios) / len(ratios)
     return _NORMS[key]
 
@@ -417,11 +437,12 @@ def build_with_readings(p: Params | None = None, seed: int = 42) -> tuple[dict[s
         return keys[name], name, "2017" if use_new else "older"
 
     # ---- patients
+    risk_kw = risk_kwargs(p)
     for _ in range(p.n_patients):
         age = rng.randint(25, 85)
         first = date(rng.randint(*p.first_years), rng.randint(1, 12), rng.randint(1, 28))
         n_vis = rng.randint(*p.visits)
-        risk = draw_risk(rng)
+        risk = draw_risk(rng, **risk_kw)
         hist = draw_history(age, n_vis, risk, rng, months_between=6.0)
         dates = [first + timedelta(days=round(182.5 * k + rng.uniform(-20, 20))) if k else first for k in range(n_vis)]
         clinic, dentist, hyg = rng.choice(clinics), rng.choice(dentists), rng.choice(hygienists)
