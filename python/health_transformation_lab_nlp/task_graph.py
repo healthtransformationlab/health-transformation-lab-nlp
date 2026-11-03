@@ -21,7 +21,10 @@ import os
 import shutil
 import subprocess
 import tarfile
+from collections.abc import Callable
 from pathlib import Path
+
+import numpy as np
 
 from . import task_mine  # one definition of the organisation name and its redaction
 from .telemetry import traced
@@ -144,6 +147,33 @@ def build_graph(sources: dict[str, str], package: str, source_root: str, meta: d
                     edges[(qual, target)] = {"source": qual, "target": target, "type": "calls", "key": 0}
     return {"directed": True, "multigraph": True, "graph": dict(meta),
             "nodes": list(nodes.values()), "edges": list(edges.values())}
+
+
+EMBED_MODEL = "google/embeddinggemma-300m"   # named and open; the competition doesn't name its model (parity unverified)
+EMBED_DIMS = 256                             # the competition's vectors are float32 (256,)
+
+
+@traced
+def embed_graph(graph: dict, encode: Callable[[list[str]], np.ndarray], dims: int = EMBED_DIMS) -> dict:
+    """One unit float32 vector of `dims` per node, keyed by node id, in node order. `encode` maps texts to rows
+    (EmbeddingGemma's full 768); the first `dims` are kept and renormalised (its Matryoshka truncation). A node with
+    no source text is embedded from its name."""
+    nodes = graph["nodes"]
+    texts = [n.get("text") or n["name"] for n in nodes]
+    rows = np.asarray(encode(texts), dtype=np.float64) if texts else np.zeros((0, dims))
+    if rows.ndim != 2 or rows.shape[0] != len(nodes) or rows.shape[1] < dims:
+        raise ValueError(f"encoder returned shape {rows.shape} for {len(nodes)} nodes; need at least {dims} dims")
+    rows = rows[:, :dims]
+    norms = np.linalg.norm(rows, axis=1, keepdims=True)
+    rows = rows / np.where(norms == 0, 1.0, norms)
+    return {n["id"]: rows[i].astype(np.float32) for i, n in enumerate(nodes)}
+
+
+@traced
+def write_embeddings(vectors: dict, path: Path) -> None:
+    """The competition's form: an .npz with one (dims,) float32 array per node id."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    np.savez_compressed(path, **vectors)
 
 
 def _git(cwd: Path, *args: str, stdin: bytes | None = None) -> bytes:

@@ -4,6 +4,7 @@
                                                      # tasks_sample.jsonl, and the manifest's base commits
     python scripts/55_build_tasks.py --sample 3
     python scripts/55_build_tasks.py --graphs        # also data/tasks/graphs/<instance_id>.json (US4, T009)
+                                                     # (then scripts/59_embed_graphs.py embeds them, T010)
     python scripts/55_build_tasks.py --snapshots 2   # also the first N snapshots/<instance_id>.tgz (US4, T008;
                                                      # one commit of the base's files, no history, name redacted, #435)
 
@@ -239,7 +240,7 @@ def main() -> int:
         write_graphs(rows)
     if a.snapshots:
         write_snapshots(rows, a.snapshots)
-    print("embeddings and wheels NOT built (T010): EmbeddingGemma is a gated model this session can't download")
+    print("embeddings NOT built here: run scripts/59_embed_graphs.py (T010); wheels not built yet (T010a)")
     telemetry.end_script()
     return 0
 

@@ -39,6 +39,8 @@ azure = ["azure-monitor-opentelemetry>=1.6"]
 otlp = ["opentelemetry-exporter-otlp-proto-http>=1.25"]
 # The task set's code graphs (spec 028 US4): only to load them; task_graph.py writes node-link JSON without it
 tasks = ["networkx>=3.4"]
+# The code graphs' embeddings (spec 028 T010, scripts/59_embed_graphs.py): EmbeddingGemma needs sentence-transformers 5
+embed = ["sentence-transformers>=5.1", "torch>=2.2"]
 dev = ["pytest>=8", "ruff>=0.5", "duckdb>=1.0"]   # duckdb runs the dashboards' SQL in tests (spec 019)
 # PerioBench as a Kaggle Benchmarks task (health_transformation_lab_nlp.kbench, kaggle/perio_bench_task.py)
 kbench = ["kaggle-benchmarks>=0.6", "pydantic>=2"]

@@ -38,6 +38,7 @@ Bio_ClinicalBERT and Clinical-Longformer); only their published weights are used
 |---|---|---|---|---|
 | SapBERT · [2010.11784](https://arxiv.org/abs/2010.11784) · biomedical, concept mapping (note terms to UMLS/SNOMED) | `cambridgeltl/SapBERT-from-PubMedBERT-fulltext` | University of Cambridge | Apache-2.0 | not run |
 | GTE-ModernColBERT · [model card](https://huggingface.co/lightonai/GTE-ModernColBERT-v1) · general, retrieval (evidence lookup for RAG) | `lightonai/GTE-ModernColBERT-v1` | LightOn | Apache-2.0 | not run |
+| EmbeddingGemma 300M · [2509.20354](https://arxiv.org/abs/2509.20354) · general, code-graph node embeddings for the DataOps task set (spec 028 T010; 256 of 768 dimensions; reads this repo's own code, no notes) | `google/embeddinggemma-300m` | Google | [Gemma terms of use](https://ai.google.dev/gemma/terms) (accept on Hugging Face first) | results (115 task graphs, 2026-11-03) |
 
 ## 3. Large language models and de-identification models
 

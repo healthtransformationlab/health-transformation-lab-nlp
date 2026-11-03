@@ -208,3 +208,50 @@ def test_snapshot_has_the_files_and_git_at_the_archive_root_like_the_competition
     assert layout["root_folder"] is None and layout["git_dir"] == ".git"
     with tarfile.open(tmp_path / "s.tgz") as t:
         assert "f.txt" in {m.name for m in t.getmembers()}
+
+
+# T010: one 256-float32 vector per graph node, keyed by node id, as the competition's embeddings/<id>.npz
+def _fake_encode(texts):
+    import numpy as np
+    return np.array([[float(len(t)), 1.0] + [0.0] * 766 for t in texts], dtype=np.float64)
+
+
+def test_embeddings_are_one_unit_float32_vector_per_node_keyed_by_id():
+    import numpy as np
+    g = tg.build_graph(PKG, "pkg", "python/", {"instance_id": "x"})
+    vecs = tg.embed_graph(g, _fake_encode, dims=256)
+    assert list(vecs) == [n["id"] for n in g["nodes"]]
+    for v in vecs.values():
+        assert v.shape == (256,) and v.dtype == np.float32
+        assert abs(float(np.linalg.norm(v)) - 1.0) < 1e-5   # truncated, then renormalised
+
+
+def test_embeddings_keep_only_the_first_dims_before_normalising():
+    import numpy as np
+    g = {"nodes": [{"id": "a", "name": "a", "text": "abc"}]}
+    v = tg.embed_graph(g, _fake_encode, dims=2)["a"]
+    expected = np.array([3.0, 1.0]) / np.linalg.norm([3.0, 1.0])
+    assert np.allclose(v, expected)
+
+
+def test_an_empty_node_text_is_embedded_from_its_name():
+    seen = []
+    tg.embed_graph({"nodes": [{"id": "m.f", "name": "m.f", "text": ""}]},
+                   lambda ts: (seen.extend(ts), _fake_encode(ts))[1], dims=2)
+    assert seen == ["m.f"]
+
+
+def test_an_encoder_returning_too_few_dims_fails_naming_them():
+    with pytest.raises(ValueError, match="256"):
+        tg.embed_graph({"nodes": [{"id": "a", "name": "a", "text": "x"}]},
+                       lambda ts: _fake_encode(ts)[:, :10], dims=256)
+
+
+def test_embeddings_round_trip_through_npz(tmp_path):
+    import numpy as np
+    g = tg.build_graph(PKG, "pkg", "python/", {"instance_id": "x"})
+    path = tmp_path / "x.npz"
+    tg.write_embeddings(tg.embed_graph(g, _fake_encode, dims=256), path)
+    with np.load(path) as z:
+        assert sorted(z.files) == sorted(n["id"] for n in g["nodes"])
+        assert {z[k].shape for k in z.files} == {(256,)}
