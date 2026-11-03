@@ -87,48 +87,44 @@ edr:
       checked: 2026-10-28
       covers: dentate US adults 30 and over (with teeth) with severe periodontitis
   solution:
-    - value: "240"
+    - value: "223"
       kind: measured
       file: data/datasets/build_summary.json
-      match: "\"review_visits\": 240"
+      match: "\"review_visits\": 223"
       covers: synthetic review charts that periodontists (simulated so far) label
   results:
-    # spec 032 US8 (#448): scored at five status groups on the 221 of the 240 review charts from 2021-04-01
-    - value: "215"
+    # #467: the notes rebuilt for adults from 2021-04-01, scored at five status groups on the 223 review charts; the GPU
+    # encoders and MedGemma read the old notes, so they show as "Rerun pending" until they are redone
+    - value: "207"
       kind: measured
       file: docs/edr/README.md
-      match: "215 of 221"
+      match: "207 of 223"
       covers: synthetic charts the whole-record rules (gum measurements first) got right, at five status groups
-    - value: "201"
-      kind: measured
-      file: docs/edr/README.md
-      match: "201 of 221"
-      covers: synthetic charts ModernBERT on the note, plus the stage 4 rule, got right, at five status groups
-    - value: "181"
-      kind: measured
-      file: docs/edr/README.md
-      match: "Medical AI, untrained (MedGemma 4B) + stage 4 rule | 181 of 221"
-      covers: synthetic charts MedGemma 4B (v1, untrained) plus the stage 4 rule got right, at five status groups
-    - value: "177"
+    - value: "191"
       kind: measured
       file: data/datasets/ladder/ladder_vs_truth.csv
-      match: "medgemma-1.5-4b-it+rules4,221,0.8009049773755657,"
-      covers: synthetic charts MedGemma 1.5 4B (untrained) plus the stage 4 rule got right (accuracy 177/221 = 0.8009050), and the gum measurements alone (177 of 221)
-    - value: "179"
+      match: "tfidf_logreg+rules4,223,0.8565022421524664,"
+      covers: synthetic charts word counts (TF-IDF) on the note, plus the stage 4 rule, got right (191/223 = 0.8565022)
+    - value: "183"
       kind: measured
       file: docs/edr/README.md
-      match: "179 of 221"
+      match: "183 of 223"
       covers: synthetic charts the keyword rules got right, at five status groups
-    - value: "221"
+    - value: "166"
       kind: measured
       file: docs/edr/README.md
-      match: "the 221 review charts"
-      covers: synthetic review charts scored (the 240 less the 19 visits before 2021-04-01)
-    - value: "240"
+      match: "166 of 223"
+      covers: synthetic charts the gum measurements alone got right
+    - value: "53"
       kind: measured
-      file: data/datasets/build_summary.json
-      match: "\"review_visits\": 240"
-      covers: synthetic review charts in the review set, of which 221 are scored
+      file: docs/edr/README.md
+      match: "53 of 223"
+      covers: synthetic review charts with no gum measurements to read (the probing chart's no-answer count)
+    - value: "223"
+      kind: measured
+      file: docs/edr/README.md
+      match: "the 223 review charts"
+      covers: synthetic review charts scored (every review chart since the #467 rebuild)
   economics:
     - value: "33,333 h"
       kind: derived
@@ -175,24 +171,24 @@ edr:
       from: "tiers.frontier_llm_whole_record ($1,200,000)"
       covers: frontier commercial LLM, whole record with examples and reasoning, three calls a visit (assumed tokens)
   evidence:
-    - value: "215"
+    - value: "207"
       kind: measured
       file: docs/edr/README.md
-      match: "215 of 221"
+      match: "207 of 223"
       covers: synthetic charts right with the gum measurements read first, at five status groups
-    - value: "221"
+    - value: "223"
       kind: measured
       file: docs/edr/README.md
-      match: "the 221 review charts"
+      match: "the 223 review charts"
       covers: synthetic review charts scored
-    - value: "74%"
+    - value: "79%"
       kind: measured
       file: docs/results.md
-      match: "`algorithm_design` | whole record | rules, study-design order: exam form, diagnosis codes, note, chart † | **73.8**"
-      covers: synthetic charts right with the study design's source order (73.8%), at five status groups
-    - value: "163"
+      match: "`algorithm_design` | whole record | rules, study-design order: exam form, diagnosis codes, note, chart † | **78.9**"
+      covers: synthetic charts right with the study design's source order (78.9%), at five status groups
+    - value: "176"
       kind: derived
-      from: "73.8% x 221 (docs/results.md, algorithm_design)"
+      from: "78.9% x 223 (docs/results.md, algorithm_design)"
       covers: synthetic charts right with the study design's source order
     - value: "4×"
       kind: derived
@@ -207,21 +203,22 @@ edr:
       from: "as 4×"
       covers: the number of source orders scored
   acceptance:
+    # #467: the LLM judge run read the 240 review notes before the rebuild; kept, and rerun pending on the new notes
     - value: "83%"
       kind: measured
-      file: docs/edr/README.md
-      match: "matched the answer key on 83% of charts"
-      covers: synthetic charts where an LLM's own reading matched the answer key
+      file: data/datasets/judge/judge_agreement.csv
+      match: "all,all,All charts,240,0.975,0.8290598290598291,"
+      covers: synthetic charts (the notes before the #467 rebuild) where an LLM's own reading matched the answer key
     - value: "53%"
       kind: measured
-      file: docs/edr/README.md
-      match: "only 53% of hard notes"
+      file: data/datasets/judge/judge_agreement.csv
+      match: "difficulty,L3,Hard note,68,0.9705882352941176,0.5303030303030303,"
       covers: the same, on hard synthetic notes
     - value: "26%"
       kind: measured
-      file: docs/edr/README.md
-      match: "only 26% of the best note model's"
-      covers: mistakes of the best note model that the LLM judge caught
+      file: data/datasets/judge/judge_metrics.csv
+      match: "0.8866995073891626,0.2631578947368421"
+      covers: mistakes of the best note model (ModernBERT, the notes before the rebuild) that the LLM judge caught
   privacy:
     - value: "115"
       kind: measured

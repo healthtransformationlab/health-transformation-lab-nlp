@@ -219,7 +219,9 @@ def test_metrics_against_the_truth_are_the_readme_numbers(inp, answers):
     m = js.judge_metrics(inp, answers, _perfect_judgments(inp, answers), n_boot=50).set_index(["system", "metric"])
     assert set(m.index.get_level_values("metric")) == set(METRICS)
     lad = rr.ladder_eval.ladder_table(truth, pred, n_boot=1, reference="").set_index("method")
-    for s in ("algorithm_v0", "modernbert-base+cw", "note_rules", "medgemma-1.5-4b-it", "probing_chart"):
+    # #467: an encoder or MedGemma run made on the old notes is pending, so a current learned rung stands in
+    for s in ("algorithm_v0", *[r for r in ("modernbert-base+cw", "medgemma-1.5-4b-it", "tfidf_logreg") if r in pred][:2],
+              "note_rules", "probing_chart"):
         yn, bd = rr.yes_no(truth, pred[s]), rr.breakdown(truth, pred[s])
         assert m.loc[(s, "correct"), "vs_truth"] == pytest.approx(lad.loc[s, "accuracy"], abs=1e-12)
         for k, b in (("correct", "correct"), ("incorrectly_assigned", "dx_said_yes"),
@@ -281,7 +283,9 @@ def test_tables_use_the_readme_names(inp, answers):
     assert set(m.loc[m.metric == "incorrectly_assigned", "metric_label"]) == {rr.COL_ASSIGNED}
     assert set(m.loc[m.metric == "correct_L3", "metric_label"]) == {"Correct: hard note"}
     assert set(m["group"]) <= set(rr.PHENOTYPE_GROUPS)                  # a group with no results yet is absent
-    assert set(rr.PHENOTYPE_GROUPS[:6]) <= set(m["group"])
+    pending = {rr.phenotype_group(x + r) for x in inp["pending"]["method_name"] for r in ("", "+rules4")} - set(
+        rr.phenotype_group(x) for x in inp["ladder"]["method"])       # #467: groups whose every run awaits a rerun
+    assert set(rr.PHENOTYPE_GROUPS[:6]) - pending <= set(m["group"])
     assert (m["group"] == m["system"].map(rr.phenotype_group)).all()
     a = js.judge_agreement(inp, _perfect_judgments(inp, answers), n_boot=20)
     assert set(a.loc[a.group == "difficulty", "label"]) == {"Easy note", "Medium note", "Hard note"}

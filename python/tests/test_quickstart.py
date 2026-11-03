@@ -39,7 +39,7 @@ def test_the_notebook_runs_on_each_platforms_layout(monkeypatch, tmp_path, platf
     for name in ("notes", "results"):
         _publish(platform, tmp_path, name)
     ns, printed = _run(monkeypatch, tmp_path)
-    assert len(ns["train"]) == 3484 and len(ns["test"]) == 240
+    assert len(ns["train"]) == 3016 and len(ns["test"]) == 223     # the #467 build
     board = pd.read_csv(REPO_ROOT / "data" / "datasets" / "ladder" / "ladder_vs_truth.csv").set_index("method")
     ref = board.loc["tfidf_logreg"]
     assert ref.acc_lo <= ns["accuracy"] <= ref.acc_hi           # the same method scores as published

@@ -140,7 +140,7 @@ def test_record_defaults_to_the_full_review_set():
     spec = importlib.util.spec_from_file_location("record_results", RECORD)
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
-    assert mod.full_run_rows() == len(pd.read_csv(DATASETS_DIR / "answer_key" / "review_key.csv")) == 240
+    assert mod.full_run_rows() == len(pd.read_csv(DATASETS_DIR / "answer_key" / "review_key.csv")) == 223   # #467
 
 
 def test_record_with_no_results_says_so(tmp_path, datasets):

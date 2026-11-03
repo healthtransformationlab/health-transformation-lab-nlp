@@ -496,8 +496,7 @@ def _phenotyping(inp) -> tuple[str, pd.DataFrame]:
     for p in pending.itertuples():
         b = base_id(p.method_name)
         name = f"[`{p.method_name}`]({links[b]})" if b in links else f"`{p.method_name}`"
-        made = f"[{p.source_name} run]({p.run_url})" if p.run_url else p.source_name
-        out.append(f"| – | {name} | chart note | {_model_method(p.method_name)} ({made}) | "
+        out.append(f"| – | {name} | chart note | {_model_method(p.method_name)} (run: {p.source_name}) | "
                    f"{note_set.RERUN_PENDING} |" + " – |" * 12)
     if len(pending):
         out += ["", (f"**{note_set.RERUN_PENDING[0].upper() + note_set.RERUN_PENDING[1:]}**: the rows marked – were "
@@ -624,7 +623,8 @@ def _near_miss(j: dict, system: str) -> str:
     c = c[(c["system"] == system) & c["answer"].notna() & (c["answer"] != c["truth"])]
     if not len(c):
         return ""
-    step = (c["answer"].map(LABELS.index) - c["truth"].map(LABELS.index)).abs() == 1
+    order = LABELS if set(c["answer"]) | set(c["truth"]) <= set(LABELS) else list(GROUPINGS[DEFAULT_GROUPING])
+    step = (c["answer"].map(order.index) - c["truth"].map(order.index)).abs() == 1   # six statuses or five groups
     t, a = (c["truth"] + "|" + c["answer"]).value_counts().index[0].split("|")
     name = lambda x: x.replace("periodontitis_", "").replace("_", " ")
     return f", which are mostly one step off ({int(step.sum())} of {len(c)}; most often {name(t)} called {name(a)})"

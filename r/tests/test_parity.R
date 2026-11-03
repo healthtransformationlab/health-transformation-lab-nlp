@@ -277,10 +277,15 @@ for (pfx in c("", "simulated_")) {
   source("r/R/17_spec004.R")
   ref <- read.csv(ref_file, stringsAsFactors = FALSE, na.strings = "")
   py <- read.csv(f, stringsAsFactors = FALSE)
-  r <- do.call(rbind, lapply(unique(py$run), function(run) {
-    det <- read.csv(sprintf("data/datasets/%sllm_details_%s.csv", pfx, run), stringsAsFactors = FALSE)
-    cbind(run = run, field_accuracy_004(det, ref), stringsAsFactors = FALSE)
-  }))
+  dets <- lapply(setNames(unique(py$run), unique(py$run)), function(run)
+    read.csv(sprintf("data/datasets/%sllm_details_%s.csv", pfx, run), stringsAsFactors = FALSE))
+  # #467: a run made on another note set (its visits aren't the review notes) is kept, not rescored
+  if (!all(sapply(dets, function(det) setequal(det$visit_id, ref$visit_id)))) {
+    cat(sprintf("%smedgemma per field: made on another note set, rerun pending; skipped\n", pfx))
+    next
+  }
+  r <- do.call(rbind, lapply(names(dets), function(run)
+    cbind(run = run, field_accuracy_004(dets[[run]], ref), stringsAsFactors = FALSE)))
   m <- merge(r, py, by = c("run", "field"), suffixes = c(".r", ".p"))
   cols <- c("n", "correct", "accuracy", "ci_lo", "ci_hi")
   d <- max(sapply(cols, function(k) max(abs(m[[paste0(k, ".r")]] - m[[paste0(k, ".p")]]))))
@@ -518,6 +523,13 @@ cat("parity OK (spec 006)\n")
 # (metrics vs truth and vs the judge's status, judge agreement). Real judge if run, and the simulated dry run.
 for (pfx in c("", "simulated_")) {
   if (!file.exists(sprintf("data/datasets/judge/%sjudge_metrics.csv", pfx))) next
+  # #467: a judge run made on another note set (its visits aren't the review notes) is kept, not rescored
+  jv <- read.csv(sprintf("data/datasets/judge/%sjudgments.csv", pfx), stringsAsFactors = FALSE)$visit_id
+  kv <- read.csv("data/datasets/answer_key/review_key.csv", stringsAsFactors = FALSE)$visit_id
+  if (!all(jv %in% kv)) {
+    cat(sprintf("%sjudge scorecard: made on another note set, rerun pending; skipped\n", pfx))
+    next
+  }
   source("r/R/11_judge_scorecard.R")
   inp <- read_judge_inputs(pfx)
   r <- judge_metrics_point(inp$answers, inp$judgments, inp$truth)

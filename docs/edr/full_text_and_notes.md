@@ -55,7 +55,7 @@ Rules and AI read it
 Rules combine the whole record; AI models read the note alone
 5
 Specialists check it
-Periodontists label the same 240 charts, each on their own (simulated reviewers so far)
+Periodontists label the same 223 charts, each on their own (simulated reviewers so far)
 6
 The acceptance test
 AI passes only if it agrees with them as often as they agree with each other
@@ -63,29 +63,29 @@ Built to run on a real extract unchanged:
 the same code, tests and dashboards, once a de-identified dataset and its approvals exist.
 Synthetic patient records · Health Transformation Lab · the dental record (EDR) · 3
 
-**Speaker notes:** This is the whole pipeline, and it runs end to end today on synthetic data. One: we generate synthetic patients across 8 clinics, visit after visit, with every kind of evidence and fake names in the notes, so the privacy step is tested too. Two: names, dates and IDs are removed, and a final check holds back any note that still has one. Three: the record goes into OMOP, the common data format medicine already uses, which is what lets a dental finding sit next to a diabetes record. Four: rules combine the whole record, and AI models read only the free-text note, for the many charts where the structured fields are missing. Five: gum specialists label the same 240 charts, independently; until real specialists do, simulated reviewers stand in so the reliability code can be tested, and their numbers are never shown as results. Six: the acceptance test. An AI method passes only if it agrees with the specialists at least as often as they agree with each other; that is the standard the OHDSI community uses to check how well records identify a disease. Because it is synthetic, we know the right answer for every chart, so we can test the test. If asked about the platform: Databricks and Unity Catalog, MLflow for models, Postgres and Lakebase for OMOP; Python and R give the same numbers.
+**Speaker notes:** This is the whole pipeline, and it runs end to end today on synthetic data. One: we generate synthetic patients across 8 clinics, visit after visit, with every kind of evidence and fake names in the notes, so the privacy step is tested too. Two: names, dates and IDs are removed, and a final check holds back any note that still has one. Three: the record goes into OMOP, the common data format medicine already uses, which is what lets a dental finding sit next to a diabetes record. Four: rules combine the whole record, and AI models read only the free-text note, for the many charts where the structured fields are missing. Five: gum specialists label the same 223 charts, independently; until real specialists do, simulated reviewers stand in so the reliability code can be tested, and their numbers are never shown as results. Six: the acceptance test. An AI method passes only if it agrees with the specialists at least as often as they agree with each other; that is the standard the OHDSI community uses to check how well records identify a disease. Because it is synthetic, we know the right answer for every chart, so we can test the test. If asked about the platform: Databricks and Unity Catalog, MLflow for models, Postgres and Lakebase for OMOP; Python and R give the same numbers.
 
 ## Slide 4 — results
 
 What it shows so far (synthetic)
 The whole record answers it. The note alone nearly does.
 Whole record, rules
-215 of 221
+207 of 223
 charts given the right status, combining the evidence, gum measurements first.
-Note only, trained AI
-201 of 221
-right from the free-text note alone (ModernBERT, with a rule for the most severe stage).
-Note only, medical AI as is
-181 of 221
-for MedGemma 4B untrained, with the same stage 4 rule; the newer MedGemma 1.5 4B got 177. Both close to keyword rules (179).
+Note only, simple text model
+191 of 223
+right from the free-text note alone (word counts, with a rule for the most severe stage); keyword rules got 183.
+Note only, trained and medical AI
+Rerun pending
+ModernBERT, the other GPU encoders and MedGemma read the notes before they were rebuilt for adults; they are rerun on the new ones.
 Gum measurements alone
-177 of 221
-right, but 42 charts had no measurements to read: one piece of evidence is not enough.
-Training beats size:
-a small model trained on dental notes beat a bigger medical AI used as is. Synthetic notes are easier than real ones, so expect the gaps to widen.
-Synthetic charts, scored against the generator's truth at five status groups (healthy and gingivitis together), adults from 2021-04-01: 221 of the 240 review charts · real model runs, 2026-10-26 to 2026-10-28 · 4
+166 of 223
+right, but 53 charts had no measurements to read: one piece of evidence is not enough.
+Combine the evidence:
+the whole record beats any one part of it. Synthetic notes are easier than real ones, so expect the gaps to widen.
+Synthetic charts, scored against the generator's truth at five status groups (healthy and gingivitis together), adults from 2021-04-01: the 223 review charts · real model runs on CPU · 4
 
-**Speaker notes:** These are real model runs, on synthetic charts, scored against the generator's truth; they are not clinical performance, and agreement with simulated reviewers is a dry run we do not show. Four numbers out of 221 review charts: the 240 review charts less the 19 visits before April 2021, the start date the scores use, with healthy and gingivitis counted as one group. Rules that combine the whole record, reading the gum measurements first, got 215 right. Reading only the free-text note, a small model trained on dental notes, ModernBERT with a keyword rule for the most severe stage, got 201. A bigger medical AI used as is, without training and with the same stage 4 rule: MedGemma 4B got 181, and the newer MedGemma 1.5 4B got 177. Both are close to simple keyword rules at 179; on 221 charts neither can be told apart from them. Alone they each get about 174. And any single piece of evidence falls short: the gum measurements alone got 177 right, because 42 of the 221 charts had no measurements at all. Two lessons: combine the evidence, and train on the domain. If asked about uncertainty: every number has a 95 percent bootstrap interval on the full results page; on 221 charts, many methods cannot be told apart. If asked whether MedGemma can improve: few-shot and fine-tuned runs are next, on a GPU. If asked why synthetic: no identifiable patient data may be used here; synthetic data lets us build and test everything, including the privacy checks, before any approvals.
+**Speaker notes:** These are real model runs, on synthetic charts, scored against the generator's truth; they are not clinical performance, and agreement with simulated reviewers is a dry run we do not show. Numbers out of 223 review charts: the notes were rebuilt for adults' visits from April 2021, the start date the scores use, with healthy and gingivitis counted as one group. Rules that combine the whole record, reading the gum measurements first, got 207 right. Reading only the free-text note, a simple word-count model with a keyword rule for the most severe stage got 191, and the keyword rules alone 183. The trained encoders such as ModernBERT and the medical AI MedGemma read the notes before the rebuild, so their runs are kept but not scored here: they are being rerun on the new notes. And any single piece of evidence falls short: the gum measurements alone got 166 right, because 53 of the 223 charts had no measurements at all. The lesson: combine the evidence. If asked about uncertainty: every number has a 95 percent bootstrap interval on the full results page; on 223 charts, many methods cannot be told apart. If asked about MedGemma and the trained encoders: their reruns on the new notes are on a GPU, then few-shot and fine-tuned runs. If asked why synthetic: no identifiable patient data may be used here; synthetic data lets us build and test everything, including the privacy checks, before any approvals.
 
 ## Slide 5 — economics
 
@@ -152,11 +152,11 @@ How this path feeds the other: test questions with known right answers
 The order matters
 Same evidence, read in a different order: a different answer
 Gum measurements first
-215 of 221
+207 of 223
 right: then the note, exam form and codes fill the gaps (the first rule set, v0).
 Exam form first
-163 of 221
-right (74%): the study design's order, exam form, diagnosis codes, note, then measurements.
+176 of 223
+right (79%): the study design's order, exam form, diagnosis codes, note, then measurements.
 Orders to test
 24
 four sources can be ranked 4×3×2×1 ways; each ranking is scored against the specialists.
@@ -164,7 +164,7 @@ So the order is a finding, not a setting:
 the ranking that agrees best with the specialists is the one to keep. Procedure codes are a rough guess from the treatment, so they are compared, not used.
 Synthetic charts, scored against the generator's truth · 2017 AAP/EFP classification · rules and worked examples: docs/evidence_rules.md · 8
 
-**Speaker notes:** A dental chart holds seven kinds of evidence: the clinician's note; the exam form, with a gum score and a status checkbox; the procedure codes done and planned; the diagnosis codes on those procedures, done and planned; and the probing chart of gum measurements, turned into a stage with the 2017 American Academy of Periodontology and European Federation of Periodontology worksheet. Procedure codes are only a rough guess from the treatment, so they are compared, not used. When the other sources disagree, the rules take the first one, in a fixed order, that gives a status. The order matters a lot. Reading the gum measurements first, the first rule set, gets 215 of 221 synthetic charts right; it is the 215 on the results slide. The study design's order, exam form first, then diagnosis codes, the note, and the measurements last, gets about 163, 74 percent. On synthetic charts the measurements are the generator's own evidence, which flatters reading them first; on real charts the answer may differ. Four sources can be ranked 24 ways; each ranking is scored against the specialists, and the one that agrees best is kept. A radiograph reading can only raise the stage.
+**Speaker notes:** A dental chart holds seven kinds of evidence: the clinician's note; the exam form, with a gum score and a status checkbox; the procedure codes done and planned; the diagnosis codes on those procedures, done and planned; and the probing chart of gum measurements, turned into a stage with the 2017 American Academy of Periodontology and European Federation of Periodontology worksheet. Procedure codes are only a rough guess from the treatment, so they are compared, not used. When the other sources disagree, the rules take the first one, in a fixed order, that gives a status. The order matters a lot. Reading the gum measurements first, the first rule set, gets 207 of 223 synthetic charts right; it is the 207 on the results slide. The study design's order, exam form first, then diagnosis codes, the note, and the measurements last, gets about 176, 79 percent. On synthetic charts the measurements are the generator's own evidence, which flatters reading them first; on real charts the answer may differ. Four sources can be ranked 24 ways; each ranking is scored against the specialists, and the one that agrees best is kept. A radiograph reading can only raise the stage.
 
 ## Slide 9 — acceptance
 
@@ -181,9 +181,9 @@ Catching mistakes
 of the best note model's mistakes caught by that AI checker: mostly near-misses, one stage off.
 So on real notes, people still set the answer key:
 the AI checker spots weak methods, but cannot yet stand in for specialists on good ones.
-Synthetic charts; LLM judgments checked against the generator's truth · the bar: OHDSI 2023 plenary on case validation; npj Digit Med 2025 · 9
+Synthetic charts; LLM judgments checked against the generator's truth, on the notes before they were rebuilt for adults (rerun pending) · the bar: OHDSI 2023 plenary on case validation; npj Digit Med 2025 · 9
 
-**Speaker notes:** How do we know an answer is right? On real records there is no answer key, so the acceptance test is the bar: an AI method passes only if it agrees with the specialists at least as often as they agree with each other, the standard from the OHDSI 2023 plenary on case validation, with the LLM review work published in npj Digital Medicine in 2025. We also tested whether a general-purpose AI, a large language model, could stand in for the answer key. Reading each note itself, it matched the answer key on 83 percent of charts but only 53 percent of hard notes, the ones that leave out what the answer key is built from. Asked whether a method's answer was right, it caught most mistakes of weak methods, but only 26 percent of the best note model's, which are near-misses such as one stage off. So it cannot replace specialists yet. These are AI judgments on synthetic notes, checked against the generator's truth. If asked about statistics: kappa for agreement beyond chance, 95 percent bootstrap intervals over charts, and unsafe errors counted separately.
+**Speaker notes:** How do we know an answer is right? On real records there is no answer key, so the acceptance test is the bar: an AI method passes only if it agrees with the specialists at least as often as they agree with each other, the standard from the OHDSI 2023 plenary on case validation, with the LLM review work published in npj Digital Medicine in 2025. We also tested whether a general-purpose AI, a large language model, could stand in for the answer key. Reading each note itself, it matched the answer key on 83 percent of charts but only 53 percent of hard notes, the ones that leave out what the answer key is built from. Asked whether a method's answer was right, it caught most mistakes of weak methods, but only 26 percent of the best note model's, which are near-misses such as one stage off. So it cannot replace specialists yet. These are AI judgments on synthetic notes, checked against the generator's truth, made on the review notes before they were rebuilt for adults; the judge is being rerun on the new notes. If asked about statistics: kappa for agreement beyond chance, 95 percent bootstrap intervals over charts, and unsafe errors counted separately.
 
 ## Slide 10 — privacy
 
