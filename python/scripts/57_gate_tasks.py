@@ -15,8 +15,9 @@ can change a verdict. Official swegemma scoring happens only on Kaggle (US5, #35
 Writes data/tasks/task_gates.csv (committed, overwritten whole, one row per gated task) and prints counts.
 A full run (no --sample, --limit or --instance-ids) also drops the failures from the set (T007a, #502):
 data/tasks/tasks_gated.jsonl (git-ignored) holds only the tasks that pass both gates, and is what gets published;
-each failure is a row in tasks_excluded.csv (its earlier gate rows replaced, the other exclusions kept). Run it after
-every 55_build_tasks.py, which rewrites tasks_excluded.csv without the gate rows.
+each failure is a row in tasks_excluded.csv (its earlier gate rows replaced, the other exclusions kept, one row per
+task). Run it after every 55_build_tasks.py: the rebuild keeps the gate rows of the tasks it still builds but
+deletes tasks_gated.jsonl, since a changed set must be gated (or --apply-only'd) again before it is published.
 
     python scripts/57_gate_tasks.py --apply-only       # no gating: apply the committed task_gates.csv
 Needs tasks.jsonl from scripts/55_build_tasks.py (git-ignored) and the full git history, since every base commit
@@ -35,9 +36,8 @@ import pandas as pd
 
 from health_transformation_lab_nlp import task_gate as tgate
 from health_transformation_lab_nlp import telemetry
-from health_transformation_lab_nlp.paths import REPO_ROOT
+from health_transformation_lab_nlp.paths import REPO_ROOT, TASKS_DIR
 
-TASKS_DIR = REPO_ROOT / "data" / "tasks"
 TASKS = TASKS_DIR / "tasks.jsonl"             # git-ignored, from 55_build_tasks.py
 SAMPLE = TASKS_DIR / "tasks_sample.jsonl"     # committed, 3 rows
 OUT = TASKS_DIR / "task_gates.csv"            # committed
@@ -52,7 +52,7 @@ def apply_gates(tasks: list[dict], gates: list[dict]) -> None:
     kept = tgate.passing_tasks(tasks, gates)
     GATED.write_text("".join(json.dumps(t) + "\n" for t in kept))   # overwritten whole: re-runnable
     existing = pd.read_csv(EXCLUDED, keep_default_na=False).to_dict("records") if EXCLUDED.exists() else []
-    dropped = tgate.gate_exclusions(gates, tiers)
+    dropped = tgate.gate_exclusions(gates, tiers, task_ids={t["instance_id"] for t in tasks})
     merged = tgate.merge_exclusions(existing, dropped)
     pd.DataFrame(merged, columns=["instance_id", "tier_code", "reason_text"]).to_csv(EXCLUDED, index=False)
     print(f"{len(kept)} of {len(tasks)} tasks -> {GATED.relative_to(REPO_ROOT)}; {len(dropped)} gate failure(s)"

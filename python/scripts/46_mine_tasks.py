@@ -19,10 +19,10 @@ import pandas as pd
 
 from health_transformation_lab_nlp import task_mine as tm
 from health_transformation_lab_nlp import telemetry
-from health_transformation_lab_nlp.paths import REPO_ROOT
+from health_transformation_lab_nlp.paths import REPO_ROOT, TASKS_DIR
 
 REPO = "healthtransformationlab/health-transformation-lab-nlp"
-OUT = REPO_ROOT / "data" / "tasks" / "task_manifest.csv"
+OUT = TASKS_DIR / "task_manifest.csv"
 MAIN = "origin/main"
 
 

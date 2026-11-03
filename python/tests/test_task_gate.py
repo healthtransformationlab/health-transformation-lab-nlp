@@ -224,3 +224,25 @@ def test_merging_replaces_old_gate_rows_and_keeps_the_rest():
 def test_a_gate_reason_is_never_empty():
     row = tgate.gate_exclusions([{"instance_id": "htlnlp_2", "is_valid": False, "reason_text": None}], TIERS)[0]
     assert row["reason_text"] == tgate.GATE_EXCLUSION_PREFIX + "invalid"
+
+
+def test_a_stale_gate_row_for_a_task_no_longer_built_is_not_an_exclusion():   # PR #505 review
+    assert tgate.gate_exclusions(GATES, TIERS, task_ids={"htlnlp_1"}) == []
+
+
+def test_one_row_per_task_and_the_builders_reason_wins():   # PR #505 review
+    own = [{"instance_id": "htlnlp_2", "tier_code": "B", "reason_text": "patch names the organisation (#435)"}]
+    merged = tgate.merge_exclusions(own, tgate.gate_exclusions(GATES, TIERS))
+    assert merged == own
+
+
+def test_a_rebuild_carries_the_gate_rows_of_tasks_it_still_builds():   # PR #505 review
+    existing = [{"instance_id": "htlnlp_2", "tier_code": "B", "reason_text": tgate.GATE_EXCLUSION_PREFIX + "x"},
+                {"instance_id": "htlnlp_9", "tier_code": "C", "reason_text": tgate.GATE_EXCLUSION_PREFIX + "y"},
+                {"instance_id": "htlnlp_91", "tier_code": "A", "reason_text": "names the organisation (#435)"}]
+    assert tgate.carried_gate_rows(existing, {"htlnlp_1", "htlnlp_2"}) == existing[:1]
+
+
+def test_the_task_set_folder_comes_from_paths():
+    from health_transformation_lab_nlp import paths
+    assert paths.TASKS_DIR == paths.REPO_ROOT / "data" / "tasks"
