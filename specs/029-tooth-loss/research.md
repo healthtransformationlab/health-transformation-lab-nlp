@@ -745,11 +745,13 @@ For a patient with rate ratio `r` (smoking ratio × diabetes ratio), the Poisson
 `r̄` is the mean of `r` over `Params.entry_other_norm_draws` (20,000) patients drawn by `synthetic.draw_risk` on
 its own fixed stream. Smoking and diabetes are drawn independently of age, so `r̄` is the same in every band, and
 dividing by it keeps each band's mean count, and so its periodontal share (US7), where it was. With the defaults
-`r̄` is 1.040 (`entry_other_rate_norm`). An OR is used as a rate ratio: for a common outcome the OR overstates the
+`r̄` is 1.047 (`entry_other_rate_norm`), drawn at the extract's own smoking and diabetes shares since spec 033 US2
+(#485; 1.040 at the study's shares before). An OR is used as a rate ratio: for a common outcome the OR overstates the
 risk ratio, which here works against the small effects found, so the generator is, if anything, generous to the
 shared risk.
 
-**Checked on generated extracts (SYNTHETIC).** Pooled over generator seeds 13 and 101-107 at 6,000 patients each
+**Checked on generated extracts (SYNTHETIC; before spec 033 US2 changed the smoking and diabetes shares, so the
+pooled test in `test_open_dental.py` is what holds now).** Pooled over generator seeds 13 and 101-107 at 6,000 patients each
 (48,000 patients), the mean non-periodontal count per patient by band is 3.61, 0.96, 0.55, 0.33, 0.27 and 0.35
 (declared 3.61, 0.96, 0.54, 0.33, 0.28, 0.35), and the periodontal share is 0.062, 0.194, 0.332, 0.490, 0.534 and
 0.474 against the targets 0.064, 0.209, 0.329, 0.480, 0.500, 0.470 (before US8, the same seeds: 0.055, 0.188, 0.344,

@@ -20,7 +20,7 @@ COLUMNS = ["Parameter", "Value", "What it means", "Source", "Published figure", 
 # argument of synthetic.draw_risk
 CONSTANTS = {
     synthetic: ["_SEVERITY_WEIGHTS", "BASE_CAL_MM_PER_YEAR", "SMOKER_EXTRA", "DIABETES_EXTRA", "ONSET_PER_VISIT",
-                "TREAT_PROB", "TREATED_RATE_FACTOR"],
+                "TREAT_PROB", "TREATED_RATE_FACTOR", "DIABETES_HBA1C", "DIABETES_OF_HBA1C"],
     study: ["CHARTED_SHARE", "CLINICIAN_DISAGREES", "N_CLINICS", "RECORD_ERROR_RATE", "REVIEW_STRATA",
             "ANALYSIS_MIN_AGE", "ANALYSIS_START_DATE"],
     open_dental: ["ENTRY_PERIO_SHARE_BY_AGE", "DIABETES_HBA1C"],
