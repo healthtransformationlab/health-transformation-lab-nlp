@@ -1,79 +1,79 @@
 group_type_code,group_name,metric_name,chart_count,value_ratio,rest_mean_ratio,rest_sd_ratio,is_flagged,preset_name,data_label
-office,1,no_margin_chart,5365,0.2505125815,0.2483221981,0.0034849312,False,exploratory_1,synthetic
-office,2,no_margin_chart,5340,0.2470037453,0.2494918101,0.003409177,False,exploratory_1,synthetic
-office,3,no_margin_chart,5387,0.2522739929,0.2477350609,0.0024936317,False,exploratory_1,synthetic
-office,4,no_margin_chart,5393,0.2456888559,0.2499301066,0.0026829714,False,exploratory_1,synthetic
-office,1,incomplete_chart,5365,0.5328984157,0.5312753426,0.003353392,False,exploratory_1,synthetic
-office,2,incomplete_chart,5340,0.5346441948,0.5306934162,0.0025258426,False,exploratory_1,synthetic
-office,3,incomplete_chart,5387,0.5279376276,0.5329289386,0.0017002002,False,exploratory_1,synthetic
-office,4,incomplete_chart,5393,0.5312442055,0.531826746,0.0034793487,False,exploratory_1,synthetic
-provider,10,no_margin_chart,3700,0.247027027,0.2493397257,0.0069087309,False,exploratory_1,synthetic
-provider,11,no_margin_chart,3536,0.2514140271,0.2484623256,0.006857823,False,exploratory_1,synthetic
-provider,12,no_margin_chart,3514,0.2521343199,0.2483182671,0.0067683858,False,exploratory_1,synthetic
-provider,13,no_margin_chart,3448,0.2555104408,0.2476430429,0.0059958202,False,exploratory_1,synthetic
-provider,14,no_margin_chart,3621,0.2375034521,0.2512444407,0.0030835758,False,exploratory_1,synthetic
-provider,15,no_margin_chart,3666,0.2501363884,0.2487178534,0.0069588528,False,exploratory_1,synthetic
-provider,10,incomplete_chart,3700,0.5345945946,0.5310294325,0.0107663012,False,exploratory_1,synthetic
-provider,11,incomplete_chart,3536,0.5325226244,0.5314438266,0.0108774436,False,exploratory_1,synthetic
-provider,12,incomplete_chart,3514,0.5432555492,0.5292972416,0.0088301046,False,exploratory_1,synthetic
-provider,13,incomplete_chart,3448,0.5211716937,0.5337140127,0.0092622012,False,exploratory_1,synthetic
-provider,14,incomplete_chart,3621,0.5189174261,0.5341648662,0.0083741854,False,exploratory_1,synthetic
-provider,15,incomplete_chart,3666,0.5392798691,0.5300923776,0.0100486726,False,exploratory_1,synthetic
-sex,female,no_margin_chart,10894,0.2503212778,0.2473798508,,False,exploratory_1,synthetic
-sex,male,no_margin_chart,10591,0.2473798508,0.2503212778,,False,exploratory_1,synthetic
-sex,female,incomplete_chart,10894,0.5275380944,0.5359267302,,False,exploratory_1,synthetic
-sex,male,incomplete_chart,10591,0.5359267302,0.5275380944,,False,exploratory_1,synthetic
-race,American Indian or Alaska Native,no_margin_chart,4288,0.2444029851,0.2500940571,0.0101882337,False,exploratory_1,synthetic
-race,Asian,no_margin_chart,4340,0.2596774194,0.2462754485,0.0080336936,False,exploratory_1,synthetic
-race,Black or African American,no_margin_chart,4172,0.2564717162,0.2470768743,0.0094286887,False,exploratory_1,synthetic
-race,Native Hawaiian or Other Pacific Islander,no_margin_chart,4417,0.2370387141,0.2519351248,0.0072981394,False,exploratory_1,synthetic
-race,White,no_margin_chart,4268,0.2471883786,0.2493977087,0.0105420752,False,exploratory_1,synthetic
-race,American Indian or Alaska Native,incomplete_chart,4288,0.5114272388,0.5367540768,0.0035931198,False,exploratory_1,synthetic
-race,Asian,incomplete_chart,4340,0.5405529954,0.5294726376,0.0122973038,False,exploratory_1,synthetic
-race,Black or African American,incomplete_chart,4172,0.5381112176,0.5300830821,0.0129142007,False,exploratory_1,synthetic
-race,Native Hawaiian or Other Pacific Islander,incomplete_chart,4417,0.5320353181,0.531602057,0.0135614691,False,exploratory_1,synthetic
-race,White,incomplete_chart,4268,0.536316776,0.5305316925,0.0132302274,False,exploratory_1,synthetic
-exam_year,2012,no_margin_chart,683,0.2386530015,0.251913605,0.0178519504,False,exploratory_1,synthetic
-exam_year,2013,no_margin_chart,1348,0.2292284866,0.2526385676,0.0170262106,False,exploratory_1,synthetic
-exam_year,2014,no_margin_chart,1758,0.2428896473,0.2515877091,0.0180677813,False,exploratory_1,synthetic
-exam_year,2015,no_margin_chart,1951,0.2716555613,0.2493749465,0.0171430796,False,exploratory_1,synthetic
-exam_year,2016,no_margin_chart,1930,0.2373056995,0.2520172436,0.0177637708,False,exploratory_1,synthetic
-exam_year,2017,no_margin_chart,1933,0.2312467667,0.2524833153,0.0172453172,False,exploratory_1,synthetic
-exam_year,2018,no_margin_chart,1894,0.2565997888,0.2505330828,0.0181507872,False,exploratory_1,synthetic
-exam_year,2019,no_margin_chart,1912,0.260460251,0.2502361242,0.0180058388,False,exploratory_1,synthetic
-exam_year,2020,no_margin_chart,1957,0.2539601431,0.2507361325,0.0182069976,False,exploratory_1,synthetic
-exam_year,2021,no_margin_chart,1952,0.2484631148,0.2511589809,0.0182136404,False,exploratory_1,synthetic
-exam_year,2022,no_margin_chart,1926,0.246105919,0.2513403036,0.0181708264,False,exploratory_1,synthetic
-exam_year,2023,no_margin_chart,1328,0.2469879518,0.2512724549,0.0181900687,False,exploratory_1,synthetic
-exam_year,2024,no_margin_chart,660,0.253030303,0.2508076587,0.018218584,False,exploratory_1,synthetic
-exam_year,2025,no_margin_chart,229,0.2969432314,0.2474297411,0.0119412327,False,exploratory_1,synthetic
-exam_year,2026,no_margin_chart,24,0.4166666667,,,False,exploratory_1,synthetic
-exam_year,2012,incomplete_chart,683,0.5197657394,0.534080584,0.0108618382,False,exploratory_1,synthetic
-exam_year,2013,incomplete_chart,1348,0.5207715134,0.5340032168,0.0109676037,False,exploratory_1,synthetic
-exam_year,2014,incomplete_chart,1758,0.5301478953,0.5332819566,0.0115358558,False,exploratory_1,synthetic
-exam_year,2015,incomplete_chart,1951,0.5427985648,0.5323088282,0.0111947064,False,exploratory_1,synthetic
-exam_year,2016,incomplete_chart,1930,0.5316062176,0.533169778,0.0115605733,False,exploratory_1,synthetic
-exam_year,2017,incomplete_chart,1933,0.52250388,0.5338699578,0.0111283135,False,exploratory_1,synthetic
-exam_year,2018,incomplete_chart,1894,0.5380147835,0.5326768114,0.0114730616,False,exploratory_1,synthetic
-exam_year,2019,incomplete_chart,1912,0.5261506276,0.5335894388,0.0113821828,False,exploratory_1,synthetic
-exam_year,2020,incomplete_chart,1957,0.5370464997,0.5327512948,0.0115068869,False,exploratory_1,synthetic
-exam_year,2021,incomplete_chart,1952,0.5266393443,0.5335518452,0.011407829,False,exploratory_1,synthetic
-exam_year,2022,incomplete_chart,1926,0.5353063344,0.5328851536,0.0115491305,False,exploratory_1,synthetic
-exam_year,2023,incomplete_chart,1328,0.5323795181,0.5331102934,0.0115669662,False,exploratory_1,synthetic
-exam_year,2024,incomplete_chart,660,0.5363636364,0.5328038227,0.0115262933,False,exploratory_1,synthetic
-exam_year,2025,incomplete_chart,229,0.5633187773,0.5307303503,0.0071872824,False,exploratory_1,synthetic
-exam_year,2026,incomplete_chart,24,0.5833333333,,,False,exploratory_1,synthetic
-age_band,30–44,no_margin_chart,5533,0.2441713356,0.2512690591,0.0023499804,False,exploratory_1,synthetic
-age_band,45–64,no_margin_chart,6943,0.2520524269,0.2486420287,0.0044779997,False,exploratory_1,synthetic
-age_band,65 and over,no_margin_chart,7650,0.248627451,0.2497836873,0.004890062,False,exploratory_1,synthetic
-age_band,under 30,no_margin_chart,1359,0.2531272995,0.2482837378,0.0039517723,False,exploratory_1,synthetic
-age_band,30–44,incomplete_chart,5533,0.5277426351,0.5297964139,0.0077087414,False,exploratory_1,synthetic
-age_band,45–64,incomplete_chart,6943,0.5352153248,0.5273055173,0.0061273609,False,exploratory_1,synthetic
-age_band,65 and over,incomplete_chart,7650,0.5332026144,0.5279764208,0.0071248884,False,exploratory_1,synthetic
-age_band,under 30,incomplete_chart,1359,0.5209713024,0.5320535248,0.0038665977,False,exploratory_1,synthetic
-insurance_type,none,no_margin_chart,3360,0.243452381,0.2500014214,0.0005273495,False,exploratory_1,synthetic
-insurance_type,private,no_margin_chart,12114,0.249628529,0.2469133474,0.0048945456,False,exploratory_1,synthetic
-insurance_type,public,no_margin_chart,6011,0.2503743138,0.246540455,0.0043671961,False,exploratory_1,synthetic
-insurance_type,none,incomplete_chart,3360,0.518452381,0.5348524609,0.0030589591,False,exploratory_1,synthetic
-insurance_type,private,incomplete_chart,12114,0.5326894502,0.5277339263,0.0131260873,False,exploratory_1,synthetic
-insurance_type,public,incomplete_chart,6011,0.5370154716,0.5255709156,0.0100671282,False,exploratory_1,synthetic
+office,1,no_margin_chart,5296,0.2454682779,0.2476940374,0.0052525918,False,exploratory_1,synthetic
+office,2,no_margin_chart,5184,0.243441358,0.2483696773,0.0045099167,False,exploratory_1,synthetic
+office,3,no_margin_chart,5287,0.246075279,0.2474917037,0.0053567831,False,exploratory_1,synthetic
+office,4,no_margin_chart,5399,0.2535654751,0.2449949717,0.0013792748,False,exploratory_1,synthetic
+office,1,incomplete_chart,5296,0.5472054381,0.5445473537,0.0095175072,False,exploratory_1,synthetic
+office,2,incomplete_chart,5184,0.5358796296,0.5483226232,0.0059305936,False,exploratory_1,synthetic
+office,3,incomplete_chart,5287,0.5430300738,0.5459391418,0.0094899405,False,exploratory_1,synthetic
+office,4,incomplete_chart,5399,0.5547323578,0.5420383805,0.0057276588,False,exploratory_1,synthetic
+provider,10,no_margin_chart,3331,0.2512758931,0.2464170501,0.0040430328,False,exploratory_1,synthetic
+provider,11,no_margin_chart,3720,0.2430107527,0.2480700782,0.0039914735,False,exploratory_1,synthetic
+provider,12,no_margin_chart,3639,0.250343501,0.2466035285,0.0042837462,False,exploratory_1,synthetic
+provider,13,no_margin_chart,3414,0.2425307557,0.2481660776,0.0038273373,False,exploratory_1,synthetic
+provider,14,no_margin_chart,3517,0.2510662496,0.2464589788,0.00410393,False,exploratory_1,synthetic
+provider,15,no_margin_chart,3545,0.2451339915,0.2476454304,0.0044665978,False,exploratory_1,synthetic
+provider,10,incomplete_chart,3331,0.5589912939,0.542769142,0.0060148066,False,exploratory_1,synthetic
+provider,11,incomplete_chart,3720,0.5405913978,0.5464491213,0.0091571829,False,exploratory_1,synthetic
+provider,12,incomplete_chart,3639,0.5427315196,0.5460210969,0.0094206201,False,exploratory_1,synthetic
+provider,13,incomplete_chart,3414,0.5398359695,0.5466002069,0.0090260873,False,exploratory_1,synthetic
+provider,14,incomplete_chart,3517,0.553028149,0.543961771,0.0085952132,False,exploratory_1,synthetic
+provider,15,incomplete_chart,3545,0.5376586742,0.547035666,0.0085255027,False,exploratory_1,synthetic
+sex,female,no_margin_chart,10585,0.2503542749,0.2440223041,,False,exploratory_1,synthetic
+sex,male,no_margin_chart,10581,0.2440223041,0.2503542749,,False,exploratory_1,synthetic
+sex,female,incomplete_chart,10585,0.5475673122,0.5430488612,,False,exploratory_1,synthetic
+sex,male,incomplete_chart,10581,0.5430488612,0.5475673122,,False,exploratory_1,synthetic
+race,American Indian or Alaska Native,no_margin_chart,4083,0.2395297575,0.2490011724,0.0068671587,False,exploratory_1,synthetic
+race,Asian,no_margin_chart,4270,0.2412177986,0.2485791621,0.007525247,False,exploratory_1,synthetic
+race,Black or African American,no_margin_chart,4367,0.2564689718,0.2447663688,0.0058787479,False,exploratory_1,synthetic
+race,Native Hawaiian or Other Pacific Islander,no_margin_chart,4279,0.2456181351,0.247479078,0.0083759433,False,exploratory_1,synthetic
+race,White,no_margin_chart,4167,0.252699784,0.2457086658,0.0076188183,False,exploratory_1,synthetic
+race,American Indian or Alaska Native,incomplete_chart,4083,0.5407788391,0.5463499246,0.0040460558,False,exploratory_1,synthetic
+race,Asian,incomplete_chart,4270,0.5426229508,0.5458888966,0.0046693389,False,exploratory_1,synthetic
+race,Black or African American,incomplete_chart,4367,0.5498053584,0.5440932948,0.0039932928,False,exploratory_1,synthetic
+race,Native Hawaiian or Other Pacific Islander,incomplete_chart,4279,0.5498948352,0.5440709255,0.0039499772,False,exploratory_1,synthetic
+race,White,incomplete_chart,4167,0.5430765539,0.5457754959,0.0047649368,False,exploratory_1,synthetic
+exam_year,2012,no_margin_chart,561,0.2228163993,0.2459049156,0.0105380448,False,exploratory_1,synthetic
+exam_year,2013,no_margin_chart,1202,0.2412645591,0.2444858263,0.012308438,False,exploratory_1,synthetic
+exam_year,2014,no_margin_chart,1688,0.2440758294,0.2442695748,0.012340895,False,exploratory_1,synthetic
+exam_year,2015,no_margin_chart,1947,0.2598870056,0.2430533304,0.0114180975,False,exploratory_1,synthetic
+exam_year,2016,no_margin_chart,1970,0.245177665,0.2441848182,0.0123379218,False,exploratory_1,synthetic
+exam_year,2017,no_margin_chart,1914,0.2408568443,0.244517189,0.0122989363,False,exploratory_1,synthetic
+exam_year,2018,no_margin_chart,1968,0.2606707317,0.2429930438,0.0113189662,False,exploratory_1,synthetic
+exam_year,2019,no_margin_chart,1976,0.2515182186,0.2436970833,0.0121477236,False,exploratory_1,synthetic
+exam_year,2020,no_margin_chart,1882,0.261424017,0.2429350988,0.0112182299,False,exploratory_1,synthetic
+exam_year,2021,no_margin_chart,1843,0.2306022789,0.2453060017,0.0116434906,False,exploratory_1,synthetic
+exam_year,2022,no_margin_chart,1940,0.25,0.2438138693,0.0122204485,False,exploratory_1,synthetic
+exam_year,2023,no_margin_chart,1278,0.2410015649,0.2445060567,0.0123024486,False,exploratory_1,synthetic
+exam_year,2024,no_margin_chart,703,0.2418207681,0.244443041,0.0123194358,False,exploratory_1,synthetic
+exam_year,2025,no_margin_chart,267,0.2284644195,0.2454704525,0.0113983167,False,exploratory_1,synthetic
+exam_year,2026,no_margin_chart,27,0.1481481481,,,False,exploratory_1,synthetic
+exam_year,2012,incomplete_chart,561,0.5329768271,0.5426531498,0.0191750325,False,exploratory_1,synthetic
+exam_year,2013,incomplete_chart,1202,0.5349417637,0.5425020008,0.0192484874,False,exploratory_1,synthetic
+exam_year,2014,incomplete_chart,1688,0.5373222749,0.5423188845,0.0193130848,False,exploratory_1,synthetic
+exam_year,2015,incomplete_chart,1947,0.5572675912,0.5407846294,0.0188123275,False,exploratory_1,synthetic
+exam_year,2016,incomplete_chart,1970,0.5472081218,0.5415584348,0.0192991509,False,exploratory_1,synthetic
+exam_year,2017,incomplete_chart,1914,0.5339602926,0.5425774986,0.0192140867,False,exploratory_1,synthetic
+exam_year,2018,incomplete_chart,1968,0.5513211382,0.5412420489,0.0191589709,False,exploratory_1,synthetic
+exam_year,2019,incomplete_chart,1976,0.5592105263,0.5406351729,0.0186608502,False,exploratory_1,synthetic
+exam_year,2020,incomplete_chart,1882,0.5552603613,0.5409390317,0.0189487803,False,exploratory_1,synthetic
+exam_year,2021,incomplete_chart,1843,0.537710255,0.5422890399,0.0193210981,False,exploratory_1,synthetic
+exam_year,2022,incomplete_chart,1940,0.5592783505,0.5406299556,0.0186552122,False,exploratory_1,synthetic
+exam_year,2023,incomplete_chart,1278,0.5078247261,0.5445879268,0.0164421483,False,exploratory_1,synthetic
+exam_year,2024,incomplete_chart,703,0.5675675676,0.5399923236,0.0177788393,False,exploratory_1,synthetic
+exam_year,2025,incomplete_chart,267,0.5056179775,0.5447576766,0.0160120586,False,exploratory_1,synthetic
+exam_year,2026,incomplete_chart,27,0.5185185185,,,False,exploratory_1,synthetic
+age_band,30–44,no_margin_chart,5128,0.229524181,0.2544428066,0.0051722409,False,exploratory_1,synthetic
+age_band,45–64,no_margin_chart,6880,0.2568313953,0.2453404018,0.0144944021,False,exploratory_1,synthetic
+age_band,65 and over,no_margin_chart,7875,0.2485079365,0.2481148881,0.016110427,False,exploratory_1,synthetic
+age_band,under 30,no_margin_chart,1283,0.2579890881,0.2449545043,0.013996112,False,exploratory_1,synthetic
+age_band,30–44,incomplete_chart,5128,0.5339313573,0.5496578341,0.0031680687,False,exploratory_1,synthetic
+age_band,45–64,incomplete_chart,6880,0.5518895349,0.5436717749,0.0088010281,False,exploratory_1,synthetic
+age_band,65 and over,incomplete_chart,7875,0.546031746,0.5456243712,0.0101350976,False,exploratory_1,synthetic
+age_band,under 30,incomplete_chart,1283,0.5510522214,0.5439508794,0.0091581407,False,exploratory_1,synthetic
+insurance_type,none,no_margin_chart,3340,0.2508982036,0.2481618026,0.0071558565,False,exploratory_1,synthetic
+insurance_type,private,no_margin_chart,11851,0.2431018479,0.2520599805,0.0016430006,False,exploratory_1,synthetic
+insurance_type,public,no_margin_chart,5975,0.2532217573,0.2470000258,0.0055128559,False,exploratory_1,synthetic
+insurance_type,none,incomplete_chart,3340,0.5443113772,0.5475560313,0.0088409562,False,exploratory_1,synthetic
+insurance_type,private,incomplete_chart,11851,0.5413045313,0.5490594543,0.006714795,False,exploratory_1,synthetic
+insurance_type,public,incomplete_chart,5975,0.5538075314,0.5428079543,0.0021261612,False,exploratory_1,synthetic

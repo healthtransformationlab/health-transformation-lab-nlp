@@ -388,7 +388,7 @@ def test_the_norm_keeps_each_age_bands_mean():
     from health_transformation_lab_nlp.synthetic import RiskFactors, draw_risk
     p = od.Params()
     rng = random.Random("an independent check")
-    ratios = [od.entry_other_rate_ratio(draw_risk(rng), p) for _ in range(20000)]
+    ratios = [od.entry_other_rate_ratio(draw_risk(rng, **od.risk_kwargs(p)), p) for _ in range(20000)]
     assert od.entry_other_rate_norm(p) == pytest.approx(sum(ratios) / len(ratios), abs=0.01)
     assert 1.0 < od.entry_other_rate_norm(p) < 1.1
     # the band's mean over patients is the US7 mean: a never-smoker without diabetes sits a little under it

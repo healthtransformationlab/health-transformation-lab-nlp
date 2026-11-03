@@ -21,8 +21,9 @@ that range, is listed in tasks_excluded.csv instead.
 
 NOT DONE HERE (T007): the two gates (fail-to-pass, pass) run in scripts/57_gate_tasks.py, our own check that
 follows the competition harness's documented verification (its evaluator, swegemma, isn't distributed: #449,
-#453); results in data/tasks/task_gates.csv. Rows here stay ungated candidates; this script doesn't drop the
-ones that fail the gate.
+#453); results in data/tasks/task_gates.csv. Rows here stay ungated candidates: 57 writes the published set
+(tasks_gated.jsonl) without the ones that fail. This script keeps 57's rows in tasks_excluded.csv for the tasks it
+still builds and removes tasks_gated.jsonl, so run 57 again before publishing (T007a, #502).
 
 Needs the full history (`git fetch --unshallow origin`) and the GitHub REST API for issue and PR text (public
 repo: works unauthenticated, 60 requests an hour; this script makes about five).
@@ -41,16 +42,17 @@ import urllib.request
 
 import pandas as pd
 
+from health_transformation_lab_nlp import task_gate as tgate
 from health_transformation_lab_nlp import task_graph as tg
 from health_transformation_lab_nlp import task_mine as tm
 from health_transformation_lab_nlp import telemetry
-from health_transformation_lab_nlp.paths import REPO_ROOT
+from health_transformation_lab_nlp.paths import REPO_ROOT, TASKS_DIR
 
 REPO = "healthtransformationlab/health-transformation-lab-nlp"
-TASKS_DIR = REPO_ROOT / "data" / "tasks"
 MANIFEST = TASKS_DIR / "task_manifest.csv"
 OUT = TASKS_DIR / "tasks.jsonl"               # git-ignored: full patches, tens of MB
 EXCLUDED = TASKS_DIR / "tasks_excluded.csv"
+GATED = TASKS_DIR / "tasks_gated.jsonl"       # git-ignored: written by 57_gate_tasks.py, removed here
 SAMPLE = TASKS_DIR / "tasks_sample.jsonl"     # committed: the smallest few rows, to show the format
 REVIEWS = REPO_ROOT / "pull_requests"
 GRAPHS = TASKS_DIR / "graphs"                 # git-ignored
@@ -274,8 +276,11 @@ def main() -> int:
     rows.sort(key=lambda r: r["instance_id"])
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text("".join(json.dumps(r) + "\n" for r in rows))   # overwritten whole: re-runnable
-    pd.DataFrame(excluded, columns=["instance_id", "tier_code", "reason_text"]) \
-        .sort_values("instance_id").to_csv(EXCLUDED, index=False)
+    previous = pd.read_csv(EXCLUDED, keep_default_na=False).to_dict("records") if EXCLUDED.exists() else []
+    carried = tgate.carried_gate_rows(previous, {r["instance_id"] for r in rows})   # 57's rows (T007a, #502)
+    pd.DataFrame(tgate.merge_exclusions(excluded, carried), columns=["instance_id", "tier_code", "reason_text"]) \
+        .to_csv(EXCLUDED, index=False)
+    GATED.unlink(missing_ok=True)   # the set changed: 57_gate_tasks.py writes the published set again
     leaked = [r["instance_id"] for r in rows if tm.names_org(json.dumps(r))]
     if leaked:   # statements and hints are redacted and naming rows excluded above, so this is a bug (#435)
         raise RuntimeError(f"{len(leaked)} rows still name the organisation CLAUDE.md forbids: {leaked[:5]}")
@@ -288,7 +293,7 @@ def main() -> int:
           + ", ".join(f"tier {t} {n}" for t, n in counts.items()) + f"); {len(excluded)} excluded -> "
           f"{EXCLUDED.relative_to(REPO_ROOT)} (organisation name: {sum('#435' in e['reason_text'] for e in excluded)});"
           f" sample {len(sample)} -> {SAMPLE.relative_to(REPO_ROOT)}")
-    print("gates NOT run here (T007): run scripts/57_gate_tasks.py; rows are candidates until then")
+    print("gates NOT run here (T007): run scripts/57_gate_tasks.py; it writes the published set, tasks_gated.jsonl")
     if a.graphs:
         write_graphs(rows)
     if a.snapshots:

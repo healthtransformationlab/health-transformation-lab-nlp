@@ -67,7 +67,8 @@ try:
     spark.sql("select 1 from system.lakeflow.jobs limit 1").collect()  # noqa: F821
 except Exception as e:  # noqa: BLE001
     raise RuntimeError("system.lakeflow: this job's identity needs USE CATALOG on system and SELECT on "
-                       f"system.lakeflow (a metastore admin grants it): {type(e).__name__}") from None
+                       f"system.lakeflow (a metastore admin runs databricks/setup/grant_system_tables.sh <target>): "
+                       f"{type(e).__name__}") from None
 if settings["span_table"] and not spark.catalog.tableExists(settings["span_table"]):  # noqa: F821
     raise RuntimeError(f"span_table: {settings['span_table']} does not exist; set it to none to run without it")
 if not settings["span_table"]:

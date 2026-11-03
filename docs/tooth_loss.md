@@ -124,22 +124,23 @@ The tables from here down are runs before 029 US9.
 
 **Under the defaults since spec 032 US8** (#448; [presets](presets.md), `repo_v2`): teeth lost (or first charted)
 from 2018-01-01, an 80/20 split by patient and XGBoost tuned by 5-fold cross-validation. The start date leaves out
-88,744 of the 168,000 non-third-molar teeth (79,256 left), so every set is smaller and the intervals wider.
+88,266 of the 168,000 non-third-molar teeth (79,734 left), so every set is smaller and the intervals wider.
 Generator seed 42, shared predictors, AUC (95% CI):
 
 | Teeth scored | completed: logistic | completed: XGBoost | completed + planned: logistic | completed + planned: XGBoost |
 |---|---|---|---|---|
-| held-out extractions (91 teeth, 84 patients) | 0.81 (0.63-0.96) | 0.82 (0.69-0.94) | 0.74 (0.56-0.90) | 0.78 (0.63-0.91) |
-| missing at the first exam (3,594 teeth, 1,452 patients) | 0.91 (0.89-0.93) | 0.89 (0.86-0.91) | 0.93 (0.92-0.95) | 0.94 (0.92-0.95) |
-| extractions without a diagnosis (84 teeth) | 0.99 (0.97-1.00) | 1.00 (0.99-1.00) | 0.97 (0.92-1.00) | 1.00 (0.99-1.00) |
+| held-out extractions (95 teeth, 87 patients) | 0.87 (0.75-0.97) | 0.82 (0.65-0.96) | 0.83 (0.64-0.97) | 0.83 (0.66-0.95) |
+| missing at the first exam (3,630 teeth, 1,483 patients) | 0.97 (0.96-0.98) | 0.94 (0.93-0.96) | 0.96 (0.95-0.97) | 0.96 (0.95-0.97) |
+| extractions without a diagnosis (78 teeth) | 0.93 (0.86-0.99) | 0.97 (0.93-1.00) | 0.94 (0.88-0.99) | 0.96 (0.92-1.00) |
 
-Across the 5 generator seeds the held-out AUC of the shared models ranges from 0.72 to 0.88. The start date and the
+Across the 5 generator seeds the held-out AUC of the shared models ranges from 0.61 to 0.93. The start date and the
 minimum age choose the teeth that train and score the model, not how many teeth a patient has lost: the stage recount
 still counts every missing tooth but third molars (`tooth_loss_model.stage_teeth`), and the fitted model gives the
-unlabelled ones outside its own teeth a probability too. So stage IV, all 2,411 patients at stage III-IV by worst
-CAL, is as before: 273 by every missing tooth, 46 by fewer than 20 teeth, 181 by fewer than 10 occluding pairs, 97 by
-the synthetic truth; by the expected count (shared predictors) 33 / 36 (completed, logistic / XGBoost) and 83 / 94
-(completed + planned), against 21 / 27 and 85 / 84 before, as the model itself changed. The detailed tables below are the run before spec 032 US8 (every year,
+unlabelled ones outside its own teeth a probability too. So stage IV, all 2,470 patients at stage III-IV by worst
+CAL, is the same under both: 280 by every missing tooth, 52 by fewer than 20 teeth, 180 by fewer than 10 occluding
+pairs, 115 by the synthetic truth; by the expected count (shared predictors) 57 / 25 (completed, logistic / XGBoost)
+and 91 / 84 (completed + planned), against 66 / 68 and 98 / 94 under the earlier settings, as the model itself
+changed. The detailed tables below are the run before spec 032 US8 (every year,
 70/30, fixed XGBoost settings: `--start-date "" --test-share 0.3 --cv-folds 0`, the `repo_v1` preset); they are kept
 because they describe the whole extract.
 
@@ -157,38 +158,39 @@ so each age band keeps its share ([research.md](../specs/029-tooth-loss/research
 published effects of smoking and diabetes on tooth loss for reasons other than periodontitis are small and not
 statistically significant, so this is a small change.
 
-**Held-out extractions** (242 teeth with a recorded diagnosis, 223 patients, 14% periodontal), shared predictors:
+**Held-out extractions** (266 teeth with a recorded diagnosis, 237 patients, 18% periodontal), shared predictors:
 
 | Label set | Model | AUC (95% CI) | Brier | Calibration slope | Sensitivity / specificity at 0.5 |
 |---|---|---|---|---|---|
-| completed | logistic | 0.84 (0.73-0.93) | 0.07 | 1.09 (0.76-1.62) | 0.59 / 0.99 |
-| completed | XGBoost | 0.86 (0.77-0.93) | 0.07 | 0.85 (0.62-1.23) | 0.53 / 0.98 |
-| completed + planned | logistic | 0.81 (0.69-0.91) | 0.10 | 0.72 (0.51-1.02) | 0.74 / 0.90 |
-| completed + planned | XGBoost | 0.86 (0.78-0.94) | 0.09 | 0.75 (0.57-1.04) | 0.74 / 0.89 |
-| baseline: outcome rate | - | 0.50 | 0.12 | - | - |
+| completed | logistic | 0.84 (0.76-0.92) | 0.09 | 0.98 (0.75-1.33) | 0.46 / 0.98 |
+| completed | XGBoost | 0.78 (0.69-0.87) | 0.09 | 0.77 (0.60-1.04) | 0.48 / 0.98 |
+| completed + planned | logistic | 0.84 (0.76-0.91) | 0.10 | 0.84 (0.66-1.13) | 0.60 / 0.93 |
+| completed + planned | XGBoost | 0.82 (0.74-0.90) | 0.10 | 0.72 (0.55-0.94) | 0.60 / 0.93 |
+| baseline: outcome rate | - | 0.50 | 0.15 | - | - |
 
-With the tooth's own measures, AUC is 0.84 (logistic) and 0.85 (XGBoost) on completed extractions: about the same as
+With the tooth's own measures, AUC is 0.84 (logistic) and 0.80 (XGBoost) on completed extractions: about the same as
 the shared set. Adding planned extractions raises sensitivity but shifts the probabilities up (calibration
-intercept about -1.2), since planned extractions in the synthetic set are mostly periodontal (training outcome
-rate 34% against 13% in completed extractions). Across the 5 generator seeds the held-out AUC of the shared models
-ranges from about 0.71 to 0.86: the held-out set is small, so one seed's number shouldn't be read alone.
+intercept -0.44 and -0.17), since planned extractions in the synthetic set are mostly periodontal. Across the 5
+generator seeds the held-out AUC of the shared models ranges from about 0.75 to 0.85: the held-out set is small, so
+one seed's number shouldn't be read alone.
 
-**Teeth missing at the first exam** (7,588 teeth, 3,090 patients, third molars left out; 21% periodontal by the
+**Teeth missing at the first exam** (7,770 teeth, 3,154 patients, third molars left out; 21% periodontal by the
 answer key), shared predictors (the tooth has no own measures there):
 
 | Label set | Model | AUC (95% CI) | Brier | Calibration intercept / slope | Mean probability | Sensitivity / specificity at 0.5 |
 |---|---|---|---|---|---|---|
-| completed | logistic | 0.94 (0.93-0.95) | 0.09 | 0.28 / 1.85 | 0.18 | 0.43 / 0.98 |
-| completed | XGBoost | 0.94 (0.92-0.95) | 0.08 | 0.44 / 1.30 | 0.17 | 0.55 / 0.98 |
-| completed + planned | logistic | 0.94 (0.93-0.95) | 0.08 | -0.77 / 1.21 | 0.29 | 0.85 / 0.91 |
-| completed + planned | XGBoost | 0.95 (0.93-0.95) | 0.08 | -0.75 / 1.10 | 0.27 | 0.89 / 0.90 |
+| completed | logistic | 0.97 (0.96-0.97) | 0.07 | -0.33 / 2.06 | 0.25 | 0.77 / 0.95 |
+| completed | XGBoost | 0.94 (0.93-0.95) | 0.07 | -0.19 / 1.26 | 0.23 | 0.72 / 0.96 |
+| completed + planned | logistic | 0.96 (0.95-0.96) | 0.08 | -0.90 / 1.41 | 0.31 | 0.90 / 0.91 |
+| completed + planned | XGBoost | 0.95 (0.95-0.96) | 0.07 | -0.78 / 1.40 | 0.29 | 0.90 / 0.90 |
 | baseline: every missing tooth is periodontal | - | 0.50 | 0.79 | - | 1.00 | 1.00 / 0.00 |
 
-Across the 5 generator seeds the AUC there ranges from 0.89 to 0.98. Specificity is the share of non-periodontal
-losses the model doesn't call periodontal: 0.94-0.98 on completed extractions, 0.89-0.91 with planned extractions
-added, against 0 for "every missing tooth". On this seed the completed-extraction models' probabilities run low
-(intercept above 0, mean 0.17-0.18 against 21% periodontal), so at 0.5 they miss more than half the periodontal
-teeth; with planned extractions added they run high (intercept below 0). The AUC is higher than on the held-out
+Across the 5 generator seeds the AUC there ranges from 0.93 to 0.97. Specificity is the share of non-periodontal
+losses the model doesn't call periodontal: 0.95-0.98 on completed extractions, 0.88-0.92 with planned extractions
+added, against 0 for "every missing tooth". On this seed the completed-extraction models' probabilities run a little
+high on average (intercept below 0, mean 0.23-0.25 against 21% periodontal) and too close together (slope above 1),
+so at 0.5 they find about three quarters of the periodontal teeth; with planned extractions added they run higher
+(intercept about -0.8 to -0.9). The AUC is higher than on the held-out
 extractions, and that is a property of this generator, not a result to expect on real records: most
 non-periodontal teeth missing at entry are in young mouths (the published mix by age), while the periodontal ones
 come with the mouth's attachment loss. US8 lets the two share smokers and patients with diabetes, but by the small
@@ -209,43 +211,64 @@ The missing-at-entry AUC moves by about 0.01 either way, inside the seed-to-seed
 after): with effects this small, sharing smoking and diabetes doesn't make the two kinds of loss much harder to tell
 apart. What keeps the AUC high is the age mix and attachment loss, not these risk factors.
 
-**Extractions without a diagnosis** (146 teeth, 16% periodontal by the answer key): AUC 0.97 (0.93-1.00) and 0.92
-(0.84-0.99) for the shared logistic and XGBoost models on completed extractions, Brier 0.05; the calibration
-intercept is near 0 (0.18 and 0.07).
+**Extractions without a diagnosis** (149 teeth, 11% periodontal by the answer key): AUC 0.97 (0.95-0.99) and 0.96
+(0.92-0.99) for the shared logistic and XGBoost models on completed extractions, Brier 0.05; the calibration
+intercept is a little below 0 (-0.45 and -0.52).
 
-**Stage III vs IV** (2,411 patients whose worst CAL in the record is 5 mm or more):
+**Stage III vs IV** (2,470 patients whose worst CAL in the record is 5 mm or more):
 
 | Counting rule | Stage IV | Agree with truth | Called IV, truth III | Called III, truth IV |
 |---|---|---|---|---|
-| recorded periodontal extractions only | 0 | 2,314 | 0 | 97 |
-| every missing tooth | 273 | 2,235 | 176 | 0 |
-| expected, completed, logistic | 21 | 2,333 | 1 | 77 |
-| expected, completed, XGBoost | 27 | 2,339 | 1 | 71 |
-| expected, completed + planned, logistic | 85 | 2,347 | 26 | 38 |
-| expected, completed + planned, XGBoost | 84 | 2,348 | 25 | 38 |
-| fewer than 20 teeth left (spec 032) | 46 | 2,336 | 12 | 63 |
-| fewer than 10 occluding pairs left (spec 032) | 181 | 2,241 | 127 | 43 |
-| the synthetic truth | 97 | 2,411 | 0 | 0 |
+| recorded periodontal extractions only | 0 | 2,355 | 0 | 115 |
+| every missing tooth | 280 | 2,305 | 165 | 0 |
+| expected, completed, logistic | 66 | 2,409 | 6 | 55 |
+| expected, completed, XGBoost | 68 | 2,407 | 8 | 55 |
+| expected, completed + planned, logistic | 98 | 2,411 | 21 | 38 |
+| expected, completed + planned, XGBoost | 94 | 2,401 | 24 | 45 |
+| fewer than 20 teeth left (spec 032) | 52 | 2,383 | 12 | 75 |
+| fewer than 10 occluding pairs left (spec 032) | 180 | 2,297 | 119 | 54 |
+| the synthetic truth | 115 | 2,470 | 0 | 0 |
 
-"Every missing tooth" calls 273 patients stage IV, 176 of them wrongly: nearly three times the true number. The
-expected count calls 21-85, with 1-26 wrongly and 38-77 missed; with planned extractions it is the closest to the
+"Every missing tooth" calls 280 patients stage IV, 165 of them wrongly: about two and a half times the true number.
+The expected count calls 66-98, with 6-24 wrongly and 38-55 missed; with planned extractions it is the closest to the
 truth, and recorded periodontal extractions alone find no stage IV patient by tooth loss. On this seed the
-completed-extraction models undercount (their probabilities run low on teeth missing at entry, above), so they miss
-more stage IV patients than before US8 (40-45 on the earlier seed 42 extract).
+completed-extraction models still undercount (66-68 against 115), missing about half the stage IV patients.
 
 The last two rules (spec 032 US4, #443) don't ask why teeth were lost: they call stage IV from the teeth left,
 fewer than 20 teeth or fewer than 10 occluding pairs (upper and lower teeth that meet), third molars left out as in
 `aces.py`, counted from the whole tooth table (`labels.stage4_rule`, rules `teeth_lt_20` and `pairs_lt_10`). Fewer
-than 20 teeth calls 46 stage IV (12 wrongly, 63 missed): it misses most true stage IV patients, who keep 20 or more
-teeth. Fewer than 10 pairs calls 181 (127 wrongly, 43 missed): a tooth lost for any reason can break a pair, so this
+than 20 teeth calls 52 stage IV (12 wrongly, 75 missed): it misses most true stage IV patients, who keep 20 or more
+teeth. Fewer than 10 pairs calls 180 (119 wrongly, 54 missed): a tooth lost for any reason can break a pair, so this
 rule overcounts like "every missing tooth", though less. Mean of the 5 generator seeds: fewer than 20
-teeth 38 called stage IV (10 wrongly, 65 missed), fewer than 10 pairs 169 (120 wrongly, 45 missed). Adding the two
+teeth 43 called stage IV (10 wrongly, 69 missed), fewer than 10 pairs 171 (120 wrongly, 51 missed). Adding the two
 rules left every other number on this page unchanged.
 
 Stage recount, mean of the 5 generator seeds, before → after US8: "every missing tooth" 271 → 264 called stage IV
 (168 → 170 wrongly) against a truth of 102 → 94; expected count, completed, 56-61 → 50-53 (7-8 → 5 wrongly, 49-54 →
 46-48 missed); completed + planned, 91-95 → 92-98 (21-23 → 24-28 wrongly, 30-32 → 23-26 missed). Before US8, seed
 42 alone: every missing tooth 250 (164 wrongly), expected count 48-81 (7-26 wrongly, 29-45 missed), truth 86.
+
+**Before and after spec 033 US2** (#485; SYNTHETIC; the same command on the code before and after). The extract's
+smoking and diabetes shares moved from the study's placeholders to the published US figures
+([synthetic_data.md](synthetic_data.md); references items 72 and 73). Every extract is a fresh synthetic sample after
+the change, so the 5-seed means are the fairer comparison. Under the defaults (`repo_v2`), shared predictors:
+
+| | Before | After |
+|---|---|---|
+| patients who smoke / 10+ a day / with type 2 diabetes listed (6,000 patients, seed 42) | 18.3% / 7.9% / 7.9% | 11.7% / 5.2% / 15.6% |
+| held-out extractions, AUC seed 42, completed: logistic / XGBoost | 0.81 / 0.82 (91 teeth) | 0.87 / 0.82 (95 teeth) |
+| held-out extractions, AUC 5-seed mean, completed: logistic / XGBoost | 0.788 / 0.791 | 0.817 / 0.829 |
+| missing at entry, AUC seed 42, completed: logistic / XGBoost | 0.91 / 0.89 | 0.97 / 0.94 |
+| missing at entry, AUC 5-seed mean, completed: logistic / XGBoost | 0.930 / 0.939 | 0.961 / 0.957 |
+| missing at entry, AUC 5-seed mean, completed + planned: logistic / XGBoost | 0.949 / 0.950 | 0.961 / 0.960 |
+| stage III-IV patients; stage IV by the truth / every missing tooth (seed 42) | 2,411; 97 / 273 | 2,470; 115 / 280 |
+| stage IV by the expected count, 5-seed mean, completed + planned: logistic / XGBoost | 89.8 / 89.8 (truth 93.8) | 90.6 / 85.4 (truth 102.2) |
+
+With about twice the share of patients with diabetes, more of them progress to stage III-IV (the diabetes term in
+`synthetic.cal_rate_per_year`), so the truth has more stage IV patients. The missing-at-entry AUC rises by about
+0.01-0.03 on the 5-seed means, and the seed-to-seed range moves up (0.88-0.97 before, 0.94-0.98 after): more of the
+periodontal losses now come with diabetes and fast attachment loss, which the shared predictors carry. The held-out
+AUC moves inside its wide spread. The insurance shares did not change (still placeholders), nor did any study result.
 
 ## What a real extract can and can't check
 

@@ -92,3 +92,10 @@ def test_commit_named_graphs_are_used_when_no_task_named_ones_exist():
     assert "snapshots/httpx_3672.tgz" in picked
     assert "graphs/rich_bbb.json" in picked and "embeddings/rich_bbb.npz" in picked   # smallest pair, same stem
     assert "graphs/httpx_aaa.json" not in picked
+
+
+def test_the_kaggle_token_is_found_under_each_name_the_environments_use():   # #502
+    assert cc.kaggle_token({"KAGGLE_API_TOKEN": "a", "KAGGLE_API_KEY": "b"}) == "a"
+    assert cc.kaggle_token({"KAGGLE_KEY": "k"}) == "k"
+    assert cc.kaggle_token({"KAGGLE_API_KEY": "b"}) == "b"          # the cloud environment's name
+    assert cc.kaggle_token({"KAGGLE_API_KEY": ""}) is None
