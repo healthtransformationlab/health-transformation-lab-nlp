@@ -30,9 +30,9 @@ once #477 is merged and main is merged into this branch.
 |---|---|
 | check (PR conventions) | ✅ |
 | changes, postgres, azure-infra, bundle | ✅ |
-| python (pandas 3) | running at review time; passes locally (below) |
-| python-databricks-runtime (pandas 2) | expected ❌ until #477 merges: the #476 failures it was added to catch |
-| r-parity | running at review time; no R or scoring change |
+| python (pandas 3) | ✅ |
+| python-databricks-runtime (pandas 2) | ❌ as expected until #477 merges: 4 failed, 13 errors, all #476's `ValueError` in `test_tooth_loss_dq` / `test_dq_site`; 1628 passed |
+| r-parity | ✅ |
 
 ## Secrets, PHI and Claims Scan
 Clean. No credentials: the only `password` match is the existing Postgres service password `ci`. No data files.
