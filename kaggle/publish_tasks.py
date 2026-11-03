@@ -8,7 +8,7 @@ The layout is the Gemma 4 Developer Agent competition's, checked against all 129
 (the harness finds them by `task.repo`; ours are built per instance id, so they are renamed here, one per base).
 Only the gated set goes: `tasks_gated.jsonl` becomes `tasks.jsonl`, never the ungated candidates. No wheels:
 they are third-party packages under their own licences (the card says how to download them). check() refuses a
-task that didn't pass the gate, a task missing a file, and any row naming the organisation CLAUDE.md forbids.
+task that didn't pass the gate, a task missing a file, and any row or graph naming the organisation CLAUDE.md forbids.
 """
 
 import argparse
@@ -73,8 +73,11 @@ def check(task_dir: Path) -> None:
         raise SystemExit(f"{len(missing)} file(s) missing, e.g. {missing[0]}: build them with 55_build_tasks.py "
                          "--snapshots N --graphs --embeddings")
     named = [r["instance_id"] for r in rows if tm.names_org(json.dumps(r))]
+    named += [dest for dest, src in files_of(task_dir).items()   # graph node text is unredacted source (PR #515)
+              if dest.startswith("graphs/") and tm.names_org(src.read_text())]
     if named:   # CLAUDE.md: nothing published names it (#435)
-        raise SystemExit(f"{len(named)} row(s) name the organisation CLAUDE.md forbids: {', '.join(named[:5])}")
+        raise SystemExit(f"{len(named)} row(s) or graph(s) name the organisation CLAUDE.md forbids: "
+                         f"{', '.join(named[:5])}")
 
 
 def card(task_dir: Path, commit: str) -> str:

@@ -5,6 +5,8 @@ against all 129 of its tasks on Nov 3, 2026), and the harness looks graphs up by
 tiny task set in tmp_path; nothing here reads the git-ignored task files."""
 import importlib.util
 import json
+import sys
+import types
 
 import pandas as pd
 import pytest
@@ -144,3 +146,45 @@ def test_the_workflow_builds_gates_then_publishes_from_full_history():
     assert "--upload" in runs[pub] and "pipefail" in runs[pub]
     check = next(i for i, r in enumerate(runs) if "authenticate()" in r)
     assert check < build                                              # the credential is checked before the work
+
+
+def test_refuses_a_graph_naming_the_forbidden_organisation(task_dir, monkeypatch):   # PR #515 review
+    (task_dir / "graphs" / "htlnlp_2.json").write_text(json.dumps({"nodes": [{"text": "FORBIDDEN"}]}))
+    monkeypatch.setattr(pt.tm, "names_org", lambda text: "FORBIDDEN" in (text or ""))
+    with pytest.raises(SystemExit, match="graph"):
+        pt.check(task_dir)
+
+
+def test_the_card_names_the_third_party_files_and_their_licences(task_dir, tmp_path):   # PR #515 review
+    card = pt.build(task_dir, tmp_path / "out", "someone", "abc1234")["description"]
+    for words in ("MACCROBAT", "Not synthetic", "10.6084/m9.figshare.9764942", "dbx_icons", "MIT"):
+        assert words in card, words
+
+
+def run_main(monkeypatch, task_dir, out, *args):
+    monkeypatch.setattr(sys, "argv", ["publish_tasks.py", "--tasks-dir", str(task_dir), "--out", str(out),
+                                      "--username", "someone", "--commit", "abc1234def5678", *args])
+    pt.main()
+
+
+def test_without_upload_nothing_reaches_kaggle(task_dir, tmp_path, monkeypatch):
+    calls = []
+    monkeypatch.setattr(pt.publish, "upload", lambda *a, **k: calls.append(a))
+    monkeypatch.setitem(sys.modules, "kaggle.api.kaggle_api_extended", None)   # importing it would fail
+    run_main(monkeypatch, task_dir, tmp_path / "out")
+    assert calls == [] and (tmp_path / "out" / "tasks.jsonl").exists()
+
+
+def test_upload_sends_the_built_folder_with_the_commit_in_the_message(task_dir, tmp_path, monkeypatch):
+    calls = []
+
+    class FakeApi:
+        def authenticate(self):
+            calls.append("auth")
+
+    fake = types.ModuleType("kaggle.api.kaggle_api_extended")
+    fake.KaggleApi = FakeApi
+    monkeypatch.setitem(sys.modules, "kaggle.api.kaggle_api_extended", fake)
+    monkeypatch.setattr(pt.publish, "upload", lambda folder, ref, message, api: calls.append((folder, ref, message)))
+    run_main(monkeypatch, task_dir, tmp_path / "out", "--upload", "--message", "First version")
+    assert calls == ["auth", (tmp_path / "out", "someone/" + pt.SLUG, "First version (abc1234def56)")]

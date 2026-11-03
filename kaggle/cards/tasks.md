@@ -8,8 +8,9 @@ files follow the Gemma 4 Developer Agent competition's dataset layout, so an age
 be run on a second kind of repository and the two compared.
 
 This is a personal learning project, **not affiliated** with any employer, institution or company, nor with
-Kaggle, Google or the competition's organisers. The repository's data is synthetic, and the tasks are code and
-text from its public history: no patient data, no PHI, **not for clinical use**.
+Kaggle, Google or the competition's organisers. The tasks are code and text from the repository's public history,
+**not for clinical use**. Its own data is synthetic, but each snapshot is the whole repository at that commit, so
+most also carry the third-party files it keeps under `data/external/` (see the licence section).
 
 ## How it was made
 
@@ -35,6 +36,13 @@ competition's sandbox (spec 028 in the repository).
 
 ## Licence and citation
 
-CC BY 4.0 for the task rows, graphs, embeddings and this card. Snapshot files are the repository's own (MIT
-licence). Please cite: Bowyer J., *health-transformation-lab-nlp*,
+CC BY 4.0 for the task rows, graphs, embeddings and this card. Inside the snapshots, the repository's own files
+are under its MIT licence, and third-party files keep their own licences, named in the files beside them:
+
+- `data/external/maccrobat/` (in most snapshots): MACCROBAT, 200 published, de-identified clinical case reports
+  from PubMed Central. **Not synthetic.** CC BY 4.0, Caufield, J. Harry (2019), *MACCROBAT*, figshare,
+  https://doi.org/10.6084/m9.figshare.9764942.v2. Its README lists the changes made.
+- `diagrams/_build/dbx_icons/`: an icon set under the MIT licence, with its own copyright in its `LICENSE`.
+
+Please cite: Bowyer J., *health-transformation-lab-nlp*,
 https://github.com/healthtransformationlab/health-transformation-lab-nlp.
