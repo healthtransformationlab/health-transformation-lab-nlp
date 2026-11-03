@@ -283,8 +283,9 @@ def test_tables_use_the_readme_names(inp, answers):
     assert set(m.loc[m.metric == "incorrectly_assigned", "metric_label"]) == {rr.COL_ASSIGNED}
     assert set(m.loc[m.metric == "correct_L3", "metric_label"]) == {"Correct: hard note"}
     assert set(m["group"]) <= set(rr.PHENOTYPE_GROUPS)                  # a group with no results yet is absent
-    pending = {rr.phenotype_group(x + r) for x in inp["pending"]["method_name"] for r in ("", "+rules4")} - set(
-        rr.phenotype_group(x) for x in inp["ladder"]["method"])       # #467: groups whose every run awaits a rerun
+    # #467: groups whose every run awaits a rerun on the new notes
+    pending = ({rr.phenotype_group(x + r) for x in inp["pending"]["method_name"] for r in ("", "+rules4")}
+               - {rr.phenotype_group(x) for x in inp["ladder"]["method"]})
     assert set(rr.PHENOTYPE_GROUPS[:6]) - pending <= set(m["group"])
     assert (m["group"] == m["system"].map(rr.phenotype_group)).all()
     a = js.judge_agreement(inp, _perfect_judgments(inp, answers), n_boot=20)
