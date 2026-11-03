@@ -143,6 +143,17 @@ def test_some_planned_extractions_never_done_are_recorded_missing_at_a_later_vis
     assert not ((pl0["procstatus"] == od.EXISTING_OTHER) & pl0["procdate"].notna()).any()
 
 
+def test_a_tooth_already_extracted_is_never_recorded_missing_later():
+    # PR #513 review: a tooth with a never-done plan can be extracted on a later plan; its old plan must not then
+    # record it missing again (seed 6 did, for patient 189's tooth 2)
+    t, _ = od.build(od.Params(n_patients=300), seed=6)
+    pl = t["procedurelog"]
+    ext = pl[pl["codenum"].isin(od.extraction_codenums(t))]
+    later = ext[(ext["procstatus"] == od.EXISTING_OTHER) & ext["procdate"].notna()]
+    done = ext[ext["procstatus"] == od.COMPLETE]
+    assert later.merge(done, on=["patnum", "toothnum"]).empty
+
+
 def test_open_dental_value_conventions(built):
     t, _ = built
     pm = t["periomeasure"]

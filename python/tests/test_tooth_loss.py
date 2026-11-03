@@ -97,6 +97,23 @@ def test_a_planned_extraction_whose_tooth_goes_missing_at_a_later_visit():
         assert (pd.isna(r["plan_to_missing_days"]) if days is None else r["plan_to_missing_days"] == days), tooth
 
 
+def test_later_missing_edge_cases():
+    # PR #513 review: a plan dated after the loss isn't "planned then missing"; an undated entry row wins over a
+    # dated later one and clears its dates; a time on the first-visit day is still the first visit (as R reads it)
+    x = _extract(procs=[(13, 30, od.PLANNED, "Periodontitis, stage IV", "2021-09-02", None),
+                        (16, 30, od.EXISTING_OTHER, "", None, None, "2021-09-01"),
+                        (17, 26, od.PLANNED, "Periodontitis, stage IV", "2021-01-01", None),
+                        (18, 26, od.EXISTING_OTHER, "", None, None, "2021-09-01"),
+                        (19, 25, od.EXISTING_OTHER, "", None, None, "2020-01-01 10:00")],
+                 initial=[26])
+    t = tl.tooth_table(x)
+    assert _row(t, 30)["tooth_status_code"] == "missing_later"
+    r = _row(t, 26)
+    assert r["tooth_status_code"] == "missing_at_entry"
+    assert pd.isna(r["loss_date"]) and pd.isna(r["plan_to_missing_days"]) and pd.isna(r["dx_def_id"])
+    assert _row(t, 25)["tooth_status_code"] == "missing_at_entry"
+
+
 def test_a_completed_extraction_still_wins_over_a_later_missing_record():
     x = _extract(procs=[(10, 3, od.COMPLETE, "Periodontitis, stage III", "2020-03-01", "2020-09-01"),
                         (11, 3, od.EXISTING_OTHER, "", None, None, "2021-01-01")])

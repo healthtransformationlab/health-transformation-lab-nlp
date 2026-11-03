@@ -184,7 +184,8 @@ class Params:
     other_extraction_per_visit: float = 0.04  # an extraction for another reason (caries, fracture) between visits
     planned_not_done_per_visit: float = 0.10  # a periodontal extraction planned and never completed in the record
     planned_then_missing: float = 0.5         # SYNTHETIC placeholder (029 US9): ... and its tooth recorded missing,
-                                              # extracted by another provider, at a later visit (own random stream)
+                                              # extracted by another provider, at a later visit (drawn on its own
+                                              # stream, though the teeth it removes change later draws)
     dx_correct: float = 0.80                  # extraction diagnosis matches the true reason
     dx_mismatch: float = 0.05                 # it names the other kind of reason (a recording mismatch)
     dx_none: float = 0.15                     # no diagnosis
@@ -528,6 +529,9 @@ def build_with_readings(p: Params | None = None, seed: int = 42) -> tuple[dict[s
             chart = hist[k].chart
             # a planned extraction never done whose tooth is recorded missing today: done by another provider
             for o in [o for o in planned_open if o.get("missing_on") == d]:
+                planned_open.remove(o)
+                if o["tooth"] not in present:      # already extracted on a later plan: nothing more to record
+                    continue
                 r("procedurelog", patnum=pat, procstatus=EXISTING_OTHER, procdate=d, datetp=None, datecomplete=None,
                       codenum=code["D7140"][0], toothnum=str(o["tooth"]), surf="", dx=0, prognosis=0,
                       diagnosticcode="", icdversion=0, provnum=0, clinicnum=clinic, aptnum=0, procfee=0.0,
@@ -535,7 +539,6 @@ def build_with_readings(p: Params | None = None, seed: int = 42) -> tuple[dict[s
                       sitenum=0)
                 present.discard(o["tooth"])
                 extracted.add(o["tooth"])
-                planned_open.remove(o)
             apt = r("appointment", patnum=pat, provnum=dentist, provhyg=hyg,
                         aptdatetime=datetime.combine(d, datetime.min.time()) + timedelta(hours=rng.randint(8, 16)),
                         pattern="/XXXXXX/" if k else "/XXXXXXXXX/", clinicnum=clinic, ishygiene=True,
@@ -817,8 +820,8 @@ def _recorded_later(away: pd.DataFrame, patient: pd.DataFrame) -> pd.Series:
     visit (029 US9), not missing at entry."""
     first = pd.Series(pd.to_datetime(patient["datefirstvisit"]).to_numpy(),
                       index=pd.to_numeric(patient["patnum"], errors="coerce").to_numpy())
-    on = pd.to_datetime(away["procdate"], errors="coerce")
-    return on.notna() & (on > pd.to_numeric(away["patnum"], errors="coerce").map(first))
+    on = pd.to_datetime(away["procdate"], errors="coerce").dt.normalize()      # by calendar day, as R reads it
+    return on.notna() & (on > pd.to_numeric(away["patnum"], errors="coerce").map(first.dt.normalize()))
 
 
 @traced
@@ -922,6 +925,7 @@ def chart_quality(tables: dict[str, pd.DataFrame]) -> pd.DataFrame:
     done = pd.concat([ext.loc[ext["procstatus"] == COMPLETE, ["patnum", "toothnum", "datecomplete"]],
                       away.loc[later, ["patnum", "toothnum", "procdate"]].rename(columns={"procdate": "datecomplete"})])
     done["datecomplete"] = pd.to_datetime(done["datecomplete"])
+    done = done.sort_values("datecomplete").drop_duplicates(["patnum", "toothnum"])     # each tooth lost once
     n_entry = entry.groupby("patnum").size()
     lost = q[["perioexamnum", "patnum", "examdate"]].merge(done, on="patnum")
     lost = lost[lost["datecomplete"] < lost["examdate"]]

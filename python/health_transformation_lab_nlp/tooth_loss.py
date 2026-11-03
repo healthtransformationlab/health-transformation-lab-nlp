@@ -156,7 +156,9 @@ def _statuses(x: dict[str, pd.DataFrame], patients: pd.Series) -> pd.DataFrame:
     pat = x["patient"]
     first_visit = pd.Series(_date(pat["datefirstvisit"]).to_numpy(), index=_num(pat["patnum"]).to_numpy())
     elsewhere = ext[ext["procstatus"] == od.EXISTING_OTHER]
-    is_later = elsewhere["procdate"].notna() & (elsewhere["procdate"] > elsewhere["patient_id"].map(first_visit))
+    elsewhere = elsewhere.assign(procdate=elsewhere["procdate"].dt.normalize())     # by calendar day, as R reads it
+    is_later = elsewhere["procdate"].notna() & (
+        elsewhere["procdate"] > elsewhere["patient_id"].map(first_visit.dt.normalize()))
     later = elsewhere[is_later].sort_values(["procdate", "procnum"]).drop_duplicates(["patient_id", "tooth_num"])
     later = later[[k in t.index for k in zip(later["patient_id"], later["tooth_num"])]]
     if len(later):

@@ -57,7 +57,9 @@ stores the image, not a reading of it.
   no label. The earlier rule (every planned extraction with a diagnosis counts) is kept as a sensitivity setting,
   `--planned-window-days none`. In the synthetic extract the later loss is an extraction by another provider dated
   at that visit; on a real extract the date may come from a dated `toothinitial`. Every tooth recorded missing later
-  counts as missing in the stage recount, with the model's probability.
+  counts as missing in the stage recount, with the model's probability; for a planned-then-missing tooth inside the
+  window that is a tooth the completed + planned model trained on, so its probability there is in-sample (only a
+  completed periodontal extraction counts as recorded).
 - **Two predictor sets:** *shared* (what every missing tooth has: tooth type, neighbours' worst CAL, the mouth at
   the first exam, teeth missing at entry, age, smoking, diabetes) is the applied model; *own* adds the tooth's own
   last measures and how good that chart was, and is shown beside it.
