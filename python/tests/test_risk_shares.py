@@ -1,5 +1,5 @@
 """Spec 033 US2 (#485): the smoking and diabetes shares are settings of synthetic.draw_risk and open_dental.Params.
-The study keeps its old shares (its notes were scored by external model runs; US3); the Open Dental extract takes the
+draw_risk's defaults stay the old placeholders; the Open Dental extract (US2) and the study build (US3, #486) take the
 published US figures (docs/synthetic_data.md; docs/references.md items 72 and 73). Every number is SYNTHETIC."""
 
 import math
