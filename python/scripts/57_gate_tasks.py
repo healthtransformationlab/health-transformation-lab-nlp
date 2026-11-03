@@ -20,7 +20,8 @@ every 55_build_tasks.py, which rewrites tasks_excluded.csv without the gate rows
 
     python scripts/57_gate_tasks.py --apply-only       # no gating: apply the committed task_gates.csv
 Needs tasks.jsonl from scripts/55_build_tasks.py (git-ignored) and the full git history, since every base commit
-is checked out in a temporary worktree.
+is checked out in a temporary worktree. Install `pip install -e ".[dev,tasks,ml]"` first: a test that
+importorskips a missing extra collects nothing and its task fails the gate (htlnlp_117 without xgboost, #502).
 """
 
 from __future__ import annotations
