@@ -99,6 +99,6 @@ Implementation starts after this spec, plan and tasks are reviewed.
   (`ModelParams.planned_window_days`, `label_set`, the stage recount), `scripts/51_tooth_loss_model.py`
   (`--planned-window-days`); the silver model's `patient_tooth`
 - [x] T028 [US9] R twin (`r/R/16_spec029.R`, `tooth_status_029`) and the parity check on statuses and day counts
-- [ ] T029 [US9] Regenerate with the scripts (tooth table, model results, presets, ERD dictionary, website JSON);
+- [x] T029 [US9] Regenerate with the scripts (tooth table, model results, presets, ERD dictionary, website JSON);
   `docs/tooth_loss.md` with the new rule and the earlier one beside it, labelled synthetic; R parity and the full
   suite
