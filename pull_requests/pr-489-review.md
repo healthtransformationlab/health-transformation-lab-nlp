@@ -12,8 +12,8 @@ verdict: approve
 
 ## Summary
 Adds `docs/synthetic_data.md`, one table per generator (study visits, the Open Dental extract, the medical record)
-with each parameter's value, meaning, source or "placeholder", the published figure and the repo's check. Seven
-sources are checked and added to `docs/references.md` (items 72-78). A test keeps the card in step with the code.
+with each parameter's value, meaning, source or "placeholder", the published figure and the repo's check. Nine
+sources are checked and added to `docs/references.md` (items 72-80). A test keeps the card in step with the code.
 
 ## Checks
 - **Test first:** `tests/test_synthetic_data_card.py` failed (199 of 200) before the card existed; it now passes. It
@@ -28,6 +28,10 @@ sources are checked and added to `docs/references.md` (items 72-78). A test keep
 - **Synthetic only, no names beyond cited publications:** institutions in item 76 are described, not named.
   The organisation-name, wording and benchmark-order tests pass.
 - **No data or results change:** docs, a README line and a test only. Full suite 1832 passed, 16 skipped.
+
+- **Known gaps (owner's addition):** edentulism and state geography are listed as gaps, not parameters, with
+  #500 (033 US4) tracking the fix. NCHS Data Brief 368 and the NCHS QuickStats (items 79-80) were checked on
+  cdc.gov; the America's Health Rankings state figures could not be opened, so they are marked unchecked.
 
 ## Notes
 - Inline rates (the clinic profiles, the patient-table rates in `build_with_readings`) are on the card as grouped
