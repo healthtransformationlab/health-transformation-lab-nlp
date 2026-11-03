@@ -276,6 +276,14 @@ Everything this repo relies on, and what it's used for.
     [cdc.gov/nchs/blog/posts/2020/09/18.html](https://www.cdc.gov/nchs/blog/posts/2020/09/18.html). Age-adjusted
     complete tooth loss at 65 and over fell from 29.3% in 1999–2000 to 12.6% in 2017–2018 (42.1% to 23.5% below 200%
     of the poverty level, 17.7% to 8.5% above it). → spec 033: the same gap, over time. Checked on cdc.gov.
+81. **CDC, National Center for Chronic Disease Prevention and Health Promotion.** *U.S. Chronic Disease
+    Indicators*, indicator ORH03, "All teeth lost among adults aged 65 years and older", BRFSS 2022, crude
+    prevalence by state. data.cdc.gov dataset `hksd-2xuw`
+    ([data.cdc.gov/resource/hksd-2xuw.json?questionid=ORH03&yearstart=2022&stratificationid1=OVR&datavaluetypeid=CRDPREV](https://data.cdc.gov/resource/hksd-2xuw.json?questionid=ORH03&yearstart=2022&stratificationid1=OVR&datavaluetypeid=CRDPREV)),
+    read 2026-11-03; Open Database License. United States 12.1% (95% CI 11.7-12.5); across the 50 states and DC from
+    5.4% (Hawaii) to 25.1% (West Virginia). → spec 033 US4: `open_dental.STATE_EDENTULOUS_65_PCT`, which scales the
+    synthetic extract's edentulous share when clinics are given states (`Params.clinic_states`). Checked in the
+    dataset itself (every value copied from it).
 
 58. **Open Dental Software.** *Open Dental* source code, `OpenDentBusiness/TableTypes` (one class per database
     table). [github.com/OpenDental/OpenDental](https://github.com/OpenDental/OpenDental), branch `24_3`, commit

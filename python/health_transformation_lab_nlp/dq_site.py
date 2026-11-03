@@ -47,7 +47,8 @@ MESS = {"charted_visit_office_share": "Office visits with a perio chart",
         "out_of_range_site_share": "Pocket readings over 15 mm",
         "charted_after_loss_chart_share": "Charts that include an extracted tooth",
         "radiograph_visit_share": "Visits with an X-ray",
-        "unread_tooth_share": "Teeth on an X-ray with no bone-loss reading"}
+        "unread_tooth_share": "Teeth on an X-ray with no bone-loss reading",
+        "edentulous_patient_share": "Patients with no natural teeth (no chart expected; left out of the visit shares)"}
 
 
 def _pct(x, d: int = 1):

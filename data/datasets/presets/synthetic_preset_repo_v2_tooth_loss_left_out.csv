@@ -1,7 +1,8 @@
 reason_name,tooth_count,preset_name,data_label
-third_molar_count,24000,repo_v2,synthetic
+edentulous_count,13728,repo_v2,synthetic
+third_molar_count,22284,repo_v2,synthetic
 under_min_age_count,0,repo_v2,synthetic
 unknown_age_count,0,repo_v2,synthetic
-before_start_date_count,88266,repo_v2,synthetic
+before_start_date_count,82673,repo_v2,synthetic
 unknown_date_count,0,repo_v2,synthetic
-eligible_count,79734,repo_v2,synthetic
+eligible_count,73315,repo_v2,synthetic

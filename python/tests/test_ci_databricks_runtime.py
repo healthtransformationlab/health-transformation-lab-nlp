@@ -37,7 +37,8 @@ def test_ci_runs_the_whole_suite_on_the_runtime_pins_and_on_the_newest_too():
     newest, runtime = jobs["python"], jobs["python-databricks-runtime"]
     assert "constraints/" not in _runs(newest)                        # the pandas 3 job stays as it was
     assert "-c python/constraints/databricks_serverless.txt" in _runs(runtime)
-    assert "cd python && pytest -q tests" in _runs(runtime)           # the whole suite, not a subset
+    for job in (newest, runtime):                                     # the whole suite, not a subset,
+        assert "cd python && pytest -q -n auto tests" in _runs(job)   # in parallel (pytest-xdist, #510)
     assert "if" not in runtime                                        # every PR, docs-only too, like python
     py = next(s["with"]["python-version"] for s in runtime["steps"] if "setup-python" in s.get("uses", ""))
     assert py == "3.12"                                               # serverless environment 4 is Python 3.12

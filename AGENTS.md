@@ -127,7 +127,8 @@ Every user story is a GitHub issue, and every branch and pull request belongs to
 6. **An agent merges its own PR when it's ready, without waiting to be told** (the owner's standing rule,
    #497). Ready means every check is green on the latest commit, there's no merge conflict, and its
    `pull_requests/pr-<n>-review.md` finds nothing blocking. These still wait for the owner to say "merge":
-   - a PR that starts a paid run (a Databricks job, a GPU, a paid endpoint);
+   - a PR that starts a run on limited compute (a Databricks job on Free Edition, a Kaggle GPU) or a paid endpoint:
+     nothing is billed, but the allowance is shared and a long run can use it up and block other jobs;
    - one that publishes outside this repo (Kaggle, Hugging Face, the website);
    - one that deletes data, tables or branches, or changes these rules;
    - one the owner has said to hold.

@@ -74,11 +74,13 @@ def test_the_truth_stays_out_of_the_extract(built):
     assert set(truth["true_reason_code"]) <= {"perio", "other"}
     for name, df in tables.items():
         assert not any("truth" in c or "reason" in c for c in df.columns if c != "reaction"), name
-    # every tooth missing at entry or extracted or planned in the record has a true reason
+    # every tooth missing at entry or extracted or planned in the record has a true reason, but for patients with no
+    # natural teeth (spec 033 US4: why they lost them isn't modelled)
     t = tables
     ext = t["procedurelog"][t["procedurelog"]["codenum"].isin(od.extraction_codenums(t))]
     events = set(zip(ext["patnum"], ext["toothnum"].astype(int)))
-    entry = t["toothinitial"][t["toothinitial"]["initialtype"] == 0]
+    entry = t["toothinitial"][(t["toothinitial"]["initialtype"] == 0)
+                              & ~t["toothinitial"]["patnum"].isin(od.edentulous_patients(t))]
     events |= set(zip(entry["patnum"], entry["toothnum"].astype(int)))
     assert events <= set(zip(truth["patient_id"], truth["tooth_num"]))
 
@@ -433,3 +435,104 @@ def test_insurance_has_its_own_random_stream_so_no_other_table_changes(built):
         pd.testing.assert_frame_equal(tables[name], other[name], obj=name)
     pd.testing.assert_frame_equal(truth, truth2)
     assert not tables["patplan"].equals(other["patplan"])
+
+
+# ---------- spec 033 US4 (#500): patients with no natural teeth (edentulism) ----------
+
+NO_EDENTULOUS = tuple((low, 0.0) for low, _ in od.Params().edentulous_share_by_age)
+
+
+def _ages(tables) -> pd.Series:
+    return pd.Series(od.patient_age(tables).to_numpy(), index=tables["patient"]["patnum"].to_numpy())
+
+
+def test_the_edentulous_share_follows_the_published_rates_by_age(large):
+    tables, _ = large
+    p = od.Params()
+    assert [low for low, _ in p.edentulous_share_by_age] == [25, 35, 45, 55, 65, 70, 75]
+    ages = _ages(tables)
+    edentulous = ages.index.isin(od.edentulous_patients(tables))
+    band = ages.map(lambda a: od._band(a, p.edentulous_share_by_age))
+    share = pd.Series(edentulous, index=ages.index).groupby(band).mean()
+    for low, target in p.edentulous_share_by_age:
+        assert abs(share[low] - target) < 0.035, (low, share[low], target)
+    assert share[25] < share[55] < share[75]
+    assert 0.05 < edentulous.mean() < 0.09                     # about 7% of a 25-85 extract (docs/synthetic_data.md)
+
+
+def test_an_edentulous_patient_has_every_tooth_missing_and_no_chart_or_tooth_procedure(large):
+    tables, truth = large
+    none = od.edentulous_patients(tables)
+    assert len(none) > 100
+    ti = tables["toothinitial"][tables["toothinitial"]["patnum"].isin(none)]
+    assert ti["patnum"].nunique() == len(none)
+    assert all(sorted(g.astype(int)) == list(range(1, 33)) for _, g in ti.groupby("patnum")["toothnum"])
+    assert (ti["initialtype"] == 0).all()
+    assert not tables["perioexam"]["patnum"].isin(none).any()                       # no teeth, so no perio chart
+    assert not tables["document"]["patnum"].isin(none).any()                         # nor radiographs
+    assert not tables["treatplan"]["patnum"].isin(none).any()
+    pl = tables["procedurelog"][tables["procedurelog"]["patnum"].isin(none)]
+    exams = set(tables["procedurecode"].loc[tables["procedurecode"]["proccode"].isin(["D0150", "D0120"]), "codenum"])
+    assert set(pl["codenum"]) <= exams and len(pl) == tables["appointment"]["patnum"].isin(none).sum()
+    assert not truth["patient_id"].isin(none).any()             # why they lost their teeth isn't modelled
+    assert not od.entry_reasons(tables, truth)["patient_id"].isin(none).any()
+
+
+def test_edentulism_draws_on_its_own_stream_so_patients_with_teeth_keep_their_rows():
+    with_none, truth = od.build(od.Params(n_patients=400), seed=5)
+    without, truth0 = od.build(od.Params(n_patients=400, edentulous_share_by_age=NO_EDENTULOUS), seed=5)
+    assert od.edentulous_patients(without) == set()
+    none = od.edentulous_patients(with_none)
+    assert none
+    pd.testing.assert_frame_equal(with_none["patient"], without["patient"])
+    keep = lambda df, key, drop: df[~df[key].isin(none)].drop(columns=drop).reset_index(drop=True)
+    pd.testing.assert_frame_equal(keep(truth, "patient_id", []), keep(truth0, "patient_id", []))
+    pd.testing.assert_frame_equal(keep(with_none["toothinitial"], "patnum", ["toothinitialnum"]),
+                                  keep(without["toothinitial"], "patnum", ["toothinitialnum"]))
+    pd.testing.assert_frame_equal(keep(with_none["perioexam"], "patnum", ["perioexamnum"]),
+                                  keep(without["perioexam"], "patnum", ["perioexamnum"]))
+    pd.testing.assert_frame_equal(keep(with_none["procedurelog"], "patnum", ["procnum", "aptnum"]),
+                                  keep(without["procedurelog"], "patnum", ["procnum", "aptnum"]))
+
+
+def test_the_realism_profile_leaves_patients_with_no_teeth_out_of_the_charting_rates():
+    tables, _, readings = od.build_with_readings(od.Params(n_patients=600, **od.NO_MESS), seed=2)
+    assert od.edentulous_patients(tables)
+    got = dict(zip(*od.realism_profile(tables, readings)[["metric_name", "value_ratio"]].T.values))
+    assert got["charted_visit_office_share"] == 1                 # no chart because no teeth is not a missing chart
+    assert 0.03 < got["edentulous_patient_share"] < 0.12
+
+
+def test_by_default_clinics_have_no_state_and_the_national_rates_hold():
+    p = od.Params()
+    assert p.clinic_states == ()
+    assert od.edentulous_share(80, None, p) == dict(p.edentulous_share_by_age)[75]
+    assert od.edentulous_share(30, None, p) == dict(p.edentulous_share_by_age)[25]
+
+
+def test_with_states_each_clinic_has_one_and_the_share_scales_to_its_rate():
+    states = ("WV", "HI", "CA", "OH")
+    p = od.Params(n_patients=50, clinic_states=states)
+    tables, _ = od.build(p, seed=3)
+    assert list(tables["clinic"]["state"]) == list(states)
+    us = od.STATE_EDENTULOUS_65_PCT["US"]
+    for state in states:
+        ratio = od.STATE_EDENTULOUS_65_PCT[state] / us
+        assert od.edentulous_share(80, state, p) == pytest.approx(min(1.0, 0.178 * ratio))
+        assert od.edentulous_share(40, state, p) == pytest.approx(0.013 * ratio)
+    assert od.edentulous_share(80, "WV", p) > od.edentulous_share(80, None, p) > od.edentulous_share(80, "HI", p)
+    assert set(od.STATE_EDENTULOUS_65_PCT) >= {"AL", "WY", "DC", "US"} and len(od.STATE_EDENTULOUS_65_PCT) == 52
+
+
+def test_states_are_checked_against_the_table_and_the_number_of_clinics():
+    with pytest.raises(ValueError, match="clinic_states"):
+        od.build(od.Params(n_patients=5, clinic_states=("WV", "HI")), seed=1)          # 4 clinics, 2 states
+    with pytest.raises(ValueError, match="ZZ"):
+        od.build(od.Params(n_patients=5, clinic_states=("WV", "HI", "CA", "ZZ")), seed=1)
+
+
+def test_a_state_extract_has_more_edentulous_patients_where_the_state_rate_is_higher():
+    high, _ = od.build(od.Params(n_patients=3000, clinic_states=("WV",) * 4), seed=9)
+    low, _ = od.build(od.Params(n_patients=3000, clinic_states=("HI",) * 4), seed=9)
+    share = lambda t: len(od.edentulous_patients(t)) / len(t["patient"])
+    assert share(high) > 2.5 * share(low)

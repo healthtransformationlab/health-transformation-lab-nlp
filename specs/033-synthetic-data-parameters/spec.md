@@ -42,6 +42,24 @@ documented where it is set, but no page lists them all.
 - Done: `study.STUDY_RISK_KWARGS` is `open_dental.risk_kwargs()` of the extract's `Params`; the external runs made
   on the old notes show as "rerun pending on the new notes" until they are redone (#467).
 
+### US4 - The Open Dental extract has patients with no natural teeth, and optionally a state per clinic (P2) #500
+
+- A share of the extract's patients have no natural teeth (edentulism), by age band: 65-69, 70-74 and 75+ from
+  NHANES 2015-2018 (NCHS Data Brief 368, references item 79); under 65 from this repo's own NHANES 2009-2014 run
+  (`scripts/38_nhanes_perio.py` writes `data/datasets/nhanes/nhanes_edentulous_by_age.csv`; real public data), as
+  Data Brief 368 covers 65 and over only. Drawn on a random stream of its own, so patients with teeth keep their rows.
+- An edentulous patient has every tooth missing in `toothinitial` and no perio chart, radiograph, hygiene visit or
+  extraction. Why their teeth were lost isn't modelled, so they have no answer-key rows.
+- The tooth table holds them as 32 teeth missing at entry; the tooth-loss model and the stage recount leave them out
+  (the 2018 classification can't stage a mouth with no teeth). The data-quality checks leave their visits out of the
+  charting rates (no chart because no teeth is not a missing chart), report their share, and flag a chart recorded
+  for one (`chart_without_teeth`).
+- Optional geography (`open_dental.Params.clinic_states`, default empty, so the default extract has no state): each
+  clinic gets a US state and its patients' share is scaled by that state's rate over the US rate (all teeth lost at
+  65 and over, BRFSS 2022, CDC U.S. Chronic Disease Indicators; references item 81).
+- Tooth-loss, data-quality and preset results are rerun and recommitted; the data card moves edentulism from "Known
+  gaps" to a sourced parameter with the synthetic against the published table.
+
 ## Out of scope
 
 - Calibrating the periodontitis mix to NHANES (a later spec; it changes every benchmark number).
