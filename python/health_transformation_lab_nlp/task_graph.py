@@ -6,6 +6,10 @@
     build_graph  an AST walk over the package into NetworkX node-link JSON with the competition's keys:
                  directed multigraph; nodes `id` (qualified symbol) / `name` (= id) / `text` (the def's source);
                  edges `source` / `target` / `type` ("calls") / `key` (parallel-edge index)
+    embed_graph  one 256-float32 unit vector per node, keyed by node id, from the node's source text (its name
+                 when empty); `save_embeddings` writes them as an .npz, one array per node (T010)
+    wheel_requirements, wheel_download_command
+                 the package's runtime, `dev` and `tasks` dependencies, as Python 3.13 binary wheels (T010)
 
 The dataset's format comes from gemma-developer-agent `docs/dataset-format.md` (read from the competition's Data
 tab); no competition graph file has been compared here, so the node-id form (`pkg.module.Class.method`, not the
@@ -21,10 +25,22 @@ import os
 import shutil
 import subprocess
 import tarfile
+from collections.abc import Callable
 from pathlib import Path
+
+import numpy as np
+import tomllib
 
 from . import task_mine  # one definition of the organisation name and its redaction
 from .telemetry import traced
+
+# The embedding model is named and pinned; the competition doesn't name its own, so parity is unverified (spec 028)
+EMBED_MODEL = "google/embeddinggemma-300m"            # gated: the Gemma licence, accepted on Hugging Face
+EMBED_REVISION = "57c266a740f537b4dc058e1b0cda161fd15afa75"
+EMBED_DIMS = 256                                      # Matryoshka cut of the model's 768, then renormalised
+WHEEL_EXTRAS = ("dev", "tasks")                       # tests and graphs; not torch and the model extras
+WHEEL_PYTHON = "3.13"
+WHEEL_PLATFORMS = ("manylinux_2_28_x86_64", "manylinux_2_17_x86_64", "manylinux2014_x86_64", "any")
 
 
 @traced
@@ -238,3 +254,47 @@ def snapshot(repo: Path, base_commit: str, out_tgz: Path, work_dir: Path) -> dic
         shutil.rmtree(dest, ignore_errors=True)
     return {"base_commit": base_commit, "snapshot_head_sha": head, "tree_sha": tree, "commit_count": count,
             "redacted_paths": ";".join(named), "size_bytes": out_tgz.stat().st_size}
+
+
+@traced
+def embed_graph(graph: dict, encode: Callable[[list[str]], np.ndarray], dims: int = EMBED_DIMS,
+                cache: dict[str, np.ndarray] | None = None) -> dict[str, np.ndarray]:
+    """One float32 unit vector of `dims` per node, keyed by node id. `encode` maps texts to an (n, >= dims) array;
+    each distinct text is encoded once, and `cache` (text -> vector) carries over between graphs, since most
+    functions are the same from one base commit to the next."""
+    cache = {} if cache is None else cache
+    texts = {n["id"]: (n.get("text") or n["name"]) for n in graph["nodes"]}
+    todo = sorted({t for t in texts.values() if t not in cache})
+    if todo:
+        raw = np.asarray(encode(todo), dtype=np.float64)[:, :dims]
+        norms = np.linalg.norm(raw, axis=1, keepdims=True)
+        unit = np.divide(raw, norms, out=np.zeros_like(raw), where=norms > 0).astype(np.float32)
+        cache.update(zip(todo, unit))
+    return {node_id: cache[t] for node_id, t in texts.items()}
+
+
+@traced
+def save_embeddings(vectors: dict[str, np.ndarray], path: Path) -> None:
+    """An .npz with one array per node, named by node id (overwritten whole, so re-runnable)."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "wb") as f:
+        np.savez_compressed(f, **vectors)
+
+
+@traced
+def wheel_requirements(pyproject_text: str) -> list[str]:
+    """The runtime dependencies plus the `dev` and `tasks` extras: what the target tests import in the sandbox."""
+    project = tomllib.loads(pyproject_text)["project"]
+    extras = project.get("optional-dependencies", {})
+    reqs = list(project.get("dependencies", []))
+    for name in WHEEL_EXTRAS:
+        reqs += [r for r in extras.get(name, []) if not r.startswith("ruff")]   # a linter, not imported by tests
+    return sorted(set(reqs), key=str.lower)
+
+
+@traced
+def wheel_download_command(requirements: list[str], out_dir: Path) -> list[str]:
+    """`pip download` of binary wheels for the Python 3.13 x86_64 Linux sandbox, with their dependencies."""
+    platforms = [x for p in WHEEL_PLATFORMS for x in ("--platform", p)]
+    return ["pip", "download", "--only-binary=:all:", "--python-version", WHEEL_PYTHON, *platforms,
+            "--dest", str(out_dir), *requirements]

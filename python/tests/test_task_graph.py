@@ -208,3 +208,73 @@ def test_snapshot_has_the_files_and_git_at_the_archive_root_like_the_competition
     assert layout["root_folder"] is None and layout["git_dir"] == ".git"
     with tarfile.open(tmp_path / "s.tgz") as t:
         assert "f.txt" in {m.name for m in t.getmembers()}
+
+
+# --- embeddings and wheels (T010) -------------------------------------------------------------------------------
+
+def _fake_encode(calls):
+    """A stand-in for EmbeddingGemma: 768 floats per text, the first one the text's length, so tests can tell
+    texts apart, and records every batch it was given."""
+    import numpy as np
+
+    def encode(texts):
+        calls.append(list(texts))
+        out = np.zeros((len(texts), 768), dtype="float64")
+        for i, t in enumerate(texts):
+            out[i, 0], out[i, 1], out[i, 300] = len(t), 1.0, 99.0   # column 300 is cut off by truncation
+        return out
+    return encode
+
+
+def test_embeddings_give_one_256_float32_unit_vector_per_node_keyed_by_node_id():
+    import numpy as np
+    g = tg.build_graph(PKG, "pkg", "python/", {"instance_id": "t1"})
+    vectors = tg.embed_graph(g, _fake_encode([]))
+    assert sorted(vectors) == sorted(n["id"] for n in g["nodes"])
+    texts = {n["id"]: n["text"] for n in g["nodes"]}
+    for node_id, v in vectors.items():
+        assert v.shape == (256,) and v.dtype == np.float32
+        n = len(texts[node_id])   # cut to 256 then renormalised: column 300's 99 must not count in the norm
+        assert np.allclose(v[:2], [n / np.hypot(n, 1), 1 / np.hypot(n, 1)]) and not v[2:].any()
+
+
+def test_embeddings_encode_each_distinct_text_once_and_reuse_a_shared_cache():
+    g = tg.build_graph(PKG, "pkg", "python/", {"instance_id": "t1"})
+    calls, cache = [], {}
+    tg.embed_graph(g, _fake_encode(calls), cache=cache)
+    first = sum(len(c) for c in calls)
+    assert first == len({n["text"] for n in g["nodes"]})
+    tg.embed_graph(g, _fake_encode(calls), cache=cache)   # the next base shares most of its functions
+    assert sum(len(c) for c in calls) == first
+
+
+def test_a_node_with_no_source_text_is_embedded_from_its_name():
+    calls = []
+    g = {"nodes": [{"id": "pkg.f", "name": "pkg.f", "text": ""}], "edges": []}
+    tg.embed_graph(g, _fake_encode(calls))
+    assert calls == [["pkg.f"]]
+
+
+def test_embeddings_round_trip_through_npz_and_match_the_competition_check(tmp_path):
+    from health_transformation_lab_nlp import competition_check as cc
+    g = tg.build_graph(PKG, "pkg", "python/", {"instance_id": "t1"})
+    path = tmp_path / "t1.npz"
+    tg.save_embeddings(tg.embed_graph(g, _fake_encode([])), path)
+    summary = cc.embedding_summary(path)
+    assert summary["arrays"] == len(g["nodes"])
+    assert summary["shapes"] == [cc.OUR_VECTOR[0]] and summary["dtypes"] == [cc.OUR_VECTOR[1]]
+
+
+def test_wheel_requirements_are_the_packages_runtime_and_test_dependencies():
+    pyproject = (
+        '[project]\ndependencies = ["pandas>=2.0", "pyyaml>=6"]\n'
+        '[project.optional-dependencies]\ndev = ["pytest>=8", "ruff>=0.5"]\ntasks = ["networkx>=3.4"]\n'
+        'models = ["torch>=2.2"]\n'
+    )
+    assert tg.wheel_requirements(pyproject) == ["networkx>=3.4", "pandas>=2.0", "pytest>=8", "pyyaml>=6"]
+
+
+def test_wheel_download_command_targets_python_313_binaries_only(tmp_path):
+    cmd = tg.wheel_download_command(["pandas>=2.0"], tmp_path / "wheels")
+    assert cmd[:4] == ["pip", "download", "--only-binary=:all:", "--python-version"] and cmd[4] == "3.13"
+    assert "--platform" in cmd and str(tmp_path / "wheels") in cmd and cmd[-1] == "pandas>=2.0"

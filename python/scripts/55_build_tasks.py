@@ -6,6 +6,11 @@
     python scripts/55_build_tasks.py --graphs        # also data/tasks/graphs/<instance_id>.json (US4, T009)
     python scripts/55_build_tasks.py --snapshots 2   # also the first N snapshots/<instance_id>.tgz (US4, T008;
                                                      # one commit of the base's files, no history, name redacted, #435)
+    python scripts/55_build_tasks.py --graphs --embeddings   # also embeddings/<instance_id>.npz (US4, T010):
+                                                     # EmbeddingGemma, 256 dims per graph node; needs HF_TOKEN with
+                                                     # the Gemma licence accepted, and sentence-transformers
+    python scripts/55_build_tasks.py --wheels        # also wheels/: the package's runtime, dev and tasks
+                                                     # dependencies as Python 3.13 binary wheels (US4, T010)
 
 For each candidate in data/tasks/task_manifest.csv: `base_commit` is the parent of a squash or direct commit, or
 the PR's merge base for a merge commit (recorded in the manifest as `base_commit_source_code`); the diff from
@@ -49,6 +54,8 @@ EXCLUDED = TASKS_DIR / "tasks_excluded.csv"
 SAMPLE = TASKS_DIR / "tasks_sample.jsonl"     # committed: the smallest few rows, to show the format
 REVIEWS = REPO_ROOT / "pull_requests"
 GRAPHS = TASKS_DIR / "graphs"                 # git-ignored
+EMBEDDINGS = TASKS_DIR / "embeddings"         # git-ignored
+WHEELS = TASKS_DIR / "wheels"                 # git-ignored
 SNAPSHOTS = TASKS_DIR / "snapshots"           # git-ignored
 SNAPSHOT_INDEX = TASKS_DIR / "snapshot_index.csv"   # committed: base commit -> the snapshot's own head
 PACKAGE, SOURCE_ROOT = "health_transformation_lab_nlp", "python/"
@@ -166,6 +173,44 @@ def write_graphs(rows: list[dict]) -> None:
           f"edges {sorted(s[1] for s in sizes)[n // 2]}, {sum(s[2] for s in sizes) / 1e6:.0f} MB in all")
 
 
+def load_encoder():
+    """EmbeddingGemma at its pinned revision, as a texts -> (n, 768) function using the model's document prompt.
+    The token is checked with one cheap call first (AGENTS.md), so a missing licence fails before the download."""
+    from health_transformation_lab_nlp.llm_reader import check_hf_access
+    check_hf_access(tg.EMBED_MODEL)
+    try:
+        from sentence_transformers import SentenceTransformer
+    except ImportError:
+        sys.exit("--embeddings needs sentence-transformers and torch: pip install sentence-transformers torch")
+    model = SentenceTransformer(tg.EMBED_MODEL, revision=tg.EMBED_REVISION, device="cpu")
+    return lambda texts: model.encode_document(texts, batch_size=16, convert_to_numpy=True)
+
+
+def write_embeddings(rows: list[dict]) -> None:
+    """One .npz per task from its graph (built first by --graphs), each distinct node text encoded once."""
+    missing = [r["instance_id"] for r in rows if not (GRAPHS / f"{r['instance_id']}.json").exists()]
+    if missing:
+        sys.exit(f"--embeddings needs the graphs first ({len(missing)} missing, e.g. {missing[0]}): add --graphs")
+    encode, cache = load_encoder(), {}
+    for r in rows:
+        g = json.loads((GRAPHS / f"{r['instance_id']}.json").read_text())
+        tg.save_embeddings(tg.embed_graph(g, encode, cache=cache), EMBEDDINGS / f"{r['instance_id']}.npz")
+    size = sum(p.stat().st_size for p in EMBEDDINGS.glob("*.npz"))
+    print(f"{len(rows)} embeddings -> {EMBEDDINGS.relative_to(REPO_ROOT)} ({tg.EMBED_MODEL}@{tg.EMBED_REVISION[:12]}, "
+          f"{tg.EMBED_DIMS} dims; {len(cache)} distinct node texts encoded; {size / 1e6:.0f} MB); parity with the "
+          "competition's own embedding model is unverified (it isn't named)")
+
+
+def write_wheels() -> None:
+    """The sandbox's wheels, from this checkout's pyproject.toml (the dependencies today, not per base)."""
+    reqs = tg.wheel_requirements((REPO_ROOT / "python" / "pyproject.toml").read_text())
+    shutil.rmtree(WHEELS, ignore_errors=True)   # rebuilt whole, so re-runnable and no stale versions
+    subprocess.run([sys.executable, "-m", *tg.wheel_download_command(reqs, WHEELS)], check=True)
+    wheels = sorted(WHEELS.glob("*.whl"))
+    print(f"{len(wheels)} wheels for Python {tg.WHEEL_PYTHON} -> {WHEELS.relative_to(REPO_ROOT)} "
+          f"({sum(w.stat().st_size for w in wheels) / 1e6:.0f} MB) from: {', '.join(reqs)}")
+
+
 def write_snapshots(rows: list[dict], limit: int) -> None:
     out = []
     for r in rows[:limit]:
@@ -188,6 +233,8 @@ def main() -> int:
     ap.add_argument("--sample", type=int, default=3, help="rows in the committed tasks_sample.jsonl (smallest first)")
     ap.add_argument("--graphs", action="store_true", help="write one code graph per task (US4)")
     ap.add_argument("--snapshots", type=int, default=0, help="write snapshots for the first N tasks (US4)")
+    ap.add_argument("--embeddings", action="store_true", help="write node embeddings from the graphs (US4, T010)")
+    ap.add_argument("--wheels", action="store_true", help="download the Python 3.13 sandbox wheels (US4, T010)")
     a = ap.parse_args()
     check_settings()
     telemetry.setup()
@@ -239,7 +286,10 @@ def main() -> int:
         write_graphs(rows)
     if a.snapshots:
         write_snapshots(rows, a.snapshots)
-    print("embeddings and wheels NOT built (T010): EmbeddingGemma is a gated model this session can't download")
+    if a.embeddings:
+        write_embeddings(rows)
+    if a.wheels:
+        write_wheels()
     telemetry.end_script()
     return 0
 
