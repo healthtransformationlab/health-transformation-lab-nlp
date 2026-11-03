@@ -119,8 +119,8 @@ None.
 New tests: the tooth-table statuses and edge cases (`test_tooth_loss.py`), the window and the earlier rule and the
 stage recount (`test_tooth_loss_model.py`), the generator's later-missing rows and the no-double-loss regression
 (`test_open_dental.py`). Run locally: `cd python && pytest -q tests` (1,901 passed, 16 skipped on the merged code;
-the full rerun after the review fixes is in progress, and the three files they touch pass: 72 tests), `ruff check` on changed files (clean),
-`python/scripts/make_parity_inputs.sh && Rscript r/tests/test_parity.R` (parity OK on every section).
+1,903 passed, 16 skipped after the review fixes), `ruff check` on changed files (clean),
+`python/scripts/make_parity_inputs.sh && Rscript r/tests/test_parity.R` (parity OK on every section, before and after the review fixes; tooth statuses 6,400 teeth, 0 differ).
 
 ## Verdict
 **Approve with nits.** Nothing blocking; the Important finding is fixed with a regression test. Open: the `_days`
