@@ -6253,7 +6253,7 @@
     "check": "values_as_declared",
     "domain": "completeness",
     "text": "dates parse and coded fields hold declared values",
-    "checked_count": 808311,
+    "checked_count": 808307,
     "found_count": 0,
     "found_pct": 0.0,
     "is_flagged": false
@@ -6262,7 +6262,7 @@
     "check": "one_value_per_field",
     "domain": "completeness",
     "text": "a tooth field holds one tooth",
-    "checked_count": 8495,
+    "checked_count": 8493,
     "found_count": 0,
     "found_pct": 0.0,
     "is_flagged": false
@@ -6271,8 +6271,8 @@
     "check": "missing_value_share",
     "domain": "completeness",
     "text": "null, blank or unknown cells, as a share (reported)",
-    "checked_count": 8738157,
-    "found_count": 225548,
+    "checked_count": 8738109,
+    "found_count": 225534,
     "found_pct": 2.58,
     "is_flagged": null
    },
@@ -6280,7 +6280,7 @@
     "check": "duplicate_row",
     "domain": "completeness",
     "text": "rows the same in every column but the key",
-    "checked_count": 26589,
+    "checked_count": 26587,
     "found_count": 0,
     "found_pct": 0.0,
     "is_flagged": false
@@ -6289,7 +6289,7 @@
     "check": "duplicate_key",
     "domain": "completeness",
     "text": "a patient, procedure or tooth key used twice",
-    "checked_count": 33321,
+    "checked_count": 33319,
     "found_count": 0,
     "found_pct": 0.0,
     "is_flagged": false
@@ -6325,7 +6325,7 @@
     "check": "tooth_number_out_of_range",
     "domain": "accuracy",
     "text": "a tooth number outside 1\u201332",
-    "checked_count": 684612,
+    "checked_count": 684610,
     "found_count": 0,
     "found_pct": 0.0,
     "is_flagged": false
