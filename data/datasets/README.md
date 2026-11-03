@@ -4,6 +4,8 @@ Built by `python/scripts/10_build_study.py` (seed 42, 1,200 people). Every
 value is generated; the notes contained fake PHI that the de-identification
 step removed before anything was written here. `build_summary.json` records
 the counts and de-id recall for this build.
+Every generator parameter, with its value and a checked source or "placeholder", is in the data card
+[docs/synthetic_data.md](../../docs/synthetic_data.md) (spec 033).
 
 | File | Use |
 |------|-----|
