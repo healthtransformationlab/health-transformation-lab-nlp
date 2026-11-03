@@ -29,7 +29,6 @@ from collections.abc import Callable
 from pathlib import Path
 
 import numpy as np
-import tomllib
 
 from . import task_mine  # one definition of the organisation name and its redaction
 from .telemetry import traced
@@ -284,6 +283,7 @@ def save_embeddings(vectors: dict[str, np.ndarray], path: Path) -> None:
 @traced
 def wheel_requirements(pyproject_text: str) -> list[str]:
     """The runtime dependencies plus the `dev` and `tasks` extras: what the target tests import in the sandbox."""
+    import tomllib  # Python 3.11+; imported here so the package still imports on 3.10 (requires-python)
     project = tomllib.loads(pyproject_text)["project"]
     extras = project.get("optional-dependencies", {})
     reqs = list(project.get("dependencies", []))

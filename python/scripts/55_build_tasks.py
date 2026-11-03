@@ -8,7 +8,7 @@
                                                      # one commit of the base's files, no history, name redacted, #435)
     python scripts/55_build_tasks.py --graphs --embeddings   # also embeddings/<instance_id>.npz (US4, T010):
                                                      # EmbeddingGemma, 256 dims per graph node; needs HF_TOKEN with
-                                                     # the Gemma licence accepted, and sentence-transformers
+                                                     # the Gemma licence accepted, and the [embeddings] extra
     python scripts/55_build_tasks.py --wheels        # also wheels/: the package's runtime, dev and tasks
                                                      # dependencies as Python 3.13 binary wheels (US4, T010)
 
@@ -83,8 +83,16 @@ def rest(path: str) -> list | dict:
     raise RuntimeError("unreachable")
 
 
-def check_settings() -> None:
-    """AGENTS.md: check what the run needs before the work, and fail naming it."""
+def check_settings(embeddings: bool = False) -> None:
+    """AGENTS.md: check what the run needs before the work, and fail naming it. With --embeddings, that includes
+    sentence-transformers and one cheap authenticated call for the gated model, before any mining or graphs."""
+    if embeddings:
+        try:
+            import sentence_transformers  # noqa: F401 - only checked here; loaded in load_encoder
+        except ImportError:
+            sys.exit('--embeddings needs sentence-transformers and torch: pip install -e ".[embeddings]"')
+        from health_transformation_lab_nlp.llm_reader import check_hf_access
+        check_hf_access(tg.EMBED_MODEL)   # fails naming HF_TOKEN when it's missing or hasn't accepted the licence
     if not MANIFEST.exists():
         sys.exit(f"missing {MANIFEST.relative_to(REPO_ROOT)}: run scripts/46_mine_tasks.py first")
     if git("rev-parse", "--is-shallow-repository").strip() == "true":
@@ -175,13 +183,8 @@ def write_graphs(rows: list[dict]) -> None:
 
 def load_encoder():
     """EmbeddingGemma at its pinned revision, as a texts -> (n, 768) function using the model's document prompt.
-    The token is checked with one cheap call first (AGENTS.md), so a missing licence fails before the download."""
-    from health_transformation_lab_nlp.llm_reader import check_hf_access
-    check_hf_access(tg.EMBED_MODEL)
-    try:
-        from sentence_transformers import SentenceTransformer
-    except ImportError:
-        sys.exit("--embeddings needs sentence-transformers and torch: pip install sentence-transformers torch")
+    The token and the library were checked in check_settings, before any other work."""
+    from sentence_transformers import SentenceTransformer
     model = SentenceTransformer(tg.EMBED_MODEL, revision=tg.EMBED_REVISION, device="cpu")
     return lambda texts: model.encode_document(texts, batch_size=16, convert_to_numpy=True)
 
@@ -192,6 +195,10 @@ def write_embeddings(rows: list[dict]) -> None:
     if missing:
         sys.exit(f"--embeddings needs the graphs first ({len(missing)} missing, e.g. {missing[0]}): add --graphs")
     encode, cache = load_encoder(), {}
+    keep = {f"{r['instance_id']}.npz" for r in rows}
+    for old in EMBEDDINGS.glob("*.npz"):   # a task dropped since the last build leaves no file behind
+        if old.name not in keep:
+            old.unlink()
     for r in rows:
         g = json.loads((GRAPHS / f"{r['instance_id']}.json").read_text())
         tg.save_embeddings(tg.embed_graph(g, encode, cache=cache), EMBEDDINGS / f"{r['instance_id']}.npz")
@@ -236,7 +243,7 @@ def main() -> int:
     ap.add_argument("--embeddings", action="store_true", help="write node embeddings from the graphs (US4, T010)")
     ap.add_argument("--wheels", action="store_true", help="download the Python 3.13 sandbox wheels (US4, T010)")
     a = ap.parse_args()
-    check_settings()
+    check_settings(embeddings=a.embeddings)
     telemetry.setup()
     telemetry.start_script("55_build_tasks", data_label="public")
 

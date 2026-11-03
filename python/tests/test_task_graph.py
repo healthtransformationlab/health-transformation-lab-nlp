@@ -278,3 +278,13 @@ def test_wheel_download_command_targets_python_313_binaries_only(tmp_path):
     cmd = tg.wheel_download_command(["pandas>=2.0"], tmp_path / "wheels")
     assert cmd[:4] == ["pip", "download", "--only-binary=:all:", "--python-version"] and cmd[4] == "3.13"
     assert "--platform" in cmd and str(tmp_path / "wheels") in cmd and cmd[-1] == "pandas>=2.0"
+
+
+def test_two_nodes_with_the_same_source_text_are_encoded_once_and_share_a_vector():
+    import numpy as np
+    calls = []
+    same = "def f():\n    return 1\n"
+    g = {"nodes": [{"id": "pkg.a.f", "name": "pkg.a.f", "text": same},
+                   {"id": "pkg.b.f", "name": "pkg.b.f", "text": same}], "edges": []}
+    v = tg.embed_graph(g, _fake_encode(calls))
+    assert calls == [[same]] and np.array_equal(v["pkg.a.f"], v["pkg.b.f"])
