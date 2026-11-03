@@ -1,0 +1,78 @@
+# Publish spec 028's task set as a public Kaggle dataset (T011, #356): the repository's own coding-agent tasks in
+# the Gemma 4 Developer Agent competition's layout. Start it from the Actions tab: "Publish the task set (Kaggle)"
+# -> Run workflow. The first run creates the dataset public (CC BY 4.0); later runs add a version named after the
+# commit. A refused upload, a task that fails the gate, or a missing file fails the run before anything is sent.
+#
+# Everything is rebuilt here from the full history, since the task files are git-ignored: rows, snapshots, graphs
+# and EmbeddingGemma embeddings (55_build_tasks.py), then the gates (57_gate_tasks.py, Python 3.13 like the
+# competition's sandbox), then the upload (kaggle/publish_tasks.py). About 2.3 GB; CPU only.
+#
+# Needs, in the GitHub environment `dev`: KAGGLE_USERNAME (variable or secret) and KAGGLE_API_TOKEN or KAGGLE_KEY
+# (secret), as the other Kaggle workflows; HF_TOKEN (secret), a Hugging Face token whose account has accepted the
+# Gemma licence, to download google/embeddinggemma-300m (read access is enough).
+name: Publish the task set (Kaggle)
+run-name: "Publish the task set (spec 028) to Kaggle"
+
+on:
+  workflow_dispatch:
+    inputs:
+      message:
+        description: "Version note (the commit is added)"
+        default: "Update from the repository"
+
+concurrency: kaggle-publish-tasks
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: dev
+    timeout-minutes: 150
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+        with: {fetch-depth: 0}            # every base commit is checked out and snapshotted
+      - uses: actions/setup-python@v6
+        with: {python-version: "3.13"}
+      - name: Install (CPU torch first, so the embeddings don't pull the CUDA build)
+        run: |
+          pip install --quiet torch --index-url https://download.pytorch.org/whl/cpu
+          pip install --quiet "kaggle==2.2.5" six -e "./python[dev,tasks,ml,embeddings]"
+
+      - name: Kaggle credentials (values stay masked)
+        env:
+          U: ${{ vars.KAGGLE_USERNAME || secrets.KAGGLE_USERNAME }}
+          T: ${{ secrets.KAGGLE_API_TOKEN }}
+          K: ${{ secrets.KAGGLE_KEY }}
+        run: |
+          [ -n "$U" ] || { echo "::error::KAGGLE_USERNAME is not set in the GitHub environment 'dev' (variable or secret)"; exit 1; }
+          echo "KAGGLE_USERNAME=$U" >> "$GITHUB_ENV"
+          tok="${T:-$K}"
+          [ -n "$tok" ] || { echo "::error::Set KAGGLE_API_TOKEN (or KAGGLE_KEY) in the GitHub environment 'dev'"; exit 1; }
+          echo "KAGGLE_API_TOKEN=$tok" >> "$GITHUB_ENV"
+          [ -n "$K" ] && echo "KAGGLE_KEY=$K" >> "$GITHUB_ENV"
+          true
+
+      - name: Check the Kaggle token before the long build (one cheap authenticated call)
+        run: |
+          python -c "from kaggle.api.kaggle_api_extended import KaggleApi; a = KaggleApi(); a.authenticate(); a.dataset_list(user='$KAGGLE_USERNAME', page=1); print('Kaggle token ok')"
+
+      - name: Build the rows, snapshots, graphs and embeddings
+        working-directory: python
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}             # checked by 55_build_tasks.py before any work
+          GH_TOKEN: ${{ github.token }}                 # issue and PR text over REST (public repo, read only)
+        run: python scripts/55_build_tasks.py --snapshots 100000 --graphs --embeddings
+
+      - name: Gate every task (a full run writes the set to publish)
+        working-directory: python
+        run: python scripts/57_gate_tasks.py
+
+      - name: Publish (created public the first time, a new version after)
+        env:
+          MESSAGE: ${{ inputs.message }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -o pipefail                      # a refused upload must fail the step, not tee
+          python kaggle/publish_tasks.py --out build/tasks --username "$KAGGLE_USERNAME" --commit "$SHA" \
+            --upload --message "$MESSAGE" | tee -a "$GITHUB_STEP_SUMMARY"
