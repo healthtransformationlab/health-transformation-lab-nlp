@@ -124,6 +124,16 @@ Every user story is a GitHub issue, and every branch and pull request belongs to
    CI fails a PR opened from `claude/*`.
 5. **Branches a tool names are kept as they are:** `dependabot/*`, and `kaggle-results/*` (results PRs the
    Kaggle workflow opens; no issue needed).
+6. **An agent merges its own PR when it's ready, without waiting to be told** (the owner's standing rule,
+   #497). Ready means every check is green on the latest commit, there's no merge conflict, and its
+   `pull_requests/pr-<n>-review.md` finds nothing blocking. These still wait for the owner to say "merge":
+   - a PR that starts a paid run (a Databricks job, a GPU, a paid endpoint);
+   - one that publishes outside this repo (Kaggle, Hugging Face, the website);
+   - one that deletes data, tables or branches, or changes these rules;
+   - one the owner has said to hold.
+
+   Before merging, check open PRs and recent commits on `main` for the same work. If another session already
+   did it, close yours, saying so.
 
 CI checks 2–5 on every PR (`.github/workflows/pr-conventions.yml`, `.github/scripts/pr_conventions.py`).
 
