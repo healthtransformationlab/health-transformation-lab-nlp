@@ -25,3 +25,4 @@ CORPUS_DIR = DATA_ROOT / "corpus"                # corpus sample, predictions, j
 COSTS_YAML = REPO_ROOT / "costs.yaml"
 EXTERNAL_DIR = REPO_ROOT / "data" / "external"   # committed public datasets (README each): always in the repo, not DENTAL_DATA_ROOT
 DEID_DIR = DATA_ROOT / "deid"                    # de-id benchmark scores (no PHI); challenge notes go to RAW_DIR
+TASKS_DIR = REPO_ROOT / "data" / "tasks"         # spec 028: the coding-agent task set (manifest, gates; big files git-ignored)

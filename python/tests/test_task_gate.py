@@ -194,3 +194,55 @@ def test_the_worktree_is_removed_even_when_a_run_raises(repo, monkeypatch, tmp_p
 def test_runs_use_the_given_python(repo):
     row = tgate.gate_task(make_task(repo), repo, python=sys.executable)
     assert row["is_valid"] is True
+
+
+# --- T007a (#502): gate failures stay out of the published set ---------------------------------------------
+
+GATES = [{"instance_id": "htlnlp_1", "is_valid": True, "reason_text": ""},
+         {"instance_id": "htlnlp_2", "is_valid": False, "reason_text": "fails with the fix (exit 1)"}]
+TIERS = {"htlnlp_1": "A", "htlnlp_2": "B"}
+
+
+def test_only_tasks_that_pass_both_gates_are_kept():
+    tasks = [{"instance_id": "htlnlp_1"}, {"instance_id": "htlnlp_2"}, {"instance_id": "htlnlp_3"}]
+    assert [t["instance_id"] for t in tgate.passing_tasks(tasks, GATES)] == ["htlnlp_1"]   # ungated is dropped too
+
+
+def test_a_gate_failure_is_listed_with_its_tier_and_reason():
+    assert tgate.gate_exclusions(GATES, TIERS) == [
+        {"instance_id": "htlnlp_2", "tier_code": "B",
+         "reason_text": tgate.GATE_EXCLUSION_PREFIX + "fails with the fix (exit 1)"}]
+
+
+def test_merging_replaces_old_gate_rows_and_keeps_the_rest():
+    existing = [{"instance_id": "htlnlp_91", "tier_code": "A", "reason_text": "patch names the organisation (#435)"},
+                {"instance_id": "htlnlp_5", "tier_code": "C", "reason_text": tgate.GATE_EXCLUSION_PREFIX + "old"}]
+    merged = tgate.merge_exclusions(existing, tgate.gate_exclusions(GATES, TIERS))
+    assert [r["instance_id"] for r in merged] == ["htlnlp_2", "htlnlp_91"]   # sorted; htlnlp_5's old gate row gone
+
+
+def test_a_gate_reason_is_never_empty():
+    row = tgate.gate_exclusions([{"instance_id": "htlnlp_2", "is_valid": False, "reason_text": None}], TIERS)[0]
+    assert row["reason_text"] == tgate.GATE_EXCLUSION_PREFIX + "invalid"
+
+
+def test_a_stale_gate_row_for_a_task_no_longer_built_is_not_an_exclusion():   # PR #505 review
+    assert tgate.gate_exclusions(GATES, TIERS, task_ids={"htlnlp_1"}) == []
+
+
+def test_one_row_per_task_and_the_builders_reason_wins():   # PR #505 review
+    own = [{"instance_id": "htlnlp_2", "tier_code": "B", "reason_text": "patch names the organisation (#435)"}]
+    merged = tgate.merge_exclusions(own, tgate.gate_exclusions(GATES, TIERS))
+    assert merged == own
+
+
+def test_a_rebuild_carries_the_gate_rows_of_tasks_it_still_builds():   # PR #505 review
+    existing = [{"instance_id": "htlnlp_2", "tier_code": "B", "reason_text": tgate.GATE_EXCLUSION_PREFIX + "x"},
+                {"instance_id": "htlnlp_9", "tier_code": "C", "reason_text": tgate.GATE_EXCLUSION_PREFIX + "y"},
+                {"instance_id": "htlnlp_91", "tier_code": "A", "reason_text": "names the organisation (#435)"}]
+    assert tgate.carried_gate_rows(existing, {"htlnlp_1", "htlnlp_2"}) == existing[:1]
+
+
+def test_the_task_set_folder_comes_from_paths():
+    from health_transformation_lab_nlp import paths
+    assert paths.TASKS_DIR == paths.REPO_ROOT / "data" / "tasks"

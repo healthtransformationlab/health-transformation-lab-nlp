@@ -7,7 +7,7 @@ Lists the competition's files through the Kaggle API, downloads only what compet
 with its graph and embedding), and prints MATCHES / DIFFERS / FOUND lines against the formats task_graph writes,
 plus where the harness installs swegemma. Run by .github/workflows/kaggle-competition-check.yml; keeps nothing.
 
-Needs KAGGLE_USERNAME and KAGGLE_API_TOKEN (or KAGGLE_KEY), and the account must have joined the competition
+Needs KAGGLE_USERNAME and KAGGLE_API_TOKEN (or KAGGLE_KEY; or KAGGLE_API_KEY, the cloud environment's name, #502), and the account must have joined the competition
 (Kaggle -> the competition -> Join Competition), or the listing is refused.
 """
 from __future__ import annotations
@@ -23,11 +23,13 @@ from health_transformation_lab_nlp import telemetry
 
 def check_settings() -> None:
     """Fail at once, naming the setting, before any network call (AGENTS.md, configuration)."""
+    token = cc.kaggle_token(os.environ)
     missing = [n for n, ok in (("KAGGLE_USERNAME", os.environ.get("KAGGLE_USERNAME")),
-                               ("KAGGLE_API_TOKEN or KAGGLE_KEY",
-                                os.environ.get("KAGGLE_API_TOKEN") or os.environ.get("KAGGLE_KEY"))) if not ok]
+                               (" or ".join(cc.KAGGLE_TOKEN_NAMES), token)) if not ok]
     if missing:
-        sys.exit(f"missing setting(s): {', '.join(missing)} (GitHub environment dev)")
+        sys.exit(f"missing setting(s): {', '.join(missing)} (GitHub environment dev, or the cloud environment)")
+    if not (os.environ.get("KAGGLE_API_TOKEN") or os.environ.get("KAGGLE_KEY")):
+        os.environ["KAGGLE_API_TOKEN"] = token   # the kaggle library doesn't read KAGGLE_API_KEY (#502)
 
 
 def list_files(api) -> list[tuple[str, int]]:

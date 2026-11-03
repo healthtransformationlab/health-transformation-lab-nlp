@@ -215,3 +215,45 @@ def gate_task(task: dict, repo: Path, timeout: int = DEFAULT_TIMEOUT, python: st
         _git(repo, "worktree", "remove", "--force", str(workdir))
         shutil.rmtree(parent, ignore_errors=True)
         _git(repo, "worktree", "prune")
+
+
+# --- T007a (#502): gate failures stay out of the published set ---------------------------------------------
+
+GATE_EXCLUSION_PREFIX = "fails our gate (T007a): "   # marks the tasks_excluded.csv rows this module owns
+
+
+@traced
+def passing_tasks(tasks: list[dict], gates: list[dict]) -> list[dict]:
+    """The tasks that passed both gates, in their order; a task with no gate row is not kept."""
+    valid = {g["instance_id"] for g in gates if g["is_valid"] is True or str(g["is_valid"]) == "True"}
+    return [t for t in tasks if t["instance_id"] in valid]
+
+
+@traced
+def gate_exclusions(gates: list[dict], tiers: dict[str, str], task_ids: set[str] | None = None) -> list[dict]:
+    """One tasks_excluded.csv row per task that failed a gate, with its tier and the gate's reason. With
+    `task_ids`, only those tasks: a stale gate row for a task no longer built is not an exclusion."""
+    return [{"instance_id": g["instance_id"], "tier_code": tiers.get(g["instance_id"], ""),
+             "reason_text": GATE_EXCLUSION_PREFIX + (g["reason_text"] or "invalid")}
+            for g in gates if not (g["is_valid"] is True or str(g["is_valid"]) == "True")
+            and (task_ids is None or g["instance_id"] in task_ids)]
+
+
+def _is_gate_row(row: dict) -> bool:
+    return str(row["reason_text"]).startswith(GATE_EXCLUSION_PREFIX)
+
+
+@traced
+def merge_exclusions(existing: list[dict], gate_rows: list[dict]) -> list[dict]:
+    """Replace the gate's earlier rows with this run's and keep every other exclusion: one row per task (the
+    builder's reason wins over the gate's), sorted by instance id."""
+    kept = [r for r in existing if not _is_gate_row(r)]
+    taken = {r["instance_id"] for r in kept}
+    return sorted(kept + [g for g in gate_rows if g["instance_id"] not in taken], key=lambda r: r["instance_id"])
+
+
+@traced
+def carried_gate_rows(existing: list[dict], built_ids: set[str]) -> list[dict]:
+    """The gate's rows a rebuild keeps: those for tasks it still builds (55_build_tasks.py, so a rebuild doesn't
+    drop the gate's exclusions until the set is gated again)."""
+    return [r for r in existing if _is_gate_row(r) and r["instance_id"] in built_ids]
