@@ -5,7 +5,8 @@
     new_files       the versions a table hasn't loaded yet
     prediction_rows method, visit_id, pred and provenance (probabilities stay in the CSV)
     detail_rows     every llm_details column and provenance
-    record          copy a collected run into the folder and note its source in the manifest
+    record          copy a collected run into the folder, note its source in the manifest and the note set it
+                    was made on (note_set.stamp, #467)
     run_rows        one run's predictions and details, labelled with its batch key (the reader job's own run)
     llm_run_metrics what one loaded LLM run is logged to MLflow with
 
@@ -89,17 +90,28 @@ def detail_rows(files: pd.DataFrame, folder: Path) -> pd.DataFrame:
 def record(src: Path, dest: Path, run_url: str, source: str = "kaggle", min_rows: int = 0) -> list[str]:
     """Copy src's result files into dest and list them in dest's manifest. Raises ValueError, changing
     nothing, if there are none, or one has fewer rows than min_rows (a full run) or than the file it would
-    replace: a test run is never committed, even under a new name (shots or adapter tags the method)."""
+    replace: a test run is never committed, even under a new name (shots or adapter tags the method). When dest
+    has an answer key, each file is stamped with its note set (#467), and one holding a visit that isn't a review
+    note there is refused: it was made on another note set."""
+    from . import note_set
+
     src, dest = Path(src), Path(dest)
     found = result_files(src)
     if found.empty:
         raise ValueError(f"no result files (ai_predictions_*.csv, llm_details_*.csv) in {src}")
+    key_path = dest / "answer_key" / "review_key.csv"
+    review_ids = set(pd.read_csv(key_path, usecols=["visit_id"])["visit_id"]) if key_path.exists() else None
     for f in found.itertuples():
         old = dest / f.file
         n = max(min_rows, len(pd.read_csv(old, usecols=["visit_id"])) if old.exists() else 0)
         if f.rows < n:
             raise ValueError(f"{f.file} has fewer rows ({f.rows}) than a full run ({n}): "
                              "a test run is not committed")
+        if review_ids is not None:
+            other = set(pd.read_csv(src / f.file, usecols=["visit_id"])["visit_id"]) - review_ids
+            if other:
+                raise ValueError(f"{f.file} holds {len(other)} visits that aren't review notes in {key_path}: it was "
+                                 "made on another note set")
     now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     manifest = read_manifest(dest)
     manifest = manifest[~manifest.file.isin(found.file)]
@@ -107,6 +119,8 @@ def record(src: Path, dest: Path, run_url: str, source: str = "kaggle", min_rows
         shutil.copy(src / f.file, dest / f.file)
     added = pd.DataFrame({"file": found.file, "source": source, "run_url": run_url, "recorded_at": now})
     pd.concat([manifest, added], ignore_index=True).sort_values("file").to_csv(dest / MANIFEST, index=False)
+    if review_ids is not None:
+        note_set.stamp(dest, list(found.file))
     return list(found.file)
 
 
