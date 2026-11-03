@@ -80,7 +80,13 @@ CHECKS = [
 
 def _is_missing(df: pd.DataFrame) -> pd.DataFrame:
     """Null, NaN or blank text (Open Dental stores blank text, not NULL)."""
-    return df.isna() | df.apply(lambda c: c.astype(str).str.strip().eq("") if c.dtype == object else False)
+    mask = df.isna()
+    # column by column: df.apply mixing scalars fails on pandas 2; text is `object` on pandas 2 and `str` on pandas 3,
+    # so check both, or blanks count on one and not the other (#476)
+    for col in df.columns:
+        if df[col].dtype == object or pd.api.types.is_string_dtype(df[col].dtype):
+            mask[col] = mask[col] | df[col].astype(str).str.strip().eq("")
+    return mask
 
 
 def _num(s: pd.Series) -> pd.Series:

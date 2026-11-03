@@ -173,3 +173,11 @@ def test_the_load_job_writes_both_tables_idempotently():
     for call in ("tooth_loss_dq.run_checks(", "tooth_loss_dq.group_consistency(", '"tooth_loss_dq_check"',
                  '"tooth_loss_dq_group"', "DELETE FROM"):
         assert call in nb, call
+
+
+def test_the_missing_value_mask_works_when_a_table_starts_with_a_number():
+    # #476: pandas 2 (the Databricks runtime) failed when a table's first column wasn't text (the insurance tables)
+    df = pd.DataFrame({"carriernum": [1, 2, None], "carriername": ["Acme", " ", None], "flag": [True, False, True]})
+    mask = tooth_loss_dq._is_missing(df)
+    assert mask.to_numpy().tolist() == [[False, False, False], [False, True, False], [True, True, False]]
+    assert list(mask.columns) == list(df.columns)
