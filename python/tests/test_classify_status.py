@@ -106,6 +106,8 @@ def test_folds_missing_a_class_are_skipped_in_tuning(visits):
     f = cs.features(visits, "algorithm_design", "5level").reset_index(drop=True)
     tr = f[~cs.split_people(f, seed=1)].reset_index(drop=True)
     stage4_people = tr.loc[tr["y"] == 4, "person_id"].unique()
-    keep = tr[(tr["y"] != 4) | tr["person_id"].isin(stage4_people[:2])].reset_index(drop=True)   # 2 people: some folds lack it
+    # One person with stage 4: the fold that validates on them trains without it, whichever fold GroupKFold picks
+    # (scikit-learn 1.6, the Databricks runtime's, assigns groups to folds differently from newer versions; #478).
+    keep = tr[(tr["y"] != 4) | tr["person_id"].isin(stage4_people[:1])].reset_index(drop=True)
     best = cs.tune(keep[cs.FEATURES], keep["y"].to_numpy(), keep["person_id"].to_numpy(), 5, seed=1, grid=SMALL, folds=5)
-    assert 0 < best["cv_macro_f1"] <= 1 and best["cv_folds_used"] < 5
+    assert 0 < best["cv_macro_f1"] <= 1 and best["cv_folds_used"] == 4

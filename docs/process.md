@@ -4,7 +4,8 @@ A **phenotype** is a computable definition of a condition: a rule or model that 
 patient's record and assigns a label (here periodontal status, stage, grade, extent)
 the same way for every patient. This page shows how periodontal status is phenotyped from a dental EHR, and how each step maps
 to this repo. The diagram is the study design; the table under it says where
-each box lives.
+each box lives. Why each method was chosen, and the rules for matching a test or model to the data:
+[How each method was chosen](method_choice.md).
 
 ```mermaid
 %%{init: {"themeVariables": {"fontSize": "20px"}, "flowchart": {"wrappingWidth": 900, "nodeSpacing": 18, "rankSpacing": 40, "padding": 12, "subGraphTitleMargin": {"top": 6, "bottom": 10}}}}%%
