@@ -22,6 +22,8 @@ What this card answers (spec 033):
 - **Set from published US figures in the Open Dental extract since spec 033 US2**: smoking (11.6% of US adults in
   2022, item 72) and diabetes (15.8% of US adults 20 and over, HbA1c >= 6.5, item 73). The study's notes keep the
   older placeholders (18% smoke, 8.5% have diabetes) until they are rebuilt (US3).
+- **Set from published US figures in the Open Dental extract since spec 033 US4**: complete tooth loss by age band
+  (items 79 and 80, and this repo's NHANES 2009-2014 run), and, as an option off by default, state rates (item 81).
 - **Still a placeholder**: insurance (the dental-coverage source could not be checked from this environment).
 
 ## Study visits (`synthetic.py`, `study.py`)
@@ -116,6 +118,9 @@ invented defaults until a real extract's `realism_profile` sets them (#385); `NO
 | `Params.insurance_shares` | private 0.55, public 0.3, none 0.15 | each patient's insurance type | placeholder | dental coverage of US adults is reported as about 62% private, 16% public and 22% none for 2022, from the ADA Health Policy Institute; that report could not be opened from this environment, so it is not checked and not cited (spec 033 US2) | `tests/test_open_dental.py` recovers the declared shares |
 | `Params.secondary_plan` | 0.05 | a privately insured patient also has a second private plan | placeholder | none | no |
 | `Params.spouse_subscriber` | 0.25 | a private plan held by a spouse | placeholder | none | no |
+| `Params.edentulous_share_by_age` | 25+: 0.008, 35+: 0.013, 45+: 0.037, 55+: 0.079, 65+: 0.089, 70+: 0.106, 75+: 0.178 | patients with no natural teeth, by age band (spec 033 US4): every tooth missing at entry, no perio chart | item 79 at 65 and over; below 65 this repo's NHANES 2009-2014 run (`data/datasets/nhanes/nhanes_edentulous_by_age.csv`, real public data), its 30-34 rate standing in for 25-34 | 8.9% at 65-69, 10.6% at 70-74, 17.8% at 75+, NHANES 2015-2018 (item 79); 0.8% at 30-34, 1.3% at 35-44, 3.7% at 45-54, 7.9% at 55-64, NHANES 2009-2014 (this repo's run, `scripts/38_nhanes_perio.py`) | `tests/test_open_dental.py` (`test_the_edentulous_share_follows_the_published_rates_by_age`); the table below |
+| `Params.clinic_states` | none (empty) | optional: one US state per clinic, which scales its patients' edentulous share by the state's rate over the US rate; empty keeps the national shares and `clinic.state` `ZZ` | placeholder (design choice; the rates are item 81) | none | `tests/test_open_dental.py` (`test_a_state_extract_has_more_edentulous_patients_where_the_state_rate_is_higher`) |
+| `open_dental.STATE_EDENTULOUS_65_PCT` | AL 16.6, AK 11.8, AZ 10.2, AR 22.1, CA 6.9, CO 7.5, CT 10.0, DE 11.0, DC 11.6, FL 12.2, GA 15.8, HI 5.4, ID 13.3, IL 8.8, IN 18.6, IA 10.6, KS 11.2, KY 22.5, LA 17.0, ME 15.3, MD 8.7, MA 10.7, MI 10.0, MN 8.1, MS 19.0, MO 15.3, MT 12.0, NE 9.5, NV 12.1, NH 10.7, NJ 10.1, NM 11.8, NY 11.9, NC 16.5, ND 11.8, OH 15.6, OK 16.9, OR 10.1, PA 13.1, RI 11.4, SC 12.9, SD 10.3, TN 18.2, TX 13.0, UT 8.6, VT 13.3, VA 10.8, WA 8.5, WV 25.1, WI 9.0, WY 13.5, US 12.1 | adults 65 and over with all teeth lost, % by state, used only as a ratio to the US figure | item 81 (CDC U.S. Chronic Disease Indicators, BRFSS 2022, crude prevalence) | the same figures | no |
 | (patient table, inline in `build_with_readings`) | age 25-85; ex-smoker 0.2 of non-smokers; inactive 0.12, deceased 0.03; Spanish 0.1; premedication 0.05; hypertension 0.35 over 50; asthma 0.07; other medicine 0.3; allergy 0.12 | patient rows | placeholder | hypertension 33.2% at 40-59 and 63.1% at 60+ (NCHS Data Brief 289, cited in `medical_record.py`) | no |
 | (visits, inline in `build_with_readings`) | scaling and root planing at an untreated periodontitis visit 0.5; surgical extraction 0.2; signed plan 0.5; extraction note 0.7; vital signs 0.6; plaque 0.4, calculus 0.3 | visit rows | placeholder | scaling and root planing: 49.7% (item 78) | no |
 
@@ -137,24 +142,50 @@ One synthetic medical record per study person, on its own random stream. Each ra
 | `medical_record.UNCONTROLLED_HBA1C` | 7 | poorly controlled diabetes, for the ASA class | cited in `medical_record.py` (`ASA_SOURCE`, a repo choice there) | none | no |
 | `medical_record.OR_TOLERANCE_LOG` | 0.25 | how close a recovered odds ratio must be, on the log scale | placeholder (test tolerance) | none | `tests/test_medical_record.py` |
 
-## Known gaps: what the generators don't model
+## Complete tooth loss: synthetic against published (spec 033 US4, #500)
 
-Neither is a parameter today, so neither has a row above. Both are tracked in #500 (spec 033 US4); this card
-changes no generator.
+Before US4 no patient of the extract had lost every tooth. Since US4 `Params.edentulous_share_by_age` sets the share,
+drawn on a random stream of its own: an edentulous patient's mouth and visits are still drawn and thrown away, so every
+patient with teeth keeps their rows. An edentulous patient has all 32 teeth in `toothinitial` and no perio chart,
+radiograph, hygiene visit or extraction, and no answer-key rows (why they lost their teeth isn't modelled). The
+tooth-loss model and the stage recount leave them out, since the 2018 classification can't stage a mouth with no
+teeth (`tooth_loss_model.edentulous`); `realism_profile` leaves their visits out of the charting rates and reports
+their share; `tooth_loss_dq` flags a perio chart recorded for one (`chart_without_teeth`).
 
-| What | In the synthetic data now | Published figure | Source | Checked by |
-|---|---|---|---|---|
-| complete tooth loss (edentulism) | none: no patient of the 6,000-patient Open Dental extract (seed 42) has lost every tooth, and the study-visit charts don't track a total tooth count | 12.9% of US adults 65 and over, NHANES 2015-2018 (8.9% at 65-69, 10.6% at 70-74, 17.8% at 75+); age-adjusted 12.6% in 2017-2018 against 29.3% in 1999-2000; this repo's own NHANES 2009-2014 run gives 6.9% of adults 30+ (`data/datasets/nhanes/nhanes_prevalence.csv`; Tay et al. 2025: 6.7%) | items 79 and 80; `scripts/38_nhanes_perio.py` | no |
-| geography (state) | clinics have a placeholder state (`ZZ`) and random ZIP codes, so no variation by state can be shown | adults 65+ with all teeth removed, by state (BRFSS, as reported by America's Health Rankings: 11.4% nationally, 5.4% to 21.4% across states); that page could not be opened from this environment, so the figures are not checked and not cited | placeholder (unchecked) | no |
+The 6,000-patient extract, seed 42 (SYNTHETIC), against the published figures:
+
+| Age band | Patients | Edentulous, before US4 | Edentulous, after US4 | Published | Source |
+|---|---|---|---|---|---|
+| 25-34 | 1,017 | 0 | 7 (0.7%) | 0.8% at 30-34 (95% CI 0.1-1.4) | this repo's NHANES 2009-2014 run |
+| 35-44 | 972 | 0 | 13 (1.3%) | 1.3% (0.7-1.9) | the same |
+| 45-54 | 959 | 0 | 42 (4.4%) | 3.7% (2.4-5.0) | the same |
+| 55-64 | 989 | 0 | 83 (8.4%) | 7.9% (5.9-9.8) | the same |
+| 65-69 | 454 | 0 | 36 (7.9%) | 8.9% | item 79 (NHANES 2015-2018) |
+| 70-74 | 485 | 0 | 50 (10.3%) | 10.6% | item 79 |
+| 75-85 | 1,124 | 0 | 198 (17.6%) | 17.8% at 75 and over | item 79 |
+| 65 and over | 2,063 | 0 | 284 (13.8%) | 12.9% | item 79 |
+| all, 25-85 | 6,000 | 0 | 429 (7.2%; 7.7% of those 30 and over) | 6.9% of adults 30+ in 2009-2014 (this repo's run; Tay et al. 2025: 6.7%) | `data/datasets/nhanes/nhanes_prevalence.csv` |
+
+The extract's ages are uniform from 25 to 85, older than US adults, so its overall share sits a little above the
+national one. The rates under 65 come from 2009-2014 and complete tooth loss is falling (item 80: age-adjusted 29.3%
+at 65 and over in 1999-2000, 12.6% in 2017-2018), so they may run a little high.
+
+**Geography (optional).** `Params.clinic_states` gives each clinic a US state; its patients' share is then the age
+band's share times the state's rate over the US rate (`STATE_EDENTULOUS_65_PCT`, adults 65 and over with all teeth
+lost, BRFSS 2022: 12.1% in the US, 5.4% in Hawaii to 25.1% in West Virginia; item 81). The state figures are for 65 and
+over only, so the same ratio is applied at every age, a placeholder assumption. Off by default: the default extract's
+clinics keep the state `ZZ` and every committed result uses the national shares.
 
 ## Sources checked for this card
 
-Items 72 to 80 of [references.md](references.md) were added for this card, each checked against its full text or,
-where the item says so, its abstract. Three candidate sources were not used:
+Items 72 to 81 of [references.md](references.md) were added for this card, each checked against its full text or,
+where the item says so, its abstract (item 81, the state rates, against the CDC dataset itself). Three candidate
+sources were not used:
 
 - **Dental coverage, ADA Health Policy Institute (2022)**: the HPI pages and the news report of them could not be
   opened from this environment, so the figures were not checked. `Params.insurance_shares` stays a placeholder.
 - **America's Health Rankings (BRFSS teeth extractions by state)**: the page could not be opened from this
-  environment, so its state figures were not checked or cited (see "Known gaps").
+  environment (tried again for spec 033 US4), so its figures were not checked or cited. The same BRFSS measure is
+  published by CDC's U.S. Chronic Disease Indicators, which could be read, and is item 81.
 - **Open Dentistry Journal 2019;13:520** (an EDR audit at one dental school): the article could not be opened, so its
   charting figures were not checked or cited.

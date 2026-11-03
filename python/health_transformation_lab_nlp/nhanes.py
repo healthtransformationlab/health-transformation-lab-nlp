@@ -154,6 +154,38 @@ def weighted_prevalence(d: pd.DataFrame, col: str, w: str = "w", strata: str = "
     return pd.DataFrame(rows)
 
 
+# spec 033 US4 (#500): age bands (lower, upper inclusive; None open) for complete tooth loss among adults 30+, the
+# synthetic Open Dental extract's bands below 65 (open_dental.Params.edentulous_share_by_age). NHANES top-codes age at 80
+EDENTULOUS_AGE_BANDS = ((30, 34), (35, 44), (45, 54), (55, 64), (65, 74), (75, None))
+
+
+@traced
+def edentulous_by_age(people: pd.DataFrame, bands=EDENTULOUS_AGE_BANDS) -> pd.DataFrame:
+    """The weighted share with no natural teeth (third molars aside) in each age band, in the adults30_all domain
+    (a complete periodontal exam, or edentulous), with its linearized 95% CI. `people`: classify_people's rows with
+    `w`, `strata` and `psu`. One row per band; a band with nobody in it has no estimate."""
+    rows = []
+    for low, high in bands:
+        age = people["RIDAGEYR"]
+        dom = (age >= low) & ((age <= high) if high is not None else True) & \
+            (people["perio_complete"] | people["edentulous"])
+        row = {"age_band_low_num": low, "age_band_high_num": high, "edentulous_pct": float("nan"), "se": float("nan"),
+               "ci_low": float("nan"), "ci_high": float("nan"), "n_unweighted": 0, "n_domain": int(dom.sum())}
+        if dom.any():
+            d = people.assign(domain=dom, category=people["edentulous"].map({True: "edentulous", False: "dentate"}))
+            p = weighted_prevalence(d, "category").set_index("category")
+            hit = p.loc["edentulous"] if "edentulous" in p.index else None
+            row.update(edentulous_pct=float(hit["pct"]) if hit is not None else 0.0,
+                       se=float(hit["se"]) if hit is not None else 0.0,
+                       ci_low=float(hit["ci_low"]) if hit is not None else 0.0,
+                       ci_high=float(hit["ci_high"]) if hit is not None else 0.0,
+                       n_unweighted=int(hit["n_unweighted"]) if hit is not None else 0)
+        rows.append(row)
+    out = pd.DataFrame(rows)
+    out["age_band_high_num"] = out["age_band_high_num"].astype("Int64")
+    return out
+
+
 @traced
 def nhanes_cdc_aap_published() -> pd.DataFrame:
     """Published NHANES 2009-2014 prevalence, adults 30+, % (95% CI where given). Checked against the papers."""

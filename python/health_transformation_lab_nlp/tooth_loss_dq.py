@@ -65,6 +65,8 @@ CHECKS = [
     Check(8, "accuracy", "tooth_number_out_of_range", "procedurelog, toothinitial, periomeasure",
           "a tooth number outside 1–32"),
     Check(8, "accuracy", "dates_out_of_order", "procedurelog", "completed before it was planned"),
+    Check(None, "accuracy", "chart_without_teeth", "perioexam, toothinitial",
+          "a perio chart for a patient the record says has no natural teeth (every tooth missing at entry)"),
     Check(9, "accuracy", "procedure_code_not_cdt", "procedurecode", "a code not in CDT form"),
     Check(9, "accuracy", "diagnosis_not_in_lists", "procedurelog", "a diagnosis item in neither declared list"),
     Check(9, "accuracy", "icd_not_valid", "procedurelog", "an ICD-10 code not in ICD-10-CM form"),
@@ -189,6 +191,9 @@ def run_checks(tables: dict[str, pd.DataFrame], switch_date: date = od.Params.li
     tp_d, dc = pd.to_datetime(done["datetp"], errors="coerce"), pd.to_datetime(done["datecomplete"], errors="coerce")
     both = tp_d.notna() & dc.notna()
     res["dates_out_of_order"] = (int(both.sum()), int((dc[both] < tp_d[both]).sum()))
+    # spec 033 US4: no chart is right for a patient with no teeth; a chart for one is a fault in one record or the other
+    none = od.edentulous_patients(t)
+    res["chart_without_teeth"] = (len(none), len(none & set(_num(t["perioexam"]["patnum"]).dropna().astype(int))))
     # 9 code sets
     pc = t["procedurecode"]["proccode"].astype(str)
     res["procedure_code_not_cdt"] = (len(pc), int((~pc.str.match(CDT)).sum()))
