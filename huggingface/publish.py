@@ -44,7 +44,7 @@ HEADERS = {
                           {"config_name": "visits", "data_files": "raw/visits_structured.csv"},
                           {"config_name": "visits_truth", "data_files": "raw/visits_truth.csv"},
                           {"config_name": "clinics", "data_files": "raw/clinic_profiles.csv"}]},
-    "results": {"pretty_name": "PerioBench results: what rules, encoders and LLMs answered on 240 review notes",
+    "results": {"pretty_name": "PerioBench results: what rules, encoders and LLMs answered on the review notes",
                 "task_categories": ["text-classification"], "size_categories": ["1K<n<10K"],
                 "configs": [{"config_name": "leaderboard", "default": True,
                              "data_files": "raw/ladder/ladder_vs_truth.csv"},
@@ -61,7 +61,7 @@ def repo_id(name: str) -> str:
 
 
 def splits(raw: Path, out: Path) -> None:
-    """data/train.csv and data/test.csv (the 240 review notes) with the same columns."""
+    """data/train.csv and data/test.csv (the review notes) with the same columns."""
     import pandas as pd
     train = pd.read_csv(raw / "train.csv")
     test = pd.read_csv(raw / "review_key.csv").rename(
@@ -71,8 +71,15 @@ def splits(raw: Path, out: Path) -> None:
     test[SPLIT_COLUMNS].to_csv(out / "data" / "test.csv", index=False)
 
 
+def _present(config: dict, out: Path) -> bool:
+    """Every file a config names is in the built folder: a result left out until its rerun (#467) drops its config."""
+    files = config["data_files"] if isinstance(config["data_files"], list) else [{"path": config["data_files"]}]
+    return all(list(out.glob(f["path"])) for f in files)
+
+
 def card(name: str, out: Path, commit: str) -> str:
     head = {"license": "cc-by-4.0", "language": ["en"], "tags": TAGS, **HEADERS[name]}
+    head["configs"] = [c for c in head["configs"] if _present(c, out)]
     files = sorted(p.relative_to(out).as_posix() for p in out.rglob("*") if p.is_file() and p.name != "README.md")
     table = "\n".join(f"| `{f}` | {kpub._rows(out / f) if f.endswith(('.csv', '.json')) else 'notebook'} |"
                       for f in files)

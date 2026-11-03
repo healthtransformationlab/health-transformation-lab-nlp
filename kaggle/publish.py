@@ -21,6 +21,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent / "python"))
 
+from health_transformation_lab_nlp import note_set
 from health_transformation_lab_nlp.paths import DATASETS_DIR as DATA
 
 REPO = HERE.parent
@@ -42,13 +43,16 @@ DATASETS = {
 
 
 def files_of(name: str) -> dict:
-    """{path in the dataset: source file}, in a stable order."""
+    """{path in the dataset: source file}, in a stable order. A result made on another note set (#467:
+    prediction_note_sets.csv) is left out until its run is redone; ladder/ladder_pending.csv lists it."""
     d = DATASETS[name]
     out = {dest: DATA / src for src, dest in d.get("files", [])}
+    stale = {f for f in note_set.read_register(DATA)["file"] if not note_set.is_current(DATA, f)}
     for folder, pattern in d.get("globs", []):
         for src in sorted((DATA / folder).glob(pattern)):
-            if not src.name.startswith("simulated_"):
-                out[f"{folder}/{src.name}" if folder else src.name] = src
+            rel = f"{folder}/{src.name}" if folder else src.name
+            if not src.name.startswith("simulated_") and rel not in stale:
+                out[rel] = src
     return out
 
 

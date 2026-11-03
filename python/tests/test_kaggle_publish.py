@@ -58,7 +58,19 @@ def test_metadata_is_cc_by_with_a_card_and_kaggle_length_limits(tmp_path, name):
 def test_no_simulated_file_reaches_the_results_dataset():
     names = [d.split("/")[-1] for d in pub.files_of("results")]
     assert not [n for n in names if n.startswith("simulated_")]
-    assert "ai_predictions_medgemma-1.5-4b-it.csv" in names
+    assert "ai_predictions_note_rules.csv" in names
+
+
+def test_no_result_made_on_another_note_set_is_published():
+    # #467: a run on the review notes before they were rebuilt stays in the repo but not in the results dataset
+    from health_transformation_lab_nlp import note_set
+    from health_transformation_lab_nlp.paths import DATASETS_DIR
+    files = pub.files_of("results")
+    stale = [f for f in note_set.read_register(DATASETS_DIR)["file"] if not note_set.is_current(DATASETS_DIR, f)]
+    assert stale, "the committed data has runs made on the old notes"
+    published = {str(src.relative_to(DATASETS_DIR)) for src in files.values()}
+    assert not published & set(stale)
+    assert "ladder/ladder_pending.csv" in files     # what is waiting for a rerun is published instead
 
 
 def test_workflow_uploads_through_publish_py_with_the_commit():

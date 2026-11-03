@@ -41,6 +41,11 @@ def _cell(row, i):
     return row.split("|")[i].strip()
 
 
+def _pending_row(row):
+    """#467: a row for a run made on another note set, shown but not scored."""
+    return rr.note_set.RERUN_PENDING in row
+
+
 def test_readme_and_results_page_match_the_committed_results(summary, md):
     readme = rr.SUMMARY_DOC.read_text()
     assert readme.count(rr.START) == 1 and readme.count(rr.END) == 1
@@ -106,12 +111,14 @@ def test_wilson_interval():
 
 def test_phenotype_leaderboard_has_every_system_best_first(inp, md):
     rows = _rows(_section(md, rr.PHENOTYPE_TITLE))
-    systems = [*inp["ladder"]["method"], *rr.PHENOTYPES, *rr.EVIDENCE]
+    systems = [*inp["ladder"]["method"], *rr.PHENOTYPES, *rr.EVIDENCE, *inp["pending"]["method_name"]]
     assert len(rows) == len(systems) == len(set(systems))
     names = [_cell(r, 2) for r in rows]
     for s in systems:
         assert sum(f"`{s}`" == n or n.startswith(f"[`{s}`]") for n in names) == 1, s
-    acc = [float(_cell(r, 5).split("**")[1]) for r in rows]   # correct, out of 100
+    scored = [r for r in rows if not _pending_row(r)]
+    assert rows[:len(scored)] == scored                         # pending rows after every scored one
+    acc = [float(_cell(r, 5).split("**")[1]) for r in scored]   # correct, out of 100
     assert acc == sorted(acc, reverse=True)
     assert _cell(rows[0], 1).startswith("1")
 
@@ -128,7 +135,8 @@ def test_periodontitis_yes_no_columns_match_the_shared_scorer(inp, md):
     sys.path.insert(0, str(REPO_ROOT / "eval"))
     from score import score
     rows = _rows(_section(md, rr.PHENOTYPE_TITLE))
-    for s in ("note_rules", "medgemma-1.5-4b-it", "algorithm_v0", "exam_form"):
+    for s in ("note_rules", *[m for m in ("medgemma-1.5-4b-it",) if m in set(inp["ladder"]["method"])],
+              "algorithm_v0", "exam_form"):
         pred = inp["preds"][s] if s in inp["preds"] else inp["key"].reindex(inp["preds"].index)[s]
         res = score(inp["preds"]["truth"], pred.where(pred.isin(rr.LABELS)).fillna("none"), None, s)
         m = res[res["class"] == ""].set_index("metric")["value"]
@@ -164,7 +172,8 @@ def test_readme_phenotyping_table_is_narrow_and_each_cell_carries_its_total(summ
     cols = [c.strip() for c in lines[i].split("|")[1:-1]]
     assert cols == ["Question", "Method", "Correct", "Periodontitis incorrectly assigned",
                     "Periodontitis incorrectly ruled out", "Incorrect stage", "No answer", "Rank"]
-    rows = [[c.strip() for c in x.split("|")[1:-1]] for x in lines[i + 2:] if x.startswith("|")]
+    rows = [[c.strip() for c in x.split("|")[1:-1]] for x in lines[i + 2:] if x.startswith("|")
+            and not _pending_row(x)]
     assert rows
     of = re.compile(r"^(\d+) of (\d+)")
     for r in rows:
@@ -300,17 +309,20 @@ def test_readme_phenotype_table_answers_three_questions(inp, summary):
     systems = [s for _, s in picks]
     assert systems[0] == "algorithm_v0"                              # whole record: the best rule phenotype
     assert "note_rules" in systems                                    # the simple baseline is always shown
-    assert any(s.startswith("medgemma") for s in systems)
+    assert any(s.startswith("medgemma") or s == rr.PENDING_MEDGEMMA for s in systems)
     assert systems[questions.index(rr.PHENOTYPE_QUESTIONS[2])] == "probing_chart"
     shown = [_cell(r, 1) for r in rows]                               # question named once, on its first row
     assert [q for q in shown if q] == list(rr.PHENOTYPE_QUESTIONS)
     truth, pred_of, _ = rr.phenotype_predictions(inp)
     for r, s in zip(rows, systems):
         assert _cell(r, 2) == rr.readme_label(s)
+        if s in (rr.PENDING_TRAINED, rr.PENDING_MEDGEMMA):        # #467: every run of the group awaits a rerun
+            assert _cell(r, 3) == rr.note_set.RERUN_PENDING, r
+            continue
         nums = [int(_cell(r, i).split(" of ")[0]) for i in (3, 4, 5, 6, 7)]   # "215 of 221", "4 of 75 (...)"
         total = int(_cell(r, 3).split(" of ")[1])
         # spec 032 US8: the review charts that count (adults, visits from the start date), at five status groups
-        assert total == len(inp["preds"]) == len(truth) < 240 and sum(nums) == total, r
+        assert total == len(inp["preds"]) == len(truth) and sum(nums) == total, r
         b = rr.breakdown(truth, pred_of[s])
         assert nums == [round(total * b[k]) for k in ("correct", "dx_said_yes", "dx_said_no", "stage", "no_answer")]
         yn = rr.yes_no(truth, pred_of[s])
@@ -330,6 +342,9 @@ def test_plain_names():
 def test_readme_names_the_medgemma_version_that_ran(inp, summary):
     rows = [r for r in _rows(_section(summary, rr.PHENOTYPE_TITLE)) if "MedGemma" in r]
     ran = {rr.plain_system(rr.base_id(m)) for m in inp["ladder"]["method"] if m.startswith("medgemma")}
+    if not ran:                                            # #467: every MedGemma run awaits a rerun on the new notes
+        assert rows and all(_pending_row(r) for r in rows)
+        ran = {"MedGemma"}
     assert rows and all(any(f"({v})" in _cell(r, 2) for v in ran) for r in rows), ran
     assert rr.plain_tool("hf_stanford+hf_obi+regex_v2+guard") == "Stanford AI + OBI AI + patterns + dental-word guard"
     assert rr.plain_tool("regex_v2") == "Patterns"
@@ -367,6 +382,8 @@ def test_readme_deid_rows_are_counts_with_their_totals(inp, summary, md):
 def test_difficulty_levels_match_the_medgemma_comparison(inp, md):
     rows = _rows(_section(md, rr.PHENOTYPE_TITLE))
     lv = inp["by_diff"].pivot(index="method", columns="difficulty", values="accuracy")
+    if not rr.note_set.is_current(rr.DATASETS_DIR, "ladder/medgemma_vs_bert_by_difficulty.csv"):
+        return                                             # #467: made on another note set; rerun pending
     for m in lv.index:
         row = next(x for x in rows if _cell(x, 2).startswith(f"[`{m}`]") or _cell(x, 2) == f"`{m}`")
         assert " / ".join(f"{100 * lv.loc[m, k]:.0f}" for k in ("L1", "L2", "L3")) in row, m
@@ -374,7 +391,7 @@ def test_difficulty_levels_match_the_medgemma_comparison(inp, md):
 
 
 def test_models_not_run_are_listed_not_dropped(inp, md):
-    scored = {rr.base_id(m) for m in inp["ladder"]["method"]}
+    scored = {rr.base_id(m) for m in [*inp["ladder"]["method"], *inp["pending"]["method_name"]]}
     not_run = _section(md, rr.PHENOTYPE_TITLE).split(rr.NOT_RUN, 1)[1]
     for m in inp["registry"]["models"]:
         if m["id"] not in scored:
@@ -409,7 +426,9 @@ def test_readme_points_to_the_judge_scorecard_and_dashboard():
     assert "LLM judgment" in md
     details = rr.details_markdown(inp)
     assert rr.JUDGE_TITLE in details
-    if inp["judge"] is None:                                # no real judge run committed yet
+    if inp["judge_pending"]:                               # #467: a real run on another note set
+        assert rr.note_set.RERUN_PENDING in details.split(rr.JUDGE_TITLE)[1].lower()
+    elif inp["judge"] is None:                              # no real judge run committed yet
         assert "not run yet" in details.split(rr.JUDGE_TITLE)[1].lower()
     assert "simulated" not in details.split(rr.JUDGE_TITLE)[1].split("\n#")[0].lower().replace("not simulated", "")
 

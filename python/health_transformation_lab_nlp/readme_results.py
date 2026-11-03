@@ -16,8 +16,9 @@ instead of a single rank. There is no overall rank across capabilities.
   read from the Wilson intervals (best case: only engines clearly above count; worst case:
   every engine whose interval reaches this one's counts).
 
-Everything is read from committed results; nothing is re-run. Synthetic data scored against the
-generator's truth: not clinical performance.
+Everything is read from committed results; nothing is re-run. A model run made on another note set (#467:
+note_set.py, data/datasets/ladder/ladder_pending.csv) is listed as "rerun pending on the new notes", never scored
+against the current answer key. Synthetic data scored against the generator's truth: not clinical performance.
 
     python scripts/35_readme_results.py           # rewrite the summary in docs/edr/README.md and docs/results.md
     python scripts/35_readme_results.py --check   # exit 1 if either is stale
@@ -33,7 +34,7 @@ import numpy as np
 import pandas as pd
 import yaml
 
-from . import ladder_eval, study
+from . import ladder_eval, note_set, study
 from .labels import DEFAULT_GROUPING, GROUPINGS, LABELS
 from .paths import DATASETS_DIR, DEID_DIR, EXTERNAL_DIR, JUDGE_DIR, MODELS_YAML, REPO_ROOT
 from .telemetry import traced
@@ -114,6 +115,8 @@ _NOT_RUN_WHY = {"gatortron-base": "ran on CPU but diverged and called every char
 @traced
 def readme_label(system: str) -> str:
     """The README's name for a phenotyping method."""
+    if system in _PENDING_LABELS:
+        return _PENDING_LABELS[system]
     b = base_id(system)
     rule = " + stage 4 rule" if system.endswith("+rules4") else ""
     if system == "algorithm_v0":
@@ -146,13 +149,22 @@ def readme_phenotype_rows(inp: dict) -> list[tuple[str, str]]:
         acc[s] = (ladder_eval.grouped(key[s]) == truth).mean()
     acc = acc.sort_values(ascending=False, kind="stable")
     note = [s for s in acc.index if s in set(inp["ladder"]["method"])]
-    trained = next(s for s in note if phenotype_group(s) in PHENOTYPE_GROUPS[1:3])
-    medgemma = next(s for s in note if base_id(s).startswith("medgemma"))
+    pending = list(inp["pending"]["method_name"]) if "pending" in inp else []
+    trained = next((s for s in note if phenotype_group(s) in PHENOTYPE_GROUPS[1:3]), None) or \
+        (PENDING_TRAINED if any(phenotype_group(m) in PHENOTYPE_GROUPS[1:3] for m in pending) else None)
+    medgemma = next((s for s in note if base_id(s).startswith("medgemma")), None) or \
+        (PENDING_MEDGEMMA if any(base_id(m).startswith("medgemma") for m in pending) else None)
     whole = next(s for s in acc.index if s in PHENOTYPES)
     parts = [s for s in acc.index if s in EVIDENCE][:2]
     q1, q2, q3 = PHENOTYPE_QUESTIONS
-    return ([(q1, whole)] + [(q2, s) for s in sorted([trained, "note_rules", medgemma], key=lambda s: -acc[s])]
-            + [(q3, s) for s in parts])
+    scored = sorted([s for s in (trained, "note_rules", medgemma) if s in acc.index], key=lambda s: -acc[s])
+    waiting = [s for s in (trained, medgemma) if s in (PENDING_TRAINED, PENDING_MEDGEMMA)]
+    return [(q1, whole)] + [(q2, s) for s in scored + waiting] + [(q3, s) for s in parts]
+
+
+# #467: README rows for a note-only group whose every run was made on another note set
+PENDING_TRAINED, PENDING_MEDGEMMA = "pending:trained", "pending:medgemma"
+_PENDING_LABELS = {PENDING_TRAINED: "Trained AI (every encoder run)", PENDING_MEDGEMMA: "Medical AI, untrained (MedGemma)"}
 
 
 @traced
@@ -235,7 +247,26 @@ def load_inputs() -> dict:
             "course": _course(pd.read_csv(DEID_DIR / "maccrobat_tagger_runs.csv")),
             "deid_not_run": pd.read_csv(DEID_DIR / "not_run.csv"),
             "maccrobat": pd.read_csv(DEID_DIR / "maccrobat_scores.csv"),
-            "judge": _load_judge()}
+            "pending": _pending(lad),
+            "judge": _load_judge(), "judge_pending": _judge_pending()}
+
+
+def _pending(lad) -> pd.DataFrame:
+    """The prediction files made on another note set (scripts/28_ladder_vs_truth.py, #467)."""
+    path = lad / note_set.PENDING_FILE
+    return pd.read_csv(path, dtype=str).fillna("") if path.exists() else pd.DataFrame(columns=note_set.PENDING_COLUMNS)
+
+
+def _judge_pending() -> bool:
+    """A real LLM judge run is committed but was made on another note set (#467)."""
+    f = JUDGE_DIR / "judgments.csv"
+    if not f.exists():
+        return False
+    try:
+        rel = f.relative_to(DATASETS_DIR)
+    except ValueError:                 # a judge folder outside the datasets folder (a test's) records no note set
+        return False
+    return not note_set.is_current(DATASETS_DIR, str(rel))
 
 
 def _key() -> pd.DataFrame:
@@ -249,8 +280,9 @@ def _key() -> pd.DataFrame:
 
 
 def _load_judge() -> dict | None:
-    """A real LLM judge run (spec 012), if one is committed; simulated dry runs are never shown."""
-    if not (JUDGE_DIR / "judge_metrics.csv").exists():
+    """A real LLM judge run (spec 012), if one is committed on the current notes; simulated dry runs are never
+    shown, and a run on another note set is pending (_judge_pending)."""
+    if not (JUDGE_DIR / "judge_metrics.csv").exists() or _judge_pending():
         return None
     return {n: pd.read_csv(JUDGE_DIR / f"{n}.csv")
             for n in ("judge_metrics", "judge_agreement", "judgments", "judge_run", "chart_answers")
@@ -460,7 +492,20 @@ def _phenotyping(inp) -> tuple[str, pd.DataFrame]:
                    f" | {_n(r['unsafe_rate'])} | "
                    + " | ".join(_pct(yn[s][k]) for k in ("sensitivity", "specificity", "ppv", "npv")) +
                    f" | {_pct(r['stage4_recall'])} | {levels} |")
-    scored = {base_id(m) for m in inp["ladder"]["method"]}
+    pending = inp.get("pending", pd.DataFrame(columns=note_set.PENDING_COLUMNS))
+    for p in pending.itertuples():
+        b = base_id(p.method_name)
+        name = f"[`{p.method_name}`]({links[b]})" if b in links else f"`{p.method_name}`"
+        made = f"[{p.source_name} run]({p.run_url})" if p.run_url else p.source_name
+        out.append(f"| – | {name} | chart note | {_model_method(p.method_name)} ({made}) | "
+                   f"{note_set.RERUN_PENDING} |" + " – |" * 12)
+    if len(pending):
+        out += ["", (f"**{note_set.RERUN_PENDING[0].upper() + note_set.RERUN_PENDING[1:]}**: the rows marked – were "
+                     "made on the review notes before they were rebuilt for adults from "
+                     f"{study.ANALYSIS_START_DATE} (#467). They are kept, with the note set they read "
+                     "(`data/datasets/prediction_note_sets.csv`), and not scored against the new answer key until "
+                     "the run is redone.")]
+    scored = {base_id(m) for m in inp["ladder"]["method"]} | {base_id(m) for m in pending["method_name"]}
     missing = []
     for m in reg["models"]:
         if m["id"] in scored:
@@ -589,6 +634,16 @@ def _judge(inp) -> tuple[str, str]:
     """docs/results.md section and the README line for the LLM judge scorecard (spec 012)."""
     link = f"[judge results](../results.md#{anchor(JUDGE_TITLE)})"
     j = inp.get("judge")
+    if j is None and inp.get("judge_pending"):
+        sec = [JUDGE_TITLE, "", (f"**{note_set.RERUN_PENDING[0].upper() + note_set.RERUN_PENDING[1:]}.** The committed "
+                                 "LLM judge run (`data/datasets/judge/`) read the review notes before they were rebuilt "
+                                 f"for adults from {study.ANALYSIS_START_DATE} (#467), so it is kept and not shown "
+                                 "against the new answer key. It is shown again once `python/scripts/"
+                                 "36_judge_scorecard.py --endpoint ...` or the `judge_scorecard` job in dev has run "
+                                 f"on the new notes; then also the *{DASHBOARD}* dashboard in Databricks.")]
+        line = (f"**LLM judge**: the same metrics against an LLM's reading of each note (LLM judgment, checked "
+                f"against the truth): {note_set.RERUN_PENDING}; {link}, then the *{DASHBOARD}* dashboard in Databricks.")
+        return "\n".join(sec), line
     if j is None:
         sec = [JUDGE_TITLE, "", ("**Not run yet.** Every system's answers scored against an LLM judge's own reading of "
                                  "each note, next to the truth, once `python/scripts/36_judge_scorecard.py --endpoint ...` "
@@ -707,6 +762,11 @@ def results_markdown(inp: dict) -> str:
            "|---|---|---:|---:|---:|---:|---:|---|"]
     last_q = None
     for q, s in readme_phenotype_rows(inp):
+        if s in _PENDING_LABELS:
+            out.append(f"| {q if q != last_q else ''} | {readme_label(s)} | {note_set.RERUN_PENDING} |"
+                       + " – |" * 5)
+            last_q = q
+            continue
         r = ph.loc[s]
         c, yes, no, st, na = [round(n_charts * r[k]) for k in ("correct", "dx_said_yes", "dx_said_no", "stage",
                                                                 "no_answer")]
