@@ -10,7 +10,7 @@ D = pd.Timestamp
 
 
 def _extract(procs=(), initial=(), exams=(), measures=(), plans=(), smoke="266919005", diseases=(), readings=()):
-    """A tiny extract for patient 1. procs: (procnum, tooth, status, dx_name, datetp, datecomplete).
+    """A tiny extract for patient 1. procs: (procnum, tooth, status, dx_name, datetp, datecomplete[, procdate]).
     exams: (examnum, date). measures: (examnum, tooth, seq, six site values or toothvalue)."""
     defs = [(i + 1, od.DEFCAT_DIAGNOSIS, n, a, i, False) for i, (n, a, _) in enumerate(od.OLDER_LIST + od.LIST_2017)]
     defnum = {n: k for k, _, n, _, _, _ in defs}
@@ -23,8 +23,9 @@ def _extract(procs=(), initial=(), exams=(), measures=(), plans=(), smoke="26691
                                       "datefirstvisit": D("2020-01-01"), "smokingsnomed": smoke}], columns=od.TABLES["patient"])
     t["procedurelog"] = pd.DataFrame(
         [{"procnum": p, "patnum": 1, "procstatus": s, "codenum": 1, "toothnum": str(tooth), "dx": defnum.get(dx, 0),
-              "datetp": D(dtp) if dtp else pd.NaT, "datecomplete": D(dc) if dc else pd.NaT, "procdate": D(dc or dtp or "2020-01-01")}
-         for p, tooth, s, dx, dtp, dc in procs], columns=od.TABLES["procedurelog"])
+              "datetp": D(dtp) if dtp else pd.NaT, "datecomplete": D(dc) if dc else pd.NaT,
+              "procdate": D(on[0] if on else (dc or dtp or "2020-01-01"))}
+         for p, tooth, s, dx, dtp, dc, *on in procs], columns=od.TABLES["procedurelog"])
     t["toothinitial"] = pd.DataFrame([{"toothinitialnum": i + 1, "patnum": 1, "toothnum": str(tooth), "initialtype": 0, "movement": 0.0}
                                       for i, tooth in enumerate(initial)], columns=od.TABLES["toothinitial"])
     t["perioexam"] = pd.DataFrame([{"perioexamnum": e, "patnum": 1, "examdate": D(d), "provnum": 1} for e, d in exams],
@@ -70,6 +71,36 @@ def test_one_row_per_patient_and_tooth_with_each_status():
         assert r["tooth_status_code"] == status, tooth
         assert (pd.isna(r["is_perio_loss"]) if label is None else r["is_perio_loss"] == label), tooth
         assert r["label_source_code"] == source, tooth
+
+
+def test_a_planned_extraction_whose_tooth_goes_missing_at_a_later_visit():
+    # 029 US9 (#507): planned, never done, then recorded missing (extraction by another provider) after the first visit
+    x = _extract(procs=[(13, 30, od.PLANNED, "Periodontitis, stage IV", "2021-01-01", None),
+                        (16, 30, od.EXISTING_OTHER, "", None, None, "2021-09-01"),
+                        (14, 31, od.PLANNED, "Fracture (2017 list)", "2021-01-01", None),
+                        (17, 31, od.EXISTING_OTHER, "", None, None, "2022-06-01"),
+                        (15, 29, od.PLANNED, "Periodontitis, stage III", "2021-01-01", None),     # still in the mouth
+                        (18, 28, od.EXISTING_OTHER, "", None, None, "2021-05-01"),                # no plan before it
+                        (19, 27, od.EXISTING_OTHER, "", None, None, "2020-01-01")])               # on the first visit
+    t = tl.tooth_table(x)
+    expect = {30: ("planned_then_missing_perio", True, "planned_then_missing", "2021-09-01", 243),
+              31: ("planned_then_missing_other", False, "planned_then_missing", "2022-06-01", 516),
+              29: ("planned_perio", True, "planned", None, None),
+              28: ("missing_later", None, "none", "2021-05-01", None),
+              27: ("missing_at_entry", None, "none", None, None)}
+    for tooth, (status, label, source, lost, days) in expect.items():
+        r = _row(t, tooth)
+        assert r["tooth_status_code"] == status, tooth
+        assert (pd.isna(r["is_perio_loss"]) if label is None else r["is_perio_loss"] == label), tooth
+        assert r["label_source_code"] == source, tooth
+        assert (pd.isna(r["loss_date"]) if lost is None else r["loss_date"] == D(lost)), tooth
+        assert (pd.isna(r["plan_to_missing_days"]) if days is None else r["plan_to_missing_days"] == days), tooth
+
+
+def test_a_completed_extraction_still_wins_over_a_later_missing_record():
+    x = _extract(procs=[(10, 3, od.COMPLETE, "Periodontitis, stage III", "2020-03-01", "2020-09-01"),
+                        (11, 3, od.EXISTING_OTHER, "", None, None, "2021-01-01")])
+    assert _row(tl.tooth_table(x), 3)["tooth_status_code"] == "extracted_perio"
 
 
 def test_a_planned_extraction_later_completed_counts_once_as_completed():

@@ -88,3 +88,17 @@ Implementation starts after this spec, plan and tasks are reviewed.
 - [x] T025 [US8] Regenerate with the scripts (tooth table, model results, ERD dictionary, website JSON);
   `docs/tooth_loss.md` with before/after AUC and specificity on teeth missing at entry and the stage recount,
   labelled synthetic; the analysis plan's change log; R parity and the full suite
+
+## US9 #507: a planned periodontal extraction counts only when the tooth is missing at a later visit
+
+- [x] T026 [US9] Failing tests (`test_tooth_loss.py`, `test_tooth_loss_model.py`, `test_open_dental.py`): the new
+  statuses, labels and day counts; the window and the earlier rule as a setting; later-missing teeth in the stage
+  recount; the generator's later-missing rows, after the plan, on their own stream
+- [x] T027 [US9] `open_dental.py` (`Params.planned_then_missing`, own stream), `tooth_loss.py`
+  (`planned_then_missing_*`, `missing_later`, `plan_to_missing_days`), `tooth_loss_model.py`
+  (`ModelParams.planned_window_days`, `label_set`, the stage recount), `scripts/51_tooth_loss_model.py`
+  (`--planned-window-days`); the silver model's `patient_tooth`
+- [x] T028 [US9] R twin (`r/R/16_spec029.R`, `tooth_status_029`) and the parity check on statuses and day counts
+- [ ] T029 [US9] Regenerate with the scripts (tooth table, model results, presets, ERD dictionary, website JSON);
+  `docs/tooth_loss.md` with the new rule and the earlier one beside it, labelled synthetic; R parity and the full
+  suite

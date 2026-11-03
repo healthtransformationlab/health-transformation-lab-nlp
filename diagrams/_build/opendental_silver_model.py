@@ -339,9 +339,10 @@ TABLES = {
     "patient_tooth": Table("derived", "One per patient and tooth (1–32): how it was lost, and what was charted before", "tooth_loss.tooth_table; overwrite per run, logged in load_log", [
         C("patient_id", "bigint", "patient.patnum", "PK,FK"),
         C("tooth_num", "bigint", "universal tooth number 1–32", "PK"),
-        C("tooth_status_code", "string", "present · extracted_perio · extracted_other · extracted_no_dx · missing_at_entry · planned_perio · planned_other"),
-        C("loss_date", "date", "extraction date; null when missing at entry or only planned"),
-        C("label_source_code", "string", "completed · planned · none: which record gave the label"),
+        C("tooth_status_code", "string", "present · extracted_perio · extracted_other · extracted_no_dx · missing_at_entry · planned_then_missing_perio · planned_then_missing_other · missing_later · planned_perio · planned_other"),
+        C("loss_date", "date", "extraction date, or the date recorded missing at a later visit; null when missing at entry or only planned"),
+        C("plan_to_missing_days", "bigint", "days from the planned extraction to the tooth recorded missing (planned_then_missing only)"),
+        C("label_source_code", "string", "completed · planned · planned_then_missing · none: which record gave the label"),
         C("dx_def_id", "bigint", "the mapped diagnosis item (definition.defnum)", "FK"),
         C("is_perio_loss", "boolean", "the label: diagnosis maps to periodontal; null when no diagnosis"),
         C("last_exam_date", "date", "last perio exam that charted the tooth, on or before the loss"),

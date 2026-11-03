@@ -647,10 +647,14 @@ if (file.exists(file.path(td, "patient_tooth.csv"))) {
   source("r/R/16_spec029.R")
   rd <- function(n) read.csv(file.path(td, paste0(n, ".csv")), stringsAsFactors = FALSE)
   pl <- rd("procedurelog"); pc <- rd("procedurecode"); defs <- rd("definition"); ti <- rd("toothinitial")
-  r_t <- tooth_status_029(pl, pc, defs, ti, rd("patient")$patnum)
+  r_t <- tooth_status_029(pl, pc, defs, ti, rd("patient"))
   py_t <- rd("patient_tooth")
   m <- merge(r_t, py_t, by = c("patient_id", "tooth_num"), suffixes = c(".r", ".p"))
-  bad_t <- sum(m$tooth_status_code.r != m$tooth_status_code.p | m$label_source_code.r != m$label_source_code.p)
+  same_days <- (is.na(m$plan_to_missing_days.r) & is.na(m$plan_to_missing_days.p)) |
+    (!is.na(m$plan_to_missing_days.r) & !is.na(m$plan_to_missing_days.p) &
+       m$plan_to_missing_days.r == m$plan_to_missing_days.p)
+  bad_t <- sum(m$tooth_status_code.r != m$tooth_status_code.p | m$label_source_code.r != m$label_source_code.p |
+               !same_days)
   r_p <- planned_extraction_029(pl, pc, defs, rd("proctp"))
   py_p <- rd("planned_extraction")
   mp <- merge(r_p, py_p, by = "procedure_id", suffixes = c(".r", ".p"))

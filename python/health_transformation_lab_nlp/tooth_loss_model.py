@@ -11,7 +11,11 @@ only to score the teeth that have no recorded reason, never as a feature. Synthe
   patient's first exam date when the loss date isn't recorded, is on or after it.
 - Label (s. 4, FR-010): 1 = the extraction's diagnosis item is periodontal, 0 = another reason. Two label sets:
   `completed` (completed extractions) and `completed_planned` (plus planned ones; the tooth table already counts a
-  tooth planned then completed once, as completed).
+  tooth planned then completed once, as completed). Since 029 US9 (#507) a planned extraction counts only when the
+  tooth is recorded missing at a later visit within `ModelParams.planned_window_days` (365) of the plan
+  (planned_then_missing_*); one still in the mouth, or missing after the window, is left unlabelled.
+  `planned_window_days=None` is the earlier rule, a sensitivity setting: every planned extraction with a diagnosis
+  counts, in the mouth or not.
 - Predictors (s. 5): `shared` (tooth_loss.SHARED_FEATURES, available for every missing tooth: the applied model) and
   `own` (plus the tooth's last measures and chart quality: shown beside it, scored only where own measures exist).
 - Models (s. 8): logistic regression (L2, C = 1, standardised; median imputation fitted on training data plus one
@@ -48,12 +52,18 @@ from .sites import THIRD_MOLARS
 from .telemetry import traced
 
 LABEL_SETS = {"completed": ("extracted_perio", "extracted_other"),
-              "completed_planned": ("extracted_perio", "extracted_other", "planned_perio", "planned_other")}
+              "completed_planned": ("extracted_perio", "extracted_other", "planned_then_missing_perio",
+                                    "planned_then_missing_other", "planned_perio", "planned_other")}
+PLANNED_THEN_MISSING = ("planned_then_missing_perio", "planned_then_missing_other")   # 029 US9 (#507)
+STILL_PLANNED = ("planned_perio", "planned_other")         # the tooth still in the record: only when no window is set
 FEATURE_SETS = {"shared": tl.SHARED_FEATURES, "own": tl.OWN_FEATURES}
 MODELS = ("logistic", "xgboost")
 BASELINES = ("baseline_all_perio", "baseline_outcome_rate", "baseline_recorded_only")
 APPLIED_STATUSES = ("missing_at_entry", "extracted_no_dx")
-MISSING_STATUSES = ("extracted_perio", "extracted_other", "extracted_no_dx", "missing_at_entry")
+MISSING_STATUSES = ("extracted_perio", "extracted_other", "extracted_no_dx", "missing_at_entry",
+                    *PLANNED_THEN_MISSING, "missing_later")
+# missing teeth the stage recount gives the model's probability (no recorded periodontal extraction)
+STAGE_UNLABELLED_STATUSES = (*APPLIED_STATUSES, *PLANNED_THEN_MISSING, "missing_later")
 EVAL_SETS = ("held_out", "missing_at_entry", "extracted_no_dx")
 TOOTH_TYPES = tuple(f"{arch}_{kind}" for arch in ("upper", "lower") for kind in ("incisor", "canine", "premolar",
                                                                                  "molar"))
@@ -83,6 +93,7 @@ class ModelParams:
     threshold: float = 0.5
     split_unit: str = "person"             # spec 032 US5: SPLIT_UNITS; visit reports the patients in both
     cv_folds: int | None = 5               # spec 032 US5: tune XGBoost over XGB_GRID by k-fold CV when set
+    planned_window_days: int | None = 365  # 029 US9: a planned extraction counts if missing within this; None: any
 
 
 DEFAULT = ModelParams()
@@ -97,6 +108,8 @@ def check_params(params: ModelParams) -> None:
         raise ValueError(f"test_share {params.test_share!r}: between 0 and 1")
     if params.cv_folds is not None and params.cv_folds < 2:
         raise ValueError(f"cv_folds {params.cv_folds!r}: at least 2, or None for no tuning")
+    if params.planned_window_days is not None and params.planned_window_days < 0:
+        raise ValueError(f"planned_window_days {params.planned_window_days!r}: 0 or more days, or None for any")
 
 
 # ---------- who, the label sets and the predictors
@@ -168,11 +181,19 @@ def with_first_exam_date(teeth: pd.DataFrame, x: dict[str, pd.DataFrame]) -> pd.
 
 
 @traced
-def label_set(teeth: pd.DataFrame, name: str) -> pd.DataFrame:
-    """The labelled teeth of one label set (FR-010), with is_perio_loss as the outcome."""
+def label_set(teeth: pd.DataFrame, name: str,
+              planned_window_days: int | None = DEFAULT.planned_window_days) -> pd.DataFrame:
+    """The labelled teeth of one label set (FR-010), with is_perio_loss as the outcome. A planned extraction counts
+    when the tooth was recorded missing within `planned_window_days` of the plan; with None, every planned
+    extraction with a diagnosis counts, the tooth in the mouth or not (the rule before 029 US9, #507)."""
     if name not in LABEL_SETS:
         raise ValueError(f"unknown label set {name!r}; one of {tuple(LABEL_SETS)}")
-    return teeth[teeth["tooth_status_code"].isin(LABEL_SETS[name]) & teeth["is_perio_loss"].notna()]
+    status = teeth["tooth_status_code"]
+    keep = status.isin(LABEL_SETS[name]) & teeth["is_perio_loss"].notna()
+    if planned_window_days is not None:
+        days = pd.to_numeric(teeth["plan_to_missing_days"], errors="coerce")
+        keep &= ~status.isin(STILL_PLANNED) & ~(status.isin(PLANNED_THEN_MISSING) & ~(days <= planned_window_days))
+    return teeth[keep]
 
 
 @traced
@@ -512,7 +533,7 @@ def patient_stage(teeth: pd.DataFrame, prob: pd.Series, truth: pd.DataFrame, wor
     t = teeth[["patient_id", "tooth_num", "tooth_status_code"]].assign(p=prob.reindex(teeth.index))
     t = t.merge(truth[["patient_id", "tooth_num", "true_reason_code"]], on=["patient_id", "tooth_num"], how="left")
     t["missing"] = t["tooth_status_code"].isin(MISSING_STATUSES)
-    t["unlabelled"] = t["tooth_status_code"].isin(APPLIED_STATUSES)
+    t["unlabelled"] = t["tooth_status_code"].isin(STAGE_UNLABELLED_STATUSES)
     rows = []
     for pat, g in t.groupby("patient_id", sort=True):
         recorded = int((g["tooth_status_code"] == "extracted_perio").sum())
@@ -579,10 +600,12 @@ def run(x: dict[str, pd.DataFrame], truth: pd.DataFrame, params: ModelParams = D
     X_stage = design_matrix(st, "shared")
     true = el.merge(truth, on=["patient_id", "tooth_num"], how="left")["true_reason_code"]
     if params.split_unit == "person":
-        test_pats = split_patients(label_set(el, "completed_planned"), params.test_share, params.seed)
+        test_pats = split_patients(label_set(el, "completed_planned", params.planned_window_days), params.test_share,
+                                   params.seed)
         in_test = el["patient_id"].isin(test_pats)
     else:                                       # random teeth: a patient can be on both sides (reported below)
-        test_rows = split_teeth(label_set(el, "completed_planned"), params.test_share, params.seed)
+        test_rows = split_teeth(label_set(el, "completed_planned", params.planned_window_days), params.test_share,
+                                params.seed)
         in_test = pd.Series(el.index.isin(list(test_rows)), index=el.index)
 
     status = el["tooth_status_code"]
@@ -595,7 +618,7 @@ def run(x: dict[str, pd.DataFrame], truth: pd.DataFrame, params: ModelParams = D
     tag = {"generator_seed": generator_seed}
     scores, cals, preds, eval_rows, stage_parts, missing, validation = [], [], [], [], [], [], []
     stage_probs = []
-    st_unlabelled = st["tooth_status_code"].isin(APPLIED_STATUSES).to_numpy()
+    st_unlabelled = st["tooth_status_code"].isin(STAGE_UNLABELLED_STATUSES).to_numpy()
 
     def score(ls, fs, model, ev, p, thresholds, boot):
         m = eval_masks[ev]
@@ -612,7 +635,7 @@ def run(x: dict[str, pd.DataFrame], truth: pd.DataFrame, params: ModelParams = D
                                        "patient_id": pts, "y": y, "p": p[m.to_numpy()]}))
 
     for ls in LABEL_SETS:
-        labelled = el.index.isin(label_set(el, ls).index)
+        labelled = el.index.isin(label_set(el, ls, params.planned_window_days).index)
         train = labelled & ~in_test.to_numpy()
         y_train = el.loc[train, "is_perio_loss"].astype(bool).to_numpy(int)
         split = np.where(train, "train", np.where(labelled, "test", "applied"))
@@ -635,6 +658,7 @@ def run(x: dict[str, pd.DataFrame], truth: pd.DataFrame, params: ModelParams = D
                 xgb = best
             validation.append({**tag, "label_set": ls, "feature_set": fs, "split_unit": params.split_unit,
                                "test_share": params.test_share, "cv_folds": params.cv_folds,
+                               "planned_window_days": params.planned_window_days,
                                "train_tooth_count": int(train.sum()),
                                "test_tooth_count": int((labelled & ~train).sum()),
                                "people_in_both_count": both, "xgboost_params": str(xgb), "cv_auc": cv_auc})

@@ -118,6 +118,31 @@ def test_a_planned_extraction_is_one_procedure_with_many_plan_copies(built):
     assert (edited["toothnumtp"] != edited["toothnum"]).sum() >= 0
 
 
+def test_some_planned_extractions_never_done_are_recorded_missing_at_a_later_visit():
+    # 029 US9 (#507): an extraction by another provider (ProcStatus 4) dated at a later visit, after a planned
+    # periodontal extraction of the same tooth that was never completed in the record
+    p = od.Params(n_patients=300)
+    t, truth = od.build(p, seed=11)
+    pl, pat = t["procedurelog"], t["patient"].set_index("patnum")
+    later = pl[(pl["procstatus"] == od.EXISTING_OTHER) & pl["procdate"].notna()]
+    assert len(later) > 0
+    first = later["patnum"].map(pat["datefirstvisit"])
+    assert (pd.to_datetime(later["procdate"]) > pd.to_datetime(first)).all()
+    planned = pl[pl["procstatus"] == od.PLANNED]
+    m = later.merge(planned, on=["patnum", "toothnum"], suffixes=("", "_plan"))
+    assert len(m) == len(later)                                  # each one follows a plan for that tooth ...
+    assert (pd.to_datetime(m["procdate"]) > pd.to_datetime(m["datetp_plan"])).all()   # ... and comes after it
+    keys = set(zip(later["patnum"], later["toothnum"].astype(int)))
+    reasons = truth.set_index(["patient_id", "tooth_num"])["true_reason_code"]
+    assert {reasons[k] for k in keys} == {"perio"}
+    never = planned.merge(t["proctp"][["procnumorig"]].drop_duplicates(), left_on="procnum", right_on="procnumorig")
+    share = len(later) / len(never)
+    assert 0.2 < share < 0.8                                      # about Params.planned_then_missing of them
+    t0, _ = od.build(od.Params(n_patients=300, planned_then_missing=0.0), seed=11)
+    pl0 = t0["procedurelog"]
+    assert not ((pl0["procstatus"] == od.EXISTING_OTHER) & pl0["procdate"].notna()).any()
+
+
 def test_open_dental_value_conventions(built):
     t, _ = built
     pm = t["periomeasure"]

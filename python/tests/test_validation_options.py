@@ -97,7 +97,9 @@ def test_a_bad_setting_fails_at_once():
 @pytest.fixture(scope="module")
 def extract():
     pytest.importorskip("xgboost")
-    tables, truth, reads = od.build_with_readings(od.Params(n_patients=300), seed=5)
+    # 600 patients: enough labelled teeth for 5-fold tuning, and patients with several, once planned extractions
+    # still in the mouth no longer count (029 US9, #507)
+    tables, truth, reads = od.build_with_readings(od.Params(n_patients=600), seed=5)
     return {**od.clean(tables), "radiograph_bone_level": reads}, truth
 
 

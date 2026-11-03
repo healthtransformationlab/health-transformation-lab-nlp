@@ -22,34 +22,55 @@ extractions_029 <- function(pl, pc, defs) {
   e
 }
 
-# One row per patient and tooth: patient_id, tooth_num, tooth_status_code, label_source_code.
-# Completed extraction first, then missing at entry, then a planned extraction with a diagnosis, else present.
+# One row per patient and tooth: patient_id, tooth_num, tooth_status_code, label_source_code, plan_to_missing_days.
+# Completed extraction first, then missing at entry, then missing at a later visit (029 US9, #507: an extraction done
+# elsewhere dated after the first visit; after a planned extraction with a diagnosis it is planned_then_missing_*),
+# then a planned extraction with a diagnosis, else present.
+# patients: patnum, or a data frame with patnum and datefirstvisit (needed to tell a later visit from the first).
 tooth_status_029 <- function(pl, pc, defs, ti, patients) {
   e <- extractions_029(pl, pc, defs)
-  grid <- expand.grid(tooth_num = 1:32, patient_id = sort(patients))[, c("patient_id", "tooth_num")]
+  pat <- if (is.data.frame(patients)) patients else data.frame(patnum = patients, datefirstvisit = NA)
+  grid <- expand.grid(tooth_num = 1:32, patient_id = sort(pat$patnum))[, c("patient_id", "tooth_num")]
   key <- paste(grid$patient_id, grid$tooth_num)
   status <- rep("present", nrow(grid)); source <- rep("none", nrow(grid))
+  plan_date <- rep(as.Date(NA), nrow(grid)); days <- rep(NA_integer_, nrow(grid))
 
   p <- e[e$procstatus == PLANNED_029 & e$dx_class != "none", ]
   p <- p[order(as.Date(p$datetp), p$procnum), ]
   p <- p[!duplicated(paste(p$patnum, p$tooth_num)), ]
   i <- match(paste(p$patnum, p$tooth_num), key)
-  status[i] <- paste0("planned_", p$dx_class); source[i] <- "planned"
+  status[i] <- paste0("planned_", p$dx_class); source[i] <- "planned"; plan_date[i] <- as.Date(p$datetp)
+
+  away <- e[e$procstatus == EXISTING_OTHER_029, ]
+  on <- if ("procdate" %in% names(away)) as.Date(substr(away$procdate, 1, 10)) else rep(as.Date(NA), nrow(away))
+  first <- as.Date(substr(pat$datefirstvisit[match(away$patnum, pat$patnum)], 1, 10))
+  later <- !is.na(on) & !is.na(first) & on > first
+  lt <- away[later, ]; lt$on <- on[later]
+  lt <- lt[order(lt$on, lt$procnum), ]
+  lt <- lt[!duplicated(paste(lt$patnum, lt$tooth_num)), ]
+  i <- match(paste(lt$patnum, lt$tooth_num), key)
+  ok <- !is.na(i)
+  lt <- lt[ok, ]; i <- i[ok]
+  after <- startsWith(status[i], "planned_") & !is.na(plan_date[i]) & plan_date[i] <= lt$on
+  status[i] <- ifelse(after, sub("^planned_", "planned_then_missing_", status[i]), "missing_later")
+  source[i] <- ifelse(after, "planned_then_missing", "none")
+  days[i] <- ifelse(after, as.integer(lt$on - plan_date[i]), NA_integer_)
 
   entry <- ti[ti$initialtype == 0, ]
-  away <- e[e$procstatus == EXISTING_OTHER_029, ]
-  i <- match(c(paste(entry$patnum, entry$toothnum), paste(away$patnum, away$tooth_num)), key)
+  away_entry <- away[!later, ]
+  i <- match(c(paste(entry$patnum, entry$toothnum), paste(away_entry$patnum, away_entry$tooth_num)), key)
   i <- i[!is.na(i)]
-  status[i] <- "missing_at_entry"; source[i] <- "none"
+  status[i] <- "missing_at_entry"; source[i] <- "none"; days[i] <- NA_integer_
 
   done <- e[e$procstatus == COMPLETE_029, ]
   done <- done[order(as.Date(done$datecomplete), done$procnum), ]
   done <- done[!duplicated(paste(done$patnum, done$tooth_num)), ]
   i <- match(paste(done$patnum, done$tooth_num), key)
   status[i] <- paste0("extracted_", ifelse(done$dx_class == "none", "no_dx", done$dx_class))
-  source[i] <- ifelse(done$dx_class == "none", "none", "completed")
+  source[i] <- ifelse(done$dx_class == "none", "none", "completed"); days[i] <- NA_integer_
 
-  data.frame(grid, tooth_status_code = status, label_source_code = source, stringsAsFactors = FALSE)
+  data.frame(grid, tooth_status_code = status, label_source_code = source, plan_to_missing_days = days,
+             stringsAsFactors = FALSE)
 }
 
 # One row per extraction ever on a plan: procedure_id, plan_copy_count, is_completed.
