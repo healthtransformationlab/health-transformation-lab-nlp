@@ -29,6 +29,9 @@ fusion_tfidf_rad,under_35,60,0.8
 gatortron-base+lr2e-05,35_64,102,0.803921568627451
 gatortron-base+lr2e-05,65_plus,61,0.8032786885245902
 gatortron-base+lr2e-05,under_35,60,0.8333333333333334
+llama-3.3-70b-instruct,35_64,102,0.8333333333333334
+llama-3.3-70b-instruct,65_plus,61,0.8360655737704918
+llama-3.3-70b-instruct,under_35,60,0.85
 longformer-base,35_64,102,0.8725490196078431
 longformer-base,65_plus,61,0.8524590163934426
 longformer-base,under_35,60,0.8
@@ -92,6 +95,9 @@ fusion_tfidf_rad+rules4,under_35,60,0.8833333333333333
 gatortron-base+lr2e-05+rules4,35_64,102,0.803921568627451
 gatortron-base+lr2e-05+rules4,65_plus,61,0.819672131147541
 gatortron-base+lr2e-05+rules4,under_35,60,0.9166666666666666
+llama-3.3-70b-instruct+rules4,35_64,102,0.8235294117647058
+llama-3.3-70b-instruct+rules4,65_plus,61,0.8360655737704918
+llama-3.3-70b-instruct+rules4,under_35,60,0.85
 longformer-base+rules4,35_64,102,0.8725490196078431
 longformer-base+rules4,65_plus,61,0.8688524590163934
 longformer-base+rules4,under_35,60,0.8833333333333333
