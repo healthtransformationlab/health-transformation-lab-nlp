@@ -114,6 +114,8 @@ def parse_reply(text: str, hit_limit: bool) -> dict:
     calls = [{"id": f"call-{n}", "name": m.group(1), "arguments": _arguments(m.group(2))}
              for n, m in enumerate(_CALL.finditer(text))]
     rest = _THOUGHT.sub("", _CALL.sub("", text))
+    if "<channel|>" in rest:   # a thought whose opening marker wasn't generated (thinking off): drop up to its close
+        rest = rest.rsplit("<channel|>", 1)[1]
     for s in STOP_STRINGS:
         rest = rest.replace(s, "")
     reason = "length" if hit_limit else ("tool_calls" if calls else "stop")

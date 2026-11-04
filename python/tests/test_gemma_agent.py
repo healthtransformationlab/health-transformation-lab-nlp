@@ -207,3 +207,9 @@ def test_a_failed_kernel_is_a_row_not_a_crash(runner, tmp_path):
     row = runner.row_for({"instance_id": "x"}, {"error": "OutOfMemoryError: CUDA"}, tmp_path / "s.tgz", tmp_path,
                          "https://www.kaggle.com/code/u/k", settings)
     assert row["is_resolved"] is False and row["error_text"].startswith("OutOfMemoryError")
+
+
+def test_a_thought_without_its_opening_marker_is_dropped():   # seen on Kaggle with thinking off (htlnlp_170)
+    r = ga.parse_reply("I will read the file first.<channel|>Reading.<|tool_call>call:get_status{}<tool_call|>",
+                       hit_limit=False)
+    assert r["content"] == "Reading." and r["tool_calls"][0]["name"] == "get_status"

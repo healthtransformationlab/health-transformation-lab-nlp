@@ -1,0 +1,37 @@
+{
+ "name": "gemma-4-e4b-it",
+ "model": {
+  "variant": "gemma-4-e4b-it",
+  "max_new_tokens": 2048,
+  "thinking": false,
+  "max_context": 24576,
+  "max_memory": {
+   "0": "12GiB",
+   "1": "13GiB"
+  }
+ },
+ "budget": {
+  "tool_calls": 40,
+  "time_minutes": 30.0,
+  "turns": 60,
+  "command_timeout": 120
+ },
+ "tools": [
+  "run_command",
+  "read_file",
+  "edit_file",
+  "write_file",
+  "get_status",
+  "submit_patch",
+  "get_code_neighbors",
+  "search_similar_code",
+  "get_code_subgraph"
+ ],
+ "left_out": [
+  "agent_tool",
+  "skill:skills/pipeline-doctor"
+ ],
+ "harness_name": "htlnlp-harness-v1",
+ "note": "Measured with this repository's re-implementation of the competition's documented harness (spec 035), not the competition's evaluator.",
+ "hardware": "Kaggle GPU (2x T4), transformers fp16, internet off"
+}
