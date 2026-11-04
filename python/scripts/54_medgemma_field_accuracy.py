@@ -59,6 +59,8 @@ table = pd.concat(tables, ignore_index=True)
 out = DATASETS_DIR / "ladder" / f"{prefix}medgemma_field_accuracy.csv"
 out.parent.mkdir(parents=True, exist_ok=True)
 table.to_csv(out, index=False)
+if not a.simulated:
+    note_set.stamp(DATASETS_DIR, [f"ladder/{out.name}"])   # scored on the current notes (#467)
 
 for run, t in table.groupby("run", sort=False):
     with track("54_medgemma_field_accuracy", f"{'sim:' if a.simulated else ''}{run}", simulated=a.simulated,

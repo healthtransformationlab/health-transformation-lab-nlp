@@ -1,11 +1,15 @@
 method,stageable_code,n,accuracy
 fusion_tfidf_rad,not_stageable,17,0.7647058823529411
 fusion_tfidf_rad,stageable,206,0.8446601941747572
+medgemma-1.5-4b-it,not_stageable,17,0.8235294117647058
+medgemma-1.5-4b-it,stageable,206,0.7815533980582524
 note_rules,not_stageable,17,0.8235294117647058
 note_rules,stageable,206,0.8203883495145631
 tfidf_logreg,not_stageable,17,0.8235294117647058
 tfidf_logreg,stageable,206,0.8300970873786407
 fusion_tfidf_rad+rules4,not_stageable,17,0.7647058823529411
 fusion_tfidf_rad+rules4,stageable,206,0.8737864077669902
+medgemma-1.5-4b-it+rules4,not_stageable,17,0.8235294117647058
+medgemma-1.5-4b-it+rules4,stageable,206,0.7815533980582524
 tfidf_logreg+rules4,not_stageable,17,0.8235294117647058
 tfidf_logreg+rules4,stageable,206,0.8592233009708737

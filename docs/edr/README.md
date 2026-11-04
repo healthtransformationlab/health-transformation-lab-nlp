@@ -66,7 +66,7 @@ What the columns mean:
 - **Periodontitis correctly assigned**: (in brackets) of the 139 charts with periodontitis, the share the method said have it. No answer counts against it. The standard name is sensitivity.
 - **Incorrect stage**: right that it is or isn't periodontitis, but the wrong stage (1 mild to 4 most severe).
 - **No answer (evidence not available)**: the method gave no status because what it reads wasn't in the record, e.g. no probing chart was taken.
-- **Rank**: where it plausibly ranks among all 15 methods.
+- **Rank**: where it plausibly ranks among all 17 methods.
 - **Stage 4 rule**: keyword rules decide stage 4, which the trained AI rarely learned (few stage 4 notes to learn from).
 
 Each row adds up to the 223 charts: correct + periodontitis incorrectly assigned (out of the 84 without it) + incorrectly ruled out (out of the 139 with it) + incorrect stage + no answer.
@@ -75,12 +75,12 @@ Each row adds up to the 223 charts: correct + periodontitis incorrectly assigned
 |---|---|---:|---:|---:|---:|---:|---|
 | 1. Whole record available | Rules, gum measurements first | 207 of 223 | 4 of 84 (95% correctly ruled out) | 1 of 139 (99% correctly assigned) | 11 of 223 | 0 of 223 | 1 |
 | 2. Only the note available | Keyword rules (simple baseline) | 183 of 223 | 10 of 84 (88% correctly ruled out) | 4 of 139 (97% correctly assigned) | 26 of 223 | 0 of 223 | 3–7 |
+|  | Medical AI, untrained (MedGemma 1.5 4B) | 175 of 223 | 8 of 84 (90% correctly ruled out) | 11 of 139 (92% correctly assigned) | 29 of 223 | 0 of 223 | 5–10 |
 |  | Trained AI (every encoder run) | rerun pending on the new notes | – | – | – | – | – |
-|  | Medical AI, untrained (MedGemma) | rerun pending on the new notes | – | – | – | – | – |
-| 3. One part of the record alone | Gum measurements (probing chart) | 166 of 223 | 1 of 84 (99% correctly ruled out) | 0 of 139 (76% correctly assigned) | 3 of 223 | 53 of 223 | 6–10 |
-|  | Procedure codes, planned | 157 of 223 | 0 of 84 (100% correctly ruled out) | 0 of 139 (90% correctly assigned) | 52 of 223 | 14 of 223 | 8–12 |
+| 3. One part of the record alone | Gum measurements (probing chart) | 166 of 223 | 1 of 84 (99% correctly ruled out) | 0 of 139 (76% correctly assigned) | 3 of 223 | 53 of 223 | 7–12 |
+|  | Procedure codes, planned | 157 of 223 | 0 of 84 (100% correctly ruled out) | 0 of 139 (90% correctly assigned) | 52 of 223 | 14 of 223 | 9–14 |
 
-All 15 methods, per 100 charts with a likely range for each number (95% confidence interval), unsafe errors, results by note difficulty, and the 3 models not run yet: [full phenotyping table](../results.md#phenotyping-periodontal-status-per-chart).
+All 17 methods, per 100 charts with a likely range for each number (95% confidence interval), unsafe errors, results by note difficulty, and the 3 models not run yet: [full phenotyping table](../results.md#phenotyping-periodontal-status-per-chart).
 
 **LLM judge**: the same metrics against an LLM's reading of each note (LLM judgment, checked against the truth): rerun pending on the new notes; [judge results](../results.md#llm-judge-every-system-against-an-llms-reading), then the *Scorecard* dashboard in Databricks.
 
