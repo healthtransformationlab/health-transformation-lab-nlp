@@ -7,7 +7,7 @@
   failed kernel's session, the queue order
 - [x] T002 `ops/cost_settings.yaml`, `agent_cost.py`
 - [x] T003 `scripts/60_kaggle_agent.py`: session and script time, cost columns, `--ids all`, `--max-gpu-hours`
-- [ ] T004 Gold: `fact_agent_task_run`, loaded by Load results, with comments
+- [x] T004 Gold: `fact_agent_task_run` (gold_model.py, gold_names.py, `grader_tables.agent_tables`), overwritten by Load results from `data/tasks/agent_runs/`, with its comments
 - [ ] T005 The full Gemma run under a cap the owner sets (spec 035 T005; owner's go-ahead)
 
 ## US1 - Every Databricks job run carries its DBUs and cost #568

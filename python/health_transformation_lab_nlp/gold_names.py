@@ -151,6 +151,24 @@ TABLES |= {
                                    "synthetic": "is_synthetic", "run_id": "run_id", "run_ts": "run_ts",
                                    "git_commit": "git_commit_sha"},
 }
+# spec 036 US2 (#569): the coding-agent task runs; most run-table columns already have their gold names
+TABLES["fact_agent_task_run"] = {
+    "run_file_name": "run_file_name", "instance_id": "instance_id", "tier_code": "tier_code",
+    "harness_name": "harness_name", "model_name": "model_name", "is_calibration": "is_calibration",
+    "is_resolved": "is_resolved", "is_patch_submitted": "is_patch_submitted",
+    "agent_patch_bytes": "agent_patch_byte_count", "files_changed_count": "changed_file_count",
+    "tool_call_count": "tool_call_count", "turn_count": "turn_count", "nudge_count": "nudge_count",
+    "agent_seconds": "agent_seconds", "verify_exit_code": "verify_exit_num",
+    "verify_passed_count": "verify_passed_count", "verify_failed_count": "verify_failed_count",
+    "verify_error_count": "verify_error_count", "reason_text": "reason_text", "kaggle_kernel_url": "kaggle_kernel_url",
+    "time_budget_seconds": "time_budget_seconds", "max_new_tokens": "max_new_token_count",
+    "is_thinking": "is_thinking", "is_cache_reused": "is_cache_reused", "max_prompt_tokens": "max_prompt_token_count",
+    "prompt_token_count": "prompt_token_count", "prefill_token_count": "prefill_token_count",
+    "output_token_count": "output_token_count", "model_seconds": "model_seconds", "load_seconds": "load_seconds",
+    "script_seconds": "script_seconds", "session_seconds": "session_seconds", "gpu_count": "gpu_count",
+    "allowance_hours": "allowance_hours", "kaggle_allowance_ratio": "kaggle_allowance_ratio",
+    "gpu_hours": "gpu_hours", "estimated_cost_usd": "estimated_cost_usd", "price_basis_text": "price_basis_text",
+    "error_text": "error_text", **_DQ_PROV}
 
 # spec 027 US5: the pipeline doctor's frames are built under their gold names already (doctor.RUN_COLUMNS,
 # doctor_job.TABLES), so each maps to itself; to_gold still fails on a column nobody declared.
