@@ -11,8 +11,25 @@ _spec.loader.exec_module(gm)
 GOLD = {n: t for n, t in gm.TABLES.items() if t.area != "file"}
 TYPES = {"_id": {"bigint", "string"}, "_key": {"string"}, "_code": {"string"}, "_name": {"string"}, "_text": {"string"},
          "_date": {"date"}, "_ts": {"timestamp"}, "_count": {"bigint"}, "_ratio": {"double"}, "_pct": {"double"},
-         "_rate": {"double"}, "_coef": {"double"}, "_seconds": {"double"}, "_usd": {"double"}, "_num": {"bigint"},
+         "_rate": {"double"}, "_coef": {"double"}, "_seconds": {"double"}, "_days": {"bigint"}, "_usd": {"double"},
+         "_num": {"bigint"},
          "_url": {"string"}, "_sha256": {"string"}, "_sha": {"string"}, "_mm": {"double"}}
+
+
+def _agents_suffixes():
+    """The suffixes in AGENTS.md's "SQL and data names" table (first column, in backticks)."""
+    text = (ROOT / "AGENTS.md").read_text()
+    table = text.split("| Suffix or prefix |", 1)[1].split("\n\n", 1)[0]
+    found = set()
+    for row in table.splitlines()[2:]:
+        first = row.split("|")[1]
+        found |= set(re.findall(r"`(_[a-z0-9]+)`", first))
+    return found
+
+
+def test_the_suffixes_here_are_the_ones_agents_md_lists():
+    # #518: the table and this test's list can't drift apart (a duration in days had no suffix in either)
+    assert _agents_suffixes() == set(TYPES)
 
 
 def kind(column):
