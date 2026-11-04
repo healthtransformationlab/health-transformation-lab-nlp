@@ -1,5 +1,5 @@
-generator_seed,label_set,feature_set,split_unit,test_share,cv_folds,train_tooth_count,test_tooth_count,people_in_both_count,xgboost_params,cv_auc,preset_name,data_label
-42,completed,shared,person,0.2,5,348,89,0,"{'max_depth': 2, 'n_estimators': 100, 'learning_rate': 0.05, 'subsample': 1.0, 'min_child_weight': 1}",0.7920508886,repo_v2,synthetic
-42,completed,own,person,0.2,5,348,89,0,"{'max_depth': 3, 'n_estimators': 200, 'learning_rate': 0.05, 'subsample': 0.8, 'min_child_weight': 5}",0.8218663209,repo_v2,synthetic
-42,completed_planned,shared,person,0.2,5,434,108,0,"{'max_depth': 2, 'n_estimators': 100, 'learning_rate': 0.05, 'subsample': 1.0, 'min_child_weight': 5}",0.8772735563,repo_v2,synthetic
-42,completed_planned,own,person,0.2,5,434,108,0,"{'max_depth': 3, 'n_estimators': 100, 'learning_rate': 0.05, 'subsample': 0.8, 'min_child_weight': 5}",0.8944818642,repo_v2,synthetic
+generator_seed,label_set,feature_set,split_unit,test_share,cv_folds,planned_window_days,train_tooth_count,test_tooth_count,people_in_both_count,xgboost_params,cv_auc,preset_name,data_label
+42,completed,shared,person,0.2,5,365,348,88,0,"{'max_depth': 2, 'n_estimators': 200, 'learning_rate': 0.05, 'subsample': 1.0, 'min_child_weight': 1}",0.8780734463,repo_v2,synthetic
+42,completed,own,person,0.2,5,365,348,88,0,"{'max_depth': 2, 'n_estimators': 100, 'learning_rate': 0.05, 'subsample': 1.0, 'min_child_weight': 1}",0.9066158192,repo_v2,synthetic
+42,completed_planned,shared,person,0.2,5,365,381,95,0,"{'max_depth': 3, 'n_estimators': 100, 'learning_rate': 0.1, 'subsample': 0.8, 'min_child_weight': 1}",0.8736099727,repo_v2,synthetic
+42,completed_planned,own,person,0.2,5,365,381,95,0,"{'max_depth': 2, 'n_estimators': 200, 'learning_rate': 0.05, 'subsample': 1.0, 'min_child_weight': 1}",0.893989071,repo_v2,synthetic

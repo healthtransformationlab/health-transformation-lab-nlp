@@ -31,7 +31,7 @@ Dental's source ([research.md](../specs/029-tooth-loss/research.md); references 
 
 | Table | What the model takes from it | Open Dental source |
 |---|---|---|
-| `procedurelog` | extractions (D7140, D7210): completed, planned, or done elsewhere; the diagnosis item (`Dx`) | [Procedure.cs](https://github.com/OpenDental/OpenDental/blob/24_3/OpenDentBusiness/TableTypes/Procedure.cs) |
+| `procedurelog` | extractions (D7140, D7210): completed, planned, or done elsewhere (at the first visit, or dated at a later one); the diagnosis item (`Dx`) | [Procedure.cs](https://github.com/OpenDental/OpenDental/blob/24_3/OpenDentBusiness/TableTypes/Procedure.cs) |
 | `definition` | the practice's own diagnosis lists (older and 2017), mapped to periodontal / other | [Def.cs](https://github.com/OpenDental/OpenDental/blob/24_3/OpenDentBusiness/TableTypes/Def.cs) |
 | `toothinitial` | teeth missing at the first exam | [ToothInitial.cs](https://github.com/OpenDental/OpenDental/blob/24_3/OpenDentBusiness/TableTypes/ToothInitial.cs) |
 | `perioexam`, `periomeasure` | probing depth, gingival margin (CAL is computed), bleeding, mobility | [PerioExam.cs](https://github.com/OpenDental/OpenDental/blob/24_3/OpenDentBusiness/TableTypes/PerioExam.cs), [PerioMeasure.cs](https://github.com/OpenDental/OpenDental/blob/24_3/OpenDentBusiness/TableTypes/PerioMeasure.cs) |
@@ -50,7 +50,16 @@ stores the image, not a reading of it.
   recorded.
   `tooth_loss_model.exclusions` counts the teeth left out by each reason.
 - **Two label sets** (FR-010): completed extractions only, and completed plus planned extractions (one per planned
-  procedure, however many plan copies; a tooth planned then extracted counts once, as completed).
+  procedure, however many plan copies; a tooth planned then extracted counts once, as completed). Since 029 US9
+  (#507) a planned extraction counts only when the tooth is **recorded missing at a later visit within 365 days of
+  the plan** (`ModelParams.planned_window_days`, `--planned-window-days`): a planned extraction often never happens,
+  so one whose tooth is still in the mouth isn't tooth loss. One still in the mouth, or missing after the window, has
+  no label. The earlier rule (every planned extraction with a diagnosis counts) is kept as a sensitivity setting,
+  `--planned-window-days none`. In the synthetic extract the later loss is an extraction by another provider dated
+  at that visit; on a real extract the date may come from a dated `toothinitial`. Every tooth recorded missing later
+  counts as missing in the stage recount, with the model's probability; for a planned-then-missing tooth inside the
+  window that is a tooth the completed + planned model trained on, so its probability there is in-sample (only a
+  completed periodontal extraction counts as recorded).
 - **Two predictor sets:** *shared* (what every missing tooth has: tooth type, neighbours' worst CAL, the mouth at
   the first exam, teeth missing at entry, age, smoking, diabetes) is the applied model; *own* adds the tooth's own
   last measures and how good that chart was, and is shown beside it.
@@ -80,6 +89,45 @@ These options can also be run together as a named preset, beside today's default
 ```bash
 cd python && python scripts/51_tooth_loss_model.py --patients 6000 --stability-seeds 5 --n-boot 1000
 ```
+
+**Under the planned-extraction rule since 029 US9** (#507; the defaults, SYNTHETIC). A planned extraction now counts
+only when the tooth is recorded missing at a later visit within 365 days; the earlier rule (every planned extraction
+with a diagnosis counts) is run beside it with `--planned-window-days none`. Same command, same five generator seeds
+and 1,000 bootstrap resamples, on the extract as spec 033 (US2 and US4) draws it. Of the 192,000 teeth, 14,016 belong
+to patients with no natural teeth, 22,248 are other third molars and 83,044 are lost (or first charted) before the
+start date, so 72,692 are left. Generator seed 42, shared predictors, AUC (95% CI); the completed + planned columns
+are where the rule changes:
+
+| Teeth scored | completed: logistic | completed: XGBoost | completed + planned: logistic | completed + planned: XGBoost |
+|---|---|---|---|---|
+| held-out extractions (88 teeth, 86 patients) | 0.80 (0.66-0.91) | 0.79 (0.65-0.91) | 0.81 (0.68-0.92) | 0.76 (0.61-0.89) |
+| missing at the first exam (3,558 teeth, 1,400 patients) | 0.93 (0.91-0.95) | 0.93 (0.91-0.95) | 0.93 (0.91-0.95) | 0.95 (0.94-0.96) |
+| extractions without a diagnosis (89 teeth) | 0.86 (0.60-1.00) | 0.94 (0.83-1.00) | 0.94 (0.84-0.99) | 0.92 (0.79-1.00) |
+| *earlier rule, held-out extractions (86 teeth)* | 0.86 (0.75-0.96) | 0.84 (0.68-0.97) | 0.81 (0.65-0.95) | 0.83 (0.67-0.96) |
+| *earlier rule, missing at the first exam* | 0.92 (0.90-0.94) | 0.95 (0.93-0.96) | 0.92 (0.89-0.94) | 0.96 (0.95-0.97) |
+
+The completed + planned set now trains on 381 teeth, not 462: planned extractions whose tooth stayed in the mouth no
+longer count. The split by patient is drawn from that set, so the held-out teeth differ a little between the rules
+(88 and 86), and the completed columns move too. Across the 5 generator seeds the held-out AUC of the shared models
+ranges from 0.66 to 0.90 (0.58 to 0.92 under the earlier rule); with under 100 held-out teeth the intervals overlap
+throughout, so the change in AUC is within the noise. Of the 2,230 patients at stage III-IV by worst CAL, the
+synthetic truth puts 93 at stage IV:
+
+| Expected count, shared predictors | stage IV | wrongly called IV | IV missed |
+|---|---|---|---|
+| completed + planned, logistic / XGBoost: new rule | 85 / 71 | 18 / 18 | 26 / 40 |
+| completed + planned, logistic / XGBoost: earlier rule | 100 / 90 | 26 / 24 | 19 / 27 |
+| completed, logistic / XGBoost: new rule | 71 / 58 | 15 / 11 | 37 / 46 |
+
+Counting planned extractions still in the mouth as tooth loss called 26 / 24 patients stage IV whom the synthetic
+truth puts at stage III; the new rule calls 18, and misses more stage IV patients in exchange. The size of the effect
+depends on how many planned teeth stay in the mouth: on the extract before spec 033 the same comparison moved 25 wrong
+calls to 10-12, and on the one between US2 and US4 it hardly moved them. Every missing tooth (277 stage IV, 184
+wrongly) and recorded extractions only (0) bracket it. The rule is there because a planned extraction that never
+happens isn't tooth loss. These are agreement with a synthetic answer key, whose planned-then-missing share
+(`Params.planned_then_missing`, 0.5) is a placeholder; a real extract decides how much this matters.
+
+The tables from here down are runs before 029 US9.
 
 **Under the defaults since spec 032 US8** (#448; [presets](presets.md), `repo_v2`): teeth lost (or first charted)
 from 2018-01-01, an 80/20 split by patient and XGBoost tuned by 5-fold cross-validation. Since spec 033 US4 the 429 patients with no natural teeth come out first (12,012 non-third-molar teeth); the start

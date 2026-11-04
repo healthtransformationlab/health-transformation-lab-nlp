@@ -307,6 +307,42 @@ hold; within an age band and risk group the count still doesn't follow worst CAL
 5. **Given** the same seed twice, **Then** the extract and the answer key are identical; the draws stay on
    `f"{seed}:open_dental:entry_reason"`, and `sites.draw_mouth_columns` and the study datasets don't change.
 
+### US9 - A planned periodontal extraction counts as tooth loss only when the tooth is missing at a later visit (Priority: P1) #507
+
+The `completed_planned` label set counted every planned extraction with a periodontal diagnosis item as lost to
+periodontitis, even when the tooth was still in the mouth. Many planned extractions never happen, so the label set
+overstated periodontal tooth loss. The study lead's labelling guidance ranks a planned periodontal extraction that is
+never done as a label of high certainty **only when the tooth is missing at a later visit**, within a time window
+(about a year in his example); the comparison group is a missing tooth whose earlier planned extraction had another
+reason. Until now the synthetic extract couldn't show this: a tooth went missing only at the first exam.
+
+Now some planned extractions that are never completed are followed, at a later visit, by the tooth recorded missing
+(an extraction by another provider, `procedurelog` ProcStatus 4, dated that visit). The tooth table calls these
+`planned_then_missing_perio` or `planned_then_missing_other`, with the days from the plan to the visit; the model
+counts them when the tooth went missing within `ModelParams.planned_window_days` (365) of the plan. A planned
+extraction whose tooth is still present, or missing after the window, is left unlabelled. The earlier rule stays as
+a sensitivity setting (`planned_window_days=None`).
+
+**Why this priority**: it changes the training label of the planned label set, and with it the stage III/IV recount.
+
+**Independent Test**: hand-built extracts give each new status, label and day count; the label set keeps a planned
+extraction only within the window; the generator records some planned extractions missing later, after the plan,
+on its own stream; R and Python agree on every tooth status.
+
+**Acceptance Scenarios**:
+
+1. **Given** a planned periodontal extraction never completed and the tooth recorded missing 243 days later, **Then**
+   the tooth is `planned_then_missing_perio`, labelled periodontal, with a loss date and `plan_to_missing_days` 243.
+2. **Given** the same with another reason, **Then** it is `planned_then_missing_other`, labelled 0.
+3. **Given** a planned periodontal extraction whose tooth is still in the record, **Then** it is `planned_perio`, and
+   the default `completed_planned` label set leaves it out; with `planned_window_days=None` it counts, as before.
+4. **Given** a tooth recorded missing after the window, **Then** it is left out of the label set; given a tooth
+   recorded missing later with no plan before it, **Then** it is `missing_later`, unlabelled.
+5. **Given** the stage recount, **Then** every tooth recorded missing later counts as missing and gets the model's
+   probability; a planned tooth still in the mouth doesn't count as missing.
+6. **Given** the same seed twice, **Then** the extract is identical; the later-missing draws use their own stream
+   (`f"{seed}:open_dental:planned_then_missing"`), and `Params.planned_then_missing=0` gives none.
+
 ### Edge Cases
 
 - **Third molars:** they are often missing for other reasons (the synthetic mouths already treat them so), so
@@ -319,7 +355,10 @@ hold; within an age band and risk group the count still doesn't follow worst CAL
 - **Classes are imbalanced** (most extractions in the synthetic set may be periodontal): rates are parameters,
   and the metrics include ones that don't depend on prevalence (AUC) and ones that do (Brier).
 - **A planned extraction's tooth later listed missing** with no completed extraction (done elsewhere, or lost
-  otherwise): the plan's diagnosis is its label, flagged "planned, outcome elsewhere".
+  otherwise): the plan's diagnosis is its label, as `planned_then_missing_*`, when it went missing within
+  `ModelParams.planned_window_days` of the plan (US9, #507).
+- **A tooth recorded missing at a later visit** with no planned extraction before it: `missing_later`, unlabelled; it
+  counts as missing and gets the model's probability in the stage recount.
 - **A diagnosis from the older list after the practice switched**, or the newer list before: both lists are
   mapped, and the use is counted by a data-quality check, not rejected.
 - **The answer key** is never a model feature. A test fails if any feature column can be traced to it.
@@ -386,7 +425,9 @@ hold; within an age band and risk group the count still doesn't follow worst CAL
 - **FR-010** Two training label sets, each with its own fitted models:
   - **completed:** extractions with `ProcStatus` 2 and a mapped diagnosis;
   - **completed and planned:** plus planned extractions (`ProcStatus` 1) with a mapped diagnosis, one per
-    `procedurelog` row however many plan copies carry it. A tooth with both counts once, as completed.
+    `procedurelog` row however many plan copies carry it. A tooth with both counts once, as completed. Since US9
+    (#507), a planned extraction counts only when the tooth was recorded missing at a later visit within
+    `ModelParams.planned_window_days` (365 by default) of the plan (FR-013).
 - **FR-009** Data-quality checks run between the bronze extract and the silver tooth table. They follow
   Kookal et al. 2024 (references item 57; NIH Collaboratory framework), so a real extract in the same format would
   get the same checks. Each check reports a number, and failures are flagged, never silently fixed:
@@ -437,6 +478,24 @@ hold; within an age band and risk group the count still doesn't follow worst CAL
     reason only in `tooth_loss_truth`, `sites.draw_mouth_columns` unchanged. The extract and everything built from
     it is regenerated.
 
+- **FR-013** (US9, #507) A planned extraction counts as a label only when the tooth is missing at a later visit:
+  - the generator records a share of the periodontal extractions planned and never completed
+    (`Params.planned_then_missing`, a SYNTHETIC placeholder, 0.5) as extracted by another provider at a later visit
+    (`procedurelog` ProcStatus 4, dated that visit; the tooth leaves the chart from then), on its own stream
+    `f"{seed}:open_dental:planned_then_missing"`;
+  - the tooth table: an extraction done elsewhere dated after the patient's first visit is a later loss, not missing
+    at entry; after a planned extraction of that tooth with a diagnosis (planned on or before that date) it is
+    `planned_then_missing_perio` or `planned_then_missing_other`, labelled by the plan, with `plan_to_missing_days`
+    from the procedure's DateTP; else `missing_later`, unlabelled. A completed extraction and missing at entry still
+    come first;
+  - the label set: `completed_planned` keeps a `planned_then_missing_*` tooth when `plan_to_missing_days` is at most
+    `ModelParams.planned_window_days` (default 365; `--planned-window-days`), and no planned tooth still in the
+    mouth. `planned_window_days=None` is the earlier rule, reported as a sensitivity setting;
+  - the stage recount counts every tooth missing later as missing, with the model's probability; a planned tooth
+    still in the mouth is a tooth left;
+  - on a real extract the date a tooth went missing may come from a dated `toothinitial`; the rule is the same.
+    Python and R stay in parity on the tooth statuses and day counts.
+
 ### Key Entities
 
 - **Extract tables** (bronze): Open Dental's table and column names, lowercased.
@@ -466,6 +525,9 @@ hold; within an age band and risk group the count still doesn't follow worst CAL
   and after the change, labelled synthetic (US8).
 - **SC-007** Both label sets are scored on the same held-out and missing-at-entry teeth, and every planned
   extraction counts once however many plan copies carry it.
+- **SC-011** No planned extraction whose tooth is still in the record is a training label by default; a planned
+  extraction is one only when its tooth is missing within the window, and the earlier rule is reported beside it as a
+  sensitivity setting, labelled synthetic (US9).
 
 ## Assumptions
 

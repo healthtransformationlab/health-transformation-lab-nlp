@@ -8,9 +8,18 @@ Status, first rule that applies:
 1. a completed extraction (ProcStatus 2): extracted_perio, extracted_other or extracted_no_dx, by its diagnosis item
    mapped through `open_dental.DIAGNOSIS_LOOKUP` (a planned extraction later completed is the same row, so it counts
    once, as completed);
-2. missing at entry: a `toothinitial` row of InitialType 0, or an extraction done elsewhere (ProcStatus 4);
-3. a planned extraction (ProcStatus 1) with a diagnosis: planned_perio or planned_other;
-4. otherwise present (a planned extraction with no diagnosis leaves the tooth present and unlabelled).
+2. missing at entry: a `toothinitial` row of InitialType 0, or an extraction done elsewhere (ProcStatus 4) with no
+   date or dated on or before the patient's first visit;
+3. missing at a later visit (029 US9, #507): an extraction done elsewhere dated after the first visit. After a planned
+   extraction of that tooth with a diagnosis, planned on or before that date, it is planned_then_missing_perio or
+   planned_then_missing_other, labelled by the plan's diagnosis, with `plan_to_missing_days` from the plan (the
+   procedure's own DateTP, the first time it was planned) to the date it was recorded missing; else missing_later,
+   unlabelled. (On a real extract the date a tooth went missing may come from a dated `toothinitial` instead; this
+   one dates it by the procedure row.)
+4. a planned extraction (ProcStatus 1) with a diagnosis, the tooth still in the record: planned_perio or
+   planned_other;
+5. otherwise present (a planned extraction with no diagnosis leaves the tooth present and unlabelled).
+Which of these the model trains on is its label set's choice (`tooth_loss_model.label_set`).
 
 Own measures come from the last perio exam on or before the event date that charted the tooth (extraction date, or
 the plan date for a planned one; an exam on the extraction day is charted first; a present tooth uses the last), with
@@ -41,7 +50,8 @@ SHARED_FEATURES = ["tooth_type_code", "neighbour_max_cal_mm", "mouth_cal5_site_p
                    "is_diabetic"]
 OWN_FEATURES = [*SHARED_FEATURES, "last_max_pd_mm", "last_max_cal_mm", "last_bop_pct", "last_mobility_code",
                 "last_chart_quality_code", "last_rbl_pct"]
-COLUMNS = ["patient_id", "tooth_num", "tooth_status_code", "loss_date", "label_source_code", "dx_def_id",
+COLUMNS = ["patient_id", "tooth_num", "tooth_status_code", "loss_date", "plan_to_missing_days", "label_source_code",
+           "dx_def_id",
            "is_perio_loss", "last_exam_date", "last_max_pd_mm", "last_max_cal_mm", "last_bop_pct",
            "last_mobility_code", "last_chart_quality_code", "last_rbl_pct", "last_radiograph_date",
            "neighbour_max_cal_mm", "mouth_cal5_site_pct", "mouth_max_pd_mm", "mouth_bop_pct", "mouth_max_rbl_pct",
@@ -70,7 +80,7 @@ def _extractions(x: dict[str, pd.DataFrame]) -> pd.DataFrame:
     ext["patient_id"], ext["tooth_num"] = _num(ext["patnum"]), _num(ext["toothnum"])
     ext["procstatus"], ext["dx"] = _num(ext["procstatus"]), _num(ext["dx"]).fillna(0)
     ext = ext[ext["tooth_num"].between(1, 32)]
-    for c in ("datetp", "datecomplete"):
+    for c in ("datetp", "datecomplete", "procdate"):
         ext[c] = _date(ext[c])
     d = x["definition"][_num(x["definition"]["category"]) == od.DEFCAT_DIAGNOSIS]
     names = dict(zip(_num(d["defnum"]), d["itemname"]))
@@ -131,6 +141,7 @@ def _statuses(x: dict[str, pd.DataFrame], patients: pd.Series) -> pd.DataFrame:
     t["tooth_status_code"], t["label_source_code"] = "present", "none"
     t["loss_date"] = t["event_date"] = pd.Series(pd.NaT, index=t.index, dtype="datetime64[ns]")
     t["dx_def_id"] = pd.Series(pd.NA, index=t.index, dtype="Int64")
+    t["plan_to_missing_days"] = pd.Series(pd.NA, index=t.index, dtype="Int64")
     t = t.set_index(["patient_id", "tooth_num"])
 
     planned = ext[(ext["procstatus"] == od.PLANNED) & (ext["dx_class"] != "none")]
@@ -141,15 +152,40 @@ def _statuses(x: dict[str, pd.DataFrame], patients: pd.Series) -> pd.DataFrame:
     t.loc[idx, "event_date"] = planned["datetp"].to_numpy()
     t.loc[idx, "dx_def_id"] = planned["dx"].astype("int64").to_numpy()
 
+    # done elsewhere: at entry when undated or dated on or before the first visit, else missing at a later visit
+    pat = x["patient"]
+    first_visit = pd.Series(_date(pat["datefirstvisit"]).to_numpy(), index=_num(pat["patnum"]).to_numpy())
+    elsewhere = ext[ext["procstatus"] == od.EXISTING_OTHER]
+    elsewhere = elsewhere.assign(procdate=elsewhere["procdate"].dt.normalize())     # by calendar day, as R reads it
+    is_later = elsewhere["procdate"].notna() & (
+        elsewhere["procdate"] > elsewhere["patient_id"].map(first_visit.dt.normalize()))
+    later = elsewhere[is_later].sort_values(["procdate", "procnum"]).drop_duplicates(["patient_id", "tooth_num"])
+    later = later[[k in t.index for k in zip(later["patient_id"], later["tooth_num"])]]
+    if len(later):
+        keys = list(zip(later["patient_id"], later["tooth_num"]))
+        plan_date = t.loc[keys, "event_date"].to_numpy()
+        status = t.loc[keys, "tooth_status_code"].to_numpy()
+        after_plan = pd.Series(status).str.startswith("planned_").to_numpy() & (plan_date <= later["procdate"].to_numpy())
+        days = (later["procdate"].to_numpy() - plan_date).astype("timedelta64[D]").astype("float64")
+        for (key, on, ok, plan_status, gap) in zip(keys, later["procdate"], after_plan, status, days):
+            t.loc[key, "loss_date"] = on
+            if ok:
+                t.loc[key, ["tooth_status_code", "label_source_code"]] = [
+                    plan_status.replace("planned_", "planned_then_missing_"), "planned_then_missing"]
+                t.loc[key, "plan_to_missing_days"] = int(gap)
+            else:
+                t.loc[key, ["tooth_status_code", "label_source_code"]] = ["missing_later", "none"]
+                t.loc[key, "event_date"] = on
+                t.loc[key, "dx_def_id"] = pd.NA
+
     ti = x["toothinitial"]
     entry = ti[_num(ti["initialtype"]) == 0]
     missing = set(zip(_num(entry["patnum"]), _num(entry["toothnum"])))
-    elsewhere = ext[ext["procstatus"] == od.EXISTING_OTHER]
-    missing |= set(zip(elsewhere["patient_id"], elsewhere["tooth_num"]))
+    missing |= set(zip(elsewhere.loc[~is_later, "patient_id"], elsewhere.loc[~is_later, "tooth_num"]))
     missing = [k for k in missing if k in t.index]
     t.loc[missing, ["tooth_status_code", "label_source_code"]] = ["missing_at_entry", "none"]
-    t.loc[missing, "event_date"] = pd.NaT
-    t.loc[missing, "dx_def_id"] = pd.NA
+    t.loc[missing, ["event_date", "loss_date"]] = pd.NaT
+    t.loc[missing, ["dx_def_id", "plan_to_missing_days"]] = pd.NA
 
     done = ext[ext["procstatus"] == od.COMPLETE].sort_values(["datecomplete", "procnum"])
     done = done.drop_duplicates(["patient_id", "tooth_num"])
@@ -158,10 +194,12 @@ def _statuses(x: dict[str, pd.DataFrame], patients: pd.Series) -> pd.DataFrame:
     t.loc[idx, "label_source_code"] = done["dx_class"].map(lambda c: "none" if c == "none" else "completed").to_numpy()
     t.loc[idx, "loss_date"] = t.loc[idx, "event_date"] = done["datecomplete"].to_numpy()
     t.loc[idx, "dx_def_id"] = done["dx"].astype("int64").where(done["dx"] != 0).astype("Int64").to_numpy()
+    t.loc[idx, "plan_to_missing_days"] = pd.NA
 
     t = t.reset_index()
     label = t["tooth_status_code"].map({"extracted_perio": True, "planned_perio": True, "extracted_other": False,
-                                        "planned_other": False})
+                                        "planned_other": False, "planned_then_missing_perio": True,
+                                        "planned_then_missing_other": False})
     t["is_perio_loss"] = label.astype("boolean")
     return t
 

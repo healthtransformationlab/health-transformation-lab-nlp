@@ -81,6 +81,7 @@ invented defaults until a real extract's `realism_profile` sets them (#385); `NO
 | `Params.entry_as_existing` | 0.3 | a tooth missing at entry recorded as an extraction done elsewhere | placeholder | none | no |
 | `Params.other_extraction_per_visit` | 0.04 | an extraction for another reason between visits | placeholder | none | no |
 | `Params.planned_not_done_per_visit` | 0.1 | a periodontal extraction planned and never completed in the record | placeholder | none | no |
+| `Params.planned_then_missing` | 0.5 | of those, the tooth recorded missing (extracted by another provider) at a later visit (029 US9, #507) | placeholder | none | no |
 | `Params.dx_correct` | 0.8 | the extraction's recorded diagnosis names the true reason | placeholder | 76.7% of diagnoses entered against treatment procedures were valid at one dental school, 2007-2008 (item 77); the synthetic 94% of entered diagnoses (0.8 of 0.85) is higher | no |
 | `Params.dx_mismatch` | 0.05 | it names the other kind of reason (a recording mismatch) | placeholder | 23.3% of entered diagnoses not valid (item 77) | no |
 | `Params.dx_none` | 0.15 | no diagnosis recorded | placeholder | periodontal diagnosis documented for 3.3-48.6% of patients at three dental schools and 99.9% at a large dental group (item 76) | no |

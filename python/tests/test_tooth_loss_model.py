@@ -16,10 +16,14 @@ from health_transformation_lab_nlp import tooth_loss_model as tm
 
 
 def _teeth(rows):
-    """rows: (patient_id, tooth_num, tooth_status_code, age); other columns filled with plain values."""
-    t = pd.DataFrame(rows, columns=["patient_id", "tooth_num", "tooth_status_code", "age_at_first_exam_num"])
+    """rows: (patient_id, tooth_num, tooth_status_code, age[, plan_to_missing_days]); other columns plain values."""
+    rows = [(*r, None) if len(r) == 4 else r for r in rows]
+    t = pd.DataFrame(rows, columns=["patient_id", "tooth_num", "tooth_status_code", "age_at_first_exam_num",
+                                    "plan_to_missing_days"])
+    t["plan_to_missing_days"] = t["plan_to_missing_days"].astype("Int64")
     label = t["tooth_status_code"].map({"extracted_perio": True, "planned_perio": True, "extracted_other": False,
-                                        "planned_other": False})
+                                        "planned_other": False, "planned_then_missing_perio": True,
+                                        "planned_then_missing_other": False})
     t["is_perio_loss"] = label.astype("boolean")
     t["loss_date"] = pd.NaT
     for c in tl.COLUMNS:
@@ -54,14 +58,40 @@ def test_the_answer_key_and_the_label_are_never_features():
 def test_the_two_label_sets_completed_and_completed_plus_planned():
     t = _teeth([(1, 3, "extracted_perio", 50), (1, 4, "extracted_other", 50), (1, 5, "planned_perio", 50),
                 (1, 6, "planned_other", 50), (1, 7, "extracted_no_dx", 50), (1, 8, "missing_at_entry", 50),
-                (1, 9, "present", 50)])
+                (1, 9, "present", 50), (1, 10, "planned_then_missing_perio", 50, 200),
+                (1, 11, "planned_then_missing_other", 50, 365), (1, 12, "planned_then_missing_perio", 50, 400),
+                (1, 13, "missing_later", 50)])
     done = tm.label_set(t, "completed")
     both = tm.label_set(t, "completed_planned")
     assert sorted(done["tooth_num"]) == [3, 4]
-    assert sorted(both["tooth_num"]) == [3, 4, 5, 6]
-    assert both["is_perio_loss"].tolist() == [True, False, True, False]
+    # 029 US9 (#507): a planned extraction counts only when the tooth is missing within the window (365 days); a tooth
+    # still in the mouth, or missing after the window, is left unlabelled
+    assert tm.DEFAULT.planned_window_days == 365
+    assert sorted(both["tooth_num"]) == [3, 4, 10, 11]
+    assert both.sort_values("tooth_num")["is_perio_loss"].tolist() == [True, False, True, False]
+    assert sorted(tm.label_set(t, "completed_planned", planned_window_days=180)["tooth_num"]) == [3, 4]
     with pytest.raises(ValueError, match="label set"):
         tm.label_set(t, "everything")
+
+
+def test_the_old_planned_rule_is_a_sensitivity_setting():
+    # planned_window_days=None: every planned extraction with a diagnosis counts, in the mouth or not (before #507)
+    t = _teeth([(1, 3, "extracted_perio", 50), (1, 5, "planned_perio", 50), (1, 6, "planned_other", 50),
+                (1, 12, "planned_then_missing_perio", 50, 400), (1, 13, "missing_later", 50)])
+    assert sorted(tm.label_set(t, "completed_planned", planned_window_days=None)["tooth_num"]) == [3, 5, 6, 12]
+    tm.check_params(tm.ModelParams(planned_window_days=None))
+    with pytest.raises(ValueError, match="planned_window_days"):
+        tm.check_params(tm.ModelParams(planned_window_days=-1))
+
+
+def test_teeth_that_go_missing_later_count_as_missing_with_the_models_probability():
+    t = _teeth([(1, 3, "extracted_perio", 50), (1, 10, "planned_then_missing_perio", 50, 200),
+                (1, 13, "missing_later", 50), (1, 5, "planned_perio", 50), (1, 6, "present", 50)])
+    truth = pd.DataFrame({"patient_id": [1], "tooth_num": [3], "true_reason_code": ["perio"]})
+    prob = pd.Series([np.nan, 0.75, 0.25, 0.9, 0.1], index=t.index)
+    ps = tm.patient_stage(t, prob, truth, pd.Series({1: 6.0})).iloc[0]
+    assert ps["recorded_perio_count"] == 1 and ps["missing_count"] == 3       # the planned tooth still in the mouth: no
+    assert ps["unlabelled_tooth_count"] == 2 and ps["unlabelled_prob_sum"] == pytest.approx(1.0)
 
 
 def test_third_molars_are_left_out_by_default_and_the_minimum_age_is_a_parameter():
@@ -323,7 +353,9 @@ def test_the_patient_stage_table_counts_the_teeth_left_in_a_full_mouth():
 @pytest.fixture(scope="module")
 def small_run():
     pytest.importorskip("xgboost")
-    tables, truth, reads = od.build_with_readings(od.Params(n_patients=400), seed=5)
+    # 600 patients: enough periodontal extractions from the start date for 5-fold tuning once planned extractions
+    # still in the mouth no longer count (029 US9, #507)
+    tables, truth, reads = od.build_with_readings(od.Params(n_patients=600), seed=5)
     x = {**od.clean(tables), "radiograph_bone_level": reads}
     return tm.run(x, truth, tm.ModelParams(n_boot=20), generator_seed=5)
 
@@ -369,7 +401,7 @@ def test_a_run_writes_calibration_stage_recount_predictions_and_missingness(smal
 
 
 def test_a_run_is_seeded(small_run):
-    tables, truth, reads = od.build_with_readings(od.Params(n_patients=400), seed=5)
+    tables, truth, reads = od.build_with_readings(od.Params(n_patients=600), seed=5)
     x = {**od.clean(tables), "radiograph_bone_level": reads}
     again = tm.run(x, truth, tm.ModelParams(n_boot=20), generator_seed=5)
     pd.testing.assert_frame_equal(again["scores"], small_run["scores"])
@@ -425,7 +457,7 @@ def test_a_run_with_a_start_date_counts_every_lost_tooth_in_the_stage_recount():
     one = ps[(ps["label_set"] == "completed") & (ps["model"] == tm.MODELS[0])].set_index("patient_id")
     got = one["recorded_perio_count"]
     assert (got.reindex(want.index) == want).all() and got.sum() == want.sum()
-    unlabelled = teeth[teeth["tooth_status_code"].isin(tm.APPLIED_STATUSES)].groupby("patient_id").size()
+    unlabelled = teeth[teeth["tooth_status_code"].isin(tm.STAGE_UNLABELLED_STATUSES)].groupby("patient_id").size()
     assert (one["unlabelled_tooth_count"].reindex(unlabelled.index) == unlabelled).all()
     assert len(tm.eligible(tm.with_first_exam_date(teeth, x), params)) < len(teeth)   # the model's set is smaller
     assert one["unlabelled_prob_sum"].gt(0).any()                # the model gives every unlabelled tooth a probability

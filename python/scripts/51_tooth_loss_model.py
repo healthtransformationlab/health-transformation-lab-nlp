@@ -4,7 +4,7 @@
     python scripts/51_tooth_loss_model.py [--patients 6000] [--seed 42] [--stability-seeds 5] [--n-boot 1000]
                                           [--min-age N] [--third-molars]
                                           [--split-unit person|visit] [--test-share 0.2] [--cv-folds K]
-                                          [--start-date 2018-01-01]
+                                          [--start-date 2018-01-01] [--planned-window-days 365|none]
 
 For the main generator seed and each further stability seed (seed + 1, ...): builds the extract (open_dental), cleans
 it as silver, fits logistic regression and XGBoost on both label sets (tooth_loss_model.run) and scores them on the
@@ -26,6 +26,11 @@ extra (xgboost). Adults only by default (analysis plan s. 3): --min-age 18; --mi
 Defaults (spec 032 US8, #448; preset repo_v2): an 80/20 split by patient, 5-fold tuning of XGBoost, and teeth lost (or
 first charted) from 2018-01-01. The defaults before it (preset repo_v1): --test-share 0.3 --cv-folds 0 --start-date ""
 (those results are then written beside these, with their own prefix).
+
+Planned extractions (029 US9, #507): a planned periodontal extraction never done counts as a label only when the tooth
+is recorded missing at a later visit within --planned-window-days of the plan (365); --planned-window-days none is the
+rule before it (every planned extraction with a diagnosis counts, the tooth in the mouth or not), a sensitivity
+setting whose files are written as synthetic_tooth_loss_planned<days|any>_<name>.csv beside the defaults.
 
 Validation settings (spec 032 US5): --split-unit visit holds out random teeth instead of patients and reports how many
 patients fall in both parts (a leak that flatters the score; never the default); --cv-folds K tunes XGBoost by K-fold
@@ -56,11 +61,16 @@ ap.add_argument("--cv-folds", type=int, default=tlm.DEFAULT.cv_folds or 0,
                 help="tune XGBoost by K-fold cross-validation; 0 for no tuning")
 ap.add_argument("--start-date", default=tlm.DEFAULT.start_date,
                 help='ISO date: leave out teeth lost (or first charted) before it; "" for every year')
+ap.add_argument("--planned-window-days", default=str(tlm.DEFAULT.planned_window_days),
+                help="a planned extraction counts if the tooth is missing within this many days; none: any planned")
 args = ap.parse_args()
+window = None if args.planned_window_days.lower() == "none" else int(args.planned_window_days)
 validation = {"split_unit": args.split_unit, "test_share": args.test_share, "cv_folds": args.cv_folds or None}
 changed = any(getattr(tlm.DEFAULT, k) != v for k, v in validation.items())
 prefix = (f"synthetic_tooth_loss_{args.split_unit}_{args.test_share:g}_cv{args.cv_folds}_" if changed
           else "synthetic_tooth_loss_")
+if window != tlm.DEFAULT.planned_window_days:          # beside the default results, never over them
+    prefix += f"planned{'any' if window is None else window}_"
 
 telemetry.setup()
 telemetry.start_script("51_tooth_loss_model", data_label="synthetic")
@@ -71,7 +81,7 @@ for k in range(max(1, args.stability_seeds)):
     x = {**open_dental.clean(tables), "radiograph_bone_level": readings}   # the reading is SIMULATED (#385)
     params = tlm.ModelParams(n_boot=args.n_boot if k == 0 else 0, min_age=args.min_age or None,
                              include_third_molars=args.third_molars, start_date=args.start_date or None,
-                             **validation)
+                             planned_window_days=window, **validation)
     out = tlm.run(x, truth, params, generator_seed=gen_seed)
     if k == 0:                     # who was left out, and why (a tooth with no recorded age, once a cut-off applies)
         teeth = tlm.with_first_exam_date(tooth_loss.tooth_table(x), x)

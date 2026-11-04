@@ -26,10 +26,11 @@ x = {**open_dental.clean(tables), "radiograph_bone_level": readings}   # the rea
 out = DATASETS_DIR / "tooth_loss"
 out.mkdir(parents=True, exist_ok=True)
 
-INPUTS = {"procedurelog": ["procnum", "patnum", "procstatus", "codenum", "toothnum", "dx", "datetp", "datecomplete"],
+INPUTS = {"procedurelog": ["procnum", "patnum", "procstatus", "codenum", "toothnum", "dx", "datetp", "datecomplete",
+                           "procdate"],
           "procedurecode": ["codenum", "proccode"], "definition": ["defnum", "category", "itemname"],
           "toothinitial": ["patnum", "toothnum", "initialtype"], "proctp": ["proctpnum", "procnumorig", "datetp"],
-          "patient": ["patnum"]}
+          "patient": ["patnum", "datefirstvisit"]}
 for name, cols in INPUTS.items():
     x[name][cols].to_csv(out / f"{name}.csv", index=False)
 teeth = tooth_loss.tooth_table(x)

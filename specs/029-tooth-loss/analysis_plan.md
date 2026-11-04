@@ -54,7 +54,10 @@ This estimates why a tooth already lost was lost. It doesn't predict future loss
   - An extraction with no diagnosis has no label.
 - **Fixed, two label sets (FR-010):**
   - completed extractions only;
-  - completed plus planned extractions (one per procedure, however many plan copies; completed wins).
+  - completed plus planned extractions (one per procedure, however many plan copies; completed wins). A planned
+    extraction counts only when the tooth is recorded missing at a later visit within 365 days of the plan
+    (`ModelParams.planned_window_days`, 029 US9, #507); one still in the mouth, or missing after the window, has no
+    label. The earlier rule (every planned extraction with a diagnosis counts) is a sensitivity analysis.
   - Both are reported.
 - **Fixed, a limit:** the label is the dentist's recorded diagnosis, not an independent judgement. On real records,
   "agreement" means agreement with the recorded diagnosis. Section 13 covers how to check the label itself.
@@ -193,6 +196,7 @@ stated plainly:
 | 2026-11-01 | s. 10: bootstrap intervals for the fitted models on the main generator seed only; baselines and the four further seeds as point estimates | Run time; the seeds show the spread (stability) themselves |
 | 2026-11-01 | s. 10: the stage III vs IV comparison covers patients whose worst CAL in the record is 5 mm or more (initial stage III/IV), and leaves out the other complexity factors | That is where the AAP worksheet lets tooth loss alone decide III vs IV |
 | 2026-11-01 | s. 8: the "only recorded periodontal extractions count" baseline is scored on the applied sets only (probability 0) | On the held-out extractions it is the label itself |
+| 2026-11-03 | s. 4: a planned extraction counts as a label only when the tooth is missing at a later visit within 365 days of the plan; the earlier rule becomes a sensitivity analysis | The study lead's labelling guidance (a planned extraction that never happens is not tooth loss) (#507) |
 | 2026-11-01 | s. 6: the synthetic run uses 6,000 patients per extract (`scripts/51_tooth_loss_model.py --patients`) | With the default 2,000 there are too few labelled teeth (third molars excluded) for narrow intervals |
 | 2026-11-01 | s. 2 (synthetic data): teeth missing at the first visit now include non-periodontal losses, by age band (US7, #429); the missing-at-entry set has both classes, so its AUC, specificity and calibration are reported, and every synthetic result was rerun | Before, every tooth missing at entry (third molars aside) was periodontal, so that set had no negatives. The shares follow Suzuki et al. 2022 ([research.md](research.md)); the analysis itself is unchanged |
 | 2026-11-01 | s. 2 (synthetic data): the number of non-periodontal teeth missing at entry now rises with smoking and diabetes (US8, #433), rescaled so each age band keeps its US7 share; every synthetic result was rerun, and `docs/tooth_loss.md` gives the missing-at-entry AUC, specificity and stage recount before and after | Before, non-periodontal and periodontal losses shared no risk factor. The effects are those published for tooth loss other than periodontitis (Mai et al. 2013; Ahmadinia et al. 2022 as an upper bound; [research.md](research.md)); they are small, and the AUC moved by about 0.01, inside the seed spread. The analysis itself is unchanged |
