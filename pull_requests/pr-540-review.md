@@ -101,7 +101,7 @@ The split-by-visit test now uses a 1,500-patient extract, because few patients h
 Run locally on the final code:
 - `cd python && pytest -q tests`: 1,979 passed, 16 skipped.
 - `ruff check` on changed files: clean.
-- `python/scripts/make_parity_inputs.sh && Rscript r/tests/test_parity.R`: in progress when this was written; recorded in a follow-up commit.
+- `python/scripts/make_parity_inputs.sh && Rscript r/tests/test_parity.R`: parity OK on every section (tooth statuses 6,400 teeth, 0 differ; the new hand-worked US10 block passes).
 
 ## Verdict
 **Approve with nits.** Nothing blocking. Merge when CI is green on the latest commit.
