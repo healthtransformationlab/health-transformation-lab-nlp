@@ -19,6 +19,10 @@ on:
       message:
         description: "Version note (the commit is added)"
         default: "Update from the repository"
+      metadata_only:
+        description: "Send only the descriptions, cover, sources and update frequency of the live files; no build, no new version (spec 034)"
+        type: boolean
+        default: false
 
 concurrency: kaggle-publish-tasks
 
@@ -58,6 +62,7 @@ jobs:
           python -c "from kaggle.api.kaggle_api_extended import KaggleApi; a = KaggleApi(); a.authenticate(); a.dataset_list(user='$KAGGLE_USERNAME', page=1); print('Kaggle token ok')"
 
       - name: Build the rows, snapshots, graphs and embeddings
+        if: ${{ !inputs.metadata_only }}
         working-directory: python
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}             # checked by 55_build_tasks.py before any work
@@ -65,6 +70,7 @@ jobs:
         run: python scripts/55_build_tasks.py --snapshots 100000 --graphs --embeddings
 
       - name: Gate every task (a full run writes the set to publish)
+        if: ${{ !inputs.metadata_only }}
         working-directory: python
         run: python scripts/57_gate_tasks.py
 
@@ -72,7 +78,9 @@ jobs:
         env:
           MESSAGE: ${{ inputs.message }}
           SHA: ${{ github.sha }}
+          METADATA_ONLY: ${{ inputs.metadata_only }}
         run: |
           set -o pipefail                      # a refused upload must fail the step, not tee
+          [ "$METADATA_ONLY" = true ] && only="--metadata-only" || only=""
           python kaggle/publish_tasks.py --out build/tasks --username "$KAGGLE_USERNAME" --commit "$SHA" \
-            --upload --message "$MESSAGE" | tee -a "$GITHUB_STEP_SUMMARY"
+            --upload --message "$MESSAGE" $only | tee -a "$GITHUB_STEP_SUMMARY"
