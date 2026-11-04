@@ -119,7 +119,7 @@ invented defaults until a real extract's `realism_profile` sets them (#385); `NO
 | `Params.heavy_smoking_fraction` | 0.44 | of the smokers, the share at 10 or more a day (the old study placeholder's 0.08 of 0.18) | placeholder | none checked | the same test |
 | `Params.diabetes_share` | 0.158 | patients with HbA1c >= 6.5, so with type 2 diabetes listed | item 73 | 15.8% of US adults 20 and over (item 73) | the same test |
 | `open_dental.DIABETES_HBA1C` | 6.5 | the HbA1c (%) at which a patient has type 2 diabetes listed | item 73 (the NHANES laboratory definition) | HbA1c >= 6.5% (item 73) | no |
-| `Params.insurance_shares` | private 0.55, public 0.3, none 0.15 | each patient's insurance type | placeholder | dental coverage of US adults is reported as about 62% private, 16% public and 22% none for 2022, from the ADA Health Policy Institute; that report could not be opened from this environment, so it is not checked and not cited (spec 033 US2) | `tests/test_open_dental.py` recovers the declared shares |
+| `Params.insurance_shares` | private 0.614, public 0.157, none 0.229 | each patient's insurance type | item 82 | 61.4% private, 15.7% public, 22.8% none, US adults 19-64, MEPS 2021 (item 82; none rounded up 0.001 so the shares sum to 1); the source warns its public share is not accurate for adults (spec 033 US5) | `tests/test_open_dental.py` recovers the declared shares; `test_the_insurance_shares_are_the_ada_hpi_adult_figures` pins them |
 | `Params.secondary_plan` | 0.05 | a privately insured patient also has a second private plan | placeholder | none | no |
 | `Params.spouse_subscriber` | 0.25 | a private plan held by a spouse | placeholder | none | no |
 | `Params.edentulous_share_by_age` | 25+: 0.008, 35+: 0.013, 45+: 0.037, 55+: 0.079, 65+: 0.089, 70+: 0.106, 75+: 0.178 | patients with no natural teeth, by age band (spec 033 US4): every tooth missing at entry, no perio chart | item 79 at 65 and over; below 65 this repo's NHANES 2009-2014 run (`data/datasets/nhanes/nhanes_edentulous_by_age.csv`, real public data), its 30-34 rate standing in for 25-34 | 8.9% at 65-69, 10.6% at 70-74, 17.8% at 75+, NHANES 2015-2018 (item 79); 0.8% at 30-34, 1.3% at 35-44, 3.7% at 45-54, 7.9% at 55-64, NHANES 2009-2014 (this repo's run, `scripts/38_nhanes_perio.py`) | `tests/test_open_dental.py` (`test_the_edentulous_share_follows_the_published_rates_by_age`); the table below |
@@ -182,12 +182,13 @@ clinics keep the state `ZZ` and every committed result uses the national shares.
 
 ## Sources checked for this card
 
-Items 72 to 81 of [references.md](references.md) were added for this card, each checked against its full text or,
+Items 72 to 82 of [references.md](references.md) were added for this card, each checked against its full text or,
 where the item says so, its abstract (item 81, the state rates, against the CDC dataset itself). Three candidate
-sources were not used:
+sources were not used as first found:
 
-- **Dental coverage, ADA Health Policy Institute (2022)**: the HPI pages and the news report of them could not be
-  opened from this environment, so the figures were not checked. `Params.insurance_shares` stays a placeholder.
+- **Dental coverage, ADA Health Policy Institute (2022)**: a news report gave 62.4% private, 15.8% public and 21.8%
+  none for 2022, but the HPI page it cites could not be found. The HPI's own deck (item 82, MEPS 2021) was read
+  instead and is what `Params.insurance_shares` uses (spec 033 US5).
 - **America's Health Rankings (BRFSS teeth extractions by state)**: the page could not be opened from this
   environment (tried again for spec 033 US4), so its figures were not checked or cited. The same BRFSS measure is
   published by CDC's U.S. Chronic Disease Indicators, which could be read, and is item 81.

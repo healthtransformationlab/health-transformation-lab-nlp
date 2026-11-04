@@ -71,9 +71,9 @@ age_band,30–44,incomplete_chart,5226,0.5447761194,0.544661594,0.0116466599,Fal
 age_band,45–64,incomplete_chart,6834,0.5563359672,0.5408083113,0.0067256277,False,exploratory_1,synthetic
 age_band,65 and over,incomplete_chart,6535,0.5446059679,0.5447183111,0.0116466678,False,exploratory_1,synthetic
 age_band,under 30,incomplete_chart,1377,0.5330428468,0.5485726848,0.006723738,False,exploratory_1,synthetic
-insurance_type,none,no_margin_chart,3159,0.2557771447,0.2551269764,0.0038943204,False,exploratory_1,synthetic
-insurance_type,private,no_margin_chart,11230,0.2578806768,0.2540752103,0.0024068986,False,exploratory_1,synthetic
-insurance_type,public,no_margin_chart,5583,0.252373276,0.2568289107,0.0014874218,False,exploratory_1,synthetic
-insurance_type,none,incomplete_chart,3159,0.5492244381,0.5464267799,0.0049903304,False,exploratory_1,synthetic
-insurance_type,private,incomplete_chart,11230,0.5499554764,0.5460612608,0.0044734083,False,exploratory_1,synthetic
-insurance_type,public,incomplete_chart,5583,0.5428980835,0.5495899573,0.0005169221,False,exploratory_1,synthetic
+insurance_type,none,no_margin_chart,4584,0.2709424084,0.250761333,0.0018096937,False,exploratory_1,synthetic
+insurance_type,private,no_margin_chart,12494,0.2520409797,0.2602120473,0.0151750221,False,exploratory_1,synthetic
+insurance_type,public,no_margin_chart,2894,0.2494816862,0.261491694,0.0133653284,False,exploratory_1,synthetic
+insurance_type,none,incomplete_chart,4584,0.5591186736,0.5474587166,0.0066725441,False,exploratory_1,synthetic
+insurance_type,private,incomplete_chart,12494,0.5427405154,0.5556477957,0.0049085627,False,exploratory_1,synthetic
+insurance_type,public,incomplete_chart,2894,0.5521769178,0.5509295945,0.0115811067,False,exploratory_1,synthetic

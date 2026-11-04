@@ -284,6 +284,14 @@ Everything this repo relies on, and what it's used for.
     5.4% (Hawaii) to 25.1% (West Virginia). → spec 033 US4: `open_dental.STATE_EDENTULOUS_65_PCT`, which scales the
     synthetic extract's edentulous share when clinics are given states (`Params.clinic_states`). Checked in the
     dataset itself (every value copied from it).
+82. **American Dental Association, Health Policy Institute.** *National Trends in Dental Care Use, Dental Insurance
+    Coverage, and Cost Barriers*, November 2023 (updated March 2024), slide "Percentage by Type of Dental Coverage –
+    Adults (Ages 19-64)", Medical Expenditure Panel Survey (MEPS) data.
+    [ada.org/-/media/…/hpi/national_trends_dental_use_benefits_barriers.pdf](https://www.ada.org/-/media/project/ada-organization/ada/ada-org/files/resources/research/hpi/national_trends_dental_use_benefits_barriers.pdf),
+    read 2026-11-04. Adults 19-64 in 2021: 61.4% private, 15.7% public, 22.8% uninsured. The deck's caveat: "the
+    MEPS data do not allow accurate estimates of the percent of adults with public dental insurance coverage", as
+    Medicaid adult dental benefits differ by state; seniors are not reported. → spec 033 US5:
+    `open_dental.Params.insurance_shares`. Checked in the deck itself (every value copied from it).
 
 58. **Open Dental Software.** *Open Dental* source code, `OpenDentBusiness/TableTypes` (one class per database
     table). [github.com/OpenDental/OpenDental](https://github.com/OpenDental/OpenDental), branch `24_3`, commit

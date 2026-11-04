@@ -71,3 +71,9 @@ documented where it is set, but no page lists them all.
 - SC-001: every generator parameter appears in the data card with a source or the word "placeholder" (test).
 - SC-002: every cited figure is checked against its full text before it is added (`docs/references.md`).
 - SC-003: after US2 the extract's smoking, diabetes and insurance shares fall within the cited figures' ranges.
+
+### US5 - The Open Dental extract's insurance shares come from the ADA Health Policy Institute (P2) #522
+
+- US2 left insurance a placeholder because the source couldn't be opened from the cloud environment. Read now:
+  ADA HPI, MEPS 2021, adults 19-64: 61.4% private, 15.7% public, 22.8% none (references item 82).
+- `open_dental.Params.insurance_shares` becomes 0.614, 0.157, 0.229; the results that read insurance are rerun.
