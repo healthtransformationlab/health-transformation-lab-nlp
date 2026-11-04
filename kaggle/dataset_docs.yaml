@@ -55,9 +55,6 @@ datasets:
       ladder/ladder_vs_truth.csv: >-
         The leaderboard: each method's accuracy against the truth with a 95% bootstrap interval, stage IV recall,
         harm rates, calibration error and the paired difference from the note_rules reference.
-      ladder/medgemma_field_accuracy.csv: >-
-        Each MedGemma reader run scored field by field (status, grade, extent) against the reference answers, with
-        a 95% Wilson interval. Status is the run's answer after the fallback; grade and extent as the model read them.
       ladder/ladder_by_age.csv: Each method's accuracy within each age band of the review notes.
       ladder/ladder_by_clinic.csv: Each method's accuracy within each synthetic clinic.
       ladder/ladder_by_stageable.csv: >-
@@ -74,12 +71,22 @@ datasets:
       ladder/medgemma_field_accuracy.csv: >-
         Each MedGemma run's agreement with the answer key on each field it answers (status, grade, extent), with a
         95% Wilson interval; grade and extent are scored only on the review notes whose truth has them.
+      ladder/medgemma_vs_bert.csv: >-
+        Each MedGemma reader run beside every fine-tuned encoder on the same review notes: accuracy with a 95%
+        bootstrap interval, the paired difference from the most accurate encoder, stage IV recall, harm rates, the
+        reader's quote-check and fallback rates, tokens, and an illustrative cost of reading a whole corpus.
+      ladder/medgemma_vs_bert_by_difficulty.csv: >-
+        The same methods' accuracy at each note difficulty level (L1 plain to L3 hard).
+      ladder/medgemma_vs_bert_preds.csv: >-
+        The predictions those two files score: one row per review note, one column per method, beside the truth and
+        the note's difficulty (healthy and gingivitis merged).
       ladder/seed_stability.csv: >-
         Each method's accuracy on the review notes of the synthetic study rebuilt with each of five seeds (42, 1, 2,
         3, 4), for the methods that need no GPU: do the scores hold on other draws?
       ladder/seed_stability_summary.csv: Each method's accuracy across those five seeds - mean, spread and range.
     other_columns:
       ladder/ladder_preds.csv: a method's predicted status for this note (healthy and gingivitis merged); the column names the method
+      ladder/medgemma_vs_bert_preds.csv: a method's predicted status for this note (healthy and gingivitis merged); the column names the method
     file_columns:
       "llm_details_*.csv":
         status: The periodontal status the model answered, as parsed from its reply.
@@ -88,6 +95,8 @@ datasets:
       ladder/medgemma_field_accuracy.csv:
         n: Number of review notes scored on this field.
         accuracy: Share of those notes where the model's answer matches the answer key (0-1).
+      ladder/medgemma_vs_bert.csv:
+        fallback: Share of notes where the quote gate failed and the keyword rules answered instead (0-1).
   health-transformation-lab-coding-agent-tasks:
     update_frequency: monthly
     sources: >-
@@ -229,29 +238,22 @@ columns:
   ci_lo: Lower end of the 95% Wilson interval for the field's accuracy.
   ci_hi: Upper end of the 95% Wilson interval for the field's accuracy.
 
+  # MedGemma vs the encoders (ladder/medgemma_vs_bert.csv)
+  kind: What kind of method the row is (llm for a note reader, encoder for a fine-tuned model, rules).
+  reference: The encoder the paired difference is measured against (the most accurate encoder alone).
+  gate_pass: Share of notes whose answer passed the quote gate (0-1); empty for methods that don't quote.
+  input_tokens_mean: Mean prompt tokens per note.
+  output_tokens_mean: Mean completion tokens per note.
+  latency_s_mean: Mean seconds per call.
+  notes_per_sec: Notes read per second, an assumed throughput from costs.yaml (not measured in this run).
+  throughput_source: Where the assumed throughput comes from.
+  corpus_usd_illustrative: >-
+    An illustrative cost, in US dollars, of reading the corpus size in costs.yaml at that throughput on the assumed
+    hardware: an example from assumptions, not a quote or a bill.
+
   # leaderboard
   method: The method (model or rule set) the row describes.
   method_name: The method the prediction file is for.
-  # the LLM reader's per-note record (llm_details_*.csv) and its per-field scores
-  model: The model the reader ran (for example medgemma-4b-it).
-  backend: Where the model ran (hf for Hugging Face transformers on a GPU, or an API endpoint).
-  revision: The Kaggle Models handle or Hugging Face commit the model's weights came from; empty when unknown.
-  prompt_version: The reader prompt's version (for example reader-v2).
-  shots: Worked examples shown to the model before the note (0 for zero-shot).
-  input_tokens: Tokens sent to the model for this note.
-  output_tokens: Tokens the model wrote back.
-  latency_s: Seconds the model took to answer this note.
-  raw: The model's answer as written, cut to 2,000 characters.
-  status: The periodontal status the model's answer states, before the quote check; empty when it could not be read.
-  quote: The sentence the model quoted from the note as its evidence.
-  gate_ok: True when the answer parsed and its quote is found word for word in the note.
-  error: Why the answer could not be used (the backend failed, or the answer could not be parsed); empty otherwise.
-  fallback: True when the quote check failed, so pred comes from the keyword rules instead of the model.
-  run: The MedGemma reader run (the method) scored on this row.
-  field: The reader's field scored on this row (status, grade or extent).
-  correct: Review notes whose answer for this field matches the reference answer.
-  ci_lo: Lower end of the 95% Wilson interval for accuracy.
-  ci_hi: Upper end of the 95% Wilson interval for accuracy.
   n: Number of review notes in the group.
   accuracy: Share of review notes whose predicted status matches the truth (0-1).
   acc_lo: Lower end of the 95% bootstrap interval for accuracy.

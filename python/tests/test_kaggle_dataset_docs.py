@@ -135,3 +135,22 @@ def test_a_file_can_say_what_a_shared_column_name_means_in_it():   # #554: an LL
     assert "true" in docs.column_description("perio-bench-results", "train.csv", "grade").lower()
     answered = docs.column_description("perio-bench-results", "llm_details_medgemma-4b-it.csv", "grade")
     assert "answered" in answered.lower() and "true" not in answered.lower()
+
+
+def test_dataset_docs_has_no_duplicate_keys():
+    # #467: two sessions described the same columns; YAML keeps the last silently, so one description was lost
+    import yaml
+
+    from health_transformation_lab_nlp.paths import REPO_ROOT
+
+    class Strict(yaml.SafeLoader):
+        pass
+
+    def no_dupes(loader, node, deep=False):
+        keys = [loader.construct_object(k, deep=deep) for k, _ in node.value]
+        dupes = sorted({k for k in keys if keys.count(k) > 1})
+        assert not dupes, f"duplicate keys in kaggle/dataset_docs.yaml: {dupes}"
+        return yaml.SafeLoader.construct_mapping(loader, node, deep)
+
+    Strict.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, no_dupes)
+    yaml.load((REPO_ROOT / "kaggle" / "dataset_docs.yaml").read_text(), Loader=Strict)
