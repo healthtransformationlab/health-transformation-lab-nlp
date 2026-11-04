@@ -135,14 +135,17 @@ class _Api:
         self.calls.append(("version", notes, kw.get("dir_mode")))
         return self.result
 
+    def dataset_metadata_update(self, ref, path):   # spec 034: every upload then sends the metadata and cover
+        self.calls.append(("metadata", ref))
+
 
 def test_upload_creates_public_then_versions(tmp_path):
     api = _Api(False, _Result())
     assert pub.upload(tmp_path, "o/d", "note (abc)", api) == "https://kaggle/x"
-    assert api.calls == [("create", True, "zip")]
+    assert api.calls == [("create", True, "zip"), ("metadata", "o/d")]
     api = _Api(True, _Result())
     pub.upload(tmp_path, "o/d", "note (abc)", api)
-    assert api.calls == [("version", "note (abc)", "zip")]
+    assert api.calls == [("version", "note (abc)", "zip"), ("metadata", "o/d")]
 
 
 @pytest.mark.parametrize("result", [_Result("error", "bad licence"), None])
