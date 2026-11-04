@@ -1,4 +1,4 @@
-# PR review: refresh MedGemma vs BERT on the rebuilt notes, and describe it (#467)
+# PR #565 review: refresh MedGemma vs BERT on the rebuilt notes, and describe it (#467)
 
 Reviewed against `.claude/review-rubric.md` and AGENTS.md.
 
