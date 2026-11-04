@@ -118,6 +118,7 @@ asked, the confusion-matrix measures lead; AUC and the Brier score are beside th
 | specificity (of 74 other) | 0.95 | 0.96 | 0.95 | 0.95 |
 | positive predictive value | 0.67 | 0.75 | 0.69 | 0.71 |
 | negative predictive value | 0.92 | 0.93 | 0.93 | 0.95 |
+| F1 (029 US11) | 0.62 | 0.69 | 0.67 | 0.71 |
 | AUC (95% CI) | 0.92 (0.84-0.98) | 0.92 (0.82-0.99) | 0.89 (0.79-0.98) | 0.89 (0.74-0.98) |
 | Brier score | 0.079 | 0.062 | 0.082 | 0.078 |
 
@@ -126,6 +127,11 @@ is 0.92 / 0.92 (completed) and 0.93 / 0.96 (completed + planned). With 14 period
 sensitivity by 0.07, and across the 5 generator seeds the held-out AUC of the shared models ranges from 0.60 to 0.93:
 read the seed-42 numbers with that spread in mind. The stage III vs IV recount below is from before US10 and is now
 written only with `--stage-recount`.
+
+Rerun under 029 US11 (#567; perio read by the codes PE1-PE4 and P1-P4, permanent teeth only, F1 added): same
+command, 6,000 patients, five seeds, 1,000 resamples. Every number above is unchanged, as expected: the synthetic
+periodontal items now carry those codes, so the same teeth get the same labels, and the teeth were already 1-32. F1
+is the new row.
 
 **Under the planned-extraction rule of 029 US9** (#507; the defaults before US10, SYNTHETIC). A planned extraction now counts
 only when the tooth is recorded missing at a later visit within 365 days; the earlier rule (every planned extraction
