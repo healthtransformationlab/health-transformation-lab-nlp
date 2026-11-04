@@ -1,0 +1,4 @@
+instance_id,harness_name,model_name,is_resolved,is_patch_submitted,agent_patch_bytes,files_changed_count,tool_call_count,turn_count,nudge_count,agent_seconds,verify_exit_code,verify_passed_count,verify_failed_count,verify_error_count,reason_text
+htlnlp_143,htlnlp-harness-v1,calib:oracle,True,True,1231,1,1,2,0,0.03,0,11,0,0,
+htlnlp_170,htlnlp-harness-v1,calib:oracle,True,True,985,1,1,2,0,0.03,0,7,0,0,
+htlnlp_174,htlnlp-harness-v1,calib:oracle,True,True,1832,1,1,2,0,0.04,0,8,0,0,
