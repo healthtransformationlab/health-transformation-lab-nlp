@@ -145,7 +145,8 @@ def _statuses(x: dict[str, pd.DataFrame], patients: pd.Series) -> pd.DataFrame:
     t = t.set_index(["patient_id", "tooth_num"])
 
     planned = ext[(ext["procstatus"] == od.PLANNED) & (ext["dx_class"] != "none")]
-    planned = planned.sort_values(["datetp", "procnum"]).drop_duplicates(["patient_id", "tooth_num"])
+    # the most recent planned extraction of the tooth gives its label and its plan date (029 US10, #529)
+    planned = planned.sort_values(["datetp", "procnum"]).drop_duplicates(["patient_id", "tooth_num"], keep="last")
     idx = pd.MultiIndex.from_frame(planned[["patient_id", "tooth_num"]])
     t.loc[idx, "tooth_status_code"] = ("planned_" + planned["dx_class"]).to_numpy()
     t.loc[idx, "label_source_code"] = "planned"

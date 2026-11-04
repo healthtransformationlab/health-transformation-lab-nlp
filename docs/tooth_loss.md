@@ -31,7 +31,7 @@ Dental's source ([research.md](../specs/029-tooth-loss/research.md); references 
 
 | Table | What the model takes from it | Open Dental source |
 |---|---|---|
-| `procedurelog` | extractions (D7140, D7210): completed, planned, or done elsewhere (at the first visit, or dated at a later one); the diagnosis item (`Dx`) | [Procedure.cs](https://github.com/OpenDental/OpenDental/blob/24_3/OpenDentBusiness/TableTypes/Procedure.cs) |
+| `procedurelog` | extractions (D7111, D7140, D7210, D7250; the generator draws the middle two): completed, planned, or done elsewhere (at the first visit, or dated at a later one); the diagnosis item (`Dx`) | [Procedure.cs](https://github.com/OpenDental/OpenDental/blob/24_3/OpenDentBusiness/TableTypes/Procedure.cs) |
 | `definition` | the practice's own diagnosis lists (older and 2017), mapped to periodontal / other | [Def.cs](https://github.com/OpenDental/OpenDental/blob/24_3/OpenDentBusiness/TableTypes/Def.cs) |
 | `toothinitial` | teeth missing at the first exam | [ToothInitial.cs](https://github.com/OpenDental/OpenDental/blob/24_3/OpenDentBusiness/TableTypes/ToothInitial.cs) |
 | `perioexam`, `periomeasure` | probing depth, gingival margin (CAL is computed), bleeding, mobility | [PerioExam.cs](https://github.com/OpenDental/OpenDental/blob/24_3/OpenDentBusiness/TableTypes/PerioExam.cs), [PerioMeasure.cs](https://github.com/OpenDental/OpenDental/blob/24_3/OpenDentBusiness/TableTypes/PerioMeasure.cs) |
@@ -43,16 +43,18 @@ stores the image, not a reading of it.
 
 ## How it is built
 
-- **Teeth:** third molars are left out by default. Only adults are included: the minimum age
-  (`ModelParams.min_age`, `--min-age`) is 18 by default; no cut-off and 30 and over are sensitivity analyses.
+- **Teeth:** third molars are left out by default. There is no age cut-off by default since 029 US10 (#529,
+  the study lead's answer); 18 and over and 30 and over (`ModelParams.min_age`, `--min-age`) are sensitivity
+  analyses. Extractions with no diagnosis are dropped entirely (029 US10): not a negative, not trained on, not scored.
   A start date (`ModelParams.start_date`, `--start-date`, spec 032; 2018-01-01 by default since spec 032 US8, `""`
   for every year) keeps the teeth lost on or after it, or first charted on or after it when the loss date isn't
   recorded.
   `tooth_loss_model.exclusions` counts the teeth left out by each reason.
 - **Two label sets** (FR-010): completed extractions only, and completed plus planned extractions (one per planned
   procedure, however many plan copies; a tooth planned then extracted counts once, as completed). Since 029 US9
-  (#507) a planned extraction counts only when the tooth is **recorded missing at a later visit within 365 days of
-  the plan** (`ModelParams.planned_window_days`, `--planned-window-days`): a planned extraction often never happens,
+  (#507) a planned extraction counts only when the tooth is **recorded missing at a later visit within 548 days
+  (1.5 years) of its most recent plan**, whose diagnosis gives the label: a later plan with another reason overrides
+  an earlier periodontal one (029 US10, #529) (`ModelParams.planned_window_days`, `--planned-window-days`): a planned extraction often never happens,
   so one whose tooth is still in the mouth isn't tooth loss. One still in the mouth, or missing after the window, has
   no label. The earlier rule (every planned extraction with a diagnosis counts) is kept as a sensitivity setting,
   `--planned-window-days none`. In the synthetic extract the later loss is an extraction by another provider dated
@@ -67,7 +69,7 @@ stores the image, not a reading of it.
   (depth 3, 200 trees, learning rate 0.05, subsample 0.8), with three baselines.
 - **Validation:** 80/20 split by patient, stratified on the outcome, seed 42, with XGBoost tuned by 5-fold
   cross-validation (the defaults since spec 032 US8; before it, 70/30 with fixed settings, the `repo_v1` preset). Both label sets are scored on the same
-  held-out extractions. The applied sets (teeth missing at entry, extractions without a diagnosis) are scored
+  held-out extractions. The applied set (teeth missing at entry; extractions without a diagnosis were an applied set before 029 US10) is scored
   against the synthetic answer key, which is never a feature. Options (spec 032): `--test-share`; `--split-unit
   visit` holds out random teeth instead of patients, so one patient's teeth can be on both sides, which flatters the
   score: the run prints how many patients that is, and it is never the default; `--cv-folds K` tunes XGBoost by
@@ -75,6 +77,9 @@ stores the image, not a reading of it.
 - **Measures:** AUC, Brier score, calibration intercept and slope, a 10-bin calibration table, and sensitivity,
   specificity and predictive values at 0.5 and at the Youden threshold chosen on the training teeth. 95% intervals
   from 1,000 bootstrap resamples of patients. The run is repeated on 5 generator seeds.
+- **Output, tooth level only** (029 US10, #529): the model gives one probability per missing tooth. Summing them to
+  the person (the stage III vs IV recount below) is a separate, later decision, so it is written only with
+  `--stage-recount`. No inter-rater statistics and no consistency measures grade this model; it is a predictive model.
 
 Python: `tooth_loss_model.py`, run by `scripts/51_tooth_loss_model.py`. The metrics and the stage rule have base-R
 twins (`r/R/16_spec029.R`) checked to 1e-9 by `r/tests/test_parity.R`. The gold table

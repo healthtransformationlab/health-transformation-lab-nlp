@@ -7,7 +7,7 @@ PERIO_ITEMS_029 <- c("Periodontal disease, advanced", "Periodontal disease, mode
 OTHER_ITEMS_029 <- c("Caries, non-restorable", "Fractured tooth", "Orthodontic extraction", "Other",
                      "Caries, non-restorable (2017 list)", "Fracture (2017 list)", "Orthodontic (2017 list)",
                      "Other (2017 list)")
-EXTRACTIONS_029 <- c("D7140", "D7210")
+EXTRACTIONS_029 <- c("D7111", "D7140", "D7210", "D7250")   # the study lead's list (029 US10, #529)
 DEFCAT_DIAGNOSIS_029 <- 16
 PLANNED_029 <- 1; COMPLETE_029 <- 2; EXISTING_OTHER_029 <- 4
 
@@ -25,7 +25,7 @@ extractions_029 <- function(pl, pc, defs) {
 # One row per patient and tooth: patient_id, tooth_num, tooth_status_code, label_source_code, plan_to_missing_days.
 # Completed extraction first, then missing at entry, then missing at a later visit (029 US9, #507: an extraction done
 # elsewhere dated after the first visit; after a planned extraction with a diagnosis it is planned_then_missing_*),
-# then a planned extraction with a diagnosis, else present.
+# then a planned extraction with a diagnosis (the most recent one, 029 US10), else present.
 # patients: patnum, or a data frame with patnum and datefirstvisit (needed to tell a later visit from the first).
 tooth_status_029 <- function(pl, pc, defs, ti, patients) {
   e <- extractions_029(pl, pc, defs)
@@ -36,7 +36,7 @@ tooth_status_029 <- function(pl, pc, defs, ti, patients) {
   plan_date <- rep(as.Date(NA), nrow(grid)); days <- rep(NA_integer_, nrow(grid))
 
   p <- e[e$procstatus == PLANNED_029 & e$dx_class != "none", ]
-  p <- p[order(as.Date(p$datetp), p$procnum), ]
+  p <- p[order(as.Date(p$datetp), p$procnum, decreasing = TRUE), ]   # the most recent plan (029 US10)
   p <- p[!duplicated(paste(p$patnum, p$tooth_num)), ]
   i <- match(paste(p$patnum, p$tooth_num), key)
   status[i] <- paste0("planned_", p$dx_class); source[i] <- "planned"; plan_date[i] <- as.Date(p$datetp)

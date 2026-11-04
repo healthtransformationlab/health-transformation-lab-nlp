@@ -144,10 +144,14 @@ PROCEDURE_CODES = [  # code, our short description, abbreviation, treat area, ca
     ("D0210", "Intraoral, complete series of radiographic images", "FMX", 3, "Radiographs", False, 130.0),
     ("D0274", "Bitewings, four radiographic images", "4BW", 3, "Radiographs", False, 65.0),
     ("D0330", "Panoramic radiographic image", "Pano", 3, "Radiographs", False, 110.0),
+    # the other two extraction codes (029 US10, #529); listed last so no other code's key moves. The generator draws
+    # D7140 and D7210 only; a real extract can hold all four
+    ("D7111", "Extraction, coronal remnants, primary tooth", "ExtRem", 2, "Oral Surgery", False, 120.0),
+    ("D7250", "Removal of residual tooth roots", "RootRem", 2, "Oral Surgery", False, 250.0),
 ]
 RADIOGRAPHS = ("D0210", "D0274", "D0330")
 BITEWING_TEETH = {2, 3, 4, 5, 12, 13, 14, 15, 18, 19, 20, 21, 28, 29, 30, 31}
-EXTRACTIONS = ("D7140", "D7210")
+EXTRACTIONS = ("D7111", "D7140", "D7210", "D7250")   # the study lead's list, no letter variants (029 US10)
 SNOMED_SMOKING = {"266919005": "Never smoked tobacco", "8517006": "Ex-smoker",
                   "449868002": "Smokes tobacco daily", "428041000124106": "Occasional tobacco smoker"}
 DISEASES = [("Type 2 diabetes mellitus", "E11.9", "44054006", "250.00"),

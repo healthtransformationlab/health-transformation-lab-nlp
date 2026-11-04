@@ -156,6 +156,13 @@ def test_a_tooth_already_extracted_is_never_recorded_missing_later():
     assert later.merge(done, on=["patnum", "toothnum"]).empty
 
 
+def test_the_code_table_holds_every_extraction_code(built):
+    # 029 US10 (#529): D7111, D7140, D7210 and D7250
+    t, _ = built
+    assert set(od.EXTRACTIONS) <= set(t["procedurecode"]["proccode"])
+    assert len(od.extraction_codenums(t)) == 4
+
+
 def test_open_dental_value_conventions(built):
     t, _ = built
     pm = t["periomeasure"]

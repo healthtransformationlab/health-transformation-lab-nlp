@@ -114,6 +114,33 @@ def test_later_missing_edge_cases():
     assert _row(t, 25)["tooth_status_code"] == "missing_at_entry"
 
 
+def test_every_extraction_code_the_study_lead_named_counts():
+    # 029 US10 (#529): extractions are CDT D7111, D7140, D7210 and D7250, with no letter variants
+    assert od.EXTRACTIONS == ("D7111", "D7140", "D7210", "D7250")
+    for code in od.EXTRACTIONS:
+        x = _extract(procs=[(10, 3, od.COMPLETE, "Periodontitis, stage III", "2020-03-01", "2020-04-01")])
+        x["procedurecode"].loc[x["procedurecode"]["codenum"] == 1, "proccode"] = code
+        assert _row(tl.tooth_table(x), 3)["tooth_status_code"] == "extracted_perio", code
+    x = _extract(procs=[(10, 3, od.COMPLETE, "Periodontitis, stage III", "2020-03-01", "2020-04-01")])
+    x["procedurecode"].loc[x["procedurecode"]["codenum"] == 1, "proccode"] = "D7140a"
+    assert _row(tl.tooth_table(x), 3)["tooth_status_code"] == "present"
+
+
+def test_the_most_recent_planned_extraction_gives_the_label_and_the_window():
+    # 029 US10 (#529): a perio plan, then a caries plan six months later: the caries code is the label, and the days
+    # to the tooth going missing count from that most recent plan
+    x = _extract(procs=[(13, 30, od.PLANNED, "Periodontitis, stage IV", "2021-01-01", None),
+                        (14, 30, od.PLANNED, "Caries, non-restorable", "2021-07-01", None),
+                        (16, 30, od.EXISTING_OTHER, "", None, None, "2022-01-01"),
+                        (15, 29, od.PLANNED, "Periodontitis, stage III", "2021-01-01", None),
+                        (17, 29, od.PLANNED, "Fractured tooth", "2021-07-01", None)])
+    t = tl.tooth_table(x)
+    r = _row(t, 30)
+    assert r["tooth_status_code"] == "planned_then_missing_other" and not r["is_perio_loss"]
+    assert r["plan_to_missing_days"] == 184
+    assert _row(t, 29)["tooth_status_code"] == "planned_other"
+
+
 def test_a_completed_extraction_still_wins_over_a_later_missing_record():
     x = _extract(procs=[(10, 3, od.COMPLETE, "Periodontitis, stage III", "2020-03-01", "2020-09-01"),
                         (11, 3, od.EXISTING_OTHER, "", None, None, "2021-01-01")])
