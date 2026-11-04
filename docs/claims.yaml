@@ -273,6 +273,10 @@ pitch:
     - value: "531"
       kind: identifier
       covers: the CDC NCHS Data Brief number
+  audience:
+    - value: "180"
+      kind: proposal
+      covers: days for the first step
   reach:
     - value: "40 million"
       kind: cited

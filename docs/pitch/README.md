@@ -12,12 +12,12 @@ public, for better oral health for millions of Americans and better overall heal
 
 | File | What it is |
 |---|---|
-| [deck.html](deck.html) | The 24 slides with speaker notes (open in a browser) |
+| [deck.html](deck.html) | The 25 slides with speaker notes (open in a browser) |
 | [full_text_and_notes.md](full_text_and_notes.md) | Every slide's text and notes, for reading or search |
 | [slides/](slides/) | The source: one `<section>` per slide, notes in its `<aside>` |
 | [../build_decks.py](../build_decks.py) | Rebuilds the two files above from `slides/`: `python docs/build_decks.py pitch` |
 
-Slides 1–6 are the pitch; 7–24 are backup for questions.
+Slides 1–7 are the pitch; 8–25 are backup for questions.
 
 ## How this repo tests the idea
 
