@@ -173,44 +173,9 @@ def test_manual_runs_default_to_dev_the_only_environment_that_exists():
     assert "dev" in name and "uat" not in name and "prod" not in name, name
 
 
-# Issue #504: the pipeline doctor reads system.lakeflow; the grants are a setup script, not hand-run SQL
-GRANTS = ROOT / "databricks" / "setup" / "grant_system_tables.sh"
 
-
-def test_grant_script_is_valid_bash_and_strict():
-    text = GRANTS.read_text()
-    assert text.startswith("#!/usr/bin/env bash") and "set -euo pipefail" in text
-    subprocess.run(["bash", "-n", str(GRANTS)], check=True)
-
-
-def test_grant_script_gives_the_admin_group_only_what_the_doctor_reads():
-    text = GRANTS.read_text()
-    assert "grants update catalog system" in text and "grants update schema system.lakeflow" in text
-    for privilege in ("USE_CATALOG", "USE_SCHEMA", "SELECT"):
-        assert f'\\"{privilege}\\"' in text, privilege   # as a JSON string in the grant
-    for wider in ("ALL_PRIVILEGES", "MODIFY", "system.access", "system.billing"):
-        assert wider not in text, wider
-    assert not __import__("re").search(r"[0-9a-f]{8}-[0-9a-f]{4}-", text), "grant to the group by name, not an id"
-
-
-@pytest.mark.skipif(not shutil.which("bash"), reason="no bash")
-@pytest.mark.parametrize("target", ["dev", "uat", "prod"])
-def test_grant_script_names_the_targets_admin_group(target):
-    out = subprocess.run(["bash", str(GRANTS), target, "--print-config"],
-                         capture_output=True, text=True, check=True).stdout.split()
-    assert out == [f"dental_omop_nlp_{target}_admin", "system", "system.lakeflow"]
-
-
-def test_grant_script_refuses_an_unknown_target():
-    r = subprocess.run(["bash", str(GRANTS), "staging", "--print-config"], capture_output=True, text=True,
-                       check=False)
-    assert r.returncode != 0 and "staging" in r.stderr
-
-
-def test_a_new_target_gets_the_system_table_grants():
-    assert "grant_system_tables.sh" in SCRIPT.read_text()
-
-
-def test_the_doctor_names_the_script_when_a_grant_is_missing():
-    notebook = (ROOT / "databricks" / "notebooks" / "13_pipeline_doctor.py").read_text()
-    assert "databricks/setup/grant_system_tables.sh" in notebook
+def test_no_system_table_grants_are_needed():
+    """#524: the doctor reads the Jobs API, so the system.lakeflow grant script (#504) is gone; on Free Edition
+    no one we control could run it anyway (the metastore belongs to Databricks)."""
+    assert not (ROOT / "databricks" / "setup" / "grant_system_tables.sh").exists()
+    assert "grant_system_tables" not in SCRIPT.read_text()

@@ -1001,7 +1001,7 @@ One per (question, model, with or without the agent, run). Written by: Load resu
 
 ### `fact_pipeline_run`
 
-One per finished run of a bundle job (step_name job), from system.lakeflow.job_run_timeline and the span export. Written by: Pipeline doctor: delete-then-append by run_id.
+One per finished run of a bundle job (step_name job), from the Jobs API's run list and the span export. Written by: Pipeline doctor: delete-then-append by run_id.
 
 | Key | Column | Type | Description |
 |---|---|---|---|
