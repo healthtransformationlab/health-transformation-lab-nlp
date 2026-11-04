@@ -26,18 +26,22 @@ Numbers are per 100 charts. What the columns mean:
 | 1 | `algorithm_v0` | whole record | rules, probing chart first (current phenotype, v0.1) † | **92.8** (89.2–96.0) | 1.8 | 0.4 | 4.9 | 0.0 | 3.1 | 99% | 95% | 97% | 99% | 83% | 99 / 91 / 80 |
 | 2–4 | `fusion_tfidf_rad+rules4` | chart note + radiograph | TF-IDF + radiograph features, + rules for stage IV † | **86.5** (81.6–90.6) | 3.1 | 3.1 | 7.2 | 0.0 | 8.5 | 95% | 92% | 95% | 92% | 83% | 96 / 91 / 66 |
 | 2–5 | `tfidf_logreg+rules4` | chart note | TF-IDF + logistic regression, + rules for stage IV † | **85.7** (80.7–89.7) | 3.6 | 1.3 | 9.4 | 0.0 | 7.2 | 98% | 90% | 94% | 96% | 83% | 96 / 91 / 61 |
-| 2–6 | `fusion_tfidf_rad` | chart note + radiograph | TF-IDF + radiograph features | **83.9** (78.5–88.8) | 3.1 | 3.1 | 9.9 | 0.0 | 13.0 | 95% | 92% | 95% | 92% | 0% | 90 / 83 / 72 |
-| 3–7 | `tfidf_logreg` | chart note | TF-IDF + logistic regression | **83.0** (77.6–87.4) | 3.6 | 1.3 | 12.1 | 0.0 | 11.7 | 98% | 90% | 94% | 96% | 0% | 90 / 83 / 67 |
-| 3–7 | `note_rules` | chart note | rules (regex) † | **82.1** (76.7–87.0) | 4.5 | 1.8 | 11.7 | 0.0 | 8.5 | 97% | 88% | 93% | 95% | 83% | 100 / 100 / 38 |
-| 3–8 | `algorithm_design` | whole record | rules, study-design order: exam form, diagnosis codes, note, chart † | **78.9** (73.1–84.3) | 4.0 | 5.4 | 11.7 | 0.0 | 13.5 | 91% | 89% | 93% | 86% | 75% | 81 / 74 / 77 |
-| 6–10 | `probing_chart` | probing chart | staged from the measurements † | **74.4** (68.6–80.3) | 0.4 | 0.0 | 1.3 | 23.8 | 1.2 | 76% | 99% | 99% | 72% | 58% | 76 / 65 / 73 |
-| 8–12 | `proc_codes_planned` | procedure codes, planned | CDT code mapped to status | **70.4** (64.6–76.2) | 0.0 | 0.0 | 23.3 | 6.3 | 20.6 | 90% | 100% | 100% | 86% | 0% | 71 / 70 / 70 |
-| 8–12 | `algorithm_patel2022` | whole record | rules, order of Patel et al. 2022: diagnosis codes, PerioDx note reading, PerioDx chart rules (spec 024) | **69.1** (63.2–75.3) | 5.4 | 13.0 | 11.2 | 1.3 | 23.6 | 78% | 86% | 90% | 71% | 25% | 78 / 74 / 48 |
-| 8–13 | `exam_form` | exam form | status field as entered | **69.1** (62.8–75.3) | 4.0 | 0.0 | 11.2 | 15.7 | 9.0 | 83% | 89% | 93% | 77% | 75% | 72 / 65 / 64 |
-| 9–13 | `proc_dx_planned` | diagnosis codes, planned procedures | ICD-10 code mapped to status | **66.4** (60.5–72.2) | 0.9 | 21.1 | 11.7 | 0.0 | 28.7 | 66% | 98% | 98% | 64% | 0% | 66 / 65 / 67 |
-| 11–14 | `proc_codes_completed` | procedure codes, completed | CDT code mapped to status | **61.9** (55.6–68.2) | 0.0 | 0.0 | 16.1 | 22.0 | 18.4 | 65% | 100% | 100% | 63% | 0% | 63 / 61 / 59 |
-| 13–14 | `proc_dx_completed` | diagnosis codes, completed procedures | ICD-10 code mapped to status | **57.0** (50.7–63.7) | 3.6 | 32.7 | 6.7 | 0.0 | 40.4 | 47% | 90% | 89% | 51% | 0% | 60 / 57 / 50 |
-| 15 | `radiograph_ai` | radiograph AI | bone-loss reading mapped to stage † | **17.9** (13.0–23.3) | 0.4 | 0.0 | 9.0 | 72.6 | 23.0 | 43% | 99% | 98% | 51% | 0% | 18 / 26 / 16 |
+| 2–9 | `fusion_tfidf_rad` | chart note + radiograph | TF-IDF + radiograph features | **83.9** (78.5–88.8) | 3.1 | 3.1 | 9.9 | 0.0 | 13.0 | 95% | 92% | 95% | 92% | 0% | 90 / 83 / 72 |
+| 3–10 | `tfidf_logreg` | chart note | TF-IDF + logistic regression | **83.0** (77.6–87.4) | 3.6 | 1.3 | 12.1 | 0.0 | 11.7 | 98% | 90% | 94% | 96% | 0% | 90 / 83 / 67 |
+| 3–9 | `note_rules` | chart note | rules (regex) † | **82.1** (76.7–87.0) | 4.5 | 1.8 | 11.7 | 0.0 | 8.5 | 97% | 88% | 93% | 95% | 83% | 100 / 100 / 38 |
+| 4–11 | [`medgemma-4b-it+rules4`](https://huggingface.co/google/medgemma-4b-it) | chart note | zero-shot LLM, + rules for stage IV † | **80.3** (75.3–85.2) | 4.9 | 2.7 | 12.1 | 0.0 | 9.4 | 96% | 87% | 92% | 92% | 83% | 99 / 83 / 39 |
+| 5–11 | [`medgemma-4b-it`](https://huggingface.co/google/medgemma-4b-it) | chart note | zero-shot LLM | **79.8** (74.4–84.8) | 4.9 | 2.7 | 12.6 | 0.0 | 11.2 | 96% | 87% | 92% | 92% | 50% | 98 / 74 / 44 |
+| 3–12 | `algorithm_design` | whole record | rules, study-design order: exam form, diagnosis codes, note, chart † | **78.9** (73.1–84.3) | 4.0 | 5.4 | 11.7 | 0.0 | 13.5 | 91% | 89% | 93% | 86% | 75% | 81 / 74 / 77 |
+| 6–12 | [`medgemma-1.5-4b-it`](https://huggingface.co/google/medgemma-1.5-4b-it) | chart note | zero-shot LLM | **78.5** (73.1–83.4) | 3.6 | 4.9 | 13.0 | 0.0 | 11.2 | 92% | 90% | 94% | 87% | 75% | 99 / 78 / 34 |
+| 6–12 | [`medgemma-1.5-4b-it+rules4`](https://huggingface.co/google/medgemma-1.5-4b-it) | chart note | zero-shot LLM, + rules for stage IV † | **78.5** (73.1–83.4) | 3.6 | 4.9 | 13.0 | 0.0 | 10.8 | 92% | 90% | 94% | 87% | 83% | 99 / 83 / 33 |
+| 7–14 | `probing_chart` | probing chart | staged from the measurements † | **74.4** (68.6–80.3) | 0.4 | 0.0 | 1.3 | 23.8 | 1.2 | 76% | 99% | 99% | 72% | 58% | 76 / 65 / 73 |
+| 11–16 | `proc_codes_planned` | procedure codes, planned | CDT code mapped to status | **70.4** (64.6–76.2) | 0.0 | 0.0 | 23.3 | 6.3 | 20.6 | 90% | 100% | 100% | 86% | 0% | 71 / 70 / 70 |
+| 12–16 | `algorithm_patel2022` | whole record | rules, order of Patel et al. 2022: diagnosis codes, PerioDx note reading, PerioDx chart rules (spec 024) | **69.1** (63.2–75.3) | 5.4 | 13.0 | 11.2 | 1.3 | 23.6 | 78% | 86% | 90% | 71% | 25% | 78 / 74 / 48 |
+| 12–17 | `exam_form` | exam form | status field as entered | **69.1** (62.8–75.3) | 4.0 | 0.0 | 11.2 | 15.7 | 9.0 | 83% | 89% | 93% | 77% | 75% | 72 / 65 / 64 |
+| 13–17 | `proc_dx_planned` | diagnosis codes, planned procedures | ICD-10 code mapped to status | **66.4** (60.5–72.2) | 0.9 | 21.1 | 11.7 | 0.0 | 28.7 | 66% | 98% | 98% | 64% | 0% | 66 / 65 / 67 |
+| 15–18 | `proc_codes_completed` | procedure codes, completed | CDT code mapped to status | **61.9** (55.6–68.2) | 0.0 | 0.0 | 16.1 | 22.0 | 18.4 | 65% | 100% | 100% | 63% | 0% | 63 / 61 / 59 |
+| 17–18 | `proc_dx_completed` | diagnosis codes, completed procedures | ICD-10 code mapped to status | **57.0** (50.7–63.7) | 3.6 | 32.7 | 6.7 | 0.0 | 40.4 | 47% | 90% | 89% | 51% | 0% | 60 / 57 / 50 |
+| 19 | `radiograph_ai` | radiograph AI | bone-loss reading mapped to stage † | **17.9** (13.0–23.3) | 0.4 | 0.0 | 9.0 | 72.6 | 23.0 | 43% | 99% | 98% | 51% | 0% | 18 / 26 / 16 |
 | – | [`bert-base+cw`](https://huggingface.co/google-bert/bert-base-uncased) | chart note | fine-tuned encoder, class-weighted (run: repo) | rerun pending on the new notes | – | – | – | – | – | – | – | – | – | – | – | – |
 | – | [`bert-base`](https://huggingface.co/google-bert/bert-base-uncased) | chart note | fine-tuned encoder (run: repo) | rerun pending on the new notes | – | – | – | – | – | – | – | – | – | – | – | – |
 | – | [`bio-clinicalbert`](https://huggingface.co/emilyalsentzer/Bio_ClinicalBERT) | chart note | fine-tuned encoder (run: repo) | rerun pending on the new notes | – | – | – | – | – | – | – | – | – | – | – | – |
@@ -49,8 +53,6 @@ Numbers are per 100 charts. What the columns mean:
 | – | [`gatortron-base+lr2e-05`](https://huggingface.co/UFNLP/gatortron-base) | chart note | fine-tuned encoder, learning rate 2e-05 (run: kaggle) | rerun pending on the new notes | – | – | – | – | – | – | – | – | – | – | – | – |
 | – | [`llama-3.3-70b-instruct`](https://huggingface.co/meta-llama/Llama-3.3-70B-Instruct) | chart note | zero-shot LLM (run: repo) | rerun pending on the new notes | – | – | – | – | – | – | – | – | – | – | – | – |
 | – | [`longformer-base`](https://huggingface.co/allenai/longformer-base-4096) | chart note | fine-tuned encoder (run: kaggle) | rerun pending on the new notes | – | – | – | – | – | – | – | – | – | – | – | – |
-| – | [`medgemma-1.5-4b-it`](https://huggingface.co/google/medgemma-1.5-4b-it) | chart note | zero-shot LLM (run: kaggle) | rerun pending on the new notes | – | – | – | – | – | – | – | – | – | – | – | – |
-| – | [`medgemma-4b-it`](https://huggingface.co/google/medgemma-4b-it) | chart note | zero-shot LLM (run: kaggle) | rerun pending on the new notes | – | – | – | – | – | – | – | – | – | – | – | – |
 | – | [`modernbert-base+cw+s1`](https://huggingface.co/answerdotai/ModernBERT-base) | chart note | fine-tuned encoder, class-weighted, seed 1 (run: repo) | rerun pending on the new notes | – | – | – | – | – | – | – | – | – | – | – | – |
 | – | [`modernbert-base+cw+s2`](https://huggingface.co/answerdotai/ModernBERT-base) | chart note | fine-tuned encoder, class-weighted, seed 2 (run: repo) | rerun pending on the new notes | – | – | – | – | – | – | – | – | – | – | – | – |
 | – | [`modernbert-base+cw`](https://huggingface.co/answerdotai/ModernBERT-base) | chart note | fine-tuned encoder, class-weighted (run: kaggle) | rerun pending on the new notes | – | – | – | – | – | – | – | – | – | – | – | – |

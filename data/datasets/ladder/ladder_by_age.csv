@@ -2,6 +2,12 @@ method,age_code,n,accuracy
 fusion_tfidf_rad,35_64,102,0.8431372549019608
 fusion_tfidf_rad,65_plus,61,0.8688524590163934
 fusion_tfidf_rad,under_35,60,0.8
+medgemma-1.5-4b-it,35_64,102,0.7843137254901961
+medgemma-1.5-4b-it,65_plus,61,0.7540983606557377
+medgemma-1.5-4b-it,under_35,60,0.8166666666666667
+medgemma-4b-it,35_64,102,0.803921568627451
+medgemma-4b-it,65_plus,61,0.7868852459016393
+medgemma-4b-it,under_35,60,0.8
 note_rules,35_64,102,0.8137254901960784
 note_rules,65_plus,61,0.819672131147541
 note_rules,under_35,60,0.8333333333333334
@@ -11,6 +17,12 @@ tfidf_logreg,under_35,60,0.8166666666666667
 fusion_tfidf_rad+rules4,35_64,102,0.8431372549019608
 fusion_tfidf_rad+rules4,65_plus,61,0.8852459016393442
 fusion_tfidf_rad+rules4,under_35,60,0.8833333333333333
+medgemma-1.5-4b-it+rules4,35_64,102,0.7843137254901961
+medgemma-1.5-4b-it+rules4,65_plus,61,0.7540983606557377
+medgemma-1.5-4b-it+rules4,under_35,60,0.8166666666666667
+medgemma-4b-it+rules4,35_64,102,0.7941176470588235
+medgemma-4b-it+rules4,65_plus,61,0.8032786885245902
+medgemma-4b-it+rules4,under_35,60,0.8166666666666667
 tfidf_logreg+rules4,35_64,102,0.8431372549019608
 tfidf_logreg+rules4,65_plus,61,0.8360655737704918
 tfidf_logreg+rules4,under_35,60,0.9
