@@ -54,6 +54,15 @@ jobs:
         env:
           JUDGE_ENDPOINT: ${{ vars.JUDGE_ENDPOINT }}
         run: echo "BUNDLE_VAR_judge_endpoint=$JUDGE_ENDPOINT" >> "$GITHUB_ENV"
+      - name: Alert email from the environment's ALERT_EMAIL variable, if set (issue 521)
+        if: vars.ALERT_EMAIL != ''
+        env:
+          ALERT_EMAIL: ${{ vars.ALERT_EMAIL }}
+        # a complex bundle variable can't come from BUNDLE_VAR_*; the bundle reads this file for the target
+        run: |
+          mkdir -p ".databricks/bundle/$TARGET"
+          python3 -c 'import json, os; print(json.dumps({"alert_emails": [os.environ["ALERT_EMAIL"].strip()]}))' \
+            > ".databricks/bundle/$TARGET/variable-overrides.json"
       - name: Stop if this environment isn't configured
         if: env.DATABRICKS_CLIENT_SECRET == ''
         run: echo "No service principal sign-in (DATABRICKS_CLIENT_SECRET) for $TARGET; skipping." && exit 0
