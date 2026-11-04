@@ -100,3 +100,12 @@ def test_no_overstated_absolutes_about_the_world():
         for phrase in (r"nobody can (count|study)", r"nobody publishes", r"nobody has measured",
                        r"nobody at this size", r"can't be linked to diabetes"):
             assert not re.search(phrase, text, flags=re.I), (f.name, phrase)
+
+
+def test_the_tagline_is_on_the_readme_and_the_edr_cover():
+    # #573: the lab's tagline, under the README title and on the EDR deck's cover slide
+    from health_transformation_lab_nlp.paths import REPO_ROOT
+
+    assert "Evidence you can check" in "\n".join((REPO_ROOT / "README.md").read_text().splitlines()[:3])
+    assert "Evidence you can check" in (REPO_ROOT / "docs" / "edr" / "slides" / "01-cover.html").read_text()
+    assert "Evidence you can check" in (REPO_ROOT / "docs" / "edr" / "deck.html").read_text()
