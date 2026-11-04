@@ -273,3 +273,35 @@ def test_a_row_carries_its_token_totals(runner, tmp_path, monkeypatch):
                          tmp_path / "s.tgz", tmp_path, "u", settings)
     assert (row["prompt_token_count"], row["prefill_token_count"], row["output_token_count"]) == (250, 140, 15)
     assert row["is_cache_reused"] is True and row["model_seconds"] == 3.5
+
+
+# --- what each task cost (spec 036 US2, #569) ----------------------------------------------------------------------
+
+COST = {"kaggle_weekly_allowance_hours": {"value": 30.0, "source": "s", "read_date": "d"},
+        "t4_usd_per_gpu_hour": {"value": 0.69, "source": "s", "read_date": "d"}}
+
+
+def test_a_row_carries_its_session_time_gpu_hours_and_estimate(runner, tmp_path, monkeypatch):
+    monkeypatch.setattr(runner.ah, "score_patch", lambda task, row, patch, src, work, sandboxed: {**row, "is_resolved": True})
+    settings = {"name": "m", "budget": {"time_minutes": 30}, "model": {"max_new_tokens": 2048}}
+    result = {"row": {"instance_id": "x"}, "patch": "", "turns": [], "gpus": ["Tesla T4", "Tesla T4"],
+              "started_ts": "2026-11-04T20:00:00Z", "finished_ts": "2026-11-04T20:05:00Z"}
+    row = runner.row_for({"instance_id": "x"}, result, tmp_path / "s.tgz", tmp_path, "u", settings, 900.0, COST)
+    assert row["script_seconds"] == 300.0 and row["session_seconds"] == 900.0 and row["gpu_count"] == 2
+    assert row["allowance_hours"] == 0.25 and row["gpu_hours"] == 0.5
+    assert row["estimated_cost_usd"] == pytest.approx(0.345) and row["price_basis_text"].startswith("estimate:")
+    assert set(runner.EXTRA) >= {"session_seconds", "gpu_hours", "kaggle_allowance_ratio", "estimated_cost_usd"}
+
+
+def test_a_failed_kernel_still_counts_its_session(runner, tmp_path):
+    settings = {"name": "m", "budget": {"time_minutes": 30}, "model": {}}
+    row = runner.row_for({"instance_id": "x"}, {"error": "OutOfMemoryError"}, tmp_path / "s.tgz", tmp_path, "u",
+                         settings, 1140.0, COST)
+    assert row["is_resolved"] is False and row["allowance_hours"] == pytest.approx(1140 / 3600, abs=1e-4)
+
+
+def test_the_queue_runs_cheapest_first_and_small_fixes_first_among_the_unrun(runner):
+    tasks = {"a": {"patch": "x" * 50}, "b": {"patch": "x" * 10}, "c": {"patch": "x" * 99}}
+    q = runner.queue(["a", "b", "c"], tasks, past={"c": 300.0, "d": 900.0})
+    assert list(q) == ["c", "b", "a"]                     # c ran in 5 min; b and a expect the median, smaller first
+    assert q["a"] == q["b"] == 600.0
