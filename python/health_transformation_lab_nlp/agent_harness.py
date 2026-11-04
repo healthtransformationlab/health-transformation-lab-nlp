@@ -808,16 +808,31 @@ def run_task(task: dict, source: Path, model, budget: Budget, work: Path, instru
     if sandbox == "required" and not use:
         raise RuntimeError("no unprivileged user namespaces here, so no sandbox: a model could read this repository's "
                            "history and the host's secrets. Run calibration models only, or use a host that has them.")
-    work = Path(work)
-    ws = prepare_workspace(task, source, work / "agent")
-    session = Session(ws, budget, graph=graph, sandbox=Sandbox(ws) if use else None)
+    row, patch = agent_phase(task, source, model, budget, Path(work), instruction, declared, graph, use)
+    return score_patch(task, row, patch, source, Path(work), sandboxed=use)
+
+
+@traced
+def agent_phase(task: dict, source: Path, model, budget: Budget, work: Path, instruction: str = "",
+                declared: list[str] | None = None, graph: CodeGraph | None = None,
+                sandboxed: bool = False) -> tuple[dict, str]:
+    """Phase 1 alone: the agent in a fresh workspace. Returns the row so far and the patch. On Kaggle this runs
+    beside one task's bundle and nothing else (kaggle/agent_bundle.py); score_patch verifies it here."""
+    ws = prepare_workspace(task, source, Path(work) / "agent")
+    session = Session(ws, budget, graph=graph, sandbox=Sandbox(ws) if sandboxed else None)
     counts = run_agent(task, session, model, instruction, declared)
     patch = session.submitted_patch if session.patch_submitted else extract_patch(session.workdir)
     row = {"instance_id": task["instance_id"], "harness_name": HARNESS_NAME,
            "model_name": getattr(model, "name", type(model).__name__), "is_patch_submitted": session.patch_submitted,
            "agent_patch_bytes": len(patch.encode()), "files_changed_count": len(re.findall(r"(?m)^diff --git ", patch)),
            "agent_seconds": round(time.monotonic() - session.started, 2), **counts}
-    row.update(verify(task, patch, source, work / "verify", sandboxed=use))
+    return row, patch
+
+
+@traced
+def score_patch(task: dict, row: dict, patch: str, source: Path, work: Path, sandboxed: bool = True) -> dict:
+    """Phase 2: verify the agent's patch in a fresh workspace (8.2) and finish its row."""
+    row = {**row, **verify(task, patch, source, Path(work) / "verify", sandboxed=sandboxed)}
     return {c: row.get(c) for c in RUN_COLUMNS}
 
 

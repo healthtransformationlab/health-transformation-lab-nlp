@@ -45,8 +45,26 @@ Our gate (`task_gate.py`, #453) already does the verification. This spec builds 
 - `calib:null` submits nothing and must resolve none.
 
 ### US2 - The Gemma agent through the local harness on a Kaggle GPU (P2) #544
-An OpenAI-compatible chat client with tool calls (vLLM serves Gemma 4 that way, with the `gemma4` tool parser),
-run from a Kaggle GPU notebook. This uses limited compute, so it waits for the owner (AGENTS.md rule 6).
+Gemma 4 with transformers on a Kaggle GPU (2x T4). Kaggle has no vLLM, and the QAT compressed-tensors model runs
+out of memory on a T4, so this run uses `gemma-4-e4b-it` in fp16. `gemma_agent.py` reads and writes Gemma 4's own
+tool-call format, as its chat template has it. This uses limited compute, so it waits for the owner (AGENTS.md
+rule 6).
+
+**No answers on Kaggle.** Kaggle blocks namespaces (`unshare` fails), and anything the agent runs can read every
+attached file: the input mount is world-readable and read-only, so a second user can't be kept out (probed Nov 2026).
+Later snapshots hold earlier tasks' fixes, and this repository's code is later than every task. So each task runs
+alone, in its own private kernel with internet off, beside a private dataset holding only that task
+(`kaggle/agent_bundle.py`):
+- the prompt's fields, without the reference patch or tests;
+- a one-commit snapshot (refused if its `.git` holds more);
+- its graph and embeddings;
+- the harness files no task changes (`agent_harness.py`, `gemma_agent.py`, `task_gate.py`), with a telemetry stub.
+
+The patch comes back and is verified here, in the sandbox (`scripts/60_kaggle_agent.py`).
+
+**Budgets.** These are the submission's 40 tool calls and 60 turns. The time budget is raised from 5 minutes to 30:
+transformers on T4s generates about 8 tokens a second, far slower than the competition's evaluator. Thinking is off
+and each turn gets at most 2,048 new tokens. Every row records the settings it ran with.
 
 ### US3 - Resolution rates per fidelity tier, labelled as ours (P2) #545
 Overall and per tier (A, B, C), with and without the pipeline-doctor skill, recorded in spec 028 T012.
