@@ -119,8 +119,17 @@ def test_a_run_without_tuning_uses_the_fixed_settings(extract):
     assert v["cv_folds"].isna().all() and (v["xgboost_params"] == str(tm.XGB_PARAMS)).all()
 
 
-def test_a_run_split_by_visit_reports_the_people_in_both_and_tunes_when_asked(extract, monkeypatch):
-    x, truth = extract
+@pytest.fixture(scope="module")
+def larger_extract():
+    # 1,500 patients: since 029 US10 (#529) few patients have two labelled teeth, so a smaller extract's 20% split by
+    # visit can by chance put nobody on both sides, and the test would show nothing
+    pytest.importorskip("xgboost")
+    tables, truth, reads = od.build_with_readings(od.Params(n_patients=1500), seed=5)
+    return {**od.clean(tables), "radiograph_bone_level": reads}, truth
+
+
+def test_a_run_split_by_visit_reports_the_people_in_both_and_tunes_when_asked(larger_extract, monkeypatch):
+    x, truth = larger_extract
     monkeypatch.setattr(tm, "XGB_GRID", {"max_depth": [2, 3], "n_estimators": [30], "learning_rate": [0.1],
                                          "subsample": [1.0], "min_child_weight": [1]})
     out = tm.run(x, truth, tm.ModelParams(n_boot=0, split_unit="visit", test_share=0.2, cv_folds=3,

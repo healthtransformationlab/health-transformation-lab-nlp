@@ -1,5 +1,6 @@
 # Spec 032 US7 (#446): named sets of analysis settings (presets.py loads them; scripts/58_preset.py runs one).
-# repo_v2 is the code's defaults (spec 032 US8, #448); repo_v1 the defaults before it; exploratory_1 a study design.
+# repo_v2 is the code's defaults (spec 032 US8, #448; no tooth-loss age cut-off since 029 US10, #529); repo_v1 the
+# defaults before it; exploratory_1 a study design.
 # Every preset writes out every setting. Settings are generic design choices of dental-record studies; no preset
 # names a study, a person or an organisation. Everything run with them is SYNTHETIC.
 
@@ -32,7 +33,8 @@ exploratory_1:
                                       # synthetic visits run from late 2020, so this leaves the earliest out
   absent_code: healthy_or_gingivitis  # a treatment plan with no gum-disease code reads as healthy or gingivitis
   stage4_rules: [recorded_only, every_missing, expected_perio_loss, truth, teeth_lt_20, pairs_lt_10]  # fewer than 20 teeth and fewer than 10 occluding pairs beside the counting rules
-  tooth_loss_min_age: 18              # adults only
+  tooth_loss_min_age: 18              # adults only, as published record studies do (the code's default has no
+                                      # age cut-off since 029 US10, #529)
   tooth_loss_start_date: "2018-01-01" # synthetic stand-in for the date a newer classification was adopted (the
                                       # synthetic extract's practices switch lists from 2018)
   tooth_loss_split_unit: visit        # random teeth: a patient can be on both sides (reported; flatters the score)
@@ -56,7 +58,7 @@ repo_v2:
   visit_start_date: "2021-04-01"      # synthetic stand-in for the date a newer classification was adopted
   absent_code: healthy_or_gingivitis  # a treatment plan with no gum-disease code reads as healthy or gingivitis
   stage4_rules: [recorded_only, every_missing, expected_perio_loss, truth, teeth_lt_20, pairs_lt_10]  # all six reported
-  tooth_loss_min_age: 18              # adults only
+  tooth_loss_min_age: null            # no age cut-off (029 US10, #529; was 18)
   tooth_loss_start_date: "2018-01-01" # synthetic stand-in for the date a newer classification was adopted
   tooth_loss_split_unit: person       # whole patients held out (a split by visit stays an option, never the default)
   tooth_loss_test_share: 0.2          # 80/20

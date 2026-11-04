@@ -46,7 +46,7 @@ The start dates are synthetic stand-ins for "the date a newer classification was
 | visits: start date | none | 2021-04-01 | 2021-04-01 |
 | plan with no gum-disease code | no answer | healthy or gingivitis | healthy or gingivitis |
 | stage IV rules reported | all six | all six | all six |
-| tooth loss: minimum age | 18 | 18 | 18 |
+| tooth loss: minimum age | 18 | none (since 029 US10, #529) | 18 |
 | tooth loss: start date | none | 2018-01-01 | 2018-01-01 |
 | tooth loss: split | by patient, 30% | by patient, 20% | by tooth (`visit`), 20% |
 | tooth loss: XGBoost tuning | none | 5-fold | 5-fold |
@@ -54,6 +54,10 @@ The start dates are synthetic stand-ins for "the date a newer classification was
 | status classifier: tuning | 5-fold | 5-fold | 5-fold |
 | consistency groups | office, provider, sex, race, exam year, age band | the same plus insurance type | the same plus insurance type |
 | CAL reliability ICC | off | on | on |
+
+The presets keep the stage III vs IV recount as an exploratory part, so the presets can still be compared on it. The
+tooth-loss model itself works at the tooth level since 029 US10 (#529), and `scripts/51_tooth_loss_model.py` writes
+the recount only with `--stage-recount`.
 
 ## Headline comparison (SYNTHETIC)
 

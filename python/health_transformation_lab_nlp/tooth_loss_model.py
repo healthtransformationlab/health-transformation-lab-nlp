@@ -61,12 +61,12 @@ STILL_PLANNED = ("planned_perio", "planned_other")         # the tooth still in 
 FEATURE_SETS = {"shared": tl.SHARED_FEATURES, "own": tl.OWN_FEATURES}
 MODELS = ("logistic", "xgboost")
 BASELINES = ("baseline_all_perio", "baseline_outcome_rate", "baseline_recorded_only")
-APPLIED_STATUSES = ("missing_at_entry", "extracted_no_dx")
+APPLIED_STATUSES = ("missing_at_entry",)      # extractions with no diagnosis are dropped (029 US10, #529)
 MISSING_STATUSES = ("extracted_perio", "extracted_other", "extracted_no_dx", "missing_at_entry",
                     *PLANNED_THEN_MISSING, "missing_later")
 # missing teeth the stage recount gives the model's probability (no recorded periodontal extraction)
 STAGE_UNLABELLED_STATUSES = (*APPLIED_STATUSES, *PLANNED_THEN_MISSING, "missing_later")
-EVAL_SETS = ("held_out", "missing_at_entry", "extracted_no_dx")
+EVAL_SETS = ("held_out", "missing_at_entry")
 TOOTH_TYPES = tuple(f"{arch}_{kind}" for arch in ("upper", "lower") for kind in ("incisor", "canine", "premolar",
                                                                                  "molar"))
 CHART_QUALITY = ("complete", "partial", "copied", "uniform")
@@ -88,17 +88,27 @@ class ModelParams:
     split by patient, 5-fold tuning of XGBoost, teeth from 2018-01-01; repo_v1 had 70/30, no tuning, every year)."""
     test_share: float = 0.2
     seed: int = 42                         # split, models and bootstrap
-    min_age: int | None = 18               # analysis plan s. 3: adults; sensitivity none (None) and 30
+    min_age: int | None = None             # 029 US10: no age cut-off; 18 and 30 are sensitivity settings
     include_third_molars: bool = False     # sensitivity analysis when True
     start_date: str | None = "2018-01-01"  # spec 032 US2: ISO date; teeth lost (or first charted) before it are out
     n_boot: int = 1000
     threshold: float = 0.5
     split_unit: str = "person"             # spec 032 US5: SPLIT_UNITS; visit reports the patients in both
     cv_folds: int | None = 5               # spec 032 US5: tune XGBoost over XGB_GRID by k-fold CV when set
-    planned_window_days: int | None = 365  # 029 US9: a planned extraction counts if missing within this; None: any
+    planned_window_days: int | None = 548  # 029 US9/US10: counts if missing within 1.5 years; None: any planned
 
 
 DEFAULT = ModelParams()
+
+
+STAGE_OUTPUTS = ("stage_recount", "patient_stage", "stage_probabilities")   # the person-level recount
+
+
+@traced
+def outputs_to_write(out: dict[str, pd.DataFrame], stage_recount: bool = False) -> dict[str, pd.DataFrame]:
+    """The frames of a run to write: tooth level only unless the stage recount is asked for (029 US10, #529). Summing
+    to the person is a separate, later decision."""
+    return {n: df for n, df in out.items() if stage_recount or n not in STAGE_OUTPUTS}
 
 
 @traced
@@ -142,7 +152,7 @@ def eligible(teeth: pd.DataFrame, params: ModelParams = DEFAULT) -> pd.DataFrame
     """The teeth in the analysis: patients with no natural teeth out (`edentulous`); third molars out unless included;
     at least `min_age` when one is set (a tooth whose age isn't recorded is then left out too: `exclusions` counts
     them); on or after `start_date` when one is set (a tooth with no date is then left out too)."""
-    teeth = teeth[~edentulous(teeth)]
+    teeth = teeth[~edentulous(teeth) & teeth["tooth_status_code"].ne("extracted_no_dx")]   # dropped (029 US10)
     t = teeth if params.include_third_molars else teeth[~teeth["tooth_num"].isin(THIRD_MOLARS)]
     if params.min_age is not None:
         t = t[_age(t) >= params.min_age]
@@ -165,7 +175,9 @@ def stage_teeth(teeth: pd.DataFrame, params: ModelParams = DEFAULT) -> pd.DataFr
 def exclusions(teeth: pd.DataFrame, params: ModelParams = DEFAULT) -> dict[str, int]:
     """How many teeth `eligible` leaves out, by reason, in the order it applies them (each tooth counted once, under
     the first reason), and how many it keeps."""
-    none = edentulous(teeth)
+    edent = edentulous(teeth)
+    no_dx = ~edent & teeth["tooth_status_code"].eq("extracted_no_dx")    # dropped (029 US10, #529)
+    none = edent | no_dx
     molar = ~none & (pd.Series(False, index=teeth.index) if params.include_third_molars else
                      teeth["tooth_num"].isin(THIRD_MOLARS))
     age = _age(teeth)
@@ -177,7 +189,8 @@ def exclusions(teeth: pd.DataFrame, params: ModelParams = DEFAULT) -> dict[str, 
     dated = params.start_date is not None
     no_date = left & on.isna() & dated
     early = left & on.notna() & ((on < pd.Timestamp(params.start_date)) if dated else False)
-    return {"edentulous_count": int(none.sum()), "third_molar_count": int(molar.sum()),
+    return {"edentulous_count": int(edent.sum()), "no_diagnosis_count": int(no_dx.sum()),
+            "third_molar_count": int(molar.sum()),
             "under_min_age_count": int(young.sum()),
             "unknown_age_count": int(unknown.sum()), "before_start_date_count": int(early.sum()),
             "unknown_date_count": int(no_date.sum()), "eligible_count": int((left & ~no_date & ~early).sum())}
@@ -626,10 +639,8 @@ def run(x: dict[str, pd.DataFrame], truth: pd.DataFrame, params: ModelParams = D
 
     status = el["tooth_status_code"]
     eval_masks = {"held_out": status.isin(LABEL_SETS["completed"]) & el["is_perio_loss"].notna() & in_test,
-                  "missing_at_entry": (status == "missing_at_entry") & true.notna(),
-                  "extracted_no_dx": (status == "extracted_no_dx") & true.notna()}
-    eval_y = {"held_out": el["is_perio_loss"].astype("Float64"), "missing_at_entry": (true == "perio").astype(float),
-              "extracted_no_dx": (true == "perio").astype(float)}
+                  "missing_at_entry": (status == "missing_at_entry") & true.notna()}
+    eval_y = {"held_out": el["is_perio_loss"].astype("Float64"), "missing_at_entry": (true == "perio").astype(float)}
     worst_cal = patient_worst_cal(x)
     tag = {"generator_seed": generator_seed}
     scores, cals, preds, eval_rows, stage_parts, missing, validation = [], [], [], [], [], [], []

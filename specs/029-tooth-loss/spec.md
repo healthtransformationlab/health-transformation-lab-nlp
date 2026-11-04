@@ -343,6 +343,33 @@ on its own stream; R and Python agree on every tooth status.
 6. **Given** the same seed twice, **Then** the extract is identical; the later-missing draws use their own stream
    (`f"{seed}:open_dental:planned_then_missing"`), and `Params.planned_then_missing=0` gives none.
 
+### US10 - The tooth-loss model follows the study lead's answers on codes, labels, window and output (Priority: P1) #529
+
+The study lead answered the open questions on the model. Extractions are CDT D7111, D7140, D7210 and D7250, with no
+letter variants. An extraction with no diagnosis is dropped entirely rather than used as a negative. A planned
+extraction counts when the tooth goes missing within 1.5 years, and the most recent diagnosis wins: a later plan with
+another reason overrides an earlier periodontal one. There is no age cut-off. The model works at the tooth level only;
+summing to the person is a separate, later decision. Inter-rater and consistency measures don't grade it. Still to come:
+the periodontal diagnosis codes for every version of the classification, and the end of the age answer ("only
+restrict…"), so the 2018-01-01 start date stays the default until it is confirmed.
+
+**Why this priority**: it sets the extraction codes, the labels and the teeth the real-data run will use.
+
+**Independent Test**: hand-built extracts give the label and window from the most recent plan, and every named code
+counts as an extraction; the model drops no-diagnosis extractions, has no age cut-off and a 548-day window; the stage
+recount is written only on request; R and Python agree on every tooth status.
+
+**Acceptance Scenarios**:
+
+1. **Given** a completed extraction coded D7111, D7140, D7210 or D7250 with a periodontal diagnosis, **Then** the tooth
+   is `extracted_perio`; a code with a letter (D7140a) is not an extraction.
+2. **Given** a periodontal plan and, six months later, a caries plan for the same tooth, which then goes missing,
+   **Then** the tooth is `planned_then_missing_other`, with the days counted from the caries plan.
+3. **Given** an extraction with no diagnosis, **Then** it is left out of the model's teeth and evaluation and counted
+   by `exclusions` (`no_diagnosis_count`).
+4. **Given** the defaults, **Then** `min_age` is none and `planned_window_days` is 548; 18 and 30 stay settings.
+5. **Given** `scripts/51_tooth_loss_model.py` without `--stage-recount`, **Then** no stage recount file is written.
+
 ### Edge Cases
 
 - **Third molars:** they are often missing for other reasons (the synthetic mouths already treat them so), so
@@ -496,6 +523,19 @@ on its own stream; R and Python agree on every tooth status.
   - on a real extract the date a tooth went missing may come from a dated `toothinitial`; the rule is the same.
     Python and R stay in parity on the tooth statuses and day counts.
 
+- **FR-014** (US10, #529) The study lead's answers:
+  - extractions are D7111, D7140, D7210 and D7250 (`open_dental.EXTRACTIONS`; the code table holds all four; the
+    generator draws D7140 and D7210);
+  - the tooth's most recent planned extraction with a diagnosis gives its planned label and plan date, and
+    `ModelParams.planned_window_days` is 548;
+  - extractions with no diagnosis are dropped from the model (`eligible`, `exclusions` `no_diagnosis_count`); the
+    applied set is the teeth missing at entry;
+  - `ModelParams.min_age` is none by default (18 and 30 as sensitivity settings; the `repo_v2` preset follows,
+    `exploratory_1` keeps 18);
+  - the stage III vs IV recount is exploratory, written by script 51 only with `--stage-recount`;
+  - no inter-rater or consistency measures grade the model.
+    Python and R stay in parity on the tooth statuses.
+
 ### Key Entities
 
 - **Extract tables** (bronze): Open Dental's table and column names, lowercased.
@@ -528,6 +568,8 @@ on its own stream; R and Python agree on every tooth status.
 - **SC-011** No planned extraction whose tooth is still in the record is a training label by default; a planned
   extraction is one only when its tooth is missing within the window, and the earlier rule is reported beside it as a
   sensitivity setting, labelled synthetic (US9).
+- **SC-012** The model uses the extraction codes, label, window, age and output the study lead set, and the results
+  are regenerated under them, labelled synthetic (US10).
 
 ## Assumptions
 

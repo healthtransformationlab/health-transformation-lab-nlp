@@ -4,7 +4,7 @@ generator_seed,label_set,model,rule,patient_count,stage3_count,stage4_count,agre
 42,all,none,truth,2230,2137,93,2230,0,0,93,0,exploratory_1,synthetic
 42,all,none,teeth_lt_20,2230,2195,35,2156,8,66,35,0,exploratory_1,synthetic
 42,all,none,pairs_lt_10,2230,2045,185,2062,130,38,185,0,exploratory_1,synthetic
-42,completed,logistic,expected_perio_loss,2230,2148,82,2183,18,29,82,0,exploratory_1,synthetic
-42,completed,xgboost,expected_perio_loss,2230,2169,61,2174,12,44,61,0,exploratory_1,synthetic
-42,completed_planned,logistic,expected_perio_loss,2230,2135,95,2182,25,23,95,0,exploratory_1,synthetic
-42,completed_planned,xgboost,expected_perio_loss,2230,2154,76,2175,19,36,76,0,exploratory_1,synthetic
+42,completed,logistic,expected_perio_loss,2230,2154,76,2177,18,35,76,0,exploratory_1,synthetic
+42,completed,xgboost,expected_perio_loss,2230,2175,55,2170,11,49,55,0,exploratory_1,synthetic
+42,completed_planned,logistic,expected_perio_loss,2230,2139,91,2180,24,26,91,0,exploratory_1,synthetic
+42,completed_planned,xgboost,expected_perio_loss,2230,2149,81,2174,22,34,81,0,exploratory_1,synthetic

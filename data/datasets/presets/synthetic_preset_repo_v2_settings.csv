@@ -5,7 +5,7 @@ visit_min_age,18,18,False,repo_v2,synthetic
 visit_start_date,2021-04-01,2021-04-01,False,repo_v2,synthetic
 absent_code,healthy_or_gingivitis,healthy_or_gingivitis,False,repo_v2,synthetic
 stage4_rules,"recorded_only, every_missing, expected_perio_loss, truth, teeth_lt_20, pairs_lt_10","recorded_only, every_missing, expected_perio_loss, truth, teeth_lt_20, pairs_lt_10",False,repo_v2,synthetic
-tooth_loss_min_age,18,18,False,repo_v2,synthetic
+tooth_loss_min_age,none,none,False,repo_v2,synthetic
 tooth_loss_start_date,2018-01-01,2018-01-01,False,repo_v2,synthetic
 tooth_loss_split_unit,person,person,False,repo_v2,synthetic
 tooth_loss_test_share,0.2,0.2,False,repo_v2,synthetic

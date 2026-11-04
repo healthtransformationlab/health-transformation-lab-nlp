@@ -1,5 +1,5 @@
 generator_seed,label_set,feature_set,split_unit,test_share,cv_folds,planned_window_days,train_tooth_count,test_tooth_count,people_in_both_count,xgboost_params,cv_auc,preset_name,data_label
-42,completed,shared,visit,0.2,5,365,346,90,10,"{'max_depth': 2, 'n_estimators': 100, 'learning_rate': 0.1, 'subsample': 1.0, 'min_child_weight': 1}",0.8947419962,exploratory_1,synthetic
-42,completed,own,visit,0.2,5,365,346,90,10,"{'max_depth': 3, 'n_estimators': 100, 'learning_rate': 0.05, 'subsample': 1.0, 'min_child_weight': 1}",0.8912517263,exploratory_1,synthetic
-42,completed_planned,shared,visit,0.2,5,365,381,95,13,"{'max_depth': 2, 'n_estimators': 100, 'learning_rate': 0.05, 'subsample': 0.8, 'min_child_weight': 1}",0.9043254781,exploratory_1,synthetic
-42,completed_planned,own,visit,0.2,5,365,381,95,13,"{'max_depth': 2, 'n_estimators': 200, 'learning_rate': 0.05, 'subsample': 0.8, 'min_child_weight': 1}",0.9062346311,exploratory_1,synthetic
+42,completed,shared,visit,0.2,5,548,348,88,12,"{'max_depth': 2, 'n_estimators': 200, 'learning_rate': 0.05, 'subsample': 1.0, 'min_child_weight': 1}",0.9134519774,exploratory_1,synthetic
+42,completed,own,visit,0.2,5,548,348,88,12,"{'max_depth': 2, 'n_estimators': 200, 'learning_rate': 0.05, 'subsample': 1.0, 'min_child_weight': 1}",0.9226101695,exploratory_1,synthetic
+42,completed_planned,shared,visit,0.2,5,548,389,97,15,"{'max_depth': 2, 'n_estimators': 100, 'learning_rate': 0.05, 'subsample': 0.8, 'min_child_weight': 1}",0.9023006179,exploratory_1,synthetic
+42,completed_planned,own,visit,0.2,5,548,389,97,15,"{'max_depth': 2, 'n_estimators': 200, 'learning_rate': 0.05, 'subsample': 1.0, 'min_child_weight': 1}",0.9212636166,exploratory_1,synthetic

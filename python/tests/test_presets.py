@@ -85,9 +85,12 @@ def test_repo_v1_keeps_the_old_defaults():
     assert presets.load_preset("repo_v1") == REPO_V1
 
 
-def test_exploratory_1_differs_from_repo_v2_only_in_the_split():
+def test_exploratory_1_differs_from_repo_v2_only_in_the_split_and_the_tooth_loss_age():
+    # the tooth-loss model has no age cut-off by default since 029 US10 (#529); exploratory_1 keeps adults only
     v2, e1 = presets.load_preset("repo_v2"), presets.load_preset("exploratory_1")
-    assert {s for s in presets.PRESET_SETTINGS if v2[s] != e1[s]} == {"tooth_loss_split_unit", "classifier_split_unit"}
+    assert {s for s in presets.PRESET_SETTINGS if v2[s] != e1[s]} == {"tooth_loss_split_unit", "classifier_split_unit",
+                                                                     "tooth_loss_min_age"}
+    assert v2["tooth_loss_min_age"] is None and e1["tooth_loss_min_age"] == 18
     assert v2["tooth_loss_split_unit"] == v2["classifier_split_unit"] == "person"
 
 
@@ -152,9 +155,9 @@ def test_settings_table_says_what_changed():
     assert list(t["setting_name"]) == list(presets.PRESET_SETTINGS)
     row = t.set_index("setting_name")
     assert row.loc["grouping", "default_value_text"] == "five" and row.loc["grouping", "preset_value_text"] == "six"
-    assert bool(row.loc["grouping", "is_changed"]) and not bool(row.loc["tooth_loss_min_age", "is_changed"])
+    assert bool(row.loc["grouping", "is_changed"]) and bool(row.loc["tooth_loss_min_age", "is_changed"])   # 18 vs none
     changed = presets.settings_table("exploratory_1").query("is_changed")["setting_name"]
-    assert set(changed) == {"tooth_loss_split_unit", "classifier_split_unit"}
+    assert set(changed) == {"tooth_loss_split_unit", "classifier_split_unit", "tooth_loss_min_age"}
     assert not presets.settings_table("repo_v2")["is_changed"].any()
 
 
