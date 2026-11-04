@@ -233,6 +233,15 @@ def test_sensitivity_specificity_and_predictive_values_at_a_threshold():
     assert math.isnan(tm.classification([0, 0], [0.1, 0.2], 0.5)["sensitivity"])   # no positives: NaN, never 0
 
 
+def test_f1_is_the_harmonic_mean_of_ppv_and_sensitivity():
+    # 029 US11 (#567): the study lead asked for the F1 score beside the other measures
+    m = tm.classification(Y, P, 0.5)       # tp 2, fp 1, fn 1 -> 2*2 / (2*2 + 1 + 1)
+    assert m["f1"] == pytest.approx(4 / 6)
+    assert tm.classification([1, 0], [0.9, 0.1], 0.5)["f1"] == 1.0
+    assert tm.classification([1, 0], [0.1, 0.2], 0.5)["f1"] == 0.0           # positives, none found
+    assert math.isnan(tm.classification([0, 0], [0.1, 0.2], 0.5)["f1"])       # nothing positive at all: NaN
+
+
 def test_youden_threshold_is_the_smallest_probability_with_the_best_j():
     # at 0.35: tp 3, fp 2 -> J = 1 + 1/3 - 1 = 1/3; at 0.8: tp 2, fp 0 -> J = 2/3 (best); 0.9: J = 1/3
     assert tm.youden_threshold(Y, P) == 0.8
@@ -392,7 +401,7 @@ def test_a_run_fits_both_models_on_both_label_sets_and_scores_the_same_teeth(sma
     assert set(fitted.loc[fitted["eval_set"] == "missing_at_entry", "feature_set"]) == {"shared"}   # no own there
     assert (s["data_label"] == "synthetic").all()
     assert {"auc", "brier", "calibration_intercept", "calibration_slope", "sensitivity", "specificity", "ppv",
-            "npv", "outcome_rate"} <= set(s["metric"])
+            "npv", "f1", "outcome_rate"} <= set(s["metric"])
     assert set(s["threshold_name"].dropna()) == {"fixed_0.5", "youden_train"}
     # US7 (#429): teeth missing at entry hold both classes, so AUC and specificity there are numbers
     entry = s[(s["eval_set"] == "missing_at_entry") & s["model"].isin(tm.MODELS)]

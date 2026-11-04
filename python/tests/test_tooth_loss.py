@@ -9,10 +9,13 @@ from health_transformation_lab_nlp import tooth_loss as tl
 D = pd.Timestamp
 
 
-def _extract(procs=(), initial=(), exams=(), measures=(), plans=(), smoke="266919005", diseases=(), readings=()):
+def _extract(procs=(), initial=(), exams=(), measures=(), plans=(), smoke="266919005", diseases=(), readings=(),
+             items=None):
     """A tiny extract for patient 1. procs: (procnum, tooth, status, dx_name, datetp, datecomplete[, procdate]).
-    exams: (examnum, date). measures: (examnum, tooth, seq, six site values or toothvalue)."""
-    defs = [(i + 1, od.DEFCAT_DIAGNOSIS, n, a, i, False) for i, (n, a, _) in enumerate(od.OLDER_LIST + od.LIST_2017)]
+    exams: (examnum, date). measures: (examnum, tooth, seq, six site values or toothvalue).
+    items: the diagnosis definitions as (name, code); the synthetic lists by default."""
+    items = [(n, a) for n, a, _ in od.OLDER_LIST + od.LIST_2017] if items is None else items
+    defs = [(i + 1, od.DEFCAT_DIAGNOSIS, n, a, i, False) for i, (n, a) in enumerate(items)]
     defnum = {n: k for k, _, n, _, _, _ in defs}
     t = {name: pd.DataFrame(columns=cols) for name, cols in od.TABLES.items()}
     t["definition"] = pd.DataFrame(defs, columns=od.TABLES["definition"])
@@ -71,6 +74,35 @@ def test_one_row_per_patient_and_tooth_with_each_status():
         assert r["tooth_status_code"] == status, tooth
         assert (pd.isna(r["is_perio_loss"]) if label is None else r["is_perio_loss"] == label), tooth
         assert r["label_source_code"] == source, tooth
+
+
+def test_perio_is_matched_by_the_study_leads_codes_not_by_the_item_name():
+    # 029 US11 (#567): PE1-PE4 and P1-P4 are the periodontal reasons; any other recorded diagnosis is another reason,
+    # whatever its name says; an extraction with no diagnosis has none
+    items = [(f"Item {c}", c) for c in od.PERIO_CODES] + [("Periodontitis, stage III", "XP3"), ("Caries", "CAR"),
+                                                         ("Lower case", " pe2 ")]
+    procs = [(10 + i, 1 + i, od.COMPLETE, name, "2020-03-01", "2020-04-01") for i, (name, _) in enumerate(items)]
+    procs.append((40, 20, od.COMPLETE, "", "2020-03-01", "2020-04-01"))
+    t = tl.tooth_table(_extract(procs=procs, items=items))
+    for i, (_, code) in enumerate(items):
+        want = "extracted_perio" if code.strip().upper() in od.PERIO_CODES else "extracted_other"
+        assert _row(t, 1 + i)["tooth_status_code"] == want, code
+    assert _row(t, 20)["tooth_status_code"] == "extracted_no_dx"
+    assert set(od.PERIO_CODES) == {"PE1", "PE2", "PE3", "PE4", "P1", "P2", "P3", "P4"}
+
+
+def test_only_numbered_permanent_teeth_are_in_the_tooth_table():
+    # 029 US11 (#567): the study lead predicts for every adult tooth (1-32); primary teeth are letters (A-T) and
+    # supernumerary teeth are 51-82 in Open Dental, so their rows never reach the table
+    x = _extract(procs=[(10, "A", od.COMPLETE, "Periodontitis, stage IV", "2020-03-01", "2020-04-01"),
+                        (11, "51", od.COMPLETE, "Periodontitis, stage IV", "2020-03-01", "2020-04-01"),
+                        (12, "T", od.PLANNED, "Periodontitis, stage IV", "2021-01-01", None),
+                        (13, 3, od.COMPLETE, "Periodontitis, stage IV", "2020-03-01", "2020-04-01")],
+                 initial=["B", 2])
+    t = tl.tooth_table(x)
+    assert sorted(t["tooth_num"]) == list(range(1, 33))
+    assert _row(t, 3)["tooth_status_code"] == "extracted_perio" and _row(t, 2)["tooth_status_code"] == "missing_at_entry"
+    assert (t.drop(t.index[t["tooth_num"].isin([2, 3])])["tooth_status_code"] == "present").all()
 
 
 def test_a_planned_extraction_whose_tooth_goes_missing_at_a_later_visit():

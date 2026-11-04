@@ -1,12 +1,9 @@
 # Spec 029 twins: tooth statuses and planned-extraction copy counts (python/health_transformation_lab_nlp/tooth_loss.py).
 # Base R. Reads the Open Dental columns scripts/47_tooth_table.py writes. Synthetic data only.
 
-# The declared diagnosis lookup (open_dental.DIAGNOSIS_LOOKUP): every item of either list -> perio / other
-PERIO_ITEMS_029 <- c("Periodontal disease, advanced", "Periodontal disease, moderate",
-                     "Periodontitis, stage III", "Periodontitis, stage IV")
-OTHER_ITEMS_029 <- c("Caries, non-restorable", "Fractured tooth", "Orthodontic extraction", "Other",
-                     "Caries, non-restorable (2017 list)", "Fracture (2017 list)", "Orthodontic (2017 list)",
-                     "Other (2017 list)")
+# The diagnosis by its code (open_dental.diagnosis_classes, 029 US11 #567): the study lead's periodontal codes;
+# any other recorded diagnosis is another reason, no diagnosis is none
+PERIO_CODES_029 <- c("PE1", "PE2", "PE3", "PE4", "P1", "P2", "P3", "P4")
 EXTRACTIONS_029 <- c("D7111", "D7140", "D7210", "D7250")   # the study lead's list (029 US10, #529)
 DEFCAT_DIAGNOSIS_029 <- 16
 PLANNED_029 <- 1; COMPLETE_029 <- 2; EXISTING_OTHER_029 <- 4
@@ -17,8 +14,8 @@ extractions_029 <- function(pl, pc, defs) {
   e$tooth_num <- suppressWarnings(as.integer(e$toothnum))
   e <- e[!is.na(e$tooth_num) & e$tooth_num >= 1 & e$tooth_num <= 32, ]
   d <- defs[defs$category == DEFCAT_DIAGNOSIS_029, ]
-  item <- d$itemname[match(e$dx, d$defnum)]
-  e$dx_class <- ifelse(item %in% PERIO_ITEMS_029, "perio", ifelse(item %in% OTHER_ITEMS_029, "other", "none"))
+  code <- toupper(trimws(ifelse(is.na(d$itemvalue), "", as.character(d$itemvalue))))[match(e$dx, d$defnum)]
+  e$dx_class <- ifelse(is.na(code), "none", ifelse(code %in% PERIO_CODES_029, "perio", "other"))
   e
 }
 
@@ -112,7 +109,7 @@ classification_029 <- function(y, p, threshold) {
   tp <- sum(pred & y == 1); fp <- sum(pred & y == 0); fn <- sum(!pred & y == 1); tn <- sum(!pred & y == 0)
   ratio <- function(a, b) if (b > 0) a / b else NA_real_
   list(tp = tp, fp = fp, fn = fn, tn = tn, sensitivity = ratio(tp, tp + fn), specificity = ratio(tn, tn + fp),
-       ppv = ratio(tp, tp + fp), npv = ratio(tn, tn + fn))
+       ppv = ratio(tp, tp + fp), npv = ratio(tn, tn + fn), f1 = ratio(2 * tp, 2 * tp + fp + fn))
 }
 
 logit_029 <- function(p) { q <- pmin(pmax(p, CLIP_029), 1 - CLIP_029); log(q / (1 - q)) }

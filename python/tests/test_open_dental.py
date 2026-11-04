@@ -98,6 +98,24 @@ def test_extraction_diagnoses_follow_the_declared_rates():
     assert icd.mean() < 0.05                              # ICD codes only for medical claims: rare
 
 
+def test_the_synthetic_lists_code_their_periodontal_items_with_the_study_leads_codes():
+    # 029 US11 (#567): the periodontal items carry P1-P4 (older list) or PE1-PE4 (2017 list) as their code
+    for items, prefix in ((od.OLDER_LIST, "P"), (od.LIST_2017, "PE")):
+        for name, code, kind in items:
+            assert (code in od.PERIO_CODES) == (kind == "perio"), name
+            if kind == "perio":
+                assert code.rstrip("1234") == prefix, name
+
+
+def test_extractions_read_the_diagnosis_key_as_a_number_even_from_text(built):
+    # PR #574 review: a dx read from CSV is text; it must still find its definition, not fall to "none"
+    tables, truth = built
+    want = od.extractions(tables, truth)["dx_class"].tolist()
+    as_text = {**tables, "procedurelog": tables["procedurelog"].astype({"dx": str})}
+    assert od.extractions(as_text, truth)["dx_class"].tolist() == want
+    assert "perio" in want
+
+
 def test_the_older_diagnosis_list_gives_way_to_the_2017_list():
     tables, truth = od.build(od.Params(n_patients=400), seed=3)
     p = od.Params()

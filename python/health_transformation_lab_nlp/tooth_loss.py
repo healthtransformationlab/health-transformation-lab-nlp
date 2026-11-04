@@ -5,8 +5,8 @@ diagnosis maps to periodontal), and what was charted before. `planned_extraction
 however many treatment-plan copies carry it. Reads the silver tables `open_dental.clean` returns; synthetic only.
 
 Status, first rule that applies:
-1. a completed extraction (ProcStatus 2): extracted_perio, extracted_other or extracted_no_dx, by its diagnosis item
-   mapped through `open_dental.DIAGNOSIS_LOOKUP` (a planned extraction later completed is the same row, so it counts
+1. a completed extraction (ProcStatus 2): extracted_perio, extracted_other or extracted_no_dx, by its diagnosis item's
+   code through `open_dental.diagnosis_classes` (PE1-PE4 and P1-P4 periodontal, 029 US11) (a planned extraction later completed is the same row, so it counts
    once, as completed);
 2. missing at entry: a `toothinitial` row of InitialType 0, or an extraction done elsewhere (ProcStatus 4) with no
    date or dated on or before the patient's first visit;
@@ -82,9 +82,7 @@ def _extractions(x: dict[str, pd.DataFrame]) -> pd.DataFrame:
     ext = ext[ext["tooth_num"].between(1, 32)]
     for c in ("datetp", "datecomplete", "procdate"):
         ext[c] = _date(ext[c])
-    d = x["definition"][_num(x["definition"]["category"]) == od.DEFCAT_DIAGNOSIS]
-    names = dict(zip(_num(d["defnum"]), d["itemname"]))
-    ext["dx_class"] = ext["dx"].map(lambda v: od.DIAGNOSIS_LOOKUP.get(names.get(v, ""), "none")).astype(str)
+    ext["dx_class"] = ext["dx"].map(od.diagnosis_classes(x["definition"])).fillna("none").astype(str)
     return ext
 
 
