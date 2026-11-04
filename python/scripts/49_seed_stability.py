@@ -8,6 +8,8 @@ data/ is changed), and every method that needs no GPU is scored on that seed's r
 - word counts, and word counts plus X-ray (trained on that seed's training notes);
 - the two rule phenotypes;
 - each part of the record alone.
+Scored as scripts/28_ladder_vs_truth.py scores (#472): at the five status groups, on the review charts that count
+(study.scored_review: adults, visits from 2021-04-01), so seed 42 gives the leaderboard's own numbers.
 
 Writes data/datasets/ladder/:
   seed_stability.csv          one row per method and seed: n, accuracy
@@ -21,10 +23,10 @@ from pathlib import Path
 
 import pandas as pd
 
-from health_transformation_lab_nlp import ladder_eval, rungs, telemetry
+from health_transformation_lab_nlp import ladder_eval, rungs, study, telemetry
+from health_transformation_lab_nlp.labels import DEFAULT_GROUPING
 from health_transformation_lab_nlp.paths import DATASETS_DIR
 from health_transformation_lab_nlp.radiograph import FEATURES as RAD_FEATURES
-from health_transformation_lab_nlp.study import build_study
 
 FROM_KEY = ("algorithm_v0", "algorithm_design", "probing_chart", "exam_form", "proc_dx_completed",
             "proc_dx_planned", "radiograph_ai")
@@ -40,14 +42,16 @@ telemetry.start_script("49_seed_stability", data_label="synthetic")
 rows = []
 for seed in a.seeds:
     with tempfile.TemporaryDirectory() as tmp:
-        build_study(Path(tmp) / "ds", Path(tmp) / "raw", seed=seed)
-        key = pd.read_csv(Path(tmp) / "ds" / "answer_key" / "review_key.csv")
+        study.build_study(Path(tmp) / "ds", Path(tmp) / "raw", seed=seed)
+        key = study.scored_review(pd.read_csv(Path(tmp) / "ds" / "answer_key" / "review_key.csv"),
+                                  pd.read_csv(Path(tmp) / "ds" / "visits_structured.csv"), seed=seed)
         train = pd.read_csv(Path(tmp) / "ds" / "train.csv")
-    truth = key["truth_status"]
+    truth = ladder_eval.grouped(key["truth_status"], DEFAULT_GROUPING)
     preds = {m: key[m] for m in FROM_KEY}
     review = key[["visit_id", "note_text", *RAD_FEATURES]]
     for name, make in TRAINED.items():
         preds[name] = pd.Series(make().fit(train).predict(review)[0], index=key.index)
+    preds = {m: ladder_eval.grouped(p, DEFAULT_GROUPING) for m, p in preds.items()}
     rows += [{"method": m, "seed": seed, "n": len(truth), "accuracy": float((p == truth).mean())}
              for m, p in preds.items()]
     print(f"seed {seed}: done")
