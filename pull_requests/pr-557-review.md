@@ -1,4 +1,4 @@
-# PR review: 034 BUG1, describe the reader's columns (#556)
+# PR #557 review: 034 BUG1, describe the reader's columns (#556)
 
 Reviewed against `.claude/review-rubric.md` and AGENTS.md.
 
