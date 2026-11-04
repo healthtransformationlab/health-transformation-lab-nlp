@@ -6,6 +6,7 @@ import tarfile
 import numpy as np
 
 from health_transformation_lab_nlp import competition_check as cc
+from health_transformation_lab_nlp.paths import REPO_ROOT
 
 LISTING = [("HARNESS_README.md", 57_000), ("tasks.jsonl", 9_000_000), ("docker/Dockerfile.public", 2_000),
            ("docker/imp.py", 900), ("sandbox/setup.py", 8_000), ("sample_submission/agent.yaml", 700),
@@ -99,3 +100,12 @@ def test_the_kaggle_token_is_found_under_each_name_the_environments_use():   # #
     assert cc.kaggle_token({"KAGGLE_KEY": "k"}) == "k"
     assert cc.kaggle_token({"KAGGLE_API_KEY": "b"}) == "b"          # the cloud environment's name
     assert cc.kaggle_token({"KAGGLE_API_KEY": ""}) is None
+
+
+def test_every_workflow_that_installs_kaggle_also_installs_six():
+    """The same gap broke Publish datasets (#536): every workflow pinning kaggle 2.2.5 installs six with it."""
+    lines = [(wf.name, line) for wf in sorted((REPO_ROOT / ".github" / "workflows").glob("*.yml"))
+             for line in wf.read_text(encoding="utf-8").splitlines() if '"kaggle==' in line]
+    assert lines
+    missing = [name for name, line in lines if "six" not in line.split("#")[0].split()]
+    assert not missing, missing
