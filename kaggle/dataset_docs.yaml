@@ -4,6 +4,8 @@
 #
 # datasets.<slug>.files: a description per file; keys are paths in the dataset, `*` matches within a name.
 #   A file entry may name `other_columns`: the description for columns named after a method or a status.
+#   file_columns: {path pattern: {column: description}} for a column whose shared name means something else in
+#   that file (an LLM's `grade` is its answer, not the truth); these win over the shared description.
 # columns: one description per column name, shared across files (same name, same meaning).
 
 repository: https://github.com/healthtransformationlab/health-transformation-lab-nlp
@@ -69,12 +71,23 @@ datasets:
       ladder/ladder_proba.csv: >-
         Each method's probability for each status (healthy and gingivitis merged), one row per method and review
         note, for the methods that give probabilities.
+      ladder/medgemma_field_accuracy.csv: >-
+        Each MedGemma run's agreement with the answer key on each field it answers (status, grade, extent), with a
+        95% Wilson interval; grade and extent are scored only on the review notes whose truth has them.
       ladder/seed_stability.csv: >-
         Each method's accuracy on the review notes of the synthetic study rebuilt with each of five seeds (42, 1, 2,
         3, 4), for the methods that need no GPU: do the scores hold on other draws?
       ladder/seed_stability_summary.csv: Each method's accuracy across those five seeds - mean, spread and range.
     other_columns:
       ladder/ladder_preds.csv: a method's predicted status for this note (healthy and gingivitis merged); the column names the method
+    file_columns:
+      "llm_details_*.csv":
+        status: The periodontal status the model answered, as parsed from its reply.
+        grade: The periodontitis grade the model answered (A, B or C); NA when it answered none.
+        extent: The extent the model answered (localized, generalized or molar_incisor); NA when it answered none.
+      ladder/medgemma_field_accuracy.csv:
+        n: Number of review notes scored on this field.
+        accuracy: Share of those notes where the model's answer matches the answer key (0-1).
   health-transformation-lab-coding-agent-tasks:
     update_frequency: monthly
     sources: >-
@@ -193,6 +206,28 @@ columns:
   periodontitis_stage_2: Probability of periodontitis stage II.
   periodontitis_stage_3: Probability of periodontitis stage III.
   periodontitis_stage_4: Probability of periodontitis stage IV.
+
+  # LLM reader details (llm_details_*.csv; see also file_columns)
+  model: The model id the reader ran (for example medgemma-4b-it).
+  backend: How the model was run - hf (local weights) or openai (an OpenAI-compatible endpoint).
+  revision: The Kaggle Models handle or Hugging Face commit of the weights; empty for runs before it was recorded.
+  prompt_version: The reader prompt's version (for example reader-v2).
+  shots: Number of few-shot examples in the prompt.
+  input_tokens: Prompt tokens for the call.
+  output_tokens: Completion tokens for the call.
+  latency_s: Seconds the call took.
+  raw: The model's full reply, as returned.
+  quote: The passage the model quoted from the note as its evidence.
+  gate_ok: True when the quote gate passed (the quote appears verbatim in the note).
+  error: The call or parse error, if any; empty otherwise.
+  fallback: True when the quote gate failed and the keyword rules answered instead.
+
+  # MedGemma field accuracy (ladder/medgemma_field_accuracy.csv)
+  run: The MedGemma run the row scores (the model id).
+  field: The field scored - status, grade or extent.
+  correct: Number of notes where the model's answer for the field matches the answer key.
+  ci_lo: Lower end of the 95% Wilson interval for the field's accuracy.
+  ci_hi: Upper end of the 95% Wilson interval for the field's accuracy.
 
   # leaderboard
   method: The method (model or rule set) the row describes.

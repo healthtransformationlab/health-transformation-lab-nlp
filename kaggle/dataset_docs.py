@@ -71,6 +71,11 @@ def columns_of(src: Path) -> list[str]:
 
 
 def column_description(slug: str, dest: str, column: str) -> str | None:
+    """A file's own description of the column first (file_columns, where a shared name means something else in
+    that file), then the shared one, then the file's other_columns."""
+    for pattern, cols in (_entry(slug).get("file_columns") or {}).items():
+        if fnmatch.fnmatchcase(dest, pattern) and column in (cols or {}):
+            return " ".join(str(cols[column]).split())
     shared = _docs()["columns"].get(column)
     if shared:
         return " ".join(str(shared).split())
