@@ -1,4 +1,4 @@
-# PR review: 000 DOCS7, the tagline "Evidence you can check" (#573)
+# PR #575 review: 000 DOCS7, the tagline "Evidence you can check" (#573)
 
 Reviewed against `.claude/review-rubric.md` and AGENTS.md.
 
