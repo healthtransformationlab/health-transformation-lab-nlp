@@ -65,7 +65,8 @@ def test_the_scored_review_charts_are_the_visits_that_count(key):
     visits = pd.read_csv(DATASETS_DIR / "visits_structured.csv")
     view = study.scored_review(key, visits)
     dated = key.merge(visits[["visit_id", "visit_date"]], on="visit_id")
-    assert len(view) == len(study.visits_in_study(dated)) < len(key)
+    # #467: the note set is built for the visits that count, so the scoring-time filter is a no-op check
+    assert len(view) == len(study.visits_in_study(dated)) == len(key)
     assert (view["age"] >= study.ANALYSIS_MIN_AGE).all()
     assert (pd.to_datetime(view["visit_date"]) >= pd.Timestamp(study.ANALYSIS_START_DATE)).all()
 

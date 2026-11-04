@@ -14,7 +14,7 @@ benchmarks that check answers where medicine meets dentistry, and whether an ans
 1. **Open the quickstart in Colab:** [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/healthtransformationlab/health-transformation-lab-nlp/blob/main/notebooks/perio_bench_quickstart.ipynb)
    It loads the notes, trains a simple baseline in about a minute, and scores it beside the leaderboard.
 2. **The data:** [perio-bench-notes](https://huggingface.co/datasets/healthtransformationlab/perio-bench-notes):
-   3,484 training and 240 test notes, labelled with periodontal status.
+   3,016 training and 223 test notes, labelled with periodontal status.
 3. **The results:** [perio-bench-results](https://huggingface.co/datasets/healthtransformationlab/perio-bench-results):
    what every method answered, and the leaderboard.
 

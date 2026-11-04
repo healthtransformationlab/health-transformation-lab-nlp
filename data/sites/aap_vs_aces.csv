@@ -1,7 +1,7 @@
 aap_2017,gingivitis,healthy,periodontitis_stage_1,periodontitis_stage_2,periodontitis_stage_3,periodontitis_stage_4
-gingivitis,773,3,0,0,0,0
-healthy,0,911,0,0,0,0
-periodontitis_stage_1,14,5,723,0,0,0
-periodontitis_stage_2,8,2,55,532,0,0
-periodontitis_stage_3,9,3,0,47,268,0
-periodontitis_stage_4,5,0,0,0,76,3
+gingivitis,600,5,0,0,0,0
+healthy,0,808,0,0,0,0
+periodontitis_stage_1,6,4,603,0,0,0
+periodontitis_stage_2,13,3,71,495,0,0
+periodontitis_stage_3,9,1,0,55,279,0
+periodontitis_stage_4,4,0,0,0,31,3

@@ -40,8 +40,9 @@ def draw_risk(rng: random.Random, light_smoker_share: float = 0.10, heavy_smoker
               hba1c_share: float = 0.12) -> RiskFactors:
     """Cigarettes a day (1-9 for a light smoker, 10-30 for a heavy one) and HbA1c (None for not on record).
 
-    The defaults are the study's SYNTHETIC placeholders, kept because its benchmark notes were scored by external
-    model runs (spec 033 US3); `risk_kwargs` gives the arguments for published shares (spec 033 US2)."""
+    The defaults are SYNTHETIC placeholders (the study's shares before spec 033 US3); `risk_kwargs` gives the
+    arguments for published shares (spec 033 US2), which the Open Dental extract and, since US3 (#486), the study
+    build use (open_dental.risk_kwargs, study.STUDY_RISK_KWARGS)."""
     weights = [round(1 - light_smoker_share - heavy_smoker_share, 12), light_smoker_share, heavy_smoker_share]
     smoke = rng.choices([0, rng.randint(1, 9), rng.randint(10, 30)], weights=weights)[0]
     hba1c = rng.choice([round(rng.uniform(5.8, 6.9), 1), round(rng.uniform(7.0, 10.5), 1)]) \

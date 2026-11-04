@@ -51,7 +51,7 @@ def test_notes_splits_share_columns_and_test_is_the_review_set(tmp_path):
     key = pd.read_csv(out / "raw" / "review_key.csv")
     assert list(train.columns) == list(test.columns)
     assert {"note_text", "label", "grade", "extent"} <= set(train.columns)
-    assert len(test) == len(key) == 240 and set(test.visit_id) == set(key.visit_id)
+    assert len(test) == len(key) > 200 and set(test.visit_id) == set(key.visit_id)
     assert (test.set_index("visit_id").label == key.set_index("visit_id").truth_status).all()
     assert not set(train.visit_id) & set(test.visit_id)          # never train on the review notes
 

@@ -2,8 +2,8 @@
 
     python scripts/49_seed_stability.py [--seeds 42 1 2 3 4]
 
-The 240 review charts are one draw (seed 42). For each seed, the study is rebuilt in a temporary folder (nothing in
-data/ is changed), and every method that needs no GPU is scored on that seed's 240 review charts:
+The review charts are one draw (seed 42). For each seed, the study is rebuilt in a temporary folder (nothing in
+data/ is changed), and every method that needs no GPU is scored on that seed's review charts:
 - the keyword rules;
 - word counts, and word counts plus X-ray (trained on that seed's training notes);
 - the two rule phenotypes;

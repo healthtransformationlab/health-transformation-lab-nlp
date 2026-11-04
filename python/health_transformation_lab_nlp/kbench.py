@@ -46,7 +46,7 @@ TASK_VERSION = 1
 # ---------------------------------------------------------------- data
 @traced
 def eval_frame(path=REVIEW_KEY, n: int | None = None, seed: int = 0) -> pd.DataFrame:
-    """The review set (240 synthetic charts, answer key included) as the SDK wants it: one row per
+    """The review set (the synthetic review charts, answer key included) as the SDK wants it: one row per
     evaluation, columns become the task's keyword arguments. `n` takes a seeded sample."""
     df = pd.read_csv(path)[EVAL_COLUMNS]
     if n is not None:

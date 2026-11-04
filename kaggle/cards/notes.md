@@ -2,7 +2,7 @@
 
 Synthetic dental chart notes, each labelled with the patient's periodontal status under the 2017 AAP/EFP
 classification (healthy, gingivitis, periodontitis stage I-IV, with grade and extent), plus the structured
-visits they came from and a 240-note review set with its answer key. Built to practise clinical NLP,
+visits they came from and a 223-note review set with its answer key. Built to practise clinical NLP,
 phenotyping from dental records and OMOP modelling without touching real patients.
 
 **Everything here is synthetic.** No patient, no PHI, no real clinic. The generator wrote fake identifiers
@@ -22,7 +22,7 @@ appear. Each review note has a difficulty level (L1-L3).
 ## Files
 
 - **Train:** `train.csv`. `label` is the chart truth; `stated_status` is what the clinician wrote.
-- **Test:** `review_key.csv`. The 240 review notes with `truth_status`, difficulty, and what each other
+- **Test:** `review_key.csv`. The 223 review notes with `truth_status`, difficulty, and what each other
   evidence source (exam form, procedure and diagnosis codes, probing chart, radiograph AI) said. Score models
   here; don't train on it.
 - `visits_structured.csv` and `visits_truth.csv` are every visit's structured record and its truth, for

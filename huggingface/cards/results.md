@@ -1,6 +1,6 @@
-# PerioBench results: what rules, encoders and LLMs answered on 240 review notes
+# PerioBench results: what rules, encoders and LLMs answered on the review notes
 
-Every method's answers on the same 240 synthetic dental review notes, and their scores against the truth:
+Every method's answers on the same 223 synthetic dental review notes, and their scores against the truth:
 rule-based methods, TF-IDF with logistic regression, fine-tuned encoders (BERT, ModernBERT, clinical and
 biomedical variants) and large language models (MedGemma, Llama). Use it to compare a new model without rerunning
 these. Part of [PerioBench](https://healthtransformationlab.org) from the Health Transformation Lab.

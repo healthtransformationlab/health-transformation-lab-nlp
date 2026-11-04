@@ -22,7 +22,8 @@ LLM variants get their own files: +lora (adapter), +k<shots> (few-shot), +terse 
 Compare with the BERT encoders: scripts/29_medgemma_vs_bert.py.
 
 Writes data/datasets/ai_predictions_<rung>.csv (visit_id, pred, p_<status>...), plus
-llm_details_<rung><tag>.csv for LLM rungs. The simulated backend writes simulated_* files,
+llm_details_<rung><tag>.csv for LLM rungs, and records the note set a full run read in
+prediction_note_sets.csv (#467). The simulated backend writes simulated_* files,
 which the reliability and judge scripts do not pick up.
 """
 
@@ -31,7 +32,7 @@ import sys
 
 import pandas as pd
 
-from health_transformation_lab_nlp import telemetry
+from health_transformation_lab_nlp import note_set, telemetry
 from health_transformation_lab_nlp.labels import LABELS
 from health_transformation_lab_nlp.paths import DATASETS_DIR
 from health_transformation_lab_nlp.radiograph import FEATURES as RAD_FEATURES
@@ -117,6 +118,8 @@ if is_llm:
         truth = key.set_index("visit_id")["truth_status"].reindex(out["visit_id"]).to_numpy()
         acc = (out["pred"].to_numpy() == truth).mean()
         print(f"*** SIMULATED READER: dry run, not a MedGemma result (agreement with truth {acc:.1%}) ***")
+if not prefix and not a.limit:     # #467: the note set a full run read, so a rebuilt one never scores it
+    note_set.stamp(DATASETS_DIR, [path.name] + ([f"llm_details_{a.rung}{tag}.csv"] if is_llm else []))
 
 # ---- MLflow (docs/mlops.md): params, prediction file, optional Unity Catalog registration
 from health_transformation_lab_nlp.tracking import track

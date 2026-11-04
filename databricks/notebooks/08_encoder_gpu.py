@@ -2,7 +2,7 @@
 # MAGIC %md
 # MAGIC # Encoders that need a GPU (spec 002 T017)
 # MAGIC
-# MAGIC Fine-tunes each encoder in `rungs` on the training notes and predicts the 240 review charts with
+# MAGIC Fine-tunes each encoder in `rungs` on the training notes and predicts the review charts with
 # MAGIC `python/scripts/11_ai_predict.py`, the same script that runs the smaller encoders on a laptop.
 # MAGIC Synthetic data only. The large ModernBERTs and the Longformers are too slow on CPU; GatorTron-base
 # MAGIC diverged on CPU at the default learning rate (every chart called healthy), so `lr_overrides` reruns it

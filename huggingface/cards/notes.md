@@ -1,6 +1,6 @@
 # PerioBench notes: synthetic dental notes labelled with periodontal status
 
-3,484 synthetic dental chart notes to train on and 240 to test on, each labelled with the patient's periodontal
+3,016 synthetic dental chart notes to train on and 223 to test on, each labelled with the patient's periodontal
 status under the 2017 AAP/EFP classification: healthy, gingivitis, or periodontitis stage I to IV, with grade
 and extent. Built to practise clinical NLP and phenotyping from dental records without touching real patients.
 Part of [PerioBench](https://healthtransformationlab.org) from the Health Transformation Lab.
@@ -10,7 +10,7 @@ Part of [PerioBench](https://healthtransformationlab.org) from the Health Transf
 ```python
 from datasets import load_dataset
 
-notes = load_dataset("healthtransformationlab/perio-bench-notes")   # train: 3,484 notes, test: 240
+notes = load_dataset("healthtransformationlab/perio-bench-notes")   # train: 3,016 notes, test: 223
 print(notes["train"][0]["note_text"], "->", notes["train"][0]["label"])
 ```
 
@@ -33,7 +33,7 @@ the test notes beside the published leaderboard. The same data and notebook are 
 | Config | What it is |
 |---|---|
 | `notes` (default) | `train` and `test` splits: the note, its `label` (healthy, gingivitis, periodontitis_stage_1 to 4), `grade`, `extent`, what the clinician wrote (`stated_status`), and the X-ray bone-loss reading |
-| `review_key` | The 240 test notes with every other part of the record: exam form, procedure and diagnosis codes, probing chart, what each says, and a difficulty level (L1 to L3) |
+| `review_key` | The 223 test notes with every other part of the record: exam form, procedure and diagnosis codes, probing chart, what each says, and a difficulty level (L1 to L3) |
 | `visits`, `visits_truth` | Every visit's structured record and its true status, for phenotyping from structured data |
 | `clinics` | The 8 synthetic clinics |
 

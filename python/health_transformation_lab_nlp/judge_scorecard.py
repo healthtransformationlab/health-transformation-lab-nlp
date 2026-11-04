@@ -204,7 +204,7 @@ def _judge_status(judgments: pd.DataFrame) -> pd.Series:
 @traced
 def judge_metrics(inp: dict, answers: pd.DataFrame, judgments: pd.DataFrame, n_boot: int = 1000,
                   seed: int = 0) -> pd.DataFrame:
-    """One row per (system, metric): vs_truth (the README number, all 240 charts), vs_truth_judged and
+    """One row per (system, metric): vs_truth (the README number, every scored chart), vs_truth_judged and
     vs_judge (the charts the judge gave a status for), difference = vs_judge - vs_truth_judged, and
     n_judged. `correct` rows also carry judge-corrected accuracy among answered charts
     (Rogan-Gladen from verdicts, judge calibrated on the same charts' truth) with a 95% range."""

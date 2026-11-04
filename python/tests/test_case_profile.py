@@ -259,7 +259,7 @@ def test_every_rule_is_scored_on_the_study_with_its_checkable_count():
     assert list(overall.index) == RULE_NAMES + ["any_rule"]
     assert (overall.checkable_count > 0).all() and (overall.flagged_count > 0).all()
     assert overall.loc["any_rule", "checkable_count"] == (v.proc_dx_completed != "unknown").sum()
-    assert overall.loc["any_rule", "injected_checkable_count"] == 34
+    assert overall.loc["any_rule", "injected_checkable_count"] == 31     # the #467 build (34 before)
 
 
 @pytest.mark.parametrize("kw, fails", [
