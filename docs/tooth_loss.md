@@ -43,13 +43,19 @@ stores the image, not a reading of it.
 
 ## How it is built
 
-- **Teeth:** third molars are left out by default. There is no age cut-off by default since 029 US10 (#529,
+- **Teeth:** the permanent (adult) teeth 1-32 only, whatever the patient's age (029 US11, #567): primary teeth are
+  lettered in Open Dental and supernumerary teeth are 51-82, so neither reaches the tooth table. Third molars are left
+  out by default. There is no age cut-off by default since 029 US10 (#529,
   the study lead's answer); 18 and over and 30 and over (`ModelParams.min_age`, `--min-age`) are sensitivity
   analyses. Extractions with no diagnosis are dropped entirely (029 US10): not a negative, not trained on, not scored.
   A start date (`ModelParams.start_date`, `--start-date`, spec 032; 2018-01-01 by default since spec 032 US8, `""`
   for every year) keeps the teeth lost on or after it, or first charted on or after it when the loss date isn't
   recorded.
   `tooth_loss_model.exclusions` counts the teeth left out by each reason.
+- **The label:** an extraction is periodontal when its diagnosis item's code is PE1, PE2, PE3, PE4, P1, P2, P3 or
+  P4 (the study lead's list, 029 US11, #567; `open_dental.PERIO_CODES`), matched on the code, not the item's name.
+  Any other recorded diagnosis is another reason. The synthetic lists carry P3 and P4 (older list) and PE3 and PE4
+  (2017 list) on their periodontal items.
 - **Two label sets** (FR-010): completed extractions only, and completed plus planned extractions (one per planned
   procedure, however many plan copies; a tooth planned then extracted counts once, as completed). Since 029 US9
   (#507) a planned extraction counts only when the tooth is **recorded missing at a later visit within 548 days
@@ -75,7 +81,7 @@ stores the image, not a reading of it.
   score: the run prints how many patients that is, and it is never the default; `--cv-folds K` tunes XGBoost by
   K-fold cross-validation over a small fixed grid, folds grouped by patient unless the split is by visit.
 - **Measures:** AUC, Brier score, calibration intercept and slope, a 10-bin calibration table, and sensitivity,
-  specificity and predictive values at 0.5 and at the Youden threshold chosen on the training teeth. 95% intervals
+  specificity, predictive values and F1 (029 US11, #567, the study lead's ask) at 0.5 and at the Youden threshold chosen on the training teeth. 95% intervals
   from 1,000 bootstrap resamples of patients. The run is repeated on 5 generator seeds.
 - **Output, tooth level only** (029 US10, #529): the model gives one probability per missing tooth. Summing them to
   the person (the stage III vs IV recount below) is a separate, later decision, so it is written only with
@@ -335,5 +341,12 @@ no state; the optional `Params.clinic_states` is not used by any committed resul
   diagnosis can't be measured; that gap is stated, not estimated. The label is the recorded diagnosis item, so
   "agreement" means agreement with what the dentist recorded; checking the label itself needs the chart comparison
   or expert review in the analysis plan (section 13).
+- **Before a real run** (029 US11): check that the extract's diagnosis definitions (`definition`, category 16)
+  carry the codes in `itemvalue`, and count the extractions by code: a periodontal item coded otherwise would be read
+  as another reason. Confirm the start date (2018-01-01 by default). Only aggregate scores leave the environment.
+- **Not built yet, for a real run:** `tooth_loss_model.run` needs the synthetic answer key and labels every row
+  synthetic, and script 51 only builds synthetic extracts; a run on a real extract needs a mode with no answer key
+  (no missing-at-entry scores, no truth stage rule), rows labelled real, and the radiograph reading left out unless
+  the practice has one (029 US12, #572).
 - **Not built yet:** subgroups (section 11), the temporal and second-site validation (section 9), the sensitivity
   analyses other than the minimum age and third molars (section 12), and the sample-size check (section 6).

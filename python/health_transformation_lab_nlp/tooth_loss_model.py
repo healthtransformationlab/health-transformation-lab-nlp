@@ -32,7 +32,7 @@ only to score the teeth that have no recorded reason, never as a feature. Synthe
   and it is never the default. `cv_folds` tunes XGBoost by k-fold cross-validated AUC over XGB_GRID (folds grouped
   by patient unless the split is by visit), in place of the fixed XGB_PARAMS.
 - Measures (s. 10): AUC, Brier, calibration intercept and slope, a 10-bin calibration table, and sensitivity,
-  specificity, PPV and NPV at 0.5 and at Youden's threshold chosen on the training predictions; 95% intervals from
+  specificity, PPV, NPV and F1 (029 US11) at 0.5 and at Youden's threshold chosen on the training predictions; 95% intervals from
   bootstrap resamples of patients, not teeth. Stage III vs IV per patient under four counting rules, and two rules
   on the teeth left (fewer than 20 teeth, fewer than 10 occluding pairs; spec 032 US4) (labels.STAGE4_COUNT_RULES).
 
@@ -394,7 +394,8 @@ def _classification(y, p, threshold) -> dict:
     def ratio(a, b):
         return a / b if b else float("nan")
     return {"tp": tp, "fp": fp, "fn": fn, "tn": tn, "sensitivity": ratio(tp, tp + fn),
-            "specificity": ratio(tn, tn + fp), "ppv": ratio(tp, tp + fp), "npv": ratio(tn, tn + fn)}
+            "specificity": ratio(tn, tn + fp), "ppv": ratio(tp, tp + fp), "npv": ratio(tn, tn + fn),
+            "f1": ratio(2 * tp, 2 * tp + fp + fn)}
 
 
 def _logit(p):
@@ -468,7 +469,7 @@ def brier(y, p) -> float:
 
 @traced
 def classification(y, p, threshold: float) -> dict:
-    """Counts, sensitivity, specificity, PPV and NPV with p >= threshold called periodontal (NaN when undefined)."""
+    """Counts, sensitivity, specificity, PPV, NPV and F1 with p >= threshold called periodontal (NaN when undefined)."""
     return _classification(*_arrays(y, p), threshold)
 
 
@@ -506,7 +507,7 @@ def _metrics(y, p, thresholds: dict) -> list[tuple]:
             ("outcome_rate", None, float(y.mean())), ("mean_predicted", None, float(p.mean()))]
     for name, t in thresholds.items():
         c = _classification(y, p, t)
-        rows += [(m, name, c[m]) for m in ("sensitivity", "specificity", "ppv", "npv")]
+        rows += [(m, name, c[m]) for m in ("sensitivity", "specificity", "ppv", "npv", "f1")]
     return rows
 
 

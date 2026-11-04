@@ -124,14 +124,18 @@ POS_OFFICE, POS_NURSING, POS_MOBILE, POS_SCHOOL = 0, 4, 7, 8
 SEQ_MOBILITY, SEQ_FURCATION, SEQ_MARGIN, SEQ_PROBING, SEQ_BLEEDING = 0, 1, 2, 4, 6
 
 # the practice's two diagnosis lists, invented here: (name, abbreviation, perio or other)
-OLDER_LIST = [("Periodontal disease, advanced", "PDA", "perio"), ("Periodontal disease, moderate", "PDM", "perio"),
+# The periodontal items carry the study lead's codes (029 US11, #567): P1-P4 on the older list, PE1-PE4 on the 2017 one.
+OLDER_LIST = [("Periodontal disease, advanced", "P4", "perio"), ("Periodontal disease, moderate", "P3", "perio"),
               ("Caries, non-restorable", "CNR", "other"), ("Fractured tooth", "FRX", "other"),
               ("Orthodontic extraction", "ORX", "other"), ("Other", "OTH", "other")]
-LIST_2017 = [("Periodontitis, stage III", "PS3", "perio"), ("Periodontitis, stage IV", "PS4", "perio"),
+LIST_2017 = [("Periodontitis, stage III", "PE3", "perio"), ("Periodontitis, stage IV", "PE4", "perio"),
              ("Caries, non-restorable (2017 list)", "CN2", "other"), ("Fracture (2017 list)", "FR2", "other"),
              ("Orthodontic (2017 list)", "OR2", "other"), ("Other (2017 list)", "OT2", "other")]
 # the declared lookup silver uses: every item of either list -> perio / other (spec 029 FR-004)
 DIAGNOSIS_LOOKUP = {name: kind for name, _, kind in OLDER_LIST + LIST_2017}
+# The tooth-loss label reads the diagnosis by its code (029 US11, #567): these codes are periodontal, any other
+# recorded diagnosis is another reason, and no diagnosis is none.
+PERIO_CODES = ("PE1", "PE2", "PE3", "PE4", "P1", "P2", "P3", "P4")
 
 PROCEDURE_CODES = [  # code, our short description, abbreviation, treat area, category, is hygiene, fee
     ("D0150", "Comprehensive oral evaluation", "CompEx", 3, "Exams", False, 95.0),
@@ -900,15 +904,24 @@ def extraction_codenums(tables: dict[str, pd.DataFrame]) -> set:
 
 
 @traced
+def diagnosis_classes(definition: pd.DataFrame) -> dict:
+    """defnum -> "perio" or "other" for each diagnosis definition, by its code (`itemvalue`, trimmed, any case):
+    PERIO_CODES are periodontal, any other code another reason (029 US11, #567). A defnum not here has no diagnosis."""
+    d = definition[pd.to_numeric(definition["category"], errors="coerce") == DEFCAT_DIAGNOSIS]
+    code = d["itemvalue"].fillna("").astype(str).str.strip().str.upper()
+    return dict(zip(pd.to_numeric(d["defnum"], errors="coerce"), code.isin(PERIO_CODES).map({True: "perio", False: "other"})))
+
+
+@traced
 def extractions(tables: dict[str, pd.DataFrame], truth: pd.DataFrame) -> pd.DataFrame:
     """One row per extraction planned or done in the record (not those done elsewhere), with its true reason, the
-    diagnosis item's class by DIAGNOSIS_LOOKUP (perio / other / none) and which list the item came from."""
+    diagnosis item's class by its code (diagnosis_classes: perio / other / none) and which list the item came from."""
     pl = tables["procedurelog"]
     ext = pl[pl["codenum"].isin(extraction_codenums(tables)) & pl["procstatus"].isin([PLANNED, COMPLETE])].copy()
     ext["tooth_num"] = ext["toothnum"].astype(int)
     d = tables["definition"][tables["definition"]["category"] == DEFCAT_DIAGNOSIS]
     names = dict(zip(d["defnum"], d["itemname"]))
-    ext["dx_class"] = ext["dx"].map(lambda x: DIAGNOSIS_LOOKUP.get(names.get(x, ""), "none"))
+    ext["dx_class"] = ext["dx"].map(diagnosis_classes(tables["definition"])).fillna("none")
     older = {n for n, _, _ in OLDER_LIST}
     ext["dx_list"] = ext["dx"].map(lambda x: None if x == 0 else ("older" if names.get(x) in older else "2017"))
     return ext.merge(truth, left_on=["patnum", "tooth_num"], right_on=["patient_id", "tooth_num"], how="left")

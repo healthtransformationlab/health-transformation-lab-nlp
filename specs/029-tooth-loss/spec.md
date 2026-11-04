@@ -370,6 +370,31 @@ recount is written only on request; R and Python agree on every tooth status.
 4. **Given** the defaults, **Then** `min_age` is none and `planned_window_days` is 548; 18 and 30 stay settings.
 5. **Given** `scripts/51_tooth_loss_model.py` without `--stage-recount`, **Then** no stage recount file is written.
 
+### US11 - The periodontal reasons are the study lead's codes, adult teeth only, and F1 is reported (Priority: P1) #567
+
+The study lead answered the last two model questions. The periodontal diagnosis codes are PE1, PE2, PE3, PE4, P1,
+P2, P3 and P4: an extraction carrying one of them is periodontal, and any other recorded diagnosis is another reason.
+The model predicts for every permanent (adult) tooth, the numbered teeth 1-32, whatever the patient's age; primary
+teeth are lettered in Open Dental and are never in the tooth table. The F1 score is reported beside the other
+classification measures. People and their teeth stay on the same side of the split (already the default), and the
+1.5-year window stands. The study start date (2018-01-01) is still to be confirmed.
+
+**Why this priority**: the periodontal codes were the last answer blocking the real-data run.
+
+**Independent Test**: hand-built extracts give `extracted_perio` for each of the eight codes, whatever the item's
+name, and `extracted_other` for another code; lettered and supernumerary teeth never reach the tooth table; F1 is
+in `classification` and the scores; R and Python agree on all of it.
+
+**Acceptance Scenarios**:
+
+1. **Given** a completed extraction whose diagnosis item's code is PE1-PE4 or P1-P4 (any case, spaces trimmed),
+   **Then** the tooth is `extracted_perio`; an item named "Periodontitis, stage III" with another code is
+   `extracted_other`.
+2. **Given** an extraction on tooth A or tooth 51, **Then** the tooth table still has exactly teeth 1-32 and the
+   extraction has no effect.
+3. **Given** the held-out teeth at a threshold, **Then** the scores include F1 = 2TP / (2TP + FP + FN), NaN when no
+   tooth is positive or predicted positive.
+
 ### Edge Cases
 
 - **Third molars:** they are often missing for other reasons (the synthetic mouths already treat them so), so
@@ -536,6 +561,15 @@ recount is written only on request; R and Python agree on every tooth status.
   - no inter-rater or consistency measures grade the model.
     Python and R stay in parity on the tooth statuses.
 
+- **FR-015** (US11, #567) The study lead's codes and measures:
+  - a diagnosis is periodontal when its definition's code (`definition.itemvalue`) is one of PE1-PE4 or P1-P4
+    (`open_dental.PERIO_CODES`, `open_dental.diagnosis_classes`), another reason for any other code, and none when
+    the procedure has no diagnosis; the synthetic lists carry P3, P4 (older) and PE3, PE4 (2017) on their
+    periodontal items;
+  - the tooth table holds the permanent teeth 1-32 only, at every age;
+  - F1 is reported with sensitivity, specificity, PPV and NPV at each threshold.
+    Python and R stay in parity on the classes and F1.
+
 ### Key Entities
 
 - **Extract tables** (bronze): Open Dental's table and column names, lowercased.
@@ -570,6 +604,8 @@ recount is written only on request; R and Python agree on every tooth status.
   sensitivity setting, labelled synthetic (US9).
 - **SC-012** The model uses the extraction codes, label, window, age and output the study lead set, and the results
   are regenerated under them, labelled synthetic (US10).
+- **SC-013** The periodontal label comes from the study lead's eight codes, only permanent teeth are predicted, and
+  F1 is in every score table, with the results regenerated and labelled synthetic (US11).
 
 ## Assumptions
 

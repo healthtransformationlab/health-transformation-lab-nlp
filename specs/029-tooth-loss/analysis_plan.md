@@ -40,6 +40,8 @@ This estimates why a tooth already lost was lost. It doesn't predict future loss
   - sensitivity: 18 and over (adults), and 30 and over (the national survey's adults).
   - Age is measured at the tooth's loss, or at the first visit for a tooth missing at entry.
   - Children's teeth are mostly baby teeth or orthodontic extractions, not periodontitis.
+- **Fixed:** the permanent (adult) teeth 1-32 only, at every age; primary teeth are lettered and never in the tooth
+  table (029 US11, #567).
 - **Fixed:** third molars are excluded from the label and the stage count by default ([spec.md](spec.md), edge cases).
   Including them is a sensitivity analysis.
 - **Fixed:** the unit is the tooth; patients contribute several teeth, and every split and interval respects that
@@ -48,10 +50,9 @@ This estimates why a tooth already lost was lost. It doesn't predict future loss
 ## 4. Outcome (the label)
 
 - **Fixed:**
-  - 1 = the tooth's extraction carries a periodontal diagnosis item;
+  - 1 = the tooth's extraction carries a periodontal diagnosis: its item's code is PE1-PE4 or P1-P4 (the study
+    lead, 029 US11, #567; `open_dental.PERIO_CODES`), on either of the practice's lists;
   - 0 = it carries another diagnosis item.
-  - Items from both of the practice's diagnosis lists (older and 2017) are mapped by a declared lookup
-    (`open_dental.DIAGNOSIS_LOOKUP`).
   - An extraction with no diagnosis is dropped entirely: not a negative, not trained on, not scored (029 US10).
   - Extractions are CDT D7111, D7140, D7210 and D7250, with no letter variants (029 US10).
 - **Fixed, two label sets (FR-010):**
@@ -128,7 +129,7 @@ reported beside it to show what those measures add.
 - **Fixed, discrimination:** AUC.
 - **Fixed, calibration:** calibration intercept and slope, and a 10-bin table and plot.
 - **Fixed, overall:** Brier score.
-- **Fixed, classification:** sensitivity, specificity and positive and negative predictive value at a threshold of
+- **Fixed, classification:** sensitivity, specificity, positive and negative predictive value and F1 (029 US11) at a threshold of
   0.5, and at the threshold chosen on the training set (Youden). Both are named.
 - **Fixed, uncertainty:** 95% intervals from 1,000 bootstrap resamples of patients, not teeth.
 - **Fixed, stability:** the synthetic run is repeated on 5 generator seeds, and the spread is reported.
@@ -205,6 +206,7 @@ stated plainly:
 | 2026-11-01 | s. 8: the "only recorded periodontal extractions count" baseline is scored on the applied sets only (probability 0) | On the held-out extractions it is the label itself |
 | 2026-11-03 | s. 4: a planned extraction counts as a label only when the tooth is missing at a later visit within 365 days of the plan; the earlier rule becomes a sensitivity analysis | The study lead's labelling guidance (a planned extraction that never happens is not tooth loss) (#507) |
 | 2026-11-04 | s. 3: no age cut-off by default (18+ and 30+ sensitivity); s. 4: extraction codes D7111, D7140, D7210, D7250; no-diagnosis extractions dropped; window 548 days from the most recent plan, whose diagnosis is the label; s. 9: applied set is teeth missing at entry; s. 10: stage recount exploratory, no inter-rater or consistency measures | The study lead's answers (#529); the end of the age answer is still to be confirmed |
+| 2026-11-04 | s. 4: periodontal = diagnosis code PE1-PE4 or P1-P4 (by code, not item name); s. 3: permanent teeth 1-32 at every age; s. 10: F1 added | The study lead's second answers (#567): the codes, "only restrict to secondary (adult) teeth", and "please add F1 score" |
 | 2026-11-01 | s. 6: the synthetic run uses 6,000 patients per extract (`scripts/51_tooth_loss_model.py --patients`) | With the default 2,000 there are too few labelled teeth (third molars excluded) for narrow intervals |
 | 2026-11-01 | s. 2 (synthetic data): teeth missing at the first visit now include non-periodontal losses, by age band (US7, #429); the missing-at-entry set has both classes, so its AUC, specificity and calibration are reported, and every synthetic result was rerun | Before, every tooth missing at entry (third molars aside) was periodontal, so that set had no negatives. The shares follow Suzuki et al. 2022 ([research.md](research.md)); the analysis itself is unchanged |
 | 2026-11-01 | s. 2 (synthetic data): the number of non-periodontal teeth missing at entry now rises with smoking and diabetes (US8, #433), rescaled so each age band keeps its US7 share; every synthetic result was rerun, and `docs/tooth_loss.md` gives the missing-at-entry AUC, specificity and stage recount before and after | Before, non-periodontal and periodontal losses shared no risk factor. The effects are those published for tooth loss other than periodontitis (Mai et al. 2013; Ahmadinia et al. 2022 as an upper bound; [research.md](research.md)); they are small, and the AUC moved by about 0.01, inside the seed spread. The analysis itself is unchanged |
