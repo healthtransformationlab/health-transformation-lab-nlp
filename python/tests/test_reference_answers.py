@@ -119,7 +119,10 @@ def test_committed_per_field_table_matches_the_committed_runs():
         # #467: the table and its runs were made on the notes before the rebuild and are kept until the rerun
         assert not any(note_set.is_current(DATASETS_DIR, f"llm_details_{r}.csv") for r in set(out["run"]))
         return
-    assert set(out["run"]) == {"medgemma-4b-it", "medgemma-1.5-4b-it"}
+    # the runs redone on the current notes so far (#467): the rest are rerun pending and left out
+    current = {r for r in ("medgemma-4b-it", "medgemma-1.5-4b-it")
+               if note_set.is_current(DATASETS_DIR, f"llm_details_{r}.csv")}
+    assert current and set(out["run"]) == current
     for run, got in out.groupby("run"):
         want = ra.field_accuracy(pd.read_csv(DATASETS_DIR / f"llm_details_{run}.csv"), ref)
         pd.testing.assert_frame_equal(got.drop(columns="run").reset_index(drop=True), want, check_dtype=False)
