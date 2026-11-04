@@ -19,6 +19,8 @@ fusion_tfidf_rad,not_stageable,17,0.7647058823529411
 fusion_tfidf_rad,stageable,206,0.8446601941747572
 gatortron-base+lr2e-05,not_stageable,17,0.8235294117647058
 gatortron-base+lr2e-05,stageable,206,0.8106796116504854
+llama-3.3-70b-instruct,not_stageable,17,0.7647058823529411
+llama-3.3-70b-instruct,stageable,206,0.8446601941747572
 longformer-base,not_stageable,17,0.8235294117647058
 longformer-base,stageable,206,0.8495145631067961
 medgemma-1.5-4b-it,not_stageable,17,0.8235294117647058
@@ -61,6 +63,8 @@ fusion_tfidf_rad+rules4,not_stageable,17,0.7647058823529411
 fusion_tfidf_rad+rules4,stageable,206,0.8737864077669902
 gatortron-base+lr2e-05+rules4,not_stageable,17,0.8235294117647058
 gatortron-base+lr2e-05+rules4,stageable,206,0.8398058252427184
+llama-3.3-70b-instruct+rules4,not_stageable,17,0.7647058823529411
+llama-3.3-70b-instruct+rules4,stageable,206,0.8398058252427184
 longformer-base+rules4,not_stageable,17,0.8235294117647058
 longformer-base+rules4,stageable,206,0.8786407766990292
 medgemma-1.5-4b-it+rules4,not_stageable,17,0.8235294117647058

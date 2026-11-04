@@ -1,4 +1,7 @@
 method,difficulty,n,accuracy
+llama-3.3-70b-instruct,L1,136,0.9632352941176471
+llama-3.3-70b-instruct,L2,23,0.8695652173913043
+llama-3.3-70b-instruct,L3,64,0.5625
 medgemma-1.5-4b-it,L1,136,0.9926470588235294
 medgemma-1.5-4b-it,L2,23,0.782608695652174
 medgemma-1.5-4b-it,L3,64,0.34375
@@ -56,6 +59,9 @@ scibert,L3,64,0.71875
 note_rules,L1,136,1.0
 note_rules,L2,23,1.0
 note_rules,L3,64,0.375
+llama-3.3-70b-instruct+rules4,L1,136,0.9632352941176471
+llama-3.3-70b-instruct+rules4,L2,23,0.8695652173913043
+llama-3.3-70b-instruct+rules4,L3,64,0.546875
 medgemma-1.5-4b-it+rules4,L1,136,0.9926470588235294
 medgemma-1.5-4b-it+rules4,L2,23,0.8260869565217391
 medgemma-1.5-4b-it+rules4,L3,64,0.328125
