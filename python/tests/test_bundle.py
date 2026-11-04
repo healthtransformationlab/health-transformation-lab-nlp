@@ -484,3 +484,31 @@ def test_doctor_notebook_checks_settings_first_and_writes_by_run_id():
     assert '.mode("append")' not in text and "saveAsTable" not in text and "mode(\"overwrite\")" not in text
     assert "DATABRICKS_TOKEN" not in text and "note_text" not in text
     assert "doctor_job.notifications(" in text and "raise RuntimeError" in text
+
+
+# Issue #521: the doctor's SEV1/SEV2 page is a failed run, so its failure email goes to the environment's ALERT_EMAIL
+def test_doctor_failure_email_goes_to_the_alert_emails_setting():
+    root, jobs = _load()
+    v = root["variables"]["alert_emails"]
+    assert v["type"] == "complex" and v["default"] == [] and v["description"]
+    doctor, _ = jobs["pipeline_doctor"]
+    assert doctor["email_notifications"] == {"on_failure": "${var.alert_emails}"}
+
+
+def test_no_email_address_is_written_in_the_bundle_or_the_deploy():
+    """The repo is public: the address lives in the GitHub environment variable ALERT_EMAIL."""
+    email = re.compile(r"[\w.+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}\b")
+    texts = [(ROOT / "databricks.yml").read_text(), (ROOT / ".github" / "workflows" / "deploy.yml").read_text()]
+    texts += [f.read_text() for f in (ROOT / "databricks" / "resources").glob("*.yml")]
+    assert not [m for t in texts for m in email.findall(t)]
+
+
+def test_deploy_passes_alert_email_as_a_variable_override_only_when_set():
+    wf = yaml.safe_load((ROOT / ".github" / "workflows" / "deploy.yml").read_text())
+    steps = wf["jobs"]["deploy"]["steps"]
+    step = next(s for s in steps if "ALERT_EMAIL" in str(s.get("env", {})))
+    assert step["if"] == "vars.ALERT_EMAIL != ''"
+    assert step["env"]["ALERT_EMAIL"] == "${{ vars.ALERT_EMAIL }}"
+    assert "variable-overrides.json" in step["run"] and "alert_emails" in step["run"]
+    names = [s.get("name", "") for s in steps]
+    assert names.index(step["name"]) < next(i for i, n in enumerate(names) if n == "Validate")

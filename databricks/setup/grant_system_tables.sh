@@ -4,7 +4,9 @@
 # create_service_principal.sh) USE_CATALOG on system and USE_SCHEMA and SELECT on system.lakeflow, nothing more.
 # a bundle can't hold these grants: bundle grants cover only resources the bundle creates, and the system
 # catalog is Databricks'. adding a privilege the group already has changes nothing, so it is safe to run again.
-# run once per target, logged in as a metastore admin (on Free Edition, the workspace's owner):
+# run once per target, logged in as an account admin. on Free Edition no one we control can: its metastore
+# belongs to Databricks and only account admins reach system.lakeflow (found 2026-11-04, issue 521), so there
+# the doctor is to read run history from the Jobs API instead. account users already have USE_CATALOG on system.
 #   databricks auth login --host https://<workspace>
 #   databricks/setup/grant_system_tables.sh dev
 #   databricks/setup/grant_system_tables.sh dev --print-config   # names only, no workspace calls

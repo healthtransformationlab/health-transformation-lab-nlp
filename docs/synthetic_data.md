@@ -187,9 +187,9 @@ where the item says so, its abstract (item 81, the state rates, against the CDC 
 sources were not used as first found:
 
 - **Dental coverage, ADA Health Policy Institute (2022)**: a news report
-  ([Becker's Dental](https://www.beckersdental.com/benchmarking/one-fifth-of-adults-lack-dental-coverage-6-notes)) gave 62.4%
-  private, 15.8% public and 21.8% none for 2022, but the HPI page it cites could not be found. The HPI's own deck (item 82, MEPS 2021) was read
-  instead and is what `Params.insurance_shares` uses (spec 033 US5).
+  ([Becker's Dental](https://www.beckersdental.com/benchmarking/one-fifth-of-adults-lack-dental-coverage-6-notes))
+  gave 62.4% private, 15.8% public and 21.8% none for 2022, but the HPI page it cites could not be found. The HPI's
+  own deck (item 82, MEPS 2021) was read instead and is what `Params.insurance_shares` uses (spec 033 US5).
 - **America's Health Rankings (BRFSS teeth extractions by state)**: the page could not be opened from this
   environment (tried again for spec 033 US4), so its figures were not checked or cited. The same BRFSS measure is
   published by CDC's U.S. Chronic Disease Indicators, which could be read, and is item 81.

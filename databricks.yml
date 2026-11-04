@@ -48,6 +48,10 @@ variables:
   judge_max_usd:
     description: Budget per run, US$, for judge endpoint calls; the judge scorecard stops above it and the pipeline doctor's root-cause rung shares it (spec 027 US5)
     default: "5"
+  alert_emails:
+    description: Where the pipeline doctor's failed runs (its SEV1/SEV2 pages) are emailed. Empty by default; the deploy sets it from the GitHub environment variable ALERT_EMAIL, never from a file (the repo is public; issue 521)
+    type: complex
+    default: []
   doctor_lookback_days:
     description: Days of job runs the pipeline doctor diagnoses on each run (1-30; it reads 60 days for the trailing ok runs)
     default: "7"
