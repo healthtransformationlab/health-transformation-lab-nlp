@@ -89,7 +89,7 @@ def test_the_build_carries_resources_sources_frequency_and_a_cover_beside_it(tmp
     assert meta["userSpecifiedSources"] and meta["expectedUpdateFrequency"]
     side = pub.meta_dir(out)
     assert (side / "dataset-cover-image.png").exists()
-    assert json.loads((side / "dataset-metadata.json").read_text()) == meta
+    assert json.loads((side / "dataset-metadata.json").read_text()) == pub.for_metadata_update(meta)
     assert not list(out.glob("dataset-cover-image.*"))   # never uploaded as data
 
 
@@ -135,3 +135,42 @@ def test_a_file_can_say_what_a_shared_column_name_means_in_it():   # #554: an LL
     assert "true" in docs.column_description("perio-bench-results", "train.csv", "grade").lower()
     answered = docs.column_description("perio-bench-results", "llm_details_medgemma-4b-it.csv", "grade")
     assert "answered" in answered.lower() and "true" not in answered.lower()
+
+
+def test_the_metadata_update_names_the_licence_as_kaggle_lists_it(tmp_path):
+    """Kaggle's metadata update refuses "CC-BY-4.0" ("You've specified an invalid license"), which create accepts;
+    it takes the licence's full name, as `kaggle datasets metadata` shows it."""
+    out = tmp_path / "notes"
+    meta = pub.build("notes", out, "someone", "abc1234")
+    assert meta["licenses"] == [{"name": "CC-BY-4.0"}]                          # create and version
+    side = json.loads((pub.meta_dir(out) / "dataset-metadata.json").read_text())
+    assert side["licenses"] == [{"name": "Attribution 4.0 International (CC BY 4.0)"}]
+    assert {k: v for k, v in side.items() if k != "licenses"} == {k: v for k, v in meta.items() if k != "licenses"}
+
+
+class ListingApi(FakeApi):
+    """Kaggle's file listing of the live dataset, in pages."""
+
+    def __init__(self, live):
+        super().__init__(True)
+        self.live = sorted(live)
+
+    def dataset_list_files(self, ref, page_token=None, page_size=200):
+        i = int(page_token or 0)
+        files = [type("F", (), {"name": n})() for n in self.live[i:i + 1]]
+        nxt = str(i + 1) if i + 1 < len(self.live) else None
+        return type("P", (), {"files": files, "next_page_token": nxt})()
+
+
+def test_metadata_only_describes_only_the_files_the_live_dataset_holds(tmp_path):
+    """A file added since the last version isn't on Kaggle yet, and Kaggle refuses metadata naming it ("The dataset
+    doesn't contain a file named ..."): the next version carries its description."""
+    out = tmp_path / "notes"
+    meta = pub.build("notes", out, "someone", "abc1234")
+    live = sorted(pub.files_of("notes"))[:-1]
+    api = ListingApi(live)
+    sent = pub.metadata_only(out, meta, api)
+    assert {r["path"] for r in sent["resources"]} == set(live)
+    assert api.calls == [("metadata", meta["id"], str(pub.meta_dir(out)))]
+    side = json.loads((pub.meta_dir(out) / "dataset-metadata.json").read_text())
+    assert {r["path"] for r in side["resources"]} == set(live)
