@@ -5,6 +5,7 @@
   "max_new_tokens": 2048,
   "thinking": false,
   "max_context": 24576,
+  "reuse_cache": true,
   "max_memory": {
    "0": "12GiB",
    "1": "13GiB"
