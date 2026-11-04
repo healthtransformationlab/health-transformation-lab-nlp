@@ -1,4 +1,4 @@
-# PR review: 033 BUG1, record full reruns on the rebuilt notes (#550)
+# PR #551 review: 033 BUG1, record full reruns on the rebuilt notes (#550)
 
 Reviewed against `.claude/review-rubric.md` and AGENTS.md.
 
