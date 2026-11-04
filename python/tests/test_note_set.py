@@ -126,3 +126,14 @@ def test_a_file_already_on_the_current_notes_still_sets_the_bar(tmp_path):
     _preds(src, "m", [1, 2, 3])
     with pytest.raises(ValueError, match="fewer rows"):
         results_store.record(src, dest, "https://x/runs/6", min_rows=3)
+
+
+def test_a_derived_medgemma_table_is_current_once_a_medgemma_run_is():
+    # #467: scripts 29 and 54 score the current MedGemma runs; the tables they write must say so, or they stay
+    # "made on the old notes" after every rerun
+    register = note_set.read_register(DATASETS_DIR)
+    runs = [f for f in register["file"] if f.startswith("llm_details_medgemma-")]
+    if not any(note_set.is_current(DATASETS_DIR, f) for f in runs):
+        pytest.skip("every MedGemma run is rerun pending")
+    derived = [f for f in register["file"] if f.startswith(("ladder/medgemma_vs_bert", "ladder/medgemma_field"))]
+    assert derived and all(note_set.is_current(DATASETS_DIR, f) for f in derived), derived
