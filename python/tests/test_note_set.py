@@ -98,3 +98,31 @@ def test_the_ladder_scores_only_current_predictions_and_lists_the_rest_as_pendin
     assert sorted(pending["method_name"]) == sorted(expected["method_name"])
     scored = {m.removesuffix("+rules4") for m in ladder["method"]}
     assert not scored & set(pending["method_name"])
+
+
+def test_a_full_run_on_rebuilt_notes_replaces_a_larger_file_from_the_old_notes(tmp_path):
+    # #467: the review set went from 240 notes to 223. The old file's 240 rows were made on the old notes, so they
+    # don't set the bar for a full run on the new ones; a smaller test run on the new notes is still refused.
+    dest, src = tmp_path / "datasets", tmp_path / "out"
+    src.mkdir()
+    _key(dest, [1, 2, 3, 4, 5], text="old note {}")
+    _preds(dest, "m", [1, 2, 3, 4, 5])
+    note_set.stamp(dest, ["ai_predictions_m.csv"])                     # made on the old notes
+    _key(dest, [1, 2, 3])                                              # the rebuild: fewer, different notes
+    _preds(src, "m", [1, 2])
+    with pytest.raises(ValueError, match="fewer rows"):
+        results_store.record(src, dest, "https://x/runs/4", min_rows=3)
+    _preds(src, "m", [1, 2, 3])
+    assert results_store.record(src, dest, "https://x/runs/5", min_rows=3) == ["ai_predictions_m.csv"]
+    assert len(pd.read_csv(dest / "ai_predictions_m.csv")) == 3 and note_set.is_current(dest, "ai_predictions_m.csv")
+
+
+def test_a_file_already_on_the_current_notes_still_sets_the_bar(tmp_path):
+    dest, src = tmp_path / "datasets", tmp_path / "out"
+    src.mkdir()
+    _key(dest, [1, 2, 3, 4])
+    _preds(dest, "m", [1, 2, 3, 4])
+    note_set.stamp(dest, ["ai_predictions_m.csv"])
+    _preds(src, "m", [1, 2, 3])
+    with pytest.raises(ValueError, match="fewer rows"):
+        results_store.record(src, dest, "https://x/runs/6", min_rows=3)
