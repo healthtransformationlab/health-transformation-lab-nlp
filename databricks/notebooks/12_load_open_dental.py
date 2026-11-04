@@ -42,6 +42,7 @@ import pandas as pd
 from health_transformation_lab_nlp import (
     gold_names,
     open_dental,
+    table_comments,
     tooth_loss,
     tooth_loss_dq,
     tooth_loss_model,
@@ -89,6 +90,7 @@ def save(df: pd.DataFrame, schema: str, name: str, mode: str = "overwrite") -> N
     """Write the table as it is: Open Dental's columns only. Its run is recorded in load_log."""
     sdf = spark.createDataFrame(df.astype({c: "string" for c in df.columns if df[c].dtype == object}))  # noqa: F821
     sdf.write.mode(mode).option("overwriteSchema", "true").saveAsTable(f"{catalog}.{schema}.{name}")
+    table_comments.apply(spark, f"{catalog}.{schema}.{name}")  # noqa: F821  spec 034: overwriteSchema drops them
     print(f"{catalog}.{schema}.{name}: {len(df):,} rows")
 
 

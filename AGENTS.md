@@ -222,6 +222,9 @@ their official names. The Postgres `perio_chart` view doesn't yet, and changes w
   files and the dashboard queries are uppercase, so keep one case per file. Three-part names
   (`health_transformation_lab.gold_perio_bench.fact_prediction`) outside a pipeline. CTEs, not nested subqueries;
   explicit `inner join` / `left join`; no `select *` outside bronze. Each table's comment states its grain.
+  Comments reach Unity Catalog through `health_transformation_lab_nlp.table_comments.apply` after every write, from the
+  table's and columns' descriptions in `diagrams/_build/gold_model.py` (spec 034); a new table or column is described
+  there, or `python/tests/test_table_comments.py` fails.
 - **Tables are singular**, one row per noun (`fact_prediction`, not `ai_predictions`).
 - **Gold prefixes:** `fact_<event>` one row per event or answer, with a key to each dimension it uses;
   `dim_<noun>` one row per thing described; a summary table is named `<subject>_<noun>` (`judge_metric`,

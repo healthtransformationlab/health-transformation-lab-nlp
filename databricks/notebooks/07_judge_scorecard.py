@@ -49,6 +49,7 @@ from health_transformation_lab_nlp import gold_names
 from health_transformation_lab_nlp import judge as jg
 from health_transformation_lab_nlp import judge_scorecard as js
 from health_transformation_lab_nlp import readme_results as rr
+from health_transformation_lab_nlp import table_comments
 from health_transformation_lab_nlp.paths import DEID_DIR
 
 inp = rr.load_inputs()
@@ -119,6 +120,7 @@ def save(pdf: pd.DataFrame, name: str):
     pdf = gold_names.to_gold(pdf, name)
     spark.createDataFrame(js.spark_rows(pdf), schema=js.spark_ddl(pdf)).write.mode("overwrite") \
          .option("overwriteSchema", "true").saveAsTable(table(name))
+    table_comments.apply(spark, table(name))  # noqa: F821  spec 034: an overwrite drops the comments
 
 save(answers, "fact_chart_answer")
 if len(judgments) or not spark.catalog.tableExists(table("fact_judge_call")):   # keep an earlier run's calls

@@ -11,4 +11,4 @@
 - [ ] T006 Run the metadata-only updates and record the new scores
 
 ## US2 - Every Unity Catalog table has a table comment and column comments #534
-- [ ] T007 Failing tests, then `delta.apply_comments` and the writers' calls
+- [x] T007 Failing tests, then `table_comments.apply` after every write (delta helpers; notebooks 01, 07, 10, 11, 12), `apply_all` in Load results after each deploy, and the LLM judge SQL's own table comment

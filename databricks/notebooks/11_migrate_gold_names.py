@@ -27,7 +27,7 @@ dbutils.library.restartPython()  # noqa: F821
 
 # COMMAND ----------
 
-from health_transformation_lab_nlp import gold_names, tracking
+from health_transformation_lab_nlp import gold_names, table_comments, tracking
 from pyspark.sql import functions as F
 
 dbutils.widgets.text("git_commit", "")  # noqa: F821  set by the job: the commit it was deployed from
@@ -90,6 +90,7 @@ def merge_missing(src, new: str) -> None:
     left, have, cond = keyed(src, new)
     (left.join(have, cond, "left_anti").select(*src.columns)
      .write.mode("append").option("mergeSchema", "true").saveAsTable(table(new)))
+    table_comments.apply(spark, table(new))  # noqa: F821  spec 034
 
 
 def not_carried(src, new: str) -> int:
@@ -110,11 +111,13 @@ if failed:
 for action, old, new in plan:
     if action == "copy":
         renamed(old, new).write.mode("overwrite").saveAsTable(table(new))
+        table_comments.apply(spark, table(new))  # noqa: F821  spec 034
         if rows(new) != rows(old):
             raise RuntimeError(f"{old} -> {new}: row counts differ ({rows(old)} vs {rows(new)})")
     elif action == "rewrite":       # same name, old columns: Delta overwrites from the snapshot it read
         n = rows(old)
         renamed(old, new).write.mode("overwrite").option("overwriteSchema", "true").saveAsTable(table(new))
+        table_comments.apply(spark, table(new))  # noqa: F821  spec 034
         if rows(new) != n:
             raise RuntimeError(f"{old}: row counts differ after renaming its columns ({n} vs {rows(new)})")
     elif action == "merge":         # a job wrote the new table first: add the old rows whose batch key it lacks
@@ -146,6 +149,7 @@ for cat, sch in legacy:
             n_old = spark.table(table(old, where)).count()  # noqa: F821
             if action == "copy":
                 renamed(old, new, where).write.mode("overwrite").saveAsTable(table(new))
+                table_comments.apply(spark, table(new))  # noqa: F821  spec 034
                 current[new] = spark.table(table(new)).columns  # noqa: F821
                 if rows(new) != n_old:
                     raise RuntimeError(f"{where}.{old} -> {new}: row counts differ ({n_old} vs {rows(new)})")

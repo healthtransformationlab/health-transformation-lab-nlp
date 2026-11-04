@@ -99,14 +99,17 @@ print(len(train), len(test))
 # OMOP + labels as Delta, so Genie / SQL / R-via-Connect can read them. The labelled notes go under their gold
 # names (spec 031), each row with this run's key.
 from health_transformation_lab_nlp import gold_names
+from health_transformation_lab_nlp import table_comments
 from health_transformation_lab_nlp.delta import replace_batch
 
 batch = {"run_id": run_id, "run_ts": pd.Timestamp.now(tz="UTC"), "git_commit": dbutils.widgets.get("git_commit")}
 for t in ["person", "visit_occurrence", "measurement", "note"]:
     spark.createDataFrame(pd.read_parquet(paths.OMOP_DIR / f"{t}.parquet")) \
          .write.mode("overwrite").saveAsTable(f"{catalog}.{schema}.{t}")
+    table_comments.apply(spark, f"{catalog}.{schema}.{t}")  # spec 034
 spark.createDataFrame(gold_names.to_gold(df.assign(**batch), "dim_study_note")).write.mode("overwrite") \
      .option("overwriteSchema", "true").saveAsTable(f"{catalog}.{schema}.dim_study_note")
+table_comments.apply(spark, f"{catalog}.{schema}.dim_study_note")  # spec 034
 display(spark.table(f"{catalog}.{schema}.dim_study_note").limit(5))
 
 # COMMAND ----------
