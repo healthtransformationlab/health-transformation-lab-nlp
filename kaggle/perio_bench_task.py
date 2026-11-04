@@ -50,7 +50,16 @@ else:
     judge_llm = perio.ScriptedReader(perio.judge_script(df), name="sim:scripted-judge")
 
 # %%
-run = perio.perio_bench.run(llm, df, judge_llm=judge_llm)
+# The task is declared here, in the pushed file: the Kaggle CLI parses this file for a `@task` named after the
+# slug and refuses the push without one (#541). The body is the package's, so tests and Kaggle run the same code.
+@kbench.task(name="perio-bench", version=perio.TASK_VERSION)
+def perio_bench(llm, df, judge_llm=None) -> dict:
+    """PerioBench: finding gum disease in dental records (phenotyping), scored against the answer key."""
+    return perio.perio_bench.func(llm, df, judge_llm=judge_llm)
+
+
+# %%
+run = perio_bench.run(llm, df, judge_llm=judge_llm)
 label = "SIMULATED (scripted model, not a result)" if run.result.get("is_simulated") else run.result["reader_name"]
 print(f"PerioBench [{label}]")
 print(json.dumps(run.result, indent=2))
