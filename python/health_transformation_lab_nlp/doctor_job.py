@@ -3,7 +3,8 @@ decides, in pandas, so it is tested without Spark. The notebook only reads and w
 
     check_settings   the job's parameters, checked before any work; a bad one fails naming it
     job_names        job display name -> pipeline key, from databricks/resources/jobs.yml (as ops/pipeline_config.yaml)
-    timeline_runs    system.lakeflow.job_run_timeline rows (one per run) -> fact_pipeline_run rows
+    api_runs         Jobs API runs (jobs.list_runs) -> the run timeline (one row per run)
+    timeline_runs    the run timeline -> fact_pipeline_run rows
     merge_spans      the span export (optional), one row per run, fills what the timeline can't say
     diagnose         doctor.signals for every recent run; doctor.classify and doctor.recommend for every failed
                      one; doctor.graduation on past decisions; approvals given as a job parameter
@@ -33,9 +34,14 @@ HISTORY_DAYS = 60                   # job runs read for the trailing ok runs; we
 MAX_LOOKBACK_DAYS = 30
 NOTIFY_NOW = ("SEV1", "SEV2")       # AGENTS.md "Alerts and severity": the owner directly; SEV3/4 go to the digests
 
-# system.lakeflow.job_run_timeline result_state -> run_status_code. Runs still going (null), cancelled, skipped
+# The timeline's result_state -> run_status_code. Runs still going (null), cancelled, skipped
 # or blocked are neither failures nor ok baselines, so they are left out.
 STATES = {"SUCCEEDED": "ok", "FAILED": "failed", "ERROR": "failed", "TIMED_OUT": "timed_out", "TIMEDOUT": "timed_out"}
+
+# Jobs API run state.result_state -> the timeline's result_state (issue 524). The rest keep their own names, which
+# STATES leaves out (neither failures nor ok baselines): CANCELED, SKIPPED, UPSTREAM_FAILED, UPSTREAM_CANCELED, ...
+API_STATES = {"SUCCESS": "SUCCEEDED", "TIMEDOUT": "TIMED_OUT", "INTERNAL_ERROR": "ERROR"}
+TIMELINE_COLUMNS = ["job_name", "run_id", "started_ts", "ended_ts", "result_state", "termination_code"]
 
 _BATCH = [("doctor_run_id", "string"), ("loaded_ts", "timestamp"), ("doctor_git_commit_sha", "string")]
 _RUN_TYPES = {"started_ts": "timestamp", "ended_ts": "timestamp", "row_in_count": "bigint", "row_out_count": "bigint",
@@ -127,9 +133,25 @@ def check_settings(widgets: dict) -> dict:
 
 @traced
 def job_names(path=JOBS_YML) -> dict[str, str]:
-    """Job display name (what system.lakeflow.jobs holds) -> the job's key in the bundle (the pipeline name)."""
+    """Job display name (a Jobs API run's run_name) -> the job's key in the bundle (the pipeline name)."""
     jobs = yaml.safe_load(path.read_text())["resources"]["jobs"]
     return {j["name"]: key for key, j in jobs.items()}
+
+
+@traced
+def api_runs(runs: list[dict]) -> pd.DataFrame:
+    """Jobs API runs (jobs.list_runs, as dicts) as the timeline frame timeline_runs reads: one row per run, its job's
+    name (run_name), times in UTC, the result state in the timeline's names and the termination code. A run still
+    going has no result state and no end. Free Edition can't read system.lakeflow, so this is where runs come from."""
+    def ts(ms):
+        return pd.Timestamp(int(ms), unit="ms", tz="UTC") if ms else pd.NaT
+    rows = []
+    for r in runs:
+        result = (r.get("state") or {}).get("result_state")
+        code = ((r.get("status") or {}).get("termination_details") or {}).get("code")
+        rows.append([r.get("run_name"), str(r["run_id"]), ts(r.get("start_time")), ts(r.get("end_time")),
+                     API_STATES.get(result, result) if result else None, code])
+    return pd.DataFrame(rows, columns=TIMELINE_COLUMNS)
 
 
 @traced

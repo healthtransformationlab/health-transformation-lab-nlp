@@ -371,7 +371,7 @@ TABLES = {
             *DQ_PROV]),
     # spec 027 US5: the pipeline doctor (run metadata only, never note text)
     "fact_pipeline_run": Table(
-        "ops", "One per finished run of a bundle job (step_name job), from system.lakeflow.job_run_timeline and the "
+        "ops", "One per finished run of a bundle job (step_name job), from the Jobs API's run list and the "
         "span export", "Pipeline doctor: delete-then-append by run_id", [
             C("pipeline_name", "string", "the job's key in the bundle (ops/pipeline_config.yaml)", "FK"),
             C("step_name", "string", "job (the whole run), or a step from the span export"),

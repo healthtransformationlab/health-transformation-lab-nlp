@@ -232,3 +232,52 @@ def test_the_job_module_never_touches_the_notes():
     text = (ROOT / "python" / "health_transformation_lab_nlp" / "doctor_job.py").read_text()
     for name in ("import notes", "clinical_notes", "note_reader", "review_key"):
         assert name not in text
+
+
+# --- issue #524: run history from the Jobs API (Free Edition can't read system.lakeflow) ---------------------------
+
+def _api(run_id, result="SUCCESS", code="SUCCESS", name="MedGemma reader", start_ms=1_793_721_101_788,
+         seconds=600, finished=True):
+    """A run as jobs.list_runs returns it (keys checked against a real dev response, 2026-11-04)."""
+    r = {"run_id": int(run_id), "job_id": 7, "run_name": name, "start_time": start_ms,
+         "end_time": start_ms + seconds * 1000 if finished else 0, "state": {}, "status": {}}
+    if finished:
+        r["state"]["result_state"] = result
+        r["status"] = {"state": "TERMINATED", "termination_details": {"code": code, "type": "CLIENT_ERROR"}}
+    return r
+
+
+def test_api_runs_give_the_timeline_columns_in_utc():
+    out = doctor_job.api_runs([_api("1")])
+    assert list(out.columns) == ["job_name", "run_id", "started_ts", "ended_ts", "result_state", "termination_code"]
+    row = out.iloc[0]
+    assert row.job_name == "MedGemma reader" and row.run_id == "1"
+    assert row.started_ts == pd.Timestamp(1_793_721_101_788, unit="ms", tz="UTC")
+    assert (row.ended_ts - row.started_ts).total_seconds() == 600
+
+
+@pytest.mark.parametrize("api, timeline", [("SUCCESS", "SUCCEEDED"), ("FAILED", "FAILED"), ("TIMEDOUT", "TIMED_OUT"),
+                                           ("INTERNAL_ERROR", "ERROR"), ("CANCELED", "CANCELED"),
+                                           ("SKIPPED", "SKIPPED"), ("UPSTREAM_FAILED", "UPSTREAM_FAILED")])
+def test_api_states_map_onto_the_timeline_states(api, timeline):
+    assert doctor_job.api_runs([_api("1", result=api)]).iloc[0].result_state == timeline
+
+
+def test_api_runs_still_going_have_no_state_or_end():
+    row = doctor_job.api_runs([_api("1", finished=False)]).iloc[0]
+    assert row.result_state is None and pd.isna(row.ended_ts)
+
+
+def test_api_runs_feed_the_same_run_rows_as_the_timeline(config):
+    api = [_api(str(100 + i), start_ms=1_793_721_101_788 - (6 - i) * 86_400_000) for i in range(1, 6)]
+    api += [_api("200", result="FAILED", code="RUN_EXECUTION_ERROR"), _api("201", result="CANCELED"),
+            _api("202", finished=False), _api("203", name="Some other project's job")]
+    runs = doctor_job.timeline_runs(doctor_job.api_runs(api), config, doctor_job.job_names())
+    assert list(runs["run_id"]) == ["101", "102", "103", "104", "105", "200"]   # cancelled, running, foreign: out
+    failed = runs[runs["run_id"] == "200"].iloc[0]
+    assert failed.run_status_code == "failed" and failed.error_type_name == "RUN_EXECUTION_ERROR"
+
+
+def test_no_api_runs_give_an_empty_timeline():
+    out = doctor_job.api_runs([])
+    assert out.empty and list(out.columns)[0] == "job_name"

@@ -475,7 +475,8 @@ def test_pipeline_doctor_is_created_paused_and_does_not_retry():
 def test_doctor_notebook_checks_settings_first_and_writes_by_run_id():
     text = "\n".join(line for line in DOCTOR_NB.read_text().splitlines() if not line.startswith("# MAGIC"))
     check = text.index("doctor_job.check_settings(")
-    assert check < text.index("system.lakeflow.job_run_timeline") and check < text.index("replace_keys(")
+    assert check < text.index("jobs_api.list_runs(") and check < text.index("replace_keys(")
+    assert "doctor_job.api_runs(" in text and "system.lakeflow" not in text   # Jobs API, not system tables (#524)
     for table in ("fact_pipeline_run", "fact_pipeline_signal", "fact_remediation_decision"):
         assert f'write("{table}",' in text, table
     # one writer: delete-then-append by run_id, under the declared gold columns and types

@@ -47,7 +47,8 @@ Plus `fact_remediation_decision`, one row per recommendation: `pipeline_name`, `
 `is_match`, `run_mode_code` (recommend_only / automatic).
 
 Sources on Databricks: `fact_pipeline_run` from the spec 014 spans (Application Insights export) and
-`system.lakeflow.job_run_timeline`; `dim_lineage_edge` from Unity Catalog system tables
+the Jobs API's run list (`jobs.list_runs`; first `system.lakeflow.job_run_timeline`, which Free Edition
+can't grant, so changed by #524); `dim_lineage_edge` from Unity Catalog system tables
 (`system.access.table_lineage`); config and runbook are YAML in `ops/` deployed by the bundle. Locally
 and in tests: pandas DataFrames with the same columns, from CSV fixtures under `data/ops/`.
 

@@ -7,7 +7,8 @@
 # MAGIC text or row-level data, and it acts on nothing: agents recommend; code acts.
 # MAGIC
 # MAGIC 1. Settings are checked first (`doctor_job.check_settings`); a missing or malformed one fails the run, naming it.
-# MAGIC 2. `system.lakeflow.job_run_timeline` (60 days, this workspace, this bundle's jobs) and, when `span_table` is
+# MAGIC 2. The Jobs API's completed runs (60 days, the runs this job's identity can see, kept to this bundle's jobs) and,
+# MAGIC    when `span_table` is
 # MAGIC    set, the span export become `fact_pipeline_run`.
 # MAGIC 3. `health_transformation_lab_nlp.doctor`: the six signals for every run in the last `lookback_days`
 # MAGIC    (`fact_pipeline_signal`); for every failed run the class, the first allowed action, the impact and the
@@ -18,7 +19,8 @@
 # MAGIC    notification reaches the owner; SEV3 and SEV4 stay in the table for the daily and weekly digests.
 # MAGIC
 # MAGIC The root-cause rung (an LLM on `unknown` runs, under `max_usd`, spec 027 US6) is not built yet: the job
-# MAGIC counts the runs it would see. Serverless CPU. Needs `SELECT` on `system.lakeflow`.
+# MAGIC counts the runs it would see. Serverless CPU. Reads the Jobs API, not `system.lakeflow`, which Free Edition
+# MAGIC can't grant (issue 524).
 
 # COMMAND ----------
 
@@ -56,19 +58,15 @@ def table(name: str) -> str:
 
 # COMMAND ----------
 
-# Cheap checks before the work: this workspace's id, read access to the system tables, the span export if set.
+# Cheap checks before the work: the Jobs API answers for this identity, and the span export if set.
 from databricks.sdk import WorkspaceClient
 
-workspace_id = str(WorkspaceClient().get_workspace_id())
-if not workspace_id.isdigit():
-    raise RuntimeError(f"workspace id {workspace_id!r} is not a number; cannot scope the system tables")
-try:
-    spark.sql("select 1 from system.lakeflow.job_run_timeline limit 1").collect()  # noqa: F821
-    spark.sql("select 1 from system.lakeflow.jobs limit 1").collect()  # noqa: F821
+jobs_api = WorkspaceClient().jobs
+try:   # one cheap call before the work: the identity can list runs
+    next(iter(jobs_api.list_runs(limit=1)), None)
 except Exception as e:  # noqa: BLE001
-    raise RuntimeError("system.lakeflow: this job's identity needs USE CATALOG on system and SELECT on "
-                       f"system.lakeflow (a metastore admin runs databricks/setup/grant_system_tables.sh <target>): "
-                       f"{type(e).__name__}") from None
+    raise RuntimeError(f"Jobs API: this job's identity can't list job runs ({type(e).__name__}); it needs CAN_VIEW "
+                       "on the bundle's jobs, which their owner has") from None
 if settings["span_table"] and not spark.catalog.tableExists(settings["span_table"]):  # noqa: F821
     raise RuntimeError(f"span_table: {settings['span_table']} does not exist; set it to none to run without it")
 if not settings["span_table"]:
@@ -79,28 +77,10 @@ if not settings["judge_endpoint"]:
 
 # COMMAND ----------
 
-# One row per run: first and last timeline slice, the final state and termination code; the job's current name.
-timeline = spark.sql(f"""
-with job_name as (
-  select job_id, name,
-    row_number() over (partition by job_id order by change_time desc) as name_rank
-  from system.lakeflow.jobs
-  where workspace_id = '{workspace_id}'
-), run as (
-  select job_id, cast(run_id as string) as run_id,
-    min(period_start_time) as started_ts,
-    max(period_end_time) as ended_ts,
-    max_by(result_state, period_end_time) as result_state,
-    max_by(termination_code, period_end_time) as termination_code
-  from system.lakeflow.job_run_timeline
-  where workspace_id = '{workspace_id}'
-    and period_start_time >= current_timestamp() - interval {doctor_job.HISTORY_DAYS} days
-  group by job_id, run_id
-)
-select j.name as job_name, r.run_id, r.started_ts, r.ended_ts, r.result_state, r.termination_code
-from run r
-inner join job_name j on r.job_id = j.job_id and j.name_rank = 1
-""").toPandas()  # noqa: F821
+# One row per finished run, as the Jobs API reports it: its job's name, times, result state and termination code.
+since_ms = int((pd.Timestamp.now(tz="UTC") - pd.Timedelta(days=doctor_job.HISTORY_DAYS)).timestamp() * 1000)
+timeline = doctor_job.api_runs([r.as_dict() for r in jobs_api.list_runs(completed_only=True,
+                                                                        start_time_from=since_ms)])
 
 config, runbook, lineage = doctor.load_config(), doctor.load_runbook(), doctor.load_lineage()
 runs = doctor_job.timeline_runs(timeline, config, doctor_job.job_names())
