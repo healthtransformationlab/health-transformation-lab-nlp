@@ -213,3 +213,63 @@ def test_a_thought_without_its_opening_marker_is_dropped():   # seen on Kaggle w
     r = ga.parse_reply("I will read the file first.<channel|>Reading.<|tool_call>call:get_status{}<tool_call|>",
                        hit_limit=False)
     assert r["content"] == "Reading." and r["tool_calls"][0]["name"] == "get_status"
+
+
+# --- turn after turn: only the new tokens are read (the cache keeps the rest) ------------------------------------
+
+def _enc(text):   # a stand-in tokenizer: one id per character
+    return [ord(c) for c in text]
+
+
+def _render(name, response):   # a stand-in for the chat template's tool_response text
+    return f"response:{name}{{{json.dumps(response, sort_keys=True)}}}"
+
+
+def _call(cid, name, args):
+    return {"id": cid, "type": "function", "function": {"name": name, "arguments": json.dumps(args)}}
+
+
+def test_tool_results_extend_the_tokens_the_model_already_read():
+    prev = _enc("PROMPT<|tool_call>call:get_status{}<tool_call|><|tool_response>")   # ends at the stop marker
+    new = [{"role": "assistant", "content": "", "tool_calls": [_call("a", "get_status", {})]},
+           {"role": "tool", "tool_call_id": "a", "content": json.dumps({"status": "ok"})}]
+    ids = ga.extend_ids(prev, new, _render, _enc)
+    assert ids == prev + _enc('response:get_status{{"status": "ok"}}<tool_response|>')
+
+
+def test_several_results_each_get_their_marker_after_the_first():
+    prev = _enc("P<|tool_response>")
+    new = [{"role": "assistant", "content": "", "tool_calls": [_call("a", "x", {}), _call("b", "y", {})]},
+           {"role": "tool", "tool_call_id": "a", "content": "1"}, {"role": "tool", "tool_call_id": "b", "content": "2"}]
+    assert ga.extend_ids(prev, new, _render, _enc) == prev + _enc(
+        "response:x{1}<tool_response|><|tool_response>response:y{2}<tool_response|>")
+
+
+def test_a_nudge_after_a_closed_turn_opens_a_new_one():
+    prev = _enc("P Done.<turn|>")
+    new = [{"role": "assistant", "content": "Done."}, {"role": "user", "content": "Please continue"}]
+    assert ga.extend_ids(prev, new, _render, _enc) == prev + _enc(
+        "\n<|turn>user\nPlease continue<turn|>\n<|turn>model\n")
+
+
+@pytest.mark.parametrize("prev,new", [
+    ("P<turn|>", [{"role": "assistant", "content": "", "tool_calls": [_call("a", "x", {})]},
+                  {"role": "tool", "tool_call_id": "a", "content": "1"}]),          # results after a closed turn
+    ("P<|tool_response>", [{"role": "assistant", "content": "", "tool_calls": [_call("a", "x", {})]},
+                           {"role": "tool", "tool_call_id": "a", "content": "1"},
+                           {"role": "user", "content": "nudge"}]),                  # a user turn inside an open one
+    ("P", []),                                                                        # nothing new
+])
+def test_any_other_shape_falls_back_to_a_full_render(prev, new):
+    assert ga.extend_ids(_enc(prev), new, _render, _enc) is None
+
+
+def test_a_row_carries_its_token_totals(runner, tmp_path, monkeypatch):
+    monkeypatch.setattr(runner.ah, "score_patch", lambda task, row, patch, src, work, sandboxed: {**row, "is_resolved": True})
+    settings = {"name": "m", "budget": {"time_minutes": 30}, "model": {"max_new_tokens": 2048, "reuse_cache": True}}
+    turns = [{"prompt_tokens": 100, "prefill_tokens": 100, "output_tokens": 10, "seconds": 2.0},
+             {"prompt_tokens": 150, "prefill_tokens": 40, "output_tokens": 5, "seconds": 1.5}]
+    row = runner.row_for({"instance_id": "x"}, {"row": {"instance_id": "x"}, "patch": "", "turns": turns},
+                         tmp_path / "s.tgz", tmp_path, "u", settings)
+    assert (row["prompt_token_count"], row["prefill_token_count"], row["output_token_count"]) == (250, 140, 15)
+    assert row["is_cache_reused"] is True and row["model_seconds"] == 3.5

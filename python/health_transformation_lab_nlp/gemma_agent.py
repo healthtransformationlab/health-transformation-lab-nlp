@@ -162,13 +162,51 @@ def to_gemma_messages(messages: list[dict]) -> list[dict]:
     return out
 
 
+def _ends_with(ids: list[int], tail: list[int]) -> bool:
+    return len(tail) > 0 and ids[-len(tail):] == tail
+
+
+@traced
+def extend_ids(prev: list[int], new: list[dict], render_response, encode) -> list[int] | None:
+    """The next prompt as the tokens the model already read plus only what's new, so its cache is reused: the tool
+    results after a call (the model stopped at `<|tool_response>`), or a user turn after a closed model turn (a
+    nudge). The model's own turn is kept exactly as it generated it. None for any other shape: the caller renders
+    the whole conversation again and starts a fresh cache.
+
+    render_response(name, response) is the template's `response:NAME{...}` text; encode(text) its tokens."""
+    if not new or new[0].get("role") != "assistant":
+        return None
+    names = {c.get("id"): (c.get("function") or {}).get("name") or "unknown" for c in new[0].get("tool_calls") or []}
+    tools = [m for m in new[1:] if m["role"] == "tool"]
+    users = [m for m in new[1:] if m["role"] == "user"]
+    if len(tools) + len(users) != len(new) - 1 or (tools and users):
+        return None
+    out = list(prev)
+    if tools:
+        if not _ends_with(out, encode("<|tool_response>")):
+            return None
+        for n, m in enumerate(tools):
+            try:
+                resp = json.loads(m.get("content") or "")
+            except json.JSONDecodeError:
+                resp = m.get("content") or ""
+            text = render_response(names.get(m.get("tool_call_id"), "unknown"), resp) + "<tool_response|>"
+            out += encode(("<|tool_response>" if n else "") + text)
+        return out
+    if users and _ends_with(out, encode("<turn|>")):
+        for m in users:
+            out += encode(f"\n<|turn>user\n{(m.get('content') or '').strip()}<turn|>")
+        return out + encode("\n<|turn>model\n")
+    return None
+
+
 class GemmaModel:
     """Gemma 4 with transformers, on whatever GPUs there are (device_map auto). Keeps what each turn cost."""
 
     @traced
     def __init__(self, model_dir: str, name: str = "gemma-4-e4b-it", max_new_tokens: int = 2048,
                  temperature: float = 0.2, top_p: float = 0.95, thinking: bool = False, max_context: int = 32768,
-                 max_memory: dict | None = None):
+                 max_memory: dict | None = None, reuse_cache: bool = True):
         import torch
         from transformers import AutoModelForCausalLM, AutoTokenizer
         self.name, self.thinking, self.max_context = name, thinking, max_context
@@ -183,24 +221,53 @@ class GemmaModel:
         self.stop_ids = [vocab[s] for s in STOP_STRINGS if s in vocab]
         self.turns: list[dict] = []
         self.history: list[dict] = []
+        # each turn's prompt is the last one plus what's new (extend_ids), so the cache is reused: only new tokens are
+        # read, not the whole conversation again (48 s at 24k tokens on 2x T4, probe 4)
+        self.reuse_cache, self.cache, self.ids, self.seen = reuse_cache, None, [], 0
+
+    @traced
+    def render_response(self, name: str, response) -> str:
+        """The chat template's own text for one tool result, without its markers."""
+        text = self.tok.apply_chat_template(
+            [{"role": "user", "content": "x"},
+             {"role": "assistant", "content": "", "tool_calls": [{"function": {"name": name, "arguments": {}}}],
+              "tool_responses": [{"name": name, "response": response}]}], tokenize=False)
+        return text.split("<|tool_response>", 1)[1].split("<tool_response|>", 1)[0]
+
+    @traced
+    def encode(self, text: str) -> list[int]:
+        return self.tok(text, add_special_tokens=False)["input_ids"]
 
     @traced
     def step(self, messages, tools):
         import torch
         self.history = messages   # the harness's list, kept for the run's transcript
-        ids = self.tok.apply_chat_template(to_gemma_messages(messages), tools=tools, add_generation_prompt=True,
-                                           return_tensors="pt", return_dict=True, enable_thinking=self.thinking)
-        n_in = int(ids["input_ids"].shape[-1])
+        ids = None
+        if self.cache is not None and self.reuse_cache:
+            ids = extend_ids(self.ids, messages[self.seen:], self.render_response, self.encode)
+        if ids is None:   # the first turn, or a shape extend_ids doesn't cover: everything again, a fresh cache
+            ids = self.tok.apply_chat_template(to_gemma_messages(messages), tools=tools, add_generation_prompt=True,
+                                               return_dict=True, enable_thinking=self.thinking)["input_ids"]
+            ids = list(ids[0] if ids and isinstance(ids[0], list) else ids)
+            self.cache = None
+        self.seen = len(messages)
+        n_in = len(ids)
         if n_in > self.max_context:   # past what fits beside the KV cache: end the turn, the harness nudges
-            self.turns.append({"prompt_tokens": n_in, "output_tokens": 0, "seconds": 0.0, "over_context": True})
+            self.turns.append({"prompt_tokens": n_in, "prefill_tokens": 0, "output_tokens": 0, "seconds": 0.0,
+                               "over_context": True})
+            self.cache = None
             return {"content": "", "tool_calls": [], "finish_reason": "length"}
-        ids = {k: v.to(self.model.device) for k, v in ids.items()}
+        cached = self.cache.get_seq_length() if self.cache is not None else 0
+        x = torch.tensor([ids], device=self.model.device)
         t = time.monotonic()
         with torch.no_grad():
-            o = self.model.generate(**ids, **self.gen, eos_token_id=self.stop_ids or None)
-        new = o[0][n_in:]
+            o = self.model.generate(input_ids=x, attention_mask=torch.ones_like(x), past_key_values=self.cache,
+                                    return_dict_in_generate=True, eos_token_id=self.stop_ids or None, **self.gen)
+        self.cache = o.past_key_values if self.reuse_cache else None
+        new = o.sequences[0][n_in:]
+        self.ids = ids + new.tolist()
         text = self.tok.decode(new, skip_special_tokens=False)
         hit = len(new) >= self.gen["max_new_tokens"] and not any(text.rstrip().endswith(s) for s in STOP_STRINGS)
-        self.turns.append({"prompt_tokens": n_in, "output_tokens": int(len(new)),
+        self.turns.append({"prompt_tokens": n_in, "prefill_tokens": n_in - cached, "output_tokens": int(len(new)),
                            "seconds": round(time.monotonic() - t, 2)})
         return parse_reply(text, hit_limit=hit)

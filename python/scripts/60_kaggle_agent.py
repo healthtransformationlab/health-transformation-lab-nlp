@@ -39,8 +39,9 @@ _spec.loader.exec_module(bundle)
 
 OUT_DIR = TASKS_DIR / "agent_runs"
 MODELS = {"gemma-4-e4b-it": "google/gemma-4/transformers/gemma-4-e4b-it/1"}
-EXTRA = ["kaggle_kernel_url", "time_minutes", "max_new_tokens", "is_thinking", "max_prompt_tokens",
-         "model_seconds", "load_seconds", "error_text"]
+EXTRA = ["kaggle_kernel_url", "time_minutes", "max_new_tokens", "is_thinking", "is_cache_reused", "max_prompt_tokens",
+         "prompt_token_count", "prefill_token_count", "output_token_count", "model_seconds", "load_seconds",
+         "error_text"]
 POLL_SECONDS, MAX_WAIT_SECONDS = 30, 4 * 3600
 
 
@@ -121,7 +122,11 @@ def row_for(task: dict, result: dict, snapshot: Path, work: Path, kernel_url: st
     turns = result.get("turns") or []
     extra = {"kaggle_kernel_url": kernel_url, "time_minutes": settings["budget"]["time_minutes"],
              "max_new_tokens": settings["model"].get("max_new_tokens"), "is_thinking": settings["model"].get("thinking"),
+             "is_cache_reused": settings["model"].get("reuse_cache", True),
              "max_prompt_tokens": max((t["prompt_tokens"] for t in turns), default=None),
+             "prompt_token_count": sum(t["prompt_tokens"] for t in turns),
+             "prefill_token_count": sum(t.get("prefill_tokens", t["prompt_tokens"]) for t in turns),
+             "output_token_count": sum(t["output_tokens"] for t in turns),
              "model_seconds": round(sum(t["seconds"] for t in turns), 1), "load_seconds": result.get("load_seconds"),
              "error_text": result.get("error")}
     if "row" not in result:
@@ -145,6 +150,8 @@ def main() -> int:
                          "transformers runs about 8 tokens a second")
     ap.add_argument("--max-new-tokens", type=int, default=2048)
     ap.add_argument("--thinking", action="store_true", help="Gemma 4's thinking mode (slow on T4s)")
+    ap.add_argument("--no-cache-reuse", action="store_true",
+                    help="read the whole conversation every turn (as the pilot did), not only the new tokens")
     ap.add_argument("--collect", action="store_true",
                     help="don't upload or push: wait for each task's kernel already running, then score it")
     ap.add_argument("--work", type=Path, default=Path(os.environ.get("TMPDIR", "/tmp")) / "htl_kaggle_agent")
@@ -165,7 +172,7 @@ def main() -> int:
     if unsupported:
         print(f"not supported by this harness, left out: {', '.join(unsupported)}")
     model_cfg = {"variant": a.model, "max_new_tokens": a.max_new_tokens, "thinking": a.thinking,
-                 "max_context": 24576, "max_memory": {"0": "12GiB", "1": "13GiB"}}
+                 "max_context": 24576, "reuse_cache": not a.no_cache_reuse, "max_memory": {"0": "12GiB", "1": "13GiB"}}
     # probe 4 (Nov 2026): every weight on the GPUs (the 5.25 GiB per-layer embedding table can't be offloaded: it is
     # copied back on each forward and runs out of memory); a 24k-token prompt then peaks at 10.6 and 11.6 GiB
     settings = {"name": a.model, "model": model_cfg, "budget": budget.__dict__, "tools": tools,
