@@ -93,14 +93,25 @@ def meta_dir(out: Path) -> Path:
     return out.parent / f"{out.name}-metadata"
 
 
+# Create and version take a licence's short name; the metadata update refuses it ("You've specified an invalid
+# license") and takes the full name `kaggle datasets metadata` shows.
+LICENCE_FULL_NAMES = {"CC-BY-4.0": "Attribution 4.0 International (CC BY 4.0)"}
+
+
+def for_metadata_update(meta: dict) -> dict:
+    """meta with each licence under the name Kaggle's metadata update accepts."""
+    return {**meta, "licenses": [{**l, "name": LICENCE_FULL_NAMES.get(l["name"], l["name"])}
+                                 for l in meta.get("licenses", [])]}
+
+
 def write_metadata(out: Path, meta: dict, slug: str) -> None:
-    """dataset-metadata.json in the build, and the same with the cover in meta_dir(out)."""
+    """dataset-metadata.json in the build, and the same with the cover in meta_dir(out), for the metadata update."""
     (out / "dataset-metadata.json").write_text(json.dumps(meta, indent=1) + "\n")
     side = meta_dir(out)
     if side.exists():
         shutil.rmtree(side)
     side.mkdir(parents=True)
-    (side / "dataset-metadata.json").write_text(json.dumps(meta, indent=1) + "\n")
+    (side / "dataset-metadata.json").write_text(json.dumps(for_metadata_update(meta), indent=1) + "\n")
     shutil.copyfile(docs.cover(slug), side / "dataset-cover-image.png")
 
 
@@ -126,6 +137,30 @@ def update_metadata(folder: Path, ref: str, api) -> None:
     """Send the description, file and column descriptions, sources, update frequency and cover; no data."""
     api.dataset_metadata_update(ref, str(meta_dir(folder)))
     print(f"metadata updated for {ref}: files, columns, cover, sources and update frequency")
+
+
+def live_files(api, ref: str) -> set[str]:
+    """The files the live dataset holds, from Kaggle's listing (paged)."""
+    names, token = set(), None
+    while True:
+        page = api.dataset_list_files(ref, page_token=token, page_size=200)
+        names |= {f.name for f in (page.files or [])}
+        token = getattr(page, "next_page_token", None)
+        if not token:
+            return names
+
+
+def metadata_only(out: Path, meta: dict, api) -> dict:
+    """Send the metadata for the files the live dataset holds: Kaggle refuses a description of a file it doesn't
+    have, so a file added since the last version waits for the next one. Returns what was sent."""
+    live = live_files(api, meta["id"])
+    sent = {**meta, "resources": [r for r in meta["resources"] if r["path"] in live]}
+    waiting = sorted({r["path"] for r in meta["resources"]} - live)
+    if waiting:
+        print(f"not on Kaggle yet, described in the next version: {', '.join(waiting)}")
+    write_metadata(out, sent, meta["id"].split("/", 1)[1])
+    update_metadata(out, meta["id"], api)
+    return sent
 
 
 def upload(folder: Path, ref: str, message: str, api) -> str:
@@ -167,7 +202,7 @@ def main() -> None:
         api = KaggleApi()
         api.authenticate()
         if a.metadata_only:
-            update_metadata(a.out, meta["id"], api)
+            metadata_only(a.out, meta, api)
         else:
             upload(a.out, meta["id"], f"{a.message} ({a.commit[:12]})", api)
 
