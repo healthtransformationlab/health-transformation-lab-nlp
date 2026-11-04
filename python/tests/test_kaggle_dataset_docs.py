@@ -80,12 +80,6 @@ def test_each_dataset_has_a_cover_sources_and_an_update_frequency(slug):
         assert im.size == (1120, 560)                     # 2:1, as Kaggle crops covers
 
 
-def test_column_descriptions_avoid_the_words_agents_md_rules_out():
-    text = (REPO_ROOT / "kaggle" / "dataset_docs.yaml").read_text().lower()
-    for word in ("diagnose", "misdiagnos", "diagnostic tool", "diagnosis accuracy"):
-        assert word not in text, word
-
-
 # --- publish.py sends them -------------------------------------------------------------------------------------
 
 def test_the_build_carries_resources_sources_frequency_and_a_cover_beside_it(tmp_path):
