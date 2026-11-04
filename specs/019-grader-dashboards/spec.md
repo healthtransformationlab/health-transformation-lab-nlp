@@ -10,7 +10,7 @@
 **Input**: "We should create Databricks Genie light versions of the React dashboards we designed yesterday;
 we should have different dashboards for the healthtransformationlab.org grader and the EHR DQ grader." The EHR
 DQ grader's design is the React *Perio Data Quality (DQ) Monitor* (a personal artifact, 2026-10-27). The lab
-grader has no design beyond the pitch (`docs/pitch/`, slides 11 uplift, 12 tests and 13 leaderboard) and
+grader has no design beyond the pitch (`docs/pitch/`, slides 12 uplift, 13 tests and 14 leaderboard) and
 GlobalDentBench's practices (`docs/dentbench_methods.md`).
 
 > Personal learning project; synthetic data only. Health Transformation Lab is a personal idea, not any
@@ -77,7 +77,7 @@ An AI/BI dashboard, **Lab grader**, designed from the pitch's uplift and leaderb
 SIMULATED while any row is simulated.
 
 - **Uplift by category**, access to care first: score on its own, with the agent, the difference, each with a
-  95% interval, and cost per answer (slide 11's table).
+  95% interval, and cost per answer (slide 12's table).
 - **Leaderboard per category**: models ranked within a category, never one overall rank across categories.
 - **Safety**: unsafe rate (S1 + S2) and irreversible-harm rate (S2), on its own and with the agent.
 - **By reasoning level**: score per level L1–L3 and the macro average, so easy questions don't flatter a model.

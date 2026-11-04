@@ -32,7 +32,7 @@ Records to recheck are found; gum disease is counted the same way across clinics
 Researchers
 in oral and overall health
 Use the open method to study gum disease alongside diabetes
-The medical-dental link studied at scale, in OMOP
+The medical-dental link could be studied at scale, in OMOP
 Gum specialists
 (periodontists)
 Label the validation charts, about a day each
@@ -42,7 +42,7 @@ Score their record readers on the same charts
 Public, comparable scores
 The impact:
 gum disease that can be counted, followed over time and linked to diabetes care. So far it runs only on synthetic records; nothing has been run on real ones.
-A personal project: no one named here has been contacted · 2
+A personal project: no partner has been contacted · 2
 
 **Speaker notes:** Before the problem, the three answers people ask for first: who this is for, what we want them to do, and what changes. PerioBench is for the people who have to count gum disease from dental records. First, the data and quality teams at clinic groups and record vendors: we ask them to run PerioBench on a de-identified extract, inside their own environment and approvals, so they find the records to recheck and count gum disease the same way across clinics. A record to recheck is often a coding or charting gap, not a clinical error. Second, researchers in oral and overall health: the method is open, so gum disease can be studied alongside diabetes, in OMOP, the format medicine already uses. Third, gum specialists: about a day each to label the validation charts, so agreement is measured on real records, not only synthetic ones. Fourth, the people who build AI record readers: they can score them on the same charts, in public. The impact is gum disease that can be counted, followed over time and linked to diabetes care. Today it runs end to end only on synthetic records; nothing has been run on real ones, and no partner has been contacted.
 
