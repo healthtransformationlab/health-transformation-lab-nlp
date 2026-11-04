@@ -108,7 +108,7 @@ def main() -> None:
             "kernel_sources": [], "model_sources": models}
     (a.out / "kernel-metadata.json").write_text(json.dumps(meta, indent=1) + "\n")
     print(f"prepared {meta['id']}: {what} "
-          f"{'all 240 notes' if a.limit == 0 else f'{a.limit} notes'} from branch {a.branch}"
+          f"{'all review notes' if a.limit == 0 else f'{a.limit} notes'} from branch {a.branch}"
           f"{f' at {a.commit[:12]}' if a.commit else ''}")
 
 

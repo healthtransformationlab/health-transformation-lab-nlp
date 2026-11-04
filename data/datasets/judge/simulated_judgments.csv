@@ -1,685 +1,665 @@
 visit_id,kind,answer,verdict,judge_status,quote,gate_ok,gate_reason,endpoint,prompt_version,prompt_tokens,completion_tokens,latency_s,simulated,api_error
-69,status,,,periodontitis_stage_2,,True,,sim:judge,judge-status-v1,647,60,0.0,True,False
-69,verdict,periodontitis_stage_2,correct,,,True,,sim:judge,judge-v2,660,60,0.0,True,False
-69,verdict,periodontitis_stage_3,incorrect,,,True,,sim:judge,judge-v2,660,60,0.0,True,False
-73,status,,,healthy,"P: Prophy, flossing instruction. 6 mo recall.",True,,sim:judge,judge-status-v1,604,60,0.0,True,False
-73,verdict,healthy_or_gingivitis,incorrect,,"P: Prophy, flossing instruction. 6 mo recall.",True,,sim:judge,judge-v2,617,60,0.0,True,False
-79,status,,,periodontitis_stage_1,,True,,sim:judge,judge-status-v1,650,60,0.0,True,False
-79,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,663,60,0.0,True,False
-79,verdict,periodontitis_stage_1,correct,,,True,,sim:judge,judge-v2,663,60,0.0,True,False
-81,status,,,periodontitis_stage_4,"P: Prophy, OHI. Recall 6 mo.",True,,sim:judge,judge-status-v1,604,60,0.0,True,False
-81,verdict,healthy_or_gingivitis,incorrect,,"P: Prophy, OHI. Recall 6 mo.",True,,sim:judge,judge-v2,617,60,0.0,True,False
-94,status,,,periodontitis_stage_2, Next appt [DATE].,True,,sim:judge,judge-status-v1,677,60,0.0,True,False
-94,verdict,periodontitis_stage_2,not_determinable,,,True,,sim:judge,judge-v2,690,60,0.0,True,False
-163,status,,,periodontitis_stage_3,"Tx plan: FM SRP, refer to periodontist. Referred to Dr. [NAME] at [LOCATION], ph",True,,sim:judge,judge-status-v1,626,60,0.0,True,False
-163,verdict,healthy_or_gingivitis,incorrect,,"Tx plan: FM SRP, refer to periodontist. Referred to Dr. [NAME] at [LOCATION], ph",True,,sim:judge,judge-v2,639,60,0.0,True,False
-163,verdict,periodontitis_stage_2,incorrect,,"Tx plan: FM SRP, refer to periodontist. Referred to Dr. [NAME] at [LOCATION], ph",True,,sim:judge,judge-v2,639,60,0.0,True,False
-163,verdict,periodontitis_stage_3,correct,,"Tx plan: FM SRP, refer to periodontist. Referred to Dr. [NAME] at [LOCATION], ph",True,,sim:judge,judge-v2,639,60,0.0,True,False
-174,status,,,,,True,,sim:judge,judge-status-v1,646,60,0.0,True,False
-174,verdict,periodontitis_stage_2,incorrect,,Pt seen for periodontal evaluation. Med hx: NKDA; non-smoker. Exam: deep pockets,True,,sim:judge,judge-v2,659,60,0.0,True,False
-174,verdict,periodontitis_stage_3,correct,,Pt seen for periodontal evaluation. Med hx: NKDA; non-smoker. Exam: deep pockets,True,,sim:judge,judge-v2,659,60,0.0,True,False
-174,verdict,periodontitis_stage_4,incorrect,,Pt seen for periodontal evaluation. Med hx: NKDA; non-smoker. Exam: deep pockets,True,,sim:judge,judge-v2,659,60,0.0,True,False
-180,status,,,periodontitis_stage_3,Dx at that visit: Stage II periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-status-v1,652,60,0.0,True,False
-180,verdict,healthy_or_gingivitis,incorrect,,Dx at that visit: Stage II periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,665,60,0.0,True,False
-180,verdict,periodontitis_stage_2,incorrect,,Dx at that visit: Stage II periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,665,60,0.0,True,False
-180,verdict,periodontitis_stage_3,correct,,Dx at that visit: Stage II periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,665,60,0.0,True,False
-181,status,,,gingivitis,"Patient seen for periodontal evaluation. Med hx: NKDA; former smoker, quit 2015.",True,,sim:judge,judge-status-v1,611,60,0.0,True,False
-181,verdict,healthy_or_gingivitis,incorrect,,"Patient seen for periodontal evaluation. Med hx: NKDA; former smoker, quit 2015.",True,,sim:judge,judge-v2,624,60,0.0,True,False
-181,verdict,periodontitis_stage_1,incorrect,,"Patient seen for periodontal evaluation. Med hx: NKDA; former smoker, quit 2015.",True,,sim:judge,judge-v2,624,60,0.0,True,False
-278,status,,,periodontitis_stage_3," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-status-v1,672,60,0.0,True,False
-278,verdict,periodontitis_stage_3,correct,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-v2,685,60,0.0,True,False
-284,status,,,periodontitis_stage_2,"P: FM SRP, refer to periodontist.",True,,sim:judge,judge-status-v1,618,60,0.0,True,False
-284,verdict,healthy_or_gingivitis,incorrect,,"P: FM SRP, refer to periodontist.",True,,sim:judge,judge-v2,631,60,0.0,True,False
-284,verdict,periodontitis_stage_2,not_determinable,,,True,,sim:judge,judge-v2,631,60,0.0,True,False
-284,verdict,periodontitis_stage_3,correct,,"P: FM SRP, refer to periodontist.",True,,sim:judge,judge-v2,631,60,0.0,True,False
-297,status,,,healthy,Patient seen for periodontal evaluation. Med hx: HTN controlled; smoker ~2 cig/d,True,,sim:judge,judge-status-v1,617,60,0.0,True,False
-297,verdict,healthy_or_gingivitis,not_determinable,,,True,,sim:judge,judge-v2,630,60,0.0,True,False
-300,status,,,periodontitis_stage_1,Dx at that visit: gingivitis. Pt declined SRP at that time.,True,,sim:judge,judge-status-v1,673,60,0.0,True,False
-300,verdict,healthy_or_gingivitis,incorrect,,Dx at that visit: gingivitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,686,60,0.0,True,False
-300,verdict,periodontitis_stage_1,incorrect,,Dx at that visit: gingivitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,686,60,0.0,True,False
-300,verdict,periodontitis_stage_2,incorrect,,Dx at that visit: gingivitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,686,60,0.0,True,False
-324,status,,,periodontitis_stage_3,,True,,sim:judge,judge-status-v1,648,60,0.0,True,False
-324,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,661,60,0.0,True,False
-324,verdict,periodontitis_stage_2,correct,,,True,,sim:judge,judge-v2,661,60,0.0,True,False
-324,verdict,periodontitis_stage_3,incorrect,,,True,,sim:judge,judge-v2,661,60,0.0,True,False
-324,verdict,periodontitis_stage_4,not_determinable,,,True,,sim:judge,judge-v2,661,60,0.0,True,False
-349,status,,,periodontitis_stage_4,Dx at that visit: Stage I periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-status-v1,673,60,0.0,True,False
-349,verdict,healthy_or_gingivitis,incorrect,,Dx at that visit: Stage I periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,686,60,0.0,True,False
-349,verdict,periodontitis_stage_1,incorrect,,Dx at that visit: Stage I periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,686,60,0.0,True,False
-349,verdict,periodontitis_stage_2,correct,,Dx at that visit: Stage I periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,686,60,0.0,True,False
-426,status,,,periodontitis_stage_1, Next appt [DATE].,True,,sim:judge,judge-status-v1,646,60,0.0,True,False
-426,verdict,healthy_or_gingivitis,incorrect,, Next appt [DATE].,True,,sim:judge,judge-v2,659,60,0.0,True,False
-426,verdict,periodontitis_stage_1,correct,, Next appt [DATE].,True,,sim:judge,judge-v2,659,60,0.0,True,False
-426,verdict,periodontitis_stage_2,incorrect,, Next appt [DATE].,True,,sim:judge,judge-v2,659,60,0.0,True,False
-437,status,,,periodontitis_stage_3,Dx at that visit: Stage I periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-status-v1,684,60,0.0,True,False
-437,verdict,periodontitis_stage_2,correct,,Dx at that visit: Stage I periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,697,60,0.0,True,False
-455,status,,,periodontitis_stage_1,"P: SRP UR/LR, re-eval 6 wk. Next appt [DATE].",True,,sim:judge,judge-status-v1,616,60,0.0,True,False
-455,verdict,healthy_or_gingivitis,incorrect,,"P: SRP UR/LR, re-eval 6 wk. Next appt [DATE].",True,,sim:judge,judge-v2,629,60,0.0,True,False
-455,verdict,periodontitis_stage_1,correct,,"P: SRP UR/LR, re-eval 6 wk. Next appt [DATE].",True,,sim:judge,judge-v2,629,60,0.0,True,False
-455,verdict,periodontitis_stage_2,incorrect,,"P: SRP UR/LR, re-eval 6 wk. Next appt [DATE].",True,,sim:judge,judge-v2,629,60,0.0,True,False
-459,status,,,gingivitis,,True,,sim:judge,judge-status-v1,645,60,0.0,True,False
-459,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,658,60,0.0,True,False
-481,status,,,periodontitis_stage_3,Tx plan: SRP 4 quads; perio consult for surgical eval. Next appt [DATE].,True,,sim:judge,judge-status-v1,636,60,0.0,True,False
-481,verdict,periodontitis_stage_2,incorrect,,Tx plan: SRP 4 quads; perio consult for surgical eval. Next appt [DATE].,True,,sim:judge,judge-v2,649,60,0.0,True,False
-481,verdict,periodontitis_stage_3,correct,,Tx plan: SRP 4 quads; perio consult for surgical eval. Next appt [DATE].,True,,sim:judge,judge-v2,649,60,0.0,True,False
-497,status,,,periodontitis_stage_1,Dx at that visit: gingivitis. Pt declined SRP at that time.,True,,sim:judge,judge-status-v1,667,60,0.0,True,False
-497,verdict,periodontitis_stage_1,correct,,Dx at that visit: gingivitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,680,60,0.0,True,False
-497,verdict,periodontitis_stage_2,correct,,Dx at that visit: gingivitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,680,60,0.0,True,False
-507,status,,,periodontitis_stage_3,,True,,sim:judge,judge-status-v1,682,60,0.0,True,False
-507,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,695,60,0.0,True,False
-507,verdict,periodontitis_stage_1,incorrect,,,True,,sim:judge,judge-v2,695,60,0.0,True,False
-507,verdict,periodontitis_stage_2,correct,,,True,,sim:judge,judge-v2,695,60,0.0,True,False
-507,verdict,periodontitis_stage_3,correct,,,True,,sim:judge,judge-v2,695,60,0.0,True,False
-507,verdict,periodontitis_stage_4,incorrect,,,True,,sim:judge,judge-v2,695,60,0.0,True,False
-521,status,,,periodontitis_stage_4," Referred to Dr. [NAME] at [LOCATION], ph [PHONE]. Next appt [DATE].",True,,sim:judge,judge-status-v1,695,60,0.0,True,False
-521,verdict,periodontitis_stage_3,correct,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE]. Next appt [DATE].",True,,sim:judge,judge-v2,708,60,0.0,True,False
-521,verdict,periodontitis_stage_4,correct,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE]. Next appt [DATE].",True,,sim:judge,judge-v2,708,60,0.0,True,False
-539,status,,,periodontitis_stage_1,,True,,sim:judge,judge-status-v1,657,60,0.0,True,False
-539,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,670,60,0.0,True,False
-539,verdict,periodontitis_stage_1,correct,,,True,,sim:judge,judge-v2,670,60,0.0,True,False
-539,verdict,periodontitis_stage_2,incorrect,,,True,,sim:judge,judge-v2,670,60,0.0,True,False
-553,status,,,periodontitis_stage_1,"Tx plan: SRP UR/LR, re-eval 6 wk. Pt moved; new address [LOCATION].",True,,sim:judge,judge-status-v1,625,60,0.0,True,False
-553,verdict,periodontitis_stage_1,not_determinable,,,True,,sim:judge,judge-v2,638,60,0.0,True,False
-553,verdict,periodontitis_stage_2,incorrect,,"Tx plan: SRP UR/LR, re-eval 6 wk. Pt moved; new address [LOCATION].",True,,sim:judge,judge-v2,638,60,0.0,True,False
-556,status,,,periodontitis_stage_3,"Pt seen for recall exam. Med hx: HTN controlled; former smoker, quit 2015. Exam:",True,,sim:judge,judge-status-v1,647,60,0.0,True,False
-556,verdict,healthy_or_gingivitis,incorrect,,"Pt seen for recall exam. Med hx: HTN controlled; former smoker, quit 2015. Exam:",True,,sim:judge,judge-v2,660,60,0.0,True,False
-556,verdict,periodontitis_stage_2,incorrect,,"Pt seen for recall exam. Med hx: HTN controlled; former smoker, quit 2015. Exam:",True,,sim:judge,judge-v2,660,60,0.0,True,False
-556,verdict,periodontitis_stage_3,incorrect,,"Pt seen for recall exam. Med hx: HTN controlled; former smoker, quit 2015. Exam:",True,,sim:judge,judge-v2,660,60,0.0,True,False
-559,status,,,periodontitis_stage_4,Tx plan: Perio referral; prosthetic consult for edentulous areas. Referred to Dr,True,,sim:judge,judge-status-v1,652,60,0.0,True,False
-559,verdict,periodontitis_stage_2,incorrect,,Tx plan: Perio referral; prosthetic consult for edentulous areas. Referred to Dr,True,,sim:judge,judge-v2,665,60,0.0,True,False
-559,verdict,periodontitis_stage_3,incorrect,,Tx plan: Perio referral; prosthetic consult for edentulous areas. Referred to Dr,True,,sim:judge,judge-v2,665,60,0.0,True,False
-559,verdict,periodontitis_stage_4,correct,,Tx plan: Perio referral; prosthetic consult for edentulous areas. Referred to Dr,True,,sim:judge,judge-v2,665,60,0.0,True,False
-560,status,,,periodontitis_stage_1,,True,,sim:judge,judge-status-v1,648,60,0.0,True,False
-560,verdict,periodontitis_stage_1,correct,,,True,,sim:judge,judge-v2,661,60,0.0,True,False
-587,status,,,periodontitis_stage_4,,True,,sim:judge,judge-status-v1,669,60,0.0,True,False
-587,verdict,periodontitis_stage_3,not_determinable,,,True,,sim:judge,judge-v2,682,60,0.0,True,False
-587,verdict,periodontitis_stage_4,correct,,,True,,sim:judge,judge-v2,682,60,0.0,True,False
-599,status,,,healthy,Tx plan: Adult prophy. RTC 6 mo.,True,,sim:judge,judge-status-v1,612,60,0.0,True,False
-599,verdict,healthy_or_gingivitis,incorrect,,Tx plan: Adult prophy. RTC 6 mo.,True,,sim:judge,judge-v2,625,60,0.0,True,False
-599,verdict,periodontitis_stage_1,incorrect,,Tx plan: Adult prophy. RTC 6 mo.,True,,sim:judge,judge-v2,625,60,0.0,True,False
-612,status,,,periodontitis_stage_1,"Tx plan: Prophy + OHI, re-eval gingiva next recall.",True,,sim:judge,judge-status-v1,609,60,0.0,True,False
-612,verdict,healthy_or_gingivitis,incorrect,,"Tx plan: Prophy + OHI, re-eval gingiva next recall.",True,,sim:judge,judge-v2,622,60,0.0,True,False
-612,verdict,periodontitis_stage_1,correct,,"Tx plan: Prophy + OHI, re-eval gingiva next recall.",True,,sim:judge,judge-v2,622,60,0.0,True,False
-634,status,,,healthy,,True,,sim:judge,judge-status-v1,640,60,0.0,True,False
-634,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,653,60,0.0,True,False
-669,status,,,periodontitis_stage_2,,True,,sim:judge,judge-status-v1,644,60,0.0,True,False
-669,verdict,periodontitis_stage_2,correct,,,True,,sim:judge,judge-v2,657,60,0.0,True,False
-669,verdict,periodontitis_stage_3,incorrect,,,True,,sim:judge,judge-v2,657,60,0.0,True,False
-670,status,,,periodontitis_stage_2,"P: SRP UR/LR, re-eval 6 wk.",True,,sim:judge,judge-status-v1,601,60,0.0,True,False
-670,verdict,periodontitis_stage_1,incorrect,,"P: SRP UR/LR, re-eval 6 wk.",True,,sim:judge,judge-v2,614,60,0.0,True,False
-670,verdict,periodontitis_stage_2,correct,,"P: SRP UR/LR, re-eval 6 wk.",True,,sim:judge,judge-v2,614,60,0.0,True,False
-676,status,,,periodontitis_stage_2,Dx at that visit: Stage I periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-status-v1,649,60,0.0,True,False
-676,verdict,healthy_or_gingivitis,incorrect,,Dx at that visit: Stage I periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,662,60,0.0,True,False
-676,verdict,periodontitis_stage_1,incorrect,,Dx at that visit: Stage I periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,662,60,0.0,True,False
-676,verdict,periodontitis_stage_2,correct,,Dx at that visit: Stage I periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,662,60,0.0,True,False
-676,verdict,periodontitis_stage_3,correct,,Dx at that visit: Stage I periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,662,60,0.0,True,False
-693,status,,,periodontitis_stage_3," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-status-v1,679,60,0.0,True,False
-693,verdict,periodontitis_stage_2,correct,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-v2,692,60,0.0,True,False
-693,verdict,periodontitis_stage_3,correct,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-v2,692,60,0.0,True,False
-700,status,,,healthy,Tx plan: Adult prophy. RTC 6 mo. Next appt [DATE].,True,,sim:judge,judge-status-v1,616,60,0.0,True,False
-700,verdict,healthy_or_gingivitis,incorrect,,Tx plan: Adult prophy. RTC 6 mo. Next appt [DATE].,True,,sim:judge,judge-v2,629,60,0.0,True,False
-700,verdict,periodontitis_stage_1,incorrect,,Tx plan: Adult prophy. RTC 6 mo. Next appt [DATE].,True,,sim:judge,judge-v2,629,60,0.0,True,False
-720,status,,,gingivitis,"Pt seen for recall exam. Med hx: T2DM, last A1c 6.6; smoker ~29 cig/day. Exam: r",True,,sim:judge,judge-status-v1,613,60,0.0,True,False
-720,verdict,healthy_or_gingivitis,incorrect,,"Pt seen for recall exam. Med hx: T2DM, last A1c 6.6; smoker ~29 cig/day. Exam: r",True,,sim:judge,judge-v2,626,60,0.0,True,False
-720,verdict,periodontitis_stage_1,incorrect,,"Pt seen for recall exam. Med hx: T2DM, last A1c 6.6; smoker ~29 cig/day. Exam: r",True,,sim:judge,judge-v2,626,60,0.0,True,False
-757,status,,,periodontitis_stage_3,Dx at that visit: Stage II periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-status-v1,685,60,0.0,True,False
-757,verdict,periodontitis_stage_2,incorrect,,Dx at that visit: Stage II periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,698,60,0.0,True,False
-757,verdict,periodontitis_stage_3,correct,,Dx at that visit: Stage II periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,698,60,0.0,True,False
-757,verdict,periodontitis_stage_4,incorrect,,Dx at that visit: Stage II periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,698,60,0.0,True,False
-763,status,,,periodontitis_stage_2,Patient seen for periodontal evaluation. Med hx: NKDA; non-smoker. Exam: bleedin,True,,sim:judge,judge-status-v1,616,60,0.0,True,False
-763,verdict,periodontitis_stage_1,incorrect,,Patient seen for periodontal evaluation. Med hx: NKDA; non-smoker. Exam: bleedin,True,,sim:judge,judge-v2,629,60,0.0,True,False
-763,verdict,periodontitis_stage_2,correct,,Patient seen for periodontal evaluation. Med hx: NKDA; non-smoker. Exam: bleedin,True,,sim:judge,judge-v2,629,60,0.0,True,False
-768,status,,,periodontitis_stage_4,P: Referral to periodontist for comprehensive tx plan. Referred to Dr. [NAME] at,True,,sim:judge,judge-status-v1,649,60,0.0,True,False
-768,verdict,healthy_or_gingivitis,incorrect,,P: Referral to periodontist for comprehensive tx plan. Referred to Dr. [NAME] at,True,,sim:judge,judge-v2,662,60,0.0,True,False
-768,verdict,periodontitis_stage_3,incorrect,,P: Referral to periodontist for comprehensive tx plan. Referred to Dr. [NAME] at,True,,sim:judge,judge-v2,662,60,0.0,True,False
-768,verdict,periodontitis_stage_4,correct,,P: Referral to periodontist for comprehensive tx plan. Referred to Dr. [NAME] at,True,,sim:judge,judge-v2,662,60,0.0,True,False
-792,status,,,periodontitis_stage_1,"P: Localized SRP, perio maint q4mo.",True,,sim:judge,judge-status-v1,618,60,0.0,True,False
-792,verdict,healthy_or_gingivitis,incorrect,,"P: Localized SRP, perio maint q4mo.",True,,sim:judge,judge-v2,631,60,0.0,True,False
-792,verdict,periodontitis_stage_1,correct,,"P: Localized SRP, perio maint q4mo.",True,,sim:judge,judge-v2,631,60,0.0,True,False
-796,status,,,periodontitis_stage_1,"P: SRP UR/LR, re-eval 6 wk.",True,,sim:judge,judge-status-v1,617,60,0.0,True,False
-796,verdict,periodontitis_stage_1,correct,,"P: SRP UR/LR, re-eval 6 wk.",True,,sim:judge,judge-v2,630,60,0.0,True,False
-796,verdict,periodontitis_stage_2,correct,,"P: SRP UR/LR, re-eval 6 wk.",True,,sim:judge,judge-v2,630,60,0.0,True,False
-868,status,,,periodontitis_stage_1,,True,,sim:judge,judge-status-v1,657,60,0.0,True,False
-868,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,670,60,0.0,True,False
-873,status,,,healthy,,True,,sim:judge,judge-status-v1,645,60,0.0,True,False
-873,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,658,60,0.0,True,False
-878,status,,,periodontitis_stage_3, Next appt [DATE].,True,,sim:judge,judge-status-v1,693,60,0.0,True,False
-878,verdict,periodontitis_stage_2,correct,, Next appt [DATE].,True,,sim:judge,judge-v2,706,60,0.0,True,False
-878,verdict,periodontitis_stage_3,correct,, Next appt [DATE].,True,,sim:judge,judge-v2,706,60,0.0,True,False
-878,verdict,periodontitis_stage_4,incorrect,, Next appt [DATE].,True,,sim:judge,judge-v2,706,60,0.0,True,False
-898,status,,,gingivitis, Next appt [DATE].,True,,sim:judge,judge-status-v1,652,60,0.0,True,False
-898,verdict,healthy_or_gingivitis,incorrect,, Next appt [DATE].,True,,sim:judge,judge-v2,665,60,0.0,True,False
-898,verdict,periodontitis_stage_1,incorrect,, Next appt [DATE].,True,,sim:judge,judge-v2,665,60,0.0,True,False
-909,status,,,periodontitis_stage_2,,True,,sim:judge,judge-status-v1,643,60,0.0,True,False
-909,verdict,periodontitis_stage_2,correct,,,True,,sim:judge,judge-v2,656,60,0.0,True,False
-909,verdict,periodontitis_stage_3,correct,,,True,,sim:judge,judge-v2,656,60,0.0,True,False
-922,status,,,healthy,,True,,sim:judge,judge-status-v1,653,60,0.0,True,False
-922,verdict,healthy_or_gingivitis,correct,,,True,,sim:judge,judge-v2,666,60,0.0,True,False
-923,status,,,gingivitis,,True,,sim:judge,judge-status-v1,645,60,0.0,True,False
-923,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,658,60,0.0,True,False
-923,verdict,periodontitis_stage_1,incorrect,,,True,,sim:judge,judge-v2,658,60,0.0,True,False
-938,status,,,healthy, Next appt [DATE].,True,,sim:judge,judge-status-v1,646,60,0.0,True,False
-938,verdict,healthy_or_gingivitis,incorrect,, Next appt [DATE].,True,,sim:judge,judge-v2,659,60,0.0,True,False
-970,status,,,healthy,Tx plan: Adult prophy. RTC 6 mo.,True,,sim:judge,judge-status-v1,614,60,0.0,True,False
-970,verdict,healthy_or_gingivitis,incorrect,,Tx plan: Adult prophy. RTC 6 mo.,True,,sim:judge,judge-v2,627,60,0.0,True,False
-987,status,,,periodontitis_stage_2, Next appt [DATE].,True,,sim:judge,judge-status-v1,673,60,0.0,True,False
-987,verdict,healthy_or_gingivitis,incorrect,, Next appt [DATE].,True,,sim:judge,judge-v2,686,60,0.0,True,False
-987,verdict,periodontitis_stage_2,correct,, Next appt [DATE].,True,,sim:judge,judge-v2,686,60,0.0,True,False
-987,verdict,periodontitis_stage_3,incorrect,, Next appt [DATE].,True,,sim:judge,judge-v2,686,60,0.0,True,False
-1002,status,,,healthy,Pt seen for periodontal evaluation. Med hx: HTN controlled; never smoker. Exam: ,True,,sim:judge,judge-status-v1,604,60,0.0,True,False
-1002,verdict,healthy_or_gingivitis,incorrect,,Pt seen for periodontal evaluation. Med hx: HTN controlled; never smoker. Exam: ,True,,sim:judge,judge-v2,617,60,0.0,True,False
-1003,status,,,periodontitis_stage_3,,True,,sim:judge,judge-status-v1,655,60,0.0,True,False
-1003,verdict,periodontitis_stage_2,incorrect,,,True,,sim:judge,judge-v2,668,60,0.0,True,False
-1003,verdict,periodontitis_stage_3,correct,,,True,,sim:judge,judge-v2,668,60,0.0,True,False
-1008,status,,,healthy,,True,,sim:judge,judge-status-v1,659,60,0.0,True,False
-1008,verdict,healthy_or_gingivitis,correct,,,True,,sim:judge,judge-v2,672,60,0.0,True,False
-1020,status,,,periodontitis_stage_1,,True,,sim:judge,judge-status-v1,640,60,0.0,True,False
-1020,verdict,periodontitis_stage_1,correct,,,True,,sim:judge,judge-v2,653,60,0.0,True,False
-1061,status,,,healthy,"Tx plan: Prophy, OHI. Recall 6 mo.",True,,sim:judge,judge-status-v1,609,60,0.0,True,False
-1061,verdict,healthy_or_gingivitis,incorrect,,"Tx plan: Prophy, OHI. Recall 6 mo.",True,,sim:judge,judge-v2,622,60,0.0,True,False
-1066,status,,,periodontitis_stage_3,,True,,sim:judge,judge-status-v1,674,60,0.0,True,False
-1066,verdict,periodontitis_stage_2,incorrect,,,True,,sim:judge,judge-v2,687,60,0.0,True,False
-1066,verdict,periodontitis_stage_3,correct,,,True,,sim:judge,judge-v2,687,60,0.0,True,False
-1092,status,,,periodontitis_stage_2,Dx at that visit: Stage I periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-status-v1,655,60,0.0,True,False
-1092,verdict,periodontitis_stage_1,incorrect,,Dx at that visit: Stage I periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,668,60,0.0,True,False
-1092,verdict,periodontitis_stage_2,correct,,Dx at that visit: Stage I periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,668,60,0.0,True,False
-1098,status,,,periodontitis_stage_2,,True,,sim:judge,judge-status-v1,651,60,0.0,True,False
-1098,verdict,periodontitis_stage_2,correct,,,True,,sim:judge,judge-v2,664,60,0.0,True,False
-1098,verdict,periodontitis_stage_3,incorrect,,,True,,sim:judge,judge-v2,664,60,0.0,True,False
-1116,status,,,periodontitis_stage_4,,True,,sim:judge,judge-status-v1,648,60,0.0,True,False
-1116,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,661,60,0.0,True,False
-1116,verdict,periodontitis_stage_3,incorrect,,,True,,sim:judge,judge-v2,661,60,0.0,True,False
-1116,verdict,periodontitis_stage_4,correct,,,True,,sim:judge,judge-v2,661,60,0.0,True,False
-1119,status,,,periodontitis_stage_3,,True,,sim:judge,judge-status-v1,646,60,0.0,True,False
-1119,verdict,periodontitis_stage_2,incorrect,,,True,,sim:judge,judge-v2,659,60,0.0,True,False
-1119,verdict,periodontitis_stage_3,correct,,,True,,sim:judge,judge-v2,659,60,0.0,True,False
-1142,status,,,periodontitis_stage_4,,True,,sim:judge,judge-status-v1,677,60,0.0,True,False
-1142,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,690,60,0.0,True,False
-1142,verdict,periodontitis_stage_3,incorrect,,,True,,sim:judge,judge-v2,690,60,0.0,True,False
-1142,verdict,periodontitis_stage_4,correct,,,True,,sim:judge,judge-v2,690,60,0.0,True,False
-1145,status,,,periodontitis_stage_2, Pt moved; new address [LOCATION].,True,,sim:judge,judge-status-v1,660,60,0.0,True,False
-1145,verdict,periodontitis_stage_1,incorrect,, Pt moved; new address [LOCATION].,True,,sim:judge,judge-v2,673,60,0.0,True,False
-1145,verdict,periodontitis_stage_2,correct,, Pt moved; new address [LOCATION].,True,,sim:judge,judge-v2,673,60,0.0,True,False
-1145,verdict,periodontitis_stage_3,incorrect,, Pt moved; new address [LOCATION].,True,,sim:judge,judge-v2,673,60,0.0,True,False
-1211,status,,,gingivitis,,True,,sim:judge,judge-status-v1,651,60,0.0,True,False
-1211,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,664,60,0.0,True,False
-1211,verdict,periodontitis_stage_1,incorrect,,,True,,sim:judge,judge-v2,664,60,0.0,True,False
-1212,status,,,periodontitis_stage_2, Pt moved; new address [LOCATION].,True,,sim:judge,judge-status-v1,666,60,0.0,True,False
-1212,verdict,periodontitis_stage_2,correct,, Pt moved; new address [LOCATION].,True,,sim:judge,judge-v2,679,60,0.0,True,False
-1225,status,,,gingivitis, Next appt [DATE].,True,,sim:judge,judge-status-v1,642,60,0.0,True,False
-1225,verdict,healthy_or_gingivitis,correct,, Next appt [DATE].,True,,sim:judge,judge-v2,655,60,0.0,True,False
-1225,verdict,periodontitis_stage_1,incorrect,, Next appt [DATE].,True,,sim:judge,judge-v2,655,60,0.0,True,False
-1264,status,,,periodontitis_stage_2,Dx at that visit: Stage I periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-status-v1,651,60,0.0,True,False
-1264,verdict,periodontitis_stage_1,incorrect,,Dx at that visit: Stage I periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,664,60,0.0,True,False
-1264,verdict,periodontitis_stage_2,correct,,Dx at that visit: Stage I periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,664,60,0.0,True,False
-1272,status,,,gingivitis,"Tx plan: Prophy, OHI. Recall 6 mo. Next appt [DATE].",True,,sim:judge,judge-status-v1,620,60,0.0,True,False
-1272,verdict,healthy_or_gingivitis,incorrect,,"Tx plan: Prophy, OHI. Recall 6 mo. Next appt [DATE].",True,,sim:judge,judge-v2,633,60,0.0,True,False
-1283,status,,,,,True,,sim:judge,judge-status-v1,620,60,0.0,True,False
-1283,verdict,healthy_or_gingivitis,incorrect,,"Tx plan: SRP UR/LR, re-eval 6 wk.",True,,sim:judge,judge-v2,633,60,0.0,True,False
-1283,verdict,periodontitis_stage_1,incorrect,,"Tx plan: SRP UR/LR, re-eval 6 wk.",True,,sim:judge,judge-v2,633,60,0.0,True,False
-1283,verdict,periodontitis_stage_2,incorrect,,"Tx plan: SRP UR/LR, re-eval 6 wk.",True,,sim:judge,judge-v2,633,60,0.0,True,False
-1309,status,,,healthy,P: Adult prophy. RTC 6 mo.,True,,sim:judge,judge-status-v1,619,60,0.0,True,False
-1309,verdict,healthy_or_gingivitis,incorrect,,P: Adult prophy. RTC 6 mo.,True,,sim:judge,judge-v2,632,60,0.0,True,False
-1348,status,,,periodontitis_stage_1,"Tx plan: Prophy, flossing instruction. 6 mo recall.",True,,sim:judge,judge-status-v1,620,60,0.0,True,False
-1348,verdict,healthy_or_gingivitis,not_determinable,,,True,,sim:judge,judge-v2,633,60,0.0,True,False
-1348,verdict,periodontitis_stage_1,correct,,"Tx plan: Prophy, flossing instruction. 6 mo recall.",True,,sim:judge,judge-v2,633,60,0.0,True,False
-1348,verdict,periodontitis_stage_2,incorrect,,"Tx plan: Prophy, flossing instruction. 6 mo recall.",True,,sim:judge,judge-v2,633,60,0.0,True,False
-1352,status,,,periodontitis_stage_3," Referred to Dr. [NAME] at [LOCATION], ph [PHONE]. Next appt [DATE].",True,,sim:judge,judge-status-v1,678,60,0.0,True,False
-1352,verdict,healthy_or_gingivitis,correct,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE]. Next appt [DATE].",True,,sim:judge,judge-v2,691,60,0.0,True,False
-1352,verdict,periodontitis_stage_2,incorrect,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE]. Next appt [DATE].",True,,sim:judge,judge-v2,691,60,0.0,True,False
-1352,verdict,periodontitis_stage_3,incorrect,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE]. Next appt [DATE].",True,,sim:judge,judge-v2,691,60,0.0,True,False
-1352,verdict,periodontitis_stage_4,incorrect,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE]. Next appt [DATE].",True,,sim:judge,judge-v2,691,60,0.0,True,False
-1365,status,,,periodontitis_stage_2, Next appt [DATE].,True,,sim:judge,judge-status-v1,660,60,0.0,True,False
-1365,verdict,healthy_or_gingivitis,incorrect,, Next appt [DATE].,True,,sim:judge,judge-v2,673,60,0.0,True,False
-1365,verdict,periodontitis_stage_1,incorrect,, Next appt [DATE].,True,,sim:judge,judge-v2,673,60,0.0,True,False
-1365,verdict,periodontitis_stage_2,correct,, Next appt [DATE].,True,,sim:judge,judge-v2,673,60,0.0,True,False
-1365,verdict,periodontitis_stage_3,incorrect,, Next appt [DATE].,True,,sim:judge,judge-v2,673,60,0.0,True,False
-1378,status,,,periodontitis_stage_1,,True,,sim:judge,judge-status-v1,645,60,0.0,True,False
-1378,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,658,60,0.0,True,False
-1378,verdict,periodontitis_stage_1,correct,,,True,,sim:judge,judge-v2,658,60,0.0,True,False
-1393,status,,,periodontitis_stage_1,,True,,sim:judge,judge-status-v1,655,60,0.0,True,False
-1393,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,668,60,0.0,True,False
-1393,verdict,periodontitis_stage_1,correct,,,True,,sim:judge,judge-v2,668,60,0.0,True,False
-1407,status,,,periodontitis_stage_1,,True,,sim:judge,judge-status-v1,659,60,0.0,True,False
-1407,verdict,periodontitis_stage_1,correct,,,True,,sim:judge,judge-v2,672,60,0.0,True,False
-1433,status,,,periodontitis_stage_1,Pt seen for periodontal evaluation. Med hx: HTN controlled; non-smoker. Exam: ra,True,,sim:judge,judge-status-v1,611,60,0.0,True,False
-1433,verdict,periodontitis_stage_1,correct,,Pt seen for periodontal evaluation. Med hx: HTN controlled; non-smoker. Exam: ra,True,,sim:judge,judge-v2,624,60,0.0,True,False
-1433,verdict,periodontitis_stage_2,incorrect,,Pt seen for periodontal evaluation. Med hx: HTN controlled; non-smoker. Exam: ra,True,,sim:judge,judge-v2,624,60,0.0,True,False
-1444,status,,,healthy,Tx plan: Adult prophy. RTC 6 mo.,True,,sim:judge,judge-status-v1,605,60,0.0,True,False
-1444,verdict,healthy_or_gingivitis,incorrect,,Tx plan: Adult prophy. RTC 6 mo.,True,,sim:judge,judge-v2,618,60,0.0,True,False
-1455,status,,,periodontitis_stage_1,Dx at that visit: gingivitis. Pt declined SRP at that time.,True,,sim:judge,judge-status-v1,643,60,0.0,True,False
-1455,verdict,healthy_or_gingivitis,incorrect,,Dx at that visit: gingivitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,656,60,0.0,True,False
-1455,verdict,periodontitis_stage_1,correct,,Dx at that visit: gingivitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,656,60,0.0,True,False
-1455,verdict,periodontitis_stage_2,not_determinable,,,True,,sim:judge,judge-v2,656,60,0.0,True,False
-1469,status,,,gingivitis,,True,,sim:judge,judge-status-v1,668,60,0.0,True,False
-1469,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,681,60,0.0,True,False
-1475,status,,,periodontitis_stage_1,Dx at that visit: gingivitis. Pt declined SRP at that time.,True,,sim:judge,judge-status-v1,681,60,0.0,True,False
-1475,verdict,healthy_or_gingivitis,incorrect,,Dx at that visit: gingivitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,694,60,0.0,True,False
-1475,verdict,periodontitis_stage_1,correct,,Dx at that visit: gingivitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,694,60,0.0,True,False
-1523,status,,,gingivitis, Next appt [DATE].,True,,sim:judge,judge-status-v1,644,60,0.0,True,False
-1523,verdict,healthy_or_gingivitis,incorrect,, Next appt [DATE].,True,,sim:judge,judge-v2,657,60,0.0,True,False
-1523,verdict,periodontitis_stage_1,correct,, Next appt [DATE].,True,,sim:judge,judge-v2,657,60,0.0,True,False
-1523,verdict,periodontitis_stage_2,incorrect,, Next appt [DATE].,True,,sim:judge,judge-v2,657,60,0.0,True,False
-1573,status,,,healthy,,True,,sim:judge,judge-status-v1,647,60,0.0,True,False
-1573,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,660,60,0.0,True,False
-1585,status,,,periodontitis_stage_4, Pt moved; new address [LOCATION].,True,,sim:judge,judge-status-v1,681,60,0.0,True,False
-1585,verdict,healthy_or_gingivitis,correct,, Pt moved; new address [LOCATION].,True,,sim:judge,judge-v2,694,60,0.0,True,False
-1585,verdict,periodontitis_stage_2,incorrect,, Pt moved; new address [LOCATION].,True,,sim:judge,judge-v2,694,60,0.0,True,False
-1585,verdict,periodontitis_stage_3,incorrect,, Pt moved; new address [LOCATION].,True,,sim:judge,judge-v2,694,60,0.0,True,False
-1585,verdict,periodontitis_stage_4,correct,, Pt moved; new address [LOCATION].,True,,sim:judge,judge-v2,694,60,0.0,True,False
-1630,status,,,gingivitis,,True,,sim:judge,judge-status-v1,651,60,0.0,True,False
-1630,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,664,60,0.0,True,False
-1630,verdict,periodontitis_stage_1,correct,,,True,,sim:judge,judge-v2,664,60,0.0,True,False
-1663,status,,,gingivitis, Next appt [DATE].,True,,sim:judge,judge-status-v1,654,60,0.0,True,False
-1663,verdict,healthy_or_gingivitis,incorrect,, Next appt [DATE].,True,,sim:judge,judge-v2,667,60,0.0,True,False
-1663,verdict,periodontitis_stage_1,incorrect,, Next appt [DATE].,True,,sim:judge,judge-v2,667,60,0.0,True,False
-1701,status,,,periodontitis_stage_2,"P: Localized SRP, perio maint q4mo. Pt moved; new address [LOCATION].",True,,sim:judge,judge-status-v1,635,60,0.0,True,False
-1701,verdict,healthy_or_gingivitis,incorrect,,"P: Localized SRP, perio maint q4mo. Pt moved; new address [LOCATION].",True,,sim:judge,judge-v2,648,60,0.0,True,False
-1701,verdict,periodontitis_stage_1,incorrect,,"P: Localized SRP, perio maint q4mo. Pt moved; new address [LOCATION].",True,,sim:judge,judge-v2,648,60,0.0,True,False
-1701,verdict,periodontitis_stage_2,correct,,"P: Localized SRP, perio maint q4mo. Pt moved; new address [LOCATION].",True,,sim:judge,judge-v2,648,60,0.0,True,False
-1706,status,,,gingivitis,"Tx plan: Prophy, flossing instruction. 6 mo recall.",True,,sim:judge,judge-status-v1,619,60,0.0,True,False
-1706,verdict,healthy_or_gingivitis,incorrect,,"Tx plan: Prophy, flossing instruction. 6 mo recall.",True,,sim:judge,judge-v2,632,60,0.0,True,False
-1712,status,,,periodontitis_stage_4,Dx at that visit: Stage III periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-status-v1,692,60,0.0,True,False
-1712,verdict,periodontitis_stage_3,incorrect,,Dx at that visit: Stage III periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,705,60,0.0,True,False
-1712,verdict,periodontitis_stage_4,correct,,Dx at that visit: Stage III periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,705,60,0.0,True,False
-1723,status,,,periodontitis_stage_3, Next appt [DATE].,True,,sim:judge,judge-status-v1,655,60,0.0,True,False
-1723,verdict,healthy_or_gingivitis,correct,, Next appt [DATE].,True,,sim:judge,judge-v2,668,60,0.0,True,False
-1723,verdict,periodontitis_stage_2,correct,, Next appt [DATE].,True,,sim:judge,judge-v2,668,60,0.0,True,False
-1723,verdict,periodontitis_stage_3,correct,, Next appt [DATE].,True,,sim:judge,judge-v2,668,60,0.0,True,False
-1734,status,,,gingivitis,Patient seen for periodontal evaluation. Med hx: no sig med hx; smoker ~21 cig/d,True,,sim:judge,judge-status-v1,620,60,0.0,True,False
-1734,verdict,healthy_or_gingivitis,correct,,Patient seen for periodontal evaluation. Med hx: no sig med hx; smoker ~21 cig/d,True,,sim:judge,judge-v2,633,60,0.0,True,False
-1748,status,,,periodontitis_stage_3,Tx plan: SRP 4 quads; perio consult for surgical eval.,True,,sim:judge,judge-status-v1,655,60,0.0,True,False
-1748,verdict,periodontitis_stage_2,incorrect,,Tx plan: SRP 4 quads; perio consult for surgical eval.,True,,sim:judge,judge-v2,668,60,0.0,True,False
-1748,verdict,periodontitis_stage_3,correct,,Tx plan: SRP 4 quads; perio consult for surgical eval.,True,,sim:judge,judge-v2,668,60,0.0,True,False
-1806,status,,,periodontitis_stage_4,Dx at that visit: Stage III periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-status-v1,699,60,0.0,True,False
-1806,verdict,periodontitis_stage_2,incorrect,,Dx at that visit: Stage III periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,712,60,0.0,True,False
-1806,verdict,periodontitis_stage_3,incorrect,,Dx at that visit: Stage III periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,712,60,0.0,True,False
-1806,verdict,periodontitis_stage_4,correct,,Dx at that visit: Stage III periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,712,60,0.0,True,False
-1815,status,,,gingivitis,,True,,sim:judge,judge-status-v1,645,60,0.0,True,False
-1815,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,658,60,0.0,True,False
-1836,status,,,periodontitis_stage_3,"Tx plan: 4 quad SRP then perio maint q3mo. Referred to Dr. [NAME] at [LOCATION],",True,,sim:judge,judge-status-v1,644,60,0.0,True,False
-1836,verdict,periodontitis_stage_2,correct,,"Tx plan: 4 quad SRP then perio maint q3mo. Referred to Dr. [NAME] at [LOCATION],",True,,sim:judge,judge-v2,657,60,0.0,True,False
-1836,verdict,periodontitis_stage_3,correct,,"Tx plan: 4 quad SRP then perio maint q3mo. Referred to Dr. [NAME] at [LOCATION],",True,,sim:judge,judge-v2,657,60,0.0,True,False
-1853,status,,,periodontitis_stage_1, Pt moved; new address [LOCATION].,True,,sim:judge,judge-status-v1,668,60,0.0,True,False
-1853,verdict,healthy_or_gingivitis,incorrect,, Pt moved; new address [LOCATION].,True,,sim:judge,judge-v2,681,60,0.0,True,False
-1853,verdict,periodontitis_stage_1,correct,, Pt moved; new address [LOCATION].,True,,sim:judge,judge-v2,681,60,0.0,True,False
-1853,verdict,periodontitis_stage_2,incorrect,, Pt moved; new address [LOCATION].,True,,sim:judge,judge-v2,681,60,0.0,True,False
-1861,status,,,gingivitis,"Patient seen for recall exam. Med hx: NKDA; non-smoker. Exam: localized BOP, no ",True,,sim:judge,judge-status-v1,599,60,0.0,True,False
-1861,verdict,healthy_or_gingivitis,incorrect,,"Patient seen for recall exam. Med hx: NKDA; non-smoker. Exam: localized BOP, no ",True,,sim:judge,judge-v2,612,60,0.0,True,False
-1874,status,,,periodontitis_stage_1,Pt seen for recall exam. Med hx: HTN controlled; never smoker. Exam: PAN: bone l,True,,sim:judge,judge-status-v1,613,60,0.0,True,False
-1874,verdict,healthy_or_gingivitis,incorrect,,Pt seen for recall exam. Med hx: HTN controlled; never smoker. Exam: PAN: bone l,True,,sim:judge,judge-v2,626,60,0.0,True,False
-1874,verdict,periodontitis_stage_1,incorrect,,Pt seen for recall exam. Med hx: HTN controlled; never smoker. Exam: PAN: bone l,True,,sim:judge,judge-v2,626,60,0.0,True,False
-1922,status,,,periodontitis_stage_3," Referred to Dr. [NAME] at [LOCATION], ph [PHONE]. Next appt [DATE].",True,,sim:judge,judge-status-v1,688,60,0.0,True,False
-1922,verdict,healthy_or_gingivitis,incorrect,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE]. Next appt [DATE].",True,,sim:judge,judge-v2,701,60,0.0,True,False
-1922,verdict,periodontitis_stage_2,incorrect,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE]. Next appt [DATE].",True,,sim:judge,judge-v2,701,60,0.0,True,False
-1922,verdict,periodontitis_stage_3,correct,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE]. Next appt [DATE].",True,,sim:judge,judge-v2,701,60,0.0,True,False
-1979,status,,,periodontitis_stage_2,,True,,sim:judge,judge-status-v1,653,60,0.0,True,False
-1979,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,666,60,0.0,True,False
-1979,verdict,periodontitis_stage_2,correct,,,True,,sim:judge,judge-v2,666,60,0.0,True,False
-1998,status,,,periodontitis_stage_2, Next appt [DATE].,True,,sim:judge,judge-status-v1,666,60,0.0,True,False
-1998,verdict,healthy_or_gingivitis,incorrect,, Next appt [DATE].,True,,sim:judge,judge-v2,679,60,0.0,True,False
-1998,verdict,periodontitis_stage_2,correct,, Next appt [DATE].,True,,sim:judge,judge-v2,679,60,0.0,True,False
-1998,verdict,periodontitis_stage_3,incorrect,, Next appt [DATE].,True,,sim:judge,judge-v2,679,60,0.0,True,False
-2015,status,,,periodontitis_stage_3, Pt moved; new address [LOCATION].,True,,sim:judge,judge-status-v1,684,60,0.0,True,False
-2015,verdict,periodontitis_stage_2,incorrect,, Pt moved; new address [LOCATION].,True,,sim:judge,judge-v2,697,60,0.0,True,False
-2015,verdict,periodontitis_stage_3,correct,, Pt moved; new address [LOCATION].,True,,sim:judge,judge-v2,697,60,0.0,True,False
-2025,status,,,periodontitis_stage_4,Tx plan: SRP 4 quads; perio consult for surgical eval. Referred to Dr. [NAME] at,True,,sim:judge,judge-status-v1,653,60,0.0,True,False
-2025,verdict,periodontitis_stage_2,incorrect,,Tx plan: SRP 4 quads; perio consult for surgical eval. Referred to Dr. [NAME] at,True,,sim:judge,judge-v2,666,60,0.0,True,False
-2025,verdict,periodontitis_stage_3,incorrect,,Tx plan: SRP 4 quads; perio consult for surgical eval. Referred to Dr. [NAME] at,True,,sim:judge,judge-v2,666,60,0.0,True,False
-2025,verdict,periodontitis_stage_4,correct,,Tx plan: SRP 4 quads; perio consult for surgical eval. Referred to Dr. [NAME] at,True,,sim:judge,judge-v2,666,60,0.0,True,False
-2030,status,,,periodontitis_stage_1,Dx at that visit: gingivitis. Pt declined SRP at that time.,True,,sim:judge,judge-status-v1,648,60,0.0,True,False
-2030,verdict,healthy_or_gingivitis,incorrect,,Dx at that visit: gingivitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,661,60,0.0,True,False
-2030,verdict,periodontitis_stage_1,correct,,Dx at that visit: gingivitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,661,60,0.0,True,False
-2030,verdict,periodontitis_stage_2,incorrect,,Dx at that visit: gingivitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,661,60,0.0,True,False
-2058,status,,,periodontitis_stage_2,,True,,sim:judge,judge-status-v1,661,60,0.0,True,False
-2058,verdict,periodontitis_stage_2,correct,,,True,,sim:judge,judge-v2,674,60,0.0,True,False
-2065,status,,,periodontitis_stage_4," Referred to Dr. [NAME] at [LOCATION], ph [PHONE]. Next appt [DATE].",True,,sim:judge,judge-status-v1,687,60,0.0,True,False
-2065,verdict,healthy_or_gingivitis,incorrect,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE]. Next appt [DATE].",True,,sim:judge,judge-v2,700,60,0.0,True,False
-2065,verdict,periodontitis_stage_2,incorrect,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE]. Next appt [DATE].",True,,sim:judge,judge-v2,700,60,0.0,True,False
-2065,verdict,periodontitis_stage_3,incorrect,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE]. Next appt [DATE].",True,,sim:judge,judge-v2,700,60,0.0,True,False
-2065,verdict,periodontitis_stage_4,correct,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE]. Next appt [DATE].",True,,sim:judge,judge-v2,700,60,0.0,True,False
-2070,status,,,periodontitis_stage_4,,True,,sim:judge,judge-status-v1,674,60,0.0,True,False
-2070,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,687,60,0.0,True,False
-2070,verdict,periodontitis_stage_3,incorrect,,,True,,sim:judge,judge-v2,687,60,0.0,True,False
-2070,verdict,periodontitis_stage_4,incorrect,,,True,,sim:judge,judge-v2,687,60,0.0,True,False
-2094,status,,,periodontitis_stage_1,,True,,sim:judge,judge-status-v1,643,60,0.0,True,False
-2094,verdict,periodontitis_stage_1,correct,,,True,,sim:judge,judge-v2,656,60,0.0,True,False
-2094,verdict,periodontitis_stage_2,incorrect,,,True,,sim:judge,judge-v2,656,60,0.0,True,False
-2107,status,,,periodontitis_stage_2,"Tx plan: SRP 4 quads, re-eval 4-6 wk.",True,,sim:judge,judge-status-v1,621,60,0.0,True,False
-2107,verdict,periodontitis_stage_2,correct,,"Tx plan: SRP 4 quads, re-eval 4-6 wk.",True,,sim:judge,judge-v2,634,60,0.0,True,False
-2170,status,,,periodontitis_stage_3,Tx plan: SRP 4 quads; perio consult for surgical eval. Referred to Dr. [NAME] at,True,,sim:judge,judge-status-v1,645,60,0.0,True,False
-2170,verdict,healthy_or_gingivitis,incorrect,,Tx plan: SRP 4 quads; perio consult for surgical eval. Referred to Dr. [NAME] at,True,,sim:judge,judge-v2,658,60,0.0,True,False
-2170,verdict,periodontitis_stage_2,correct,,Tx plan: SRP 4 quads; perio consult for surgical eval. Referred to Dr. [NAME] at,True,,sim:judge,judge-v2,658,60,0.0,True,False
-2170,verdict,periodontitis_stage_3,correct,,Tx plan: SRP 4 quads; perio consult for surgical eval. Referred to Dr. [NAME] at,True,,sim:judge,judge-v2,658,60,0.0,True,False
-2177,status,,,gingivitis,P: Adult prophy. RTC 6 mo. Next appt [DATE].,True,,sim:judge,judge-status-v1,609,60,0.0,True,False
-2177,verdict,healthy_or_gingivitis,correct,,P: Adult prophy. RTC 6 mo. Next appt [DATE].,True,,sim:judge,judge-v2,622,60,0.0,True,False
-2177,verdict,periodontitis_stage_1,incorrect,,P: Adult prophy. RTC 6 mo. Next appt [DATE].,True,,sim:judge,judge-v2,622,60,0.0,True,False
-2181,status,,,periodontitis_stage_3," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-status-v1,680,60,0.0,True,False
-2181,verdict,periodontitis_stage_2,incorrect,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-v2,693,60,0.0,True,False
-2181,verdict,periodontitis_stage_3,correct,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-v2,693,60,0.0,True,False
-2213,status,,,periodontitis_stage_1,,True,,sim:judge,judge-status-v1,645,60,0.0,True,False
-2213,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,658,60,0.0,True,False
-2213,verdict,periodontitis_stage_1,correct,,,True,,sim:judge,judge-v2,658,60,0.0,True,False
-2224,status,,,periodontitis_stage_4,,True,,sim:judge,judge-status-v1,669,60,0.0,True,False
-2224,verdict,periodontitis_stage_3,incorrect,,,True,,sim:judge,judge-v2,682,60,0.0,True,False
-2224,verdict,periodontitis_stage_4,correct,,,True,,sim:judge,judge-v2,682,60,0.0,True,False
-2238,status,,,gingivitis,Dx at that visit: Stage I periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-status-v1,673,60,0.0,True,False
-2238,verdict,periodontitis_stage_2,correct,,Dx at that visit: Stage I periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,686,60,0.0,True,False
-2238,verdict,periodontitis_stage_3,incorrect,,Dx at that visit: Stage I periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,686,60,0.0,True,False
-2275,status,,,healthy,,True,,sim:judge,judge-status-v1,645,60,0.0,True,False
-2275,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,658,60,0.0,True,False
-2278,status,,,gingivitis,"P: Localized SRP, perio maint q4mo. Next appt [DATE].",True,,sim:judge,judge-status-v1,620,60,0.0,True,False
-2278,verdict,healthy_or_gingivitis,correct,,"P: Localized SRP, perio maint q4mo. Next appt [DATE].",True,,sim:judge,judge-v2,633,60,0.0,True,False
-2278,verdict,periodontitis_stage_1,incorrect,,"P: Localized SRP, perio maint q4mo. Next appt [DATE].",True,,sim:judge,judge-v2,633,60,0.0,True,False
-2299,status,,,periodontitis_stage_3," Referred to Dr. [NAME] at [LOCATION], ph [PHONE]. Next appt [DATE].",True,,sim:judge,judge-status-v1,690,60,0.0,True,False
-2299,verdict,healthy_or_gingivitis,incorrect,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE]. Next appt [DATE].",True,,sim:judge,judge-v2,703,60,0.0,True,False
-2299,verdict,periodontitis_stage_2,incorrect,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE]. Next appt [DATE].",True,,sim:judge,judge-v2,703,60,0.0,True,False
-2299,verdict,periodontitis_stage_3,incorrect,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE]. Next appt [DATE].",True,,sim:judge,judge-v2,703,60,0.0,True,False
-2299,verdict,periodontitis_stage_4,incorrect,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE]. Next appt [DATE].",True,,sim:judge,judge-v2,703,60,0.0,True,False
-2342,status,,,periodontitis_stage_1, Pt moved; new address [LOCATION].,True,,sim:judge,judge-status-v1,662,60,0.0,True,False
-2342,verdict,periodontitis_stage_1,incorrect,, Pt moved; new address [LOCATION].,True,,sim:judge,judge-v2,675,60,0.0,True,False
-2342,verdict,periodontitis_stage_2,incorrect,, Pt moved; new address [LOCATION].,True,,sim:judge,judge-v2,675,60,0.0,True,False
-2360,status,,,periodontitis_stage_2,"Tx plan: SRP 4 quads, re-eval 4-6 wk.",True,,sim:judge,judge-status-v1,616,60,0.0,True,False
-2360,verdict,periodontitis_stage_1,incorrect,,"Tx plan: SRP 4 quads, re-eval 4-6 wk.",True,,sim:judge,judge-v2,629,60,0.0,True,False
-2360,verdict,periodontitis_stage_2,correct,,"Tx plan: SRP 4 quads, re-eval 4-6 wk.",True,,sim:judge,judge-v2,629,60,0.0,True,False
-2360,verdict,periodontitis_stage_3,correct,,"Tx plan: SRP 4 quads, re-eval 4-6 wk.",True,,sim:judge,judge-v2,629,60,0.0,True,False
-2364,status,,,,,True,,sim:judge,judge-status-v1,676,60,0.0,True,False
-2364,verdict,healthy_or_gingivitis,incorrect,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-v2,689,60,0.0,True,False
-2364,verdict,periodontitis_stage_2,incorrect,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-v2,689,60,0.0,True,False
-2364,verdict,periodontitis_stage_3,correct,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-v2,689,60,0.0,True,False
-2373,status,,,periodontitis_stage_2,Pt seen for recall exam. Med hx: no sig med hx; never smoker. Exam: CAL up to 3m,True,,sim:judge,judge-status-v1,611,60,0.0,True,False
-2373,verdict,healthy_or_gingivitis,incorrect,,Pt seen for recall exam. Med hx: no sig med hx; never smoker. Exam: CAL up to 3m,True,,sim:judge,judge-v2,624,60,0.0,True,False
-2373,verdict,periodontitis_stage_2,correct,,Pt seen for recall exam. Med hx: no sig med hx; never smoker. Exam: CAL up to 3m,True,,sim:judge,judge-v2,624,60,0.0,True,False
-2388,status,,,healthy,,True,,sim:judge,judge-status-v1,658,60,0.0,True,False
-2388,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,671,60,0.0,True,False
-2421,status,,,periodontitis_stage_1,"Tx plan: Prophy, flossing instruction. 6 mo recall.",True,,sim:judge,judge-status-v1,603,60,0.0,True,False
-2421,verdict,healthy_or_gingivitis,incorrect,,"Tx plan: Prophy, flossing instruction. 6 mo recall.",True,,sim:judge,judge-v2,616,60,0.0,True,False
-2421,verdict,periodontitis_stage_1,correct,,"Tx plan: Prophy, flossing instruction. 6 mo recall.",True,,sim:judge,judge-v2,616,60,0.0,True,False
-2430,status,,,gingivitis,"Pt seen for recall exam. Med hx: HTN controlled; never smoker. Exam: CAL 0, loca",True,,sim:judge,judge-status-v1,615,60,0.0,True,False
-2430,verdict,healthy_or_gingivitis,incorrect,,"Pt seen for recall exam. Med hx: HTN controlled; never smoker. Exam: CAL 0, loca",True,,sim:judge,judge-v2,628,60,0.0,True,False
-2430,verdict,periodontitis_stage_1,incorrect,,"Pt seen for recall exam. Med hx: HTN controlled; never smoker. Exam: CAL 0, loca",True,,sim:judge,judge-v2,628,60,0.0,True,False
-2496,status,,,healthy,"Tx plan: Prophy, OHI. Recall 6 mo.",True,,sim:judge,judge-status-v1,608,60,0.0,True,False
-2496,verdict,healthy_or_gingivitis,incorrect,,"Tx plan: Prophy, OHI. Recall 6 mo.",True,,sim:judge,judge-v2,621,60,0.0,True,False
-2499,status,,,gingivitis,,True,,sim:judge,judge-status-v1,655,60,0.0,True,False
-2499,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,668,60,0.0,True,False
-2499,verdict,periodontitis_stage_1,incorrect,,,True,,sim:judge,judge-v2,668,60,0.0,True,False
-2537,status,,,periodontitis_stage_1,,True,,sim:judge,judge-status-v1,647,60,0.0,True,False
-2537,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,660,60,0.0,True,False
-2537,verdict,periodontitis_stage_1,correct,,,True,,sim:judge,judge-v2,660,60,0.0,True,False
-2537,verdict,periodontitis_stage_2,incorrect,,,True,,sim:judge,judge-v2,660,60,0.0,True,False
-2545,status,,,healthy, Pt moved; new address [LOCATION].,True,,sim:judge,judge-status-v1,647,60,0.0,True,False
-2545,verdict,healthy_or_gingivitis,incorrect,, Pt moved; new address [LOCATION].,True,,sim:judge,judge-v2,660,60,0.0,True,False
-2576,status,,,gingivitis,,True,,sim:judge,judge-status-v1,650,60,0.0,True,False
-2576,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,663,60,0.0,True,False
-2592,status,,,gingivitis, Pt moved; new address [LOCATION].,True,,sim:judge,judge-status-v1,664,60,0.0,True,False
-2592,verdict,healthy_or_gingivitis,incorrect,, Pt moved; new address [LOCATION].,True,,sim:judge,judge-v2,677,60,0.0,True,False
-2592,verdict,periodontitis_stage_1,incorrect,, Pt moved; new address [LOCATION].,True,,sim:judge,judge-v2,677,60,0.0,True,False
-2601,status,,,periodontitis_stage_4,,True,,sim:judge,judge-status-v1,650,60,0.0,True,False
-2601,verdict,periodontitis_stage_2,correct,,,True,,sim:judge,judge-v2,663,60,0.0,True,False
-2601,verdict,periodontitis_stage_3,not_determinable,,,True,,sim:judge,judge-v2,663,60,0.0,True,False
-2633,status,,,periodontitis_stage_3, Next appt [DATE].,True,,sim:judge,judge-status-v1,651,60,0.0,True,False
-2633,verdict,periodontitis_stage_2,incorrect,, Next appt [DATE].,True,,sim:judge,judge-v2,664,60,0.0,True,False
-2633,verdict,periodontitis_stage_3,correct,, Next appt [DATE].,True,,sim:judge,judge-v2,664,60,0.0,True,False
-2636,status,,,periodontitis_stage_4,P: Perio referral; prosthetic consult for edentulous areas.,True,,sim:judge,judge-status-v1,650,60,0.0,True,False
-2636,verdict,periodontitis_stage_2,correct,,P: Perio referral; prosthetic consult for edentulous areas.,True,,sim:judge,judge-v2,663,60,0.0,True,False
-2636,verdict,periodontitis_stage_3,incorrect,,P: Perio referral; prosthetic consult for edentulous areas.,True,,sim:judge,judge-v2,663,60,0.0,True,False
-2636,verdict,periodontitis_stage_4,incorrect,,P: Perio referral; prosthetic consult for edentulous areas.,True,,sim:judge,judge-v2,663,60,0.0,True,False
-2641,status,,,periodontitis_stage_1,,True,,sim:judge,judge-status-v1,655,60,0.0,True,False
-2641,verdict,periodontitis_stage_1,correct,,,True,,sim:judge,judge-v2,668,60,0.0,True,False
-2641,verdict,periodontitis_stage_2,incorrect,,,True,,sim:judge,judge-v2,668,60,0.0,True,False
-2653,status,,,gingivitis,,True,,sim:judge,judge-status-v1,643,60,0.0,True,False
-2653,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,656,60,0.0,True,False
-2672,status,,,periodontitis_stage_3," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-status-v1,679,60,0.0,True,False
-2672,verdict,periodontitis_stage_2,incorrect,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-v2,692,60,0.0,True,False
-2672,verdict,periodontitis_stage_3,correct,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-v2,692,60,0.0,True,False
-2708,status,,,periodontitis_stage_1, Pt moved; new address [LOCATION].,True,,sim:judge,judge-status-v1,661,60,0.0,True,False
-2708,verdict,healthy_or_gingivitis,correct,, Pt moved; new address [LOCATION].,True,,sim:judge,judge-v2,674,60,0.0,True,False
-2708,verdict,periodontitis_stage_1,correct,, Pt moved; new address [LOCATION].,True,,sim:judge,judge-v2,674,60,0.0,True,False
-2708,verdict,periodontitis_stage_2,incorrect,, Pt moved; new address [LOCATION].,True,,sim:judge,judge-v2,674,60,0.0,True,False
-2712,status,,,healthy,,True,,sim:judge,judge-status-v1,654,60,0.0,True,False
-2712,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,667,60,0.0,True,False
-2718,status,,,gingivitis, Pt moved; new address [LOCATION].,True,,sim:judge,judge-status-v1,651,60,0.0,True,False
-2718,verdict,healthy_or_gingivitis,incorrect,, Pt moved; new address [LOCATION].,True,,sim:judge,judge-v2,664,60,0.0,True,False
-2718,verdict,periodontitis_stage_1,incorrect,, Pt moved; new address [LOCATION].,True,,sim:judge,judge-v2,664,60,0.0,True,False
-2752,status,,,gingivitis, Next appt [DATE].,True,,sim:judge,judge-status-v1,666,60,0.0,True,False
-2752,verdict,healthy_or_gingivitis,incorrect,, Next appt [DATE].,True,,sim:judge,judge-v2,679,60,0.0,True,False
-2774,status,,,periodontitis_stage_3,Tx plan: SRP 4 quads; perio consult for surgical eval.,True,,sim:judge,judge-status-v1,637,60,0.0,True,False
-2774,verdict,periodontitis_stage_2,incorrect,,Tx plan: SRP 4 quads; perio consult for surgical eval.,True,,sim:judge,judge-v2,650,60,0.0,True,False
-2774,verdict,periodontitis_stage_3,correct,,Tx plan: SRP 4 quads; perio consult for surgical eval.,True,,sim:judge,judge-v2,650,60,0.0,True,False
-2796,status,,,periodontitis_stage_2,,True,,sim:judge,judge-status-v1,649,60,0.0,True,False
-2796,verdict,periodontitis_stage_2,correct,,,True,,sim:judge,judge-v2,662,60,0.0,True,False
-2796,verdict,periodontitis_stage_3,incorrect,,,True,,sim:judge,judge-v2,662,60,0.0,True,False
-2819,status,,,periodontitis_stage_1,,True,,sim:judge,judge-status-v1,649,60,0.0,True,False
-2819,verdict,healthy_or_gingivitis,correct,,,True,,sim:judge,judge-v2,662,60,0.0,True,False
-2819,verdict,periodontitis_stage_1,correct,,,True,,sim:judge,judge-v2,662,60,0.0,True,False
-2819,verdict,periodontitis_stage_2,incorrect,,,True,,sim:judge,judge-v2,662,60,0.0,True,False
-2829,status,,,periodontitis_stage_1,,True,,sim:judge,judge-status-v1,643,60,0.0,True,False
-2829,verdict,periodontitis_stage_1,correct,,,True,,sim:judge,judge-v2,656,60,0.0,True,False
-2829,verdict,periodontitis_stage_2,incorrect,,,True,,sim:judge,judge-v2,656,60,0.0,True,False
-2842,status,,,periodontitis_stage_2,,True,,sim:judge,judge-status-v1,652,60,0.0,True,False
-2842,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,665,60,0.0,True,False
-2842,verdict,periodontitis_stage_2,correct,,,True,,sim:judge,judge-v2,665,60,0.0,True,False
-2855,status,,,periodontitis_stage_4,Dx at that visit: Stage III periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-status-v1,679,60,0.0,True,False
-2855,verdict,periodontitis_stage_3,incorrect,,Dx at that visit: Stage III periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,692,60,0.0,True,False
-2855,verdict,periodontitis_stage_4,correct,,Dx at that visit: Stage III periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,692,60,0.0,True,False
-2889,status,,,periodontitis_stage_2,P: 4 quad SRP then perio maint q3mo.,True,,sim:judge,judge-status-v1,615,60,0.0,True,False
-2889,verdict,periodontitis_stage_1,incorrect,,P: 4 quad SRP then perio maint q3mo.,True,,sim:judge,judge-v2,628,60,0.0,True,False
-2889,verdict,periodontitis_stage_2,correct,,P: 4 quad SRP then perio maint q3mo.,True,,sim:judge,judge-v2,628,60,0.0,True,False
-2903,status,,,gingivitis,,True,,sim:judge,judge-status-v1,665,60,0.0,True,False
-2903,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,678,60,0.0,True,False
-2903,verdict,periodontitis_stage_1,correct,,,True,,sim:judge,judge-v2,678,60,0.0,True,False
-2913,status,,,periodontitis_stage_4,"Pt seen for recall exam. Med hx: no sig med hx; non-smoker. Exam: no BOP, shallo",True,,sim:judge,judge-status-v1,629,60,0.0,True,False
-2913,verdict,healthy_or_gingivitis,incorrect,,"Pt seen for recall exam. Med hx: no sig med hx; non-smoker. Exam: no BOP, shallo",True,,sim:judge,judge-v2,642,60,0.0,True,False
-2913,verdict,periodontitis_stage_2,incorrect,,"Pt seen for recall exam. Med hx: no sig med hx; non-smoker. Exam: no BOP, shallo",True,,sim:judge,judge-v2,642,60,0.0,True,False
-2913,verdict,periodontitis_stage_3,correct,,"Pt seen for recall exam. Med hx: no sig med hx; non-smoker. Exam: no BOP, shallo",True,,sim:judge,judge-v2,642,60,0.0,True,False
-2924,status,,,periodontitis_stage_2,"P: SRP UR/LR, re-eval 6 wk.",True,,sim:judge,judge-status-v1,609,60,0.0,True,False
-2924,verdict,healthy_or_gingivitis,incorrect,,"P: SRP UR/LR, re-eval 6 wk.",True,,sim:judge,judge-v2,622,60,0.0,True,False
-2924,verdict,periodontitis_stage_2,correct,,"P: SRP UR/LR, re-eval 6 wk.",True,,sim:judge,judge-v2,622,60,0.0,True,False
-2924,verdict,periodontitis_stage_3,incorrect,,"P: SRP UR/LR, re-eval 6 wk.",True,,sim:judge,judge-v2,622,60,0.0,True,False
-2930,status,,,periodontitis_stage_4,Dx at that visit: Stage III periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-status-v1,655,60,0.0,True,False
-2930,verdict,periodontitis_stage_3,incorrect,,Dx at that visit: Stage III periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,668,60,0.0,True,False
-2930,verdict,periodontitis_stage_4,correct,,Dx at that visit: Stage III periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,668,60,0.0,True,False
-2944,status,,,periodontitis_stage_3," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-status-v1,694,60,0.0,True,False
-2944,verdict,periodontitis_stage_2,incorrect,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-v2,707,60,0.0,True,False
-2944,verdict,periodontitis_stage_3,correct,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-v2,707,60,0.0,True,False
-2951,status,,,gingivitis,"P: SRP UR/LR, re-eval 6 wk.",True,,sim:judge,judge-status-v1,611,60,0.0,True,False
-2951,verdict,healthy_or_gingivitis,incorrect,,"P: SRP UR/LR, re-eval 6 wk.",True,,sim:judge,judge-v2,624,60,0.0,True,False
-2951,verdict,periodontitis_stage_1,incorrect,,"P: SRP UR/LR, re-eval 6 wk.",True,,sim:judge,judge-v2,624,60,0.0,True,False
-2960,status,,,periodontitis_stage_2, Pt moved; new address [LOCATION].,True,,sim:judge,judge-status-v1,670,60,0.0,True,False
-2960,verdict,healthy_or_gingivitis,correct,, Pt moved; new address [LOCATION].,True,,sim:judge,judge-v2,683,60,0.0,True,False
-2960,verdict,periodontitis_stage_2,correct,, Pt moved; new address [LOCATION].,True,,sim:judge,judge-v2,683,60,0.0,True,False
-2992,status,,,gingivitis,"Tx plan: Prophy, flossing instruction. 6 mo recall.",True,,sim:judge,judge-status-v1,612,60,0.0,True,False
-2992,verdict,healthy_or_gingivitis,incorrect,,"Tx plan: Prophy, flossing instruction. 6 mo recall.",True,,sim:judge,judge-v2,625,60,0.0,True,False
-2996,status,,,periodontitis_stage_2,"Pt seen for periodontal evaluation. Med hx: T2DM, last A1c 6.6; smoker ~8 cig/da",True,,sim:judge,judge-status-v1,624,60,0.0,True,False
-2996,verdict,periodontitis_stage_1,not_determinable,,,True,,sim:judge,judge-v2,637,60,0.0,True,False
-2996,verdict,periodontitis_stage_2,correct,,"Pt seen for periodontal evaluation. Med hx: T2DM, last A1c 6.6; smoker ~8 cig/da",True,,sim:judge,judge-v2,637,60,0.0,True,False
-2996,verdict,periodontitis_stage_3,incorrect,,"Pt seen for periodontal evaluation. Med hx: T2DM, last A1c 6.6; smoker ~8 cig/da",True,,sim:judge,judge-v2,637,60,0.0,True,False
-3063,status,,,periodontitis_stage_3," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-status-v1,695,60,0.0,True,False
-3063,verdict,healthy_or_gingivitis,incorrect,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-v2,708,60,0.0,True,False
-3063,verdict,periodontitis_stage_2,incorrect,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-v2,708,60,0.0,True,False
-3063,verdict,periodontitis_stage_3,correct,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-v2,708,60,0.0,True,False
-3127,status,,,periodontitis_stage_2,P: 4 quad SRP then perio maint q3mo.,True,,sim:judge,judge-status-v1,613,60,0.0,True,False
-3127,verdict,healthy_or_gingivitis,incorrect,,P: 4 quad SRP then perio maint q3mo.,True,,sim:judge,judge-v2,626,60,0.0,True,False
-3127,verdict,periodontitis_stage_1,incorrect,,P: 4 quad SRP then perio maint q3mo.,True,,sim:judge,judge-v2,626,60,0.0,True,False
-3127,verdict,periodontitis_stage_2,correct,,P: 4 quad SRP then perio maint q3mo.,True,,sim:judge,judge-v2,626,60,0.0,True,False
-3177,status,,,periodontitis_stage_3," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-status-v1,667,60,0.0,True,False
-3177,verdict,periodontitis_stage_2,correct,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-v2,680,60,0.0,True,False
-3177,verdict,periodontitis_stage_3,correct,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-v2,680,60,0.0,True,False
-3181,status,,,periodontitis_stage_2,"P: FM SRP, refer to periodontist.",True,,sim:judge,judge-status-v1,621,60,0.0,True,False
-3181,verdict,periodontitis_stage_2,correct,,"P: FM SRP, refer to periodontist.",True,,sim:judge,judge-v2,634,60,0.0,True,False
-3181,verdict,periodontitis_stage_3,incorrect,,"P: FM SRP, refer to periodontist.",True,,sim:judge,judge-v2,634,60,0.0,True,False
-3225,status,,,gingivitis,,True,,sim:judge,judge-status-v1,655,60,0.0,True,False
-3225,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,668,60,0.0,True,False
-3229,status,,,healthy,,True,,sim:judge,judge-status-v1,656,60,0.0,True,False
-3229,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,669,60,0.0,True,False
-3246,status,,,periodontitis_stage_4, Next appt [DATE].,True,,sim:judge,judge-status-v1,691,60,0.0,True,False
-3246,verdict,healthy_or_gingivitis,incorrect,, Next appt [DATE].,True,,sim:judge,judge-v2,704,60,0.0,True,False
-3246,verdict,periodontitis_stage_2,incorrect,, Next appt [DATE].,True,,sim:judge,judge-v2,704,60,0.0,True,False
-3246,verdict,periodontitis_stage_3,incorrect,, Next appt [DATE].,True,,sim:judge,judge-v2,704,60,0.0,True,False
-3246,verdict,periodontitis_stage_4,correct,, Next appt [DATE].,True,,sim:judge,judge-v2,704,60,0.0,True,False
-3270,status,,,healthy,,True,,sim:judge,judge-status-v1,642,60,0.0,True,False
-3270,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,655,60,0.0,True,False
-3287,status,,,periodontitis_stage_3," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-status-v1,664,60,0.0,True,False
-3287,verdict,healthy_or_gingivitis,correct,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-v2,677,60,0.0,True,False
-3287,verdict,periodontitis_stage_2,incorrect,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-v2,677,60,0.0,True,False
-3287,verdict,periodontitis_stage_3,correct,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-v2,677,60,0.0,True,False
-3309,status,,,periodontitis_stage_3, Next appt [DATE].,True,,sim:judge,judge-status-v1,664,60,0.0,True,False
-3309,verdict,healthy_or_gingivitis,correct,, Next appt [DATE].,True,,sim:judge,judge-v2,677,60,0.0,True,False
-3309,verdict,periodontitis_stage_2,incorrect,, Next appt [DATE].,True,,sim:judge,judge-v2,677,60,0.0,True,False
-3309,verdict,periodontitis_stage_3,correct,, Next appt [DATE].,True,,sim:judge,judge-v2,677,60,0.0,True,False
-3319,status,,,gingivitis,,True,,sim:judge,judge-status-v1,649,60,0.0,True,False
-3319,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,662,60,0.0,True,False
-3319,verdict,periodontitis_stage_1,incorrect,,,True,,sim:judge,judge-v2,662,60,0.0,True,False
-3341,status,,,healthy,,True,,sim:judge,judge-status-v1,635,60,0.0,True,False
-3341,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,648,60,0.0,True,False
-3386,status,,,periodontitis_stage_2, Next appt [DATE].,True,,sim:judge,judge-status-v1,645,60,0.0,True,False
-3386,verdict,healthy_or_gingivitis,not_determinable,,,True,,sim:judge,judge-v2,658,60,0.0,True,False
-3386,verdict,periodontitis_stage_2,correct,, Next appt [DATE].,True,,sim:judge,judge-v2,658,60,0.0,True,False
-3392,status,,,periodontitis_stage_3,,True,,sim:judge,judge-status-v1,658,60,0.0,True,False
-3392,verdict,periodontitis_stage_1,incorrect,,,True,,sim:judge,judge-v2,671,60,0.0,True,False
-3392,verdict,periodontitis_stage_2,correct,,,True,,sim:judge,judge-v2,671,60,0.0,True,False
-3392,verdict,periodontitis_stage_3,incorrect,,,True,,sim:judge,judge-v2,671,60,0.0,True,False
-3422,status,,,periodontitis_stage_3,Dx at that visit: Stage II periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-status-v1,717,60,0.0,True,False
-3422,verdict,healthy_or_gingivitis,not_determinable,,,True,,sim:judge,judge-v2,730,60,0.0,True,False
-3422,verdict,periodontitis_stage_2,incorrect,,Dx at that visit: Stage II periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,730,60,0.0,True,False
-3422,verdict,periodontitis_stage_3,correct,,Dx at that visit: Stage II periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,730,60,0.0,True,False
-3422,verdict,periodontitis_stage_4,correct,,Dx at that visit: Stage II periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,730,60,0.0,True,False
-3433,status,,,periodontitis_stage_2,P: 4 quad SRP then perio maint q3mo.,True,,sim:judge,judge-status-v1,635,60,0.0,True,False
-3433,verdict,periodontitis_stage_1,incorrect,,P: 4 quad SRP then perio maint q3mo.,True,,sim:judge,judge-v2,648,60,0.0,True,False
-3433,verdict,periodontitis_stage_2,correct,,P: 4 quad SRP then perio maint q3mo.,True,,sim:judge,judge-v2,648,60,0.0,True,False
-3433,verdict,periodontitis_stage_3,incorrect,,P: 4 quad SRP then perio maint q3mo.,True,,sim:judge,judge-v2,648,60,0.0,True,False
-3457,status,,,periodontitis_stage_3,"P: SRP UR/LR, re-eval 6 wk.",True,,sim:judge,judge-status-v1,614,60,0.0,True,False
-3457,verdict,periodontitis_stage_1,correct,,"P: SRP UR/LR, re-eval 6 wk.",True,,sim:judge,judge-v2,627,60,0.0,True,False
-3457,verdict,periodontitis_stage_2,incorrect,,"P: SRP UR/LR, re-eval 6 wk.",True,,sim:judge,judge-v2,627,60,0.0,True,False
-3484,status,,,periodontitis_stage_4,"Pt seen for recall exam. Med hx: no sig med hx; former smoker, quit 2015. Exam: ",True,,sim:judge,judge-status-v1,641,60,0.0,True,False
-3484,verdict,healthy_or_gingivitis,incorrect,,"Pt seen for recall exam. Med hx: no sig med hx; former smoker, quit 2015. Exam: ",True,,sim:judge,judge-v2,654,60,0.0,True,False
-3484,verdict,periodontitis_stage_3,incorrect,,"Pt seen for recall exam. Med hx: no sig med hx; former smoker, quit 2015. Exam: ",True,,sim:judge,judge-v2,654,60,0.0,True,False
-3484,verdict,periodontitis_stage_4,correct,,"Pt seen for recall exam. Med hx: no sig med hx; former smoker, quit 2015. Exam: ",True,,sim:judge,judge-v2,654,60,0.0,True,False
-3514,status,,,gingivitis,,True,,sim:judge,judge-status-v1,650,60,0.0,True,False
-3514,verdict,healthy_or_gingivitis,correct,,,True,,sim:judge,judge-v2,663,60,0.0,True,False
-3514,verdict,periodontitis_stage_1,incorrect,,,True,,sim:judge,judge-v2,663,60,0.0,True,False
-3551,status,,,gingivitis,,True,,sim:judge,judge-status-v1,649,60,0.0,True,False
-3551,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,662,60,0.0,True,False
-3559,status,,,periodontitis_stage_4,Dx at that visit: Stage III periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-status-v1,694,60,0.0,True,False
-3559,verdict,periodontitis_stage_3,incorrect,,Dx at that visit: Stage III periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,707,60,0.0,True,False
-3559,verdict,periodontitis_stage_4,correct,,Dx at that visit: Stage III periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,707,60,0.0,True,False
-3565,status,,,periodontitis_stage_4,Dx at that visit: Stage III periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-status-v1,674,60,0.0,True,False
-3565,verdict,healthy_or_gingivitis,correct,,Dx at that visit: Stage III periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,687,60,0.0,True,False
-3565,verdict,periodontitis_stage_3,incorrect,,Dx at that visit: Stage III periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,687,60,0.0,True,False
-3565,verdict,periodontitis_stage_4,correct,,Dx at that visit: Stage III periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,687,60,0.0,True,False
-3581,status,,,gingivitis,Patient seen for recall exam. Med hx: NKDA; never smoker. Exam: probing depths w,True,,sim:judge,judge-status-v1,627,60,0.0,True,False
-3581,verdict,healthy_or_gingivitis,incorrect,,Patient seen for recall exam. Med hx: NKDA; never smoker. Exam: probing depths w,True,,sim:judge,judge-v2,640,60,0.0,True,False
-3581,verdict,periodontitis_stage_1,incorrect,,Patient seen for recall exam. Med hx: NKDA; never smoker. Exam: probing depths w,True,,sim:judge,judge-v2,640,60,0.0,True,False
-3593,status,,,,,True,,sim:judge,judge-status-v1,603,60,0.0,True,False
-3593,verdict,healthy_or_gingivitis,incorrect,,"Tx plan: Prophy, OHI. Recall 6 mo.",True,,sim:judge,judge-v2,616,60,0.0,True,False
-3623,status,,,healthy,"Tx plan: Prophy, OHI. Recall 6 mo. Next appt [DATE].",True,,sim:judge,judge-status-v1,603,60,0.0,True,False
-3623,verdict,healthy_or_gingivitis,incorrect,,"Tx plan: Prophy, OHI. Recall 6 mo. Next appt [DATE].",True,,sim:judge,judge-v2,616,60,0.0,True,False
-3634,status,,,gingivitis,,True,,sim:judge,judge-status-v1,645,60,0.0,True,False
-3634,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,658,60,0.0,True,False
-3634,verdict,periodontitis_stage_1,correct,,,True,,sim:judge,judge-v2,658,60,0.0,True,False
-3647,status,,,periodontitis_stage_3,,True,,sim:judge,judge-status-v1,679,60,0.0,True,False
-3647,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,692,60,0.0,True,False
-3647,verdict,periodontitis_stage_2,incorrect,,,True,,sim:judge,judge-v2,692,60,0.0,True,False
-3647,verdict,periodontitis_stage_3,correct,,,True,,sim:judge,judge-v2,692,60,0.0,True,False
-3685,status,,,gingivitis, Next appt [DATE].,True,,sim:judge,judge-status-v1,651,60,0.0,True,False
-3685,verdict,healthy_or_gingivitis,incorrect,, Next appt [DATE].,True,,sim:judge,judge-v2,664,60,0.0,True,False
-3685,verdict,periodontitis_stage_1,incorrect,, Next appt [DATE].,True,,sim:judge,judge-v2,664,60,0.0,True,False
-3689,status,,,periodontitis_stage_2,,True,,sim:judge,judge-status-v1,652,60,0.0,True,False
-3689,verdict,healthy_or_gingivitis,correct,,,True,,sim:judge,judge-v2,665,60,0.0,True,False
-3689,verdict,periodontitis_stage_2,correct,,,True,,sim:judge,judge-v2,665,60,0.0,True,False
-3689,verdict,periodontitis_stage_3,incorrect,,,True,,sim:judge,judge-v2,665,60,0.0,True,False
-3702,status,,,periodontitis_stage_3," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-status-v1,689,60,0.0,True,False
-3702,verdict,healthy_or_gingivitis,incorrect,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-v2,702,60,0.0,True,False
-3702,verdict,periodontitis_stage_2,incorrect,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-v2,702,60,0.0,True,False
-3702,verdict,periodontitis_stage_3,not_determinable,,,True,,sim:judge,judge-v2,702,60,0.0,True,False
-3716,status,,,gingivitis,"P: Prophy, flossing instruction. 6 mo recall.",True,,sim:judge,judge-status-v1,613,60,0.0,True,False
-3716,verdict,healthy_or_gingivitis,incorrect,,"P: Prophy, flossing instruction. 6 mo recall.",True,,sim:judge,judge-v2,626,60,0.0,True,False
-3716,verdict,periodontitis_stage_1,incorrect,,"P: Prophy, flossing instruction. 6 mo recall.",True,,sim:judge,judge-v2,626,60,0.0,True,False
-3764,status,,,periodontitis_stage_4," Referred to Dr. [NAME] at [LOCATION], ph [PHONE]. Next appt [DATE].",True,,sim:judge,judge-status-v1,690,60,0.0,True,False
-3764,verdict,periodontitis_stage_3,incorrect,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE]. Next appt [DATE].",True,,sim:judge,judge-v2,703,60,0.0,True,False
-3764,verdict,periodontitis_stage_4,correct,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE]. Next appt [DATE].",True,,sim:judge,judge-v2,703,60,0.0,True,False
-3773,status,,,periodontitis_stage_3, Next appt [DATE].,True,,sim:judge,judge-status-v1,673,60,0.0,True,False
-3773,verdict,healthy_or_gingivitis,incorrect,, Next appt [DATE].,True,,sim:judge,judge-v2,686,60,0.0,True,False
-3773,verdict,periodontitis_stage_2,incorrect,, Next appt [DATE].,True,,sim:judge,judge-v2,686,60,0.0,True,False
-3773,verdict,periodontitis_stage_3,correct,, Next appt [DATE].,True,,sim:judge,judge-v2,686,60,0.0,True,False
-3791,status,,,healthy,"Patient seen for recall exam. Med hx: HTN controlled; former smoker, quit 2015. ",True,,sim:judge,judge-status-v1,615,60,0.0,True,False
-3791,verdict,healthy_or_gingivitis,incorrect,,"Patient seen for recall exam. Med hx: HTN controlled; former smoker, quit 2015. ",True,,sim:judge,judge-v2,628,60,0.0,True,False
-3791,verdict,periodontitis_stage_1,incorrect,,"Patient seen for recall exam. Med hx: HTN controlled; former smoker, quit 2015. ",True,,sim:judge,judge-v2,628,60,0.0,True,False
-3854,status,,,periodontitis_stage_2,Pt seen for periodontal evaluation. Med hx: HTN controlled; never smoker. Exam: ,True,,sim:judge,judge-status-v1,627,60,0.0,True,False
-3854,verdict,healthy_or_gingivitis,incorrect,,Pt seen for periodontal evaluation. Med hx: HTN controlled; never smoker. Exam: ,True,,sim:judge,judge-v2,640,60,0.0,True,False
-3854,verdict,periodontitis_stage_1,incorrect,,Pt seen for periodontal evaluation. Med hx: HTN controlled; never smoker. Exam: ,True,,sim:judge,judge-v2,640,60,0.0,True,False
-3854,verdict,periodontitis_stage_2,incorrect,,Pt seen for periodontal evaluation. Med hx: HTN controlled; never smoker. Exam: ,True,,sim:judge,judge-v2,640,60,0.0,True,False
-3888,status,,,,,True,,sim:judge,judge-status-v1,610,60,0.0,True,False
-3888,verdict,periodontitis_stage_1,correct,,"Tx plan: SRP UR/LR, re-eval 6 wk.",True,,sim:judge,judge-v2,623,60,0.0,True,False
-3888,verdict,periodontitis_stage_2,incorrect,,"Tx plan: SRP UR/LR, re-eval 6 wk.",True,,sim:judge,judge-v2,623,60,0.0,True,False
-3912,status,,,healthy,Pt seen for recall exam. Med hx: HTN controlled; never smoker. Exam: attachment ,True,,sim:judge,judge-status-v1,625,60,0.0,True,False
-3912,verdict,healthy_or_gingivitis,incorrect,,Pt seen for recall exam. Med hx: HTN controlled; never smoker. Exam: attachment ,True,,sim:judge,judge-v2,638,60,0.0,True,False
-3912,verdict,periodontitis_stage_3,incorrect,,Pt seen for recall exam. Med hx: HTN controlled; never smoker. Exam: attachment ,True,,sim:judge,judge-v2,638,60,0.0,True,False
-3912,verdict,periodontitis_stage_4,correct,,Pt seen for recall exam. Med hx: HTN controlled; never smoker. Exam: attachment ,True,,sim:judge,judge-v2,638,60,0.0,True,False
-3932,status,,,healthy, Next appt [DATE].,True,,sim:judge,judge-status-v1,657,60,0.0,True,False
-3932,verdict,healthy_or_gingivitis,incorrect,, Next appt [DATE].,True,,sim:judge,judge-v2,670,60,0.0,True,False
-3947,status,,,periodontitis_stage_4, Pt moved; new address [LOCATION].,True,,sim:judge,judge-status-v1,660,60,0.0,True,False
-3947,verdict,periodontitis_stage_1,correct,, Pt moved; new address [LOCATION].,True,,sim:judge,judge-v2,673,60,0.0,True,False
-3947,verdict,periodontitis_stage_2,correct,, Pt moved; new address [LOCATION].,True,,sim:judge,judge-v2,673,60,0.0,True,False
-3966,status,,,healthy,,True,,sim:judge,judge-status-v1,655,60,0.0,True,False
-3966,verdict,healthy_or_gingivitis,correct,,,True,,sim:judge,judge-v2,668,60,0.0,True,False
-3968,status,,,gingivitis,,True,,sim:judge,judge-status-v1,655,60,0.0,True,False
-3968,verdict,healthy_or_gingivitis,correct,,,True,,sim:judge,judge-v2,668,60,0.0,True,False
-3973,status,,,gingivitis,,True,,sim:judge,judge-status-v1,647,60,0.0,True,False
-3973,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,660,60,0.0,True,False
-3979,status,,,healthy,,True,,sim:judge,judge-status-v1,650,60,0.0,True,False
-3979,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,663,60,0.0,True,False
-3982,status,,,periodontitis_stage_3,Pt seen for periodontal evaluation. Med hx: pre-diabetic A1c 6.3; never smoker. ,True,,sim:judge,judge-status-v1,651,60,0.0,True,False
-3982,verdict,periodontitis_stage_2,incorrect,,Pt seen for periodontal evaluation. Med hx: pre-diabetic A1c 6.3; never smoker. ,True,,sim:judge,judge-v2,664,60,0.0,True,False
-3982,verdict,periodontitis_stage_3,correct,,Pt seen for periodontal evaluation. Med hx: pre-diabetic A1c 6.3; never smoker. ,True,,sim:judge,judge-v2,664,60,0.0,True,False
-4006,status,,,gingivitis, Next appt [DATE].,True,,sim:judge,judge-status-v1,653,60,0.0,True,False
-4006,verdict,healthy_or_gingivitis,incorrect,, Next appt [DATE].,True,,sim:judge,judge-v2,666,60,0.0,True,False
-4009,status,,,healthy,,True,,sim:judge,judge-status-v1,640,60,0.0,True,False
-4009,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,653,60,0.0,True,False
-4061,status,,,gingivitis,,True,,sim:judge,judge-status-v1,640,60,0.0,True,False
-4061,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,653,60,0.0,True,False
-4061,verdict,periodontitis_stage_1,incorrect,,,True,,sim:judge,judge-v2,653,60,0.0,True,False
-4077,status,,,periodontitis_stage_1,Dx at that visit: gingivitis. Pt declined SRP at that time.,True,,sim:judge,judge-status-v1,671,60,0.0,True,False
-4077,verdict,healthy_or_gingivitis,incorrect,,Dx at that visit: gingivitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,684,60,0.0,True,False
-4077,verdict,periodontitis_stage_1,correct,,Dx at that visit: gingivitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,684,60,0.0,True,False
-4094,status,,,healthy, Next appt [DATE].,True,,sim:judge,judge-status-v1,649,60,0.0,True,False
-4094,verdict,healthy_or_gingivitis,incorrect,, Next appt [DATE].,True,,sim:judge,judge-v2,662,60,0.0,True,False
-4147,status,,,gingivitis, Next appt [DATE].,True,,sim:judge,judge-status-v1,656,60,0.0,True,False
-4147,verdict,healthy_or_gingivitis,incorrect,, Next appt [DATE].,True,,sim:judge,judge-v2,669,60,0.0,True,False
-4167,status,,,periodontitis_stage_2,,True,,sim:judge,judge-status-v1,637,60,0.0,True,False
-4167,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,650,60,0.0,True,False
-4167,verdict,periodontitis_stage_2,correct,,,True,,sim:judge,judge-v2,650,60,0.0,True,False
-4178,status,,,periodontitis_stage_4,,True,,sim:judge,judge-status-v1,667,60,0.0,True,False
-4178,verdict,periodontitis_stage_3,incorrect,,,True,,sim:judge,judge-v2,680,60,0.0,True,False
-4178,verdict,periodontitis_stage_4,correct,,,True,,sim:judge,judge-v2,680,60,0.0,True,False
-4192,status,,,periodontitis_stage_2,Pt seen for periodontal evaluation. Med hx: NKDA; never smoker. Exam: BOP genera,True,,sim:judge,judge-status-v1,613,60,0.0,True,False
-4192,verdict,periodontitis_stage_2,correct,,Pt seen for periodontal evaluation. Med hx: NKDA; never smoker. Exam: BOP genera,True,,sim:judge,judge-v2,626,60,0.0,True,False
-4192,verdict,periodontitis_stage_3,correct,,Pt seen for periodontal evaluation. Med hx: NKDA; never smoker. Exam: BOP genera,True,,sim:judge,judge-v2,626,60,0.0,True,False
-4198,status,,,healthy,Tx plan: Adult prophy. RTC 6 mo. Pt moved; new address [LOCATION].,True,,sim:judge,judge-status-v1,618,60,0.0,True,False
-4198,verdict,healthy_or_gingivitis,incorrect,,Tx plan: Adult prophy. RTC 6 mo. Pt moved; new address [LOCATION].,True,,sim:judge,judge-v2,631,60,0.0,True,False
-4218,status,,,periodontitis_stage_3,"P: FM SRP, refer to periodontist.",True,,sim:judge,judge-status-v1,614,60,0.0,True,False
-4218,verdict,periodontitis_stage_2,incorrect,,"P: FM SRP, refer to periodontist.",True,,sim:judge,judge-v2,627,60,0.0,True,False
-4218,verdict,periodontitis_stage_3,correct,,"P: FM SRP, refer to periodontist.",True,,sim:judge,judge-v2,627,60,0.0,True,False
-4219,status,,,periodontitis_stage_2,"Tx plan: SRP 4 quads, re-eval 4-6 wk.",True,,sim:judge,judge-status-v1,622,60,0.0,True,False
-4219,verdict,periodontitis_stage_2,correct,,"Tx plan: SRP 4 quads, re-eval 4-6 wk.",True,,sim:judge,judge-v2,635,60,0.0,True,False
-4219,verdict,periodontitis_stage_3,incorrect,,"Tx plan: SRP 4 quads, re-eval 4-6 wk.",True,,sim:judge,judge-v2,635,60,0.0,True,False
-4256,status,,,periodontitis_stage_1,,True,,sim:judge,judge-status-v1,652,60,0.0,True,False
-4256,verdict,periodontitis_stage_1,correct,,,True,,sim:judge,judge-v2,665,60,0.0,True,False
-4256,verdict,periodontitis_stage_2,incorrect,,,True,,sim:judge,judge-v2,665,60,0.0,True,False
-4277,status,,,periodontitis_stage_3," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-status-v1,678,60,0.0,True,False
-4277,verdict,periodontitis_stage_2,incorrect,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-v2,691,60,0.0,True,False
-4277,verdict,periodontitis_stage_3,correct,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-v2,691,60,0.0,True,False
-4282,status,,,periodontitis_stage_4,P: Referral to periodontist for comprehensive tx plan. Referred to Dr. [NAME] at,True,,sim:judge,judge-status-v1,635,60,0.0,True,False
-4282,verdict,periodontitis_stage_3,incorrect,,P: Referral to periodontist for comprehensive tx plan. Referred to Dr. [NAME] at,True,,sim:judge,judge-v2,648,60,0.0,True,False
-4282,verdict,periodontitis_stage_4,correct,,P: Referral to periodontist for comprehensive tx plan. Referred to Dr. [NAME] at,True,,sim:judge,judge-v2,648,60,0.0,True,False
-4296,status,,,periodontitis_stage_4,Dx at that visit: Stage III periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-status-v1,680,60,0.0,True,False
-4296,verdict,periodontitis_stage_2,incorrect,,Dx at that visit: Stage III periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,693,60,0.0,True,False
-4296,verdict,periodontitis_stage_3,incorrect,,Dx at that visit: Stage III periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,693,60,0.0,True,False
-4296,verdict,periodontitis_stage_4,correct,,Dx at that visit: Stage III periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,693,60,0.0,True,False
-4302,status,,,periodontitis_stage_4,Dx at that visit: Stage III periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-status-v1,718,60,0.0,True,False
-4302,verdict,periodontitis_stage_3,incorrect,,Dx at that visit: Stage III periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,731,60,0.0,True,False
-4302,verdict,periodontitis_stage_4,correct,,Dx at that visit: Stage III periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,731,60,0.0,True,False
-4318,status,,,periodontitis_stage_3, Next appt [DATE].,True,,sim:judge,judge-status-v1,659,60,0.0,True,False
-4318,verdict,healthy_or_gingivitis,correct,, Next appt [DATE].,True,,sim:judge,judge-v2,672,60,0.0,True,False
-4318,verdict,periodontitis_stage_2,incorrect,, Next appt [DATE].,True,,sim:judge,judge-v2,672,60,0.0,True,False
-4318,verdict,periodontitis_stage_3,correct,, Next appt [DATE].,True,,sim:judge,judge-v2,672,60,0.0,True,False
+43,status,,,periodontitis_stage_1,,True,,sim:judge,judge-status-v1,638,60,0.0,True,False
+43,verdict,periodontitis_stage_1,correct,,,True,,sim:judge,judge-v2,651,60,0.0,True,False
+43,verdict,periodontitis_stage_2,incorrect,,,True,,sim:judge,judge-v2,651,60,0.0,True,False
+117,status,,,periodontitis_stage_1,"Tx plan: SRP 4 quads, re-eval 4-6 wk.",True,,sim:judge,judge-status-v1,616,60,0.0,True,False
+117,verdict,periodontitis_stage_1,correct,,"Tx plan: SRP 4 quads, re-eval 4-6 wk.",True,,sim:judge,judge-v2,629,60,0.0,True,False
+117,verdict,periodontitis_stage_2,incorrect,,"Tx plan: SRP 4 quads, re-eval 4-6 wk.",True,,sim:judge,judge-v2,629,60,0.0,True,False
+153,status,,,periodontitis_stage_1,,True,,sim:judge,judge-status-v1,657,60,0.0,True,False
+153,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,670,60,0.0,True,False
+153,verdict,periodontitis_stage_1,incorrect,,,True,,sim:judge,judge-v2,670,60,0.0,True,False
+153,verdict,periodontitis_stage_2,incorrect,,,True,,sim:judge,judge-v2,670,60,0.0,True,False
+156,status,,,healthy,,True,,sim:judge,judge-status-v1,645,60,0.0,True,False
+156,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,658,60,0.0,True,False
+175,status,,,gingivitis,,True,,sim:judge,judge-status-v1,648,60,0.0,True,False
+175,verdict,healthy_or_gingivitis,not_determinable,,,True,,sim:judge,judge-v2,661,60,0.0,True,False
+253,status,,,periodontitis_stage_2,"P: SRP 4 quads, re-eval 4-6 wk. Next appt [DATE].",True,,sim:judge,judge-status-v1,621,60,0.0,True,False
+253,verdict,healthy_or_gingivitis,incorrect,,"P: SRP 4 quads, re-eval 4-6 wk. Next appt [DATE].",True,,sim:judge,judge-v2,634,60,0.0,True,False
+253,verdict,periodontitis_stage_2,correct,,"P: SRP 4 quads, re-eval 4-6 wk. Next appt [DATE].",True,,sim:judge,judge-v2,634,60,0.0,True,False
+308,status,,,healthy, Next appt [DATE].,True,,sim:judge,judge-status-v1,658,60,0.0,True,False
+308,verdict,healthy_or_gingivitis,correct,, Next appt [DATE].,True,,sim:judge,judge-v2,671,60,0.0,True,False
+355,status,,,periodontitis_stage_1,,True,,sim:judge,judge-status-v1,648,60,0.0,True,False
+355,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,661,60,0.0,True,False
+355,verdict,periodontitis_stage_1,correct,,,True,,sim:judge,judge-v2,661,60,0.0,True,False
+355,verdict,periodontitis_stage_2,incorrect,,,True,,sim:judge,judge-v2,661,60,0.0,True,False
+370,status,,,healthy,,True,,sim:judge,judge-status-v1,645,60,0.0,True,False
+370,verdict,healthy_or_gingivitis,correct,,,True,,sim:judge,judge-v2,658,60,0.0,True,False
+390,status,,,periodontitis_stage_3," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-status-v1,688,60,0.0,True,False
+390,verdict,healthy_or_gingivitis,correct,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-v2,701,60,0.0,True,False
+390,verdict,periodontitis_stage_2,correct,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-v2,701,60,0.0,True,False
+390,verdict,periodontitis_stage_3,correct,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-v2,701,60,0.0,True,False
+437,status,,,healthy,,True,,sim:judge,judge-status-v1,645,60,0.0,True,False
+437,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,658,60,0.0,True,False
+459,status,,,gingivitis,,True,,sim:judge,judge-status-v1,652,60,0.0,True,False
+459,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,665,60,0.0,True,False
+531,status,,,,,True,,sim:judge,judge-status-v1,620,60,0.0,True,False
+531,verdict,healthy_or_gingivitis,incorrect,,"P: SRP UR/LR, re-eval 6 wk. Next appt [DATE].",True,,sim:judge,judge-v2,633,60,0.0,True,False
+531,verdict,periodontitis_stage_1,correct,,"P: SRP UR/LR, re-eval 6 wk. Next appt [DATE].",True,,sim:judge,judge-v2,633,60,0.0,True,False
+546,status,,,periodontitis_stage_1,Patient seen for periodontal evaluation. Med hx: HTN controlled; never smoker. E,True,,sim:judge,judge-status-v1,613,60,0.0,True,False
+546,verdict,healthy_or_gingivitis,incorrect,,Patient seen for periodontal evaluation. Med hx: HTN controlled; never smoker. E,True,,sim:judge,judge-v2,626,60,0.0,True,False
+578,status,,,healthy,,True,,sim:judge,judge-status-v1,654,60,0.0,True,False
+578,verdict,periodontitis_stage_1,incorrect,,,True,,sim:judge,judge-v2,667,60,0.0,True,False
+599,status,,,periodontitis_stage_2, Next appt [DATE].,True,,sim:judge,judge-status-v1,670,60,0.0,True,False
+599,verdict,healthy_or_gingivitis,incorrect,, Next appt [DATE].,True,,sim:judge,judge-v2,683,60,0.0,True,False
+599,verdict,periodontitis_stage_2,correct,, Next appt [DATE].,True,,sim:judge,judge-v2,683,60,0.0,True,False
+634,status,,,gingivitis,,True,,sim:judge,judge-status-v1,652,60,0.0,True,False
+634,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,665,60,0.0,True,False
+647,status,,,periodontitis_stage_2,,True,,sim:judge,judge-status-v1,654,60,0.0,True,False
+647,verdict,periodontitis_stage_1,incorrect,,,True,,sim:judge,judge-v2,667,60,0.0,True,False
+647,verdict,periodontitis_stage_2,correct,,,True,,sim:judge,judge-v2,667,60,0.0,True,False
+647,verdict,periodontitis_stage_3,incorrect,,,True,,sim:judge,judge-v2,667,60,0.0,True,False
+727,status,,,periodontitis_stage_3,"Tx plan: FM SRP, refer to periodontist. Referred to Dr. [NAME] at [LOCATION], ph",True,,sim:judge,judge-status-v1,648,60,0.0,True,False
+727,verdict,healthy_or_gingivitis,correct,,"Tx plan: FM SRP, refer to periodontist. Referred to Dr. [NAME] at [LOCATION], ph",True,,sim:judge,judge-v2,661,60,0.0,True,False
+727,verdict,periodontitis_stage_2,incorrect,,"Tx plan: FM SRP, refer to periodontist. Referred to Dr. [NAME] at [LOCATION], ph",True,,sim:judge,judge-v2,661,60,0.0,True,False
+727,verdict,periodontitis_stage_3,correct,,"Tx plan: FM SRP, refer to periodontist. Referred to Dr. [NAME] at [LOCATION], ph",True,,sim:judge,judge-v2,661,60,0.0,True,False
+733,status,,,periodontitis_stage_1,,True,,sim:judge,judge-status-v1,655,60,0.0,True,False
+733,verdict,periodontitis_stage_1,correct,,,True,,sim:judge,judge-v2,668,60,0.0,True,False
+763,status,,,periodontitis_stage_2, Next appt [DATE].,True,,sim:judge,judge-status-v1,654,60,0.0,True,False
+763,verdict,periodontitis_stage_1,incorrect,, Next appt [DATE].,True,,sim:judge,judge-v2,667,60,0.0,True,False
+763,verdict,periodontitis_stage_2,correct,, Next appt [DATE].,True,,sim:judge,judge-v2,667,60,0.0,True,False
+785,status,,,periodontitis_stage_4,Dx at that visit: Stage III periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-status-v1,700,60,0.0,True,False
+785,verdict,periodontitis_stage_2,incorrect,,Dx at that visit: Stage III periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,713,60,0.0,True,False
+785,verdict,periodontitis_stage_3,incorrect,,Dx at that visit: Stage III periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,713,60,0.0,True,False
+785,verdict,periodontitis_stage_4,correct,,Dx at that visit: Stage III periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,713,60,0.0,True,False
+844,status,,,periodontitis_stage_3,Dx at that visit: Stage II periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-status-v1,718,60,0.0,True,False
+844,verdict,healthy_or_gingivitis,incorrect,,Dx at that visit: Stage II periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,731,60,0.0,True,False
+844,verdict,periodontitis_stage_2,incorrect,,Dx at that visit: Stage II periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,731,60,0.0,True,False
+844,verdict,periodontitis_stage_3,correct,,Dx at that visit: Stage II periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,731,60,0.0,True,False
+844,verdict,periodontitis_stage_4,incorrect,,Dx at that visit: Stage II periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,731,60,0.0,True,False
+849,status,,,gingivitis,,True,,sim:judge,judge-status-v1,642,60,0.0,True,False
+849,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,655,60,0.0,True,False
+849,verdict,periodontitis_stage_1,incorrect,,,True,,sim:judge,judge-v2,655,60,0.0,True,False
+890,status,,,gingivitis,"Pt seen for periodontal evaluation. Med hx: T2DM, last A1c 6.7; never smoker. Ex",True,,sim:judge,judge-status-v1,620,60,0.0,True,False
+890,verdict,healthy_or_gingivitis,incorrect,,"Pt seen for periodontal evaluation. Med hx: T2DM, last A1c 6.7; never smoker. Ex",True,,sim:judge,judge-v2,633,60,0.0,True,False
+890,verdict,periodontitis_stage_1,incorrect,,"Pt seen for periodontal evaluation. Med hx: T2DM, last A1c 6.7; never smoker. Ex",True,,sim:judge,judge-v2,633,60,0.0,True,False
+914,status,,,periodontitis_stage_4,P: 4 quad SRP then perio maint q3mo.,True,,sim:judge,judge-status-v1,628,60,0.0,True,False
+914,verdict,periodontitis_stage_2,correct,,P: 4 quad SRP then perio maint q3mo.,True,,sim:judge,judge-v2,641,60,0.0,True,False
+914,verdict,periodontitis_stage_3,not_determinable,,,True,,sim:judge,judge-v2,641,60,0.0,True,False
+923,status,,,,,True,,sim:judge,judge-status-v1,689,60,0.0,True,False
+923,verdict,periodontitis_stage_3,incorrect,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-v2,702,60,0.0,True,False
+923,verdict,periodontitis_stage_4,correct,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-v2,702,60,0.0,True,False
+929,status,,,periodontitis_stage_3,Dx at that visit: Stage II periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-status-v1,666,60,0.0,True,False
+929,verdict,periodontitis_stage_2,incorrect,,Dx at that visit: Stage II periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,679,60,0.0,True,False
+929,verdict,periodontitis_stage_3,correct,,Dx at that visit: Stage II periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,679,60,0.0,True,False
+935,status,,,periodontitis_stage_2,"P: SRP 4 quads, re-eval 4-6 wk. Next appt [DATE]. Pt moved; new address [LOCATIO",True,,sim:judge,judge-status-v1,625,60,0.0,True,False
+935,verdict,periodontitis_stage_1,incorrect,,"P: SRP 4 quads, re-eval 4-6 wk. Next appt [DATE]. Pt moved; new address [LOCATIO",True,,sim:judge,judge-v2,638,60,0.0,True,False
+935,verdict,periodontitis_stage_2,correct,,"P: SRP 4 quads, re-eval 4-6 wk. Next appt [DATE]. Pt moved; new address [LOCATIO",True,,sim:judge,judge-v2,638,60,0.0,True,False
+955,status,,,gingivitis, Next appt [DATE].,True,,sim:judge,judge-status-v1,665,60,0.0,True,False
+955,verdict,healthy_or_gingivitis,correct,, Next appt [DATE].,True,,sim:judge,judge-v2,678,60,0.0,True,False
+970,status,,,healthy,,True,,sim:judge,judge-status-v1,649,60,0.0,True,False
+970,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,662,60,0.0,True,False
+1003,status,,,periodontitis_stage_3," Referred to Dr. [NAME] at [LOCATION], ph [PHONE]. Next appt [DATE].",True,,sim:judge,judge-status-v1,677,60,0.0,True,False
+1003,verdict,periodontitis_stage_2,incorrect,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE]. Next appt [DATE].",True,,sim:judge,judge-v2,690,60,0.0,True,False
+1003,verdict,periodontitis_stage_3,correct,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE]. Next appt [DATE].",True,,sim:judge,judge-v2,690,60,0.0,True,False
+1042,status,,,periodontitis_stage_3,,True,,sim:judge,judge-status-v1,664,60,0.0,True,False
+1042,verdict,periodontitis_stage_2,correct,,,True,,sim:judge,judge-v2,677,60,0.0,True,False
+1042,verdict,periodontitis_stage_3,incorrect,,,True,,sim:judge,judge-v2,677,60,0.0,True,False
+1085,status,,,healthy,,True,,sim:judge,judge-status-v1,650,60,0.0,True,False
+1085,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,663,60,0.0,True,False
+1104,status,,,,,True,,sim:judge,judge-status-v1,597,60,0.0,True,False
+1104,verdict,healthy_or_gingivitis,incorrect,,P: Adult prophy. RTC 6 mo.,True,,sim:judge,judge-v2,610,60,0.0,True,False
+1110,status,,,periodontitis_stage_2,,True,,sim:judge,judge-status-v1,669,60,0.0,True,False
+1110,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,682,60,0.0,True,False
+1110,verdict,periodontitis_stage_1,incorrect,,,True,,sim:judge,judge-v2,682,60,0.0,True,False
+1110,verdict,periodontitis_stage_2,not_determinable,,,True,,sim:judge,judge-v2,682,60,0.0,True,False
+1145,status,,,periodontitis_stage_3,,True,,sim:judge,judge-status-v1,659,60,0.0,True,False
+1145,verdict,periodontitis_stage_2,incorrect,,,True,,sim:judge,judge-v2,672,60,0.0,True,False
+1145,verdict,periodontitis_stage_3,correct,,,True,,sim:judge,judge-v2,672,60,0.0,True,False
+1153,status,,,periodontitis_stage_2,Dx at that visit: Stage I periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-status-v1,670,60,0.0,True,False
+1153,verdict,periodontitis_stage_2,correct,,Dx at that visit: Stage I periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,683,60,0.0,True,False
+1153,verdict,periodontitis_stage_3,incorrect,,Dx at that visit: Stage I periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,683,60,0.0,True,False
+1158,status,,,gingivitis,,True,,sim:judge,judge-status-v1,643,60,0.0,True,False
+1158,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,656,60,0.0,True,False
+1158,verdict,periodontitis_stage_1,incorrect,,,True,,sim:judge,judge-v2,656,60,0.0,True,False
+1167,status,,,periodontitis_stage_3,Tx plan: SRP 4 quads; perio consult for surgical eval. Referred to Dr. [NAME] at,True,,sim:judge,judge-status-v1,656,60,0.0,True,False
+1167,verdict,periodontitis_stage_2,incorrect,,Tx plan: SRP 4 quads; perio consult for surgical eval. Referred to Dr. [NAME] at,True,,sim:judge,judge-v2,669,60,0.0,True,False
+1167,verdict,periodontitis_stage_3,incorrect,,Tx plan: SRP 4 quads; perio consult for surgical eval. Referred to Dr. [NAME] at,True,,sim:judge,judge-v2,669,60,0.0,True,False
+1177,status,,,periodontitis_stage_2, Next appt [DATE].,True,,sim:judge,judge-status-v1,651,60,0.0,True,False
+1177,verdict,periodontitis_stage_2,correct,, Next appt [DATE].,True,,sim:judge,judge-v2,664,60,0.0,True,False
+1203,status,,,periodontitis_stage_4," Referred to Dr. [NAME] at [LOCATION], ph [PHONE]. Next appt [DATE].",True,,sim:judge,judge-status-v1,681,60,0.0,True,False
+1203,verdict,healthy_or_gingivitis,incorrect,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE]. Next appt [DATE].",True,,sim:judge,judge-v2,694,60,0.0,True,False
+1203,verdict,periodontitis_stage_3,incorrect,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE]. Next appt [DATE].",True,,sim:judge,judge-v2,694,60,0.0,True,False
+1203,verdict,periodontitis_stage_4,correct,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE]. Next appt [DATE].",True,,sim:judge,judge-v2,694,60,0.0,True,False
+1214,status,,,gingivitis,,True,,sim:judge,judge-status-v1,650,60,0.0,True,False
+1214,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,663,60,0.0,True,False
+1214,verdict,periodontitis_stage_1,incorrect,,,True,,sim:judge,judge-v2,663,60,0.0,True,False
+1224,status,,,periodontitis_stage_4, Next appt [DATE].,True,,sim:judge,judge-status-v1,708,60,0.0,True,False
+1224,verdict,healthy_or_gingivitis,not_determinable,,,True,,sim:judge,judge-v2,721,60,0.0,True,False
+1224,verdict,periodontitis_stage_2,incorrect,, Next appt [DATE].,True,,sim:judge,judge-v2,721,60,0.0,True,False
+1224,verdict,periodontitis_stage_3,not_determinable,,,True,,sim:judge,judge-v2,721,60,0.0,True,False
+1224,verdict,periodontitis_stage_4,correct,, Next appt [DATE].,True,,sim:judge,judge-v2,721,60,0.0,True,False
+1234,status,,,gingivitis, Next appt [DATE].,True,,sim:judge,judge-status-v1,655,60,0.0,True,False
+1234,verdict,healthy_or_gingivitis,incorrect,, Next appt [DATE].,True,,sim:judge,judge-v2,668,60,0.0,True,False
+1234,verdict,periodontitis_stage_1,incorrect,, Next appt [DATE].,True,,sim:judge,judge-v2,668,60,0.0,True,False
+1261,status,,,gingivitis,Dx at that visit: Stage II periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-status-v1,654,60,0.0,True,False
+1261,verdict,healthy_or_gingivitis,incorrect,,Dx at that visit: Stage II periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,667,60,0.0,True,False
+1261,verdict,periodontitis_stage_2,incorrect,,Dx at that visit: Stage II periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,667,60,0.0,True,False
+1261,verdict,periodontitis_stage_3,correct,,Dx at that visit: Stage II periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,667,60,0.0,True,False
+1264,status,,,gingivitis,Patient seen for recall exam. Med hx: HTN controlled; smoker ~7 cig/day. Exam: P,True,,sim:judge,judge-status-v1,632,60,0.0,True,False
+1264,verdict,healthy_or_gingivitis,incorrect,,Patient seen for recall exam. Med hx: HTN controlled; smoker ~7 cig/day. Exam: P,True,,sim:judge,judge-v2,645,60,0.0,True,False
+1293,status,,,periodontitis_stage_1, Next appt [DATE].,True,,sim:judge,judge-status-v1,667,60,0.0,True,False
+1293,verdict,healthy_or_gingivitis,incorrect,, Next appt [DATE].,True,,sim:judge,judge-v2,680,60,0.0,True,False
+1293,verdict,periodontitis_stage_1,correct,, Next appt [DATE].,True,,sim:judge,judge-v2,680,60,0.0,True,False
+1293,verdict,periodontitis_stage_2,correct,, Next appt [DATE].,True,,sim:judge,judge-v2,680,60,0.0,True,False
+1298,status,,,periodontitis_stage_3,,True,,sim:judge,judge-status-v1,654,60,0.0,True,False
+1298,verdict,periodontitis_stage_2,incorrect,,,True,,sim:judge,judge-v2,667,60,0.0,True,False
+1298,verdict,periodontitis_stage_3,correct,,,True,,sim:judge,judge-v2,667,60,0.0,True,False
+1307,status,,,healthy,,True,,sim:judge,judge-status-v1,641,60,0.0,True,False
+1307,verdict,healthy_or_gingivitis,correct,,,True,,sim:judge,judge-v2,654,60,0.0,True,False
+1318,status,,,periodontitis_stage_2,,True,,sim:judge,judge-status-v1,650,60,0.0,True,False
+1318,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,663,60,0.0,True,False
+1318,verdict,periodontitis_stage_2,correct,,,True,,sim:judge,judge-v2,663,60,0.0,True,False
+1318,verdict,periodontitis_stage_3,incorrect,,,True,,sim:judge,judge-v2,663,60,0.0,True,False
+1324,status,,,periodontitis_stage_2,"P: SRP UR/LR, re-eval 6 wk. Next appt [DATE].",True,,sim:judge,judge-status-v1,619,60,0.0,True,False
+1324,verdict,healthy_or_gingivitis,incorrect,,"P: SRP UR/LR, re-eval 6 wk. Next appt [DATE].",True,,sim:judge,judge-v2,632,60,0.0,True,False
+1324,verdict,periodontitis_stage_1,correct,,"P: SRP UR/LR, re-eval 6 wk. Next appt [DATE].",True,,sim:judge,judge-v2,632,60,0.0,True,False
+1346,status,,,periodontitis_stage_1,,True,,sim:judge,judge-status-v1,646,60,0.0,True,False
+1346,verdict,periodontitis_stage_1,correct,,,True,,sim:judge,judge-v2,659,60,0.0,True,False
+1346,verdict,periodontitis_stage_2,incorrect,,,True,,sim:judge,judge-v2,659,60,0.0,True,False
+1348,status,,,healthy,,True,,sim:judge,judge-status-v1,646,60,0.0,True,False
+1348,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,659,60,0.0,True,False
+1352,status,,,periodontitis_stage_3," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-status-v1,673,60,0.0,True,False
+1352,verdict,healthy_or_gingivitis,incorrect,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-v2,686,60,0.0,True,False
+1352,verdict,periodontitis_stage_2,incorrect,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-v2,686,60,0.0,True,False
+1352,verdict,periodontitis_stage_3,correct,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-v2,686,60,0.0,True,False
+1368,status,,,gingivitis,,True,,sim:judge,judge-status-v1,647,60,0.0,True,False
+1368,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,660,60,0.0,True,False
+1378,status,,,gingivitis,,True,,sim:judge,judge-status-v1,638,60,0.0,True,False
+1378,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,651,60,0.0,True,False
+1393,status,,,periodontitis_stage_1,Dx at that visit: gingivitis. Pt declined SRP at that time.,True,,sim:judge,judge-status-v1,649,60,0.0,True,False
+1393,verdict,healthy_or_gingivitis,incorrect,,Dx at that visit: gingivitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,662,60,0.0,True,False
+1393,verdict,periodontitis_stage_1,correct,,Dx at that visit: gingivitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,662,60,0.0,True,False
+1407,status,,,healthy, Next appt [DATE].,True,,sim:judge,judge-status-v1,644,60,0.0,True,False
+1407,verdict,healthy_or_gingivitis,correct,, Next appt [DATE].,True,,sim:judge,judge-v2,657,60,0.0,True,False
+1419,status,,,periodontitis_stage_1,P: 4 quad SRP then perio maint q3mo.,True,,sim:judge,judge-status-v1,623,60,0.0,True,False
+1419,verdict,healthy_or_gingivitis,incorrect,,P: 4 quad SRP then perio maint q3mo.,True,,sim:judge,judge-v2,636,60,0.0,True,False
+1419,verdict,periodontitis_stage_1,correct,,P: 4 quad SRP then perio maint q3mo.,True,,sim:judge,judge-v2,636,60,0.0,True,False
+1419,verdict,periodontitis_stage_2,incorrect,,P: 4 quad SRP then perio maint q3mo.,True,,sim:judge,judge-v2,636,60,0.0,True,False
+1433,status,,,gingivitis, Next appt [DATE].,True,,sim:judge,judge-status-v1,650,60,0.0,True,False
+1433,verdict,healthy_or_gingivitis,incorrect,, Next appt [DATE].,True,,sim:judge,judge-v2,663,60,0.0,True,False
+1455,status,,,periodontitis_stage_2,Tx plan: 4 quad SRP then perio maint q3mo.,True,,sim:judge,judge-status-v1,626,60,0.0,True,False
+1455,verdict,periodontitis_stage_2,correct,,Tx plan: 4 quad SRP then perio maint q3mo.,True,,sim:judge,judge-v2,639,60,0.0,True,False
+1455,verdict,periodontitis_stage_3,incorrect,,Tx plan: 4 quad SRP then perio maint q3mo.,True,,sim:judge,judge-v2,639,60,0.0,True,False
+1482,status,,,periodontitis_stage_3,Patient seen for periodontal evaluation. Med hx: no sig med hx; never smoker. Ex,True,,sim:judge,judge-status-v1,655,60,0.0,True,False
+1482,verdict,healthy_or_gingivitis,correct,,Patient seen for periodontal evaluation. Med hx: no sig med hx; never smoker. Ex,True,,sim:judge,judge-v2,668,60,0.0,True,False
+1482,verdict,periodontitis_stage_3,correct,,Patient seen for periodontal evaluation. Med hx: no sig med hx; never smoker. Ex,True,,sim:judge,judge-v2,668,60,0.0,True,False
+1485,status,,,gingivitis,"Tx plan: Prophy + OHI, re-eval gingiva next recall. Next appt [DATE].",True,,sim:judge,judge-status-v1,621,60,0.0,True,False
+1485,verdict,healthy_or_gingivitis,correct,,"Tx plan: Prophy + OHI, re-eval gingiva next recall. Next appt [DATE].",True,,sim:judge,judge-v2,634,60,0.0,True,False
+1485,verdict,periodontitis_stage_1,incorrect,,"Tx plan: Prophy + OHI, re-eval gingiva next recall. Next appt [DATE].",True,,sim:judge,judge-v2,634,60,0.0,True,False
+1502,status,,,gingivitis,"Tx plan: Prophy, flossing instruction. 6 mo recall.",True,,sim:judge,judge-status-v1,628,60,0.0,True,False
+1502,verdict,healthy_or_gingivitis,incorrect,,"Tx plan: Prophy, flossing instruction. 6 mo recall.",True,,sim:judge,judge-v2,641,60,0.0,True,False
+1502,verdict,periodontitis_stage_1,incorrect,,"Tx plan: Prophy, flossing instruction. 6 mo recall.",True,,sim:judge,judge-v2,641,60,0.0,True,False
+1510,status,,,periodontitis_stage_1,"P: SRP 4 quads, re-eval 4-6 wk.",True,,sim:judge,judge-status-v1,605,60,0.0,True,False
+1510,verdict,healthy_or_gingivitis,incorrect,,"P: SRP 4 quads, re-eval 4-6 wk.",True,,sim:judge,judge-v2,618,60,0.0,True,False
+1510,verdict,periodontitis_stage_1,correct,,"P: SRP 4 quads, re-eval 4-6 wk.",True,,sim:judge,judge-v2,618,60,0.0,True,False
+1532,status,,,periodontitis_stage_3,Tx plan: SRP 4 quads; perio consult for surgical eval.,True,,sim:judge,judge-status-v1,629,60,0.0,True,False
+1532,verdict,periodontitis_stage_2,incorrect,,Tx plan: SRP 4 quads; perio consult for surgical eval.,True,,sim:judge,judge-v2,642,60,0.0,True,False
+1532,verdict,periodontitis_stage_3,correct,,Tx plan: SRP 4 quads; perio consult for surgical eval.,True,,sim:judge,judge-v2,642,60,0.0,True,False
+1537,status,,,periodontitis_stage_2,,True,,sim:judge,judge-status-v1,657,60,0.0,True,False
+1537,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,670,60,0.0,True,False
+1537,verdict,periodontitis_stage_2,correct,,,True,,sim:judge,judge-v2,670,60,0.0,True,False
+1537,verdict,periodontitis_stage_3,incorrect,,,True,,sim:judge,judge-v2,670,60,0.0,True,False
+1549,status,,,gingivitis,,True,,sim:judge,judge-status-v1,656,60,0.0,True,False
+1549,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,669,60,0.0,True,False
+1549,verdict,periodontitis_stage_2,incorrect,,,True,,sim:judge,judge-v2,669,60,0.0,True,False
+1619,status,,,periodontitis_stage_3, Next appt [DATE].,True,,sim:judge,judge-status-v1,683,60,0.0,True,False
+1619,verdict,periodontitis_stage_2,incorrect,, Next appt [DATE].,True,,sim:judge,judge-v2,696,60,0.0,True,False
+1619,verdict,periodontitis_stage_3,correct,, Next appt [DATE].,True,,sim:judge,judge-v2,696,60,0.0,True,False
+1619,verdict,periodontitis_stage_4,correct,, Next appt [DATE].,True,,sim:judge,judge-v2,696,60,0.0,True,False
+1623,status,,,periodontitis_stage_1,Patient seen for recall exam. Med hx: NKDA; non-smoker. Exam: FMX: crestal bone ,True,,sim:judge,judge-status-v1,612,60,0.0,True,False
+1623,verdict,periodontitis_stage_1,correct,,Patient seen for recall exam. Med hx: NKDA; non-smoker. Exam: FMX: crestal bone ,True,,sim:judge,judge-v2,625,60,0.0,True,False
+1636,status,,,periodontitis_stage_4,Dx at that visit: Stage III periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-status-v1,727,60,0.0,True,False
+1636,verdict,healthy_or_gingivitis,incorrect,,Dx at that visit: Stage III periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,740,60,0.0,True,False
+1636,verdict,periodontitis_stage_2,incorrect,,Dx at that visit: Stage III periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,740,60,0.0,True,False
+1636,verdict,periodontitis_stage_3,incorrect,,Dx at that visit: Stage III periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,740,60,0.0,True,False
+1636,verdict,periodontitis_stage_4,not_determinable,,,True,,sim:judge,judge-v2,740,60,0.0,True,False
+1652,status,,,periodontitis_stage_1,"Tx plan: Localized SRP, perio maint q4mo.",True,,sim:judge,judge-status-v1,629,60,0.0,True,False
+1652,verdict,healthy_or_gingivitis,correct,,"Tx plan: Localized SRP, perio maint q4mo.",True,,sim:judge,judge-v2,642,60,0.0,True,False
+1652,verdict,periodontitis_stage_1,correct,,"Tx plan: Localized SRP, perio maint q4mo.",True,,sim:judge,judge-v2,642,60,0.0,True,False
+1652,verdict,periodontitis_stage_2,incorrect,,"Tx plan: Localized SRP, perio maint q4mo.",True,,sim:judge,judge-v2,642,60,0.0,True,False
+1671,status,,,gingivitis,,True,,sim:judge,judge-status-v1,655,60,0.0,True,False
+1671,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,668,60,0.0,True,False
+1671,verdict,periodontitis_stage_1,not_determinable,,,True,,sim:judge,judge-v2,668,60,0.0,True,False
+1682,status,,,gingivitis,,True,,sim:judge,judge-status-v1,641,60,0.0,True,False
+1682,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,654,60,0.0,True,False
+1690,status,,,periodontitis_stage_3, Next appt [DATE].,True,,sim:judge,judge-status-v1,675,60,0.0,True,False
+1690,verdict,healthy_or_gingivitis,correct,, Next appt [DATE].,True,,sim:judge,judge-v2,688,60,0.0,True,False
+1690,verdict,periodontitis_stage_2,incorrect,, Next appt [DATE].,True,,sim:judge,judge-v2,688,60,0.0,True,False
+1690,verdict,periodontitis_stage_3,incorrect,, Next appt [DATE].,True,,sim:judge,judge-v2,688,60,0.0,True,False
+1697,status,,,periodontitis_stage_3,"Tx plan: FM SRP, refer to periodontist. Referred to Dr. [NAME] at [LOCATION], ph",True,,sim:judge,judge-status-v1,628,60,0.0,True,False
+1697,verdict,healthy_or_gingivitis,incorrect,,"Tx plan: FM SRP, refer to periodontist. Referred to Dr. [NAME] at [LOCATION], ph",True,,sim:judge,judge-v2,641,60,0.0,True,False
+1697,verdict,periodontitis_stage_2,incorrect,,"Tx plan: FM SRP, refer to periodontist. Referred to Dr. [NAME] at [LOCATION], ph",True,,sim:judge,judge-v2,641,60,0.0,True,False
+1697,verdict,periodontitis_stage_3,correct,,"Tx plan: FM SRP, refer to periodontist. Referred to Dr. [NAME] at [LOCATION], ph",True,,sim:judge,judge-v2,641,60,0.0,True,False
+1706,status,,,periodontitis_stage_2,,True,,sim:judge,judge-status-v1,649,60,0.0,True,False
+1706,verdict,periodontitis_stage_2,correct,,,True,,sim:judge,judge-v2,662,60,0.0,True,False
+1734,status,,,gingivitis,"P: Localized SRP, perio maint q4mo.",True,,sim:judge,judge-status-v1,614,60,0.0,True,False
+1734,verdict,healthy_or_gingivitis,incorrect,,"P: Localized SRP, perio maint q4mo.",True,,sim:judge,judge-v2,627,60,0.0,True,False
+1734,verdict,periodontitis_stage_1,incorrect,,"P: Localized SRP, perio maint q4mo.",True,,sim:judge,judge-v2,627,60,0.0,True,False
+1738,status,,,gingivitis,,True,,sim:judge,judge-status-v1,660,60,0.0,True,False
+1738,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,673,60,0.0,True,False
+1748,status,,,periodontitis_stage_2, Pt moved; new address [LOCATION].,True,,sim:judge,judge-status-v1,675,60,0.0,True,False
+1748,verdict,periodontitis_stage_2,correct,, Pt moved; new address [LOCATION].,True,,sim:judge,judge-v2,688,60,0.0,True,False
+1761,status,,,periodontitis_stage_1,,True,,sim:judge,judge-status-v1,659,60,0.0,True,False
+1761,verdict,periodontitis_stage_1,correct,,,True,,sim:judge,judge-v2,672,60,0.0,True,False
+1761,verdict,periodontitis_stage_2,incorrect,,,True,,sim:judge,judge-v2,672,60,0.0,True,False
+1764,status,,,periodontitis_stage_3,,True,,sim:judge,judge-status-v1,661,60,0.0,True,False
+1764,verdict,periodontitis_stage_2,incorrect,,,True,,sim:judge,judge-v2,674,60,0.0,True,False
+1764,verdict,periodontitis_stage_3,correct,,,True,,sim:judge,judge-v2,674,60,0.0,True,False
+1799,status,,,periodontitis_stage_4,"Pt seen for recall exam. Med hx: T2DM, last A1c 8.4; former smoker, quit 2015. E",True,,sim:judge,judge-status-v1,645,60,0.0,True,False
+1799,verdict,periodontitis_stage_3,incorrect,,"Pt seen for recall exam. Med hx: T2DM, last A1c 8.4; former smoker, quit 2015. E",True,,sim:judge,judge-v2,658,60,0.0,True,False
+1799,verdict,periodontitis_stage_4,correct,,"Pt seen for recall exam. Med hx: T2DM, last A1c 8.4; former smoker, quit 2015. E",True,,sim:judge,judge-v2,658,60,0.0,True,False
+1804,status,,,,,True,,sim:judge,judge-status-v1,638,60,0.0,True,False
+1804,verdict,periodontitis_stage_2,correct,,"Patient seen for periodontal evaluation. Med hx: no sig med hx; former smoker, q",True,,sim:judge,judge-v2,651,60,0.0,True,False
+1821,status,,,periodontitis_stage_2,Dx at that visit: Stage I periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-status-v1,689,60,0.0,True,False
+1821,verdict,healthy_or_gingivitis,incorrect,,Dx at that visit: Stage I periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,702,60,0.0,True,False
+1821,verdict,periodontitis_stage_1,incorrect,,Dx at that visit: Stage I periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,702,60,0.0,True,False
+1821,verdict,periodontitis_stage_2,correct,,Dx at that visit: Stage I periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,702,60,0.0,True,False
+1856,status,,,periodontitis_stage_1,"P: Prophy, OHI. Recall 6 mo.",True,,sim:judge,judge-status-v1,600,60,0.0,True,False
+1856,verdict,healthy_or_gingivitis,incorrect,,"P: Prophy, OHI. Recall 6 mo.",True,,sim:judge,judge-v2,613,60,0.0,True,False
+1861,status,,,periodontitis_stage_3,,True,,sim:judge,judge-status-v1,659,60,0.0,True,False
+1861,verdict,periodontitis_stage_2,incorrect,,,True,,sim:judge,judge-v2,672,60,0.0,True,False
+1861,verdict,periodontitis_stage_3,correct,,,True,,sim:judge,judge-v2,672,60,0.0,True,False
+1874,status,,,periodontitis_stage_2,,True,,sim:judge,judge-status-v1,649,60,0.0,True,False
+1874,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,662,60,0.0,True,False
+1874,verdict,periodontitis_stage_2,correct,,,True,,sim:judge,judge-v2,662,60,0.0,True,False
+1885,status,,,periodontitis_stage_2,,True,,sim:judge,judge-status-v1,642,60,0.0,True,False
+1885,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,655,60,0.0,True,False
+1885,verdict,periodontitis_stage_1,incorrect,,,True,,sim:judge,judge-v2,655,60,0.0,True,False
+1885,verdict,periodontitis_stage_2,correct,,,True,,sim:judge,judge-v2,655,60,0.0,True,False
+1891,status,,,gingivitis,"Tx plan: SRP UR/LR, re-eval 6 wk. Pt moved; new address [LOCATION].",True,,sim:judge,judge-status-v1,636,60,0.0,True,False
+1891,verdict,healthy_or_gingivitis,correct,,"Tx plan: SRP UR/LR, re-eval 6 wk. Pt moved; new address [LOCATION].",True,,sim:judge,judge-v2,649,60,0.0,True,False
+1891,verdict,periodontitis_stage_1,incorrect,,"Tx plan: SRP UR/LR, re-eval 6 wk. Pt moved; new address [LOCATION].",True,,sim:judge,judge-v2,649,60,0.0,True,False
+1909,status,,,gingivitis, Next appt [DATE].,True,,sim:judge,judge-status-v1,660,60,0.0,True,False
+1909,verdict,healthy_or_gingivitis,incorrect,, Next appt [DATE].,True,,sim:judge,judge-v2,673,60,0.0,True,False
+1922,status,,,periodontitis_stage_2,,True,,sim:judge,judge-status-v1,641,60,0.0,True,False
+1922,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,654,60,0.0,True,False
+1922,verdict,periodontitis_stage_2,correct,,,True,,sim:judge,judge-v2,654,60,0.0,True,False
+1923,status,,,gingivitis,"Tx plan: Prophy, flossing instruction. 6 mo recall.",True,,sim:judge,judge-status-v1,609,60,0.0,True,False
+1923,verdict,healthy_or_gingivitis,incorrect,,"Tx plan: Prophy, flossing instruction. 6 mo recall.",True,,sim:judge,judge-v2,622,60,0.0,True,False
+1930,status,,,healthy,,True,,sim:judge,judge-status-v1,644,60,0.0,True,False
+1930,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,657,60,0.0,True,False
+1968,status,,,periodontitis_stage_3," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-status-v1,680,60,0.0,True,False
+1968,verdict,healthy_or_gingivitis,correct,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-v2,693,60,0.0,True,False
+1968,verdict,periodontitis_stage_2,incorrect,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-v2,693,60,0.0,True,False
+1968,verdict,periodontitis_stage_3,incorrect,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-v2,693,60,0.0,True,False
+1976,status,,,periodontitis_stage_3,"P: FM SRP, refer to periodontist.",True,,sim:judge,judge-status-v1,639,60,0.0,True,False
+1976,verdict,periodontitis_stage_3,correct,,"P: FM SRP, refer to periodontist.",True,,sim:judge,judge-v2,652,60,0.0,True,False
+1983,status,,,periodontitis_stage_1,,True,,sim:judge,judge-status-v1,647,60,0.0,True,False
+1983,verdict,periodontitis_stage_1,incorrect,,,True,,sim:judge,judge-v2,660,60,0.0,True,False
+1989,status,,,periodontitis_stage_1,,True,,sim:judge,judge-status-v1,642,60,0.0,True,False
+1989,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,655,60,0.0,True,False
+1989,verdict,periodontitis_stage_1,correct,,,True,,sim:judge,judge-v2,655,60,0.0,True,False
+1989,verdict,periodontitis_stage_2,incorrect,,,True,,sim:judge,judge-v2,655,60,0.0,True,False
+2030,status,,,periodontitis_stage_2,,True,,sim:judge,judge-status-v1,650,60,0.0,True,False
+2030,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,663,60,0.0,True,False
+2030,verdict,periodontitis_stage_2,correct,,,True,,sim:judge,judge-v2,663,60,0.0,True,False
+2030,verdict,periodontitis_stage_3,incorrect,,,True,,sim:judge,judge-v2,663,60,0.0,True,False
+2034,status,,,healthy,,True,,sim:judge,judge-status-v1,651,60,0.0,True,False
+2034,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,664,60,0.0,True,False
+2038,status,,,gingivitis, Pt moved; new address [LOCATION].,True,,sim:judge,judge-status-v1,695,60,0.0,True,False
+2038,verdict,healthy_or_gingivitis,incorrect,, Pt moved; new address [LOCATION].,True,,sim:judge,judge-v2,708,60,0.0,True,False
+2038,verdict,periodontitis_stage_2,incorrect,, Pt moved; new address [LOCATION].,True,,sim:judge,judge-v2,708,60,0.0,True,False
+2038,verdict,periodontitis_stage_3,correct,, Pt moved; new address [LOCATION].,True,,sim:judge,judge-v2,708,60,0.0,True,False
+2050,status,,,periodontitis_stage_1,"Tx plan: Localized SRP, perio maint q4mo.",True,,sim:judge,judge-status-v1,609,60,0.0,True,False
+2050,verdict,healthy_or_gingivitis,incorrect,,"Tx plan: Localized SRP, perio maint q4mo.",True,,sim:judge,judge-v2,622,60,0.0,True,False
+2050,verdict,periodontitis_stage_1,correct,,"Tx plan: Localized SRP, perio maint q4mo.",True,,sim:judge,judge-v2,622,60,0.0,True,False
+2070,status,,,healthy,,True,,sim:judge,judge-status-v1,640,60,0.0,True,False
+2070,verdict,healthy_or_gingivitis,correct,,,True,,sim:judge,judge-v2,653,60,0.0,True,False
+2083,status,,,periodontitis_stage_3," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-status-v1,666,60,0.0,True,False
+2083,verdict,healthy_or_gingivitis,incorrect,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-v2,679,60,0.0,True,False
+2083,verdict,periodontitis_stage_2,incorrect,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-v2,679,60,0.0,True,False
+2083,verdict,periodontitis_stage_3,correct,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-v2,679,60,0.0,True,False
+2087,status,,,periodontitis_stage_2, Next appt [DATE].,True,,sim:judge,judge-status-v1,663,60,0.0,True,False
+2087,verdict,periodontitis_stage_2,correct,, Next appt [DATE].,True,,sim:judge,judge-v2,676,60,0.0,True,False
+2103,status,,,gingivitis,,True,,sim:judge,judge-status-v1,646,60,0.0,True,False
+2103,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,659,60,0.0,True,False
+2103,verdict,periodontitis_stage_1,incorrect,,,True,,sim:judge,judge-v2,659,60,0.0,True,False
+2107,status,,,healthy,"P: Prophy, OHI. Recall 6 mo. Next appt [DATE].",True,,sim:judge,judge-status-v1,603,60,0.0,True,False
+2107,verdict,healthy_or_gingivitis,incorrect,,"P: Prophy, OHI. Recall 6 mo. Next appt [DATE].",True,,sim:judge,judge-v2,616,60,0.0,True,False
+2110,status,,,periodontitis_stage_3,Patient seen for periodontal evaluation. Med hx: HTN controlled; never smoker. E,True,,sim:judge,judge-status-v1,638,60,0.0,True,False
+2110,verdict,periodontitis_stage_2,incorrect,,Patient seen for periodontal evaluation. Med hx: HTN controlled; never smoker. E,True,,sim:judge,judge-v2,651,60,0.0,True,False
+2110,verdict,periodontitis_stage_3,correct,,Patient seen for periodontal evaluation. Med hx: HTN controlled; never smoker. E,True,,sim:judge,judge-v2,651,60,0.0,True,False
+2122,status,,,gingivitis,,True,,sim:judge,judge-status-v1,647,60,0.0,True,False
+2122,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,660,60,0.0,True,False
+2150,status,,,periodontitis_stage_1, Next appt [DATE].,True,,sim:judge,judge-status-v1,656,60,0.0,True,False
+2150,verdict,periodontitis_stage_1,correct,, Next appt [DATE].,True,,sim:judge,judge-v2,669,60,0.0,True,False
+2150,verdict,periodontitis_stage_2,incorrect,, Next appt [DATE].,True,,sim:judge,judge-v2,669,60,0.0,True,False
+2166,status,,,gingivitis,,True,,sim:judge,judge-status-v1,649,60,0.0,True,False
+2166,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,662,60,0.0,True,False
+2174,status,,,healthy,"P: Prophy, OHI. Recall 6 mo.",True,,sim:judge,judge-status-v1,620,60,0.0,True,False
+2174,verdict,healthy_or_gingivitis,incorrect,,"P: Prophy, OHI. Recall 6 mo.",True,,sim:judge,judge-v2,633,60,0.0,True,False
+2177,status,,,healthy, Next appt [DATE].,True,,sim:judge,judge-status-v1,648,60,0.0,True,False
+2177,verdict,healthy_or_gingivitis,incorrect,, Next appt [DATE].,True,,sim:judge,judge-v2,661,60,0.0,True,False
+2275,status,,,periodontitis_stage_1,,True,,sim:judge,judge-status-v1,643,60,0.0,True,False
+2275,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,656,60,0.0,True,False
+2275,verdict,periodontitis_stage_1,correct,,,True,,sim:judge,judge-v2,656,60,0.0,True,False
+2299,status,,,periodontitis_stage_3," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-status-v1,675,60,0.0,True,False
+2299,verdict,periodontitis_stage_2,incorrect,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-v2,688,60,0.0,True,False
+2299,verdict,periodontitis_stage_3,correct,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-v2,688,60,0.0,True,False
+2305,status,,,periodontitis_stage_3,"P: FM SRP, refer to periodontist.",True,,sim:judge,judge-status-v1,625,60,0.0,True,False
+2305,verdict,healthy_or_gingivitis,incorrect,,"P: FM SRP, refer to periodontist.",True,,sim:judge,judge-v2,638,60,0.0,True,False
+2305,verdict,periodontitis_stage_2,incorrect,,"P: FM SRP, refer to periodontist.",True,,sim:judge,judge-v2,638,60,0.0,True,False
+2305,verdict,periodontitis_stage_3,incorrect,,"P: FM SRP, refer to periodontist.",True,,sim:judge,judge-v2,638,60,0.0,True,False
+2318,status,,,periodontitis_stage_4," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-status-v1,675,60,0.0,True,False
+2318,verdict,healthy_or_gingivitis,incorrect,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-v2,688,60,0.0,True,False
+2318,verdict,periodontitis_stage_3,incorrect,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-v2,688,60,0.0,True,False
+2318,verdict,periodontitis_stage_4,correct,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-v2,688,60,0.0,True,False
+2324,status,,,periodontitis_stage_4,Tx plan: Perio referral; prosthetic consult for edentulous areas. Referred to Dr,True,,sim:judge,judge-status-v1,647,60,0.0,True,False
+2324,verdict,periodontitis_stage_3,incorrect,,Tx plan: Perio referral; prosthetic consult for edentulous areas. Referred to Dr,True,,sim:judge,judge-v2,660,60,0.0,True,False
+2324,verdict,periodontitis_stage_4,correct,,Tx plan: Perio referral; prosthetic consult for edentulous areas. Referred to Dr,True,,sim:judge,judge-v2,660,60,0.0,True,False
+2366,status,,,gingivitis,"P: SRP UR/LR, re-eval 6 wk.",True,,sim:judge,judge-status-v1,611,60,0.0,True,False
+2366,verdict,healthy_or_gingivitis,incorrect,,"P: SRP UR/LR, re-eval 6 wk.",True,,sim:judge,judge-v2,624,60,0.0,True,False
+2366,verdict,periodontitis_stage_1,incorrect,,"P: SRP UR/LR, re-eval 6 wk.",True,,sim:judge,judge-v2,624,60,0.0,True,False
+2373,status,,,periodontitis_stage_3,"Tx plan: SRP UR/LR, re-eval 6 wk. Next appt [DATE].",True,,sim:judge,judge-status-v1,614,60,0.0,True,False
+2373,verdict,healthy_or_gingivitis,incorrect,,"Tx plan: SRP UR/LR, re-eval 6 wk. Next appt [DATE].",True,,sim:judge,judge-v2,627,60,0.0,True,False
+2373,verdict,periodontitis_stage_1,incorrect,,"Tx plan: SRP UR/LR, re-eval 6 wk. Next appt [DATE].",True,,sim:judge,judge-v2,627,60,0.0,True,False
+2427,status,,,healthy,"P: Prophy, OHI. Recall 6 mo.",True,,sim:judge,judge-status-v1,602,60,0.0,True,False
+2427,verdict,healthy_or_gingivitis,incorrect,,"P: Prophy, OHI. Recall 6 mo.",True,,sim:judge,judge-v2,615,60,0.0,True,False
+2430,status,,,periodontitis_stage_2,,True,,sim:judge,judge-status-v1,652,60,0.0,True,False
+2430,verdict,periodontitis_stage_2,correct,,,True,,sim:judge,judge-v2,665,60,0.0,True,False
+2430,verdict,periodontitis_stage_3,incorrect,,,True,,sim:judge,judge-v2,665,60,0.0,True,False
+2491,status,,,gingivitis, Next appt [DATE]. Pt moved; new address [LOCATION].,True,,sim:judge,judge-status-v1,675,60,0.0,True,False
+2491,verdict,healthy_or_gingivitis,incorrect,, Next appt [DATE]. Pt moved; new address [LOCATION].,True,,sim:judge,judge-v2,688,60,0.0,True,False
+2491,verdict,periodontitis_stage_1,correct,, Next appt [DATE]. Pt moved; new address [LOCATION].,True,,sim:judge,judge-v2,688,60,0.0,True,False
+2515,status,,,periodontitis_stage_3,Pt seen for periodontal evaluation. Med hx: no sig med hx; non-smoker. Exam: CAL,True,,sim:judge,judge-status-v1,647,60,0.0,True,False
+2515,verdict,healthy_or_gingivitis,incorrect,,Pt seen for periodontal evaluation. Med hx: no sig med hx; non-smoker. Exam: CAL,True,,sim:judge,judge-v2,660,60,0.0,True,False
+2515,verdict,periodontitis_stage_2,correct,,Pt seen for periodontal evaluation. Med hx: no sig med hx; non-smoker. Exam: CAL,True,,sim:judge,judge-v2,660,60,0.0,True,False
+2515,verdict,periodontitis_stage_3,correct,,Pt seen for periodontal evaluation. Med hx: no sig med hx; non-smoker. Exam: CAL,True,,sim:judge,judge-v2,660,60,0.0,True,False
+2529,status,,,periodontitis_stage_3, Next appt [DATE].,True,,sim:judge,judge-status-v1,674,60,0.0,True,False
+2529,verdict,periodontitis_stage_2,incorrect,, Next appt [DATE].,True,,sim:judge,judge-v2,687,60,0.0,True,False
+2529,verdict,periodontitis_stage_3,incorrect,, Next appt [DATE].,True,,sim:judge,judge-v2,687,60,0.0,True,False
+2537,status,,,periodontitis_stage_1,,True,,sim:judge,judge-status-v1,648,60,0.0,True,False
+2537,verdict,periodontitis_stage_1,correct,,,True,,sim:judge,judge-v2,661,60,0.0,True,False
+2555,status,,,periodontitis_stage_1,,True,,sim:judge,judge-status-v1,658,60,0.0,True,False
+2555,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,671,60,0.0,True,False
+2555,verdict,periodontitis_stage_1,correct,,,True,,sim:judge,judge-v2,671,60,0.0,True,False
+2555,verdict,periodontitis_stage_2,incorrect,,,True,,sim:judge,judge-v2,671,60,0.0,True,False
+2573,status,,,healthy, Next appt [DATE]. Pt moved; new address [LOCATION].,True,,sim:judge,judge-status-v1,650,60,0.0,True,False
+2573,verdict,healthy_or_gingivitis,incorrect,, Next appt [DATE]. Pt moved; new address [LOCATION].,True,,sim:judge,judge-v2,663,60,0.0,True,False
+2576,status,,,periodontitis_stage_3," Referred to Dr. [NAME] at [LOCATION], ph [PHONE]. Pt moved; new address [LOCATI",True,,sim:judge,judge-status-v1,667,60,0.0,True,False
+2576,verdict,periodontitis_stage_2,incorrect,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE]. Pt moved; new address [LOCATI",True,,sim:judge,judge-v2,680,60,0.0,True,False
+2576,verdict,periodontitis_stage_3,correct,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE]. Pt moved; new address [LOCATI",True,,sim:judge,judge-v2,680,60,0.0,True,False
+2581,status,,,periodontitis_stage_2,,True,,sim:judge,judge-status-v1,655,60,0.0,True,False
+2581,verdict,periodontitis_stage_1,incorrect,,,True,,sim:judge,judge-v2,668,60,0.0,True,False
+2581,verdict,periodontitis_stage_2,correct,,,True,,sim:judge,judge-v2,668,60,0.0,True,False
+2584,status,,,gingivitis,P: Adult prophy. RTC 6 mo.,True,,sim:judge,judge-status-v1,615,60,0.0,True,False
+2584,verdict,healthy_or_gingivitis,incorrect,,P: Adult prophy. RTC 6 mo.,True,,sim:judge,judge-v2,628,60,0.0,True,False
+2609,status,,,periodontitis_stage_1,"P: Localized SRP, perio maint q4mo.",True,,sim:judge,judge-status-v1,613,60,0.0,True,False
+2609,verdict,healthy_or_gingivitis,incorrect,,"P: Localized SRP, perio maint q4mo.",True,,sim:judge,judge-v2,626,60,0.0,True,False
+2609,verdict,periodontitis_stage_1,correct,,"P: Localized SRP, perio maint q4mo.",True,,sim:judge,judge-v2,626,60,0.0,True,False
+2621,status,,,periodontitis_stage_2,P: 4 quad SRP then perio maint q3mo.,True,,sim:judge,judge-status-v1,620,60,0.0,True,False
+2621,verdict,healthy_or_gingivitis,incorrect,,P: 4 quad SRP then perio maint q3mo.,True,,sim:judge,judge-v2,633,60,0.0,True,False
+2621,verdict,periodontitis_stage_2,correct,,P: 4 quad SRP then perio maint q3mo.,True,,sim:judge,judge-v2,633,60,0.0,True,False
+2621,verdict,periodontitis_stage_3,incorrect,,P: 4 quad SRP then perio maint q3mo.,True,,sim:judge,judge-v2,633,60,0.0,True,False
+2627,status,,,periodontitis_stage_1,,True,,sim:judge,judge-status-v1,651,60,0.0,True,False
+2627,verdict,periodontitis_stage_1,correct,,,True,,sim:judge,judge-v2,664,60,0.0,True,False
+2646,status,,,periodontitis_stage_2,"Pt seen for recall exam. Med hx: pre-diabetic A1c 6.1; former smoker, quit 2015.",True,,sim:judge,judge-status-v1,623,60,0.0,True,False
+2646,verdict,periodontitis_stage_2,correct,,"Pt seen for recall exam. Med hx: pre-diabetic A1c 6.1; former smoker, quit 2015.",True,,sim:judge,judge-v2,636,60,0.0,True,False
+2646,verdict,periodontitis_stage_3,incorrect,,"Pt seen for recall exam. Med hx: pre-diabetic A1c 6.1; former smoker, quit 2015.",True,,sim:judge,judge-v2,636,60,0.0,True,False
+2653,status,,,periodontitis_stage_3,"P: 4 quad SRP then perio maint q3mo. Referred to Dr. [NAME] at [LOCATION], ph [P",True,,sim:judge,judge-status-v1,647,60,0.0,True,False
+2653,verdict,healthy_or_gingivitis,incorrect,,"P: 4 quad SRP then perio maint q3mo. Referred to Dr. [NAME] at [LOCATION], ph [P",True,,sim:judge,judge-v2,660,60,0.0,True,False
+2653,verdict,periodontitis_stage_2,incorrect,,"P: 4 quad SRP then perio maint q3mo. Referred to Dr. [NAME] at [LOCATION], ph [P",True,,sim:judge,judge-v2,660,60,0.0,True,False
+2653,verdict,periodontitis_stage_3,correct,,"P: 4 quad SRP then perio maint q3mo. Referred to Dr. [NAME] at [LOCATION], ph [P",True,,sim:judge,judge-v2,660,60,0.0,True,False
+2682,status,,,healthy, Next appt [DATE].,True,,sim:judge,judge-status-v1,661,60,0.0,True,False
+2682,verdict,healthy_or_gingivitis,incorrect,, Next appt [DATE].,True,,sim:judge,judge-v2,674,60,0.0,True,False
+2745,status,,,periodontitis_stage_2,"Tx plan: Localized SRP, perio maint q4mo.",True,,sim:judge,judge-status-v1,617,60,0.0,True,False
+2745,verdict,healthy_or_gingivitis,incorrect,,"Tx plan: Localized SRP, perio maint q4mo.",True,,sim:judge,judge-v2,630,60,0.0,True,False
+2745,verdict,periodontitis_stage_1,incorrect,,"Tx plan: Localized SRP, perio maint q4mo.",True,,sim:judge,judge-v2,630,60,0.0,True,False
+2745,verdict,periodontitis_stage_2,correct,,"Tx plan: Localized SRP, perio maint q4mo.",True,,sim:judge,judge-v2,630,60,0.0,True,False
+2752,status,,,periodontitis_stage_4, Next appt [DATE].,True,,sim:judge,judge-status-v1,669,60,0.0,True,False
+2752,verdict,healthy_or_gingivitis,incorrect,, Next appt [DATE].,True,,sim:judge,judge-v2,682,60,0.0,True,False
+2752,verdict,periodontitis_stage_2,incorrect,, Next appt [DATE].,True,,sim:judge,judge-v2,682,60,0.0,True,False
+2752,verdict,periodontitis_stage_3,incorrect,, Next appt [DATE].,True,,sim:judge,judge-v2,682,60,0.0,True,False
+2752,verdict,periodontitis_stage_4,correct,, Next appt [DATE].,True,,sim:judge,judge-v2,682,60,0.0,True,False
+2758,status,,,periodontitis_stage_4,"P: Prophy, flossing instruction. 6 mo recall. Next appt [DATE].",True,,sim:judge,judge-status-v1,609,60,0.0,True,False
+2758,verdict,healthy_or_gingivitis,incorrect,,"P: Prophy, flossing instruction. 6 mo recall. Next appt [DATE].",True,,sim:judge,judge-v2,622,60,0.0,True,False
+2758,verdict,periodontitis_stage_1,not_determinable,,,True,,sim:judge,judge-v2,622,60,0.0,True,False
+2761,status,,,gingivitis,,True,,sim:judge,judge-status-v1,650,60,0.0,True,False
+2761,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,663,60,0.0,True,False
+2761,verdict,periodontitis_stage_1,incorrect,,,True,,sim:judge,judge-v2,663,60,0.0,True,False
+2776,status,,,gingivitis, Pt moved; new address [LOCATION].,True,,sim:judge,judge-status-v1,654,60,0.0,True,False
+2776,verdict,healthy_or_gingivitis,correct,, Pt moved; new address [LOCATION].,True,,sim:judge,judge-v2,667,60,0.0,True,False
+2827,status,,,periodontitis_stage_1,"Tx plan: SRP UR/LR, re-eval 6 wk.",True,,sim:judge,judge-status-v1,617,60,0.0,True,False
+2827,verdict,periodontitis_stage_1,incorrect,,"Tx plan: SRP UR/LR, re-eval 6 wk.",True,,sim:judge,judge-v2,630,60,0.0,True,False
+2827,verdict,periodontitis_stage_2,incorrect,,"Tx plan: SRP UR/LR, re-eval 6 wk.",True,,sim:judge,judge-v2,630,60,0.0,True,False
+2839,status,,,healthy,Tx plan: Adult prophy. RTC 6 mo. Next appt [DATE].,True,,sim:judge,judge-status-v1,610,60,0.0,True,False
+2839,verdict,healthy_or_gingivitis,incorrect,,Tx plan: Adult prophy. RTC 6 mo. Next appt [DATE].,True,,sim:judge,judge-v2,623,60,0.0,True,False
+2866,status,,,periodontitis_stage_1,,True,,sim:judge,judge-status-v1,645,60,0.0,True,False
+2866,verdict,periodontitis_stage_1,correct,,,True,,sim:judge,judge-v2,658,60,0.0,True,False
+2866,verdict,periodontitis_stage_2,incorrect,,,True,,sim:judge,judge-v2,658,60,0.0,True,False
+2871,status,,,gingivitis, Next appt [DATE]. Pt moved; new address [LOCATION].,True,,sim:judge,judge-status-v1,668,60,0.0,True,False
+2871,verdict,healthy_or_gingivitis,incorrect,, Next appt [DATE]. Pt moved; new address [LOCATION].,True,,sim:judge,judge-v2,681,60,0.0,True,False
+2884,status,,,periodontitis_stage_3,Dx at that visit: Stage II periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-status-v1,701,60,0.0,True,False
+2884,verdict,healthy_or_gingivitis,correct,,Dx at that visit: Stage II periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,714,60,0.0,True,False
+2884,verdict,periodontitis_stage_2,incorrect,,Dx at that visit: Stage II periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,714,60,0.0,True,False
+2884,verdict,periodontitis_stage_3,correct,,Dx at that visit: Stage II periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,714,60,0.0,True,False
+2889,status,,,periodontitis_stage_1,,True,,sim:judge,judge-status-v1,642,60,0.0,True,False
+2889,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,655,60,0.0,True,False
+2889,verdict,periodontitis_stage_1,correct,,,True,,sim:judge,judge-v2,655,60,0.0,True,False
+2889,verdict,periodontitis_stage_2,incorrect,,,True,,sim:judge,judge-v2,655,60,0.0,True,False
+2900,status,,,gingivitis,,True,,sim:judge,judge-status-v1,661,60,0.0,True,False
+2900,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,674,60,0.0,True,False
+2900,verdict,periodontitis_stage_1,incorrect,,,True,,sim:judge,judge-v2,674,60,0.0,True,False
+2913,status,,,periodontitis_stage_2,,True,,sim:judge,judge-status-v1,667,60,0.0,True,False
+2913,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,680,60,0.0,True,False
+2913,verdict,periodontitis_stage_2,correct,,,True,,sim:judge,judge-v2,680,60,0.0,True,False
+2913,verdict,periodontitis_stage_3,incorrect,,,True,,sim:judge,judge-v2,680,60,0.0,True,False
+2923,status,,,gingivitis,,True,,sim:judge,judge-status-v1,659,60,0.0,True,False
+2923,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,672,60,0.0,True,False
+2936,status,,,periodontitis_stage_1, Next appt [DATE]. Pt moved; new address [LOCATION].,True,,sim:judge,judge-status-v1,660,60,0.0,True,False
+2936,verdict,healthy_or_gingivitis,correct,, Next appt [DATE]. Pt moved; new address [LOCATION].,True,,sim:judge,judge-v2,673,60,0.0,True,False
+2936,verdict,periodontitis_stage_1,correct,, Next appt [DATE]. Pt moved; new address [LOCATION].,True,,sim:judge,judge-v2,673,60,0.0,True,False
+2936,verdict,periodontitis_stage_2,incorrect,, Next appt [DATE]. Pt moved; new address [LOCATION].,True,,sim:judge,judge-v2,673,60,0.0,True,False
+2949,status,,,periodontitis_stage_2,Dx at that visit: Stage I periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-status-v1,630,60,0.0,True,False
+2949,verdict,healthy_or_gingivitis,incorrect,,Dx at that visit: Stage I periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,643,60,0.0,True,False
+2949,verdict,periodontitis_stage_2,correct,,Dx at that visit: Stage I periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,643,60,0.0,True,False
+2949,verdict,periodontitis_stage_3,incorrect,,Dx at that visit: Stage I periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,643,60,0.0,True,False
+3003,status,,,gingivitis,,True,,sim:judge,judge-status-v1,664,60,0.0,True,False
+3003,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,677,60,0.0,True,False
+3010,status,,,healthy,,True,,sim:judge,judge-status-v1,648,60,0.0,True,False
+3010,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,661,60,0.0,True,False
+3022,status,,,healthy,"P: Prophy, OHI. Recall 6 mo.",True,,sim:judge,judge-status-v1,605,60,0.0,True,False
+3022,verdict,healthy_or_gingivitis,incorrect,,"P: Prophy, OHI. Recall 6 mo.",True,,sim:judge,judge-v2,618,60,0.0,True,False
+3063,status,,,periodontitis_stage_1,,True,,sim:judge,judge-status-v1,639,60,0.0,True,False
+3063,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,652,60,0.0,True,False
+3063,verdict,periodontitis_stage_1,correct,,,True,,sim:judge,judge-v2,652,60,0.0,True,False
+3063,verdict,periodontitis_stage_2,incorrect,,,True,,sim:judge,judge-v2,652,60,0.0,True,False
+3084,status,,,gingivitis,Dx at that visit: gingivitis. Pt declined SRP at that time.,True,,sim:judge,judge-status-v1,640,60,0.0,True,False
+3084,verdict,healthy_or_gingivitis,incorrect,,Dx at that visit: gingivitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,653,60,0.0,True,False
+3084,verdict,periodontitis_stage_1,correct,,Dx at that visit: gingivitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,653,60,0.0,True,False
+3092,status,,,gingivitis,,True,,sim:judge,judge-status-v1,647,60,0.0,True,False
+3092,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,660,60,0.0,True,False
+3092,verdict,periodontitis_stage_1,incorrect,,,True,,sim:judge,judge-v2,660,60,0.0,True,False
+3106,status,,,healthy, Next appt [DATE].,True,,sim:judge,judge-status-v1,653,60,0.0,True,False
+3106,verdict,healthy_or_gingivitis,incorrect,, Next appt [DATE].,True,,sim:judge,judge-v2,666,60,0.0,True,False
+3124,status,,,periodontitis_stage_3,,True,,sim:judge,judge-status-v1,667,60,0.0,True,False
+3124,verdict,periodontitis_stage_2,incorrect,,,True,,sim:judge,judge-v2,680,60,0.0,True,False
+3124,verdict,periodontitis_stage_3,correct,,,True,,sim:judge,judge-v2,680,60,0.0,True,False
+3127,status,,,healthy, Next appt [DATE].,True,,sim:judge,judge-status-v1,655,60,0.0,True,False
+3127,verdict,healthy_or_gingivitis,incorrect,, Next appt [DATE].,True,,sim:judge,judge-v2,668,60,0.0,True,False
+3177,status,,,healthy,,True,,sim:judge,judge-status-v1,644,60,0.0,True,False
+3177,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,657,60,0.0,True,False
+3229,status,,,periodontitis_stage_2,,True,,sim:judge,judge-status-v1,667,60,0.0,True,False
+3229,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,680,60,0.0,True,False
+3229,verdict,periodontitis_stage_2,correct,,,True,,sim:judge,judge-v2,680,60,0.0,True,False
+3316,status,,,periodontitis_stage_1,Dx at that visit: gingivitis. Pt declined SRP at that time.,True,,sim:judge,judge-status-v1,682,60,0.0,True,False
+3316,verdict,healthy_or_gingivitis,correct,,Dx at that visit: gingivitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,695,60,0.0,True,False
+3316,verdict,periodontitis_stage_1,correct,,Dx at that visit: gingivitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,695,60,0.0,True,False
+3329,status,,,gingivitis,"P: Prophy, OHI. Recall 6 mo. Next appt [DATE].",True,,sim:judge,judge-status-v1,613,60,0.0,True,False
+3329,verdict,healthy_or_gingivitis,incorrect,,"P: Prophy, OHI. Recall 6 mo. Next appt [DATE].",True,,sim:judge,judge-v2,626,60,0.0,True,False
+3329,verdict,periodontitis_stage_1,incorrect,,"P: Prophy, OHI. Recall 6 mo. Next appt [DATE].",True,,sim:judge,judge-v2,626,60,0.0,True,False
+3333,status,,,periodontitis_stage_2, Next appt [DATE]. Pt moved; new address [LOCATION].,True,,sim:judge,judge-status-v1,671,60,0.0,True,False
+3333,verdict,healthy_or_gingivitis,incorrect,, Next appt [DATE]. Pt moved; new address [LOCATION].,True,,sim:judge,judge-v2,684,60,0.0,True,False
+3333,verdict,periodontitis_stage_2,correct,, Next appt [DATE]. Pt moved; new address [LOCATION].,True,,sim:judge,judge-v2,684,60,0.0,True,False
+3341,status,,,gingivitis, Pt moved; new address [LOCATION].,True,,sim:judge,judge-status-v1,656,60,0.0,True,False
+3341,verdict,healthy_or_gingivitis,incorrect,, Pt moved; new address [LOCATION].,True,,sim:judge,judge-v2,669,60,0.0,True,False
+3341,verdict,periodontitis_stage_1,incorrect,, Pt moved; new address [LOCATION].,True,,sim:judge,judge-v2,669,60,0.0,True,False
+3355,status,,,healthy, Next appt [DATE].,True,,sim:judge,judge-status-v1,663,60,0.0,True,False
+3355,verdict,healthy_or_gingivitis,incorrect,, Next appt [DATE].,True,,sim:judge,judge-v2,676,60,0.0,True,False
+3392,status,,,gingivitis,Tx plan: Adult prophy. RTC 6 mo.,True,,sim:judge,judge-status-v1,605,60,0.0,True,False
+3392,verdict,healthy_or_gingivitis,incorrect,,Tx plan: Adult prophy. RTC 6 mo.,True,,sim:judge,judge-v2,618,60,0.0,True,False
+3407,status,,,periodontitis_stage_1,,True,,sim:judge,judge-status-v1,643,60,0.0,True,False
+3407,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,656,60,0.0,True,False
+3407,verdict,periodontitis_stage_1,correct,,,True,,sim:judge,judge-v2,656,60,0.0,True,False
+3422,status,,,periodontitis_stage_3," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-status-v1,686,60,0.0,True,False
+3422,verdict,healthy_or_gingivitis,correct,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-v2,699,60,0.0,True,False
+3422,verdict,periodontitis_stage_2,incorrect,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-v2,699,60,0.0,True,False
+3422,verdict,periodontitis_stage_3,correct,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-v2,699,60,0.0,True,False
+3422,verdict,periodontitis_stage_4,incorrect,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-v2,699,60,0.0,True,False
+3455,status,,,healthy,,True,,sim:judge,judge-status-v1,629,60,0.0,True,False
+3455,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,642,60,0.0,True,False
+3464,status,,,periodontitis_stage_4,Patient seen for periodontal evaluation. Med hx: NKDA; smoker ~7 cig/day. Exam: ,True,,sim:judge,judge-status-v1,639,60,0.0,True,False
+3464,verdict,healthy_or_gingivitis,incorrect,,Patient seen for periodontal evaluation. Med hx: NKDA; smoker ~7 cig/day. Exam: ,True,,sim:judge,judge-v2,652,60,0.0,True,False
+3464,verdict,periodontitis_stage_3,incorrect,,Patient seen for periodontal evaluation. Med hx: NKDA; smoker ~7 cig/day. Exam: ,True,,sim:judge,judge-v2,652,60,0.0,True,False
+3464,verdict,periodontitis_stage_4,incorrect,,Patient seen for periodontal evaluation. Med hx: NKDA; smoker ~7 cig/day. Exam: ,True,,sim:judge,judge-v2,652,60,0.0,True,False
+3477,status,,,gingivitis,,True,,sim:judge,judge-status-v1,642,60,0.0,True,False
+3477,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,655,60,0.0,True,False
+3479,status,,,healthy,Pt seen for periodontal evaluation. Med hx: HTN controlled; non-smoker. Exam: sh,True,,sim:judge,judge-status-v1,619,60,0.0,True,False
+3479,verdict,healthy_or_gingivitis,incorrect,,Pt seen for periodontal evaluation. Med hx: HTN controlled; non-smoker. Exam: sh,True,,sim:judge,judge-v2,632,60,0.0,True,False
+3479,verdict,periodontitis_stage_1,incorrect,,Pt seen for periodontal evaluation. Med hx: HTN controlled; non-smoker. Exam: sh,True,,sim:judge,judge-v2,632,60,0.0,True,False
+3504,status,,,healthy,,True,,sim:judge,judge-status-v1,645,60,0.0,True,False
+3504,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,658,60,0.0,True,False
+3514,status,,,periodontitis_stage_1,,True,,sim:judge,judge-status-v1,655,60,0.0,True,False
+3514,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,668,60,0.0,True,False
+3514,verdict,periodontitis_stage_1,correct,,,True,,sim:judge,judge-v2,668,60,0.0,True,False
+3514,verdict,periodontitis_stage_2,incorrect,,,True,,sim:judge,judge-v2,668,60,0.0,True,False
+3519,status,,,gingivitis, Next appt [DATE].,True,,sim:judge,judge-status-v1,655,60,0.0,True,False
+3519,verdict,healthy_or_gingivitis,not_determinable,,,True,,sim:judge,judge-v2,668,60,0.0,True,False
+3519,verdict,periodontitis_stage_1,incorrect,, Next appt [DATE].,True,,sim:judge,judge-v2,668,60,0.0,True,False
+3551,status,,,periodontitis_stage_3,Patient seen for recall exam. Med hx: no sig med hx; smoker ~26 cig/day. Exam: 1,True,,sim:judge,judge-status-v1,640,60,0.0,True,False
+3551,verdict,periodontitis_stage_2,incorrect,,Patient seen for recall exam. Med hx: no sig med hx; smoker ~26 cig/day. Exam: 1,True,,sim:judge,judge-v2,653,60,0.0,True,False
+3551,verdict,periodontitis_stage_3,correct,,Patient seen for recall exam. Med hx: no sig med hx; smoker ~26 cig/day. Exam: 1,True,,sim:judge,judge-v2,653,60,0.0,True,False
+3567,status,,,healthy, Next appt [DATE].,True,,sim:judge,judge-status-v1,640,60,0.0,True,False
+3567,verdict,healthy_or_gingivitis,incorrect,, Next appt [DATE].,True,,sim:judge,judge-v2,653,60,0.0,True,False
+3576,status,,,periodontitis_stage_1,"Tx plan: SRP UR/LR, re-eval 6 wk. Pt moved; new address [LOCATION].",True,,sim:judge,judge-status-v1,642,60,0.0,True,False
+3576,verdict,periodontitis_stage_1,correct,,"Tx plan: SRP UR/LR, re-eval 6 wk. Pt moved; new address [LOCATION].",True,,sim:judge,judge-v2,655,60,0.0,True,False
+3576,verdict,periodontitis_stage_2,incorrect,,"Tx plan: SRP UR/LR, re-eval 6 wk. Pt moved; new address [LOCATION].",True,,sim:judge,judge-v2,655,60,0.0,True,False
+3587,status,,,periodontitis_stage_2,,True,,sim:judge,judge-status-v1,656,60,0.0,True,False
+3587,verdict,healthy_or_gingivitis,correct,,,True,,sim:judge,judge-v2,669,60,0.0,True,False
+3587,verdict,periodontitis_stage_1,not_determinable,,,True,,sim:judge,judge-v2,669,60,0.0,True,False
+3587,verdict,periodontitis_stage_2,correct,,,True,,sim:judge,judge-v2,669,60,0.0,True,False
+3587,verdict,periodontitis_stage_3,incorrect,,,True,,sim:judge,judge-v2,669,60,0.0,True,False
+3608,status,,,healthy,Dx at that visit: gingivitis. Pt declined SRP at that time.,True,,sim:judge,judge-status-v1,683,60,0.0,True,False
+3608,verdict,periodontitis_stage_1,correct,,Dx at that visit: gingivitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,696,60,0.0,True,False
+3608,verdict,periodontitis_stage_2,correct,,Dx at that visit: gingivitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,696,60,0.0,True,False
+3618,status,,,periodontitis_stage_3,,True,,sim:judge,judge-status-v1,648,60,0.0,True,False
+3618,verdict,periodontitis_stage_2,incorrect,,,True,,sim:judge,judge-v2,661,60,0.0,True,False
+3618,verdict,periodontitis_stage_3,correct,,,True,,sim:judge,judge-v2,661,60,0.0,True,False
+3628,status,,,gingivitis,,True,,sim:judge,judge-status-v1,666,60,0.0,True,False
+3628,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,679,60,0.0,True,False
+3628,verdict,periodontitis_stage_2,incorrect,,,True,,sim:judge,judge-v2,679,60,0.0,True,False
+3652,status,,,periodontitis_stage_2, Next appt [DATE].,True,,sim:judge,judge-status-v1,651,60,0.0,True,False
+3652,verdict,healthy_or_gingivitis,incorrect,, Next appt [DATE].,True,,sim:judge,judge-v2,664,60,0.0,True,False
+3652,verdict,periodontitis_stage_2,correct,, Next appt [DATE].,True,,sim:judge,judge-v2,664,60,0.0,True,False
+3662,status,,,periodontitis_stage_2,Dx at that visit: Stage I periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-status-v1,680,60,0.0,True,False
+3662,verdict,periodontitis_stage_2,correct,,Dx at that visit: Stage I periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,693,60,0.0,True,False
+3672,status,,,periodontitis_stage_2, Pt moved; new address [LOCATION].,True,,sim:judge,judge-status-v1,665,60,0.0,True,False
+3672,verdict,healthy_or_gingivitis,incorrect,, Pt moved; new address [LOCATION].,True,,sim:judge,judge-v2,678,60,0.0,True,False
+3672,verdict,periodontitis_stage_2,correct,, Pt moved; new address [LOCATION].,True,,sim:judge,judge-v2,678,60,0.0,True,False
+3672,verdict,periodontitis_stage_3,incorrect,, Pt moved; new address [LOCATION].,True,,sim:judge,judge-v2,678,60,0.0,True,False
+3710,status,,,gingivitis,Patient seen for periodontal evaluation. Med hx: no sig med hx; smoker ~9 cig/da,True,,sim:judge,judge-status-v1,619,60,0.0,True,False
+3710,verdict,healthy_or_gingivitis,incorrect,,Patient seen for periodontal evaluation. Med hx: no sig med hx; smoker ~9 cig/da,True,,sim:judge,judge-v2,632,60,0.0,True,False
+3755,status,,,gingivitis,,True,,sim:judge,judge-status-v1,649,60,0.0,True,False
+3755,verdict,healthy_or_gingivitis,correct,,,True,,sim:judge,judge-v2,662,60,0.0,True,False
+3755,verdict,periodontitis_stage_1,incorrect,,,True,,sim:judge,judge-v2,662,60,0.0,True,False
+3764,status,,,periodontitis_stage_3," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-status-v1,675,60,0.0,True,False
+3764,verdict,healthy_or_gingivitis,incorrect,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-v2,688,60,0.0,True,False
+3764,verdict,periodontitis_stage_2,incorrect,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-v2,688,60,0.0,True,False
+3764,verdict,periodontitis_stage_3,correct,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-v2,688,60,0.0,True,False
+3764,verdict,periodontitis_stage_4,not_determinable,,,True,,sim:judge,judge-v2,688,60,0.0,True,False
+3773,status,,,periodontitis_stage_1, Pt moved; new address [LOCATION].,True,,sim:judge,judge-status-v1,657,60,0.0,True,False
+3773,verdict,healthy_or_gingivitis,incorrect,, Pt moved; new address [LOCATION].,True,,sim:judge,judge-v2,670,60,0.0,True,False
+3773,verdict,periodontitis_stage_1,correct,, Pt moved; new address [LOCATION].,True,,sim:judge,judge-v2,670,60,0.0,True,False
+3791,status,,,healthy,,True,,sim:judge,judge-status-v1,652,60,0.0,True,False
+3791,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,665,60,0.0,True,False
+3814,status,,,periodontitis_stage_4,,True,,sim:judge,judge-status-v1,663,60,0.0,True,False
+3814,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,676,60,0.0,True,False
+3814,verdict,periodontitis_stage_2,incorrect,,,True,,sim:judge,judge-v2,676,60,0.0,True,False
+3814,verdict,periodontitis_stage_3,correct,,,True,,sim:judge,judge-v2,676,60,0.0,True,False
+3825,status,,,healthy,"Patient seen for periodontal evaluation. Med hx: HTN controlled; former smoker, ",True,,sim:judge,judge-status-v1,605,60,0.0,True,False
+3825,verdict,healthy_or_gingivitis,incorrect,,"Patient seen for periodontal evaluation. Med hx: HTN controlled; former smoker, ",True,,sim:judge,judge-v2,618,60,0.0,True,False
+3831,status,,,periodontitis_stage_3,"Tx plan: FM SRP, refer to periodontist. Next appt [DATE].",True,,sim:judge,judge-status-v1,645,60,0.0,True,False
+3831,verdict,healthy_or_gingivitis,incorrect,,"Tx plan: FM SRP, refer to periodontist. Next appt [DATE].",True,,sim:judge,judge-v2,658,60,0.0,True,False
+3831,verdict,periodontitis_stage_3,not_determinable,,,True,,sim:judge,judge-v2,658,60,0.0,True,False
+3868,status,,,healthy, Next appt [DATE].,True,,sim:judge,judge-status-v1,643,60,0.0,True,False
+3868,verdict,healthy_or_gingivitis,incorrect,, Next appt [DATE].,True,,sim:judge,judge-v2,656,60,0.0,True,False
+3886,status,,,periodontitis_stage_3,"Tx plan: FM SRP, refer to periodontist. Next appt [DATE].",True,,sim:judge,judge-status-v1,625,60,0.0,True,False
+3886,verdict,periodontitis_stage_2,not_determinable,,,True,,sim:judge,judge-v2,638,60,0.0,True,False
+3886,verdict,periodontitis_stage_3,correct,,"Tx plan: FM SRP, refer to periodontist. Next appt [DATE].",True,,sim:judge,judge-v2,638,60,0.0,True,False
+3888,status,,,periodontitis_stage_2,"Tx plan: SRP 4 quads, re-eval 4-6 wk.",True,,sim:judge,judge-status-v1,619,60,0.0,True,False
+3888,verdict,healthy_or_gingivitis,incorrect,,"Tx plan: SRP 4 quads, re-eval 4-6 wk.",True,,sim:judge,judge-v2,632,60,0.0,True,False
+3888,verdict,periodontitis_stage_2,correct,,"Tx plan: SRP 4 quads, re-eval 4-6 wk.",True,,sim:judge,judge-v2,632,60,0.0,True,False
+3896,status,,,periodontitis_stage_3,Pt seen for periodontal evaluation. Med hx: HTN controlled; non-smoker. Exam: CA,True,,sim:judge,judge-status-v1,646,60,0.0,True,False
+3896,verdict,periodontitis_stage_2,incorrect,,Pt seen for periodontal evaluation. Med hx: HTN controlled; non-smoker. Exam: CA,True,,sim:judge,judge-v2,659,60,0.0,True,False
+3896,verdict,periodontitis_stage_3,correct,,Pt seen for periodontal evaluation. Med hx: HTN controlled; non-smoker. Exam: CA,True,,sim:judge,judge-v2,659,60,0.0,True,False
+3935,status,,,periodontitis_stage_2, Next appt [DATE].,True,,sim:judge,judge-status-v1,665,60,0.0,True,False
+3935,verdict,periodontitis_stage_1,incorrect,, Next appt [DATE].,True,,sim:judge,judge-v2,678,60,0.0,True,False
+3935,verdict,periodontitis_stage_2,correct,, Next appt [DATE].,True,,sim:judge,judge-v2,678,60,0.0,True,False
+3938,status,,,gingivitis,"Patient seen for recall exam. Med hx: T2DM, last A1c 8.8; never smoker. Exam: lo",True,,sim:judge,judge-status-v1,614,60,0.0,True,False
+3938,verdict,healthy_or_gingivitis,incorrect,,"Patient seen for recall exam. Med hx: T2DM, last A1c 8.8; never smoker. Exam: lo",True,,sim:judge,judge-v2,627,60,0.0,True,False
+3988,status,,,gingivitis,"P: Prophy, flossing instruction. 6 mo recall.",True,,sim:judge,judge-status-v1,620,60,0.0,True,False
+3988,verdict,healthy_or_gingivitis,incorrect,,"P: Prophy, flossing instruction. 6 mo recall.",True,,sim:judge,judge-v2,633,60,0.0,True,False
+3988,verdict,periodontitis_stage_1,incorrect,,"P: Prophy, flossing instruction. 6 mo recall.",True,,sim:judge,judge-v2,633,60,0.0,True,False
+4006,status,,,healthy,"P: FM SRP, refer to periodontist. Referred to Dr. [NAME] at [LOCATION], ph [PHON",True,,sim:judge,judge-status-v1,628,60,0.0,True,False
+4006,verdict,healthy_or_gingivitis,incorrect,,"P: FM SRP, refer to periodontist. Referred to Dr. [NAME] at [LOCATION], ph [PHON",True,,sim:judge,judge-v2,641,60,0.0,True,False
+4006,verdict,periodontitis_stage_2,incorrect,,"P: FM SRP, refer to periodontist. Referred to Dr. [NAME] at [LOCATION], ph [PHON",True,,sim:judge,judge-v2,641,60,0.0,True,False
+4006,verdict,periodontitis_stage_3,correct,,"P: FM SRP, refer to periodontist. Referred to Dr. [NAME] at [LOCATION], ph [PHON",True,,sim:judge,judge-v2,641,60,0.0,True,False
+4021,status,,,periodontitis_stage_3,"Tx plan: FM SRP, refer to periodontist. Referred to Dr. [NAME] at [LOCATION], ph",True,,sim:judge,judge-status-v1,663,60,0.0,True,False
+4021,verdict,healthy_or_gingivitis,incorrect,,"Tx plan: FM SRP, refer to periodontist. Referred to Dr. [NAME] at [LOCATION], ph",True,,sim:judge,judge-v2,676,60,0.0,True,False
+4021,verdict,periodontitis_stage_2,incorrect,,"Tx plan: FM SRP, refer to periodontist. Referred to Dr. [NAME] at [LOCATION], ph",True,,sim:judge,judge-v2,676,60,0.0,True,False
+4021,verdict,periodontitis_stage_3,incorrect,,"Tx plan: FM SRP, refer to periodontist. Referred to Dr. [NAME] at [LOCATION], ph",True,,sim:judge,judge-v2,676,60,0.0,True,False
+4028,status,,,periodontitis_stage_4,,True,,sim:judge,judge-status-v1,690,60,0.0,True,False
+4028,verdict,healthy_or_gingivitis,correct,,,True,,sim:judge,judge-v2,703,60,0.0,True,False
+4028,verdict,periodontitis_stage_3,incorrect,,,True,,sim:judge,judge-v2,703,60,0.0,True,False
+4028,verdict,periodontitis_stage_4,correct,,,True,,sim:judge,judge-v2,703,60,0.0,True,False
+4034,status,,,periodontitis_stage_1,Tx plan: 4 quad SRP then perio maint q3mo.,True,,sim:judge,judge-status-v1,631,60,0.0,True,False
+4034,verdict,healthy_or_gingivitis,incorrect,,Tx plan: 4 quad SRP then perio maint q3mo.,True,,sim:judge,judge-v2,644,60,0.0,True,False
+4034,verdict,periodontitis_stage_1,correct,,Tx plan: 4 quad SRP then perio maint q3mo.,True,,sim:judge,judge-v2,644,60,0.0,True,False
+4034,verdict,periodontitis_stage_2,incorrect,,Tx plan: 4 quad SRP then perio maint q3mo.,True,,sim:judge,judge-v2,644,60,0.0,True,False
+4046,status,,,periodontitis_stage_2, Next appt [DATE].,True,,sim:judge,judge-status-v1,657,60,0.0,True,False
+4046,verdict,healthy_or_gingivitis,correct,, Next appt [DATE].,True,,sim:judge,judge-v2,670,60,0.0,True,False
+4046,verdict,periodontitis_stage_1,correct,, Next appt [DATE].,True,,sim:judge,judge-v2,670,60,0.0,True,False
+4046,verdict,periodontitis_stage_2,incorrect,, Next appt [DATE].,True,,sim:judge,judge-v2,670,60,0.0,True,False
+4064,status,,,periodontitis_stage_2, Next appt [DATE].,True,,sim:judge,judge-status-v1,663,60,0.0,True,False
+4064,verdict,healthy_or_gingivitis,incorrect,, Next appt [DATE].,True,,sim:judge,judge-v2,676,60,0.0,True,False
+4064,verdict,periodontitis_stage_2,correct,, Next appt [DATE].,True,,sim:judge,judge-v2,676,60,0.0,True,False
+4064,verdict,periodontitis_stage_3,incorrect,, Next appt [DATE].,True,,sim:judge,judge-v2,676,60,0.0,True,False
+4094,status,,,periodontitis_stage_3,"Pt seen for recall exam. Med hx: T2DM, last A1c 8.3; never smoker. Exam: BWX: bo",True,,sim:judge,judge-status-v1,649,60,0.0,True,False
+4094,verdict,periodontitis_stage_2,incorrect,,"Pt seen for recall exam. Med hx: T2DM, last A1c 8.3; never smoker. Exam: BWX: bo",True,,sim:judge,judge-v2,662,60,0.0,True,False
+4094,verdict,periodontitis_stage_3,correct,,"Pt seen for recall exam. Med hx: T2DM, last A1c 8.3; never smoker. Exam: BWX: bo",True,,sim:judge,judge-v2,662,60,0.0,True,False
+4161,status,,,periodontitis_stage_2,Dx at that visit: Stage I periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-status-v1,642,60,0.0,True,False
+4161,verdict,periodontitis_stage_2,correct,,Dx at that visit: Stage I periodontitis. Pt declined SRP at that time.,True,,sim:judge,judge-v2,655,60,0.0,True,False
+4167,status,,,periodontitis_stage_3," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-status-v1,689,60,0.0,True,False
+4167,verdict,periodontitis_stage_2,correct,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-v2,702,60,0.0,True,False
+4167,verdict,periodontitis_stage_3,correct,," Referred to Dr. [NAME] at [LOCATION], ph [PHONE].",True,,sim:judge,judge-v2,702,60,0.0,True,False
+4188,status,,,periodontitis_stage_1,,True,,sim:judge,judge-status-v1,657,60,0.0,True,False
+4188,verdict,periodontitis_stage_1,correct,,,True,,sim:judge,judge-v2,670,60,0.0,True,False
+4198,status,,,healthy,,True,,sim:judge,judge-status-v1,648,60,0.0,True,False
+4198,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,661,60,0.0,True,False
+4203,status,,,periodontitis_stage_2,Patient seen for periodontal evaluation. Med hx: HTN controlled; smoker ~10 cig/,True,,sim:judge,judge-status-v1,633,60,0.0,True,False
+4203,verdict,healthy_or_gingivitis,incorrect,,Patient seen for periodontal evaluation. Med hx: HTN controlled; smoker ~10 cig/,True,,sim:judge,judge-v2,646,60,0.0,True,False
+4203,verdict,periodontitis_stage_1,correct,,Patient seen for periodontal evaluation. Med hx: HTN controlled; smoker ~10 cig/,True,,sim:judge,judge-v2,646,60,0.0,True,False
+4203,verdict,periodontitis_stage_2,correct,,Patient seen for periodontal evaluation. Med hx: HTN controlled; smoker ~10 cig/,True,,sim:judge,judge-v2,646,60,0.0,True,False
+4210,status,,,periodontitis_stage_2,"Tx plan: SRP 4 quads, re-eval 4-6 wk. Pt moved; new address [LOCATION].",True,,sim:judge,judge-status-v1,631,60,0.0,True,False
+4210,verdict,healthy_or_gingivitis,incorrect,,"Tx plan: SRP 4 quads, re-eval 4-6 wk. Pt moved; new address [LOCATION].",True,,sim:judge,judge-v2,644,60,0.0,True,False
+4210,verdict,periodontitis_stage_2,correct,,"Tx plan: SRP 4 quads, re-eval 4-6 wk. Pt moved; new address [LOCATION].",True,,sim:judge,judge-v2,644,60,0.0,True,False
+4210,verdict,periodontitis_stage_3,incorrect,,"Tx plan: SRP 4 quads, re-eval 4-6 wk. Pt moved; new address [LOCATION].",True,,sim:judge,judge-v2,644,60,0.0,True,False
+4235,status,,,periodontitis_stage_1,"Pt seen for recall exam. Med hx: NKDA; former smoker, quit 2015. Exam: BOP gener",True,,sim:judge,judge-status-v1,615,60,0.0,True,False
+4235,verdict,healthy_or_gingivitis,incorrect,,"Pt seen for recall exam. Med hx: NKDA; former smoker, quit 2015. Exam: BOP gener",True,,sim:judge,judge-v2,628,60,0.0,True,False
+4235,verdict,periodontitis_stage_1,correct,,"Pt seen for recall exam. Med hx: NKDA; former smoker, quit 2015. Exam: BOP gener",True,,sim:judge,judge-v2,628,60,0.0,True,False
+4235,verdict,periodontitis_stage_2,incorrect,,"Pt seen for recall exam. Med hx: NKDA; former smoker, quit 2015. Exam: BOP gener",True,,sim:judge,judge-v2,628,60,0.0,True,False
+4265,status,,,periodontitis_stage_3,,True,,sim:judge,judge-status-v1,658,60,0.0,True,False
+4265,verdict,periodontitis_stage_3,correct,,,True,,sim:judge,judge-v2,671,60,0.0,True,False
+4274,status,,,periodontitis_stage_4, Next appt [DATE].,True,,sim:judge,judge-status-v1,668,60,0.0,True,False
+4274,verdict,healthy_or_gingivitis,incorrect,, Next appt [DATE].,True,,sim:judge,judge-v2,681,60,0.0,True,False
+4274,verdict,periodontitis_stage_3,incorrect,, Next appt [DATE].,True,,sim:judge,judge-v2,681,60,0.0,True,False
+4274,verdict,periodontitis_stage_4,correct,, Next appt [DATE].,True,,sim:judge,judge-v2,681,60,0.0,True,False
+4277,status,,,periodontitis_stage_2,,True,,sim:judge,judge-status-v1,658,60,0.0,True,False
+4277,verdict,healthy_or_gingivitis,incorrect,,,True,,sim:judge,judge-v2,671,60,0.0,True,False
+4277,verdict,periodontitis_stage_1,incorrect,,,True,,sim:judge,judge-v2,671,60,0.0,True,False
+4277,verdict,periodontitis_stage_2,not_determinable,,,True,,sim:judge,judge-v2,671,60,0.0,True,False
+4277,verdict,periodontitis_stage_3,incorrect,,,True,,sim:judge,judge-v2,671,60,0.0,True,False
+4343,status,,,periodontitis_stage_2,,True,,sim:judge,judge-status-v1,665,60,0.0,True,False
+4343,verdict,periodontitis_stage_1,incorrect,,,True,,sim:judge,judge-v2,678,60,0.0,True,False
+4343,verdict,periodontitis_stage_2,correct,,,True,,sim:judge,judge-v2,678,60,0.0,True,False
+4343,verdict,periodontitis_stage_3,incorrect,,,True,,sim:judge,judge-v2,678,60,0.0,True,False

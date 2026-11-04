@@ -6,7 +6,8 @@
 
 Writes data/datasets/judge/{simulated_,}{chart_answers,judgments,judge_metrics,judge_agreement}.csv.
 A real run prints the token cost first and stops if it's over --max-usd; it resumes from an
-existing judgments.csv, asking only rows not yet judged (and those that failed on the endpoint).
+existing judgments.csv, asking only rows not yet judged (and those that failed on the endpoint), unless that file
+was made on another note set (#467: then every row is asked again, and the new run is recorded on the current notes).
 Prices are the endpoint's per-1M-token list prices: check them before running.
 """
 
@@ -19,8 +20,9 @@ import pandas as pd
 
 from health_transformation_lab_nlp import judge as jg
 from health_transformation_lab_nlp import judge_scorecard as js
+from health_transformation_lab_nlp import note_set
 from health_transformation_lab_nlp import readme_results as rr
-from health_transformation_lab_nlp.paths import JUDGE_DIR
+from health_transformation_lab_nlp.paths import DATASETS_DIR, JUDGE_DIR
 
 ap = argparse.ArgumentParser()
 mode = ap.add_mutually_exclusive_group(required=True)
@@ -47,7 +49,12 @@ if a.simulated:
 else:
     if a.usd_in is None or a.usd_out is None:
         sys.exit("--usd-in and --usd-out are required: check the endpoint's current price list")
-    done = js.reusable(pd.read_csv(path["judgments"]), a.endpoint) if path["judgments"].exists() else None
+    in_repo = a.out.resolve() == JUDGE_DIR.resolve()
+    stale = in_repo and path["judgments"].exists() and not note_set.is_current(DATASETS_DIR, note_set.JUDGE_FILE)
+    if stale:
+        print(f"the committed judgments were made on another note set: {note_set.RERUN_PENDING}, asking every row")
+    done = js.reusable(pd.read_csv(path["judgments"]), a.endpoint) if path["judgments"].exists() and not stale \
+        else None
     judged = set() if done is None else {js._key(d) for d in done.itertuples()}
     todo = queue[[js._key(r) not in judged for r in queue.itertuples()]]
     est = js.estimate_cost(todo, a.usd_in, a.usd_out)
@@ -68,6 +75,8 @@ judgments.to_csv(path["judgments"], index=False)
 metrics.to_csv(path["judge_metrics"], index=False)
 agreement.to_csv(path["judge_agreement"], index=False)
 run.to_csv(path["judge_run"], index=False)
+if not a.simulated and a.out.resolve() == JUDGE_DIR.resolve():     # #467: the note set this run read
+    note_set.stamp(DATASETS_DIR, [f"{JUDGE_DIR.name}/{p.name}" for p in path.values()])
 
 label = "SIMULATED judge" if a.simulated else f"LLM judgment ({endpoint})"
 print(f"{label}: {len(judgments)} calls, {int(judgments['api_error'].sum())} endpoint errors, "

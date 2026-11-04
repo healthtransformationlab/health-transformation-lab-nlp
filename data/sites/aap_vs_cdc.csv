@@ -1,7 +1,7 @@
 aap_2017,mild,moderate,none,severe
-gingivitis,0,0,776,0
-healthy,0,0,911,0
-periodontitis_stage_1,0,0,742,0
-periodontitis_stage_2,157,7,433,0
-periodontitis_stage_3,4,155,16,152
-periodontitis_stage_4,0,27,0,57
+gingivitis,1,0,604,0
+healthy,0,0,808,0
+periodontitis_stage_1,0,0,613,0
+periodontitis_stage_2,106,7,469,0
+periodontitis_stage_3,2,178,15,149
+periodontitis_stage_4,0,13,0,25

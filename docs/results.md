@@ -6,7 +6,7 @@
 
 ### Phenotyping: periodontal status per chart
 
-Every method that assigns a periodontal status, scored at five status groups (healthy and gingivitis together, then stage I to IV) on the same 221 synthetic review charts (adults, visits from 2021-04-01: the defaults since spec 032 US8, [presets](presets.md)) against the generator's truth: models that read only the chart note, the rule phenotypes that combine the whole record, and each evidence type alone. **Rank** is the 95% range of the method's rank by exact status, over the same chart resamples as its CI (paired bootstrap): "1–3" means it plausibly ranks anywhere from 1st to 3rd. How each part of the record is turned into a status, with worked examples: [rules for each evidence type](evidence_rules.md).
+Every method that assigns a periodontal status, scored at five status groups (healthy and gingivitis together, then stage I to IV) on the same 223 synthetic review charts (adults, visits from 2021-04-01: the defaults since spec 032 US8, [presets](presets.md)) against the generator's truth: models that read only the chart note, the rule phenotypes that combine the whole record, and each evidence type alone. **Rank** is the 95% range of the method's rank by exact status, over the same chart resamples as its CI (paired bootstrap): "1–3" means it plausibly ranks anywhere from 1st to 3rd. How each part of the record is turned into a status, with worked examples: [rules for each evidence type](evidence_rules.md).
 
 Numbers are per 100 charts. What the columns mean:
 
@@ -23,123 +23,48 @@ Numbers are per 100 charts. What the columns mean:
 
 | Rank | Method | Input | Approach | Correct (95% CI) | Periodontitis incorrectly assigned (when not present) | Periodontitis incorrectly ruled out (when present) | Incorrect stage | No answer (evidence not available) | Unsafe errors | Sensitivity | Specificity | PPV | NPV | Stage 4 correct | Easy / medium / hard |
 |---|---|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|
-| 1 | `algorithm_v0` | whole record | rules, probing chart first (current phenotype, v0.1) † | **97.3** (95.0–99.1) | 0.0 | 0.0 | 2.7 | 0.0 | 0.0 | 100% | 100% | 100% | 100% | 100% | 98 / 96 / 97 |
-| 2–11 | [`modernbert-large+rules4`](https://huggingface.co/answerdotai/ModernBERT-large) | chart note | fine-tuned encoder, + rules for stage IV † | **91.0** (86.9–94.6) | 1.8 | 0.9 | 6.3 | 0.0 | 5.0 | 99% | 95% | 97% | 97% | 96% | 95 / 96 / 81 |
-| 2–16 | [`modernbert-base+cw+s2+rules4`](https://huggingface.co/answerdotai/ModernBERT-base) | chart note | fine-tuned encoder, class-weighted, seed 2, + rules for stage IV † | **91.0** (86.4–94.6) | 1.8 | 0.5 | 6.8 | 0.0 | 3.6 | 99% | 95% | 97% | 99% | 96% | 97 / 96 / 76 |
-| 2–11 | [`modernbert-base+cw+rules4`](https://huggingface.co/answerdotai/ModernBERT-base) | chart note | fine-tuned encoder, class-weighted, + rules for stage IV † | **91.0** (86.9–94.6) | 1.8 | 0.5 | 6.8 | 0.0 | 4.5 | 99% | 95% | 97% | 99% | 96% | 95 / 96 / 79 |
-| 2–12 | [`gatortron-base+lr2e-05+rules4`](https://huggingface.co/UFNLP/gatortron-base) | chart note | fine-tuned encoder, learning rate 2e-05, + rules for stage IV † | **91.0** (86.9–94.6) | 1.8 | 1.4 | 5.9 | 0.0 | 5.4 | 98% | 95% | 97% | 96% | 96% | 97 / 96 / 76 |
-| 2–13 | [`modernbert-base+rules4`](https://huggingface.co/answerdotai/ModernBERT-base) | chart note | fine-tuned encoder, + rules for stage IV † | **90.5** (86.4–94.1) | 2.3 | 0.9 | 6.3 | 0.0 | 6.3 | 99% | 93% | 97% | 97% | 96% | 95 / 93 / 79 |
-| 2–14 | [`bert-base+cw+rules4`](https://huggingface.co/google-bert/bert-base-uncased) | chart note | fine-tuned encoder, class-weighted, + rules for stage IV † | **90.5** (86.4–94.1) | 1.8 | 1.8 | 5.9 | 0.0 | 6.8 | 97% | 95% | 97% | 95% | 96% | 95 / 96 / 78 |
-| 2–14 | [`bioclinical-modernbert-large+rules4`](https://huggingface.co/thomas-sounack/BioClinical-ModernBERT-large) | chart note | fine-tuned encoder, + rules for stage IV † | **90.5** (86.4–94.1) | 2.7 | 0.9 | 5.9 | 0.0 | 5.9 | 99% | 92% | 96% | 97% | 96% | 95 / 96 / 79 |
-| 3–14 | [`bert-base+rules4`](https://huggingface.co/google-bert/bert-base-uncased) | chart note | fine-tuned encoder, + rules for stage IV † | **90.0** (86.0–94.1) | 1.8 | 0.5 | 7.7 | 0.0 | 5.4 | 99% | 95% | 97% | 99% | 96% | 94 / 93 / 81 |
-| 3–17 | [`bio-clinicalbert+rules4`](https://huggingface.co/emilyalsentzer/Bio_ClinicalBERT) | chart note | fine-tuned encoder, + rules for stage IV † | **89.6** (85.5–93.2) | 1.8 | 1.4 | 7.2 | 0.0 | 6.3 | 98% | 95% | 97% | 96% | 96% | 95 / 93 / 78 |
-| 3–19 | [`scibert+rules4`](https://huggingface.co/allenai/scibert_scivocab_uncased) | chart note | fine-tuned encoder, + rules for stage IV † | **89.1** (84.6–93.2) | 1.4 | 3.2 | 6.3 | 0.0 | 7.7 | 95% | 96% | 98% | 91% | 96% | 95 / 96 / 73 |
-| 5–18 | [`distilbert-base+rules4`](https://huggingface.co/distilbert/distilbert-base-uncased) | chart note | fine-tuned encoder, + rules for stage IV † | **89.1** (84.6–93.2) | 1.8 | 2.3 | 6.8 | 0.0 | 7.2 | 97% | 95% | 97% | 93% | 96% | 95 / 96 / 75 |
-| 4–19 | [`modernbert-base+cw+s1+rules4`](https://huggingface.co/answerdotai/ModernBERT-base) | chart note | fine-tuned encoder, class-weighted, seed 1, + rules for stage IV † | **89.1** (84.6–93.2) | 1.8 | 0.5 | 8.6 | 0.0 | 5.0 | 99% | 95% | 97% | 99% | 96% | 95 / 93 / 76 |
-| 8–19 | [`bioclinical-modernbert-base+rules4`](https://huggingface.co/thomas-sounack/BioClinical-ModernBERT-base) | chart note | fine-tuned encoder, + rules for stage IV † | **88.7** (84.2–92.8) | 2.3 | 0.9 | 8.1 | 0.0 | 6.3 | 99% | 93% | 97% | 97% | 96% | 93 / 93 / 78 |
-| 5–19 | [`longformer-base+rules4`](https://huggingface.co/allenai/longformer-base-4096) | chart note | fine-tuned encoder, + rules for stage IV † | **88.7** (84.2–92.8) | 3.2 | 2.3 | 5.9 | 0.0 | 7.7 | 97% | 91% | 95% | 93% | 96% | 96 / 96 / 70 |
-| 5–19 | `tfidf_logreg+rules4` | chart note | TF-IDF + logistic regression, + rules for stage IV † | **88.7** (84.2–93.2) | 3.2 | 1.4 | 6.8 | 0.0 | 7.2 | 98% | 91% | 95% | 96% | 96% | 95 / 96 / 71 |
-| 5–21 | `fusion_tfidf_rad+rules4` | chart note + radiograph | TF-IDF + radiograph features, + rules for stage IV † | **88.2** (83.7–92.8) | 2.7 | 0.9 | 8.1 | 0.0 | 6.3 | 99% | 92% | 96% | 97% | 96% | 96 / 93 / 70 |
-| 9–21 | [`clinical-longformer+rules4`](https://huggingface.co/yikuan8/Clinical-Longformer) | chart note | fine-tuned encoder, + rules for stage IV † | **87.8** (83.3–92.3) | 3.2 | 2.3 | 6.8 | 0.0 | 8.6 | 97% | 91% | 95% | 93% | 96% | 94 / 96 / 71 |
-| 13–24 | [`biomedbert+rules4`](https://huggingface.co/microsoft/BiomedNLP-BiomedBERT-base-uncased-abstract-fulltext) | chart note | fine-tuned encoder, + rules for stage IV † | **86.9** (81.9–91.4) | 2.3 | 2.7 | 8.1 | 0.0 | 9.0 | 96% | 93% | 97% | 92% | 96% | 94 / 93 / 70 |
-| 12–36 | [`llama-3.3-70b-instruct+rules4`](https://huggingface.co/meta-llama/Llama-3.3-70B-Instruct) | chart note | zero-shot LLM, + rules for stage IV † | **84.6** (79.2–89.6) | 4.5 | 1.8 | 9.0 | 0.0 | 7.2 | 97% | 87% | 93% | 94% | 96% | 97 / 93 / 56 |
-| 12–36 | [`llama-3.3-70b-instruct`](https://huggingface.co/meta-llama/Llama-3.3-70B-Instruct) | chart note | zero-shot LLM | **84.6** (79.2–89.6) | 4.5 | 1.8 | 9.0 | 0.0 | 7.2 | 97% | 87% | 93% | 94% | 96% | 97 / 93 / 56 |
-| 18–32 | [`modernbert-large`](https://huggingface.co/answerdotai/ModernBERT-large) | chart note | fine-tuned encoder | **82.8** (77.8–87.3) | 1.8 | 0.9 | 14.5 | 0.0 | 15.4 | 99% | 95% | 97% | 97% | 12% | 86 / 71 / 81 |
-| 18–31 | [`modernbert-base+cw`](https://huggingface.co/answerdotai/ModernBERT-base) | chart note | fine-tuned encoder, class-weighted | **82.8** (77.8–87.8) | 1.8 | 0.5 | 14.9 | 0.0 | 14.9 | 99% | 95% | 97% | 99% | 12% | 87 / 71 / 79 |
-| 19–37 | `fusion_tfidf_rad` | chart note + radiograph | TF-IDF + radiograph features | **82.4** (76.9–87.3) | 2.7 | 0.9 | 14.0 | 0.0 | 14.5 | 99% | 92% | 96% | 97% | 31% | 88 / 75 / 73 |
-| 19–34 | [`gatortron-base+lr2e-05`](https://huggingface.co/UFNLP/gatortron-base) | chart note | fine-tuned encoder, learning rate 2e-05 | **81.9** (76.5–86.9) | 1.8 | 1.4 | 14.9 | 0.0 | 16.7 | 98% | 95% | 97% | 96% | 0% | 88 / 68 / 76 |
-| 20–35 | [`modernbert-base`](https://huggingface.co/answerdotai/ModernBERT-base) | chart note | fine-tuned encoder | **81.9** (76.9–87.3) | 2.3 | 0.9 | 14.9 | 0.0 | 17.2 | 99% | 93% | 97% | 97% | 8% | 87 / 68 / 78 |
-| 20–42 | [`medgemma-4b-it+rules4`](https://huggingface.co/google/medgemma-4b-it) | chart note | zero-shot LLM, + rules for stage IV † | **81.9** (76.5–86.4) | 4.5 | 3.2 | 10.4 | 0.0 | 8.6 | 95% | 87% | 93% | 90% | 96% | 98 / 89 / 44 |
-| 20–40 | [`modernbert-base+cw+s2`](https://huggingface.co/answerdotai/ModernBERT-base) | chart note | fine-tuned encoder, class-weighted, seed 2 | **81.4** (76.0–86.4) | 1.8 | 0.5 | 16.3 | 0.0 | 15.4 | 99% | 95% | 97% | 99% | 0% | 88 / 68 / 75 |
-| 21–44 | `note_rules` | chart note | rules (regex) † | **81.0** (75.6–86.0) | 4.5 | 3.2 | 11.3 | 0.0 | 10.0 | 95% | 87% | 93% | 90% | 96% | 100 / 100 / 33 |
-| 21–38 | [`bert-base+cw`](https://huggingface.co/google-bert/bert-base-uncased) | chart note | fine-tuned encoder, class-weighted | **81.0** (75.6–86.0) | 1.8 | 1.8 | 15.4 | 0.0 | 18.6 | 97% | 95% | 97% | 95% | 0% | 86 / 68 / 76 |
-| 21–39 | [`bioclinical-modernbert-large`](https://huggingface.co/thomas-sounack/BioClinical-ModernBERT-large) | chart note | fine-tuned encoder | **81.0** (75.6–86.0) | 2.7 | 0.9 | 15.4 | 0.0 | 17.6 | 99% | 92% | 96% | 97% | 0% | 85 / 68 / 78 |
-| 24–39 | [`bert-base`](https://huggingface.co/google-bert/bert-base-uncased) | chart note | fine-tuned encoder | **80.5** (75.1–86.0) | 1.8 | 0.5 | 17.2 | 0.0 | 17.2 | 99% | 95% | 97% | 99% | 0% | 85 / 64 / 79 |
-| 24–42 | [`bio-clinicalbert`](https://huggingface.co/emilyalsentzer/Bio_ClinicalBERT) | chart note | fine-tuned encoder | **80.1** (74.7–85.1) | 1.8 | 1.4 | 16.7 | 0.0 | 18.1 | 98% | 95% | 97% | 96% | 0% | 85 / 64 / 76 |
-| 22–44 | [`medgemma-1.5-4b-it+rules4`](https://huggingface.co/google/medgemma-1.5-4b-it) | chart note | zero-shot LLM, + rules for stage IV † | **80.1** (74.2–85.1) | 3.6 | 4.1 | 12.2 | 0.0 | 9.5 | 94% | 89% | 94% | 88% | 96% | 100 / 100 / 30 |
-| 20–45 | `probing_chart` | probing chart | staged from the measurements † | **80.1** (74.2–85.1) | 0.0 | 0.0 | 0.9 | 19.0 | 0.0 | 79% | 100% | 100% | 71% | 69% | 78 / 79 / 86 |
-| 27–44 | [`modernbert-base+cw+s1`](https://huggingface.co/answerdotai/ModernBERT-base) | chart note | fine-tuned encoder, class-weighted, seed 1 | **79.6** (73.8–84.6) | 1.8 | 0.5 | 18.1 | 0.0 | 16.7 | 99% | 95% | 97% | 99% | 0% | 85 / 64 / 75 |
-| 26–43 | [`distilbert-base`](https://huggingface.co/distilbert/distilbert-base-uncased) | chart note | fine-tuned encoder | **79.6** (73.8–85.1) | 1.8 | 2.3 | 16.3 | 0.0 | 19.0 | 97% | 95% | 97% | 93% | 0% | 85 / 68 / 73 |
-| 25–43 | [`scibert`](https://huggingface.co/allenai/scibert_scivocab_uncased) | chart note | fine-tuned encoder | **79.6** (74.2–85.5) | 1.4 | 3.2 | 15.8 | 0.0 | 19.5 | 95% | 96% | 98% | 91% | 0% | 86 / 68 / 71 |
-| 27–44 | `tfidf_logreg` | chart note | TF-IDF + logistic regression | **79.2** (73.3–85.1) | 3.2 | 1.4 | 16.3 | 0.0 | 19.0 | 98% | 91% | 95% | 96% | 0% | 86 / 68 / 70 |
-| 29–44 | [`bioclinical-modernbert-base`](https://huggingface.co/thomas-sounack/BioClinical-ModernBERT-base) | chart note | fine-tuned encoder | **79.2** (73.7–84.6) | 2.3 | 0.9 | 17.6 | 0.0 | 18.1 | 99% | 93% | 97% | 97% | 0% | 84 / 64 / 76 |
-| 27–44 | [`longformer-base`](https://huggingface.co/allenai/longformer-base-4096) | chart note | fine-tuned encoder | **79.2** (73.3–85.1) | 3.2 | 2.3 | 15.4 | 0.0 | 19.5 | 97% | 91% | 95% | 93% | 0% | 87 / 68 / 68 |
-| 24–46 | [`medgemma-4b-it`](https://huggingface.co/google/medgemma-4b-it) | chart note | zero-shot LLM | **78.7** (73.3–83.7) | 4.5 | 3.2 | 13.6 | 0.0 | 14.0 | 95% | 87% | 93% | 90% | 50% | 97 / 71 / 44 |
-| 25–46 | [`medgemma-1.5-4b-it`](https://huggingface.co/google/medgemma-1.5-4b-it) | chart note | zero-shot LLM | **78.7** (72.9–83.7) | 3.6 | 4.1 | 13.6 | 0.0 | 10.9 | 94% | 89% | 94% | 88% | 85% | 100 / 96 / 27 |
-| 33–46 | [`clinical-longformer`](https://huggingface.co/yikuan8/Clinical-Longformer) | chart note | fine-tuned encoder | **77.8** (72.4–83.7) | 3.2 | 2.3 | 16.7 | 0.0 | 20.8 | 97% | 91% | 95% | 93% | 0% | 85 / 68 / 68 |
-| 35–46 | [`biomedbert`](https://huggingface.co/microsoft/BiomedNLP-BiomedBERT-base-uncased-abstract-fulltext) | chart note | fine-tuned encoder | **77.4** (71.5–82.8) | 2.3 | 2.7 | 17.6 | 0.0 | 20.8 | 96% | 93% | 97% | 92% | 0% | 85 / 64 / 68 |
-| 32–47 | `algorithm_design` | whole record | rules, study-design order: exam form, diagnosis codes, note, chart † | **73.8** (67.4–79.2) | 4.5 | 2.7 | 19.0 | 0.0 | 16.3 | 96% | 87% | 93% | 92% | 65% | 74 / 82 / 70 |
-| 45–48 | `algorithm_patel2022` | whole record | rules, order of Patel et al. 2022: diagnosis codes, PerioDx note reading, PerioDx chart rules (spec 024) | **70.1** (63.8–76.0) | 4.1 | 8.1 | 16.7 | 0.9 | 22.8 | 88% | 88% | 93% | 79% | 31% | 79 / 46 / 62 |
-| 47–52 | `exam_form` | exam form | status field as entered | **63.8** (57.5–70.1) | 3.6 | 0.0 | 18.1 | 14.5 | 14.3 | 87% | 89% | 94% | 78% | 65% | 66 / 71 / 56 |
-| 47–50 | `proc_codes_planned` | procedure codes, planned | CDT code mapped to status | **63.3** (57.0–69.7) | 0.0 | 0.0 | 30.8 | 5.9 | 27.9 | 91% | 100% | 100% | 85% | 0% | 66 / 46 / 65 |
-| 48–51 | `proc_dx_planned` | diagnosis codes, planned procedures | ICD-10 code mapped to status | **62.0** (54.8–68.3) | 2.7 | 21.7 | 13.6 | 0.0 | 33.5 | 67% | 92% | 94% | 59% | 0% | 65 / 54 / 60 |
-| 49–52 | `proc_codes_completed` | procedure codes, completed | CDT code mapped to status | **60.2** (54.3–66.1) | 0.0 | 0.0 | 25.3 | 14.5 | 25.9 | 78% | 100% | 100% | 70% | 0% | 63 / 43 / 62 |
-| 50–52 | `proc_dx_completed` | diagnosis codes, completed procedures | ICD-10 code mapped to status | **56.1** (49.8–62.9) | 3.2 | 28.1 | 12.7 | 0.0 | 40.7 | 58% | 91% | 92% | 52% | 0% | 60 / 32 / 59 |
-| 53 | `radiograph_ai` | radiograph AI | bone-loss reading mapped to stage † | **18.6** (13.6–23.5) | 0.0 | 0.0 | 14.0 | 67.4 | 29.2 | 49% | 100% | 100% | 50% | 0% | 15 / 25 / 22 |
+| 1 | `algorithm_v0` | whole record | rules, probing chart first (current phenotype, v0.1) † | **92.8** (89.2–96.0) | 1.8 | 0.4 | 4.9 | 0.0 | 3.1 | 99% | 95% | 97% | 99% | 83% | 99 / 91 / 80 |
+| 2–4 | `fusion_tfidf_rad+rules4` | chart note + radiograph | TF-IDF + radiograph features, + rules for stage IV † | **86.5** (81.6–90.6) | 3.1 | 3.1 | 7.2 | 0.0 | 8.5 | 95% | 92% | 95% | 92% | 83% | 96 / 91 / 66 |
+| 2–5 | `tfidf_logreg+rules4` | chart note | TF-IDF + logistic regression, + rules for stage IV † | **85.7** (80.7–89.7) | 3.6 | 1.3 | 9.4 | 0.0 | 7.2 | 98% | 90% | 94% | 96% | 83% | 96 / 91 / 61 |
+| 2–6 | `fusion_tfidf_rad` | chart note + radiograph | TF-IDF + radiograph features | **83.9** (78.5–88.8) | 3.1 | 3.1 | 9.9 | 0.0 | 13.0 | 95% | 92% | 95% | 92% | 0% | 90 / 83 / 72 |
+| 3–7 | `tfidf_logreg` | chart note | TF-IDF + logistic regression | **83.0** (77.6–87.4) | 3.6 | 1.3 | 12.1 | 0.0 | 11.7 | 98% | 90% | 94% | 96% | 0% | 90 / 83 / 67 |
+| 3–7 | `note_rules` | chart note | rules (regex) † | **82.1** (76.7–87.0) | 4.5 | 1.8 | 11.7 | 0.0 | 8.5 | 97% | 88% | 93% | 95% | 83% | 100 / 100 / 38 |
+| 3–8 | `algorithm_design` | whole record | rules, study-design order: exam form, diagnosis codes, note, chart † | **78.9** (73.1–84.3) | 4.0 | 5.4 | 11.7 | 0.0 | 13.5 | 91% | 89% | 93% | 86% | 75% | 81 / 74 / 77 |
+| 6–10 | `probing_chart` | probing chart | staged from the measurements † | **74.4** (68.6–80.3) | 0.4 | 0.0 | 1.3 | 23.8 | 1.2 | 76% | 99% | 99% | 72% | 58% | 76 / 65 / 73 |
+| 8–12 | `proc_codes_planned` | procedure codes, planned | CDT code mapped to status | **70.4** (64.6–76.2) | 0.0 | 0.0 | 23.3 | 6.3 | 20.6 | 90% | 100% | 100% | 86% | 0% | 71 / 70 / 70 |
+| 8–12 | `algorithm_patel2022` | whole record | rules, order of Patel et al. 2022: diagnosis codes, PerioDx note reading, PerioDx chart rules (spec 024) | **69.1** (63.2–75.3) | 5.4 | 13.0 | 11.2 | 1.3 | 23.6 | 78% | 86% | 90% | 71% | 25% | 78 / 74 / 48 |
+| 8–13 | `exam_form` | exam form | status field as entered | **69.1** (62.8–75.3) | 4.0 | 0.0 | 11.2 | 15.7 | 9.0 | 83% | 89% | 93% | 77% | 75% | 72 / 65 / 64 |
+| 9–13 | `proc_dx_planned` | diagnosis codes, planned procedures | ICD-10 code mapped to status | **66.4** (60.5–72.2) | 0.9 | 21.1 | 11.7 | 0.0 | 28.7 | 66% | 98% | 98% | 64% | 0% | 66 / 65 / 67 |
+| 11–14 | `proc_codes_completed` | procedure codes, completed | CDT code mapped to status | **61.9** (55.6–68.2) | 0.0 | 0.0 | 16.1 | 22.0 | 18.4 | 65% | 100% | 100% | 63% | 0% | 63 / 61 / 59 |
+| 13–14 | `proc_dx_completed` | diagnosis codes, completed procedures | ICD-10 code mapped to status | **57.0** (50.7–63.7) | 3.6 | 32.7 | 6.7 | 0.0 | 40.4 | 47% | 90% | 89% | 51% | 0% | 60 / 57 / 50 |
+| 15 | `radiograph_ai` | radiograph AI | bone-loss reading mapped to stage † | **17.9** (13.0–23.3) | 0.4 | 0.0 | 9.0 | 72.6 | 23.0 | 43% | 99% | 98% | 51% | 0% | 18 / 26 / 16 |
+| – | [`bert-base+cw`](https://huggingface.co/google-bert/bert-base-uncased) | chart note | fine-tuned encoder, class-weighted (run: repo) | rerun pending on the new notes | – | – | – | – | – | – | – | – | – | – | – | – |
+| – | [`bert-base`](https://huggingface.co/google-bert/bert-base-uncased) | chart note | fine-tuned encoder (run: repo) | rerun pending on the new notes | – | – | – | – | – | – | – | – | – | – | – | – |
+| – | [`bio-clinicalbert`](https://huggingface.co/emilyalsentzer/Bio_ClinicalBERT) | chart note | fine-tuned encoder (run: repo) | rerun pending on the new notes | – | – | – | – | – | – | – | – | – | – | – | – |
+| – | [`bioclinical-modernbert-base`](https://huggingface.co/thomas-sounack/BioClinical-ModernBERT-base) | chart note | fine-tuned encoder (run: repo) | rerun pending on the new notes | – | – | – | – | – | – | – | – | – | – | – | – |
+| – | [`bioclinical-modernbert-large`](https://huggingface.co/thomas-sounack/BioClinical-ModernBERT-large) | chart note | fine-tuned encoder (run: kaggle) | rerun pending on the new notes | – | – | – | – | – | – | – | – | – | – | – | – |
+| – | [`biomedbert`](https://huggingface.co/microsoft/BiomedNLP-BiomedBERT-base-uncased-abstract-fulltext) | chart note | fine-tuned encoder (run: repo) | rerun pending on the new notes | – | – | – | – | – | – | – | – | – | – | – | – |
+| – | [`clinical-longformer`](https://huggingface.co/yikuan8/Clinical-Longformer) | chart note | fine-tuned encoder (run: kaggle) | rerun pending on the new notes | – | – | – | – | – | – | – | – | – | – | – | – |
+| – | [`distilbert-base`](https://huggingface.co/distilbert/distilbert-base-uncased) | chart note | fine-tuned encoder (run: repo) | rerun pending on the new notes | – | – | – | – | – | – | – | – | – | – | – | – |
+| – | [`gatortron-base+lr2e-05`](https://huggingface.co/UFNLP/gatortron-base) | chart note | fine-tuned encoder, learning rate 2e-05 (run: kaggle) | rerun pending on the new notes | – | – | – | – | – | – | – | – | – | – | – | – |
+| – | [`llama-3.3-70b-instruct`](https://huggingface.co/meta-llama/Llama-3.3-70B-Instruct) | chart note | zero-shot LLM (run: repo) | rerun pending on the new notes | – | – | – | – | – | – | – | – | – | – | – | – |
+| – | [`longformer-base`](https://huggingface.co/allenai/longformer-base-4096) | chart note | fine-tuned encoder (run: kaggle) | rerun pending on the new notes | – | – | – | – | – | – | – | – | – | – | – | – |
+| – | [`medgemma-1.5-4b-it`](https://huggingface.co/google/medgemma-1.5-4b-it) | chart note | zero-shot LLM (run: kaggle) | rerun pending on the new notes | – | – | – | – | – | – | – | – | – | – | – | – |
+| – | [`medgemma-4b-it`](https://huggingface.co/google/medgemma-4b-it) | chart note | zero-shot LLM (run: kaggle) | rerun pending on the new notes | – | – | – | – | – | – | – | – | – | – | – | – |
+| – | [`modernbert-base+cw+s1`](https://huggingface.co/answerdotai/ModernBERT-base) | chart note | fine-tuned encoder, class-weighted, seed 1 (run: repo) | rerun pending on the new notes | – | – | – | – | – | – | – | – | – | – | – | – |
+| – | [`modernbert-base+cw+s2`](https://huggingface.co/answerdotai/ModernBERT-base) | chart note | fine-tuned encoder, class-weighted, seed 2 (run: repo) | rerun pending on the new notes | – | – | – | – | – | – | – | – | – | – | – | – |
+| – | [`modernbert-base+cw`](https://huggingface.co/answerdotai/ModernBERT-base) | chart note | fine-tuned encoder, class-weighted (run: kaggle) | rerun pending on the new notes | – | – | – | – | – | – | – | – | – | – | – | – |
+| – | [`modernbert-base`](https://huggingface.co/answerdotai/ModernBERT-base) | chart note | fine-tuned encoder (run: repo) | rerun pending on the new notes | – | – | – | – | – | – | – | – | – | – | – | – |
+| – | [`modernbert-large`](https://huggingface.co/answerdotai/ModernBERT-large) | chart note | fine-tuned encoder (run: kaggle) | rerun pending on the new notes | – | – | – | – | – | – | – | – | – | – | – | – |
+| – | [`scibert`](https://huggingface.co/allenai/scibert_scivocab_uncased) | chart note | fine-tuned encoder (run: repo) | rerun pending on the new notes | – | – | – | – | – | – | – | – | – | – | – | – |
+
+**Rerun pending on the new notes**: the rows marked – were made on the review notes before they were rebuilt for adults from 2021-04-01 (#467). They are kept, with the note set they read (`data/datasets/prediction_note_sets.csv`), and not scored against the new answer key until the run is redone.
 
 **Not run yet:** [`sapbert`](https://huggingface.co/cambridgeltl/SapBERT-from-PubMedBERT-fulltext) (not a periodontal status classifier, and no scorer for its own task yet); [`gte-moderncolbert`](https://huggingface.co/lightonai/GTE-ModernColBERT-v1) (not a periodontal status classifier, and no scorer for its own task yet); [`medgemma-27b-text-it`](https://huggingface.co/google/medgemma-27b-text-it) (needs a GPU). MedGemma few-shot and LoRA runs are not done yet (LoRA needs a GPU).
 
 #### LLM judge: every system against an LLM's reading
 
-Could an LLM stand in for the answer key on real notes? A general-purpose LLM (`databricks-meta-llama-3-3-70b-instruct`; prompts `judge-status-v1`, `judge-v2`) read each of the 240 synthetic notes and did two things: gave its own status for the chart, and said whether each method's answer was right. Both are compared with the truth below (**LLM judgment**; every number is computed in code, not by the LLM). In Databricks: the *Scorecard* dashboard.
-
-**How often the LLM's status matches the truth**
-
-| Charts | LLM gave a status | LLM's status matches the truth (95% CI) | Kappa |
-|---|---:|---|---:|
-| All charts (240) | 98% | **82.9%** (77.8%–87.6%) | 0.79 |
-| Easy note (141) | 98% | **95.7%** (92.0%–98.6%) | 0.95 |
-| Medium note (31) | 97% | **90.0%** (76.7%–100.0%) | 0.87 |
-| Hard note (68) | 97% | **53.0%** (40.9%–66.7%) | 0.43 |
-
-It does well on easy notes and badly on hard ones (53%). The LLM reads only the note; the truth also comes from the exam form, procedure codes and chart, which hard notes leave out.
-
-**It misses the mistakes good methods make.** Asked whether an answer was right, it flagged 90% of the wrong answers from `proc_codes_planned`, but only 26% of those from `modernbert-base+cw+s2+rules4` (91% right by the truth), which are mostly one step off (21 of 21; most often stage 3 called stage 4). So it can tell a weak method from a strong one, but not two strong ones apart. This also rules out the usual fix of adjusting each method's score for the judge's own error rate (the Rogan-Gladen correction): that fix assumes the judge misses the same share of every method's mistakes, and here it would put the top methods at about 100%, so it isn't shown. Before trusting a judge on real notes, measure how many of each method's mistakes it catches on charts a person has reviewed.
-
-| Method | Group | Right, by the truth | Right, by the LLM's status | Gap | LLM said right | Wrong answers the LLM flagged |
-|---|---|---:|---:|---:|---:|---:|
-| `algorithm_v0` | Rules on the whole record | 97.5% | 83.3% | -14.1 pts | 83% | 60% |
-| `modernbert-base+cw+s2+rules4` | Trained AI on the note + stage 4 rule | 91.2% | 88.5% | -2.6 pts | 87% | 26% |
-| `modernbert-base+rules4` | Trained AI on the note + stage 4 rule | 90.8% | 87.2% | -3.4 pts | 85% | 40% |
-| `modernbert-base+cw+rules4` | Trained AI on the note + stage 4 rule | 90.8% | 87.2% | -3.4 pts | 84% | 45% |
-| `bert-base+rules4` | Trained AI on the note + stage 4 rule | 90.4% | 87.6% | -2.6 pts | 84% | 43% |
-| `bio-clinicalbert+rules4` | Trained AI on the note + stage 4 rule | 90.0% | 87.2% | -2.6 pts | 84% | 45% |
-| `bert-base+cw+rules4` | Trained AI on the note + stage 4 rule | 90.0% | 86.3% | -3.4 pts | 84% | 48% |
-| `modernbert-base+cw+s1+rules4` | Trained AI on the note + stage 4 rule | 89.6% | 88.0% | -1.3 pts | 85% | 41% |
-| `bioclinical-modernbert-base+rules4` | Trained AI on the note + stage 4 rule | 89.2% | 87.2% | -1.7 pts | 84% | 46% |
-| `scibert+rules4` | Trained AI on the note + stage 4 rule | 88.8% | 85.5% | -3.0 pts | 82% | 58% |
-| `distilbert-base+rules4` | Trained AI on the note + stage 4 rule | 88.8% | 86.3% | -2.1 pts | 82% | 54% |
-| `fusion_tfidf_rad+rules4` | Simple text methods on the note | 87.1% | 85.9% | -0.9 pts | 84% | 50% |
-| `tfidf_logreg+rules4` | Simple text methods on the note | 86.7% | 86.8% | +0.4 pts | 83% | 53% |
-| `biomedbert+rules4` | Trained AI on the note + stage 4 rule | 86.7% | 86.3% | +0.0 pts | 81% | 59% |
-| `modernbert-base+cw` | Trained AI on the note | 83.8% | 76.1% | -7.7 pts | 76% | 67% |
-| `modernbert-base` | Trained AI on the note | 82.1% | 74.4% | -7.7 pts | 76% | 65% |
-| `modernbert-base+cw+s2` | Trained AI on the note | 81.7% | 74.8% | -6.8 pts | 78% | 59% |
-| `fusion_tfidf_rad` | Simple text methods on the note | 80.8% | 75.6% | -5.1 pts | 76% | 68% |
-| `bert-base` | Trained AI on the note | 80.8% | 73.9% | -6.8 pts | 75% | 65% |
-| `bio-clinicalbert` | Trained AI on the note | 80.4% | 73.5% | -6.8 pts | 75% | 66% |
-| `probing_chart` | One part of the record alone | 80.4% | 67.1% | -12.8 pts | 82% | 50% |
-| `bert-base+cw` | Trained AI on the note | 80.4% | 72.6% | -7.7 pts | 74% | 67% |
-| `modernbert-base+cw+s1` | Trained AI on the note | 80.0% | 74.4% | -5.6 pts | 75% | 64% |
-| `bioclinical-modernbert-base` | Trained AI on the note | 79.6% | 73.5% | -6.0 pts | 75% | 65% |
-| `distilbert-base` | Trained AI on the note | 79.2% | 72.6% | -6.4 pts | 73% | 70% |
-| `scibert` | Trained AI on the note | 79.2% | 71.8% | -7.3 pts | 72% | 72% |
-| `note_rules` | Simple text methods on the note | 78.8% | 83.8% | +5.6 pts | 85% | 50% |
-| `tfidf_logreg` | Simple text methods on the note | 77.1% | 73.1% | -3.8 pts | 74% | 67% |
-| `medgemma-1.5-4b-it+rules4` | Untrained medical AI on the note (MedGemma 1.5 4B) | 77.1% | 83.8% | +6.8 pts | 85% | 49% |
-| `biomedbert` | Trained AI on the note | 77.1% | 72.6% | -4.3 pts | 72% | 71% |
-| `medgemma-1.5-4b-it` | Untrained medical AI on the note (MedGemma 1.5 4B) | 75.8% | 82.9% | +6.8 pts | 84% | 48% |
-| `algorithm_design` | Rules on the whole record | 72.1% | 59.8% | -12.4 pts | 61% | 89% |
-| `exam_form` | One part of the record alone | 62.1% | 50.9% | -11.1 pts | 61% | 89% |
-| `proc_codes_planned` | One part of the record alone | 50.8% | 45.3% | -6.0 pts | 50% | 90% |
-| `proc_dx_planned` | One part of the record alone | 50.0% | 44.0% | -7.3 pts | 65% | 82% |
-| `proc_codes_completed` | One part of the record alone | 47.1% | 41.0% | -6.4 pts | 50% | 90% |
-| `proc_dx_completed` | One part of the record alone | 45.0% | 38.9% | -6.8 pts | 58% | 87% |
-| `radiograph_ai` | One part of the record alone | 17.5% | 16.7% | -0.9 pts | 62% | 77% |
-
-*Right, by the LLM's status*: the method's answer matches the LLM's own status (on the charts the LLM gave one). *LLM said right*: share of the method's answers the LLM called right. *Wrong answers the LLM flagged*: of the method's wrong answers, the share the LLM called wrong. Every other metric (periodontitis incorrectly assigned or ruled out, incorrect stage, no answer, unsafe errors, sensitivity, specificity, PPV, NPV, stage 4 correct, by note difficulty) both ways: `data/datasets/judge/judge_metrics.csv`.
-
-**Cost and speed**: 742 calls, US$0.37 at the endpoint's list price (US$0.0016 per chart); latency median 1.3 s, 95th percentile 2.8 s; 42 answers failed the quote gate, 0 endpoint errors.
+**Rerun pending on the new notes.** The committed LLM judge run (`data/datasets/judge/`) read the review notes before they were rebuilt for adults from 2021-04-01 (#467), so it is kept and not shown against the new answer key. It is shown again once `python/scripts/36_judge_scorecard.py --endpoint ...` or the `judge_scorecard` job in dev has run on the new notes; then also the *Scorecard* dashboard in Databricks.
 
 ### De-identification
 

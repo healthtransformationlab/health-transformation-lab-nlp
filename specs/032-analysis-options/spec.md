@@ -82,6 +82,10 @@ validated, and a consistency split by insurance.
   (`study.scored_review`, `study.reread_absent_code`): the benchmark note set itself (study build, review set,
   answer key, Kaggle and Hugging Face task data) is built as before, because external model runs were scored on
   those exact notes. Rebuilding it for adults from the start date, and rerunning those model runs, is tracked in #467.
+- Since #467 the note set itself is built for adults from the start date (`study.build_study`'s defaults), with the
+  smoking and diabetes shares of spec 033 US3; the scoring-time visit filter stays as a check and leaves nothing out.
+  The external runs made on the old notes are kept, recorded with their note set (`note_set.py`), and shown as
+  "rerun pending on the new notes" until they are redone.
 
 ## Follow-ups
 

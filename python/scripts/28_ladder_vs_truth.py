@@ -3,12 +3,14 @@
     python scripts/28_ladder_vs_truth.py [--n-boot 1000] [--seed 0]
     python scripts/28_ladder_vs_truth.py --grouping six --all-visits --absent-code no_answer   # before spec 032 US8
 
-Reads data/datasets/ai_predictions_<rung>.csv (not the simulated_* dry runs) and the answer key.
+Reads data/datasets/ai_predictions_<rung>.csv (not the simulated_* dry runs) and the answer key. A prediction file
+made on another note set (#467: prediction_note_sets.csv, note_set.py) is not scored: it is listed in
+ladder_pending.csv, "rerun pending on the new notes".
 Adds '<rung>+rules4' for each learned rung: the note rules decide stage IV, the model the rest.
 Scored under the spec 032 US8 defaults (#448; docs/presets.md, preset repo_v2): at the five status groups (healthy
 and gingivitis merged), on the review charts that count (adults, visits from 2021-04-01: study.scored_review), with a
-treatment plan that has no gum-disease code read as healthy or gingivitis. The benchmark note set and every committed
-prediction are unchanged; only the scoring is.
+treatment plan that has no gum-disease code read as healthy or gingivitis. Since #467 the note set itself holds only
+those visits, so the visit filter leaves nothing out; it stays as a check.
 Writes data/datasets/ladder/:
   ladder_vs_truth.csv   per method: accuracy (CI), difference from note_rules (paired CI),
                         stage IV recall, unsafe and S2 rates, calibration error
@@ -16,16 +18,16 @@ Writes data/datasets/ladder/:
   ladder_proba.csv      class probabilities added up within each group, long (method, visit_id, group columns)
   ladder_by_stageable.csv  per method: n and accuracy on charts that can and can't be staged (spec 030)
   ladder_by_age.csv, ladder_by_clinic.csv  the same by age band and by clinic (spec 030 US2)
+  ladder_pending.csv    the prediction files made on another note set, with their source and run (#467)
 The truth is the generator's: these are synthetic-data results, not clinical performance.
 """
 
 import argparse
-import glob
 from pathlib import Path
 
 import pandas as pd
 
-from health_transformation_lab_nlp import ladder_eval, study
+from health_transformation_lab_nlp import ladder_eval, note_set, study
 from health_transformation_lab_nlp.labels import DEFAULT_GROUPING, GROUPINGS, LABELS
 from health_transformation_lab_nlp.paths import DATASETS_DIR
 from health_transformation_lab_nlp.phenotype import ABSENT_CODE_RULES, DEFAULT_ABSENT_CODE
@@ -47,7 +49,8 @@ min_age, start_date = (None, None) if a.all_visits else (a.min_age, a.start_date
 key = study.scored_review(key_all, visits, min_age, start_date, a.absent_code).set_index("visit_id")
 truth = key["truth_status"]
 preds, proba = {}, {}
-for f in sorted(glob.glob(str(DATASETS_DIR / "ai_predictions_*.csv"))):
+current, pending = note_set.prediction_files(DATASETS_DIR)
+for f in current:
     rung = Path(f).stem.removeprefix("ai_predictions_")
     d = pd.read_csv(f).set_index("visit_id").reindex(truth.index)
     preds[rung] = d["pred"]
@@ -74,7 +77,10 @@ split.to_csv(out / "ladder_by_stageable.csv", index=False)
 for name, level in (("age", ladder_eval.age_band(key["age"])), ("clinic", key["clinic_id"].astype(str))):
     ladder_eval.by_difficulty(truth, preds, level).rename(columns={"difficulty": f"{name}_code"}).to_csv(
         out / f"ladder_by_{name}.csv", index=False)
+pending.to_csv(out / note_set.PENDING_FILE, index=False)
 print(table.sort_values("accuracy", ascending=False).round(3).to_string(index=False))
 print(f"{len(truth)} of {len(key_all)} review charts scored (min age {min_age}, start date {start_date}), grouping "
       f"{a.grouping}, absent code {a.absent_code}")
+if len(pending):
+    print(f"{note_set.RERUN_PENDING}, not scored: {', '.join(pending['method_name'])}")
 print("wrote", out, "(synthetic truth; not clinical performance)")

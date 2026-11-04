@@ -2,7 +2,7 @@
 
 What rule-based methods, classical machine learning (TF-IDF with logistic regression), fine-tuned encoders
 (BERT, ModernBERT, clinical and biomedical variants) and large language models (MedGemma, Llama) answered on
-the same 240 synthetic dental review notes, with their scores against the generator's truth. Pair it with the
+the same 223 synthetic dental review notes, with their scores against the generator's truth. Pair it with the
 notes dataset (*Synthetic dental periodontal notes and charts*) to compare a new model without rerunning these.
 
 **These are measurements on synthetic notes**, made by a personal learning project that is **not affiliated**

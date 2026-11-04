@@ -20,7 +20,7 @@ gets their own project and can't see anyone else's answers:
 
 1. *Create Project* → name it `perio-review-<reviewer>`.
 2. *Labeling Setup* → *Custom template* → paste `chart_review.xml`.
-3. *Import* → `data/datasets/review_tasks.json` (240 charts).
+3. *Import* → `data/datasets/review_tasks.json` (223 charts).
 4. Share the project with that reviewer only.
 5. Give every reviewer `docs/labeling_protocol.md` before they start.
 

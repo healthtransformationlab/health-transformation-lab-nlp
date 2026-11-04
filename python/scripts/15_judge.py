@@ -22,6 +22,7 @@ from pathlib import Path
 import pandas as pd
 import yaml
 
+from health_transformation_lab_nlp import note_set
 from health_transformation_lab_nlp.cost_effectiveness import bakeoff
 from health_transformation_lab_nlp.judge import PROMPT_VERSION, OpenAIJudge, SimulatedJudge
 from health_transformation_lab_nlp.paths import CORPUS_DIR, COSTS_YAML, DATASETS_DIR, REVIEW_DIR
@@ -51,7 +52,7 @@ rel_dir = REVIEW_DIR / ("simulated_reliability" if a.simulated_review else "reli
 consensus = pd.read_csv(rel_dir / "consensus.csv").set_index("visit_id")["consensus"]
 key = pd.read_csv(DATASETS_DIR / "answer_key" / "review_key.csv").set_index("visit_id")
 gold_rows = []
-for f in sorted(glob.glob(str(DATASETS_DIR / "ai_predictions_*.csv"))):
+for f in note_set.prediction_files(DATASETS_DIR)[0]:   # #467: only runs on the current review notes
     m = Path(f).stem.removeprefix("ai_predictions_")
     p = pd.read_csv(f).set_index("visit_id")["pred"]
     for vid, pred in p.items():
@@ -159,7 +160,7 @@ print(f"corpus: {len(c)} judged predictions over {c['method'].nunique()} methods
 print(f"gate failures: gold {(~g['gate_ok']).mean():.1%}, corpus {(~c['gate_ok']).mean():.1%}")
 
 # ---- MLflow: one run for the bake-off and corpus judging (docs/mlops.md)
-from health_transformation_lab_nlp.tracking import track  # noqa: E402
+from health_transformation_lab_nlp.tracking import track
 
 with track("15_judge", f"judge-bakeoff:{chosen}", simulated=bool(prefix),
            params={"backend": a.backend, "prompt_version": PROMPT_VERSION, "candidates": ",".join(judges),

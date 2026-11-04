@@ -1,21 +1,28 @@
 {
- "visits": 4343,
+ "visits": 3794,
  "blocked_by_leak_gate": 0,
- "train_visits": 3484,
- "train_people": 960,
- "review_visits": 240,
+ "train_visits": 3016,
+ "train_people": 896,
+ "review_visits": 223,
  "deid_engine": "regex",
  "deid_char_recall": 1.0,
  "deid_non_phi_chars_removed": 0,
  "algorithm": "v0.1-placeholder",
  "algorithm_design": "design-v1",
- "record_errors_injected": 45,
+ "record_errors_injected": 46,
  "review_status_mix": {
   "gingivitis": 48,
-  "periodontitis_stage_3": 43,
   "periodontitis_stage_2": 43,
+  "periodontitis_stage_3": 43,
   "periodontitis_stage_1": 41,
   "healthy": 36,
-  "periodontitis_stage_4": 29
+  "periodontitis_stage_4": 12
+ },
+ "visits_left_out": {
+  "min_age": 18,
+  "start_date": "2021-04-01",
+  "under_min_age_count": 0,
+  "before_start_date_count": 549,
+  "eligible_count": 3794
  }
 }

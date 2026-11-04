@@ -2,7 +2,7 @@
 # MAGIC %md
 # MAGIC # Load results: every committed model result into the gold tables (spec 016)
 # MAGIC
-# MAGIC Model answers on the 240 synthetic review notes are made in three places: Databricks jobs (which
+# MAGIC Model answers on the synthetic review notes are made in three places: Databricks jobs (which
 # MAGIC write their own tables), Kaggle's free GPU (collected into a pull request by the `kaggle-medgemma`
 # MAGIC workflow) and laptops. Whatever is committed under `data/datasets/` is deployed with the bundle;
 # MAGIC this job, run after every deploy, appends each file version it hasn't seen yet:

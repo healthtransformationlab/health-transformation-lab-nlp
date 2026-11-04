@@ -18,12 +18,12 @@ simulated. Synthetic data only: the review set has passed the de-identification 
 """
 
 import argparse
-import glob
 from pathlib import Path
 
 import pandas as pd
 
 from health_transformation_lab_nlp import mlflow_judge as mj
+from health_transformation_lab_nlp import note_set
 from health_transformation_lab_nlp.paths import DATASETS_DIR, REVIEW_DIR
 
 ap = argparse.ArgumentParser()
@@ -52,7 +52,7 @@ rel = REVIEW_DIR / ("simulated_reliability" if (a.simulated_review or a.simulate
 consensus = pd.read_csv(rel / "consensus.csv").set_index("visit_id")["consensus"]
 notes = pd.read_csv(DATASETS_DIR / "answer_key" / "review_key.csv").set_index("visit_id")["note_text"]
 results = []
-for f in sorted(glob.glob(str(DATASETS_DIR / "ai_predictions_*.csv"))):
+for f in note_set.prediction_files(DATASETS_DIR)[0]:   # #467: only runs on the current review notes
     method = Path(f).stem.removeprefix("ai_predictions_")
     if a.method and method != a.method.removeprefix("ai:"):
         continue

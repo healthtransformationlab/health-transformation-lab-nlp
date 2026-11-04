@@ -1,8 +1,8 @@
-"""Databricks ai_classify on the 240 de-identified review notes (spec 017 US2).
+"""Databricks ai_classify on the de-identified review notes (spec 017 US2).
 
     export DATABRICKS_HOST=... DATABRICKS_TOKEN=... DATABRICKS_WAREHOUSE_ID=<serverless warehouse id>
     python scripts/41_databricks_ai_methods.py --limit 10      # test on 10 notes
-    python scripts/41_databricks_ai_methods.py                 # all 240 -> data/datasets/ai_predictions_dbai-classify.csv
+    python scripts/41_databricks_ai_methods.py                 # every review note -> data/datasets/ai_predictions_dbai-classify.csv
     python scripts/41_databricks_ai_methods.py --simulate      # dry run, no Databricks: simulated_* file only
 
 The Llama 3.3 70B reader (US3) is the LLM reader on a Databricks endpoint:

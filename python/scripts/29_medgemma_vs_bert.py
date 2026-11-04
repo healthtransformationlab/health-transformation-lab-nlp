@@ -31,7 +31,7 @@ from pathlib import Path
 import pandas as pd
 import yaml
 
-from health_transformation_lab_nlp import ladder_eval, study
+from health_transformation_lab_nlp import ladder_eval, note_set, study
 from health_transformation_lab_nlp.labels import DEFAULT_GROUPING, LABELS
 from health_transformation_lab_nlp.llm_reader import summarize_details
 from health_transformation_lab_nlp.paths import COSTS_YAML, DATASETS_DIR
@@ -50,11 +50,15 @@ prefix = "simulated_" if a.simulated else ""
 
 
 def runs(pattern_prefix: str, role: set) -> dict:
-    """{rung (with tag): file} for prediction files whose base model has one of these roles."""
+    """{rung (with tag): file} for prediction files whose base model has one of these roles, made on the current
+    review notes (#467: a run on another note set is left out, "rerun pending on the new notes")."""
     out = {}
     for f in sorted(glob.glob(str(DATASETS_DIR / f"{pattern_prefix}ai_predictions_*.csv"))):
         rung = Path(f).stem.removeprefix(f"{pattern_prefix}ai_predictions_")
         if roles.get(rung.split("+")[0]) in role:
+            if not note_set.is_current(DATASETS_DIR, Path(f).name):
+                print(f"skip {rung}: made on another note set ({note_set.RERUN_PENDING})")
+                continue
             out[rung] = f
     return out
 
@@ -66,7 +70,8 @@ if not llm_files:
                      "  python scripts/11_ai_predict.py --rung medgemma-1.5-4b-it --backend hf   (GPU)\n"
                      "or a dry run: --backend simulated, then this script with --simulated")
 if not bert_files:
-    raise SystemExit("no encoder predictions; run scripts/11_ai_predict.py --rung bert-base (or another encoder)")
+    print("no encoder predictions on the current notes: compared with note_rules instead (encoders: "
+          f"{note_set.RERUN_PENDING})")
 
 key = study.scored_review(pd.read_csv(DATASETS_DIR / "answer_key" / "review_key.csv"),
                           pd.read_csv(DATASETS_DIR / "visits_structured.csv")).set_index("visit_id")
@@ -95,7 +100,7 @@ preds = {m: ladder_eval.grouped(p, DEFAULT_GROUPING) for m, p in preds.items()}
 proba = {m: ladder_eval.grouped_proba(p, DEFAULT_GROUPING) for m, p in proba.items()}
 
 if a.bert is None:
-    a.bert = max(bert_files, key=lambda r: (preds[r] == truth).mean())
+    a.bert = max(bert_files, key=lambda r: (preds[r] == truth).mean()) if bert_files else "note_rules"
 if a.bert not in preds:
     raise SystemExit(f"--bert {a.bert}: no ai_predictions_{a.bert}.csv (have: {', '.join(bert_files)})")
 

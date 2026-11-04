@@ -2,7 +2,7 @@
 # # PerioBench on Kaggle Benchmarks
 #
 # Finding gum disease in dental records (phenotyping): a model reads one synthetic dental note and names
-# the periodontal status (2017 AAP/EFP) as JSON with a verbatim quote. Scored on the 240-note review set
+# the periodontal status (2017 AAP/EFP) as JSON with a verbatim quote. Scored on the 223-note review set
 # of the public `perio-bench-notes` dataset (CC BY 4.0, synthetic only) against its answer key, with a
 # second model as judge. The logic lives in `health_transformation_lab_nlp.kbench`; this file is what
 # `kaggle benchmarks tasks push` uploads and what the leaderboard runs.

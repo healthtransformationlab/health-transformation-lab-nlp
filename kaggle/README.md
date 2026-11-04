@@ -9,9 +9,9 @@ data only, and no token is ever stored in it.
 
 | On Kaggle (user `jcblearning`) | What it is | Made by (Actions tab) | Files here |
 |---|---|---|---|
-| Notebook `perio-bench-medgemma-reader` | MedGemma 1.5 4B reads the 240 review notes | *Run MedGemma on a free Kaggle GPU* | `medgemma_reader.ipynb`, `keras_to_hf.py`, `hf_config/`, `gemma3_chat_template.jinja` |
+| Notebook `perio-bench-medgemma-reader` | MedGemma 1.5 4B reads the 223 review notes | *Run MedGemma on a free Kaggle GPU* | `medgemma_reader.ipynb`, `keras_to_hf.py`, `hf_config/`, `gemma3_chat_template.jinja` |
 | Notebook `perio-bench-encoder-gpu` | Fine-tunes the large encoders (ModernBERT-large, Longformer, GatorTron) | *Fine-tune the GPU encoders on a free Kaggle GPU* | `encoder_gpu.ipynb` |
-| Dataset `perio-bench-notes` | Synthetic notes, labels, structured visits, 240-note review set and answer key | *Publish datasets (Kaggle and Hugging Face)* | `publish.py`, `cards/notes.md` |
+| Dataset `perio-bench-notes` | Synthetic notes, labels, structured visits, 223-note review set and answer key | *Publish datasets (Kaggle and Hugging Face)* | `publish.py`, `cards/notes.md` |
 | Dataset `perio-bench-results` | Every model's answers on the review set, the leaderboard, the judge scorecard | *Publish datasets (Kaggle and Hugging Face)* | `publish.py`, `cards/results.md` |
 | Notebook `perio-bench-quickstart` (spec 025) | Loads both datasets, trains a baseline on a CPU in about a minute, scores it beside the leaderboard | *Publish datasets (Kaggle and Hugging Face)* | `../notebooks/perio_bench_quickstart.ipynb`, `prepare_kernel.py --job quickstart` |
 | Benchmark task `perio-bench` (Kaggle Benchmarks) | The reader task Kaggle's leaderboard runs: read a note, name the status, quote it; a judge checks it (`docs/kaggle_benchmarks.md`) | *Run PerioBench on Kaggle Benchmarks* | `perio_bench_task.py`, `../python/health_transformation_lab_nlp/kbench.py` |
@@ -40,7 +40,7 @@ encoders are public.
 Actions → pick the workflow → **Run workflow**:
 
 - **`limit` 10** is a test (10 notes; encoders train 1 epoch). It takes 10-15 minutes and is never committed.
-- **`limit` 0** is the full run: all 240 notes, a few hours. With `open_pr` on, the workflow opens a pull
+- **`limit` 0** is the full run: every review note, a few hours. With `open_pr` on, the workflow opens a pull
   request with `ai_predictions_<model>.csv` (and `llm_details_` for MedGemma). Once it's merged, the dev
   deploy's **Load results** job puts them in the Delta tables (spec 016).
 - If it runs longer than the workflow can wait, run again with **`collect_only`** to fetch the outputs of the

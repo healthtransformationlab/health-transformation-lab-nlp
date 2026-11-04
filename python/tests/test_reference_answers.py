@@ -3,6 +3,7 @@
 import pandas as pd
 import pytest
 
+from health_transformation_lab_nlp import note_set
 from health_transformation_lab_nlp import reference_answers as ra
 from health_transformation_lab_nlp.paths import DATASETS_DIR
 
@@ -55,9 +56,11 @@ def test_committed_table_matches_the_committed_answer_key():
 
 def test_committed_table_covers_every_note_medgemma_read():
     ref = pd.read_csv(REF, keep_default_na=False)
-    assert ref["visit_id"].is_unique and len(ref) == 240
+    assert ref["visit_id"].is_unique and len(ref) == 223     # the #467 build
     for run in ("medgemma-4b-it", "medgemma-1.5-4b-it"):
         d = pd.read_csv(DATASETS_DIR / f"llm_details_{run}.csv")
+        if not note_set.is_current(DATASETS_DIR, f"llm_details_{run}.csv"):
+            continue                       # #467: made on the notes before the rebuild; rerun pending
         assert set(d["visit_id"]) == set(ref["visit_id"]), run
     perio = ref["status"].str.startswith("periodontitis")
     assert set(ref.loc[perio, "grade"]) <= {"A", "B", "C"}
@@ -112,6 +115,10 @@ def test_a_partial_run_is_refused():
 def test_committed_per_field_table_matches_the_committed_runs():
     out = pd.read_csv(DATASETS_DIR / "ladder" / "medgemma_field_accuracy.csv")
     ref = pd.read_csv(REF, keep_default_na=False)
+    if not note_set.is_current(DATASETS_DIR, "ladder/medgemma_field_accuracy.csv"):
+        # #467: the table and its runs were made on the notes before the rebuild and are kept until the rerun
+        assert not any(note_set.is_current(DATASETS_DIR, f"llm_details_{r}.csv") for r in set(out["run"]))
+        return
     assert set(out["run"]) == {"medgemma-4b-it", "medgemma-1.5-4b-it"}
     for run, got in out.groupby("run"):
         want = ra.field_accuracy(pd.read_csv(DATASETS_DIR / f"llm_details_{run}.csv"), ref)

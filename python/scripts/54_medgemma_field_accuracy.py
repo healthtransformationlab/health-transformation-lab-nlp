@@ -9,7 +9,8 @@ data/datasets/ladder/[simulated_]medgemma_field_accuracy.csv: run, field, n, cor
 Each run is logged to MLflow (tracking.track; a no-op without mlflow) as field_accuracy_<field> and
 field_n_<field>, with the table as an artifact. r/R/17_spec004.R recomputes the table (parity test).
 
-Runs that didn't read every review note (a --limit run) are skipped. Synthetic notes and generator truth: not
+Runs that didn't read every review note (a --limit run) are skipped, and so are runs made on another note set
+(#467, note_set.py): with none left the committed table is kept as it is, recorded on the notes it was made on. Synthetic notes and generator truth: not
 evidence about either model on real records. --simulated rows come from placeholder error rates and say nothing
 about MedGemma (the simulated reader returns no grade or extent at all).
 """
@@ -20,6 +21,7 @@ from pathlib import Path
 
 import pandas as pd
 
+from health_transformation_lab_nlp import note_set
 from health_transformation_lab_nlp.paths import DATASETS_DIR
 from health_transformation_lab_nlp.reference_answers import field_accuracy, field_metrics
 from health_transformation_lab_nlp.tracking import track
@@ -34,15 +36,22 @@ if not ref_file.exists():
     raise SystemExit(f"no {ref_file}; run scripts/53_reference_answers.py first")
 ref = pd.read_csv(ref_file, keep_default_na=False)
 
-tables = []
+tables, pending = [], []
 for f in sorted(glob.glob(str(DATASETS_DIR / f"{prefix}llm_details_medgemma-*.csv"))):
     run = Path(f).stem.removeprefix(f"{prefix}llm_details_")
+    if not note_set.is_current(DATASETS_DIR, Path(f).name):
+        print(f"skip {run}: made on another note set ({note_set.RERUN_PENDING})")
+        pending.append(run)
+        continue
     try:
         t = field_accuracy(pd.read_csv(f), ref)
     except ValueError as e:
         print(f"skip {run}: {e}")
         continue
     tables.append(t.assign(run=run)[["run", *t.columns]])
+if not tables and pending:
+    print(f"every MedGemma run is {note_set.RERUN_PENDING}; ladder/{prefix}medgemma_field_accuracy.csv kept as it is")
+    raise SystemExit(0)
 if not tables:
     raise SystemExit(f"no complete {prefix}llm_details_medgemma-*.csv to score")
 

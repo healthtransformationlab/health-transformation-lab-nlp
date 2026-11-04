@@ -19,22 +19,24 @@ What this card answers (spec 033):
 - **Placeholders**: the periodontitis mix (shaped on NHANES, not calibrated to it), progression and treatment, and
   every record-mess rate. Calibrating the periodontitis mix is a later spec; the mess rates wait for a real
   extract's `realism_profile` (spec 033, "Out of scope").
-- **Set from published US figures in the Open Dental extract since spec 033 US2**: smoking (11.6% of US adults in
-  2022, item 72) and diabetes (15.8% of US adults 20 and over, HbA1c >= 6.5, item 73). The study's notes keep the
-  older placeholders (18% smoke, 8.5% have diabetes) until they are rebuilt (US3).
+- **Set from published US figures**: smoking (11.6% of US adults in 2022, item 72) and diabetes (15.8% of US adults
+  20 and over, HbA1c >= 6.5, item 73), in the Open Dental extract since spec 033 US2 and in the study visits since
+  spec 033 US3 (#486), when the benchmark notes were rebuilt for adults from the start date (#467). Before that the
+  study used placeholders (18% smoke, 8.5% have diabetes), which stay the defaults of `synthetic.draw_risk`.
 - **Set from published US figures in the Open Dental extract since spec 033 US4**: complete tooth loss by age band
   (items 79 and 80, and this repo's NHANES 2009-2014 run), and, as an option off by default, state rates (item 81).
 - **Still a placeholder**: insurance (the dental-coverage source could not be checked from this environment).
 
 ## Study visits (`synthetic.py`, `study.py`)
 
-The benchmark notes, the chart-review set and the answer key (`scripts/10_build_study.py`, seed 42, 1,200 people).
-External model runs were scored on these exact notes, so their values stay until the notes are rebuilt (spec 033
-US3, #486, with #467).
+The benchmark notes, the chart-review set and the answer key (`scripts/10_build_study.py`, seed 42, 1,200 people;
+since #467 only adults' visits from 2021-04-01). Since spec 033 US3 (#486) the study draws smoking and diabetes at
+the extract's published shares (`study.STUDY_RISK_KWARGS`); the three `draw_risk` rows below are the function's
+defaults, the placeholders the notes had before.
 
 | Parameter | Value | What it means | Source | Published figure | Checked by |
 |---|---|---|---|---|---|
-| `synthetic._SEVERITY_WEIGHTS` | healthy 0.3, gingivitis 0.28, mild 0.18, moderate 0.15, severe 0.07, advanced 0.02 | the latent severity mix a chart is drawn from (before the age shift and the clinic's case mix) | placeholder, shaped on NHANES 2009-2014 (item 35) | 42.2% of US adults 30+ with periodontitis, 7.8% severe, CDC/AAP definitions (item 35); under the 2017 classification (ACES), stage I 17.9%, II 46.2%, III 16.7%, IV 12.4% of dentate adults 30+ (Tay et al. 2025, cited in `data/datasets/nhanes/nhanes_published.csv`) | `scripts/19_prevalence.py` writes `data/datasets/prevalence/vs_published.csv`: truth 53.2% with periodontitis and 13.0% stage III-IV against 42.2% and 7.8%. Off, and not comparable one to one ('severe' is not stage III-IV) |
+| `synthetic._SEVERITY_WEIGHTS` | healthy 0.3, gingivitis 0.28, mild 0.18, moderate 0.15, severe 0.07, advanced 0.02 | the latent severity mix a chart is drawn from (before the age shift and the clinic's case mix) | placeholder, shaped on NHANES 2009-2014 (item 35) | 42.2% of US adults 30+ with periodontitis, 7.8% severe, CDC/AAP definitions (item 35); under the 2017 classification (ACES), stage I 17.9%, II 46.2%, III 16.7%, IV 12.4% of dentate adults 30+ (Tay et al. 2025, cited in `data/datasets/nhanes/nhanes_published.csv`) | `scripts/19_prevalence.py` writes `data/datasets/prevalence/vs_published.csv`: truth 54.1% with periodontitis and 14.0% stage III-IV (928 people, since #467) against 42.2% and 7.8%. Off, and not comparable one to one ('severe' is not stage III-IV) |
 | (age shift in `draw_chart`) | at 50 and over: healthy -0.10, moderate +0.06, severe +0.04 | older people draw more disease | placeholder | prevalence rises with age (item 35) | no |
 | `synthetic.BASE_CAL_MM_PER_YEAR` | 0.05 to 0.25 mm a year, uniform | how fast a periodontitis patient's worst attachment loss grows, before risk factors | placeholder | 0.05 mm a year mean whole-mouth loss in a well-maintained cohort, 0.08-0.1 before 35 (item 74); 0.05-0.5 mm a year with moderate and 0.1-1.0 with rapid progression, no care (item 75). The range sits inside the moderate one | no |
 | `synthetic.SMOKER_EXTRA` | light 0.1, heavy 0.3 mm a year | added to the rate for under 10 / 10 or more cigarettes a day | placeholder | none checked | no |
@@ -44,9 +46,10 @@ US3, #486, with #467).
 | (teeth lost in `draw_history`) | 0.05 a visit once CAL >= 6 mm | a tooth lost to periodontitis | placeholder | none | no |
 | `synthetic.TREAT_PROB` | 0.6 | a periodontitis visit leads to scaling and root planing | placeholder | about half (927 of 1,866, 49.7%) of dental-school patients with generalized moderate periodontitis had scaling and root planing billed within two years (item 78, Table 3) | no |
 | `synthetic.TREATED_RATE_FACTOR` | 0.4 | progression after therapy, as a share of the untreated rate | placeholder | none checked | no |
-| `draw_risk(light_smoker_share)` | 0.1 | smokes 1-9 cigarettes a day (the study's default) | placeholder | 11.6% (95% CI 11.1-12.1) of US adults smoked cigarettes in 2022, NHIS (item 72); the study's 18% (light and heavy) is above it | `tests/test_risk_shares.py` recovers the shares on a large seeded draw |
-| `draw_risk(heavy_smoker_share)` | 0.08 | smokes 10-30 a day (the study's default) | placeholder | as above | the same test |
-| `draw_risk(hba1c_share)` | 0.12 | has an HbA1c on record, half drawn from 5.8-6.9 and half from 7.0-10.5 (the study's default), so 8.5% have diabetes and 5.9% HbA1c >= 7.0 | placeholder | 15.8% of US adults 20 and over had diabetes (diagnosed, or HbA1c >= 6.5 or fasting glucose >= 126 mg/dL), NHANES August 2021-August 2023 (item 73); the study's 8.5% is below it | the same test |
+| `draw_risk(light_smoker_share)` | 0.1 | smokes 1-9 cigarettes a day (the function's default; the study's before spec 033 US3) | placeholder | 11.6% (95% CI 11.1-12.1) of US adults smoked cigarettes in 2022, NHIS (item 72); the default's 18% (light and heavy) is above it | `tests/test_risk_shares.py` recovers the shares on a large seeded draw |
+| `draw_risk(heavy_smoker_share)` | 0.08 | smokes 10-30 a day (the function's default) | placeholder | as above | the same test |
+| `draw_risk(hba1c_share)` | 0.12 | has an HbA1c on record, half drawn from 5.8-6.9 and half from 7.0-10.5 (the function's default), so 8.5% have diabetes and 5.9% HbA1c >= 7.0 | placeholder | 15.8% of US adults 20 and over had diabetes (diagnosed, or HbA1c >= 6.5 or fasting glucose >= 126 mg/dL), NHANES August 2021-August 2023 (item 73); the default's 8.5% is below it | the same test |
+| `study.STUDY_RISK_KWARGS` | light_smoker_share 0.06496, heavy_smoker_share 0.05104, hba1c_share 0.224258 | the `draw_risk` arguments the study uses (`open_dental.risk_kwargs` of the extract's `Params`): 11.6% smoke, 44% of them 10 or more a day, 15.8% have diabetes | item 72 (smoking) and item 73 (diabetes), through `Params.smoking_share` and `diabetes_share` | 11.6% of US adults (item 72); 15.8% of US adults 20 and over (item 73) | `tests/test_study.py` (`test_the_study_draws_smoking_and_diabetes_at_the_published_shares`) recovers them in 2,500 generated people |
 | `synthetic.DIABETES_HBA1C` | 6.5 | the HbA1c (%) at or above which a synthetic person has diabetes | item 73 (the NHANES laboratory definition) | HbA1c >= 6.5% (item 73) | no |
 | `synthetic.DIABETES_OF_HBA1C` | 0.704545 | the share of drawn HbA1c values at or above 6.5, which `risk_kwargs` divides a diabetes share by | placeholder (follows from the HbA1c draw) | none | `tests/test_risk_shares.py` |
 | `study.CHARTED_SHARE` | 0.8 | the share of visits with a full probing chart the evidence reader assumes | item 3 (about 80% of patients charted) | perio chart present for 32.7-69.6% of patients at three dental schools and 99.3-99.7% at a large dental group, 2015-2018 (item 76, Table 2) | no |
@@ -58,16 +61,16 @@ US3, #486, with #467).
 | `study.RECORD_ERROR_RATE` | 0.02 | a charted follow-up visit holds another patient's chart or a decimal slip (half each) | placeholder | none | no |
 | (people and visits in `_study_visits`) | born 1940-2002; first visit in the first half of 2021; 1-6 visits about 182 days apart | who is in the study | placeholder (design choice) | none | no |
 | `study.REVIEW_STRATA` | healthy 0.15, gingivitis 0.2, stage I 0.17, stage II 0.18, stage III 0.18, stage IV 0.12 | target shares of the chart-review set, rare statuses oversampled | placeholder (design choice) | none: a sampling design, not a prevalence | no |
-| `study.ANALYSIS_MIN_AGE` | 18 | the youngest age scored (spec 032 US8) | placeholder (design choice) | none | no |
-| `study.ANALYSIS_START_DATE` | 2021-04-01 | the first visit date scored, a synthetic stand-in for an adoption date | placeholder (design choice) | none | no |
+| `study.ANALYSIS_MIN_AGE` | 18 | the youngest age in the note set and scored (spec 032 US8, #467) | placeholder (design choice) | none | no |
+| `study.ANALYSIS_START_DATE` | 2021-04-01 | the first visit date in the note set and scored, a synthetic stand-in for an adoption date | placeholder (design choice) | none | no |
 
 ## The Open Dental extract (`open_dental.py`)
 
 A seeded practice-management extract in Open Dental's table format (spec 029; 2,000 patients by default, 6,000 in
 `scripts/51_tooth_loss_model.py` and the presets). It draws smoking, HbA1c and histories with the same
-`synthetic.draw_risk` and `draw_history` as the study, so the rows above apply to it too, except that since spec 033
-US2 its smoking and diabetes shares are its own settings (`Params.smoking_share`, `heavy_smoking_fraction`,
-`diabetes_share`). The record-mess rates are
+`synthetic.draw_risk` and `draw_history` as the study, so the rows above apply to it too. Its smoking and diabetes
+shares are its own settings since spec 033 US2 (`Params.smoking_share`, `heavy_smoking_fraction`, `diabetes_share`),
+and the study takes the same values since US3. The record-mess rates are
 invented defaults until a real extract's `realism_profile` sets them (#385); `NO_MESS` turns them off.
 
 | Parameter | Value | What it means | Source | Published figure | Checked by |
@@ -113,7 +116,7 @@ invented defaults until a real extract's `realism_profile` sets them (#385); `NO
 | `Params.entry_other_diabetes_ratio` | 1.2 | how much more often a patient with diabetes has them (an upper bound) | item 70 (item 69 on why it is an upper bound) | the same figure | the same test |
 | `Params.entry_other_norm_draws` | 20000 | patients drawn to keep each band's mean | placeholder (design choice) | none | no |
 | `Params.smoking_share` | 0.116 | patients who smoke cigarettes (`synthetic.draw_risk` through `open_dental.risk_kwargs`) | item 72 | 11.6% (95% CI 11.1-12.1) of US adults, 2022 (item 72) | `tests/test_risk_shares.py` recovers it in a built extract |
-| `Params.heavy_smoking_fraction` | 0.44 | of the smokers, the share at 10 or more a day (the study's 0.08 of 0.18) | placeholder | none checked | the same test |
+| `Params.heavy_smoking_fraction` | 0.44 | of the smokers, the share at 10 or more a day (the old study placeholder's 0.08 of 0.18) | placeholder | none checked | the same test |
 | `Params.diabetes_share` | 0.158 | patients with HbA1c >= 6.5, so with type 2 diabetes listed | item 73 | 15.8% of US adults 20 and over (item 73) | the same test |
 | `open_dental.DIABETES_HBA1C` | 6.5 | the HbA1c (%) at which a patient has type 2 diabetes listed | item 73 (the NHANES laboratory definition) | HbA1c >= 6.5% (item 73) | no |
 | `Params.insurance_shares` | private 0.55, public 0.3, none 0.15 | each patient's insurance type | placeholder | dental coverage of US adults is reported as about 62% private, 16% public and 22% none for 2022, from the ADA Health Policy Institute; that report could not be opened from this environment, so it is not checked and not cited (spec 033 US2) | `tests/test_open_dental.py` recovers the declared shares |

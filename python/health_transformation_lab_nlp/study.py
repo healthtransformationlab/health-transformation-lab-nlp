@@ -29,6 +29,8 @@ from .deid import deidentify, leak_check, residual_scan, score_deid
 from .labels import PerioChart, Status, extent_of, grade_of, label_chart
 from .medical_record import medical_records, people_from_visits
 from .note_reader import read_note
+from .open_dental import Params as _ExtractParams
+from .open_dental import risk_kwargs as _extract_risk_kwargs
 from .periodx import visits_table as periodx_visits_table
 from .phenotype import (
     DEFAULT_ABSENT_CODE,
@@ -77,6 +79,9 @@ def _clinician_call(status: Status, rng: random.Random) -> Status:
 
 
 N_CLINICS = 8
+# Spec 033 US3 (#486): smoking and diabetes are drawn at the published US shares the Open Dental extract uses
+# (spec 033 US2: open_dental.Params.smoking_share, heavy_smoking_fraction, diabetes_share; docs/synthetic_data.md).
+STUDY_RISK_KWARGS = _extract_risk_kwargs(_ExtractParams())
 RECORD_ERROR_RATE = 0.02     # charted follow-up visits with a charting error (spec 005)
 
 
@@ -118,12 +123,15 @@ def _record_error(chart: PerioChart, age: int, rng: random.Random) -> tuple[Peri
 
 
 @traced
-def generate_visits(n_people: int, seed: int) -> pd.DataFrame:
+def generate_visits(n_people: int, seed: int, risk_kwargs: dict | None = None) -> pd.DataFrame:
+    """Every synthetic visit of `n_people` people, with fake PHI. `risk_kwargs` are synthetic.draw_risk's arguments
+    (default STUDY_RISK_KWARGS, the published shares; {} for the placeholders the notes had before spec 033 US3)."""
+    risk_kw = STUDY_RISK_KWARGS if risk_kwargs is None else risk_kwargs
     rng = random.Random(seed)
     clinics = clinic_profiles(seed).set_index("clinic_id")
     visits = _study_visits(n_people, rng, clinics.reset_index()).sort_values(
         ["person_id", "visit_date"]).reset_index(drop=True)
-    people = {pid: (fake_person(rng, g.iloc[0]["birth_date"]), draw_risk(rng))
+    people = {pid: (fake_person(rng, g.iloc[0]["birth_date"]), draw_risk(rng, **risk_kw))
               for pid, g in visits.groupby("person_id")}
     histories = {pid: draw_history(int(g.iloc[0]["age"]), len(g), people[pid][1], rng,
                                    case_mix=float(clinics.loc[g.iloc[0]["clinic_id"], "case_mix"]))
@@ -169,9 +177,9 @@ def generate_visits(n_people: int, seed: int) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-# Spec 032 US8 (#448): which visits count when results are scored. The benchmark note set (build_study: the review
-# set, the answer key, train.csv) keeps every visit, because committed model runs were scored on those exact notes; the
-# scoring scripts leave out the rest (scripts/28_ladder_vs_truth.py, 19_prevalence.py, 40_classify_status.py).
+# Spec 032 US8 (#448): which visits count. Since #467 the benchmark note set itself (build_study: the review set, the
+# answer key, train.csv) holds only these visits; the scoring scripts still apply the same filter (scripts/
+# 28_ladder_vs_truth.py, 19_prevalence.py, 40_classify_status.py), which on the rebuilt notes leaves nothing out.
 ANALYSIS_MIN_AGE = 18
 ANALYSIS_START_DATE = "2021-04-01"    # synthetic stand-in for the date a newer classification was adopted
 
@@ -188,7 +196,7 @@ def visits_in_study(df: pd.DataFrame, min_age: int | None = ANALYSIS_MIN_AGE,
                     start_date: str | None = ANALYSIS_START_DATE) -> pd.DataFrame:
     """The visits that count (spec 032 US2): aged at least `min_age` at the visit when one is set, and on or after
     `start_date` (an ISO date) when one is set. The defaults (spec 032 US8) are adults from ANALYSIS_START_DATE; None
-    for both keeps every visit (as build_study does for the benchmark note set)."""
+    for both keeps every visit."""
     if min_age is None and start_date is None:
         return df
     young, early = _visit_masks(df, min_age, start_date)
@@ -272,12 +280,13 @@ def label_studio_tasks(review: pd.DataFrame) -> list[dict]:
 
 @traced
 def build_study(out_dir: Path, raw_dir: Path, n_people: int = 1200, review_n: int = 240,
-                seed: int = 42, engine: str = "regex", min_age: int | None = None,
-                start_date: str | None = None, absent_code: str = "no_answer") -> dict:
-    """Build the study files (module docstring). `min_age` and `start_date` (spec 032 US2, default None: every
-    visit) choose which visits count; the summary then reports those left out, by reason. These and `absent_code`
-    keep their pre-US8 defaults here: this builds the benchmark note set (review set, answer key) that committed model
-    runs were scored on, so the scoring scripts apply the spec 032 US8 defaults instead (ANALYSIS_MIN_AGE)."""
+                seed: int = 42, engine: str = "regex", min_age: int | None = ANALYSIS_MIN_AGE,
+                start_date: str | None = ANALYSIS_START_DATE, absent_code: str = "no_answer") -> dict:
+    """Build the study files (module docstring). `min_age` and `start_date` (spec 032 US2) choose which visits are
+    in the note set: by default adults from ANALYSIS_START_DATE (spec 032 US8, #467); None for both keeps every visit.
+    The summary reports those left out, by reason, whenever a filter is set. `absent_code` stays "no_answer": the
+    files keep the codes as read, and the scoring scripts re-read them under the default rule
+    (reread_absent_code)."""
     df = generate_visits(n_people, seed)
     filtered = min_age is not None or start_date is not None
     left_out = visit_exclusions(df, min_age, start_date)
@@ -337,7 +346,7 @@ def build_study(out_dir: Path, raw_dir: Path, n_people: int = 1200, review_n: in
             "algorithm": RULES_V0["version"], "algorithm_design": RULES_DESIGN["version"],
             "record_errors_injected": int((df["record_error"] != "").sum()),
             "review_status_mix": review["truth_status"].value_counts().to_dict()}
-    if filtered:      # only then, so the default summary (data/datasets/build_summary.json) is unchanged
+    if filtered:
         summary["visits_left_out"] = {"min_age": min_age, "start_date": start_date, **left_out}
     return summary
 

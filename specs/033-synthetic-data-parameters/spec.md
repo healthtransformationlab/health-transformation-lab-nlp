@@ -39,6 +39,8 @@ documented where it is set, but no page lists them all.
 
 - Done together with #467 (rebuild the notes for adults from the start date), so the external model runs are
   redone once.
+- Done: `study.STUDY_RISK_KWARGS` is `open_dental.risk_kwargs()` of the extract's `Params`; the external runs made
+  on the old notes show as "rerun pending on the new notes" until they are redone (#467).
 
 ### US4 - The Open Dental extract has patients with no natural teeth, and optionally a state per clinic (P2) #500
 

@@ -6,10 +6,10 @@ Reads data/datasets/periodx_visits.csv (written by 10_build_study.py) and writes
 
   data_quality/completeness_patel2022.csv  completeness per section (M1 diagnosis codes, M2 the PerioDx Extractor on
                                            the note, M3 the PerioDx Diagnoser on the chart) before merging, and of the
-                                           merged result, on all visits and on the 240 review charts (paper: Fig. 1)
+                                           merged result, on all visits and on the review charts (paper: Fig. 1)
   periodx/confusion_scores.csv             TP, FP, FN, TN, precision, recall and F1 per status, one-vs-rest and
                                            pooled, for the Diagnoser, the Extractor and the stepwise phenotype, against
-                                           the synthetic generator's truth on the 240 review charts (paper: Table 1)
+                                           the synthetic generator's truth on the review charts (paper: Table 1)
 
 Synthetic data scored against the generator's truth: not clinical performance, and not a replication of the paper,
 whose figures come from real records at one dental school (docs/periodx.md).

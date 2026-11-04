@@ -9,7 +9,7 @@
 # MAGIC endpoints, so the model runs here in the notebook. On paid workspaces you can instead
 # MAGIC serve it and use `--backend openai` or `ai_query`.
 # MAGIC
-# MAGIC **Compare with BERT:** set `limit` to 0 (all 240 review charts), optionally `lora_train` to
+# MAGIC **Compare with BERT:** set `limit` to 0 (every review chart), optionally `lora_train` to
 # MAGIC fine-tune first (the BERT encoders were fine-tuned on the same `train.csv`); the last cells run
 # MAGIC `29_medgemma_vs_bert.py` against the committed encoder predictions.
 # MAGIC
@@ -107,9 +107,9 @@ display(d.assign(correct=d.pred == d.truth).groupby("difficulty")["correct"].agg
 # COMMAND ----------
 
 # MedGemma vs the fine-tuned BERT encoders (committed ai_predictions_<encoder>.csv), paired bootstrap CIs.
-# Meaningful only with limit = 0: the encoders scored all 240 charts.
+# Meaningful only with limit = 0: the encoders scored every review chart.
 if int(dbutils.widgets.get("limit") or 0):  # noqa: F821
-    print("skipped: set limit to 0 so MedGemma scores all 240 charts, as the encoders did")
+    print("skipped: set limit to 0 so MedGemma scores every review chart, as the encoders did")
 else:
     if runlog.run(["python", "../../python/scripts/29_medgemma_vs_bert.py"], log_path=log) == 0:
         display(pd.read_csv("../../data/datasets/ladder/medgemma_vs_bert.csv"))  # noqa: F821

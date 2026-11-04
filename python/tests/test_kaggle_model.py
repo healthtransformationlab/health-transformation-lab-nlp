@@ -24,7 +24,25 @@ _spec.loader.exec_module(pm)
 NB = REPO_ROOT / "kaggle" / "encoder_gpu.ipynb"
 WF = REPO_ROOT / ".github" / "workflows" / "kaggle-encoders.yml"
 SCRIPT = REPO_ROOT / "python" / "scripts" / "11_ai_predict.py"
-PREDICTIONS = DATASETS_DIR / "ai_predictions_modernbert-base+cw.csv"   # a committed full run of the same rung
+COMMITTED = DATASETS_DIR / "ai_predictions_modernbert-base+cw.csv"   # the committed run of the same rung
+
+
+@pytest.fixture
+def PREDICTIONS(tmp_path):
+    """A full run on the current review notes. The committed GPU run was made on the notes before the #467 rebuild
+    (rerun pending), so the keyword rules' answers stand in for it, under the rung's file name."""
+    path = tmp_path / "runs" / COMMITTED.name
+    path.parent.mkdir()
+    pd.read_csv(DATASETS_DIR / "ai_predictions_note_rules.csv").to_csv(path, index=False)
+    return path
+
+
+def test_the_committed_run_made_on_the_old_notes_is_refused(tmp_path):
+    from health_transformation_lab_nlp import note_set
+    if note_set.is_current(DATASETS_DIR, COMMITTED.name):
+        pytest.skip("the GPU run has been redone on the current notes")
+    with pytest.raises(SystemExit, match="full run"):
+        pm.build(_model_dir(tmp_path), COMMITTED, tmp_path / "b", "someone", "abc")
 
 
 def _code():
@@ -82,7 +100,7 @@ def test_prepared_kernel_names_the_rung_to_keep(tmp_path):
 
 # ---- the model folder and its card -------------------------------------------------------------------------
 
-def test_built_folder_is_an_apache_licensed_public_transformers_model(tmp_path):
+def test_built_folder_is_an_apache_licensed_public_transformers_model(tmp_path, PREDICTIONS):
     out = tmp_path / "build"
     meta, inst = pm.build(_model_dir(tmp_path), PREDICTIONS, out, "someone", "abc123def456")
     assert {"config.json", "model.safetensors", "tokenizer.json", "model-metadata.json",
@@ -95,7 +113,7 @@ def test_built_folder_is_an_apache_licensed_public_transformers_model(tmp_path):
     assert len(meta["subtitle"]) <= 80 and 5 <= len(meta["title"]) <= 50
 
 
-def test_card_gives_the_same_runs_scores_and_says_synthetic(tmp_path):
+def test_card_gives_the_same_runs_scores_and_says_synthetic(tmp_path, PREDICTIONS):
     _, inst = pm.build(_model_dir(tmp_path), PREDICTIONS, tmp_path / "b", "someone", "abc123def456")
     pred = pd.read_csv(PREDICTIONS)
     truth = pd.read_csv(DATASETS_DIR / "answer_key" / "review_key.csv").set_index("visit_id")["truth_status"]
@@ -107,14 +125,14 @@ def test_card_gives_the_same_runs_scores_and_says_synthetic(tmp_path):
     assert all(lab in card for lab in LABELS)
 
 
-def test_build_refuses_a_partial_run(tmp_path):
+def test_build_refuses_a_partial_run(tmp_path, PREDICTIONS):
     part = tmp_path / "ai_predictions_modernbert-base+cw.csv"
     pd.read_csv(PREDICTIONS).head(10).to_csv(part, index=False)
     with pytest.raises(SystemExit, match="full run"):
         pm.build(_model_dir(tmp_path), part, tmp_path / "b", "someone", "abc")
 
 
-def test_build_refuses_simulated_predictions(tmp_path):
+def test_build_refuses_simulated_predictions(tmp_path, PREDICTIONS):
     sim = tmp_path / "simulated_ai_predictions_modernbert-base+cw.csv"
     pd.read_csv(PREDICTIONS).to_csv(sim, index=False)
     with pytest.raises(SystemExit, match="simulated"):
@@ -122,7 +140,7 @@ def test_build_refuses_simulated_predictions(tmp_path):
 
 
 @pytest.mark.parametrize("broken", ["no weights", "other labels"])
-def test_build_refuses_a_model_folder_that_is_not_this_classifier(tmp_path, broken):
+def test_build_refuses_a_model_folder_that_is_not_this_classifier(tmp_path, broken, PREDICTIONS):
     d = _model_dir(tmp_path, labels=LABELS if broken == "no weights" else ["a", "b"])
     if broken == "no weights":
         (d / "model.safetensors").unlink()

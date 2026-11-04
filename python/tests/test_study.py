@@ -124,9 +124,29 @@ def test_a_minimum_age_and_a_start_date_leave_visits_out_counted_once_by_first_r
     assert list(visits_in_study(v, min_age=None, start_date="2021-01-01")["visit_id"]) == [2, 4]
 
 
-def test_the_study_build_reports_visits_left_out_only_when_a_filter_is_set(tmp_path):
-    plain = build_study(tmp_path / "a", tmp_path / "ra", n_people=40, review_n=10, seed=5)
-    assert "visits_left_out" not in plain                  # the default summary is unchanged
+def test_the_study_build_keeps_adults_from_the_start_date_by_default(tmp_path):
+    # spec 032 US8 / #467: the benchmark note set itself is built for adults from the start date (repo_v2)
+    import inspect
+    sig = inspect.signature(build_study).parameters
+    assert (sig["min_age"].default, sig["start_date"].default) == (ANALYSIS_MIN_AGE, ANALYSIS_START_DATE)
+    s = build_study(tmp_path / "a", tmp_path / "ra", n_people=40, review_n=10, seed=5)
+    out = s["visits_left_out"]
+    assert (out["min_age"], out["start_date"]) == (ANALYSIS_MIN_AGE, ANALYSIS_START_DATE)
+    assert out["before_start_date_count"] > 0 and out["eligible_count"] == s["visits"]
+    structured = pd.read_csv(tmp_path / "a" / "visits_structured.csv")
+    assert (structured["age"] >= 18).all() and (structured["visit_date"] >= ANALYSIS_START_DATE).all()
+    key = pd.read_csv(tmp_path / "a" / "answer_key" / "review_key.csv")
+    assert key["visit_id"].isin(structured["visit_id"]).all()
+
+
+def test_a_build_with_no_filter_keeps_every_visit(tmp_path):
+    s = build_study(tmp_path / "a", tmp_path / "ra", n_people=40, review_n=10, seed=5, min_age=None,
+                    start_date=None)
+    assert "visits_left_out" not in s
+    assert s["visits"] == len(generate_visits(40, seed=5))
+
+
+def test_the_study_build_reports_visits_left_out_when_a_filter_is_set(tmp_path):
     s = build_study(tmp_path / "b", tmp_path / "rb", n_people=40, review_n=10, seed=5, min_age=40,
                     start_date="2021-07-01")
     out = s["visits_left_out"]
@@ -134,3 +154,20 @@ def test_the_study_build_reports_visits_left_out_only_when_a_filter_is_set(tmp_p
     assert out["eligible_count"] == s["visits"]
     structured = pd.read_csv(tmp_path / "b" / "visits_structured.csv")
     assert (structured["age"] >= 40).all() and (structured["visit_date"] >= "2021-07-01").all()
+
+
+def test_the_study_draws_smoking_and_diabetes_at_the_published_shares():
+    # spec 033 US3 (#486): the study build uses US2's shares (open_dental.Params, docs/references.md items 72, 73)
+    import math
+
+    from health_transformation_lab_nlp import open_dental, study
+    assert study.STUDY_RISK_KWARGS == open_dental.risk_kwargs(open_dental.Params())
+    people = generate_visits(2500, seed=9).groupby("person_id").first()
+    p, n = open_dental.Params(), len(people)
+
+    def near(observed, share):
+        return abs(observed - share) <= 4 * math.sqrt(share * (1 - share) / n)
+
+    assert near((people["cigarettes_per_day"] > 0).mean(), p.smoking_share)
+    assert near((people["cigarettes_per_day"] >= 10).mean(), p.smoking_share * p.heavy_smoking_fraction)
+    assert near(people["diabetes"].mean(), p.diabetes_share)

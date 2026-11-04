@@ -60,29 +60,30 @@ The start dates are synthetic stand-ins for "the date a newer classification was
 | | `repo_v1` | `repo_v2` (the defaults) | `exploratory_1` |
 |---|---|---|---|
 | visits in the study set (left out: before the start date) | 4,343 (0) | 3,794 (549) | 3,794 (549) |
-| rules phenotype (`algorithm_design`): macro F1 at the main grouping | 0.739 (six) | 0.740 (five); 0.843 (three) | 0.740 (five); 0.843 (three) |
-| rules phenotype: periodontitis sensitivity / specificity | 0.973 / 0.878 | 0.925 / 0.889 | 0.925 / 0.889 |
-| the note's stated status: macro F1 at the main grouping | 0.788 (six) | 0.803 (five) | 0.803 (five) |
+| rules phenotype (`algorithm_design`): macro F1 at the main grouping | 0.747 (six) | 0.759 (five); 0.846 (three) | 0.759 (five); 0.846 (three) |
+| rules phenotype: periodontitis sensitivity / specificity | 0.980 / 0.903 | 0.933 / 0.917 | 0.933 / 0.917 |
+| the note's stated status: macro F1 at the main grouping | 0.760 (six) | 0.769 (five) | 0.769 (five) |
 | tooth loss, held-out teeth (completed label set, shared features) | 223 | 89 | 87 |
 | tooth loss: AUC, logistic / XGBoost | 0.808 / 0.799 | 0.719 / 0.749 | 0.878 / 0.834 |
 | tooth loss: patients in both the training and the test part | 0 | 0 | 12 |
-| status classifier, 5level: accuracy / macro F1 | 0.797 / 0.746 | 0.795 / 0.751 | 0.768 / 0.716 |
-| status classifier, 3level: accuracy / macro F1 | 0.881 / 0.864 | 0.882 / 0.868 | 0.867 / 0.846 |
-| status classifier: people in both the training and the test part | 0 | 0 | 405 |
+| status classifier, 5level: accuracy / macro F1 | 0.815 / 0.763 | 0.791 / 0.767 | 0.781 / 0.661 |
+| status classifier, 3level: accuracy / macro F1 | 0.882 / 0.850 | 0.857 / 0.832 | 0.875 / 0.853 |
+| status classifier: people in both the training and the test part | 0 | 0 | 413 |
 | stage IV, all patients at stage III-IV: every missing tooth / fewer than 20 teeth / fewer than 10 pairs / truth | 261 / 49 / 171 / 98 | 261 / 49 / 171 / 98 | 261 / 49 / 171 / 98 |
 | stage IV by the expected count, completed + planned, logistic / XGBoost | 94 / 89 | 92 / 80 | 86 / 84 |
 | CAL reliability: ICC for the same site charted again (SEM) | not run | 0.683 (0.82 mm) | 0.683 (0.82 mm) |
 
 How to read it:
 
-- `repo_v2` reproduces the committed status-classifier results (`data/datasets/classify_status/`, 0.795 and 0.882
-  accuracy) and `repo_v1` the ones before spec 032 US8 (0.797 and 0.881), as they should.
-- **A split by visit overstates accuracy.** It puts some people (405 here) or patients on both sides, so the model is
+- `repo_v2` reproduces the committed status-classifier results (`data/datasets/classify_status/`, 0.791 and 0.857
+  accuracy), as it should. The visit rows are on the study visits as drawn since #467 (spec 033 US3's smoking and
+  diabetes shares), so `repo_v1` keeps the old settings but no longer the old numbers (0.797 and 0.881 before).
+- **A split by visit overstates accuracy.** It puts some people (413 here) or patients on both sides, so the model is
   partly tested on people it trained on. Script 58 prints that count next to every such score, with a warning. A
   higher number under `exploratory_1` is not a better model: the test set is smaller (the start date leaves out more
   than half the teeth) and the split leaks.
 - Reading a plan with no gum-disease code as healthy or gingivitis turns some "no answer" readings into answers. The
-  rules phenotype then finds periodontitis less often (sensitivity 0.973 to 0.925): a plan with no code says nothing
+  rules phenotype then finds periodontitis less often (sensitivity 0.980 to 0.933): a plan with no code says nothing
   about gum health, so on this synthetic data the rule costs sensitivity.
 - Grouping changes the macro F1 most (fewer, larger groups are easier to tell apart); periodontitis yes/no is the same
   at every grouping.
@@ -95,10 +96,11 @@ Spec 032 US8 (#448) made the `exploratory_1` settings the code's defaults, with 
 
 **The split stays by person.** A random split by visit lets one person's visits (or one patient's teeth) sit in both
 the training and the test part, so the model is partly tested on people it learned from, and the score overstates
-how well it would do on new people (405 people on both sides for the status classifier above). It stays an option
+how well it would do on new people (413 people on both sides for the status classifier above). It stays an option
 (`split_unit=visit`, `--split-unit visit`), which reports that count beside every score, and is never a default.
 
-**The visit filters apply when results are scored, not to the note set.** The age and start-date defaults, the
+**The visit filters applied when results were scored, not to the note set** (until #467, below). The age and
+start-date defaults, the
 five-group scoring and the absent-code rule are applied at scoring time (`study.scored_review`,
 `study.reread_absent_code`): the ladder, the leaderboards, prevalence and the status classifier count only adults'
 visits from 2021-04-01, and re-read the diagnosis codes from the seeded raw codes. The benchmark note set itself is
@@ -110,7 +112,8 @@ that count. Rebuilding the note set for adults from the start date, then rerunni
 tracked in #467. No synthetic visit is under 18, so today the age filter leaves nothing out; the start date leaves
 out 19 of the 240 review charts and 549 of the 4,343 visits.
 
-Headline numbers before and after (SYNTHETIC: agreement with the generator's answer key, not clinical performance):
+Headline numbers before and after spec 032 US8, on the notes as they were then (SYNTHETIC: agreement with the
+generator's answer key, not clinical performance; the visit rows have moved again since #467, below):
 
 | | Before (`repo_v1`) | After (`repo_v2`) |
 |---|---|---|
@@ -143,8 +146,62 @@ task data and cards (the note set, #467), the per-field MedGemma accuracy (it sc
 status), and the seed-stability check (`scripts/49_seed_stability.py` rebuilds the study for five seeds and still
 scores six statuses on every review chart; moving it to the scoring defaults is a follow-up).
 
+## The note set rebuilt for adults from the start date (#467, spec 033 US3)
+
+Since #467 the benchmark note set itself holds only the visits the defaults count: `study.build_study` and
+`scripts/10_build_study.py` default to adults (18+) and visits from 2021-04-01 (`--all-visits` keeps every one), so the
+review set, the answer key, `train.csv`, `visits_structured.csv` and the Kaggle and Hugging Face task data are built
+from those visits alone. In the same rebuild the study draws smoking and diabetes at spec 033 US2's published US shares
+(11.6% smoke, 15.8% have diabetes; `study.STUDY_RISK_KWARGS`, [synthetic data card](synthetic_data.md)), so the
+external model runs are redone once. The diagnosis codes are still written as read, and re-read under the default
+absent-code rule at scoring time.
+
+**The scoring-time filter is now a check.** `study.scored_review` still applies the age and start-date filter; on the
+rebuilt notes it leaves nothing out (223 of 223 review charts; `tests/test_scoring_defaults.py` fails if it ever leaves
+one out), so a build made with other filters can't be scored under the defaults by mistake.
+
+**The review set is 223 charts, not 240.** The review set takes one visit per person, stratified by status. With the
+new risk draw only 12 people's latest visit is stage IV, under the 29 the stratum asks for, so the set is 223 (stage
+IV 12; the other strata as before). The sampling rule is unchanged.
+
+**Runs made on the old notes are kept, not rescored.** The committed predictions of the GPU encoders (ModernBERT,
+GatorTron and the others), MedGemma on Kaggle and Databricks, Llama 3.3 70B on Databricks and the real LLM judge
+were made on the 240 notes before the rebuild. `note_set.py` fingerprints the review notes (SHA-256 of each visit id
+and note text) and `data/datasets/prediction_note_sets.csv` records the note set each result file was made on; the
+ladder (`scripts/28_ladder_vs_truth.py`) scores only files made on the current notes and lists the rest in
+`data/datasets/ladder/ladder_pending.csv`, and the leaderboards ([results](results.md)) show them as "rerun pending on
+the new notes". The Kaggle and Hugging Face results datasets leave them out. A collected run (`kaggle/record_results.py`)
+is stamped with the current notes, and refused if it holds visits that aren't review notes.
+
+Headline numbers before and after the rebuild (SYNTHETIC: agreement with the generator's answer key, not clinical
+performance; both columns at the `repo_v2` defaults):
+
+| | Before (#467) | After |
+|---|---|---|
+| visits in the note set | 4,343 (549 before 2021-04-01 left out when scored) | 3,794 |
+| training notes / people | 3,484 / 960 | 3,016 / 896 |
+| review charts / scored | 240 / 221 | 223 / 223 |
+| review charts at stage IV | 29 | 12 |
+| rules, gum measurements first (whole record) | 215 of 221 | 207 of 223 |
+| rules, exam form first (the study design's order) | 163 of 221 (73.8%) | 176 of 223 (78.9%) |
+| keyword rules / gum measurements alone | 179 / 177 of 221 | 183 / 166 of 223 |
+| word counts (TF-IDF) / plus the stage 4 rule | 175 / 196 of 221 | 185 / 191 of 223 |
+| word counts plus the X-ray reading / plus the stage 4 rule | 182 / 195 of 221 | 187 / 193 of 223 |
+| GPU encoders, MedGemma, Llama 3.3 70B, the LLM judge | scored (ModernBERT + stage 4 rule 201, MedGemma 4B + rule 181 of 221) | rerun pending on the new notes |
+| prevalence of periodontitis, rules exam form first (people) | 53.8% of 1,119 | 52.6% of 1,119 |
+| prevalence from the done-treatment diagnosis codes alone | 32.0% of 1,119 | 31.0% of 1,119 |
+| status classifier (outcome: rules exam form first), 5level / 3level accuracy | 0.795 / 0.882 | 0.791 / 0.857 |
+| tooth loss (Open Dental extract) | | unchanged: a separate generator |
+
+The TF-IDF rungs were retrained on the new training notes; this container's scikit-learn also gives slightly
+different TF-IDF predictions on the old notes, so their before and after are not a clean comparison of notes alone.
+The simulated reviewers, judge and reader (all `simulated_*`), prevalence, the data-quality tables and page, case
+profiles, the PerioDx scores, site-level charts, progression, the medical feature sets, seed stability, the presets'
+visit parts, the dashboards, the standards page, the leaderboards and the decks were rerun on the new notes.
+
 To get the old behaviour: `--preset repo_v1` for script 58; `scripts/28_ladder_vs_truth.py --grouping six
---all-visits --absent-code no_answer` and `scripts/19_prevalence.py --all-visits --absent-code no_answer` give
-byte for byte what the scripts wrote before spec 032 US8; `scripts/51_tooth_loss_model.py --start-date "" --test-share 0.3
+--all-visits --absent-code no_answer` and `scripts/19_prevalence.py --all-visits --absent-code no_answer` gave
+byte for byte what the scripts wrote before spec 032 US8 on the notes before #467 (the old notes need
+`scripts/10_build_study.py --all-visits` and the old risk shares, `generate_visits(..., risk_kwargs={})`); `scripts/51_tooth_loss_model.py --start-date "" --test-share 0.3
 --cv-folds 0`; in code, pass `grouping="six"`, `min_age=None, start_date=None`, `absent_code="no_answer"`, or
 `tooth_loss_dq.GROUP_TYPES[:-1]`. See also [tooth loss](tooth_loss.md).
