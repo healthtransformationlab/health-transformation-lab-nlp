@@ -65,6 +65,19 @@ def org_exclusion_reason(row: dict) -> str | None:
 
 
 @traced
+def withheld_exclusion_reason(row: dict, prefixes: tuple[str, ...]) -> str | None:
+    """Why a task can't be published because its patch carries files the snapshots withhold, or None. Those files
+    have no stated redistribution licence (task_graph.WITHHELD_PATHS, PR #515), so a patch adding or changing them
+    can't go out either."""
+    for field in ("patch", "test_patch"):
+        paths = re.findall(r"(?m)^diff --git a/(\S+) b/", row.get(field) or "")
+        hit = sorted({pre for p in paths for pre in prefixes if p.startswith(pre)})
+        if hit:
+            return f"{field} carries {', '.join(hit)}, which the snapshots withhold (no stated licence, PR #515)"
+    return None
+
+
+@traced
 def issue_from_branch(branch: str) -> int | None:
     m = BRANCH_ISSUE.match(branch or "")
     return int(m.group(1)) if m else None

@@ -195,3 +195,12 @@ def test_a_task_naming_the_organisation_in_its_code_is_excluded_with_the_reason(
         assert reason and where in reason and "CLAUDE.md" in reason
         assert ORG_NAME.lower() not in reason.lower()       # the reason itself never names it
     assert tm.names_org(f"see {ORG_NAME} Institute") and not tm.names_org("care questions")
+
+
+def test_a_task_whose_patch_carries_withheld_files_is_excluded():   # PR #515: the course files (owner's call)
+    clean = {"patch": "diff --git a/python/x.py b/python/x.py\n+x = 1\n", "test_patch": ""}
+    assert tm.withheld_exclusion_reason(clean, ("data/external/maccrobat/course/",)) is None
+    row = {"patch": "diff --git a/data/external/maccrobat/course/train.txt b/data/external/maccrobat/course/train.txt\n"
+                    "+A DT O\n", "test_patch": ""}
+    reason = tm.withheld_exclusion_reason(row, ("data/external/maccrobat/course/",))
+    assert reason and "patch" in reason and "data/external/maccrobat/course/" in reason
