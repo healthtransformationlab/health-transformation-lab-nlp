@@ -232,7 +232,7 @@ One per item in the practice's own lists (diagnoses, prognoses, ...). tooth_loss
 | PK | `defnum` | bigint | item key |
 |  | `category` | int | which list: Diagnosis, Prognosis, ... |
 |  | `itemname` | string | the item's text, e.g. a diagnosis; older and newer lists both stay |
-|  | `itemvalue` | string | extra information, used differently per list |
+|  | `itemvalue` | string | extra information, used differently per list; for a diagnosis, its code (PE1-PE4 and P1-P4 are periodontal, 029 US11) |
 |  | `itemorder` | int | place in the list, from 0 |
 |  | `ishidden` | boolean | hidden: retired items keep their keys |
 

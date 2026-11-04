@@ -118,6 +118,44 @@ for the committed agent runs.
 
 ---
 
+### User Story 4 - The data-quality report covers spend and speed against budgets and targets (Priority: P2) #576
+
+The data-quality report the dashboards and Genie already read (`dq_check`) covers the dental record: conformance,
+completeness and plausibility. The owner opens the same report and sees, beside those checks, whether spend is within
+budget and work within its performance targets. It also shows whether the cost numbers themselves can be trusted.
+Each budget and target is written down once, with a limit, an owner and an action (AGENTS.md, "Alerts and severity":
+without an action it isn't an alert).
+
+**Why this priority**: US1 and US2 produce the numbers; this makes them governed. A budget or a target is checked
+the way a data rule is: each period, with a pass or a fail, in the report people already read.
+
+**Independent Test**: from a fixed register, fixed cost and run rows, and fixed settings dates, the checks come out
+with the expected PASS, FAIL and REPORT rows in `dq_check`'s shape, and each failing one routes at its severity.
+
+**Acceptance Scenarios**:
+
+1. **Given** a budget register naming, for each budget or target, the period, limit, owner and action, **When** the
+   report is built, **Then** it has one `cost` or `performance` check per entry, in `dq_check`'s columns, so the
+   existing dashboards and Genie show it with no new plumbing.
+2. **Given** spend to date for a period, **When** the projected spend for the whole period passes the budget,
+   **Then** `cost:budget_burn` fails and goes to the daily digest (SEV3), naming the budget, the projection and the
+   action.
+3. **Given** agent runs by model and settings, **When** cost per resolved task or GPU-hours per resolved task passes
+   its ceiling, **Then** that check fails for that model and settings.
+4. **Given** pipeline runs, **When** a pipeline's p95 duration passes its target or its freshness passes its SLA,
+   **Then** its `performance` check fails, and drift alone stays SEV4 (weekly digest).
+5. **Given** the cost data itself, **When** the report is built, **Then** four checks on it are reported:
+   - **completeness:** the share of runs that have a cost (REPORT: billing lags);
+   - **plausibility:** no negative cost, and no zero cost on a run that used compute (FAIL);
+   - **conformance:** every price and allowance setting read within 90 days (FAIL when stale);
+   - **labelling:** every estimated cost is marked as one, and calibration and simulated rows stay out of a model's
+     cost per resolved task (FAIL).
+6. **Given** a failing `cost` or `performance` check, **When** the doctor runs, **Then** it becomes a
+   recommendation naming the file and setting to change (US3), which an agent session can carry out as a PR under
+   the usual rules.
+
+---
+
 ### Edge Cases
 
 - A job run with no usage records (a skipped task, a run too short to bill): DBUs 0 only if billing says so; an
@@ -156,6 +194,15 @@ for the committed agent runs.
 - **FR-011**: A dashboard and Genie view MUST show cost per resolved task by model, tier and settings, with
   estimated costs labelled.
 - **FR-012**: Calibration and simulated runs MUST be labelled and kept out of a model's cost per resolved task.
+- **FR-013**: Every budget and performance target MUST be declared once, with its period, limit, owner and action.
+- **FR-014**: The report MUST check each declared budget and target every period, in `dq_check`'s columns, with
+  categories `cost` and `performance` beside conformance, completeness and plausibility.
+- **FR-015**: The report MUST check the cost data itself: completeness (REPORT), plausibility, the age of its
+  settings, and that estimates and calibration or simulated rows are labelled (FAIL).
+- **FR-016**: A passed budget or a cap that stopped a run MUST route at SEV3; cost or duration drift alone at SEV4.
+  A more severe level changes AGENTS.md and waits for the owner.
+- **FR-017**: The grader dashboards MUST have a Governance page, and Genie instructions MUST answer "are we within
+  budget this period?" from the same rows.
 
 ### Key Entities
 
@@ -163,6 +210,8 @@ for the committed agent runs.
 - **Agent task run**: one coding-agent task on one model with one set of settings: tokens, seconds, GPU-hours,
   allowance share, estimated cost, whether it resolved.
 - **Price setting**: a GPU or DBU price: value, unit, source, date read.
+- **Budget or target**: what is limited (a pipeline, a model, an allowance), the period, the limit and its unit,
+  the owner, the action when passed.
 - **Cost recommendation**: a doctor decision for cost or duration drift: the run, the evidence, the severity, the
   action, and whether the owner took it.
 
@@ -180,6 +229,9 @@ for the committed agent runs.
   weekly digest.
 - **SC-005**: The owner can answer "which model resolves tasks for the least GPU time?" from one view, without
   reading run files.
+- **SC-006**: Each period, the owner reads one report that says, for every declared budget and target, whether it
+  passed, and for the cost data whether it is complete and current.
+- **SC-007**: A projected budget overrun reaches the daily digest before the period ends.
 
 ## Assumptions
 

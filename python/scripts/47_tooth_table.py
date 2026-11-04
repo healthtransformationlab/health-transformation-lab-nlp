@@ -28,7 +28,7 @@ out.mkdir(parents=True, exist_ok=True)
 
 INPUTS = {"procedurelog": ["procnum", "patnum", "procstatus", "codenum", "toothnum", "dx", "datetp", "datecomplete",
                            "procdate"],
-          "procedurecode": ["codenum", "proccode"], "definition": ["defnum", "category", "itemname"],
+          "procedurecode": ["codenum", "proccode"], "definition": ["defnum", "category", "itemname", "itemvalue"],
           "toothinitial": ["patnum", "toothnum", "initialtype"], "proctp": ["proctpnum", "procnumorig", "datetp"],
           "patient": ["patnum", "datefirstvisit"]}
 for name, cols in INPUTS.items():
