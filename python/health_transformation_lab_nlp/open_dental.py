@@ -131,7 +131,8 @@ OLDER_LIST = [("Periodontal disease, advanced", "P4", "perio"), ("Periodontal di
 LIST_2017 = [("Periodontitis, stage III", "PE3", "perio"), ("Periodontitis, stage IV", "PE4", "perio"),
              ("Caries, non-restorable (2017 list)", "CN2", "other"), ("Fracture (2017 list)", "FR2", "other"),
              ("Orthodontic (2017 list)", "OR2", "other"), ("Other (2017 list)", "OT2", "other")]
-# the declared lookup silver uses: every item of either list -> perio / other (spec 029 FR-004)
+# every item of either list -> perio / other, by name (spec 029 FR-004); since 029 US11 the tooth-loss label reads
+# the code (PERIO_CODES below), and this lookup serves the data-quality checks on the lists themselves
 DIAGNOSIS_LOOKUP = {name: kind for name, _, kind in OLDER_LIST + LIST_2017}
 # The tooth-loss label reads the diagnosis by its code (029 US11, #567): these codes are periodontal, any other
 # recorded diagnosis is another reason, and no diagnosis is none.
@@ -921,7 +922,7 @@ def extractions(tables: dict[str, pd.DataFrame], truth: pd.DataFrame) -> pd.Data
     ext["tooth_num"] = ext["toothnum"].astype(int)
     d = tables["definition"][tables["definition"]["category"] == DEFCAT_DIAGNOSIS]
     names = dict(zip(d["defnum"], d["itemname"]))
-    ext["dx_class"] = ext["dx"].map(diagnosis_classes(tables["definition"])).fillna("none")
+    ext["dx_class"] = pd.to_numeric(ext["dx"], errors="coerce").map(diagnosis_classes(tables["definition"])).fillna("none")
     older = {n for n, _, _ in OLDER_LIST}
     ext["dx_list"] = ext["dx"].map(lambda x: None if x == 0 else ("older" if names.get(x) in older else "2017"))
     return ext.merge(truth, left_on=["patnum", "tooth_num"], right_on=["patient_id", "tooth_num"], how="left")

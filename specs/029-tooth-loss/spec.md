@@ -565,7 +565,8 @@ in `classification` and the scores; R and Python agree on all of it.
   - a diagnosis is periodontal when its definition's code (`definition.itemvalue`) is one of PE1-PE4 or P1-P4
     (`open_dental.PERIO_CODES`, `open_dental.diagnosis_classes`), another reason for any other code, and none when
     the procedure has no diagnosis; the synthetic lists carry P3, P4 (older) and PE3, PE4 (2017) on their
-    periodontal items;
+    periodontal items. A recorded diagnosis outside the practice's lists is now another reason (by name it was
+    none); `tooth_loss_dq`'s `diagnosis_not_in_lists` still checks the lists by name;
   - the tooth table holds the permanent teeth 1-32 only, at every age;
   - F1 is reported with sensitivity, specificity, PPV and NPV at each threshold.
     Python and R stay in parity on the classes and F1.

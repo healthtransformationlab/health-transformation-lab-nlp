@@ -107,6 +107,15 @@ def test_the_synthetic_lists_code_their_periodontal_items_with_the_study_leads_c
                 assert code.rstrip("1234") == prefix, name
 
 
+def test_extractions_read_the_diagnosis_key_as_a_number_even_from_text(built):
+    # PR #574 review: a dx read from CSV is text; it must still find its definition, not fall to "none"
+    tables, truth = built
+    want = od.extractions(tables, truth)["dx_class"].tolist()
+    as_text = {**tables, "procedurelog": tables["procedurelog"].astype({"dx": str})}
+    assert od.extractions(as_text, truth)["dx_class"].tolist() == want
+    assert "perio" in want
+
+
 def test_the_older_diagnosis_list_gives_way_to_the_2017_list():
     tables, truth = od.build(od.Params(n_patients=400), seed=3)
     p = od.Params()

@@ -54,7 +54,8 @@ stores the image, not a reading of it.
   `tooth_loss_model.exclusions` counts the teeth left out by each reason.
 - **The label:** an extraction is periodontal when its diagnosis item's code is PE1, PE2, PE3, PE4, P1, P2, P3 or
   P4 (the study lead's list, 029 US11, #567; `open_dental.PERIO_CODES`), matched on the code, not the item's name.
-  Any other recorded diagnosis is another reason. The synthetic lists carry P3 and P4 (older list) and PE3 and PE4
+  Any other recorded diagnosis is another reason, including an item outside the practice's lists (read by name it
+  was none; the data-quality check `diagnosis_not_in_lists` still flags such items). The synthetic lists carry P3 and P4 (older list) and PE3 and PE4
   (2017 list) on their periodontal items.
 - **Two label sets** (FR-010): completed extractions only, and completed plus planned extractions (one per planned
   procedure, however many plan copies; a tooth planned then extracted counts once, as completed). Since 029 US9
