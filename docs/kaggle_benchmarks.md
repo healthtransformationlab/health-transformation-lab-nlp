@@ -17,7 +17,7 @@ free-text answer against a rubric, used where no single right string exists.
 | The quote gate (`llm_reader.parse_answer`) | `assert_true` on `gate_ok` | `kbench.read_note` |
 | Exact check against the answer key | `assert_equal(truth, predicted)` | `kbench.read_note` |
 | The judge prompt and gate (`judge.SYSTEM`, `judge.gate`) | `assess_response_with_judge` with our `prompt_fn` and a pydantic schema | `kbench.judge_note` |
-| 240-note review set, `review_key.csv` | `evaluation_data=` DataFrame, one row per run | `kbench.eval_frame` |
+| 223-note review set, `review_key.csv` | `evaluation_data=` DataFrame, one row per run | `kbench.eval_frame` |
 | `eval/score.py` metrics | the `dict` the top task returns (parity test to 1e-9) | `kbench.score_rows` |
 | `models.yaml` model ids | `kbench.llm`, `kbench.judge_llm`, `kbench.llms[...]` from `.env` | `kaggle b init` |
 | `data/results/*.csv` per run | `*.run.json` per note, read by the leaderboard | written by the SDK |
@@ -81,7 +81,7 @@ finished runs' outputs to the workflow run. The Model Proxy credentials it fetch
    - *a novel benchmark*: finding gum disease in dental records from notes with a verbatim-quote gate and
      an audited judge; no public benchmark covers it;
    - *a publishable dataset with ground truth*: `perio-bench-notes` is already public, synthetic, CC BY 4.0,
-     240 reviewed charts with an answer key plus 3,484 training notes;
+     223 reviewed charts with an answer key plus 3,016 training notes;
    - *reproducibility*: the task file, the tests, seeded data, the R parity test;
    - *why compute*: the judge doubles the calls (one read, one verdict per note), and the ladder in
      `models.yaml` is what we would want run across every proxy model.
