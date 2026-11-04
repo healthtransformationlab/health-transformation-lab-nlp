@@ -19,6 +19,7 @@ import re
 
 import pandas as pd
 
+from . import table_comments
 from .telemetry import traced
 
 _SAFE = re.compile(r"[\w.:+@/-]+")
@@ -44,6 +45,7 @@ def replace_batch(spark, rows: pd.DataFrame, table: str, key: dict) -> int:
             if field.name in empty:
                 sdf = sdf.withColumn(field.name, sdf[field.name].cast(field.dataType))
     sdf.write.mode("append").option("mergeSchema", "true").saveAsTable(table)
+    table_comments.apply(spark, table)   # spec 034: the table and column comments, after every write
     return len(rows)
 
 
@@ -66,4 +68,5 @@ def replace_keys(spark, rows: pd.DataFrame, table: str, column: str, schema: str
         listed = ", ".join(f"'{v}'" for v in values)
         spark.sql(f"DELETE FROM {table} WHERE {column} IN ({listed})")
     sdf.write.mode("append").option("mergeSchema", "true").saveAsTable(table)
+    table_comments.apply(spark, table)   # spec 034
     return len(rows)
