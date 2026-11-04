@@ -37,6 +37,25 @@ python ../kaggle/perio_bench_task.py                   # dry run: prints a SIMUL
 
 A dry run is labelled `SIMULATED (scripted model, not a result)` and is never a number to report.
 
+## First runs on Kaggle (2026-11-04)
+
+Three models, one each from Google, Anthropic and OpenAI, read all 223 review notes through Kaggle's model proxy
+(workflow run 41782477681, task version 1). The notes are synthetic, so each score is **agreement with the
+generator's answer key, not accuracy on real patients** ([how scoring works](scoring.md)). The judge was Kaggle's
+default evaluation model, `google/gemini-3-flash-preview`, for all three, so it judged its own answers in the first row.
+
+| Model | Sensitivity | Specificity | Macro F1 (five groups) | Agreement with the key | Quote check passed | Judge agreed |
+|---|---|---|---|---|---|---|
+| `anthropic/claude-sonnet-5@default` | 0.986 | 0.810 | 0.853 | 0.839 | 0.973 | 0.960 |
+| `google/gemini-3-flash-preview` | 0.993 | 0.821 | 0.840 | 0.825 | 0.991 | 0.946 |
+| `openai/gpt-5.4-nano-2026-03-17` | 0.827 | 0.976 | 0.669 | 0.722 | 0.928 | 0.664 |
+
+Read from each run's log (`kaggle b t log perio-bench -m <model>`). Every note was answered (`errored_count` 0), but
+Kaggle marked all three runs ERRORED after they finished. Its code check wanted `kbench.llm` passed in the task's run
+call (#547), so these runs are not on a leaderboard. A clean rerun after that fix records them. The two larger models
+catch nearly every periodontitis case but flag some healthy or gingivitis charts as periodontitis. The smaller OpenAI
+model is the reverse. Sensitivity, the leaderboard's main number, is the share of periodontitis charts found.
+
 ## Push it to Kaggle
 
 Credentials come from `kaggle b init`, which writes short-lived `MODEL_PROXY_*` variables to `.env`

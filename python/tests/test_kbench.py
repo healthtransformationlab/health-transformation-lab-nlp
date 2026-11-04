@@ -196,6 +196,11 @@ def test_task_file_defines_the_task_the_cli_pushes():
     assert "perio-bench" in _cli_task_names(TASK_FILE.read_text())
 
 
+def test_task_file_runs_the_task_on_kbench_llm():
+    # #547: Kaggle errors a run whose code doesn't pass `kbench.llm` to the task's run call (a hard-coded model)
+    assert "perio_bench.run(kbench.llm," in TASK_FILE.read_text()
+
+
 def test_task_file_dry_runs_on_a_scripted_model(monkeypatch, capsys):
     monkeypatch.setenv("PERIO_BENCH_N", "6")
     monkeypatch.syspath_prepend(str(Path(kbench.__file__).parents[1]))
