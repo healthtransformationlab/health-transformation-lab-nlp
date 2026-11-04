@@ -28,7 +28,7 @@ What the extract carries, as Open Dental records it:
   (`radiograph_bone_level`), standing in for a radiograph-reading tool; it is never an Open Dental table;
 - insurance (spec 032 US6, #445) is Open Dental's `carrier`, `insplan`, `inssub` and `patplan`, drawn on a random
   stream of its own after every other table, so adding it changed no other row. Each patient is `private`, `public` or
-  `none` at SYNTHETIC placeholder shares (`Params.insurance_shares`), read back by `insurance_type`;
+  `none` at the ADA HPI's published US adult shares (`Params.insurance_shares`, spec 033 US5), read back by `insurance_type`;
 - smoking and diabetes follow published US shares (spec 033 US2, #485: `Params.smoking_share`, `diabetes_share`),
   where the study's notes keep the older placeholders (docs/synthetic_data.md);
 - some patients have no natural teeth (spec 033 US4, #500), at published US shares by age band
@@ -258,8 +258,10 @@ class Params:
     # US adults 20 and over with diabetes, August 2021-August 2023: Gwira et al., NCHS Data Brief 516, NHANES (item 73);
     # here every one of them has HbA1c >= DIABETES_HBA1C, the NHANES laboratory cut-off
     diabetes_share: float = 0.158
-    # spec 032 US6 (#445): each patient's insurance type. SYNTHETIC placeholders, not estimates of any population
-    insurance_shares: tuple = (("private", 0.55), ("public", 0.30), ("none", 0.15))
+    # spec 032 US6 (#445): each patient's insurance type. Spec 033 US5 (#522): US adults 19-64, MEPS 2021, from the ADA
+    # Health Policy Institute (docs/references.md item 82): 61.4% private, 15.7% public, 22.8% none (rounded up 0.001
+    # so the three sum to 1). The source says MEPS can't estimate adult public coverage accurately
+    insurance_shares: tuple = (("private", 0.614), ("public", 0.157), ("none", 0.229))
     secondary_plan: float = 0.05              # a privately insured patient also has a second private plan
     spouse_subscriber: float = 0.25           # a private plan held by a spouse (another patient), not the patient
     # spec 033 US4 (#500): the share of patients with no natural teeth (edentulous), by age band (lower bound, years).

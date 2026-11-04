@@ -14,7 +14,7 @@ pytest.importorskip("kaggle_benchmarks")
 
 from health_transformation_lab_nlp import judge, kbench, llm_reader
 from health_transformation_lab_nlp.labels import LABELS
-from health_transformation_lab_nlp.paths import REPO_ROOT
+from health_transformation_lab_nlp.paths import DATASETS_DIR, REPO_ROOT
 
 N = 24
 
@@ -46,7 +46,8 @@ def test_eval_frame_is_the_review_set_with_the_sdk_columns(df):
     assert list(df.columns) == ["visit_id", "note_text", "truth_status", "difficulty"]
     assert len(df) == N and set(df["truth_status"]) <= set(LABELS)
     assert df.equals(kbench.eval_frame(n=N, seed=1))                      # seeded, so reproducible
-    assert len(kbench.eval_frame()) == 240
+    review_key = pd.read_csv(DATASETS_DIR / "answer_key" / "review_key.csv")
+    assert len(kbench.eval_frame()) == len(review_key)                      # the whole review set
 
 
 def test_reader_prompt_is_our_reader_system_and_user_messages():

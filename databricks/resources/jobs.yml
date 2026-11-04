@@ -246,6 +246,8 @@ resources:
     pipeline_doctor:
       name: Pipeline doctor
       max_concurrent_runs: 1
+      email_notifications:   # a new SEV1/SEV2 decision fails the run: this is the page (issue 521)
+        on_failure: ${var.alert_emails}
       tags:
         project: health-transformation-lab-nlp
         data: synthetic

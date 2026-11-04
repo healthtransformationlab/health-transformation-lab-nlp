@@ -182,7 +182,11 @@ its own workspace: names are the same in all three, so they can't share one.
    It also runs `databricks/setup/grant_system_tables.sh`, which gives the same group `USE_CATALOG` on
    `system` and `USE_SCHEMA` and `SELECT` on `system.lakeflow`, the run history the pipeline doctor reads
    (spec 027). A bundle can't hold these grants, because the `system` catalog isn't one of its resources.
-   For a target set up before that script existed (dev), run it on its own, as a metastore admin:
+   For a target set up before that script existed, run it on its own, as an account admin. On Free Edition
+   (dev) no one we control can: the metastore belongs to Databricks, only account admins reach
+   `system.lakeflow`, and the grant fails with "does not have MANAGE on Catalog 'system'" (tried 2026-11-04,
+   issue 521). There the doctor is to read run history from the Jobs API instead. On a workspace with an account
+   console:
 
    ```bash
    databricks/setup/grant_system_tables.sh dev --print-config   # the group and schema it will use, no changes
