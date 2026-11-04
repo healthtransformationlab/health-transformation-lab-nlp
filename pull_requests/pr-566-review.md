@@ -1,4 +1,4 @@
-# PR review: Llama 3.3 70B rerun on the rebuilt notes (#467)
+# PR #566 review: Llama 3.3 70B rerun on the rebuilt notes (#467)
 
 Reviewed against `.claude/review-rubric.md` and AGENTS.md.
 
