@@ -438,3 +438,13 @@ def test_the_sandbox_has_the_hosts_packages_dev_fd_and_shm(session):
     assert out["status"] == "ok", out
     assert "subst-ok" in out["stdout"] and "shm-ok" in out["stdout"]
     assert _site.getusersitepackages() in out["stdout"]
+
+
+def test_commands_find_the_running_python_first(session):
+    """CI's Python lives in /opt/hostedtoolcache and Kaggle's in /opt/conda: python3 in a command must be the
+    interpreter running the harness, with its packages, not whatever /usr/bin holds (CI on PR #549)."""
+    import sys
+    assert ah._env("/workspace")["PATH"].split(":")[0] == str(Path(sys.executable).parent)
+    unsandboxed = ah.Session(session.workdir, session.budget, sandbox=None)
+    out = call(unsandboxed, "run_command", command="python3 -c 'import sys; print(sys.prefix)'")
+    assert out["stdout"].strip() == sys.prefix

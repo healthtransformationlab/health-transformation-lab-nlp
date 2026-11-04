@@ -189,7 +189,8 @@ def _spawn(argv: list[str], cwd: Path | None, timeout: int, env: dict | None = N
 
 def _env(workspace: str) -> dict:
     """The only variables a command sees: never the host's tokens."""
-    return {"PATH": f"{Path(site.getuserbase()) / 'bin'}:/usr/local/bin:/usr/bin:/bin", "HOME": "/tmp",
+    path = [str(Path(sys.executable).parent), str(Path(site.getuserbase()) / "bin"), "/usr/local/bin", "/usr/bin", "/bin"]
+    return {"PATH": ":".join(dict.fromkeys(path)), "HOME": "/tmp",   # the running Python first: CI, Kaggle
             "LANG": "C.UTF-8", "PYTHONPATH": f"{workspace}/python", "PYTHONDONTWRITEBYTECODE": "1",
             "PYTHONUSERBASE": site.getuserbase()}   # HOME is /tmp, so the user site-packages must be named
 
