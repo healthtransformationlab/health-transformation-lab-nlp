@@ -1,4 +1,4 @@
-# PR review: 032 AI2, seed stability scores as the leaderboard does (#472)
+# PR #583 review: 032 AI2, seed stability scores as the leaderboard does (#472)
 
 Reviewed against `.claude/review-rubric.md` and AGENTS.md.
 
