@@ -174,3 +174,22 @@ def test_metadata_only_describes_only_the_files_the_live_dataset_holds(tmp_path)
     assert api.calls == [("metadata", meta["id"], str(pub.meta_dir(out)))]
     side = json.loads((pub.meta_dir(out) / "dataset-metadata.json").read_text())
     assert {r["path"] for r in side["resources"]} == set(live)
+
+
+def test_dataset_docs_has_no_duplicate_keys():
+    # #467: two sessions described the same columns; YAML keeps the last silently, so one description was lost
+    import yaml
+
+    from health_transformation_lab_nlp.paths import REPO_ROOT
+
+    class Strict(yaml.SafeLoader):
+        pass
+
+    def no_dupes(loader, node, deep=False):
+        keys = [loader.construct_object(k, deep=deep) for k, _ in node.value]
+        dupes = sorted({k for k in keys if keys.count(k) > 1})
+        assert not dupes, f"duplicate keys in kaggle/dataset_docs.yaml: {dupes}"
+        return yaml.SafeLoader.construct_mapping(loader, node, deep)
+
+    Strict.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, no_dupes)
+    yaml.load((REPO_ROOT / "kaggle" / "dataset_docs.yaml").read_text(), Loader=Strict)
