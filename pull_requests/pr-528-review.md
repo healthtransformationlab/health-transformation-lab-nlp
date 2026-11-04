@@ -1,4 +1,4 @@
-# PR review: 033 DOCS1, missing references (#526)
+# PR #528 review: 033 DOCS1, missing references (#526)
 
 Reviewed against `.claude/review-rubric.md` and AGENTS.md.
 
