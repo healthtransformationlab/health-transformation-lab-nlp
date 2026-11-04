@@ -1,8 +1,9 @@
 reason_name,tooth_count,preset_name,data_label
 edentulous_count,14016,repo_v1,synthetic
-third_molar_count,22248,repo_v1,synthetic
+no_diagnosis_count,161,repo_v1,synthetic
+third_molar_count,22244,repo_v1,synthetic
 under_min_age_count,0,repo_v1,synthetic
 unknown_age_count,0,repo_v1,synthetic
 before_start_date_count,0,repo_v1,synthetic
 unknown_date_count,0,repo_v1,synthetic
-eligible_count,155736,repo_v1,synthetic
+eligible_count,155579,repo_v1,synthetic

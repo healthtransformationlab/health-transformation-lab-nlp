@@ -6278,8 +6278,8 @@
     "check": "missing_value_share",
     "domain": "completeness",
     "text": "null, blank or unknown cells, as a share (reported)",
-    "checked_count": 8182327,
-    "found_count": 218110,
+    "checked_count": 8182347,
+    "found_count": 218112,
     "found_pct": 2.67,
     "is_flagged": null
    },
@@ -6359,7 +6359,7 @@
     "check": "procedure_code_not_cdt",
     "domain": "accuracy",
     "text": "a code not in CDT form",
-    "checked_count": 10,
+    "checked_count": 12,
     "found_count": 0,
     "found_pct": 0.0,
     "is_flagged": false

@@ -4,7 +4,7 @@ generator_seed,label_set,model,rule,patient_count,stage3_count,stage4_count,agre
 42,all,none,truth,2230,2137,93,2230,0,0,93,0,repo_v1,synthetic
 42,all,none,teeth_lt_20,2230,2195,35,2156,8,66,35,0,repo_v1,synthetic
 42,all,none,pairs_lt_10,2230,2045,185,2062,130,38,185,0,repo_v1,synthetic
-42,completed,logistic,expected_perio_loss,2230,2175,55,2168,12,50,55,0,repo_v1,synthetic
-42,completed,xgboost,expected_perio_loss,2230,2189,41,2168,5,57,41,0,repo_v1,synthetic
-42,completed_planned,logistic,expected_perio_loss,2230,2158,72,2169,20,41,72,0,repo_v1,synthetic
-42,completed_planned,xgboost,expected_perio_loss,2230,2182,48,2157,14,59,48,0,repo_v1,synthetic
+42,completed,logistic,expected_perio_loss,2230,2176,54,2175,8,47,54,0,repo_v1,synthetic
+42,completed,xgboost,expected_perio_loss,2230,2195,35,2168,2,60,35,0,repo_v1,synthetic
+42,completed_planned,logistic,expected_perio_loss,2230,2155,75,2178,17,35,75,0,repo_v1,synthetic
+42,completed_planned,xgboost,expected_perio_loss,2230,2173,57,2176,9,45,57,0,repo_v1,synthetic
