@@ -251,6 +251,19 @@ def output_tag(class_weight: str | None = None, seed: int = 42, adapter: str | N
 
 
 @traced
+def parse_variant(name: str) -> tuple[str, str | None, int]:
+    """The base rung, class weight and seed a name like `modernbert-base+cw+s1` asks for: the inverse of
+    `output_tag` for its +cw and +s<seed> suffixes (#559)."""
+    base, cw, seed = name, None, 42
+    if "+s" in base and base.rsplit("+s", 1)[1].isdigit():
+        base, s = base.rsplit("+s", 1)
+        seed = int(s)
+    if base.endswith("+cw"):
+        base, cw = base.removesuffix("+cw"), "sqrt"
+    return base, cw, seed
+
+
+@traced
 def make_rung(rung_id: str, registry: dict, **hf_kwargs):
     if rung_id == "rules_baseline":
         return RulesBaseline()
