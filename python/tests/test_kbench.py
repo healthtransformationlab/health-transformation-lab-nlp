@@ -14,7 +14,7 @@ pytest.importorskip("kaggle_benchmarks")
 
 from health_transformation_lab_nlp import judge, kbench, llm_reader
 from health_transformation_lab_nlp.labels import LABELS
-from health_transformation_lab_nlp.paths import REPO_ROOT
+from health_transformation_lab_nlp.paths import DATASETS_DIR, REPO_ROOT
 
 N = 24
 
@@ -46,7 +46,8 @@ def test_eval_frame_is_the_review_set_with_the_sdk_columns(df):
     assert list(df.columns) == ["visit_id", "note_text", "truth_status", "difficulty"]
     assert len(df) == N and set(df["truth_status"]) <= set(LABELS)
     assert df.equals(kbench.eval_frame(n=N, seed=1))                      # seeded, so reproducible
-    assert len(kbench.eval_frame()) == 240
+    review_key = pd.read_csv(DATASETS_DIR / "answer_key" / "review_key.csv")
+    assert len(kbench.eval_frame()) == len(review_key)                      # the whole review set
 
 
 def test_reader_prompt_is_our_reader_system_and_user_messages():
@@ -172,6 +173,32 @@ def test_task_file_follows_the_sdk_rules():
     assert "import kaggle_benchmarks as kbench" in text
     assert "perio_bench.run(" in text                                       # without .run() nothing is recorded
     assert "SIMULATED" in text                                              # dry runs say so
+
+
+def _cli_task_names(text: str) -> list[str]:
+    """The task names the Kaggle CLI finds before a push (kaggle_api_extended._get_task_names_from_file, kaggle
+    2.2.5): functions decorated `@task(...)` or `@<x>.task(...)`, named by `name=` or the first argument."""
+    import ast
+    names = []
+    for node in ast.walk(ast.parse(text)):
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            for dec in node.decorator_list:
+                func = dec.func if isinstance(dec, ast.Call) else dec
+                if (isinstance(func, ast.Name) and func.id == "task") or (isinstance(func, ast.Attribute)
+                                                                          and func.attr == "task"):
+                    name = next((k.value.value for k in getattr(dec, "keywords", []) if k.arg == "name"), None)
+                    names.append(name or node.name)
+    return names
+
+
+def test_task_file_defines_the_task_the_cli_pushes():
+    # #541: the CLI refuses a push when the file itself has no @task for the slug ("No @task decorators found")
+    assert "perio-bench" in _cli_task_names(TASK_FILE.read_text())
+
+
+def test_task_file_runs_the_task_on_kbench_llm():
+    # #547: Kaggle errors a run whose code doesn't pass `kbench.llm` to the task's run call (a hard-coded model)
+    assert "perio_bench.run(kbench.llm," in TASK_FILE.read_text()
 
 
 def test_task_file_dry_runs_on_a_scripted_model(monkeypatch, capsys):

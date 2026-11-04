@@ -59,19 +59,37 @@ def test_the_two_label_sets_completed_and_completed_plus_planned():
     t = _teeth([(1, 3, "extracted_perio", 50), (1, 4, "extracted_other", 50), (1, 5, "planned_perio", 50),
                 (1, 6, "planned_other", 50), (1, 7, "extracted_no_dx", 50), (1, 8, "missing_at_entry", 50),
                 (1, 9, "present", 50), (1, 10, "planned_then_missing_perio", 50, 200),
-                (1, 11, "planned_then_missing_other", 50, 365), (1, 12, "planned_then_missing_perio", 50, 400),
+                (1, 11, "planned_then_missing_other", 50, 365), (1, 12, "planned_then_missing_perio", 50, 600),
                 (1, 13, "missing_later", 50)])
     done = tm.label_set(t, "completed")
     both = tm.label_set(t, "completed_planned")
     assert sorted(done["tooth_num"]) == [3, 4]
-    # 029 US9 (#507): a planned extraction counts only when the tooth is missing within the window (365 days); a tooth
+    # 029 US9 (#507): a planned extraction counts only when the tooth is missing within the window (1.5 years since
+    # 029 US10, #529); a tooth
     # still in the mouth, or missing after the window, is left unlabelled
-    assert tm.DEFAULT.planned_window_days == 365
+    assert tm.DEFAULT.planned_window_days == 548
     assert sorted(both["tooth_num"]) == [3, 4, 10, 11]
     assert both.sort_values("tooth_num")["is_perio_loss"].tolist() == [True, False, True, False]
     assert sorted(tm.label_set(t, "completed_planned", planned_window_days=180)["tooth_num"]) == [3, 4]
     with pytest.raises(ValueError, match="label set"):
         tm.label_set(t, "everything")
+
+
+def test_extractions_with_no_diagnosis_are_dropped_from_the_model():
+    # 029 US10 (#529): an extraction with no diagnosis is dropped entirely, not a negative and not scored
+    t = _teeth([(1, 3, "extracted_perio", 50), (1, 7, "extracted_no_dx", 50), (1, 8, "missing_at_entry", 50)])
+    t["loss_date"] = pd.Timestamp("2022-01-01")
+    kept = tm.eligible(t, tm.ModelParams(start_date=None))
+    assert sorted(kept["tooth_num"]) == [3, 8]
+    assert "extracted_no_dx" not in tm.APPLIED_STATUSES and "extracted_no_dx" not in tm.EVAL_SETS
+
+
+def test_the_stage_recount_is_written_only_on_request():
+    # 029 US10 (#529): the model works at the tooth level; the person-level recount is written only on request
+    out = {n: pd.DataFrame({"x": [1]}) for n in ("scores", "predictions", "stage_recount", "patient_stage",
+                                                 "stage_probabilities")}
+    assert set(tm.outputs_to_write(out)) == {"scores", "predictions"}
+    assert set(tm.outputs_to_write(out, stage_recount=True)) == set(out)
 
 
 def test_the_old_planned_rule_is_a_sensitivity_setting():
@@ -97,9 +115,9 @@ def test_teeth_that_go_missing_later_count_as_missing_with_the_models_probabilit
 def test_third_molars_are_left_out_by_default_and_the_minimum_age_is_a_parameter():
     t = _teeth([(1, 1, "extracted_perio", 15), (1, 3, "extracted_perio", 15), (2, 3, "extracted_other", 40),
                 (2, 32, "missing_at_entry", 40)])
-    every_year = tm.ModelParams(start_date=None)               # these teeth carry no dates
+    every_year = tm.ModelParams(start_date=None, min_age=18)   # these teeth carry no dates; 18 a sensitivity
     assert len(tm.eligible(t, tm.ModelParams(min_age=None, include_third_molars=True, start_date=None))) == 4
-    assert tm.ModelParams().min_age == 18                      # adults only (analysis plan s. 3)
+    assert tm.ModelParams().min_age is None                    # no age cut-off (029 US10, #529); 18 a sensitivity
     assert tm.eligible(t, every_year)["patient_id"].tolist() == [2]       # the 15-year-old is out
     no_cut = tm.ModelParams(min_age=None, start_date=None)
     assert sorted(tm.eligible(t, no_cut)["tooth_num"]) == [3, 3]   # sensitivity: no cut-off
@@ -110,9 +128,9 @@ def test_the_teeth_left_out_are_counted_by_reason_including_an_unknown_age():
     # a tooth whose age isn't recorded is left out once a cut-off applies: say how many, so a real run reports it
     t = _teeth([(1, 1, "extracted_perio", 40), (1, 3, "extracted_perio", 15), (2, 3, "extracted_other", 40),
                 (3, 4, "missing_at_entry", None)])
-    every_year = tm.ModelParams(start_date=None)               # these teeth carry no dates
+    every_year = tm.ModelParams(start_date=None, min_age=18)   # these teeth carry no dates; 18 a sensitivity
     out = tm.exclusions(t, every_year)
-    assert out == {"edentulous_count": 0, "third_molar_count": 1, "under_min_age_count": 1, "unknown_age_count": 1,
+    assert out == {"edentulous_count": 0, "no_diagnosis_count": 0, "third_molar_count": 1, "under_min_age_count": 1, "unknown_age_count": 1,
                    "before_start_date_count": 0, "unknown_date_count": 0, "eligible_count": 1}
     assert tm.exclusions(t, tm.ModelParams(min_age=None, start_date=None))["unknown_age_count"] == 0
     assert out["eligible_count"] == len(tm.eligible(t, every_year))
@@ -156,7 +174,7 @@ def test_a_start_date_leaves_out_teeth_lost_or_first_charted_before_it():
 def test_the_start_date_applies_after_the_age_cut_and_counts_each_tooth_once():
     t = _teeth([(1, 3, "extracted_perio", 15), (2, 3, "extracted_other", 40)])
     t["loss_date"] = pd.to_datetime(["2010-01-01", "2010-01-01"])
-    out = tm.exclusions(t, tm.ModelParams(start_date="2020-01-01"))
+    out = tm.exclusions(t, tm.ModelParams(start_date="2020-01-01", min_age=18))   # an age cut, as a sensitivity
     assert out["under_min_age_count"] == 1 and out["before_start_date_count"] == 1 and out["eligible_count"] == 0
 
 
@@ -213,6 +231,15 @@ def test_sensitivity_specificity_and_predictive_values_at_a_threshold():
     assert m["sensitivity"] == pytest.approx(2 / 3) and m["specificity"] == pytest.approx(2 / 3)
     assert m["ppv"] == pytest.approx(2 / 3) and m["npv"] == pytest.approx(2 / 3)
     assert math.isnan(tm.classification([0, 0], [0.1, 0.2], 0.5)["sensitivity"])   # no positives: NaN, never 0
+
+
+def test_f1_is_the_harmonic_mean_of_ppv_and_sensitivity():
+    # 029 US11 (#567): the study lead asked for the F1 score beside the other measures
+    m = tm.classification(Y, P, 0.5)       # tp 2, fp 1, fn 1 -> 2*2 / (2*2 + 1 + 1)
+    assert m["f1"] == pytest.approx(4 / 6)
+    assert tm.classification([1, 0], [0.9, 0.1], 0.5)["f1"] == 1.0
+    assert tm.classification([1, 0], [0.1, 0.2], 0.5)["f1"] == 0.0           # positives, none found
+    assert math.isnan(tm.classification([0, 0], [0.1, 0.2], 0.5)["f1"])       # nothing positive at all: NaN
 
 
 def test_youden_threshold_is_the_smallest_probability_with_the_best_j():
@@ -318,8 +345,9 @@ def test_the_patient_stage_table_counts_each_rule_from_the_tooth_predictions():
     s = tm.patient_stage(t, prob, truth, worst_cal=pd.Series({1: 6.0, 2: 3.0})).set_index("patient_id")
     one = s.loc[1]
     assert one["recorded_perio_count"] == 2 and one["missing_count"] == 6       # planned tooth is still there
-    assert one["unlabelled_prob_sum"] == pytest.approx(2.4)
-    assert one["expected_perio_loss"] == pytest.approx(4.4)
+    # the extraction with no diagnosis is dropped from the model (029 US10, #529): missing, but no probability
+    assert one["unlabelled_prob_sum"] == pytest.approx(1.7)
+    assert one["expected_perio_loss"] == pytest.approx(3.7)
     assert one["true_perio_count"] == 5                                         # the planned tooth isn't lost yet
     assert (one["is_stage4_recorded_only"], one["is_stage4_every_missing"], one["is_stage4_expected_perio_loss"],
             one["is_stage4_truth"]) == (False, True, False, True)
@@ -365,7 +393,7 @@ def test_a_run_fits_both_models_on_both_label_sets_and_scores_the_same_teeth(sma
     assert set(s["label_set"]) == {"completed", "completed_planned"}
     assert {"logistic", "xgboost"} <= set(s["model"])
     assert {"baseline_all_perio", "baseline_outcome_rate", "baseline_recorded_only"} <= set(s["model"])
-    assert set(s["eval_set"]) == {"held_out", "missing_at_entry", "extracted_no_dx"}
+    assert set(s["eval_set"]) == {"held_out", "missing_at_entry"}      # no-diagnosis extractions dropped (#529)
     n = s[s["metric"] == "auc"].groupby(["eval_set", "feature_set", "label_set", "model"])["tooth_count"].first()
     for ev in ("held_out", "missing_at_entry"):
         assert n.loc[ev].nunique() == 1, ev           # both label sets and models scored on the same teeth
@@ -373,7 +401,7 @@ def test_a_run_fits_both_models_on_both_label_sets_and_scores_the_same_teeth(sma
     assert set(fitted.loc[fitted["eval_set"] == "missing_at_entry", "feature_set"]) == {"shared"}   # no own there
     assert (s["data_label"] == "synthetic").all()
     assert {"auc", "brier", "calibration_intercept", "calibration_slope", "sensitivity", "specificity", "ppv",
-            "npv", "outcome_rate"} <= set(s["metric"])
+            "npv", "f1", "outcome_rate"} <= set(s["metric"])
     assert set(s["threshold_name"].dropna()) == {"fixed_0.5", "youden_train"}
     # US7 (#429): teeth missing at entry hold both classes, so AUC and specificity there are numbers
     entry = s[(s["eval_set"] == "missing_at_entry") & s["model"].isin(tm.MODELS)]

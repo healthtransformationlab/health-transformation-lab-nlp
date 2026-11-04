@@ -98,6 +98,24 @@ def test_extraction_diagnoses_follow_the_declared_rates():
     assert icd.mean() < 0.05                              # ICD codes only for medical claims: rare
 
 
+def test_the_synthetic_lists_code_their_periodontal_items_with_the_study_leads_codes():
+    # 029 US11 (#567): the periodontal items carry P1-P4 (older list) or PE1-PE4 (2017 list) as their code
+    for items, prefix in ((od.OLDER_LIST, "P"), (od.LIST_2017, "PE")):
+        for name, code, kind in items:
+            assert (code in od.PERIO_CODES) == (kind == "perio"), name
+            if kind == "perio":
+                assert code.rstrip("1234") == prefix, name
+
+
+def test_extractions_read_the_diagnosis_key_as_a_number_even_from_text(built):
+    # PR #574 review: a dx read from CSV is text; it must still find its definition, not fall to "none"
+    tables, truth = built
+    want = od.extractions(tables, truth)["dx_class"].tolist()
+    as_text = {**tables, "procedurelog": tables["procedurelog"].astype({"dx": str})}
+    assert od.extractions(as_text, truth)["dx_class"].tolist() == want
+    assert "perio" in want
+
+
 def test_the_older_diagnosis_list_gives_way_to_the_2017_list():
     tables, truth = od.build(od.Params(n_patients=400), seed=3)
     p = od.Params()
@@ -154,6 +172,13 @@ def test_a_tooth_already_extracted_is_never_recorded_missing_later():
     later = ext[(ext["procstatus"] == od.EXISTING_OTHER) & ext["procdate"].notna()]
     done = ext[ext["procstatus"] == od.COMPLETE]
     assert later.merge(done, on=["patnum", "toothnum"]).empty
+
+
+def test_the_code_table_holds_every_extraction_code(built):
+    # 029 US10 (#529): D7111, D7140, D7210 and D7250
+    t, _ = built
+    assert set(od.EXTRACTIONS) <= set(t["procedurecode"]["proccode"])
+    assert len(od.extraction_codenums(t)) == 4
 
 
 def test_open_dental_value_conventions(built):
@@ -461,6 +486,13 @@ def test_each_patient_has_one_insurance_type_at_the_declared_synthetic_shares():
         assert abs((kind == name).mean() - share) < 0.03, name
     covered = set(tables["patplan"]["patnum"])
     assert ((kind == "none") == ~kind.index.isin(covered)).all()        # none: no patplan row at all
+
+
+def test_the_insurance_shares_are_the_ada_hpi_adult_figures():
+    """ADA HPI, MEPS 2021, adults 19-64 (docs/references.md item 82): 61.4% private, 15.7% public, 22.8% none;
+    none rounded up 0.001 so the three sum to 1 (spec 033 US5, #522)."""
+    assert dict(od.Params().insurance_shares) == {"private": 0.614, "public": 0.157, "none": 0.229}
+    assert abs(sum(dict(od.Params().insurance_shares).values()) - 1) < 1e-12
 
 
 def test_insurance_has_its_own_random_stream_so_no_other_table_changes(built):

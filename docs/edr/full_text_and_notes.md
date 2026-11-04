@@ -7,7 +7,8 @@ PerioBench · executive pitch · the dental record (EDR) · October 2026
 Gum disease is in the dental record.
 It's hard to count.
 PerioBench: can finding gum disease accurately in the dental record improve care for millions of patients? Checked against gum specialists, built and tested end to end on synthetic records.
-Health Transformation Lab
+Health Transformation Lab ·
+Evidence you can check
 Synthetic patient records
 Two open benchmarks:
 PerioBench

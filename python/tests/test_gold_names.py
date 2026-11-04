@@ -63,7 +63,9 @@ def test_every_llm_details_file_with_its_provenance_becomes_fact_llm_call():
 def test_the_readers_revision_column_has_a_gold_name():
     # #214: the reader writes the Kaggle Models handle or Hugging Face commit its weights came from
     assert '"revision":' in (ROOT / "python" / "health_transformation_lab_nlp" / "llm_reader.py").read_text()
+    # the reader now writes revision itself; replace it with a known handle
     d = pd.read_csv(ROOT / "data" / "datasets" / "llm_details_medgemma-1.5-4b-it.csv").head(2)
+    d = d.drop(columns="revision", errors="ignore")
     d.insert(3, "revision", "keras/medgemma/keras/medgemma_instruct_4b/1")
     out = gold_names.to_gold(_with_provenance(d), "fact_llm_call")
     assert list(out.columns) == declared("fact_llm_call")

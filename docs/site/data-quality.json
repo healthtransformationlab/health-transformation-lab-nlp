@@ -6260,7 +6260,7 @@
     "check": "values_as_declared",
     "domain": "completeness",
     "text": "dates parse and coded fields hold declared values",
-    "checked_count": 759085,
+    "checked_count": 758924,
     "found_count": 0,
     "found_pct": 0.0,
     "is_flagged": false
@@ -6278,9 +6278,9 @@
     "check": "missing_value_share",
     "domain": "completeness",
     "text": "null, blank or unknown cells, as a share (reported)",
-    "checked_count": 8182327,
-    "found_count": 218110,
-    "found_pct": 2.67,
+    "checked_count": 8179932,
+    "found_count": 217790,
+    "found_pct": 2.66,
     "is_flagged": null
    },
    {
@@ -6359,7 +6359,7 @@
     "check": "procedure_code_not_cdt",
     "domain": "accuracy",
     "text": "a code not in CDT form",
-    "checked_count": 10,
+    "checked_count": 12,
     "found_count": 0,
     "found_pct": 0.0,
     "is_flagged": false
@@ -7154,9 +7154,9 @@
     "group": "none",
     "label": "none",
     "metric": "no_margin_chart",
-    "chart_count": 1037,
-    "pct": 24.3,
-    "rest_pct": 25.2,
+    "chart_count": 1566,
+    "pct": 24.6,
+    "rest_pct": 25.4,
     "is_flagged": false
    },
    {
@@ -7164,9 +7164,9 @@
     "group": "private",
     "label": "private",
     "metric": "no_margin_chart",
-    "chart_count": 3753,
-    "pct": 25.4,
-    "rest_pct": 24.7,
+    "chart_count": 4142,
+    "pct": 25.2,
+    "rest_pct": 25.1,
     "is_flagged": false
    },
    {
@@ -7174,9 +7174,9 @@
     "group": "public",
     "label": "public",
     "metric": "no_margin_chart",
-    "chart_count": 1850,
-    "pct": 25.1,
-    "rest_pct": 24.8,
+    "chart_count": 932,
+    "pct": 25.5,
+    "rest_pct": 24.9,
     "is_flagged": false
    },
    {
@@ -7184,9 +7184,9 @@
     "group": "none",
     "label": "none",
     "metric": "incomplete_chart",
-    "chart_count": 1037,
-    "pct": 53.0,
-    "rest_pct": 55.1,
+    "chart_count": 1566,
+    "pct": 53.1,
+    "rest_pct": 55.3,
     "is_flagged": false
    },
    {
@@ -7194,8 +7194,8 @@
     "group": "private",
     "label": "private",
     "metric": "incomplete_chart",
-    "chart_count": 3753,
-    "pct": 54.7,
+    "chart_count": 4142,
+    "pct": 55.1,
     "rest_pct": 54.3,
     "is_flagged": false
    },
@@ -7204,9 +7204,9 @@
     "group": "public",
     "label": "public",
     "metric": "incomplete_chart",
-    "chart_count": 1850,
+    "chart_count": 932,
     "pct": 55.5,
-    "rest_pct": 53.9,
+    "rest_pct": 54.1,
     "is_flagged": false
    }
   ],

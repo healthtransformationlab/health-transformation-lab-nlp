@@ -133,6 +133,8 @@ ladder_eval.by_difficulty(truth, preds, key["difficulty"]).to_csv(
     out / f"{prefix}medgemma_vs_bert_by_difficulty.csv", index=False)
 pd.DataFrame(preds).assign(truth=truth, difficulty=key["difficulty"]).rename_axis("visit_id").reset_index().to_csv(
     out / f"{prefix}medgemma_vs_bert_preds.csv", index=False)
+if not a.simulated:   # scored on the current notes (#467)
+    note_set.stamp(DATASETS_DIR, [f"ladder/medgemma_vs_bert{s}.csv" for s in ("", "_by_difficulty", "_preds")])
 
 show = ["method", "kind", "accuracy", "acc_lo", "acc_hi", "diff_vs_ref", "diff_lo", "diff_hi",
         "stage4_recall", "unsafe_rate", "fallback"]

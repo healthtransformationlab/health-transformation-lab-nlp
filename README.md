@@ -1,4 +1,5 @@
 # Health Transformation Lab
+**Evidence you can check.**
 
 > **Personal learning project.** Built on my own time: not affiliated with or endorsed by any employer,
 > institution or vendor, and nothing here is any organization's plan, study or finding. The patients are synthetic. See
@@ -10,8 +11,7 @@ the care they seek and get. AI developers such as OpenAI, Anthropic and Google i
 and no public benchmark we found checks answers where medicine meets dentistry, or whether an answer helps someone get
 care. The lab builds its benchmarks in the open: **PerioBench** (finding gum disease in dental records) has working
 code and results on synthetic records; **OralHealthBench** (AI answers on oral health and getting care) is planned,
-building on GlobalDentBench; and **AccessBench** (whether an answer helps someone get care) is exploratory.
-[healthtransformationlab.org](https://healthtransformationlab.org).
+building on GlobalDentBench; and **AccessBench** (whether an answer helps someone get care) is exploratory. [healthtransformationlab.org](https://healthtransformationlab.org).
 
 Two benchmarks so far, each with a short pitch that drills down to the detail.
 
@@ -28,7 +28,7 @@ It runs end to end on **synthetic** records:
 
 - the whole record, by rules that read the gum measurements first: **207 of 223** (flattering: the key uses the same rules);
 - the free-text note alone, read by word counts with a stage 4 rule: **191 of 223** (keyword rules alone: 183);
-- the trained encoders (ModernBERT and others) and the medical AI MedGemma: rerun pending on the rebuilt notes (#467).
+- the note alone, read by AI: **203 of 223** for the best trained encoder (ModernBERT-large with the stage 4 rule), **187** for Llama 3.3 70B, **178** for the medical AI MedGemma 4B.
 
 Synthetic charts, scored against the generator's answer key: agreement with it, not accuracy on real patients ([how
 scoring works](docs/scoring.md)), on the 223 review charts, all from adults' visits since April 2021, with healthy

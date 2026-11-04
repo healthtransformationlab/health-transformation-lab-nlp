@@ -33,7 +33,7 @@ from sklearn.metrics import f1_score
 
 from . import judge as judge_rules
 from . import llm_reader
-from .labels import LABELS
+from .labels import DEFAULT_GROUPING, GROUPINGS, LABELS, group_status
 from .paths import DATASETS_DIR
 from .telemetry import traced
 
@@ -131,7 +131,9 @@ def judge_note(judge_llm, visit_id: int, note_text: str, predicted_status_code: 
 def score_rows(rows: pd.DataFrame) -> dict:
     """The `eval/score.py` metrics on the per-note rows of `read_note` (parity test: `test_kbench.py`).
     Primary metric first: for screening, the miss is the costly error."""
-    truth, pred = rows["truth_status_code"].tolist(), rows["predicted_status_code"].tolist()
+    # macro F1 at the default status grouping, as eval/score.py does (spec 032 US8: healthy and gingivitis merged)
+    truth = [group_status(s) for s in rows["truth_status_code"].tolist()]
+    pred = [group_status(s) for s in rows["predicted_status_code"].tolist()]
     t, p = rows["is_perio_truth"].to_numpy(bool), rows["is_perio_predicted"].to_numpy(bool)
     tp, fn, tn, fp = int((t & p).sum()), int((t & ~p).sum()), int((~t & ~p).sum()), int((~t & p).sum())
 
@@ -143,7 +145,8 @@ def score_rows(rows: pd.DataFrame) -> dict:
         "specificity": ratio(tn, tn + fp),
         "ppv": ratio(tp, tp + fp),
         "npv": ratio(tn, tn + fn),
-        "macro_f1": float(f1_score(truth, pred, labels=LABELS, average="macro", zero_division=0)),
+        "macro_f1": float(f1_score(truth, pred, labels=list(GROUPINGS[DEFAULT_GROUPING]), average="macro",
+                                     zero_division=0)),
         "accuracy": float(rows["is_correct"].mean()),
         "gate_ok_ratio": float(rows["is_gate_ok"].mean()),
         "n": len(rows),

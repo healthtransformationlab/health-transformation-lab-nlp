@@ -28,7 +28,7 @@ What the extract carries, as Open Dental records it:
   (`radiograph_bone_level`), standing in for a radiograph-reading tool; it is never an Open Dental table;
 - insurance (spec 032 US6, #445) is Open Dental's `carrier`, `insplan`, `inssub` and `patplan`, drawn on a random
   stream of its own after every other table, so adding it changed no other row. Each patient is `private`, `public` or
-  `none` at SYNTHETIC placeholder shares (`Params.insurance_shares`), read back by `insurance_type`;
+  `none` at the ADA HPI's published US adult shares (`Params.insurance_shares`, spec 033 US5), read back by `insurance_type`;
 - smoking and diabetes follow published US shares (spec 033 US2, #485: `Params.smoking_share`, `diabetes_share`),
   where the study's notes keep the older placeholders (docs/synthetic_data.md);
 - some patients have no natural teeth (spec 033 US4, #500), at published US shares by age band
@@ -124,14 +124,19 @@ POS_OFFICE, POS_NURSING, POS_MOBILE, POS_SCHOOL = 0, 4, 7, 8
 SEQ_MOBILITY, SEQ_FURCATION, SEQ_MARGIN, SEQ_PROBING, SEQ_BLEEDING = 0, 1, 2, 4, 6
 
 # the practice's two diagnosis lists, invented here: (name, abbreviation, perio or other)
-OLDER_LIST = [("Periodontal disease, advanced", "PDA", "perio"), ("Periodontal disease, moderate", "PDM", "perio"),
+# The periodontal items carry the study lead's codes (029 US11, #567): P1-P4 on the older list, PE1-PE4 on the 2017 one.
+OLDER_LIST = [("Periodontal disease, advanced", "P4", "perio"), ("Periodontal disease, moderate", "P3", "perio"),
               ("Caries, non-restorable", "CNR", "other"), ("Fractured tooth", "FRX", "other"),
               ("Orthodontic extraction", "ORX", "other"), ("Other", "OTH", "other")]
-LIST_2017 = [("Periodontitis, stage III", "PS3", "perio"), ("Periodontitis, stage IV", "PS4", "perio"),
+LIST_2017 = [("Periodontitis, stage III", "PE3", "perio"), ("Periodontitis, stage IV", "PE4", "perio"),
              ("Caries, non-restorable (2017 list)", "CN2", "other"), ("Fracture (2017 list)", "FR2", "other"),
              ("Orthodontic (2017 list)", "OR2", "other"), ("Other (2017 list)", "OT2", "other")]
-# the declared lookup silver uses: every item of either list -> perio / other (spec 029 FR-004)
+# every item of either list -> perio / other, by name (spec 029 FR-004); since 029 US11 the tooth-loss label reads
+# the code (PERIO_CODES below), and this lookup serves the data-quality checks on the lists themselves
 DIAGNOSIS_LOOKUP = {name: kind for name, _, kind in OLDER_LIST + LIST_2017}
+# The tooth-loss label reads the diagnosis by its code (029 US11, #567): these codes are periodontal, any other
+# recorded diagnosis is another reason, and no diagnosis is none.
+PERIO_CODES = ("PE1", "PE2", "PE3", "PE4", "P1", "P2", "P3", "P4")
 
 PROCEDURE_CODES = [  # code, our short description, abbreviation, treat area, category, is hygiene, fee
     ("D0150", "Comprehensive oral evaluation", "CompEx", 3, "Exams", False, 95.0),
@@ -144,10 +149,14 @@ PROCEDURE_CODES = [  # code, our short description, abbreviation, treat area, ca
     ("D0210", "Intraoral, complete series of radiographic images", "FMX", 3, "Radiographs", False, 130.0),
     ("D0274", "Bitewings, four radiographic images", "4BW", 3, "Radiographs", False, 65.0),
     ("D0330", "Panoramic radiographic image", "Pano", 3, "Radiographs", False, 110.0),
+    # the other two extraction codes (029 US10, #529); listed last so no other code's key moves. The generator draws
+    # D7140 and D7210 only; a real extract can hold all four
+    ("D7111", "Extraction, coronal remnants, primary tooth", "ExtRem", 2, "Oral Surgery", False, 120.0),
+    ("D7250", "Removal of residual tooth roots", "RootRem", 2, "Oral Surgery", False, 250.0),
 ]
 RADIOGRAPHS = ("D0210", "D0274", "D0330")
 BITEWING_TEETH = {2, 3, 4, 5, 12, 13, 14, 15, 18, 19, 20, 21, 28, 29, 30, 31}
-EXTRACTIONS = ("D7140", "D7210")
+EXTRACTIONS = ("D7111", "D7140", "D7210", "D7250")   # the study lead's list, no letter variants (029 US10)
 SNOMED_SMOKING = {"266919005": "Never smoked tobacco", "8517006": "Ex-smoker",
                   "449868002": "Smokes tobacco daily", "428041000124106": "Occasional tobacco smoker"}
 DISEASES = [("Type 2 diabetes mellitus", "E11.9", "44054006", "250.00"),
@@ -254,8 +263,10 @@ class Params:
     # US adults 20 and over with diabetes, August 2021-August 2023: Gwira et al., NCHS Data Brief 516, NHANES (item 73);
     # here every one of them has HbA1c >= DIABETES_HBA1C, the NHANES laboratory cut-off
     diabetes_share: float = 0.158
-    # spec 032 US6 (#445): each patient's insurance type. SYNTHETIC placeholders, not estimates of any population
-    insurance_shares: tuple = (("private", 0.55), ("public", 0.30), ("none", 0.15))
+    # spec 032 US6 (#445): each patient's insurance type. Spec 033 US5 (#522): US adults 19-64, MEPS 2021, from the ADA
+    # Health Policy Institute (docs/references.md item 82): 61.4% private, 15.7% public, 22.8% none (rounded up 0.001
+    # so the three sum to 1). The source says MEPS can't estimate adult public coverage accurately
+    insurance_shares: tuple = (("private", 0.614), ("public", 0.157), ("none", 0.229))
     secondary_plan: float = 0.05              # a privately insured patient also has a second private plan
     spouse_subscriber: float = 0.25           # a private plan held by a spouse (another patient), not the patient
     # spec 033 US4 (#500): the share of patients with no natural teeth (edentulous), by age band (lower bound, years).
@@ -894,15 +905,24 @@ def extraction_codenums(tables: dict[str, pd.DataFrame]) -> set:
 
 
 @traced
+def diagnosis_classes(definition: pd.DataFrame) -> dict:
+    """defnum -> "perio" or "other" for each diagnosis definition, by its code (`itemvalue`, trimmed, any case):
+    PERIO_CODES are periodontal, any other code another reason (029 US11, #567). A defnum not here has no diagnosis."""
+    d = definition[pd.to_numeric(definition["category"], errors="coerce") == DEFCAT_DIAGNOSIS]
+    code = d["itemvalue"].fillna("").astype(str).str.strip().str.upper()
+    return dict(zip(pd.to_numeric(d["defnum"], errors="coerce"), code.isin(PERIO_CODES).map({True: "perio", False: "other"})))
+
+
+@traced
 def extractions(tables: dict[str, pd.DataFrame], truth: pd.DataFrame) -> pd.DataFrame:
     """One row per extraction planned or done in the record (not those done elsewhere), with its true reason, the
-    diagnosis item's class by DIAGNOSIS_LOOKUP (perio / other / none) and which list the item came from."""
+    diagnosis item's class by its code (diagnosis_classes: perio / other / none) and which list the item came from."""
     pl = tables["procedurelog"]
     ext = pl[pl["codenum"].isin(extraction_codenums(tables)) & pl["procstatus"].isin([PLANNED, COMPLETE])].copy()
     ext["tooth_num"] = ext["toothnum"].astype(int)
     d = tables["definition"][tables["definition"]["category"] == DEFCAT_DIAGNOSIS]
     names = dict(zip(d["defnum"], d["itemname"]))
-    ext["dx_class"] = ext["dx"].map(lambda x: DIAGNOSIS_LOOKUP.get(names.get(x, ""), "none"))
+    ext["dx_class"] = pd.to_numeric(ext["dx"], errors="coerce").map(diagnosis_classes(tables["definition"])).fillna("none")
     older = {n for n, _, _ in OLDER_LIST}
     ext["dx_list"] = ext["dx"].map(lambda x: None if x == 0 else ("older" if names.get(x) in older else "2017"))
     return ext.merge(truth, left_on=["patnum", "tooth_num"], right_on=["patient_id", "tooth_num"], how="left")

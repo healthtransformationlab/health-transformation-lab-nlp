@@ -45,11 +45,11 @@ The best of each kind; every variant is in [results.md](results.md).
 
 | Algorithm | Reads | How it decides | Source | Correct (95% CI) |
 |---|---|---|---|---|
-| `modernbert-base+cw+s2+rules4` | chart note | ModernBERT fine-tuned on the synthetic training notes, class-weighted, then the stage 4 rule | Model: ModernBERT ([model inventory](model_inventory.md)); fine-tuning recipe is this repo's own (spec 002) | rerun pending on the new notes: not in the leaderboard until it is redone (#467) |
+| `modernbert-base+cw+s2+rules4` | chart note | ModernBERT fine-tuned on the synthetic training notes, class-weighted, then the stage 4 rule | Model: ModernBERT ([model inventory](model_inventory.md)); fine-tuning recipe is this repo's own (spec 002) | 85.2 (80.7–89.2) |
 | `fusion_tfidf_rad+rules4` | chart note + X-ray reading | Word counts plus bone-loss features, logistic regression, then the stage 4 rule | this repo's own | 86.5 (81.6–90.6) |
 | `tfidf_logreg+rules4` | chart note | Word counts (TF-IDF) and logistic regression, then the stage 4 rule | this repo's own standard baseline | 85.7 (80.7–89.7) |
-| `llama-3.3-70b-instruct` | chart note | Asked for the status with no training on these notes, through Databricks | Model: Llama 3.3 70B ([model inventory](model_inventory.md)); prompt is this repo's own (spec 017) | rerun pending on the new notes: not in the leaderboard until it is redone (#467) |
-| `medgemma-1.5-4b-it+rules4` | chart note | MedGemma asked for the status with no training on these notes, then the stage 4 rule | Model: MedGemma, Sellergren et al. 2025 and Google's model card [[22, 23]](#sources); prompt is this repo's own (spec 004) | rerun pending on the new notes: not in the leaderboard until it is redone (#467) |
+| `llama-3.3-70b-instruct` | chart note | Asked for the status with no training on these notes, through Databricks | Model: Llama 3.3 70B ([model inventory](model_inventory.md)); prompt is this repo's own (spec 017) | 83.9 (78.9–88.8) |
+| `medgemma-1.5-4b-it+rules4` | chart note | MedGemma asked for the status with no training on these notes, then the stage 4 rule | Model: MedGemma, Sellergren et al. 2025 and Google's model card [[22, 23]](#sources); prompt is this repo's own (spec 004) | 78.5 (73.1–83.4) |
 
 **Stage 4 rule (`+rules4`)**: when the keyword rules read stage 4, that replaces the model's answer, because the
 trained models saw few stage 4 notes. This repo's own.

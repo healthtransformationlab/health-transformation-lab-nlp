@@ -102,3 +102,22 @@ Implementation starts after this spec, plan and tasks are reviewed.
 - [x] T029 [US9] Regenerate with the scripts (tooth table, model results, presets, ERD dictionary, website JSON);
   `docs/tooth_loss.md` with the new rule and the earlier one beside it, labelled synthetic; R parity and the full
   suite
+
+## US10 #529: the model follows the study lead's answers
+
+- [x] T030 [US10] Failing tests: the four extraction codes; the most recent plan's label and window; no-diagnosis
+  extractions dropped and counted; no age cut-off and a 548-day window by default; presets follow
+- [x] T031 [US10] `open_dental.py` (codes), `tooth_loss.py` (most recent plan), `tooth_loss_model.py` (defaults,
+  `eligible`, `exclusions`, applied and evaluation sets), `scripts/51_tooth_loss_model.py` (`--stage-recount`,
+  `--min-age` default), `analysis_presets.yaml`; R twin (codes, most recent plan)
+- [x] T032 [US10] Regenerate (tooth table, ERD, presets, site JSON, model results); `docs/tooth_loss.md`; R parity
+  and the full suite
+
+## US11 #567: perio by the study lead's codes, adult teeth, F1
+
+- [x] T033 [US11] Failing tests: each of PE1-PE4 and P1-P4 is periodontal whatever the item's name, another code is
+  not; lettered and supernumerary teeth never reach the tooth table; F1 in `classification` and the scores
+- [x] T034 [US11] `open_dental.py` (`PERIO_CODES`, `diagnosis_classes`, the synthetic list codes), `tooth_loss.py`,
+  `tooth_loss_model.py` (F1), `scripts/47_tooth_table.py` (`itemvalue`); R twin and hand-worked parity block
+- [x] T035 [US11] Regenerate (tooth table, ERD, presets, site JSON, model results); `docs/tooth_loss.md` with F1;
+  R parity and the full suite

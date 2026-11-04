@@ -13,7 +13,7 @@ is the last ten percent.
 | Table | One row per | Lives in | Locally |
 |---|---|---|---|
 | `dim_pipeline` | pipeline: owner, SLA, expectations, retry policy, runbook, outputs | `ops/pipeline_config.yaml`, deployed by the bundle | `doctor.load_config()` |
-| `fact_pipeline_run` | run or step: timings, counts, schema hash, checks, error type, duration, cost | spec 014 spans + `system.lakeflow.job_run_timeline` | a pandas frame with the same columns |
+| `fact_pipeline_run` | run or step: timings, counts, schema hash, checks, error type, duration, cost | spec 014 spans + the Jobs API's run list | a pandas frame with the same columns |
 | `dim_lineage_edge` | edge: what feeds what | `system.access.table_lineage` | `data/ops/lineage_edge.csv`, `doctor.load_lineage()` |
 | `dim_runbook_entry` | failure class: ordered allowed actions, reversible, severity, escalation | `ops/runbook.yaml` | `doctor.load_runbook()` |
 
@@ -78,10 +78,10 @@ says `unknown`.
 logic in `doctor_job.py`) is deployed to dev, uat and prod **paused**: running or unpausing it is the
 owner's decision. Each run:
 
-1. checks its settings first and fails naming a bad one; then checks it can read `system.lakeflow` (the
-   job's identity needs `USE CATALOG` on `system` and `SELECT` on `system.lakeflow`);
-2. reads 60 days of this workspace's job runs from `system.lakeflow.job_run_timeline` (names from
-   `system.lakeflow.jobs`), keeps this bundle's jobs, and fills counts, schema hash, checks and cost from the
+1. checks its settings first and fails naming a bad one; then makes one cheap Jobs API call to check it can list
+   job runs;
+2. reads 60 days of completed job runs from the Jobs API (`jobs.list_runs`; Free Edition can't grant
+   `system.lakeflow`, issue 524), keeps this bundle's jobs, and fills counts, schema hash, checks and cost from the
    span export when `doctor_span_table` names one (one row per run, `fact_pipeline_run`'s columns; the export
    from Application Insights isn't built yet, so without it most failures carry only a termination code and
    often classify as `unknown`);

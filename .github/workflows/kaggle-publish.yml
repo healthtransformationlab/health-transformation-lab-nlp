@@ -25,6 +25,10 @@ on:
       message:
         description: "Version note (the commit is added)"
         default: "Update from the repository"
+      metadata_only:
+        description: "Kaggle: send only the descriptions, cover, sources and update frequency; no new version (spec 034)"
+        type: boolean
+        default: false
 
 concurrency: publish-datasets
 
@@ -40,7 +44,7 @@ jobs:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
         with: {python-version: "3.12"}
-      - run: pip install --quiet "kaggle==2.2.5" -e ./python   # publish.py uses health_transformation_lab_nlp.paths
+      - run: pip install --quiet "kaggle==2.2.5" six -e ./python   # six: kaggle 2.2.5 imports it undeclared (#536); publish.py uses health_transformation_lab_nlp.paths
 
       - name: Kaggle credentials (values stay masked)
         env:
@@ -61,18 +65,20 @@ jobs:
           WHICH: ${{ inputs.dataset }}
           MESSAGE: ${{ inputs.message }}
           SHA: ${{ github.sha }}
+          METADATA_ONLY: ${{ inputs.metadata_only }}
         run: |
           set -o pipefail                      # a refused upload must fail the step, not tee
           [ "$WHICH" = both ] && names="notes results" || names="$WHICH"
+          [ "$METADATA_ONLY" = true ] && only="--metadata-only" || only=""
           for name in $names; do
             python kaggle/publish.py --dataset "$name" --out "build/$name" --username "$KAGGLE_USERNAME" \
-              --commit "$SHA" --upload --message "$MESSAGE" | tee -a "$GITHUB_STEP_SUMMARY"
+              --commit "$SHA" --upload --message "$MESSAGE" $only | tee -a "$GITHUB_STEP_SUMMARY"
           done
 
       # spec 025 US2: the quickstart reads both datasets, so it goes when both do; it runs once on Kaggle (CPU,
       # a minute or two), which proves it works there, and its run is the published version.
       - name: Publish the quickstart notebook and wait for its run
-        if: inputs.dataset == 'both'
+        if: inputs.dataset == 'both' && !inputs.metadata_only
         run: |
           python kaggle/prepare_kernel.py --job quickstart --out build/quickstart --username "$KAGGLE_USERNAME"
           kaggle kernels push -p build/quickstart

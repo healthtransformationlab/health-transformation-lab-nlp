@@ -32,7 +32,7 @@ import re
 from pathlib import Path
 
 import pandas as pd
-from health_transformation_lab_nlp import gold_names, grader_tables, results_store, tracking
+from health_transformation_lab_nlp import gold_names, grader_tables, results_store, table_comments, tracking
 from pyspark.sql import functions as F
 
 dbutils.widgets.text("git_commit", "")  # noqa: F821  set by the job: the commit it was deployed from
@@ -96,6 +96,7 @@ def append(df: pd.DataFrame, name: str):
             if field.name in empty:
                 sdf = sdf.withColumn(field.name, F.col(field.name).cast(field.dataType))
     sdf.write.mode("append").option("mergeSchema", "true").saveAsTable(table(name))
+    table_comments.apply(spark, table(name))  # noqa: F821  spec 034: comments after every write
 
 
 preds = new[new.kind == "predictions"]
@@ -130,4 +131,11 @@ for name, df in {**grader_tables.dq_tables(data_dir), **grader_tables.lab_tables
     empty = [c for c in df.columns if df[c].isna().all()]
     spark.createDataFrame(df.astype({c: "string" for c in empty})) \
         .write.mode("overwrite").option("overwriteSchema", "true").saveAsTable(table(name))  # noqa: F821
+    table_comments.apply(spark, table(name))  # noqa: F821  an overwrite drops them
     print(f"{name}: {len(df)} rows")
+
+# COMMAND ----------
+
+# Spec 034 US2 (#534): every declared table that exists gets its table and column comments, whichever job wrote it
+# (the LLM judge's SQL, the reader jobs). This runs after every deploy, so a table rewritten since is put right.
+table_comments.apply_all(spark, catalog)  # noqa: F821

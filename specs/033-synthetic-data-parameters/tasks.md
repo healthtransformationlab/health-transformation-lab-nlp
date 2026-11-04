@@ -8,3 +8,4 @@
 - [x] T006 [US4] failing tests: edentulous share by age on its own stream, no chart or answer-key rows, left out of
   the model, the stage recount and the charting rates, the `chart_without_teeth` check, optional clinic states; then
   the code; rerun tooth-loss, data-quality and preset results; the data card's edentulism row
+- [x] T007 [US5] failing test pinning the ADA HPI shares; set them; cite item 82; rerun what reads insurance

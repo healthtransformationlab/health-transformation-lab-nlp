@@ -67,6 +67,12 @@ FROM raw;
 
 -- COMMAND ----------
 
+-- Spec 034 US2 (#534): CREATE OR REPLACE drops the table comment, so set it again (from diagrams/_build/gold_model.py;
+-- python/tests/test_table_comments.py checks they match). Load results sets the column comments after each deploy.
+COMMENT ON TABLE IDENTIFIER(:catalog || '.' || :schema || '.fact_corpus_judge_call') IS 'One per corpus judge call (ai_query)';
+
+-- COMMAND ----------
+
 SELECT method_name, verdict_code, is_gate_ok, count(*) AS call_count
 FROM IDENTIFIER(:catalog || '.' || :schema || '.fact_corpus_judge_call')
 GROUP BY ALL ORDER BY method_name, verdict_code;

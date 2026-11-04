@@ -35,7 +35,7 @@
 
 ## US5 - The doctor runs as a job and writes its decisions
 - [x] T010 Failing bundle tests: job `pipeline_doctor` runs `13_pipeline_doctor.py` (12 was taken by `12_load_open_dental.py`) with catalog, schema, judge endpoint and `max_usd`; writes are delete-then-append by `run_id` (`test_bundle.py`, `test_delta.py`)
-- [x] T011 Notebook: read `system.lakeflow.job_run_timeline` and the span export into `fact_pipeline_run`; call the module; write `fact_remediation_decision`; notification at the runbook severity. The decisions live in `doctor_job.py` (`test_doctor_job.py`); the notebook only reads and writes. Also writes `fact_pipeline_signal` for the dashboard
+- [x] T011 Notebook: read the job runs (the Jobs API's `list_runs` since #524, which replaced `system.lakeflow.job_run_timeline`: Free Edition can't grant it) and the span export into `fact_pipeline_run`; call the module; write `fact_remediation_decision`; notification at the runbook severity. The decisions live in `doctor_job.py` (`test_doctor_job.py`); the notebook only reads and writes. Also writes `fact_pipeline_signal` for the dashboard
 - [x] T012 Grader dashboard: the signals per pipeline (spec 019 pattern; six since cost was added): `dashboards.doctor_dashboard`, `databricks/dashboards/pipeline_doctor.lvdash.json`
 
 ## US6 - The LLM rung is evaluated like any other model here

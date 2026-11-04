@@ -213,3 +213,55 @@ def test_refuses_a_row_whose_patch_carries_withheld_files(task_dir):
     (task_dir / "tasks_gated.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows))
     with pytest.raises(SystemExit, match="withheld"):
         pt.check(task_dir)
+
+
+# --- spec 034 US1 (#533): file and column descriptions, cover, sources, update frequency -------------------------
+
+def test_the_build_describes_every_file_and_column_and_sends_a_cover(task_dir, tmp_path):
+    out = tmp_path / "out"
+    meta = pt.build(task_dir, out, "someone", "abc1234")
+    res = {r["path"]: r for r in meta["resources"]}
+    assert set(res) == set(pt.files_of(task_dir))
+    assert all(r["description"] for r in res.values())
+    assert all(f["description"] for f in res["tasks.jsonl"]["schema"]["fields"])
+    assert meta["expectedUpdateFrequency"] == "monthly" and "github.com" in meta["userSpecifiedSources"]
+    assert (pt.publish.meta_dir(out) / "dataset-cover-image.png").exists()
+    assert not list(out.glob("dataset-cover-image.*"))
+
+
+class ListingApi:
+    """Kaggle's file listing of the live dataset, and a record of what was sent."""
+
+    def __init__(self, names):
+        self.names, self.calls = names, []
+
+    def dataset_list_files(self, ref, page_token=None, page_size=200):
+        f = [type("F", (), {"name": n, "total_bytes": 1000})() for n in self.names]
+        return type("R", (), {"files": f, "next_page_token": None})()
+
+    def dataset_metadata_update(self, ref, path):
+        self.calls.append(("metadata", ref, path))
+
+    def dataset_create_version(self, *a, **k):
+        self.calls.append(("version",))
+
+    def dataset_create_new(self, *a, **k):
+        self.calls.append(("create",))
+
+
+def test_metadata_only_describes_the_live_files_and_sends_no_data(tmp_path):
+    names = ["tasks.jsonl", "tasks_excluded.csv", "task_gates.csv", "snapshots/htlnlp_1.tgz",
+             f"graphs/health-transformation-lab-nlp_{BASE_A}.json", f"embeddings/health-transformation-lab-nlp_{BASE_A}.npz"]
+    api = ListingApi(names)
+    out = tmp_path / "out"
+    meta = pt.metadata_only(api, out, "someone", "abc1234")
+    assert [c[0] for c in api.calls] == ["metadata"]                  # no version, no create
+    assert {r["path"] for r in meta["resources"]} == set(names)
+    assert all(r["description"] for r in meta["resources"])
+    assert "1 tasks" in meta["description"] and "abc1234" in meta["description"]
+    assert (pt.publish.meta_dir(out) / "dataset-cover-image.png").exists()
+
+
+def test_metadata_only_refuses_a_live_file_it_cannot_describe(tmp_path):
+    with pytest.raises(SystemExit, match="undescribed"):
+        pt.metadata_only(ListingApi(["tasks.jsonl", "notes.txt"]), tmp_path / "out", "someone", "abc1234")

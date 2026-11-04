@@ -179,17 +179,11 @@ its own workspace: names are the same in all three, so they can't share one.
    Deploy dev from your laptop only after running this for `dev` too, since the
    catalog grant names the target's group. It prints the principal's `id` and `applicationId`.
 
-   It also runs `databricks/setup/grant_system_tables.sh`, which gives the same group `USE_CATALOG` on
-   `system` and `USE_SCHEMA` and `SELECT` on `system.lakeflow`, the run history the pipeline doctor reads
-   (spec 027). A bundle can't hold these grants, because the `system` catalog isn't one of its resources.
-   For a target set up before that script existed (dev), run it on its own, as a metastore admin:
+   The pipeline doctor (spec 027) needs no grant here: it reads run history from the Jobs API, which the
+   principal can already read for the jobs it owns. It doesn't use `system.lakeflow`, which Free Edition
+   can't grant: the metastore belongs to Databricks and only account admins reach it (tried 2026-11-04,
+   issues 521 and 524).
 
-   ```bash
-   databricks/setup/grant_system_tables.sh dev --print-config   # the group and schema it will use, no changes
-   databricks/setup/grant_system_tables.sh dev
-   ```
-
-   Running it again changes nothing. It prints the group's effective privileges on `system.lakeflow` at the end.
    Run it once per target; a second run fails at the first step because the
    principal exists.
 2. **Create its OAuth secret**, here for 90 days. The output shows it once: put it

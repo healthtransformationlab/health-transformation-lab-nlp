@@ -768,6 +768,44 @@ local({
             stage4_rule_029("every_missing", 0, 5, teeth_present = integer(0)))
   cat("parity OK (spec 032 US4: teeth-left stage rules, hand-worked cases)\n")
 })
+# Spec 029 US10 (#529): the most recent planned extraction gives the label and the plan date, an undated plan counts as
+# the oldest, and every named extraction code counts (hand-worked, as python/tests/test_tooth_loss.py)
+local({
+  source("r/R/16_spec029.R")
+  pc <- data.frame(codenum = 1:2, proccode = c("D7250", "D7140a"))
+  defs <- data.frame(defnum = 1:2, category = 16, itemname = c("Periodontitis, stage IV", "Caries, non-restorable"),
+                     itemvalue = c("PE4", "CN1"))
+  pl <- data.frame(procnum = c(13, 14, 16, 15, 17, 18), patnum = 1, procstatus = c(1, 1, 4, 1, 1, 2),
+                   codenum = c(1, 1, 1, 1, 1, 2), toothnum = c(30, 30, 30, 29, 29, 3), dx = c(1, 2, 0, 1, 2, 1),
+                   datetp = c("2021-01-01", "2021-07-01", NA, "2021-01-01", NA, "2020-03-01"),
+                   procdate = c(NA, NA, "2022-01-01", NA, NA, "2020-04-01"),
+                   datecomplete = c(NA, NA, NA, NA, NA, "2020-04-01"), stringsAsFactors = FALSE)
+  ti <- data.frame(patnum = integer(0), toothnum = integer(0), initialtype = integer(0))
+  t <- tooth_status_029(pl, pc, defs, ti, data.frame(patnum = 1, datefirstvisit = "2020-01-01"))
+  row <- function(n) t[t$tooth_num == n, ]
+  stopifnot(row(30)$tooth_status_code == "planned_then_missing_other", row(30)$plan_to_missing_days == 184,
+            row(29)$tooth_status_code == "planned_perio",       # the dated plan, not the undated one
+            row(3)$tooth_status_code == "present")              # D7140a is not an extraction code
+  cat("parity OK (spec 029 US10: most recent plan, hand-worked cases)\n")
+})
+# Spec 029 US11 (#567): perio by the study lead's codes, whatever the item's name; F1 (as python/tests)
+local({
+  source("r/R/16_spec029.R")
+  pc <- data.frame(codenum = 1, proccode = "D7140")
+  defs <- data.frame(defnum = 1:4, category = 16, itemvalue = c("P2", " pe1 ", "XP3", NA),
+                     itemname = c("Item P2", "Lower case", "Periodontitis, stage III", "No code"))
+  pl <- data.frame(procnum = 1:5, patnum = 1, procstatus = 2, codenum = 1, toothnum = c("3", "4", "5", "6", "A"),
+                   dx = c(1, 2, 3, 0, 1), datetp = "2020-03-01", procdate = "2020-04-01", datecomplete = "2020-04-01",
+                   stringsAsFactors = FALSE)
+  ti <- data.frame(patnum = integer(0), toothnum = integer(0), initialtype = integer(0))
+  t <- tooth_status_029(pl, pc, defs, ti, data.frame(patnum = 1, datefirstvisit = "2020-01-01"))
+  st <- setNames(t$tooth_status_code, t$tooth_num)
+  stopifnot(nrow(t) == 32, st[["3"]] == "extracted_perio", st[["4"]] == "extracted_perio",
+            st[["5"]] == "extracted_other", st[["6"]] == "extracted_no_dx")
+  cl <- classification_029(c(1, 1, 1, 0, 0, 0), c(0.8, 0.6, 0.2, 0.9, 0.1, 0.3), 0.5)
+  stopifnot(abs(cl$f1 - 4 / 6) < 1e-12, is.na(classification_029(c(0, 0), c(0.1, 0.2), 0.5)$f1))
+  cat("parity OK (spec 029 US11: perio by code, F1, hand-worked cases)\n")
+})
 # Spec 029 US3: the tooth-loss model's metrics and the stage IV counting rules (R 16_spec029.R vs
 # tooth_loss_model.py / labels.py, from scripts/51_tooth_loss_model.py's outputs). Model fitting is Python only.
 rt <- "data/results"
@@ -796,7 +834,7 @@ if (file.exists(file.path(rt, "synthetic_tooth_loss_eval_rows.csv"))) {
     for (tn in unique(s$threshold_name[!is.na(s$threshold_name) & s$threshold_name != ""])) {
       th <- s$threshold[s$threshold_name == tn][1]
       cl <- classification_029(g$y, g$p, th)
-      for (m in c("sensitivity", "specificity", "ppv", "npv")) {
+      for (m in c("sensitivity", "specificity", "ppv", "npv", "f1")) {
         r[paste(m, tn)] <- cl[[m]]; py[paste(m, tn)] <- get(m, tn)
       }
       if (tn == "youden_train") {                       # the threshold itself, chosen on the training teeth

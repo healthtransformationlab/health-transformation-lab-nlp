@@ -1,0 +1,18 @@
+# What a coding-agent task costs (spec 036 US2, #569): each setting declared once, with its value, its source and
+# the date it was read (AGENTS.md "Configuration and secrets"). A change is a pull request that updates the date.
+# Every cost these give is an ESTIMATE: Kaggle's GPUs are free to us, and the price is what the same GPU time would
+# cost on a cloud, not anything paid.
+
+# Kaggle counts a GPU session's time against a weekly allowance, whatever its GPUs (a 2x T4 session hour is one
+# hour of allowance). About 30 hours, and it varies by week; Kaggle shows the current figure on the account's
+# settings page, and third-party guides disagree on when it resets.
+kaggle_weekly_allowance_hours:
+  value: 30
+  source: https://www.kaggle.com/docs/notebooks
+  read_date: "2026-11-04"
+
+# One T4 GPU-hour on a cloud: the median on-demand price across providers listed on Oct 26, 2026.
+t4_usd_per_gpu_hour:
+  value: 0.69
+  source: https://getdeploying.com/gpus/nvidia-t4
+  read_date: "2026-11-04"

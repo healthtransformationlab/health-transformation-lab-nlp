@@ -90,7 +90,7 @@ def detail_rows(files: pd.DataFrame, folder: Path) -> pd.DataFrame:
 def record(src: Path, dest: Path, run_url: str, source: str = "kaggle", min_rows: int = 0) -> list[str]:
     """Copy src's result files into dest and list them in dest's manifest. Raises ValueError, changing
     nothing, if there are none, or one has fewer rows than min_rows (a full run) or than the file it would
-    replace: a test run is never committed, even under a new name (shots or adapter tags the method). When dest
+    replace (when that file was made on the current notes): a test run is never committed, even under a new name (shots or adapter tags the method). When dest
     has an answer key, each file is stamped with its note set (#467), and one holding a visit that isn't a review
     note there is refused: it was made on another note set."""
     from . import note_set
@@ -103,7 +103,10 @@ def record(src: Path, dest: Path, run_url: str, source: str = "kaggle", min_rows
     review_ids = set(pd.read_csv(key_path, usecols=["visit_id"])["visit_id"]) if key_path.exists() else None
     for f in found.itertuples():
         old = dest / f.file
-        n = max(min_rows, len(pd.read_csv(old, usecols=["visit_id"])) if old.exists() else 0)
+        # the file it replaces sets the bar only if it was made on the current notes: after a rebuild the old
+        # file's row count is the old note set's size (#467)
+        same_notes = old.exists() and (review_ids is None or note_set.is_current(dest, f.file))
+        n = max(min_rows, len(pd.read_csv(old, usecols=["visit_id"])) if same_notes else 0)
         if f.rows < n:
             raise ValueError(f"{f.file} has fewer rows ({f.rows}) than a full run ({n}): "
                              "a test run is not committed")
