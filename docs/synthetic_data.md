@@ -137,7 +137,7 @@ One synthetic medical record per study person, on its own random stream. Each ra
 | Parameter | Value | What it means | Source | Published figure | Checked by |
 |---|---|---|---|---|---|
 | `medical_record.CONDITIONS[is_hypertension]` | 18-39: 0.075, 40-59: 0.332, 60+: 0.631; OR 1.22 in stages II-IV | hypertension by age band, and its odds ratio with periodontitis | cited in `medical_record.py` (NCHS Data Brief 289; Muñoz Aguilera et al. 2020) | the same figures | `tests/test_medical_record.py`: the age-adjusted odds ratio is recovered (`test_age_adjusted_odds_ratios_are_the_cited_ones`) and the base rates hold (`test_base_rates_hold_in_the_unexposed`) |
-| `medical_record.CONDITIONS[is_ckd]` | 18-44: 0.06, 45-64: 0.13, 65+: 0.34; OR 1.6 in periodontitis | chronic kidney disease | cited in `medical_record.py` (CDC CKD in the US 2026; Kapellas et al. 2019) | the same figures | the same tests |
+| `medical_record.CONDITIONS[is_ckd]` | 18-44: 0.06, 45-64: 0.13, 65+: 0.34; OR 1.6 in periodontitis | chronic kidney disease | cited in `medical_record.py` (CDC CKD in the US 2026; Kapellas et al. 2019, item 83) | the same figures | the same tests |
 | `medical_record.CONDITIONS[is_cvd]` | 18-44: 0.009, 45-64: 0.059, 65+: 0.182; OR 1.19 in periodontitis | cardiovascular disease | cited in `medical_record.py` (NCHS QuickStats 2022; Janket et al. 2003, a relative risk used as an odds ratio) | the same figures | the same tests |
 | `medical_record.CONDITIONS[is_copd]` | 18-24: 0.004, 25-44: 0.014, 45-54: 0.029, 55-64: 0.074, 65-74: 0.089, 75+: 0.105; OR 2.08 in periodontitis | COPD | cited in `medical_record.py` (NCHS Data Brief 529; Zeng et al. 2012) | the same figures | the same tests |
 | `medical_record.HYPERTENSION_CONTROL` | 18-39: 0.325, 40-59: 0.508, 60+: 0.494 | blood pressure controlled among people with hypertension | cited in `medical_record.py` (NCHS Data Brief 289) | the same figures | no |
@@ -182,15 +182,19 @@ clinics keep the state `ZZ` and every committed result uses the national shares.
 
 ## Sources checked for this card
 
-Items 72 to 82 of [references.md](references.md) were added for this card, each checked against its full text or,
-where the item says so, its abstract (item 81, the state rates, against the CDC dataset itself). Three candidate
+Items 72 to 86 of [references.md](references.md) were added for this card, each checked against its full text or,
+where the item says so, its abstract (item 81, the state rates, against the CDC dataset itself). Five candidate
 sources were not used as first found:
 
-- **Dental coverage, ADA Health Policy Institute (2022)**: a news report gave 62.4% private, 15.8% public and 21.8%
-  none for 2022, but the HPI page it cites could not be found. The HPI's own deck (item 82, MEPS 2021) was read
+- **Dental coverage, ADA Health Policy Institute (2022)**: a news report
+  ([Becker's Dental](https://www.beckersdental.com/benchmarking/one-fifth-of-adults-lack-dental-coverage-6-notes)) gave 62.4%
+  private, 15.8% public and 21.8% none for 2022, but the HPI page it cites could not be found. The HPI's own deck (item 82, MEPS 2021) was read
   instead and is what `Params.insurance_shares` uses (spec 033 US5).
 - **America's Health Rankings (BRFSS teeth extractions by state)**: the page could not be opened from this
   environment (tried again for spec 033 US4), so its figures were not checked or cited. The same BRFSS measure is
   published by CDC's U.S. Chronic Disease Indicators, which could be read, and is item 81.
 - **Open Dentistry Journal 2019;13:520** (an EDR audit at one dental school): the article could not be opened, so its
   charting figures were not checked or cited.
+- **ICD-10 codes for traumatic dental injuries (item 85)** and **regional private dental coverage, NCHS Data Brief
+  336 (item 86)**: checked, but not used. The first covers injury codes, not extraction or periodontal diagnoses;
+  the second is by region, which the extract doesn't have.

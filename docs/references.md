@@ -292,6 +292,28 @@ Everything this repo relies on, and what it's used for.
     MEPS data do not allow accurate estimates of the percent of adults with public dental insurance coverage", as
     Medicaid adult dental benefits differ by state; seniors are not reported. → spec 033 US5:
     `open_dental.Params.insurance_shares`. Checked in the deck itself (every value copied from it).
+83. **Kapellas K, Singh A, Bertotti M, Nascimento GG, Jamieson LM; Perio-CKD collaboration.** *Periodontal and chronic
+    kidney disease association: a systematic review and meta-analysis.* Nephrology (Carlton) 2019;24(2):202–212.
+    [doi:10.1111/nep.13225](https://doi.org/10.1111/nep.13225), PMID 29359889. 17 studies; odds of chronic kidney
+    disease 60% higher with periodontitis, pooled OR 1.60 (95% CI 1.44–1.79). → spec 023: the CKD odds ratio in
+    `medical_record.CONDITIONS` (data card row `is_ckd`). Checked against the abstract.
+84. **Walji MF, Kalenderian E, Stark PC, White JM, Kookal KK, Phan D, Tran D, Bernstam EV, Ramoni R.** *BigMouth: a
+    multi-institutional dental data repository.* J Am Med Inform Assoc 2014;21(6):1136–1140.
+    [doi:10.1136/amiajnl-2013-002230](https://doi.org/10.1136/amiajnl-2013-002230), PMC4215035. Launched August 2012
+    on the i2b2 platform with data on 1.1 million patients from contributing dental schools. → `docs/data_sources.md`
+    (why it is not used here: real records under a data-use agreement). Checked against the abstract.
+85. **Azadani EN, McDaniel J, Peng J, Townsend JA.** *The validity of ICD-10 codes in recording the incidence of
+    traumatic dental injuries.* Dent Traumatol 2026 (online 6 May).
+    [doi:10.1111/edt.70076](https://doi.org/10.1111/edt.70076), PMID 42089477. Overall accuracy of the ICD-10 codes
+    78.5% (sensitivity 60.1%, specificity 98.4%). → a candidate for the extraction-diagnosis rates in
+    [synthetic_data.md](synthetic_data.md); not used, as it covers injury codes, not extraction or periodontal
+    diagnoses. Checked against the abstract.
+86. **Blackwell DL, Villarroel MA, Norris T.** *Regional variation in private dental coverage and care among dentate
+    adults aged 18–64 in the United States, 2014–2017.* NCHS Data Brief No. 336, May 2019.
+    [cdc.gov/nchs/products/databriefs/db336.htm](https://www.cdc.gov/nchs/products/databriefs/db336.htm). Of dentate
+    adults 18–64 with private health insurance, 50.2% had dental coverage all year (45.6% to 57.1% by region). → a
+    candidate for regional insurance shares in [synthetic_data.md](synthetic_data.md); not used (the extract has no
+    regions). Checked against the page.
 
 58. **Open Dental Software.** *Open Dental* source code, `OpenDentBusiness/TableTypes` (one class per database
     table). [github.com/OpenDental/OpenDental](https://github.com/OpenDental/OpenDental), branch `24_3`, commit

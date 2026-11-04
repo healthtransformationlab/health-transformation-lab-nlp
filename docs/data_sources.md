@@ -50,7 +50,7 @@ synthetic sets.
 |--------|---------|
 | Synthea | Generates dental encounters and procedures, but no free-text notes |
 | GlobalDentBench-OA | Exam-style questions and answers, not chart notes |
-| BigMouth Dental Data Repository | Real EHR data under a data-use agreement, not synthetic or public |
+| BigMouth Dental Data Repository ([references](references.md) item 84) | Real EHR data under a data-use agreement, not synthetic or public |
 
 ## Next step
 
