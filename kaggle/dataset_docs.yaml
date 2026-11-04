@@ -53,6 +53,9 @@ datasets:
       ladder/ladder_vs_truth.csv: >-
         The leaderboard: each method's accuracy against the truth with a 95% bootstrap interval, stage IV recall,
         harm rates, calibration error and the paired difference from the note_rules reference.
+      ladder/medgemma_field_accuracy.csv: >-
+        Each MedGemma reader run scored field by field (status, grade, extent) against the reference answers, with
+        a 95% Wilson interval. Status is the run's answer after the fallback; grade and extent as the model read them.
       ladder/ladder_by_age.csv: Each method's accuracy within each age band of the review notes.
       ladder/ladder_by_clinic.csv: Each method's accuracy within each synthetic clinic.
       ladder/ladder_by_stageable.csv: >-
@@ -194,6 +197,26 @@ columns:
   # leaderboard
   method: The method (model or rule set) the row describes.
   method_name: The method the prediction file is for.
+  # the LLM reader's per-note record (llm_details_*.csv) and its per-field scores
+  model: The model the reader ran (for example medgemma-4b-it).
+  backend: Where the model ran (hf for Hugging Face transformers on a GPU, or an API endpoint).
+  revision: The Kaggle Models handle or Hugging Face commit the model's weights came from; empty when unknown.
+  prompt_version: The reader prompt's version (for example reader-v2).
+  shots: Worked examples shown to the model before the note (0 for zero-shot).
+  input_tokens: Tokens sent to the model for this note.
+  output_tokens: Tokens the model wrote back.
+  latency_s: Seconds the model took to answer this note.
+  raw: The model's answer as written, cut to 2,000 characters.
+  status: The periodontal status the model's answer states, before the quote check; empty when it could not be read.
+  quote: The sentence the model quoted from the note as its evidence.
+  gate_ok: True when the answer parsed and its quote is found word for word in the note.
+  error: Why the answer could not be used (the backend failed, or the answer could not be parsed); empty otherwise.
+  fallback: True when the quote check failed, so pred comes from the keyword rules instead of the model.
+  run: The MedGemma reader run (the method) scored on this row.
+  field: The reader's field scored on this row (status, grade or extent).
+  correct: Review notes whose answer for this field matches the reference answer.
+  ci_lo: Lower end of the 95% Wilson interval for accuracy.
+  ci_hi: Upper end of the 95% Wilson interval for accuracy.
   n: Number of review notes in the group.
   accuracy: Share of review notes whose predicted status matches the truth (0-1).
   acc_lo: Lower end of the 95% bootstrap interval for accuracy.
