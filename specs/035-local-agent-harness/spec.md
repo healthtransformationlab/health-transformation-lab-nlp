@@ -51,12 +51,43 @@ run from a Kaggle GPU notebook. This uses limited compute, so it waits for the o
 ### US3 - Resolution rates per fidelity tier, labelled as ours (P2) #545
 Overall and per tier (A, B, C), with and without the pipeline-doctor skill, recorded in spec 028 T012.
 
+## Isolation (from the review before the PR)
+Commands and verification run in a sandbox built from Linux user, mount, network and pid namespaces (`unshare`):
+- the workspace at `/workspace`;
+- the system and Python bound read-only;
+- a private `/tmp`;
+- no network;
+- an environment of `PATH`, `HOME`, `LANG` and `PYTHONPATH` only.
+
+Without it, a model could read this repository's history, which holds every fix, and the task files, which hold
+every reference patch, from the host, as well as the host's tokens. A real model never runs without it
+(`59_run_agent.py --sandbox required` is the default for anything that isn't `calib:`).
+
+## Which tasks a model is scored on
+A task counts toward a real model's resolution rate only if `calib:oracle` resolves it in the same environment, so
+the denominator is what the harness can verify there. The rest are listed with their reason in the oracle's run
+table: a test that needs a Postgres server, or R, skips there.
+
+The run environment installs `python[dev,tasks,ml,track,stats,db,azure,otlp]`. Without the optional groups, tests
+that need MLflow, statsmodels, psycopg or the Azure exporter skip, and the strict criterion counts a skipped
+required test as unresolved.
+
 ## Known differences from the competition's harness
-- No Docker container: a temporary folder and subprocesses, like swegemma's subprocess backend.
+- Namespaces, not a Docker container. The sandbox brings up the namespace's own loopback, so tests that
+  serve on 127.0.0.1 work. It also provides `/dev/shm` and `/dev/fd`, and names the host's user site-packages
+  (`PYTHONUSERBASE`), since `HOME` is `/tmp`.
 - No ADK: no context compaction or prefix caching.
 - Sub-agents (`agent_tool`) and skills are not run. The runner lists them as left out.
 - `PYTHONPATH=<workspace>/python` instead of an editable install, as the gate uses.
 - Patch application tries five `git apply` variants, not the guide's four passes with GNU `patch`.
+- Packages come from the host's Python, so `PYTHONNOUSERSITE` isn't set. `PYTHONSAFEPATH` isn't set either: this
+  repository's tests run its scripts, which import the modules beside them, and the flag broke 7 tasks whose
+  reference fix passes. `-p no:anyio` and `-o python_classes` are set.
+- Snapshots get no `pytest.ini` or `conftest.py` written into them.
+- Budgets default to gemma-developer-agent's `eval_config.yaml` (40 calls, 5 minutes, 60 turns, 120 s), not the
+  guide's defaults.
+- Resolved also requires every test function the test patch adds or changes to pass, not be skipped. That's the
+  guide's criterion as we read it, without its FAIL_TO_PASS and PASS_TO_PASS lists.
 
 ## Out of scope
 Submitting to the competition; LoRA training.

@@ -69,7 +69,13 @@ def main() -> int:
     ap.add_argument("--graphs", type=Path, default=TASKS_DIR / "graphs")
     ap.add_argument("--embeddings", type=Path, default=TASKS_DIR / "embeddings")
     ap.add_argument("--limit", type=int, default=0)
+    ap.add_argument("--sandbox", choices=["auto", "required", "off"],
+                    help="default: required for a real model, auto for a calib: model (spec 035)")
     a = ap.parse_args()
+    calib = MODELS[a.model].name.startswith("calib:")
+    sandbox = a.sandbox or ("auto" if calib else "required")
+    if sandbox != "required" and not calib:
+        sys.exit("a real model runs only in the sandbox: it could otherwise read this repository and the host's secrets")
     if not a.tasks.exists():   # check inputs before any work (AGENTS.md, configuration)
         sys.exit(f"missing {a.tasks}: run scripts/55_build_tasks.py, or use the committed tasks_sample.jsonl")
     if a.agent_dir and not (a.agent_dir / "agent.yaml").exists():
@@ -78,6 +84,7 @@ def main() -> int:
     telemetry.start_script("59_run_agent", data_label="public")
 
     instruction, tools, budget, unsupported = agent_config(a.agent_dir)
+    print(f"sandbox: {sandbox} ({'namespaces available' if ah.Sandbox.available() else 'no namespaces here'})")
     if unsupported:
         print(f"not supported by this harness, left out: {', '.join(unsupported)}")
     tasks = [json.loads(line) for line in a.tasks.read_text().splitlines() if line.strip()]
@@ -89,7 +96,7 @@ def main() -> int:
         graph = ah.load_graph(task, a.graphs, a.embeddings)
         work = ah.workspace_tmp()
         try:
-            row = ah.run_task(task, source, MODELS[a.model](), budget, work, instruction, tools, graph)
+            row = ah.run_task(task, source, MODELS[a.model](), budget, work, instruction, tools, graph, sandbox)
         finally:
             shutil.rmtree(work, ignore_errors=True)
         rows.append(row)

@@ -20,9 +20,15 @@ Models implement step(messages, tools) -> {"content", "tool_calls": [{"id", "nam
 "finish_reason"}. Two scripted ones bound the runner: OracleModel replays the reference patch (should resolve
 every task), NullModel submits nothing (should resolve none).
 
-THIS IS NOT THE COMPETITION'S EVALUATOR. Differences we know of: no Docker sandbox (a temporary folder and
-subprocesses, like swegemma's subprocess backend), no ADK, no context compaction, no sub-agents or skills, and
-PYTHONPATH=<workspace>/python instead of an editable install. Every row says which harness made it.
+Commands and verification run in a Sandbox (Linux user, mount, network and pid namespaces through `unshare`): the
+workspace at /workspace, the system and Python read-only, a private /tmp, no network, and a minimal environment,
+so a model can't read this repository's history, the task files (which hold every reference patch), or the
+host's secrets. Without unprivileged namespaces, run_task(sandbox="required") refuses to run.
+
+THIS IS NOT THE COMPETITION'S EVALUATOR. Differences we know of: namespaces instead of Docker, no ADK, no context
+compaction, no sub-agents or skills, PYTHONPATH=<workspace>/python instead of an editable install, packages from
+the host's Python (so no PYTHONNOUSERSITE), no PYTHONSAFEPATH, and five git apply variants instead of four passes with GNU patch.
+Every row says which harness made it.
 """
 
 from __future__ import annotations
@@ -32,11 +38,15 @@ import io
 import json
 import os
 import re
+import shutil
 import signal
+import site
 import subprocess
+import sys
 import tarfile
 import tempfile
 import time
+import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -97,6 +107,101 @@ def prepare_workspace(task: dict, source: Path, dest: Path) -> Path:
     return dest
 
 
+# --- the sandbox ------------------------------------------------------------------------------------------------
+
+_INNER = r"""
+set -e
+root=$1; ws=$2; binds=$3; shift 3
+mkdir -p "$root"
+for d in $binds; do
+  [ -e "$d" ] || continue
+  if [ -L "$d" ]; then mkdir -p "$root$(dirname "$d")"; ln -sfn "$(readlink "$d")" "$root$d"; continue; fi
+  mkdir -p "$root$d"; mount --rbind "$d" "$root$d"; mount -o remount,bind,ro "$root$d" 2>/dev/null || true
+done
+mkdir -p "$root/workspace" "$root/tmp" "$root/dev" "$root/proc"
+mount --bind "$ws" "$root/workspace"
+mount -t tmpfs tmpfs "$root/tmp"
+for n in null zero random urandom; do touch "$root/dev/$n"; mount --bind "/dev/$n" "$root/dev/$n"; done
+mkdir -p "$root/dev/shm"; mount -t tmpfs tmpfs "$root/dev/shm"      # multiprocessing and joblib need it
+ln -s /proc/self/fd "$root/dev/fd"                                 # bash process substitution: < <(...)
+ln -s /proc/self/fd/0 "$root/dev/stdin"; ln -s /proc/self/fd/1 "$root/dev/stdout"; ln -s /proc/self/fd/2 "$root/dev/stderr"
+mount -t proc proc "$root/proc"
+python3 -c "$LOOPBACK_UP" 2>/dev/null || true
+exec chroot "$root" /usr/bin/env -i "$@"
+"""
+
+
+# Bring the namespace's own loopback up (no `ip` command needed): tests that serve on 127.0.0.1 work, while the
+# network outside stays unreachable.
+_LOOPBACK_UP = ("import fcntl,socket,struct;s=socket.socket(socket.AF_INET,socket.SOCK_DGRAM);"
+                "f=struct.unpack('16sH14x',fcntl.ioctl(s,0x8913,struct.pack('16sH14x',b'lo',0)))[1];"
+                "fcntl.ioctl(s,0x8914,struct.pack('16sH14x',b'lo',f|1))")
+
+
+class Sandbox:
+    """Run a command with the workspace at /workspace and nothing else of the host's but the system and Python
+    (read-only): no home directories, no repository, no network, a minimal environment (spec 035)."""
+    SYSTEM = ("/usr", "/bin", "/sbin", "/lib", "/lib32", "/lib64", "/libx32", "/etc")
+    _available: bool | None = None
+
+    @classmethod
+    @traced
+    def available(cls) -> bool:
+        if cls._available is None:
+            try:
+                cls._available = subprocess.run(
+                    ["unshare", "--user", "--map-root-user", "--mount", "--net", "--pid", "--fork", "true"],
+                    capture_output=True, timeout=20, check=False).returncode == 0
+            except (OSError, subprocess.TimeoutExpired):
+                cls._available = False
+        return cls._available
+
+    def __init__(self, workdir: Path):
+        self.workdir = Path(workdir)
+        extra = {sys.prefix, sys.base_prefix, site.getusersitepackages(), str(Path(site.getuserbase()) / "bin")}
+        self.binds = list(self.SYSTEM) + sorted(p for p in extra if p and not p.startswith(self.SYSTEM))
+
+    @traced
+    def run(self, command: str, timeout: int, env: dict) -> tuple[int | None, str, str]:
+        """(exit code or None on timeout, stdout, stderr) of `bash -c command` in /workspace."""
+        root = Path(tempfile.mkdtemp(prefix="htlnlp_sbx_"))
+        argv = ["unshare", "--user", "--map-root-user", "--mount", "--net", "--pid", "--fork", "bash", "-c", _INNER,
+                "sandbox", str(root / "r"), str(self.workdir), " ".join(self.binds),
+                *[f"{k}={v}" for k, v in env.items()], "/bin/bash", "-c", f"cd /workspace && {command}"]
+        try:
+            return _spawn(argv, None, timeout, {"PATH": os.environ.get("PATH", "/usr/bin:/bin"),
+                                                "LOOPBACK_UP": _LOOPBACK_UP})
+        finally:
+            shutil.rmtree(root, ignore_errors=True)
+
+
+def _spawn(argv: list[str], cwd: Path | None, timeout: int, env: dict | None = None) -> tuple[int | None, str, str]:
+    proc = subprocess.Popen(argv, cwd=cwd, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+                            errors="replace", start_new_session=True)
+    try:
+        out, err = proc.communicate(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        os.killpg(proc.pid, signal.SIGKILL)
+        proc.communicate()
+        return None, "", ""
+    return proc.returncode, out, err
+
+
+def _env(workspace: str) -> dict:
+    """The only variables a command sees: never the host's tokens."""
+    return {"PATH": f"{Path(site.getuserbase()) / 'bin'}:/usr/local/bin:/usr/bin:/bin", "HOME": "/tmp",
+            "LANG": "C.UTF-8", "PYTHONPATH": f"{workspace}/python", "PYTHONDONTWRITEBYTECODE": "1",
+            "PYTHONUSERBASE": site.getuserbase()}   # HOME is /tmp, so the user site-packages must be named
+
+
+def _shell(s_workdir: Path, sandbox: Sandbox | None, command: str, timeout: int) -> tuple[int | None, str, str]:
+    if sandbox is not None:
+        return sandbox.run(command, timeout, _env("/workspace"))
+    # no namespaces (calibration only): the host, a minimal environment, /workspace rewritten to the folder
+    cmd = command.replace("/workspace", str(s_workdir))
+    return _spawn(["/bin/bash", "-c", cmd], s_workdir, timeout, {**_env(str(s_workdir)), "HOME": str(s_workdir)})
+
+
 # --- budgets and the session ---------------------------------------------------------------------------------------
 
 @dataclass
@@ -111,7 +216,7 @@ class Budget:
     @traced
     def from_eval_config(cls, path: Path) -> Budget:
         import yaml
-        e = (yaml.safe_load(Path(path).read_text()) or {}).get("evaluation", {})
+        e = (yaml.safe_load(Path(path).read_text()) or {}).get("evaluation") or {}
         return cls(tool_calls=int(e.get("max_tool_calls", 40)), time_minutes=float(e.get("max_time_minutes", 5.0)),
                    turns=int(e.get("max_turns", 60)), command_timeout=int(e.get("timeout_seconds", 120)))
 
@@ -121,6 +226,7 @@ class Session:
     workdir: Path
     budget: Budget = field(default_factory=Budget)
     graph: CodeGraph | None = None
+    sandbox: Sandbox | None = None
     tool_calls_used: int = 0
     patch_submitted: bool = False
     submitted_patch: str = ""
@@ -165,7 +271,7 @@ def _path(session: Session, filepath) -> Path:
 def _int(v, default=None):
     if v is None or v == "":
         return default
-    return int(v)
+    return int(float(v))
 
 
 def _bool(v) -> bool:
@@ -176,19 +282,13 @@ def _bool(v) -> bool:
 
 def _run_command(s: Session, command: str) -> dict:
     timeout = min(s.budget.command_timeout, max(5, int(s.remaining_seconds())))
-    env = {**os.environ, "PYTHONPATH": str(s.workdir / "python"), "PYTHONDONTWRITEBYTECODE": "1"}
-    proc = subprocess.Popen(["/bin/bash", "-c", command], cwd=s.workdir, env=env, stdout=subprocess.PIPE,
-                            stderr=subprocess.PIPE, text=True, start_new_session=True)
-    try:
-        out, err = proc.communicate(timeout=timeout)
-    except subprocess.TimeoutExpired:
-        os.killpg(proc.pid, signal.SIGKILL)
-        proc.communicate()
+    code, out, err = _shell(s.workdir, s.sandbox, str(command), timeout)
+    if code is None:
         return _err("TimeoutExceeded", f"command exceeded {timeout} seconds")
     out, err = out[:MAX_STDOUT], err[:MAX_STDOUT]
-    if proc.returncode == 0:
+    if code == 0:
         return _ok(stdout=out, stderr=err, exit_code=0)
-    return _err("CommandError", f"exit code {proc.returncode}", stdout=out, stderr=err, exit_code=proc.returncode)
+    return _err("CommandError", f"exit code {code}", stdout=out, stderr=err, exit_code=code)
 
 
 def _read_file(s: Session, filepath, start_line=None, end_line=None) -> dict:
@@ -240,8 +340,8 @@ def _edit_file(s: Session, filepath, old_string="", new_string="", allow_multipl
     p = _path(s, filepath)
     if not p.is_file() or p.stat().st_size == 0:
         raise _ToolError("FileEditError", f"{filepath}: missing or empty")
-    if not old_string:
-        raise _ToolError("FileEditError", "old_string is empty")
+    if not str(old_string).strip():
+        raise _ToolError("FileEditError", "old_string is empty or only whitespace")
     many = _bool(allow_multiple)
     before = p.read_text().replace("\r\n", "\n")
     old = old_string.replace("\r\n", "\n")
@@ -355,7 +455,7 @@ def _get_code_neighbors(s: Session, node, edge_type=None, max_neighbors=50) -> d
         if kind and t.lower() != kind:
             continue
         other = b if a == name else a if b == name else None
-        if other and other not in seen:
+        if other and other != name and other not in seen:
             seen.append(other)
     names, cut = _cap(seen[: _int(max_neighbors, 50)])
     return _ok(node=name, neighbors=names, count=len(seen), is_truncated=cut)
@@ -413,8 +513,20 @@ def call_tool(session: Session, name: str, arguments: dict | None) -> str:
         if session.remaining_calls() <= 0:
             return json.dumps(_err("BudgetExceeded", "no tool calls left: call submit_patch"))
         session.tool_calls_used += 1
+    bad = object()
+    if arguments is None:
+        arguments = {}
+    elif isinstance(arguments, str):
+        try:
+            arguments = json.loads(arguments) if arguments.strip() else {}
+        except json.JSONDecodeError:
+            arguments = bad
+    if not isinstance(arguments, dict):
+        arguments = bad
     try:
-        out = fn(session, **(arguments or {}))
+        if arguments is bad:
+            raise _ToolError("ValidationError", "arguments must be a JSON object")
+        out = fn(session, **arguments)
     except _ToolError as e:
         out = _err(e.kind, str(e))
     except TypeError as e:
@@ -524,50 +636,82 @@ NUDGE = ("Please continue your work using the available tools, or call submit_pa
 NUDGE_LENGTH = ("Your previous response reached the token limit while thinking before a tool call was completed. Do "
                 "NOT repeat your analysis in thought—keep reasoning under a few sentences and emit your next tool call "
                 "immediately, or call submit_patch when you have completed and verified your changes.")
+NUDGE_UNCLOSED = ("Your previous response reached the token limit before the tool call finished closing (<|tool_call|> "
+                  "was cut off). Do NOT repeat your prior reasoning in thought—emit your next tool call immediately, and "
+                  "if calling edit_file or write_file, split the change into smaller incremental edits.")
+
+
+def _calls(reply: dict) -> list[dict]:
+    """The reply's tool calls as {id, name, arguments}; a call with no name is kept, to come back as an error."""
+    out = []
+    for n, c in enumerate(reply.get("tool_calls") or []):
+        c = c if isinstance(c, dict) else {}
+        fn = c.get("function") if isinstance(c.get("function"), dict) else {}
+        out.append({"id": str(c.get("id") or f"call-{n}"), "name": str(c.get("name") or fn.get("name") or ""),
+                    "arguments": c.get("arguments", fn.get("arguments"))})
+    return out
+
+
+def _nudge(reply: dict) -> str:
+    text = str(reply.get("content") or "")
+    if "<|tool_call>" in text and "<tool_call|>" not in text:
+        return NUDGE_UNCLOSED
+    reason = str(reply.get("finish_reason") or "").upper()
+    return NUDGE_LENGTH if ("LENGTH" in reason or "MAX_TOKENS" in reason) else NUDGE
 
 
 @traced
 def run_agent(task: dict, session: Session, model, instruction: str = "", declared: list[str] | None = None) -> dict:
     """The multi-turn loop. Returns counts: turns, nudges, tool calls."""
-    declared = declared or ALL_TOOLS
+    declared = ALL_TOOLS if declared is None else declared
     if hasattr(model, "start"):
         model.start(task)
     messages = []
     if instruction:
         messages.append({"role": "system", "content": fill_instruction(instruction, task)})
     messages.append({"role": "user", "content": build_agent_prompt(task, session, declared)})
-    specs, turns, nudges, consecutive = tool_specs(declared), 0, 0, 0
+    specs, turns, nudges, consecutive, last_turn = tool_specs(declared), 0, 0, 0, False
     while turns < session.budget.turns and session.remaining_seconds() > 0:
         turns += 1
         reply = model.step(messages, specs)
-        calls = reply.get("tool_calls") or []
+        calls = _calls(reply)
         messages.append({"role": "assistant", "content": reply.get("content") or "",
                          "tool_calls": [{"id": c["id"], "type": "function",
-                                         "function": {"name": c["name"], "arguments": json.dumps(c["arguments"])}}
+                                         "function": {"name": c["name"], "arguments": c["arguments"] if
+                                                      isinstance(c["arguments"], str) else json.dumps(c["arguments"])}}
                                         for c in calls]})
+        valid = False
         for c in calls:
-            name = c["name"] if c["name"] in declared else f"undeclared:{c['name']}"
-            result = call_tool(session, name, c.get("arguments") or {})
+            if c["name"] not in declared:
+                result = json.dumps(_err("ValidationError" if not c["name"] else "UnknownTool",
+                                         f"no declared tool named {c['name']!r}"))
+            else:
+                result = call_tool(session, c["name"], c["arguments"])
+                valid = valid or json.loads(result).get("status") == "ok"
             messages.append({"role": "tool", "tool_call_id": c["id"], "content": result})
-        if session.patch_submitted:
+        if session.patch_submitted or last_turn:
             break
-        if calls:
+        if session.remaining_calls() <= 0:   # one more turn, in which only submit_patch and get_status work
+            last_turn = True
+            continue
+        if valid:
             consecutive = 0
-            if session.remaining_calls() <= 0:   # nothing left but submit_patch: the fallback takes the diff
-                break
             continue
         consecutive += 1
         if consecutive > MAX_NUDGES:
             break
-        nudges += 1
-        reason = str(reply.get("finish_reason") or "").upper()
-        messages.append({"role": "user", "content": NUDGE_LENGTH if ("LENGTH" in reason or "MAX_TOKENS" in reason)
-                         else NUDGE})
+        if not calls:
+            nudges += 1
+            messages.append({"role": "user", "content": _nudge(reply)})
     session.done = True
     return {"turn_count": turns, "nudge_count": nudges, "tool_call_count": session.tool_calls_used}
 
 
 # --- verification (8.2) --------------------------------------------------------------------------------------------
+
+_JUNIT = ".harness_junit.xml"
+_TEST_DEF = re.compile(r"(?m)^\+\s*(?:async\s+)?def\s+(test\w*)\s*\(")
+
 
 def _apply_resilient(workdir: Path, patch: str) -> bool:
     for args in (["apply"], ["apply", "-3"], ["apply", "--ignore-space-change", "--ignore-whitespace"],
@@ -578,9 +722,41 @@ def _apply_resilient(workdir: Path, patch: str) -> bool:
 
 
 @traced
-def verify(task: dict, agent_patch: str, source: Path, work: Path, timeout: int = tgate.DEFAULT_TIMEOUT) -> dict:
-    """A fresh workspace at base_commit, the agent's patch (protected files stripped), the task's test files reset
-    and its test patch applied, then the target tests: resolved iff exit 0, passed > 0, no failures or errors."""
+def required_tests(test_patch: str) -> list[str]:
+    """The test functions the test patch adds or changes: each must pass, not be skipped (8.2, criterion 2)."""
+    return sorted(set(_TEST_DEF.findall(test_patch or "")))
+
+
+def _cases(xml: Path) -> list[tuple[str, str]]:
+    """(test name, outcome) for each <testcase>: passed, failed, error or skipped."""
+    try:
+        root = ET.parse(xml).getroot()
+    except (OSError, ET.ParseError):
+        return []
+    out = []
+    for c in root.iter("testcase"):
+        kinds = {child.tag for child in c}
+        outcome = ("failed" if "failure" in kinds else "error" if "error" in kinds else
+                   "skipped" if "skipped" in kinds else "passed")
+        out.append((c.get("name", "").split("[")[0], outcome))
+    return out
+
+
+def _reset_test_paths(ws: Path, test_patch: str) -> None:
+    """The files the test patch touches go back to the baseline (or away, if new) before it is applied (8.2 step 3)."""
+    for path in re.findall(r"(?m)^diff --git a/\S+ b/(\S+)", test_patch or ""):
+        if _git(ws, "cat-file", "-e", f"_swegemma_baseline:{path}").returncode == 0:
+            _git(ws, "checkout", "_swegemma_baseline", "--", path)
+        else:
+            (ws / path).unlink(missing_ok=True)
+
+
+@traced
+def verify(task: dict, agent_patch: str, source: Path, work: Path, timeout: int = tgate.DEFAULT_TIMEOUT,
+           sandboxed: bool = True) -> dict:
+    """A fresh workspace at base_commit, the agent's patch (protected files stripped), the test patch's files reset
+    and the test patch applied, then the target tests, in the sandbox: resolved iff exit 0, passed > 0, no failures
+    or errors, and every test function the test patch adds or changes passed (not skipped)."""
     out = {"is_resolved": False, "verify_exit_code": None, "verify_passed_count": None, "verify_failed_count": None,
            "verify_error_count": None, "reason_text": ""}
     patch = tgate.strip_protected(agent_patch or "")[0]
@@ -591,20 +767,30 @@ def verify(task: dict, agent_patch: str, source: Path, work: Path, timeout: int 
     if not _apply_resilient(ws, patch):
         out["reason_text"] = "agent patch didn't apply"
         return out
+    _reset_test_paths(ws, task["test_patch"])
     if not tgate._apply(ws, task["test_patch"]):
         out["reason_text"] = "test_patch didn't apply over the agent patch"
         return out
-    targets = tgate.target_tests(task["test_patch"])
-    res = tgate.run_tests(ws, targets, timeout)
-    j = res["junit"] or {}
-    out.update(verify_exit_code=res["exit_code"], verify_passed_count=j.get("passed"),
-               verify_failed_count=j.get("failures"), verify_error_count=j.get("errors"))
-    if res["exit_code"] is None:
+    targets = " ".join(tgate.target_tests(task["test_patch"]))
+    # no PYTHONSAFEPATH: this repository's tests run its scripts, which import modules beside them (spec 035)
+    cmd = (f"python3 -m pytest {targets} --junitxml=/workspace/{_JUNIT} -q -p no:cacheprovider "
+           "-p no:anyio -o python_classes='Test* *Test'")
+    code, _, _ = _shell(ws, Sandbox(ws) if sandboxed else None, cmd, timeout)
+    j = tgate.parse_junit(ws / _JUNIT) if code is not None else None
+    cases = _cases(ws / _JUNIT)
+    (ws / _JUNIT).unlink(missing_ok=True)
+    j = j or {}
+    out.update(verify_exit_code=code, verify_passed_count=j.get("passed"), verify_failed_count=j.get("failures"),
+               verify_error_count=j.get("errors"))
+    not_passed = [t for t in required_tests(task["test_patch"]) if not any(n == t and o == "passed" for n, o in cases)]
+    if code is None:
         out["reason_text"] = "verification timed out"
-    elif res["exit_code"] == 0 and j.get("passed") and not j.get("failures") and not j.get("errors"):
-        out["is_resolved"] = True
-    else:
+    elif code != 0 or not j.get("passed") or j.get("failures") or j.get("errors"):
         out["reason_text"] = "tests fail with the agent's patch"
+    elif not_passed:
+        out["reason_text"] = "required tests not passed: " + ", ".join(not_passed[:5])
+    else:
+        out["is_resolved"] = True
     return out
 
 
@@ -612,17 +798,25 @@ def verify(task: dict, agent_patch: str, source: Path, work: Path, timeout: int 
 
 @traced
 def run_task(task: dict, source: Path, model, budget: Budget, work: Path, instruction: str = "",
-             declared: list[str] | None = None, graph: CodeGraph | None = None) -> dict:
-    """Phase 1 (the agent in a workspace) and phase 2 (verification in a fresh one) for one task."""
+             declared: list[str] | None = None, graph: CodeGraph | None = None, sandbox: str = "auto") -> dict:
+    """Phase 1 (the agent in a workspace) and phase 2 (verification in a fresh one) for one task. sandbox is
+    "required" (a real model: refuse without namespaces), "auto" (use them when there are) or "off"."""
+    if sandbox not in ("auto", "required", "off"):
+        raise ValueError(f"sandbox {sandbox!r}: auto, required or off")
+    use = sandbox != "off" and Sandbox.available()
+    if sandbox == "required" and not use:
+        raise RuntimeError("no unprivileged user namespaces here, so no sandbox: a model could read this repository's "
+                           "history and the host's secrets. Run calibration models only, or use a host that has them.")
     work = Path(work)
-    session = Session(prepare_workspace(task, source, work / "agent"), budget, graph=graph)
+    ws = prepare_workspace(task, source, work / "agent")
+    session = Session(ws, budget, graph=graph, sandbox=Sandbox(ws) if use else None)
     counts = run_agent(task, session, model, instruction, declared)
     patch = session.submitted_patch if session.patch_submitted else extract_patch(session.workdir)
     row = {"instance_id": task["instance_id"], "harness_name": HARNESS_NAME,
            "model_name": getattr(model, "name", type(model).__name__), "is_patch_submitted": session.patch_submitted,
            "agent_patch_bytes": len(patch.encode()), "files_changed_count": len(re.findall(r"(?m)^diff --git ", patch)),
            "agent_seconds": round(time.monotonic() - session.started, 2), **counts}
-    row.update(verify(task, patch, source, work / "verify"))
+    row.update(verify(task, patch, source, work / "verify", sandboxed=use))
     return {c: row.get(c) for c in RUN_COLUMNS}
 
 

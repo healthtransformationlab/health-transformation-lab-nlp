@@ -58,7 +58,8 @@ def task(repo):
 @pytest.fixture
 def session(repo, task, tmp_path):
     ws = ah.prepare_workspace(task, repo, tmp_path / "ws")
-    return ah.Session(ws, ah.Budget(tool_calls=40, time_minutes=5, turns=60, command_timeout=30))
+    return ah.Session(ws, ah.Budget(tool_calls=40, time_minutes=5, turns=60, command_timeout=30),
+                      sandbox=ah.Sandbox(ws) if ah.Sandbox.available() else None)
 
 
 def call(session, name, **kw):
@@ -281,3 +282,159 @@ def test_the_oracle_applies_a_patch_bigger_than_one_shell_argument(repo, tmp_pat
             "hints_text": "", "created_at": ""}
     row = ah.run_task(task, repo, ah.OracleModel(), ah.Budget(), tmp_path / "big")
     assert row["is_resolved"] is True and "_oracle" not in (row["reason_text"] or "")
+
+
+# --- the review's findings (PR #546 review, before the PR) -------------------------------------------------------
+
+needs_sandbox = pytest.mark.skipif(not ah.Sandbox.available(), reason="no unprivileged user namespaces here")
+
+
+@needs_sandbox
+def test_commands_cannot_see_the_host_repo_secrets_or_network(session, monkeypatch):
+    monkeypatch.setenv("KAGGLE_API_KEY", "not-a-real-key")
+    assert session.sandbox is not None
+    out = call(session, "run_command", command="env; ls /home 2>&1; git -C /home/user log -1 2>&1; "
+               "python3 -c \"import urllib.request; urllib.request.urlopen('https://pypi.org', timeout=3)\" 2>&1 | tail -1")
+    text = out.get("stdout", "") + json.dumps(out.get("details", {}))
+    assert "not-a-real-key" not in text and "KAGGLE" not in text
+    assert "No such file" in text or "cannot access" in text
+    assert "Error" in text or "error" in text                              # no network
+
+
+@needs_sandbox
+def test_workspace_paths_work_in_commands(session):
+    out = call(session, "run_command", command="cd /workspace && ls python/pkg/calc.py && pwd")
+    assert out["status"] == "ok" and "/workspace" in out["stdout"]
+
+
+@needs_sandbox
+def test_the_system_is_read_only_and_tmp_is_private(session):
+    out = call(session, "run_command", command="touch /usr/x 2>&1; touch /tmp/scratch && echo tmp-ok")
+    assert "Read-only" in out["stdout"] and "tmp-ok" in out["stdout"]
+
+
+def test_verification_runs_the_agents_code_without_the_hosts_secrets(repo, task, tmp_path, monkeypatch):
+    if not ah.Sandbox.available():
+        pytest.skip("no unprivileged user namespaces here")
+    monkeypatch.setenv("KAGGLE_API_KEY", "not-a-real-key")
+    leak = FIXED + "import os\nassert 'KAGGLE_API_KEY' not in os.environ\n"
+    patch_task = dict(task, patch=task["patch"])
+
+    class LeakyFix(ah.OracleModel):
+        def start(self, t):
+            super().start(t)
+            self.patch = ("diff --git a/python/pkg/calc.py b/python/pkg/calc.py\n--- a/python/pkg/calc.py\n"
+                          "+++ b/python/pkg/calc.py\n@@ -1,2 +1,4 @@\n def add(a, b):\n-    return a - b\n"
+                          "+    return a + b\n+import os\n+assert 'KAGGLE_API_KEY' not in os.environ\n")
+    assert leak
+    row = ah.run_task(patch_task, repo, LeakyFix(), ah.Budget(), tmp_path / "leak")
+    assert row["is_resolved"] is True                     # the assert held: no secret in the test environment
+
+
+def test_an_agent_that_declares_no_tools_gets_none(repo, task, tmp_path):
+    seen = {}
+
+    class Looks:
+        def step(self, messages, tools):
+            seen["tools"] = tools
+            return {"content": "nothing to do", "tool_calls": [], "finish_reason": "stop"}
+    ah.run_task(task, repo, Looks(), ah.Budget(), tmp_path / "none", declared=[])
+    assert seen["tools"] == []
+
+
+def test_malformed_tool_calls_come_back_as_errors(repo, task, tmp_path):
+    replies = iter([
+        {"content": "", "finish_reason": "tool_calls", "tool_calls": [
+            {"name": "read_file", "arguments": '{"filepath": "python/pkg/calc.py", "start_line": "1.0"}'},
+            {"id": "x"}, {"id": "y", "name": "run_command", "arguments": "not json"}]},
+        {"content": "", "finish_reason": "tool_calls", "tool_calls": [{"id": "z", "name": "submit_patch"}]}])
+    results = []
+
+    class Sloppy:
+        def step(self, messages, tools):
+            results.extend(m["content"] for m in messages if m.get("role") == "tool")
+            return next(replies, {"content": "done", "tool_calls": [], "finish_reason": "stop"})
+    row = ah.run_task(task, repo, Sloppy(), ah.Budget(), tmp_path / "sloppy")
+    parsed = [json.loads(r) for r in results]
+    assert parsed[0]["status"] == "ok" and parsed[0]["start_line"] == 1   # a JSON-string argument and "1.0" work
+    assert parsed[1]["error_type"] == "ValidationError" and parsed[2]["error_type"] == "ValidationError"
+    assert row["is_patch_submitted"] is True
+
+
+def test_a_whitespace_old_string_is_refused(session):
+    r = call(session, "edit_file", filepath="python/pkg/calc.py", old_string="\t", new_string="X")
+    assert r["error_type"] == "FileEditError" and (session.workdir / "python/pkg/calc.py").read_text() == BUGGY
+
+
+def test_a_skipped_fail_to_pass_test_is_not_resolved(repo, tmp_path):
+    base = commit_all(repo, "base")
+    write(repo, "python/pkg/calc.py", FIXED)
+    write(repo, "python/tests/test_calc.py", "import pytest\nfrom pkg.calc import add\n\n\ndef test_other():\n"
+          "    assert True\n\n\n@pytest.mark.skip\ndef test_add():\n    assert add(2, 3) == 5\n")
+    commit_all(repo, "fix")
+    task = {"instance_id": "t_skip", "repo": "owner/pkg", "base_commit": base, "problem_statement": "p",
+            "hints_text": "", "created_at": "", "patch": git(repo, "diff", base, "HEAD", "--", "python/pkg/"),
+            "test_patch": git(repo, "diff", base, "HEAD", "--", "python/tests/")}
+    row = ah.run_task(task, repo, ah.OracleModel(), ah.Budget(), tmp_path / "skip")
+    assert row["is_resolved"] is False and "test_add" in row["reason_text"]
+
+
+def test_a_new_test_file_the_agent_also_wrote_is_reset_before_the_test_patch(repo, task, tmp_path):
+    class WritesFixAndATestHelper(ah.OracleModel):
+        def step(self, messages, tools):
+            r = super().step(messages, tools)
+            if self.turn == 3:   # before submitting, leave a non-protected file the test patch also adds
+                return {"content": "", "finish_reason": "tool_calls", "tool_calls": [
+                    {"id": "h", "name": "write_file", "arguments": {"filepath": "python/tests/helpers.txt",
+                                                                     "content": "agent's\n"}},
+                    {"id": "s", "name": "submit_patch", "arguments": {}}]}
+            return r
+    write(repo, "python/tests/helpers.txt", "")
+    row = ah.run_task(task, repo, WritesFixAndATestHelper(), ah.Budget(), tmp_path / "helper")
+    assert row["is_resolved"] is True
+
+
+def test_with_no_calls_left_the_model_still_gets_a_turn_to_submit(repo, task, tmp_path):
+    class SpendsThenSubmits:
+        def step(self, messages, tools):
+            if any("BudgetExceeded" in (m.get("content") or "") for m in messages if m.get("role") == "tool") or \
+                    sum(m.get("role") == "tool" for m in messages) >= 2:
+                return {"content": "", "finish_reason": "tool_calls",
+                        "tool_calls": [{"id": "s", "name": "submit_patch", "arguments": {}}]}
+            return {"content": "", "finish_reason": "tool_calls",
+                    "tool_calls": [{"id": "r", "name": "run_command", "arguments": {"command": "true"}}]}
+    row = ah.run_task(task, repo, SpendsThenSubmits(), ah.Budget(tool_calls=2), tmp_path / "spent")
+    assert row["is_patch_submitted"] is True
+
+
+def test_a_null_evaluation_section_uses_the_defaults(tmp_path):
+    (tmp_path / "eval_config.yaml").write_text("evaluation:\n")
+    assert ah.Budget.from_eval_config(tmp_path / "eval_config.yaml") == ah.Budget()
+
+
+def test_neighbors_leave_out_the_node_itself(session):
+    session.graph = ah.CodeGraph({"nodes": [{"id": "a.f"}, {"id": "a.g"}],
+                                  "edges": [{"source": "a.f", "target": "a.f"}, {"source": "a.f", "target": "a.g"}]})
+    assert call(session, "get_code_neighbors", node="a.f")["neighbors"] == ["a.g"]
+
+
+@needs_sandbox
+def test_loopback_works_inside_the_sandbox_but_the_network_does_not(session):
+    """A test that serves on 127.0.0.1 (the OpenAI fake in test_llm_reader.py) must still pass."""
+    code = ("import socket,threading;s=socket.socket();s.bind(('127.0.0.1',0));s.listen();"
+            "c=socket.create_connection(s.getsockname(),timeout=3);print('loopback-ok')")
+    out = call(session, "run_command", command=f'python3 -c "{code}"')
+    assert out["status"] == "ok" and "loopback-ok" in out["stdout"]
+
+
+@needs_sandbox
+def test_the_sandbox_has_the_hosts_packages_dev_fd_and_shm(session):
+    """Three gaps the full calibration found: user site-packages, process substitution, /dev/shm."""
+    import site as _site
+    out = call(session, "run_command", command=(
+        "read -r x < <(echo subst-ok); echo $x; "
+        "python3 -c \"import site; print(site.getusersitepackages())\"; "
+        "python3 -c \"import multiprocessing as m; m.Lock(); print('shm-ok')\""))
+    assert out["status"] == "ok", out
+    assert "subst-ok" in out["stdout"] and "shm-ok" in out["stdout"]
+    assert _site.getusersitepackages() in out["stdout"]
