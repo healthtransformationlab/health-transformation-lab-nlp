@@ -110,5 +110,5 @@ Implementation starts after this spec, plan and tasks are reviewed.
 - [x] T031 [US10] `open_dental.py` (codes), `tooth_loss.py` (most recent plan), `tooth_loss_model.py` (defaults,
   `eligible`, `exclusions`, applied and evaluation sets), `scripts/51_tooth_loss_model.py` (`--stage-recount`,
   `--min-age` default), `analysis_presets.yaml`; R twin (codes, most recent plan)
-- [ ] T032 [US10] Regenerate (tooth table, ERD, presets, site JSON, model results); `docs/tooth_loss.md`; R parity
+- [x] T032 [US10] Regenerate (tooth table, ERD, presets, site JSON, model results); `docs/tooth_loss.md`; R parity
   and the full suite

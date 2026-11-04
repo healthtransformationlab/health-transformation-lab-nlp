@@ -95,7 +95,33 @@ These options can also be run together as a named preset, beside today's default
 cd python && python scripts/51_tooth_loss_model.py --patients 6000 --stability-seeds 5 --n-boot 1000
 ```
 
-**Under the planned-extraction rule since 029 US9** (#507; the defaults, SYNTHETIC). A planned extraction now counts
+**Under the study lead's answers since 029 US10** (#529; the defaults, SYNTHETIC; tooth level only). Extractions are
+D7111, D7140, D7210 and D7250; extractions with no diagnosis are dropped; a planned extraction counts if the tooth
+goes missing within 548 days of its most recent plan; no age cut-off; the 2018-01-01 start date stays until confirmed.
+Same command, 6,000 patients, five generator seeds, 1,000 bootstrap resamples. Of the 192,000 teeth, 14,016 belong to
+patients with no natural teeth, 161 are extractions with no diagnosis, 22,244 are other third molars and 82,976 are
+lost (or first charted) before the start date, so 72,603 are left. The completed set trains on 348 teeth and the
+completed + planned set on 391.
+
+Held-out extractions (88 teeth, 85 patients, 14 periodontal), shared predictors, generator seed 42. As the study lead
+asked, the confusion-matrix measures lead; AUC and the Brier score are beside them:
+
+| At a threshold of 0.5 | completed: logistic | completed: XGBoost | completed + planned: logistic | completed + planned: XGBoost |
+|---|---|---|---|---|
+| sensitivity (of 14 periodontal) | 0.57 | 0.64 | 0.64 | 0.71 |
+| specificity (of 74 other) | 0.95 | 0.96 | 0.95 | 0.95 |
+| positive predictive value | 0.67 | 0.75 | 0.69 | 0.71 |
+| negative predictive value | 0.92 | 0.93 | 0.93 | 0.95 |
+| AUC (95% CI) | 0.92 (0.84-0.98) | 0.92 (0.82-0.99) | 0.89 (0.79-0.98) | 0.89 (0.74-0.98) |
+| Brier score | 0.079 | 0.062 | 0.082 | 0.078 |
+
+On the teeth missing at the first exam (3,558 teeth, 1,400 patients; scored against the synthetic answer key) the AUC
+is 0.92 / 0.92 (completed) and 0.93 / 0.96 (completed + planned). With 14 periodontal teeth held out, one tooth moves
+sensitivity by 0.07, and across the 5 generator seeds the held-out AUC of the shared models ranges from 0.60 to 0.93:
+read the seed-42 numbers with that spread in mind. The stage III vs IV recount below is from before US10 and is now
+written only with `--stage-recount`.
+
+**Under the planned-extraction rule of 029 US9** (#507; the defaults before US10, SYNTHETIC). A planned extraction now counts
 only when the tooth is recorded missing at a later visit within 365 days; the earlier rule (every planned extraction
 with a diagnosis counts) is run beside it with `--planned-window-days none`. Same command, same five generator seeds
 and 1,000 bootstrap resamples, on the extract as spec 033 (US2 and US4) draws it. Of the 192,000 teeth, 14,016 belong
