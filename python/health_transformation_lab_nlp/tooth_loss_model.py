@@ -101,6 +101,16 @@ class ModelParams:
 DEFAULT = ModelParams()
 
 
+STAGE_OUTPUTS = ("stage_recount", "patient_stage", "stage_probabilities")   # the person-level recount
+
+
+@traced
+def outputs_to_write(out: dict[str, pd.DataFrame], stage_recount: bool = False) -> dict[str, pd.DataFrame]:
+    """The frames of a run to write: tooth level only unless the stage recount is asked for (029 US10, #529). Summing
+    to the person is a separate, later decision."""
+    return {n: df for n, df in out.items() if stage_recount or n not in STAGE_OUTPUTS}
+
+
 @traced
 def check_params(params: ModelParams) -> None:
     """Fail at once, naming the setting, on a validation setting that can't work."""

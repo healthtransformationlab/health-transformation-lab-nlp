@@ -84,6 +84,14 @@ def test_extractions_with_no_diagnosis_are_dropped_from_the_model():
     assert "extracted_no_dx" not in tm.APPLIED_STATUSES and "extracted_no_dx" not in tm.EVAL_SETS
 
 
+def test_the_stage_recount_is_written_only_on_request():
+    # 029 US10 (#529): the model works at the tooth level; the person-level recount is written only on request
+    out = {n: pd.DataFrame({"x": [1]}) for n in ("scores", "predictions", "stage_recount", "patient_stage",
+                                                 "stage_probabilities")}
+    assert set(tm.outputs_to_write(out)) == {"scores", "predictions"}
+    assert set(tm.outputs_to_write(out, stage_recount=True)) == set(out)
+
+
 def test_the_old_planned_rule_is_a_sensitivity_setting():
     # planned_window_days=None: every planned extraction with a diagnosis counts, in the mouth or not (before #507)
     t = _teeth([(1, 3, "extracted_perio", 50), (1, 5, "planned_perio", 50), (1, 6, "planned_other", 50),

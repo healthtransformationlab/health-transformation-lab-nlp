@@ -55,6 +55,10 @@ The start dates are synthetic stand-ins for "the date a newer classification was
 | consistency groups | office, provider, sex, race, exam year, age band | the same plus insurance type | the same plus insurance type |
 | CAL reliability ICC | off | on | on |
 
+The presets keep the stage III vs IV recount as an exploratory part, so the presets can still be compared on it. The
+tooth-loss model itself works at the tooth level since 029 US10 (#529), and `scripts/51_tooth_loss_model.py` writes
+the recount only with `--stage-recount`.
+
 ## Headline comparison (SYNTHETIC)
 
 | | `repo_v1` | `repo_v2` (the defaults) | `exploratory_1` |

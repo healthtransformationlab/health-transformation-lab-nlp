@@ -14,8 +14,8 @@ a diagnosis. Bootstrap intervals are computed for the main seed only. Writes to 
 
     synthetic_tooth_loss_scores.csv         one row per seed, label set, feature set, model, set of teeth, metric
     synthetic_tooth_loss_calibration.csv    ten bins per seed, label set, feature set, model and set of teeth
-    synthetic_tooth_loss_stage_recount.csv  patients called stage III and IV under each rule (labels.STAGE4_COUNT_RULES)
-    synthetic_tooth_loss_patient_stage.csv  one row per patient: teeth lost to periodontitis counted four ways, the
+    synthetic_tooth_loss_stage_recount.csv  (with --stage-recount) patients called stage III and IV under each rule
+    synthetic_tooth_loss_patient_stage.csv  (with --stage-recount) one row per patient: teeth lost to periodontitis, the
                                             teeth and occluding pairs left, and stage IV under each rule
     synthetic_tooth_loss_predictions.csv    one row per tooth and model (the gold fact_tooth_loss_prediction rows)
     synthetic_tooth_loss_missing.csv        share missing per predictor, by label set and split
@@ -98,8 +98,7 @@ for k in range(max(1, args.stability_seeds)):
               f"{out['validation'].drop(columns=['data_label']).to_string(index=False)}")
     if not changed:                # the default results keep their files; the validation is printed above
         out = {n: df for n, df in out.items() if n != "validation"}
-    if not args.stage_recount:     # tooth level only by default (029 US10)
-        out = {n: df for n, df in out.items() if n not in ("stage_recount", "patient_stage", "stage_probabilities")}
+    out = tlm.outputs_to_write(out, args.stage_recount)       # tooth level only by default (029 US10)
     keep = out if k == 0 else {n: out[n] for n in ("scores", "stage_recount") if n in out}   # stability: the spread
     for name, df in keep.items():
         frames.setdefault(name, []).append(df)

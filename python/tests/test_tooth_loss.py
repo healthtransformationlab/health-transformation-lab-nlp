@@ -133,12 +133,15 @@ def test_the_most_recent_planned_extraction_gives_the_label_and_the_window():
                         (14, 30, od.PLANNED, "Caries, non-restorable", "2021-07-01", None),
                         (16, 30, od.EXISTING_OTHER, "", None, None, "2022-01-01"),
                         (15, 29, od.PLANNED, "Periodontitis, stage III", "2021-01-01", None),
-                        (17, 29, od.PLANNED, "Fractured tooth", "2021-07-01", None)])
+                        (17, 29, od.PLANNED, "Fractured tooth", "2021-07-01", None),
+                        (18, 28, od.PLANNED, "Periodontitis, stage III", "2021-01-01", None),
+                        (19, 28, od.PLANNED, "Fractured tooth", None, None)])     # an undated plan is the oldest
     t = tl.tooth_table(x)
     r = _row(t, 30)
     assert r["tooth_status_code"] == "planned_then_missing_other" and not r["is_perio_loss"]
     assert r["plan_to_missing_days"] == 184
     assert _row(t, 29)["tooth_status_code"] == "planned_other"
+    assert _row(t, 28)["tooth_status_code"] == "planned_perio"           # as the R twin reads it (PR #540 review)
 
 
 def test_a_completed_extraction_still_wins_over_a_later_missing_record():
