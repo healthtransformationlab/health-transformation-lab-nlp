@@ -71,7 +71,7 @@ systems.** Read the file that owns a concern before changing anything that touch
 | Answer key and committed data | `data/datasets/answer_key/review_key.csv`; paths only via `paths.py` |
 | Gold table names and column rules | `gold_names.py`, `diagrams/_build/gold_model.py`, "SQL and data names" below |
 | Telemetry (`@traced`, levels) | `telemetry.py`, `telemetry_levels.yaml` |
-| Kaggle: GPUs, datasets, Kaggle Benchmarks task | `kaggle/README.md`, `kaggle/perio_bench_task.py`, `kbench.py`, `docs/kaggle_benchmarks.md` |
+| Kaggle: GPUs, datasets, Kaggle Benchmarks task | `kaggle/README.md`, `kaggle/perio_bench_task.py`, `kbench.py`, `docs/kaggle_benchmarks.md`; what every published file and column holds: `kaggle/dataset_docs.yaml` |
 | Settings, secrets, alerts, reruns | `databricks.yml`, `ops/secrets_register.yaml`, `docs/operations.md` |
 | Specs, decisions, PR reviews | `specs/NNN-*/`, `docs/adr/`, `pull_requests/` |
 | The rules every coding agent follows | this file; Claude Code's own workflow in `CLAUDE.md` |
@@ -86,6 +86,25 @@ Anything that changes a dataset, a metric, a label rule or the review workflow g
 Small fixes (a typo, a one-line bug with a regression test) don't need one.
 Every pull request gets a review written to `pull_requests/pr-<n>-review.md`, against
 `.claude/review-rubric.md` and these rules.
+
+## Publishing datasets
+
+Every dataset we publish on Kaggle meets Kaggle's usability checklist, aiming at a score of 10, and keeps meeting it
+as files change (spec 034):
+
+- **Described:** a title, a subtitle, at least three tags and a card (`kaggle/cards/`). The card says what the data
+  is and how it was made, that it is not affiliated, and that it is not for clinical use, and names any third-party
+  files with their licences.
+- **Every file and every column:** described in `kaggle/dataset_docs.yaml`, in the PR that adds the file or column.
+- **A cover image:** `kaggle/covers/<slug>.png` (1120 x 560), drawn by `kaggle/make_covers.py`.
+- **Sources and an update frequency:** never "not specified".
+- **A licence:** CC BY 4.0 unless a source's own licence says otherwise.
+- **At least one public notebook** that loads it.
+- **Sent on every publish:** `kaggle/publish.py` and `kaggle/publish_tasks.py` send the metadata after each upload.
+  `--metadata-only` (the workflows' `metadata_only` input) refreshes it without a new version.
+
+`python/tests/test_kaggle_dataset_docs.py` fails CI when a published file or column has no description, or a
+dataset lacks a cover, sources or an update frequency.
 
 ## Decisions and action items
 
