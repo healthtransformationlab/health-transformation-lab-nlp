@@ -129,3 +129,9 @@ def test_metadata_only_sends_no_data(tmp_path):
     api = FakeApi(True)
     pub.update_metadata(out, meta["id"], api)
     assert api.calls == [("metadata", meta["id"], str(pub.meta_dir(out)))]
+
+
+def test_a_file_can_say_what_a_shared_column_name_means_in_it():   # #554: an LLM's grade is its answer
+    assert "true" in docs.column_description("perio-bench-results", "train.csv", "grade").lower()
+    answered = docs.column_description("perio-bench-results", "llm_details_medgemma-4b-it.csv", "grade")
+    assert "answered" in answered.lower() and "true" not in answered.lower()
