@@ -463,6 +463,13 @@ def test_each_patient_has_one_insurance_type_at_the_declared_synthetic_shares():
     assert ((kind == "none") == ~kind.index.isin(covered)).all()        # none: no patplan row at all
 
 
+def test_the_insurance_shares_are_the_ada_hpi_adult_figures():
+    """ADA HPI, MEPS 2021, adults 19-64 (docs/references.md item 82): 61.4% private, 15.7% public, 22.8% none;
+    none rounded up 0.001 so the three sum to 1 (spec 033 US5, #522)."""
+    assert dict(od.Params().insurance_shares) == {"private": 0.614, "public": 0.157, "none": 0.229}
+    assert abs(sum(dict(od.Params().insurance_shares).values()) - 1) < 1e-12
+
+
 def test_insurance_has_its_own_random_stream_so_no_other_table_changes(built):
     tables, truth = built
     shares = (("private", 0.1), ("public", 0.1), ("none", 0.8))
