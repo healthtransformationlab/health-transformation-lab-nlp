@@ -3,9 +3,11 @@
 # the agent's patch, its counts, each turn's tokens and seconds, and the settings. The patch is verified elsewhere
 # (python/scripts/60_kaggle_agent.py, in the sandbox), so this kernel never sees the task's tests.
 # Measured with this repository's re-implementation of the competition's harness, NOT the competition's evaluator.
+import os
+
+os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")   # before torch: long prompts fragment
 import glob
 import json
-import os
 import sys
 import time
 import traceback

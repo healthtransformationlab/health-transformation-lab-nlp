@@ -165,7 +165,9 @@ def main() -> int:
     if unsupported:
         print(f"not supported by this harness, left out: {', '.join(unsupported)}")
     model_cfg = {"variant": a.model, "max_new_tokens": a.max_new_tokens, "thinking": a.thinking,
-                 "max_context": 24576, "max_memory": {"0": "9GiB", "1": "9GiB", "cpu": "24GiB"}}
+                 "max_context": 24576, "max_memory": {"0": "12GiB", "1": "13GiB"}}
+    # probe 4 (Nov 2026): every weight on the GPUs (the 5.25 GiB per-layer embedding table can't be offloaded: it is
+    # copied back on each forward and runs out of memory); a 24k-token prompt then peaks at 10.6 and 11.6 GiB
     settings = {"name": a.model, "model": model_cfg, "budget": budget.__dict__, "tools": tools,
                 "left_out": unsupported, "harness_name": ah.HARNESS_NAME, "note": ah.HARNESS_NOTE,
                 "hardware": "Kaggle GPU (2x T4), transformers fp16, internet off"}
