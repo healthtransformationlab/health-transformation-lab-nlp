@@ -1,4 +1,4 @@
-# PR review: 020 BUG1, seed variants in the Kaggle encoder notebook (#559)
+# PR #560 review: 020 BUG1, seed variants in the Kaggle encoder notebook (#559)
 
 Reviewed against `.claude/review-rubric.md` and AGENTS.md.
 
