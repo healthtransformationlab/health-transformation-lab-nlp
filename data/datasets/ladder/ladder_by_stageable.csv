@@ -25,6 +25,10 @@ medgemma-1.5-4b-it,not_stageable,17,0.8235294117647058
 medgemma-1.5-4b-it,stageable,206,0.7815533980582524
 medgemma-4b-it,not_stageable,17,0.8823529411764706
 medgemma-4b-it,stageable,206,0.7912621359223301
+modernbert-base+cw+s1,not_stageable,17,0.8823529411764706
+modernbert-base+cw+s1,stageable,206,0.8495145631067961
+modernbert-base+cw+s2,not_stageable,17,0.8235294117647058
+modernbert-base+cw+s2,stageable,206,0.8252427184466019
 modernbert-base+cw,not_stageable,17,0.8235294117647058
 modernbert-base+cw,stageable,206,0.8543689320388349
 modernbert-base,not_stageable,17,0.8235294117647058
@@ -63,6 +67,10 @@ medgemma-1.5-4b-it+rules4,not_stageable,17,0.8235294117647058
 medgemma-1.5-4b-it+rules4,stageable,206,0.7815533980582524
 medgemma-4b-it+rules4,not_stageable,17,0.8235294117647058
 medgemma-4b-it+rules4,stageable,206,0.8009708737864077
+modernbert-base+cw+s1+rules4,not_stageable,17,0.8823529411764706
+modernbert-base+cw+s1+rules4,stageable,206,0.8786407766990292
+modernbert-base+cw+s2+rules4,not_stageable,17,0.8235294117647058
+modernbert-base+cw+s2+rules4,stageable,206,0.8543689320388349
 modernbert-base+cw+rules4,not_stageable,17,0.8235294117647058
 modernbert-base+cw+rules4,stageable,206,0.883495145631068
 modernbert-base+rules4,not_stageable,17,0.8235294117647058
