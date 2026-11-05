@@ -438,6 +438,8 @@ TABLES = {
             C("duration_seconds", "double", "run length"),
             C("cost_usd", "double", "run cost: its billing usage at the USD list price in effect then (spec 036), "
               "or the span export's; empty when neither is readable, never zero"),
+            C("billed_dbu", "double", "the run's Databricks Units from billing usage in DBU (#597); empty when billing "
+              "can't be read"),
             C("git_commit_sha", "string", "commit the pipeline ran (span export)"),
             C("data_label_code", "string", "synthetic · public · simulated, from the pipeline's config"),
             *DOCTOR_PROV]),

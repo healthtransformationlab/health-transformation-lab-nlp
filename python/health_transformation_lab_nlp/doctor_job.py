@@ -48,7 +48,10 @@ _RUN_TYPES = {"started_ts": "timestamp", "ended_ts": "timestamp", "row_in_count"
               "check_passed_count": "bigint", "check_failed_count": "bigint", "duration_seconds": "double",
               "cost_usd": "double"}
 TABLES = {
-    "fact_pipeline_run": [(c, _RUN_TYPES.get(c, "string")) for c in doctor.RUN_COLUMNS] + _BATCH,
+    "fact_pipeline_run": [(c, _RUN_TYPES.get(c, "string")) for c in doctor.RUN_COLUMNS[:doctor.RUN_COLUMNS.index("cost_usd") + 1]]
+                         + [("billed_dbu", "double")]   # #597: from billing only, so not a doctor.RUN_COLUMNS signal input
+                         + [(c, _RUN_TYPES.get(c, "string")) for c in doctor.RUN_COLUMNS[doctor.RUN_COLUMNS.index("cost_usd") + 1:]]
+                         + _BATCH,
     "fact_pipeline_signal": [("pipeline_name", "string"), ("step_name", "string"), ("run_id", "string"),
                              ("started_ts", "timestamp"), ("run_status_code", "string"),
                              ("freshness_seconds", "double"), ("sla_seconds", "double"), ("volume_ratio", "double"),
@@ -212,7 +215,7 @@ def billing_costs(usage: pd.DataFrame, prices: pd.DataFrame) -> tuple[pd.DataFra
     """Each job run's cost: its usage at the list price in effect when it was used (same SKU and unit). A run with a
     SKU no price covers gets no cost at all, never a partial one; those SKUs are returned to be named."""
     if usage is None or not len(usage):
-        return pd.DataFrame(columns=["run_id", "cost_usd"]), []
+        return pd.DataFrame(columns=["run_id", "cost_usd", "billed_dbu"]), []
     u = usage.assign(run_id=usage["job_run_id"].astype(str), _row=range(len(usage)))
     u["usage_start_time"] = pd.to_datetime(u["usage_start_time"], utc=True)
     p = prices.assign(price_start_time=pd.to_datetime(prices["price_start_time"], utc=True),
@@ -223,9 +226,12 @@ def billing_costs(usage: pd.DataFrame, prices: pd.DataFrame) -> tuple[pd.DataFra
     priced = m[inside].drop_duplicates("_row")
     u = u.merge(priced[["_row", "price_usd"]], on="_row", how="left")
     u["line_usd"] = u["usage_quantity"].astype(float) * u["price_usd"]
+    u["line_dbu"] = u["usage_quantity"].astype(float).where(u["usage_unit"].astype(str).str.upper() == "DBU", 0.0)
     missing = sorted(u.loc[u["price_usd"].isna(), "sku_name"].astype(str).unique())
-    costs = u.groupby("run_id")["line_usd"].agg(lambda s: s.sum() if s.notna().all() else float("nan"))
-    return costs.rename("cost_usd").reset_index(), missing
+    g = u.groupby("run_id")
+    costs = g["line_usd"].agg(lambda s: s.sum() if s.notna().all() else float("nan")).rename("cost_usd").to_frame()
+    costs["billed_dbu"] = g["line_dbu"].sum()   # #597: what billing counts, priced or not
+    return costs.reset_index(), missing
 
 
 @traced
@@ -235,6 +241,9 @@ def merge_billing(runs: pd.DataFrame, costs: pd.DataFrame) -> pd.DataFrame:
     by_run = dict(zip(costs["run_id"].astype(str), costs["cost_usd"]))
     fill = out["cost_usd"].isna() & out["run_id"].astype(str).isin(by_run)
     out.loc[fill, "cost_usd"] = out.loc[fill, "run_id"].astype(str).map(by_run)
+    if "billed_dbu" in costs:   # #597: the DBUs beside the cost
+        dbu = dict(zip(costs["run_id"].astype(str), costs["billed_dbu"]))
+        out["billed_dbu"] = out["run_id"].astype(str).map(dbu)
     return out
 
 
