@@ -153,50 +153,7 @@ edge("lake", "ls", "tasks out · labels in", exit=(0.3, 1), entry=(1, 0.5), via=
 edge("rev", "ls", "labels")
 save("d2_platform_architecture", page_w=1600, page_h=700)
 
-# ====================================================================== d3: ERD
-reset()
-title("ERD: OMOP CDM 5.4 tables used here + dental extension (SITE, SITE_EVENT) + local concepts")
-# column 1: person, visit, note, note_nlp
-entity("person", "PERSON", ["PK person_id", "gender_concept_id", "year_of_birth", "race_concept_id", "ethnicity_concept_id"], 40, 80, w=250)
-entity("visit", "VISIT_OCCURRENCE", ["PK visit_occurrence_id", "FK person_id", "visit_concept_id (9202 outpatient)",
-                                     "visit_start_date / end_date", "visit_type_concept_id"], 40, 300, w=250)
-entity("note", "NOTE", ["PK note_id", "FK person_id", "FK visit_occurrence_id", "note_text (de-identified)",
-                        "note_type / class / encoding / language"], 40, 520, w=250)
-entity("nlp", "NOTE_NLP", ["PK note_nlp_id", "FK note_id", "lexical_variant, term", "note_nlp_concept_id (status)",
-                           "nlp_system (model + version)", "flag for review, never a diagnosis"], 40, 740, w=250, color=PURPLE, fill=PURPLE_F)
-# column 2: measurement
-entity("meas", "MEASUREMENT", ["PK measurement_id", "FK person_id", "FK visit_occurrence_id", "FK measurement_concept_id",
-                                "value_as_number", "measurement_date", "measurement_source_value",
-                                "tooth_number  (design C only)", "tooth_site  (design C only)"], 420, 110, w=270)
-# column 3: dental extension
-entity("sev", "SITE_EVENT  (dental extension)", ["PK site_event_id", "FK site_id", "event_id → measurement_id",
-                                                 "event_field_concept_id (1147138)", "site_event_type_concept_id"],
-       800, 110, w=280, color=DBX, fill="#FFF3F0")
-entity("site", "SITE  (dental extension)", ["PK site_id", "FK person_id", "site_concept_id (tooth / tooth-site)",
-                                            "site_source_value '3' / '3-MB'", "FK parent_site_id (the tooth)",
-                                            "site_start_date / end_date"], 800, 340, w=280, color=DBX, fill="#FFF3F0")
-# column 4: vocabulary and view
-entity("concept", "CONCEPT", ["PK concept_id", "concept_code", "vocabulary_id", "domain_id", "standard_concept"], 1190, 110, w=320)
-entity("loc", "Local concepts  (DENTAL_LOCAL rows in CONCEPT)", ["SITE_PD · SITE_CAL · SITE_BOP", "TOOTH_STATUS · FURCATION · MOBILITY",
-                                                "PERIO_MAX_CAL · PERIO_BOP_PCT ... (derived)", "N_TEETH_IP_CAL3/4/6 · N_TEETH_IP_PD4/5",
-                                                "N_SITES_IP_PD5 · CDC_AAP_* · PERIO_STATUS_*"], 1190, 310, w=320, color=GREEN, fill=GREEN_F)
-entity("view", "perio_chart  (view over MEASUREMENT)", ["person_id, visit_occurrence_id, exam_date", "max_probing_depth_mm, bop_pct",
-                                       "max_cal_mm, rbl_pct, teeth_lost_perio"], 1190, 520, w=320, color=GREY, fill=GREY_F)
-rel("visit", "person", exit=(0.5, 0), entry=(0.5, 1))
-rel("note", "visit", exit=(0.5, 0), entry=(0.5, 1))
-rel("nlp", "note", exit=(0.5, 0), entry=(0.5, 1))
-rel("meas", "person", "person_id", exit=(0, 0.12), entry=(1, 0.4))
-rel("meas", "visit", "visit_occurrence_id", exit=(0, 0.3), entry=(1, 0.3), via=[(350, 186), (350, 352)])
-rel("sev", "meas", "event_id", exit=(0, 0.35), entry=(1, 0.15))
-rel("sev", "site", "site_id", exit=(0.5, 1), entry=(0.5, 0))
-rel("site", "site", "parent_site_id", exit=(1, 0.75), entry=(1, 0.55), via=[(1120, 468), (1120, 435)])
-rel("site", "person", "person_id", exit=(0.5, 1), entry=(1, 0.75), via=[(940, 520), (330, 520), (330, 196)])
-rel("meas", "concept", "measurement_concept_id", exit=(0.5, 0), entry=(0.5, 0), via=[(555, 72), (1350, 72)])
-rel("loc", "concept", "", dashed=True, exit=(0.5, 0), entry=(0.5, 1))
-rel("view", "meas", "pivots", dashed=True, exit=(0, 0.5), entry=(0.5, 1), via=[(555, 581)])
-note("Design A links each site measurement through SITE_EVENT; design B encodes tooth and site in the concept (PD|3|MB); "
-     "design C adds tooth_number / tooth_site to MEASUREMENT. See d4 and docs/site_level_omop.md.", 40, 920, 1470, 40)
-save("d3_erd_omop_dental", page_w=1560, page_h=970)
+# d3, the OMOP dental ERD, is in the data-dictionary format: omop_dental_erd.py (#607)
 
 # ====================================================================== d4: site storage designs
 reset()

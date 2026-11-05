@@ -21,7 +21,7 @@ def _load(name):
 
 DIC = _load("dictionary_erd")
 MODELS = {"gold": _load("gold_model"), "opendental": _load("opendental_silver_model"),
-          "omop": _load("omop_silver_model")}
+          "omop": _load("omop_silver_model"), "d3": _load("omop_dental_model")}
 
 
 def _keys(m, table):
@@ -95,7 +95,8 @@ def test_entity_lines_never_cross_a_table(name):
 def test_every_erd_file_is_in_the_dictionary_format():
     files = {"gold": ROOT / "diagrams" / "gold" / "source" / "gold_data_model",
              "opendental": ROOT / "diagrams" / "silver" / "source" / "opendental_silver",
-             "omop": ROOT / "diagrams" / "silver" / "source" / "omop_silver"}
+             "omop": ROOT / "diagrams" / "silver" / "source" / "omop_silver",
+             "d3": ROOT / "diagrams" / "d3_erd_omop_dental"}
     for name, stem in files.items():
         m = MODELS[name]
         for view in ("full", "entity"):
@@ -104,3 +105,20 @@ def test_every_erd_file_is_in_the_dictionary_format():
             for title, _, _ in m.GROUPS:
                 assert DIC._esc(title) in xml or title in xml, (stem, view, title)
         assert not Path(f"{stem}_dictionary.drawio").exists(), "the full view is the data dictionary now"
+
+
+def test_d3_is_no_longer_hand_drawn():   # #607: d3 was drawn by hand in build_drawio.py, outside the format
+    assert "d3_erd_omop_dental" not in (BUILD / "build_drawio.py").read_text()
+    assert not (ROOT / "diagrams" / "d3_erd_omop_dental.drawio").exists()
+    for view in ("full", "entity"):
+        assert (ROOT / "diagrams" / f"d3_erd_omop_dental_{view}.drawio").exists()
+        assert (ROOT / "diagrams" / f"d3_erd_omop_dental_{view}.png").exists()
+
+
+def test_d3_profiles_the_synthetic_omop_tables_but_never_note_text():
+    sys.path.insert(0, str(BUILD))
+    d3 = _load("omop_dental_erd")
+    stats = d3.stats()
+    assert stats["person"]["rows"] > 0 and stats["measurement"]["rows"] > 0
+    assert "note_text" not in stats["note"]["columns"], "free text is never profiled into a diagram"
+    assert stats["concept"]["rows"] == 31 and "n_distinct=31" in stats["concept"]["columns"]["concept_code"]

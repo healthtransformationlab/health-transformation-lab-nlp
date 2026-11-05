@@ -28,6 +28,7 @@ crossing lines) and `gold/data_model.md`, and `gold_architecture.py` writes the 
 
 ```bash
 python3 gold_erd.py && python3 gold_architecture.py
+python3 omop_dental_erd.py                             # d3 (#607), into ../
 python3 silver_erd.py                                  # spec 029: ../silver/; every ERD's draw.io is the data-dictionary format (dictionary_erd.py, #601)
 npm install playwright && node drawio_render.js        # VIEWER=http://localhost:8765/js/viewer-static.min.js with the local webapp above
 ```
