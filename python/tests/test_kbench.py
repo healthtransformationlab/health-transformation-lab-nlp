@@ -201,7 +201,42 @@ def test_task_file_runs_the_task_on_kbench_llm():
     assert "perio_bench.run(kbench.llm," in TASK_FILE.read_text()
 
 
+def _module_level_calls(text: str):
+    import ast
+    for node in ast.parse(text).body:                       # top level only, not inside an `if`
+        value = getattr(node, "value", None)
+        if isinstance(value, ast.Call):
+            yield value
+
+
+def test_task_file_runs_on_kbench_llm_at_the_top_level():
+    # #593: as in Kaggle's cookbook, `task.run(kbench.llm, ...)` is a top-level statement, not inside an `if`
+    calls = [ast_call for ast_call in _module_level_calls(TASK_FILE.read_text())
+             if getattr(ast_call.func, "attr", "") == "run"]
+    assert any(c.args and getattr(c.args[0], "attr", "") == "llm" and getattr(c.args[0].value, "id", "") == "kbench"
+               for c in calls)
+
+
+def test_task_definition_calls_the_model_it_is_given():
+    # #593: Kaggle stores the task's own source as its definition; it uses `llm` itself, as the cookbook's tasks do
+    import ast
+    tree = ast.parse(TASK_FILE.read_text())
+    fn = next(n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == "perio_bench")
+    assert "evaluate(llm=[llm]" in ast.get_source_segment(TASK_FILE.read_text(), fn)
+
+
+def test_task_file_chooses_its_task_for_the_leaderboard():
+    # #593: the cookbook's leaderboard needs `%choose <main task>` in the notebook's last cell
+    text = TASK_FILE.read_text()
+    assert text.rstrip().endswith("# %choose perio_bench")
+    jupytext = pytest.importorskip("jupytext")
+    assert jupytext.reads(text, fmt="py:percent").cells[-1].source.strip().endswith("%choose perio_bench")
+
+
 def test_task_file_dry_runs_on_a_scripted_model(monkeypatch, capsys):
+    import kaggle_benchmarks
+    monkeypatch.setattr(kaggle_benchmarks, "llm", kaggle_benchmarks.llm)          # the file swaps in scripted models
+    monkeypatch.setattr(kaggle_benchmarks, "judge_llm", kaggle_benchmarks.judge_llm)
     monkeypatch.setenv("PERIO_BENCH_N", "6")
     monkeypatch.syspath_prepend(str(Path(kbench.__file__).parents[1]))
     spec = importlib.util.spec_from_file_location("perio_bench_task", TASK_FILE)

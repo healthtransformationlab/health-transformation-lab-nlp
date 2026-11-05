@@ -44,7 +44,8 @@ embeddings = ["sentence-transformers>=5", "torch>=2.2"]
 # duckdb runs the dashboards' SQL in tests (spec 019); pytest-xdist runs the suite in parallel in CI (#510)
 dev = ["pytest>=8", "pytest-xdist>=3.5", "ruff>=0.5", "duckdb>=1.0"]
 # PerioBench as a Kaggle Benchmarks task (health_transformation_lab_nlp.kbench, kaggle/perio_bench_task.py)
-kbench = ["kaggle-benchmarks>=0.6", "pydantic>=2"]
+# hishel<2: hishel 2.0.0 dropped BaseFilter, which kaggle-benchmarks 0.6.2 imports (#593)
+kbench = ["kaggle-benchmarks>=0.6", "pydantic>=2", "hishel<2"]
 
 [build-system]
 requires = ["setuptools>=68"]

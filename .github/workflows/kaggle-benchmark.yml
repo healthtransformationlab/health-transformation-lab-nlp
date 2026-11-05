@@ -26,12 +26,17 @@ on:
         description: "Wait for the runs to finish and attach their outputs"
         type: boolean
         default: true
+      probe:
+        description: "Probe: push and run a copy as `perio-bench-probe` on 3 notes (cents, not dollars), to check a change before a full run; never published (#593)"
+        type: boolean
+        default: false
 
 concurrency: kaggle-benchmark
 
 env:
-  TASK: perio-bench
-  TASK_FILE: kaggle/perio_bench_task.py
+  # The probe (#593) pushes a copy under its own slug, so it never touches the real task or its leaderboard
+  TASK: ${{ inputs.probe && 'perio-bench-probe' || 'perio-bench' }}
+  TASK_FILE: ${{ inputs.probe && 'build/perio_bench_probe.py' || 'kaggle/perio_bench_task.py' }}
 
 jobs:
   benchmark:
@@ -69,6 +74,11 @@ jobs:
           grep -q '^MODEL_PROXY_API_KEY=' .env || { echo "::error::kaggle b init wrote no MODEL_PROXY_API_KEY"; exit 1; }
           grep -E '^(LLM_DEFAULT|LLM_DEFAULT_EVAL|LLMS_AVAILABLE)=' .env | tee -a "$GITHUB_STEP_SUMMARY"
           kaggle b quota | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Probe copy (perio-bench-probe, 3 notes)
+        if: inputs.probe
+        run: |
+          python kaggle/probe_task.py --out build/perio_bench_probe.py --n 3 | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: Validate the task on 3 notes with the real default model
         if: inputs.validate && (inputs.action == 'push' || inputs.action == 'push-and-run')
@@ -120,7 +130,7 @@ jobs:
           if-no-files-found: ignore
 
       - name: Publish the task (public task and backing notebook)
-        if: inputs.action == 'publish'
+        if: inputs.action == 'publish' && !inputs.probe
         run: |
           set -o pipefail
           kaggle b t publish "$TASK" 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
