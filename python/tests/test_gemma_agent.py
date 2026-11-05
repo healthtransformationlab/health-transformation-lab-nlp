@@ -6,6 +6,7 @@ import json
 import subprocess
 import sys
 import tarfile
+from pathlib import Path
 
 import pytest
 
@@ -166,8 +167,14 @@ def test_the_shipped_code_imports_without_the_rest_of_the_package(tmp_path, samp
     ab = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(ab)
     out = ab.build(sample, _snapshot(tmp_path), None, None, tmp_path / "b", "", ["read_file"], ah.Budget())
+    # -I keeps the repo package off the path; numpy (on Kaggle's image) is put back by hand, since -I also drops the
+    # user site, where the deploy job's pip installs it ("Defaulting to user installation")
+    import numpy
+    numpy_dir = str(Path(numpy.__file__).resolve().parent.parent)
     r = subprocess.run([sys.executable, "-I", "-c", f"import sys; sys.path.insert(0, {str(out)!r}); "
+                        f"sys.path.append({numpy_dir!r}); "
                         "import htl_agent.agent_harness as h, htl_agent.gemma_agent as g; "
+                        "assert not any(m.startswith('health_transformation_lab_nlp') for m in sys.modules); "
                         "print(h.HARNESS_NAME, g.parse_reply('x', hit_limit=False)['content'])"],
                        capture_output=True, text=True, cwd=tmp_path)
     assert r.returncode == 0, r.stderr
