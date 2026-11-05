@@ -113,7 +113,7 @@ def dq_tables(datasets_dir: Path) -> dict[str, pd.DataFrame]:
 
 # ---------------------------------------------------------------- the lab grader (spec 019 US3)
 
-# Access to care first: the mission (docs/pitch/, slide 11). Five key points per question, as GlobalDentBench
+# Access to care first: the mission (docs/pitch/, the uplift slide). Five key points per question, as GlobalDentBench
 # decomposes a case answer (docs/dentbench_methods.md).
 CATEGORIES = ["Access to care", "Clinical cases", "Medical-dental integration", "Barriers to care",
               "Cost and coverage"]

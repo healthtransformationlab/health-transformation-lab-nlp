@@ -37,7 +37,7 @@ pick one to believe first. Measurements first gives 207; exam form first (the st
 
 | For | Go to |
 |---|---|
-| **Executives** (11 slides, 10 minutes) | [read the pitch with speaker notes](docs/edr/full_text_and_notes.md) · [slides](docs/edr/deck.html) (download and open in a browser) |
+| **Executives** (12 slides, 10 minutes) | [read the pitch with speaker notes](docs/edr/full_text_and_notes.md) · [slides](docs/edr/deck.html) (download and open in a browser) |
 | **Scientists** | [the study](docs/edr/README.md): the seven kinds of evidence, every method with 95% intervals, the acceptance test, models, de-identification |
 | **Engineers** | [code walkthrough](docs/code_walkthrough.md), [deployment](docs/deployment.md), [how we work](AGENTS.md) |
 
@@ -57,7 +57,7 @@ it would ask whether an answer works for someone with no coverage, no car or no 
 
 | For | Go to |
 |---|---|
-| **Executives** (6 slides, plus backup) | [read the pitch with speaker notes](docs/pitch/full_text_and_notes.md) · [slides](docs/pitch/deck.html) (download and open in a browser) |
+| **Executives** (7 slides, plus backup) | [read the pitch with speaker notes](docs/pitch/full_text_and_notes.md) · [slides](docs/pitch/deck.html) (download and open in a browser) |
 | **Detail** | [the pitch's sources and how this repo tests it](docs/pitch/README.md) |
 
 ## How the two paths connect
