@@ -133,10 +133,21 @@ def test_the_scripts_write_the_subgroups_and_the_stability_files():
         assert f in parity, f
 
 
-def test_the_seed_42_row_matches_the_committed_answer_key():
+def test_the_seed_42_row_matches_the_leaderboard():
+    # #472: seed stability scores as the leaderboard does (five status groups, the review charts that count), so the
+    # committed seed (42) gives the leaderboard's own numbers
+    from health_transformation_lab_nlp import study
+    from health_transformation_lab_nlp.labels import DEFAULT_GROUPING
     from health_transformation_lab_nlp.paths import DATASETS_DIR
     st = pd.read_csv(DATASETS_DIR / "ladder" / "seed_stability.csv")
-    key = pd.read_csv(DATASETS_DIR / "answer_key" / "review_key.csv")
+    at42 = st[st["seed"] == 42].set_index("method")
+    board = pd.read_csv(DATASETS_DIR / "ladder" / "ladder_vs_truth.csv").set_index("method")
+    for m in ("note_rules", "tfidf_logreg", "fusion_tfidf_rad"):
+        assert at42.loc[m, "n"] == board.loc[m, "n"], m
+        assert at42.loc[m, "accuracy"] == pytest.approx(board.loc[m, "accuracy"]), m
+    key = study.scored_review(pd.read_csv(DATASETS_DIR / "answer_key" / "review_key.csv"),
+                              pd.read_csv(DATASETS_DIR / "visits_structured.csv"))
+    truth = ladder_eval.grouped(key["truth_status"], DEFAULT_GROUPING)
     for m in ("algorithm_v0", "algorithm_design", "exam_form"):
-        row = st[(st["method"] == m) & (st["seed"] == 42)].iloc[0]
-        assert row["accuracy"] == pytest.approx((key[m] == key["truth_status"]).mean()), m
+        want = (ladder_eval.grouped(key[m], DEFAULT_GROUPING) == truth).mean()
+        assert at42.loc[m, "accuracy"] == pytest.approx(want), m

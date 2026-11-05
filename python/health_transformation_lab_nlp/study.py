@@ -422,8 +422,11 @@ def reread_absent_code(frame: pd.DataFrame, absent_code: str = DEFAULT_ABSENT_CO
 @traced
 def scored_review(key: pd.DataFrame, visits: pd.DataFrame, min_age: int | None = ANALYSIS_MIN_AGE,
                   start_date: str | None = ANALYSIS_START_DATE,
-                  absent_code: str = DEFAULT_ABSENT_CODE) -> pd.DataFrame:
+                  absent_code: str = DEFAULT_ABSENT_CODE, n_people: int = BUILD_N_PEOPLE,
+                  seed: int = BUILD_SEED) -> pd.DataFrame:
     """The review charts results are scored on (spec 032 US8): the answer key's visits that count (visits_in_study,
-    with each visit's date from visits_structured.csv), their codes and rule phenotypes read under `absent_code`."""
+    with each visit's date from visits_structured.csv), their codes and rule phenotypes read under `absent_code`.
+    `n_people` and `seed` are the build's: another seed's study (seed stability, #472) passes its own."""
     dated = key.merge(visits[["visit_id", "visit_date"]], on="visit_id", how="left")
-    return reread_absent_code(visits_in_study(dated, min_age, start_date), absent_code).reset_index(drop=True)
+    return reread_absent_code(visits_in_study(dated, min_age, start_date), absent_code,
+                              n_people, seed).reset_index(drop=True)
