@@ -43,23 +43,32 @@ n = os.environ.get("PERIO_BENCH_N")
 df = perio.eval_frame(review_key, n=int(n) if n else None)
 
 # %%
-# The task is declared here, in the pushed file: the Kaggle CLI parses this file for a `@task` named after the
-# slug and refuses the push without one (#541). The body is the package's, so tests and Kaggle run the same code.
-@kbench.task(name="perio-bench", version=perio.TASK_VERSION)
-def perio_bench(llm, df, judge_llm=None) -> dict:
-    """PerioBench: finding gum disease in dental records (phenotyping), scored against the answer key."""
-    return perio.perio_bench.func(llm, df, judge_llm=judge_llm)
+# A dry run, without Kaggle credentials: scripted models stand in for `kbench.llm` and `kbench.judge_llm` and the
+# result says SIMULATED. On Kaggle this cell does nothing.
+if not kbench.kaggle.is_configured():
+    kbench.llm = perio.ScriptedReader(perio.answer_key_script(df, wrong_every=5))
+    kbench.judge_llm = perio.ScriptedReader(perio.judge_script(df), name="sim:scripted-judge")
 
 
 # %%
-# On Kaggle the run call passes `kbench.llm` itself: Kaggle checks the code for it and errors a run without it, as a
-# hard-coded model (#547). Kaggle swaps in each model picked for the leaderboard. Without credentials, a scripted model.
-if kbench.kaggle.is_configured():
-    run = perio_bench.run(kbench.llm, df, judge_llm=kbench.judge_llm)
-else:
-    run = perio_bench.run(perio.ScriptedReader(perio.answer_key_script(df, wrong_every=5)), df,
-                          judge_llm=perio.ScriptedReader(perio.judge_script(df), name="sim:scripted-judge"))
+# The task, in the form Kaggle's cookbook uses (#541, #547, #593): declared in this file, it calls the model it is
+# given (`llm`) itself, and is run once on `kbench.llm` at the top level, so Kaggle can swap in each model added to
+# the leaderboard. The judging and scoring are the package's (`perio.judge_and_score`), shared with the tests.
+@kbench.task(name="perio-bench", version=perio.TASK_VERSION)
+def perio_bench(llm, df, judge_llm=None) -> dict:
+    """PerioBench: finding gum disease in dental records (phenotyping), scored against the answer key."""
+    with kbench.client.enable_cache():
+        runs = perio.read_note.evaluate(llm=[llm], evaluation_data=df, **perio.READ_OPTIONS)
+    return perio.judge_and_score(llm, df, runs, judge_llm)
+
+
+# %%
+run = perio_bench.run(kbench.llm, df, judge_llm=kbench.judge_llm)
 label = "SIMULATED (scripted model, not a result)" if run.result.get("is_simulated") else run.result["reader_name"]
 print(f"PerioBench [{label}]")
 print(json.dumps(run.result, indent=2))
-run  # noqa: B018 - the SDK renders the run object in a notebook cell
+
+# %%
+# The leaderboard's main task. In jupytext's percent format a magic is written commented out; Kaggle's converter
+# makes this line `%choose perio_bench` in the notebook.
+# %choose perio_bench

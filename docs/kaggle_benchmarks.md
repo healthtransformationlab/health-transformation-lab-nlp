@@ -37,12 +37,26 @@ python ../kaggle/perio_bench_task.py                   # dry run: prints a SIMUL
 
 A dry run is labelled `SIMULATED (scripted model, not a result)` and is never a number to report.
 
-## First runs on Kaggle (2026-11-04)
+## First runs on Kaggle (2026-11-04 and 2026-11-05)
 
-Three models, one each from Google, Anthropic and OpenAI, read all 223 review notes through Kaggle's model proxy
-(workflow run 41782477681, task version 1). The notes are synthetic, so each score is **agreement with the
-generator's answer key, not accuracy on real patients** ([how scoring works](scoring.md)). The judge was Kaggle's
-default evaluation model, `google/gemini-3-flash-preview`, for all three, so it judged its own answers in the first row.
+Three models, one each from Google, Anthropic and OpenAI, read all 223 review notes through Kaggle's model proxy,
+twice. The notes are synthetic, so each score is **agreement with the generator's answer key, not accuracy on real
+patients** ([how scoring works](scoring.md)). Every note was answered both times (`errored_count` 0), but Kaggle
+marked every added model's run ERRORED after it finished, with "The task code doesn't contain any statement to use
+the `kbench.llm` model". So these runs are not on a leaderboard; the scores are read from the runs' outputs
+(`kaggle b t log` and `kaggle b t download perio-bench`). #547 and #593 change the task file to Kaggle's cookbook form.
+
+**2026-11-05** (workflow run 41978154454, task version 2). The judge was Kaggle's default evaluation model,
+`google/gemini-3.8-flash`, for every model. Its own run is the push's default-model run, which completed.
+
+| Model | Sensitivity | Specificity | Macro F1 (five groups) | Agreement with the key | Quote check passed | Judge agreed |
+|---|---|---|---|---|---|---|
+| `anthropic/claude-sonnet-5@default` | 1.000 | 0.810 | 0.858 | 0.839 | 0.982 | 0.964 |
+| `google/gemini-3-flash-preview` | 1.000 | 0.833 | 0.862 | 0.848 | 0.978 | 0.951 |
+| `google/gemini-3.8-flash` | 1.000 | 0.750 | 0.846 | 0.821 | 1.000 | 0.991 |
+| `openai/gpt-5.4-nano-2026-03-17` | 0.813 | 0.964 | 0.619 | 0.682 | 0.928 | 0.646 |
+
+**2026-11-04** (workflow run 41782477681, task version 1). The judge was `google/gemini-3-flash-preview`.
 
 | Model | Sensitivity | Specificity | Macro F1 (five groups) | Agreement with the key | Quote check passed | Judge agreed |
 |---|---|---|---|---|---|---|
@@ -50,11 +64,10 @@ default evaluation model, `google/gemini-3-flash-preview`, for all three, so it 
 | `google/gemini-3-flash-preview` | 0.993 | 0.821 | 0.840 | 0.825 | 0.991 | 0.946 |
 | `openai/gpt-5.4-nano-2026-03-17` | 0.827 | 0.976 | 0.669 | 0.722 | 0.928 | 0.664 |
 
-Read from each run's log (`kaggle b t log perio-bench -m <model>`). Every note was answered (`errored_count` 0), but
-Kaggle marked all three runs ERRORED after they finished. Its code check wanted `kbench.llm` passed in the task's run
-call (#547), so these runs are not on a leaderboard. A clean rerun after that fix records them. The two larger models
-catch nearly every periodontitis case but flag some healthy or gingivitis charts as periodontitis. The smaller OpenAI
-model is the reverse. Sensitivity, the leaderboard's main number, is the share of periodontitis charts found.
+The larger models find (nearly) every periodontitis chart but call some healthy or gingivitis charts periodontitis.
+The smaller OpenAI model is the reverse. The numbers move between days because the models' answers vary and Kaggle's
+default judge changed, so quote a model's score from more than one run. Sensitivity, the leaderboard's main number,
+is the share of periodontitis charts found.
 
 ## Push it to Kaggle
 
@@ -78,17 +91,24 @@ kaggle b t publish perio-bench                         # public task + backing n
 Rules the SDK silently depends on (all checked by `tests/test_kbench.py`):
 
 - the file starts with `# %%` cells and imports `kaggle_benchmarks as kbench`;
-- the task slug `perio-bench` must match a `@kbench.task(name=...)` in the file;
-- the file must call `.run(...)`: a push succeeds without it, and then nothing is recorded;
+- the task slug `perio-bench` must match a `@kbench.task(name=...)` **in the pushed file**: the CLI parses that file
+  and refuses the push otherwise (#541);
+- the task's own source is its definition on Kaggle, and it calls the model it is given (`evaluate(llm=[llm], ...)`),
+  as the cookbook's tasks do (#593);
+- the file runs the task with `perio_bench.run(kbench.llm, ...)` as a top-level statement, so Kaggle can swap in each
+  added model (#547, #593); a push succeeds without `.run(...)`, and then nothing is recorded;
 - repeat `-d jcblearning/perio-bench-notes` on every push, or the dataset is detached;
-- one task per notebook feeds a leaderboard (`%choose perio_bench` as the notebook's last cell).
+- one task per notebook feeds a leaderboard: `# %choose perio_bench` is the file's last cell, which Kaggle's
+  converter turns into the `%choose` magic (#593).
 
 Per AGENTS.md ("Everything is started from GitHub Actions, never from a laptop") the same steps run from the
 Actions tab: **Run PerioBench on Kaggle Benchmarks** (`.github/workflows/kaggle-benchmark.yml`), with the
 `KAGGLE_USERNAME` variable and `KAGGLE_API_TOKEN` secret the publish workflow already uses. Pick `push`,
 `push-and-run` (default; model slugs as an input), `run`, `status` or `publish`; with `validate` on it first runs
 the task on 3 notes with the real default model and fails if no run file appears; with `wait` on it attaches the
-finished runs' outputs to the workflow run. The Model Proxy credentials it fetches live only in the runner.
+finished runs' outputs to the workflow run. The Model Proxy credentials it fetches live only in the runner. With `probe` on, it pushes and runs a copy of
+the task as `perio-bench-probe` on 3 notes (`kaggle/probe_task.py`), for cents rather than the roughly $6 a full
+three-model run costs, and never publishes it: check a change to the task file that way before a full run (#593).
 
 ## Getting involved: three routes
 
