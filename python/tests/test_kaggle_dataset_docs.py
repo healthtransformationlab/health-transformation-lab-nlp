@@ -193,3 +193,17 @@ def test_dataset_docs_has_no_duplicate_keys():
 
     Strict.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, no_dupes)
     yaml.load((REPO_ROOT / "kaggle" / "dataset_docs.yaml").read_text(), Loader=Strict)
+
+
+def test_published_descriptions_give_the_review_sets_own_size():
+    # #598: the review set went from 240 notes to 223 (#467); what we publish says the answer key's count
+    import pandas as pd
+
+    from health_transformation_lab_nlp.paths import DATASETS_DIR, REPO_ROOT
+    n = len(pd.read_csv(DATASETS_DIR / "answer_key" / "review_key.csv"))
+    files = [REPO_ROOT / "kaggle" / "dataset_docs.yaml", *(REPO_ROOT / "kaggle" / "cards").glob("*.md"),
+             *(REPO_ROOT / "huggingface" / "cards").glob("*.md")]
+    for f in files:
+        text = f.read_text()
+        assert "240 review" not in text and "of the 240" not in text, f.name
+    assert f"{n} review notes" in (REPO_ROOT / "kaggle" / "dataset_docs.yaml").read_text()
