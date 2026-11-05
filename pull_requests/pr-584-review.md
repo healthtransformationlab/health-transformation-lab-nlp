@@ -1,4 +1,4 @@
-# PR review: 004 CHORE1, the MedGemma run's deprecation warning (#136)
+# PR #584 review: 004 CHORE1, the MedGemma run's deprecation warning (#136)
 
 Reviewed against `.claude/review-rubric.md` and AGENTS.md.
 
