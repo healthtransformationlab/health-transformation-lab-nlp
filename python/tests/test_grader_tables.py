@@ -180,3 +180,54 @@ def test_every_record_mismatch_names_a_known_rule_and_the_scores_cover_every_cli
     assert set(m.rule) <= set(s.rule) and "any_rule" in set(s.rule)
     assert set(s.clinic) == {"All"} | {str(i) for i in range(1, 9)}
     assert set(m.visit_id) <= set(dq["fact_visit_evidence"].visit_id)
+
+
+# ---------------------------------------------------------------- coding-agent task runs (spec 036 US2, #569)
+
+@pytest.fixture(scope="module")
+def agent():
+    from health_transformation_lab_nlp.paths import TASKS_DIR
+    return gt.agent_tables(TASKS_DIR)["fact_agent_task_run"]
+
+
+def test_every_agent_run_file_becomes_rows_with_its_file_and_provenance(agent):
+    from health_transformation_lab_nlp.paths import TASKS_DIR
+    files = sorted(p.name for p in (TASKS_DIR / "agent_runs").glob("*.csv"))
+    assert sorted(agent["run_file_name"].unique()) == files
+    assert len(agent) == sum(len(__import__("pandas").read_csv(TASKS_DIR / "agent_runs" / f)) for f in files)
+    assert PROVENANCE <= set(agent.columns) and agent["sha256"].nunique() == 1
+
+
+def test_calibration_runs_are_labelled_and_tasks_carry_their_tier(agent):
+    calib = agent[agent["model_name"].str.startswith("calib:")]
+    assert len(calib) and calib["is_calibration"].all() and not agent.loc[~agent.index.isin(calib.index),
+                                                                            "is_calibration"].any()
+    assert agent["tier_code"].isin(["A", "B", "C"]).all()
+
+
+def test_the_time_budget_is_in_seconds_and_estimates_are_named_as_such(agent):
+    gemma = agent[agent["model_name"] == "gemma-4-e4b-it"]
+    assert (gemma["time_budget_seconds"] == 1800).all()
+    priced = agent["estimated_cost_usd"].notna()      # none yet: the pilot ran before the cost columns (#569)
+    assert agent.loc[priced, "price_basis_text"].astype(str).str.startswith("estimate:").all()
+
+
+def test_load_results_writes_the_agent_runs(agent):
+    from health_transformation_lab_nlp.paths import REPO_ROOT
+    nb = (REPO_ROOT / "databricks" / "notebooks" / "10_load_results.py").read_text()
+    assert "grader_tables.agent_tables(tasks_dir)" in nb
+
+
+def test_the_agent_runs_become_their_declared_gold_table(agent):
+    import importlib.util
+
+    import pandas as pd
+
+    from health_transformation_lab_nlp import gold_names
+    from health_transformation_lab_nlp.paths import REPO_ROOT
+    spec = importlib.util.spec_from_file_location("gold_model", REPO_ROOT / "diagrams" / "_build" / "gold_model.py")
+    gm = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(gm)
+    gold = gold_names.to_gold(agent.assign(git_commit="abc", loaded_at=pd.Timestamp("2026-11-04", tz="UTC")),
+                              "fact_agent_task_run")
+    assert list(gold.columns) == [c.name for c in gm.TABLES["fact_agent_task_run"].columns]

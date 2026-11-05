@@ -53,6 +53,7 @@ erDiagram
     dq_mismatch_rule
     dim_grader_question
     fact_grader_answer
+    fact_agent_task_run
     fact_pipeline_run
     fact_pipeline_signal
     fact_remediation_decision
@@ -422,6 +423,51 @@ erDiagram
         string judge_model_name "judge; never a family under test"
         string run_id "the grading run"
         boolean is_simulated "true for the simulated sample"
+        string source_files_text "the committed CSVs the table is built from"
+        string file_sha256 "SHA-256 of those files together: the version"
+        string git_commit_sha "commit the job was deployed from"
+        timestamp loaded_ts "when Load results wrote it"
+    }
+    fact_agent_task_run {
+        string run_file_name PK "the run table it came from: <model>_<tasks>.csv or <model>_kaggle.csv"
+        string instance_id PK "the task (spec 028 task set)"
+        string tier_code "the task's fidelity tier: A · B · C"
+        string harness_name "the harness that ran and scored it"
+        string model_name "the model; calib:oracle and calib:null bound the harness"
+        boolean is_calibration "a calib: run, never counted in a model's rates or costs"
+        boolean is_resolved "the required tests pass with the agent's patch"
+        boolean is_patch_submitted "the agent called submit_patch"
+        bigint agent_patch_byte_count "size of the agent's patch"
+        bigint changed_file_count "files the patch changes"
+        bigint tool_call_count "tool calls the agent made"
+        bigint turn_count "model turns"
+        bigint nudge_count "turns without a tool call that got a nudge"
+        double agent_seconds "the agent's session, model and tools"
+        bigint verify_exit_num "pytest's exit status in verification"
+        bigint verify_passed_count "required tests passed"
+        bigint verify_failed_count "required tests failed"
+        bigint verify_error_count "required tests that errored"
+        string reason_text "why it isn't resolved; empty when it is"
+        string kaggle_kernel_url "the private Kaggle kernel that ran it (Kaggle runs)"
+        double time_budget_seconds "the agent's time budget"
+        bigint max_new_token_count "most tokens one turn may generate"
+        boolean is_thinking "Gemma 4's thinking mode on"
+        boolean is_cache_reused "each turn read only its new tokens"
+        bigint max_prompt_token_count "the longest prompt, in tokens"
+        bigint prompt_token_count "prompt tokens over all turns"
+        bigint prefill_token_count "prompt tokens actually read (the rest came from the cache)"
+        bigint output_token_count "tokens generated over all turns"
+        double model_seconds "time spent generating"
+        double load_seconds "time loading the model"
+        double script_seconds "the kernel script's own run time"
+        double session_seconds "the Kaggle session, push to output: queue and boot included, so it errs high"
+        bigint gpu_count "GPUs the session had"
+        double allowance_hours "hours of the weekly Kaggle GPU allowance it used (session time)"
+        double kaggle_allowance_ratio "share of the weekly allowance (ops/cost_settings.yaml)"
+        double gpu_hours "session time by GPU count, as a cloud bills it"
+        double estimated_cost_usd "ESTIMATE: gpu_hours at a cloud's T4 price; Kaggle's GPUs are free"
+        string price_basis_text "the price, its source and the date it was read"
+        string error_text "how a failed kernel ended"
         string source_files_text "the committed CSVs the table is built from"
         string file_sha256 "SHA-256 of those files together: the version"
         string git_commit_sha "commit the job was deployed from"
@@ -994,6 +1040,56 @@ One per (question, model, with or without the agent, run). Written by: Load resu
 |  | `judge_model_name` | string | judge; never a family under test |
 |  | `run_id` | string | the grading run |
 |  | `is_simulated` | boolean | true for the simulated sample |
+|  | `source_files_text` | string | the committed CSVs the table is built from |
+|  | `file_sha256` | string | SHA-256 of those files together: the version |
+|  | `git_commit_sha` | string | commit the job was deployed from |
+|  | `loaded_ts` | timestamp | when Load results wrote it |
+
+### `fact_agent_task_run`
+
+One per task per run table in data/tasks/agent_runs/: an agent's attempt at one coding task, scored by this repo's harness (spec 035), not the competition's evaluator. Written by: Load results: overwrite.
+
+| Key | Column | Type | Description |
+|---|---|---|---|
+| PK | `run_file_name` | string | the run table it came from: <model>_<tasks>.csv or <model>_kaggle.csv |
+| PK | `instance_id` | string | the task (spec 028 task set) |
+|  | `tier_code` | string | the task's fidelity tier: A · B · C |
+|  | `harness_name` | string | the harness that ran and scored it |
+|  | `model_name` | string | the model; calib:oracle and calib:null bound the harness |
+|  | `is_calibration` | boolean | a calib: run, never counted in a model's rates or costs |
+|  | `is_resolved` | boolean | the required tests pass with the agent's patch |
+|  | `is_patch_submitted` | boolean | the agent called submit_patch |
+|  | `agent_patch_byte_count` | bigint | size of the agent's patch |
+|  | `changed_file_count` | bigint | files the patch changes |
+|  | `tool_call_count` | bigint | tool calls the agent made |
+|  | `turn_count` | bigint | model turns |
+|  | `nudge_count` | bigint | turns without a tool call that got a nudge |
+|  | `agent_seconds` | double | the agent's session, model and tools |
+|  | `verify_exit_num` | bigint | pytest's exit status in verification |
+|  | `verify_passed_count` | bigint | required tests passed |
+|  | `verify_failed_count` | bigint | required tests failed |
+|  | `verify_error_count` | bigint | required tests that errored |
+|  | `reason_text` | string | why it isn't resolved; empty when it is |
+|  | `kaggle_kernel_url` | string | the private Kaggle kernel that ran it (Kaggle runs) |
+|  | `time_budget_seconds` | double | the agent's time budget |
+|  | `max_new_token_count` | bigint | most tokens one turn may generate |
+|  | `is_thinking` | boolean | Gemma 4's thinking mode on |
+|  | `is_cache_reused` | boolean | each turn read only its new tokens |
+|  | `max_prompt_token_count` | bigint | the longest prompt, in tokens |
+|  | `prompt_token_count` | bigint | prompt tokens over all turns |
+|  | `prefill_token_count` | bigint | prompt tokens actually read (the rest came from the cache) |
+|  | `output_token_count` | bigint | tokens generated over all turns |
+|  | `model_seconds` | double | time spent generating |
+|  | `load_seconds` | double | time loading the model |
+|  | `script_seconds` | double | the kernel script's own run time |
+|  | `session_seconds` | double | the Kaggle session, push to output: queue and boot included, so it errs high |
+|  | `gpu_count` | bigint | GPUs the session had |
+|  | `allowance_hours` | double | hours of the weekly Kaggle GPU allowance it used (session time) |
+|  | `kaggle_allowance_ratio` | double | share of the weekly allowance (ops/cost_settings.yaml) |
+|  | `gpu_hours` | double | session time by GPU count, as a cloud bills it |
+|  | `estimated_cost_usd` | double | ESTIMATE: gpu_hours at a cloud's T4 price; Kaggle's GPUs are free |
+|  | `price_basis_text` | string | the price, its source and the date it was read |
+|  | `error_text` | string | how a failed kernel ended |
 |  | `source_files_text` | string | the committed CSVs the table is built from |
 |  | `file_sha256` | string | SHA-256 of those files together: the version |
 |  | `git_commit_sha` | string | commit the job was deployed from |

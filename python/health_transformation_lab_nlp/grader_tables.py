@@ -1,6 +1,7 @@
 """The tables the two graders read (spec 019), one DataFrame per gold table, built from committed CSVs.
 
     lab_tables  the lab grader: questions and answers, real when committed, else a seeded SIMULATED sample
+    agent_tables  the coding-agent task runs and what each cost (spec 036 US2)
     dq_tables   the EHR DQ grader: data-quality checks, completeness, prevalence, temporal plausibility,
                 transitions, concordance, per-visit evidence with its truth (statuses only, never note text),
                 each visit's case profile, and the record-mismatch rules with their scores (spec 026)
@@ -167,3 +168,36 @@ def lab_tables(datasets_dir: Path) -> dict[str, pd.DataFrame]:
     return {n: df.assign(source_files="simulate_grader(seed=2026)",
                          sha256=hashlib.sha256(df.to_csv(index=False).encode()).hexdigest())
             for n, df in sim.items()}
+
+
+# ---------------------------------------------------------------- coding-agent task runs (spec 036 US2, #569)
+
+# In the gold table's order (diagrams/_build/gold_model.py): what ran, how it came out, what it cost.
+AGENT_COLUMNS = ["run_file_name", "instance_id", "tier_code", "harness_name", "model_name", "is_calibration",
+                 "is_resolved", "is_patch_submitted", "agent_patch_bytes", "files_changed_count", "tool_call_count",
+                 "turn_count", "nudge_count", "agent_seconds", "verify_exit_code", "verify_passed_count",
+                 "verify_failed_count", "verify_error_count", "reason_text", "kaggle_kernel_url",
+                 "time_budget_seconds", "max_new_tokens", "is_thinking", "is_cache_reused", "max_prompt_tokens",
+                 "prompt_token_count", "prefill_token_count", "output_token_count", "model_seconds", "load_seconds",
+                 "script_seconds", "session_seconds", "gpu_count", "allowance_hours", "kaggle_allowance_ratio",
+                 "gpu_hours", "estimated_cost_usd", "price_basis_text", "error_text"]
+
+
+@traced
+def agent_tables(tasks_dir: Path) -> dict[str, pd.DataFrame]:
+    """fact_agent_task_run: one row per task per run table in data/tasks/agent_runs/ (the local harness's runs, the
+    Kaggle runs), with the task's fidelity tier, calibration runs (calib:) labelled, and the time budget in seconds.
+    A column a table doesn't have (a calibration run has no tokens or cost) is empty."""
+    d = Path(tasks_dir)
+    files = sorted(p.name for p in (d / "agent_runs").glob("*.csv"))
+    tiers = pd.read_csv(d / "task_manifest.csv", usecols=["instance_id", "tier_code"])
+    frames = []
+    for f in files:
+        df = pd.read_csv(d / "agent_runs" / f)
+        if "time_minutes" in df:
+            df["time_budget_seconds"] = df.pop("time_minutes") * 60
+        frames.append(df.assign(run_file_name=f))
+    runs = pd.concat(frames, ignore_index=True).merge(tiers, on="instance_id", how="left")
+    runs["is_calibration"] = runs["model_name"].astype(str).str.startswith("calib:")
+    runs = runs.reindex(columns=AGENT_COLUMNS)
+    return {"fact_agent_task_run": _with_provenance(runs, d / "agent_runs", files)}
