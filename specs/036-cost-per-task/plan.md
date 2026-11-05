@@ -24,8 +24,17 @@
 
 ## US1 (#568): DBUs per job run
 
-- First, one query in the dev workspace: can the job's identity read `system.billing.usage` and
-  `system.billing.list_prices`? The answer decides US1's size and goes in this plan.
+- First, can the job's identity read `system.billing.usage` and `system.billing.list_prices`? **Checked Nov 5, 2026,
+  with metadata calls only (no warehouse):**
+  - both tables exist in the workspace;
+  - the `system` catalog grants USE CATALOG to all account users;
+  - the `system.billing` schema grants USE SCHEMA and SELECT to account admins only;
+  - so the owner (an account admin) can read them, and the jobs' service principals (`dental-omop-ci` in dev,
+    `dental_omop_nlp_uat_sp` in uat) can't.
+
+  US1 therefore needs a one-time grant by an account admin: USE SCHEMA and SELECT on `system.billing` to each job
+  identity. Until then, the doctor warns that the tables can't be read and leaves costs empty (FR-002, FR-003). The
+  grant is the owner's to make; nothing in this repo makes it.
 - `doctor_job.billing_costs(usage, prices)`: one row per job run, its DBUs summed over SKUs and priced at the list
   price in effect at usage time. Joined onto the timeline runs by `job_run_id`, so `cost_usd` is filled before
   `merge_spans`; a span value still wins.
