@@ -2,6 +2,12 @@
 
 draw.io sources with rendered PNGs, and Mermaid process flows. Gold tables: [`gold/data_model.md`](gold/data_model.md) and [`docs/gold_tables.md`](../docs/gold_tables.md). How they're built: [`_build/render.md`](_build/render.md).
 
+Every ERD is in the owner's data-dictionary format (`_build/dictionary_erd.py`, #601): tables in subject areas, green
+headers fact tables, orange dimensions, blue summaries, each with its row count and grain; blue primary keys, purple
+foreign keys, red PHI and open questions; right-angled lines routed between the tables. The **full** view adds every
+column's type, meaning and, for silver, its profile (nulls, distinct and top values). The **entity** view has exactly
+the same layout, each table cut to its header and key columns.
+
 | Diagram | What it shows |
 |---|---|
 | [**d0 medallion architecture**](d0_medallion_architecture.png) ([.drawio](d0_medallion_architecture.drawio)) | Source → ingest → bronze (PHI zone) → silver (de-identified) → gold (OMOP + dental) → query and process → serve → consumers, on Databricks; same style as the Milliman diagrams |
@@ -15,7 +21,6 @@ draw.io sources with rendered PNGs, and Mermaid process flows. Gold tables: [`go
 | [gold data model, entity](gold/gold_data_model_entity.png) ([.drawio](gold/source/gold_data_model_entity.drawio), [.mmd](gold/source/gold_data_model_entity.mmd)) | The gold tables (spec 018 names) and their relationships |
 | [gold data model, full](gold/gold_data_model_full.png) ([.drawio](gold/source/gold_data_model_full.drawio), [.mmd](gold/source/gold_data_model_full.mmd)) | Every column, type, logical key and description; also as Mermaid in [gold/data_model.md](gold/data_model.md) |
 | [**Open Dental silver**](silver/opendental_silver_entity.png) ([full](silver/opendental_silver_full.png); [.drawio](silver/source/opendental_silver_entity.drawio), [full .drawio](silver/source/opendental_silver_full.drawio)) | Spec 029's `silver_opendental_perio`: the cleaned Open Dental tables with their own names, the per-tooth and planned-extraction tables, the data-quality checks and the answer key; every column in [silver/data_model.md](silver/data_model.md) |
-| [Open Dental silver, data dictionary](silver/opendental_silver_dictionary.png) ([.drawio](silver/source/opendental_silver_dictionary.drawio)); [OMOP](silver/omop_silver_dictionary.png) | The same tables as a data dictionary: subject areas, fact and dimension headers, each table's row count and grain, each column's meaning, open questions in red, and its profile (nulls, distinct and top values) once spec 029's synthetic extract exists |
 | [OMOP silver, an alternative](silver/omop_silver_entity.png) ([full](silver/omop_silver_full.png); [.drawio](silver/source/omop_silver_entity.drawio), [full .drawio](silver/source/omop_silver_full.drawio)) | The same data mapped to OMOP CDM 5.4 and the dental extension, each column naming its Open Dental source, and what the CDM can't hold (not built) |
 | [flow 01: run order](flows/01_run_order.png) | Scripts 10–24 and what feeds what |
 | [flow 02: review and acceptance](flows/02_review_and_acceptance.png) | Reviewers → human bar vs each method → verdict |

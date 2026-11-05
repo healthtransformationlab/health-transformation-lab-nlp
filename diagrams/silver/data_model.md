@@ -6,7 +6,7 @@ Generated from [`_build/opendental_silver_model.py`](../_build/opendental_silver
 
 The cleaned Open Dental tables spec 029 reads, with Open Dental's own names lowercased ([research](../../specs/029-tooth-loss/research.md)), the tables derived from them, and the evaluation-only answer key. Dashed lines are matches, not keys: `proctp.dx` is text matched to a diagnosis by name, and a planned procedure's copies point back with `procnumorig`.
 
-Draw.io: [entity](source/opendental_silver_entity.drawio) · [full](source/opendental_silver_full.drawio) · [data dictionary](source/opendental_silver_dictionary.drawio) (subject areas, row counts, nulls, distinct and top values)
+Draw.io, in the data-dictionary format: [full](source/opendental_silver_full.drawio) (subject areas, row counts, nulls, distinct and top values) · [entity](source/opendental_silver_entity.drawio) (the same layout, each table's header and key columns)
 
 ```mermaid
 erDiagram
@@ -693,7 +693,7 @@ One per patient and missing tooth: the generator's true reason; evaluation only,
 
 The same data mapped to OMOP CDM 5.4 and the repo's dental extension ([`omop/ddl/dental_extension.sql`](../../omop/ddl/dental_extension.sql)). Each column says which Open Dental column fills it (←). `not_mapped` lists what the CDM can't hold, which is why spec 029 keeps silver in Open Dental's shape.
 
-Draw.io: [entity](source/omop_silver_entity.drawio) · [full](source/omop_silver_full.drawio) · [data dictionary](source/omop_silver_dictionary.drawio) (subject areas, row counts, nulls, distinct and top values)
+Draw.io, in the data-dictionary format: [full](source/omop_silver_full.drawio) (subject areas, row counts, nulls, distinct and top values) · [entity](source/omop_silver_entity.drawio) (the same layout, each table's header and key columns)
 
 ```mermaid
 erDiagram
