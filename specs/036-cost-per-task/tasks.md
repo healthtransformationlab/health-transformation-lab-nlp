@@ -18,5 +18,6 @@
   (DBUs are fractional: not `_count`)
 
 ## US3 - Cost and duration recommendations, and the view #570
-- [ ] T008 Failing tests, then `duration_drift` in `doctor.classify` and the runbook actions
+- [x] T008 Failing tests, then `duration_drift` in `doctor.classify` (over 2x the trailing median, no other class,
+  SEV4) and the runbook's `fix_text` (file and setting) for it and `cost_anomaly`, in every recommendation's text
 - [ ] T009 Cost per resolved task on the grader dashboards and in Genie
