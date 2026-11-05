@@ -19,7 +19,7 @@ import json
 
 import pandas as pd
 
-from health_transformation_lab_nlp.llm_reader import sft_records
+from health_transformation_lab_nlp.llm_reader import dtype_kwarg, sft_records
 from health_transformation_lab_nlp.paths import DATASETS_DIR
 from health_transformation_lab_nlp.registry import load_registry, model
 
@@ -57,7 +57,7 @@ from transformers import (
 from trl import SFTConfig, SFTTrainer
 
 m = model(load_registry(), a.rung)
-kw = {"torch_dtype": torch.bfloat16, "device_map": "auto"}
+kw = {**dtype_kwarg(torch.bfloat16), "device_map": "auto"}
 if m.get("modality") == "multimodal":
     proc = AutoProcessor.from_pretrained(m["hf"])
     base = AutoModelForImageTextToText.from_pretrained(m["hf"], **kw)

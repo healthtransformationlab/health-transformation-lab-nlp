@@ -323,3 +323,20 @@ def test_the_reader_notebook_checks_the_token_before_building_the_study():
     nb = (REPO_ROOT / "databricks" / "notebooks" / "03_medgemma_reader.py").read_text()
     assert "check_hf_access(" in nb
     assert nb.index("check_hf_access(") < nb.index("10_build_study.py")
+
+
+def test_the_dtype_keyword_follows_the_installed_transformers():
+    # #136: transformers 4.56 renamed from_pretrained's torch_dtype to dtype and warns on the old name; older
+    # versions (the repo allows >= 4.50) only know torch_dtype
+    from health_transformation_lab_nlp.llm_reader import dtype_kwarg
+    assert dtype_kwarg("bf16", version="4.57.1") == {"dtype": "bf16"}
+    assert dtype_kwarg("bf16", version="4.56.0") == {"dtype": "bf16"}
+    assert dtype_kwarg("bf16", version="4.55.4") == {"torch_dtype": "bf16"}
+    assert dtype_kwarg("bf16", version="4.50.0.dev0") == {"torch_dtype": "bf16"}
+    assert dtype_kwarg("bf16", version="5.0.0") == {"dtype": "bf16"}
+
+
+def test_no_model_load_passes_the_deprecated_torch_dtype_keyword():
+    from health_transformation_lab_nlp.paths import REPO_ROOT
+    for f in ("python/health_transformation_lab_nlp/llm_reader.py", "python/scripts/17_medgemma_lora.py"):
+        assert '"torch_dtype":' not in (REPO_ROOT / f).read_text(), f
