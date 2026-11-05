@@ -57,6 +57,8 @@ erDiagram
     fact_pipeline_run
     fact_pipeline_signal
     fact_remediation_decision
+    fact_digest_item
+    fact_digest_message
     fact_tooth_loss_prediction
     dim_study_note
     benchmark_metric
@@ -535,6 +537,38 @@ erDiagram
         string doctor_run_id "the Pipeline doctor run that wrote the row (batch key)"
         timestamp loaded_ts "when it wrote it"
         string doctor_git_commit_sha "commit the doctor was deployed from"
+    }
+    fact_digest_item {
+        string digest_key PK "<digest_date>/<period_code>: the batch a rerun replaces"
+        date digest_date PK "the day the digest was built (UTC)"
+        string period_code PK "daily (SEV3) · weekly (SEV4, Mondays)"
+        string owner_name PK "who it goes to"
+        string subject_name PK "the budget check, pipeline run, credential or dependency"
+        string subject_kind_code "budget · pipeline_run · credential · pipeline · model · runtime · ..."
+        string pipeline_names_text "the pipelines it touches"
+        string predicted_failure_class_code PK "the failure class (ops/runbook.yaml)"
+        date predicted_date "when it fails or failed (a forecast's date, a run's day); empty for a budget"
+        bigint days_until_count "days from the digest to that date (forecasts)"
+        string severity_code "SEV3 or SEV4"
+        string recommended_action_code "the first allowed runbook action"
+        string evidence_text "the numbers or the reason: names and codes, never row data"
+        bigint alert_count "how many alerts the item stands for (pipelines, runs)"
+        boolean is_repeat "in the previous digest of this period too"
+        boolean is_level_review "a repeating SEV2: fix the cause or lower the level"
+        string digest_run_id "the Pipeline digest run that wrote the row (batch key)"
+        timestamp loaded_ts "when it wrote it"
+        string git_commit_sha "commit the job was deployed from"
+    }
+    fact_digest_message {
+        string digest_key PK "<digest_date>/<period_code>: the batch a rerun replaces"
+        date digest_date PK "the day the digest was built (UTC)"
+        string period_code PK "daily · weekly"
+        string owner_name PK "who it goes to"
+        bigint item_count "open problems in it"
+        string message_text "the digest as pipeline-doctor renders it: by severity, then subject"
+        string digest_run_id "the Pipeline digest run that wrote the row (batch key)"
+        timestamp loaded_ts "when it wrote it"
+        string git_commit_sha "commit the job was deployed from"
     }
     fact_tooth_loss_prediction {
         bigint patient_id PK "Open Dental PatNum (synthetic)"
@@ -1175,6 +1209,48 @@ One per failed run: the doctor's recommendation and, once given, the owner's dec
 |  | `doctor_run_id` | string | the Pipeline doctor run that wrote the row (batch key) |
 |  | `loaded_ts` | timestamp | when it wrote it |
 |  | `doctor_git_commit_sha` | string | commit the doctor was deployed from |
+
+### `fact_digest_item`
+
+One per (digest date, period, owner, subject, failure class): an open SEV3 or SEV4 problem in that day's daily or that week's weekly digest. Written by: Pipeline digest: delete-then-append by digest_key.
+
+| Key | Column | Type | Description |
+|---|---|---|---|
+| PK | `digest_key` | string | <digest_date>/<period_code>: the batch a rerun replaces |
+| PK | `digest_date` | date | the day the digest was built (UTC) |
+| PK | `period_code` | string | daily (SEV3) · weekly (SEV4, Mondays) |
+| PK | `owner_name` | string | who it goes to |
+| PK | `subject_name` | string | the budget check, pipeline run, credential or dependency |
+|  | `subject_kind_code` | string | budget · pipeline_run · credential · pipeline · model · runtime · ... |
+|  | `pipeline_names_text` | string | the pipelines it touches |
+| PK | `predicted_failure_class_code` | string | the failure class (ops/runbook.yaml) |
+|  | `predicted_date` | date | when it fails or failed (a forecast's date, a run's day); empty for a budget |
+|  | `days_until_count` | bigint | days from the digest to that date (forecasts) |
+|  | `severity_code` | string | SEV3 or SEV4 |
+|  | `recommended_action_code` | string | the first allowed runbook action |
+|  | `evidence_text` | string | the numbers or the reason: names and codes, never row data |
+|  | `alert_count` | bigint | how many alerts the item stands for (pipelines, runs) |
+|  | `is_repeat` | boolean | in the previous digest of this period too |
+|  | `is_level_review` | boolean | a repeating SEV2: fix the cause or lower the level |
+|  | `digest_run_id` | string | the Pipeline digest run that wrote the row (batch key) |
+|  | `loaded_ts` | timestamp | when it wrote it |
+|  | `git_commit_sha` | string | commit the job was deployed from |
+
+### `fact_digest_message`
+
+One per (digest date, period, owner): the plain-text digest a Databricks SQL alert emails. Written by: Pipeline digest: delete-then-append by digest_key.
+
+| Key | Column | Type | Description |
+|---|---|---|---|
+| PK | `digest_key` | string | <digest_date>/<period_code>: the batch a rerun replaces |
+| PK | `digest_date` | date | the day the digest was built (UTC) |
+| PK | `period_code` | string | daily · weekly |
+| PK | `owner_name` | string | who it goes to |
+|  | `item_count` | bigint | open problems in it |
+|  | `message_text` | string | the digest as pipeline-doctor renders it: by severity, then subject |
+|  | `digest_run_id` | string | the Pipeline digest run that wrote the row (batch key) |
+|  | `loaded_ts` | timestamp | when it wrote it |
+|  | `git_commit_sha` | string | commit the job was deployed from |
 
 ### `fact_tooth_loss_prediction`
 

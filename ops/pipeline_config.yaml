@@ -132,3 +132,13 @@ pipelines:
     runbook_name: default
     data_label_code: synthetic
     output_names: [gold_perio_bench.fact_pipeline_run, gold_perio_bench.fact_pipeline_signal, gold_perio_bench.fact_remediation_decision]
+  pipeline_digest:               # spec 027 US8 T023: the daily and weekly digests, emailed by two SQL alerts
+    owner_name: repo owner
+    sla_seconds: 172800          # daily once the owner unpauses it; created paused
+    schedule_text: daily 07:32 UTC (weekly digest on Mondays), paused until the owner unpauses it
+    expectation_names: [conformance]
+    retry_max_count: 1
+    retry_interval_seconds: 600
+    runbook_name: default
+    data_label_code: synthetic
+    output_names: [gold_perio_bench.fact_digest_item, gold_perio_bench.fact_digest_message]

@@ -32,6 +32,13 @@
 - [x] T021 `pipeline-doctor` `forecast.py`: credential expiry, deprecation (dated or marked deprecated), cost and duration trends, volume drift, schema-change frequency; `digest.py`: route now/daily/weekly, dedupe, repeats, level review, render (46 tests there)
 - [x] T022 `ops/dependency_inventory.csv` with no invented dates; first forecast on the real register recorded in spec.md
 - [ ] T023 This repo installs `pipeline-doctor` and drops its own `doctor.py` copy (US7 T018); a `pipeline_forecast` job runs the forecaster and writes the digests
+  - [x] Installed, pinned to a commit in `python/pyproject.toml` (no release tags yet); a `pipeline_digest` job
+    (`14_pipeline_digest.py`) runs the forecaster and `digest` on this repo's alerts (budget checks, open SEV3/SEV4
+    recommendations, forecasts), writes `fact_digest_item` and `fact_digest_message`, keeps two Databricks SQL alerts
+    that email them (the owner's choice: no mail credential), and fails on a SEV1/SEV2 forecast so its failure email
+    pages (Nov 2026)
+  - [ ] Drop this repo's `doctor.py` copy: the package's lacks `duration_drift` and the runbook's `fix_text`
+    (spec 036 T008), so they go upstream first
 
 ## US5 - The doctor runs as a job and writes its decisions
 - [x] T010 Failing bundle tests: job `pipeline_doctor` runs `13_pipeline_doctor.py` (12 was taken by `12_load_open_dental.py`) with catalog, schema, judge endpoint and `max_usd`; writes are delete-then-append by `run_id` (`test_bundle.py`, `test_delta.py`)

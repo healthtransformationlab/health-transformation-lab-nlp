@@ -513,3 +513,22 @@ def test_deploy_passes_alert_email_as_a_variable_override_only_when_set():
     assert "variable-overrides.json" in step["run"] and "alert_emails" in step["run"]
     names = [s.get("name", "") for s in steps]
     assert names.index(step["name"]) < next(i for i, n in enumerate(names) if n == "Validate")
+
+
+def test_pipeline_digest_job_runs_the_digest_paused_after_the_doctor_and_pages_by_failure():
+    """Spec 027 US8 T023: daily at 07:32 UTC once unpaused, after the doctor; its failure email is the page."""
+    root, jobs = _load()
+    job = jobs["pipeline_digest"][0]
+    assert job["schedule"]["pause_status"] == "PAUSED" and "7 * * ?" in job["schedule"]["quartz_cron_expression"]
+    assert job["email_notifications"]["on_failure"] == "${var.alert_emails}"
+    task = job["tasks"][0]
+    assert task["notebook_task"]["notebook_path"].endswith("14_pipeline_digest.py")
+    assert task["notebook_task"]["base_parameters"]["digest_email"] == "${var.digest_email}"
+    assert task["max_retries"] == 1 and task["timeout_seconds"] <= 1800
+    assert root["variables"]["digest_email"]["default"] == ""
+
+
+def test_deploy_sets_the_digest_email_from_the_same_alert_email_variable():
+    wf = yaml.safe_load((ROOT / ".github" / "workflows" / "deploy.yml").read_text())
+    step = next(s for s in wf["jobs"]["deploy"]["steps"] if "ALERT_EMAIL" in str(s.get("env", {})))
+    assert '"digest_email": e' in step["run"] and '"alert_emails": [e]' in step["run"]

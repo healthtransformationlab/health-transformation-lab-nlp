@@ -73,6 +73,18 @@ Both live in the shared package (`pipeline-doctor` `forecast.py`, `digest.py`); 
 files. The inventory has no invented dates: a model or platform without a published end-of-support date
 says `unknown`.
 
+The `pipeline_digest` job (`14_pipeline_digest.py`, daily at 07:32 UTC once unpaused, the weekly digest on
+Mondays) puts this together. It collects every alert this repo raises:
+- failing budget and target checks from `dq_check` (spec 036);
+- the doctor's SEV3 and SEV4 recommendations no one has decided yet;
+- the forecaster's rows.
+
+It builds the digests with the package's `digest` and writes `fact_digest_item` and `fact_digest_message`. Two
+Databricks SQL alerts, one per period, email the day's message to `digest_email` (from the `ALERT_EMAIL` GitHub
+variable): Databricks sends it, so there is no mail credential. A SEV1 or SEV2 forecast fails the run, so the job's
+failure email pages the owner, as the doctor does. An item that was in the previous digest is marked a repeat; a
+repeating SEV2 is flagged for review.
+
 ## The job
 
 `Pipeline doctor` (bundle key `pipeline_doctor`, notebook `databricks/notebooks/13_pipeline_doctor.py`,
@@ -105,6 +117,6 @@ latest signals, runs by status, failures by class and every recommendation with 
 
 ## Next
 
-The root-cause rung with its judge, the span export, the digest job, and extracting the module into its own
-package so a second project of a different shape can adopt it and report the same metrics (spec 027 US6,
-US7, T023).
+The root-cause rung with its judge, the span export, and dropping this repo's copy of the module for the package
+(it needs `duration_drift` and the runbook's fix text upstream first), so a second project of a different shape can
+adopt it and report the same metrics (spec 027 US6, US7, T023).

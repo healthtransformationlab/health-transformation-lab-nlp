@@ -174,6 +174,16 @@ TABLES["fact_agent_task_run"] = {
 # spec 027 US5: the pipeline doctor's frames are built under their gold names already (doctor.RUN_COLUMNS,
 # doctor_job.TABLES), so each maps to itself; to_gold still fails on a column nobody declared.
 _DOCTOR_PROV = ("doctor_run_id", "loaded_ts", "doctor_git_commit_sha")
+# spec 027 US8 T023: the digests are built under their gold names (digests.TABLES)
+_DIGEST_PROV = ("digest_run_id", "loaded_ts", "git_commit_sha")
+TABLES |= {
+    "fact_digest_item": {c: c for c in (
+        "digest_key", "digest_date", "period_code", "owner_name", "subject_name", "subject_kind_code",
+        "pipeline_names_text", "predicted_failure_class_code", "predicted_date", "days_until_count", "severity_code",
+        "recommended_action_code", "evidence_text", "alert_count", "is_repeat", "is_level_review", *_DIGEST_PROV)},
+    "fact_digest_message": {c: c for c in (
+        "digest_key", "digest_date", "period_code", "owner_name", "item_count", "message_text", *_DIGEST_PROV)},
+}
 TABLES |= {
     "fact_pipeline_run": {c: c for c in (
         "pipeline_name", "step_name", "run_id", "started_ts", "ended_ts", "run_status_code", "row_in_count",
