@@ -22,7 +22,7 @@ def con():
     c.execute("ATTACH ':memory:' AS health_transformation_lab")
     c.execute("CREATE SCHEMA health_transformation_lab.gold_perio_bench")
     now = pd.Timestamp("2026-10-28", tz="UTC")
-    for name, df in {**gt.dq_tables(DATASETS_DIR), **gt.lab_tables(DATASETS_DIR)}.items():   # under their gold names
+    for name, df in _load_results_tables(now).items():                                  # under their gold names
         df = gold_names.to_gold(df.assign(git_commit="abc1234", loaded_at=now), name)
         c.register(f"src_{name}", df)
         c.execute(f"CREATE TABLE health_transformation_lab.gold_perio_bench.{name} AS SELECT * FROM src_{name}")
@@ -30,6 +30,21 @@ def con():
         c.register(f"src_{name}", df)
         c.execute(f"CREATE TABLE health_transformation_lab.gold_perio_bench.{name} AS SELECT * FROM src_{name}")
     return c
+
+
+def _load_results_tables(now):
+    """The grader tables as Load results writes them: dq_check with the cost and performance rows added (spec 036
+    US4), and the coding-agent task runs."""
+    from health_transformation_lab_nlp import agent_cost, doctor, governance
+    from health_transformation_lab_nlp.paths import TASKS_DIR
+    tables = {**gt.dq_tables(DATASETS_DIR), **gt.lab_tables(DATASETS_DIR), **gt.agent_tables(TASKS_DIR)}
+    pipes = pd.DataFrame([{"pipeline_name": "study_benchmark", "run_id": "1", "started_ts": now - pd.Timedelta(days=9),
+                           "ended_ts": now - pd.Timedelta(days=9), "run_status_code": "ok", "duration_seconds": 600.0,
+                           "cost_usd": None}])
+    gov = governance.with_provenance(governance.checks(governance.load_budgets(), tables["fact_agent_task_run"], pipes,
+                                                       doctor.load_config(), agent_cost.load_settings(), now))
+    tables["dq_check"] = pd.concat([tables["dq_check"], gov[tables["dq_check"].columns]], ignore_index=True)
+    return tables
 
 
 def _doctor_tables(now):
@@ -122,7 +137,7 @@ def test_dq_genie_space_reads_only_dq_tables_and_defines_each_tile():
     space = json.loads(dash.render_genie("dq_grader"))
     assert space["version"] == 2
     tables = {t["identifier"] for t in space["data_sources"]["tables"]}
-    assert tables == {f"{dash.GOLD}.{n}" for n in gt.dq_tables(DATASETS_DIR)}
+    assert tables == {f"{dash.GOLD}.{n}" for n in gt.dq_tables(DATASETS_DIR)} | {f"{dash.GOLD}.fact_agent_task_run"}
     text = " ".join(" ".join(i["content"]) for i in space["instructions"]["text_instructions"])
     for measure in ("Completeness", "Accuracy", "Consistency", "Temporal plausibility", "Reliability"):
         assert measure in text, measure
@@ -369,6 +384,53 @@ def test_doctor_dashboard_lists_decisions_and_their_classes(con):
 def test_doctor_dashboard_reads_only_the_doctor_tables_and_says_what_it_holds():
     for ds in _datasets("pipeline_doctor"):
         tables = set(re.findall(r"gold_perio_bench\.(\w+)", "".join(ds["queryLines"])))
-        assert tables and tables <= {"fact_pipeline_signal", "fact_remediation_decision"}, ds["name"]
+        allowed = ({"dq_check", "fact_agent_task_run"} if ds["name"] in dash.GOV_SQL       # the Governance page
+                   else {"fact_pipeline_signal", "fact_remediation_decision"})
+        assert tables and tables <= allowed, ds["name"]
     text = dash.render("pipeline_doctor")
     assert "never note text" in text and "recommends" in text and "Pipeline doctor" in text
+
+
+
+# ---------------------------------------------------------------- spec 036 T012 and T009: spend and speed
+
+def _rows(con, name, ds):
+    sql = {d["name"]: "".join(d["queryLines"]) for d in _datasets(name)}[ds]
+    cur = con.execute(sql)
+    return [dict(zip([c[0] for c in cur.description], r)) for r in cur.fetchall()]
+
+
+def test_the_record_checks_leave_out_the_cost_and_performance_rows(con):
+    cats = {r["category"] for r in _rows(con, "dq_grader", "checks")}
+    assert cats and cats <= {"conformance", "completeness", "plausibility"}
+
+
+def test_the_doctor_dashboard_has_a_governance_page():
+    pages = json.loads(dash.render("pipeline_doctor"))["pages"]
+    assert [p["displayName"] for p in pages] == ["Pipeline doctor", "Governance"]
+
+
+def test_the_governance_page_lists_every_budget_check_with_its_severity_and_numbers(con):
+    rows = _rows(con, "pipeline_doctor", "gov_checks")
+    assert rows and {r["category"] for r in rows} <= {"cost", "performance"}
+    assert all(r["measure"] for r in rows)
+    assert {"check", "status", "severity", "measure"} <= set(rows[0])
+    tiles = _rows(con, "pipeline_doctor", "gov_tiles")[0]
+    assert tiles["checks"] == len(rows) and tiles["failing"] == sum(r["status"] == "FAIL" for r in rows)
+
+
+def test_cost_per_resolved_task_leaves_out_calibration_and_says_estimated(con):
+    rows = _rows(con, "pipeline_doctor", "cost_per_task")
+    assert rows and not any(str(r["model"]).startswith("calib:") for r in rows)
+    assert {"model", "tier", "tasks", "resolved", "gpu_hours", "est_cost_usd_per_resolved_task"} <= set(rows[0])
+    banner = " ".join(dash.GOV_BANNER.split())
+    assert "ESTIMATE" in banner and "Kaggle's GPUs are free" in banner and "gov_banner" in dash.render("pipeline_doctor")
+
+
+def test_genie_answers_budget_questions_from_the_same_rows():
+    space = json.loads(dash.render_genie("dq_grader"))
+    text = " ".join(" ".join(i["content"]) for i in space["instructions"]["text_instructions"])
+    assert "check_category_code" in text and "cost" in text and "performance" in text and "severity_code" in text
+    assert "estimate" in text.lower() and "is_calibration" in text
+    questions = [q["question"][0] for q in space["config"]["sample_questions"]]
+    assert any("budget" in q.lower() for q in questions)
