@@ -188,7 +188,7 @@ TABLES |= {
     "fact_pipeline_run": {c: c for c in (
         "pipeline_name", "step_name", "run_id", "started_ts", "ended_ts", "run_status_code", "row_in_count",
         "row_out_count", "schema_sha256", "check_passed_count", "check_failed_count", "error_type_name", "error_text",
-        "duration_seconds", "cost_usd", "git_commit_sha", "data_label_code", *_DOCTOR_PROV)},
+        "duration_seconds", "cost_usd", "billed_dbu", "git_commit_sha", "data_label_code", *_DOCTOR_PROV)},
     "fact_pipeline_signal": {c: c for c in (
         "pipeline_name", "step_name", "run_id", "started_ts", "run_status_code", "freshness_seconds", "sla_seconds",
         "volume_ratio", "is_schema_changed", "quality_ratio", "duration_ratio", "cost_ratio", *_DOCTOR_PROV)},

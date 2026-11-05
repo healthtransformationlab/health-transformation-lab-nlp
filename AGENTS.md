@@ -251,6 +251,7 @@ their official names. The Postgres `perio_chart` view doesn't yet, and changes w
 | `_seconds` | a duration | `double` | `latency_seconds` |
 | `_hours` | a duration in hours, where hours are the unit it's counted in (a GPU allowance, a price per hour) | `double` | `gpu_hours` |
 | `_days` | a duration in whole days | `bigint` | `plan_to_missing_days` |
+| `_dbu` | a quantity of Databricks Units (fractional; what billing counts) | `double` | `billed_dbu` |
 | `_mm` | a length in millimetres | `double` | `max_probing_depth_mm` |
 | `_usd` | money, US dollars (`double`: per-call costs are fractions of a cent) | `double` | `cost_usd` |
 | `_num` | a number that isn't a count or a measure: a position, a year | `bigint` | |
