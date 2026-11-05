@@ -156,14 +156,13 @@ def score_rows(rows: pd.DataFrame) -> dict:
     return out
 
 
-@kbench.task(name="perio-bench", version=TASK_VERSION)
+READ_OPTIONS = {"n_jobs": 2, "timeout": 180, "on_failure": "continue", "max_attempts": 2, "retry_delay": 5}
+
+
 @traced
-def perio_bench(llm, df: pd.DataFrame, judge_llm=None, n_jobs: int = 2, timeout: float = 180) -> dict:
-    """PerioBench: finding gum disease in dental records (phenotyping). `read_note` over the review set,
-    `judge_note` on each answer when a judge is given, then the `eval/score.py` metrics."""
-    with kbench.client.enable_cache():
-        runs = read_note.evaluate(llm=[llm], evaluation_data=df, n_jobs=n_jobs, timeout=timeout,
-                                  on_failure="continue", max_attempts=2, retry_delay=5)
+def judge_and_score(llm, df: pd.DataFrame, runs, judge_llm=None, n_jobs: int = 2, timeout: float = 180) -> dict:
+    """After `read_note.evaluate`: `judge_note` on each answer when a judge is given, then the `eval/score.py`
+    metrics. Shared by `perio_bench` here and the task in `kaggle/perio_bench_task.py` (#593)."""
     rows = pd.DataFrame(list(runs.completed_runs.as_dataframe()["result"]))
     if judge_llm is not None and len(rows):
         with kbench.client.enable_cache():
@@ -179,6 +178,17 @@ def perio_bench(llm, df: pd.DataFrame, judge_llm=None, n_jobs: int = 2, timeout:
     out["reader_name"] = getattr(llm, "name", "")
     out["is_simulated"] = isinstance(llm, ScriptedReader)
     return out
+
+
+@kbench.task(name="perio-bench", version=TASK_VERSION)
+@traced
+def perio_bench(llm, df: pd.DataFrame, judge_llm=None, n_jobs: int = 2, timeout: float = 180) -> dict:
+    """PerioBench: finding gum disease in dental records (phenotyping). `read_note` over the review set,
+    `judge_note` on each answer when a judge is given, then the `eval/score.py` metrics."""
+    with kbench.client.enable_cache():
+        runs = read_note.evaluate(llm=[llm], evaluation_data=df,
+                                  **{**READ_OPTIONS, "n_jobs": n_jobs, "timeout": timeout})
+    return judge_and_score(llm, df, runs, judge_llm, n_jobs=n_jobs, timeout=timeout)
 
 
 @kbench.task(name="perio-bench-sensitivity", version=TASK_VERSION)
