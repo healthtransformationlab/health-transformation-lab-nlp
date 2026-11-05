@@ -1,4 +1,4 @@
-# PR review: 034 AI1, a public notebook that loads the coding-agent task set (#535)
+# PR #595 review: 034 AI1, a public notebook that loads the coding-agent task set (#535)
 
 Reviewed against `.claude/review-rubric.md` and AGENTS.md.
 
