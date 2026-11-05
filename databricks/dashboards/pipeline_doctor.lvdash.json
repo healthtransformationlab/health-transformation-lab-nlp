@@ -75,6 +75,45 @@
         "GROUP BY failure_class_code, severity_code\n",
         "ORDER BY failures DESC, failure_class_code\n"
       ]
+    },
+    {
+      "name": "gov_tiles",
+      "displayName": "gov_tiles",
+      "queryLines": [
+        "SELECT COUNT(*) AS checks,\n",
+        "  SUM(CASE WHEN check_status_code = 'FAIL' THEN 1 ELSE 0 END) AS failing,\n",
+        "  SUM(CASE WHEN severity_code = 'SEV3' THEN 1 ELSE 0 END) AS daily_digest,\n",
+        "  SUM(CASE WHEN severity_code = 'SEV4' THEN 1 ELSE 0 END) AS weekly_digest\n",
+        "FROM health_transformation_lab.gold_perio_bench.dq_check\n",
+        "WHERE check_category_code IN ('cost', 'performance')\n"
+      ]
+    },
+    {
+      "name": "gov_checks",
+      "displayName": "gov_checks",
+      "queryLines": [
+        "SELECT check_category_code AS category, check_name AS check, check_status_code AS status, severity_code AS severity,\n",
+        "  measure_text AS measure\n",
+        "FROM health_transformation_lab.gold_perio_bench.dq_check\n",
+        "WHERE check_category_code IN ('cost', 'performance')\n",
+        "ORDER BY CASE check_status_code WHEN 'FAIL' THEN 0 WHEN 'REPORT' THEN 1 ELSE 2 END, check_category_code, check_name\n"
+      ]
+    },
+    {
+      "name": "cost_per_task",
+      "displayName": "cost_per_task",
+      "queryLines": [
+        "SELECT model_name AS model, tier_code AS tier, max_new_token_count AS max_new_tokens, is_thinking AS thinking,\n",
+        "  is_cache_reused AS cache_reused, ROUND(time_budget_seconds / 60, 0) AS budget_minutes, COUNT(*) AS tasks,\n",
+        "  SUM(CASE WHEN is_resolved THEN 1 ELSE 0 END) AS resolved, ROUND(SUM(gpu_hours), 2) AS gpu_hours,\n",
+        "  ROUND(SUM(gpu_hours) / NULLIF(SUM(CASE WHEN is_resolved THEN 1 ELSE 0 END), 0), 2) AS gpu_hours_per_resolved_task,\n",
+        "  ROUND(SUM(estimated_cost_usd) / NULLIF(SUM(CASE WHEN is_resolved THEN 1 ELSE 0 END), 0), 2)\n",
+        "    AS est_cost_usd_per_resolved_task\n",
+        "FROM health_transformation_lab.gold_perio_bench.fact_agent_task_run\n",
+        "WHERE NOT is_calibration\n",
+        "GROUP BY model_name, tier_code, max_new_token_count, is_thinking, is_cache_reused, time_budget_seconds\n",
+        "ORDER BY model_name, tier_code\n"
+      ]
     }
   ],
   "pages": [
@@ -889,6 +928,417 @@
           "position": {
             "x": 0,
             "y": 28,
+            "width": 6,
+            "height": 7
+          }
+        }
+      ]
+    },
+    {
+      "name": "governance",
+      "displayName": "Governance",
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layout": [
+        {
+          "widget": {
+            "name": "gov_banner",
+            "multilineTextboxSpec": {
+              "lines": [
+                "## Governance: spend and speed against their budgets and targets\n",
+                "Each budget and target in `ops/budgets.yaml`, checked every time Load results runs, beside the record checks: a\n",
+                "weekly budget fails on its projection for the whole week. A failing check carries the severity the digests route by\n",
+                "(SEV3 daily, SEV4 weekly) and its action. Cost per resolved task is an ESTIMATE at a cloud's T4 price; Kaggle's GPUs\n",
+                "are free to us. Calibration runs (`calib:`) are left out of every model's figures.\n"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 6,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "g_checks",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "gov_tiles",
+                  "fields": [
+                    {
+                      "name": "checks",
+                      "expression": "`checks`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "checks",
+                  "displayName": "Budget and target checks"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Budget and target checks",
+                "showDescription": true,
+                "description": "Cost and performance rows in dq_check."
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 3,
+            "width": 1,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "g_failing",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "gov_tiles",
+                  "fields": [
+                    {
+                      "name": "failing",
+                      "expression": "`failing`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "failing",
+                  "displayName": "Failing"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Failing",
+                "showDescription": true,
+                "description": "Over budget or target: each names its action."
+              }
+            }
+          },
+          "position": {
+            "x": 1,
+            "y": 3,
+            "width": 1,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "g_daily",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "gov_tiles",
+                  "fields": [
+                    {
+                      "name": "daily_digest",
+                      "expression": "`daily_digest`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "daily_digest",
+                  "displayName": "For the daily digest"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "For the daily digest",
+                "showDescription": true,
+                "description": "SEV3: a passed budget, cost data that fails, a late pipeline."
+              }
+            }
+          },
+          "position": {
+            "x": 2,
+            "y": 3,
+            "width": 1,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "g_weekly",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "gov_tiles",
+                  "fields": [
+                    {
+                      "name": "weekly_digest",
+                      "expression": "`weekly_digest`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "weekly_digest",
+                  "displayName": "For the weekly digest"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "For the weekly digest",
+                "showDescription": true,
+                "description": "SEV4: performance drift."
+              }
+            }
+          },
+          "position": {
+            "x": 3,
+            "y": 3,
+            "width": 1,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "tb_gov",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "gov_checks",
+                  "fields": [
+                    {
+                      "name": "category",
+                      "expression": "`category`"
+                    },
+                    {
+                      "name": "check",
+                      "expression": "`check`"
+                    },
+                    {
+                      "name": "status",
+                      "expression": "`status`"
+                    },
+                    {
+                      "name": "severity",
+                      "expression": "`severity`"
+                    },
+                    {
+                      "name": "measure",
+                      "expression": "`measure`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "category",
+                    "displayName": "Category"
+                  },
+                  {
+                    "fieldName": "check",
+                    "displayName": "Check"
+                  },
+                  {
+                    "fieldName": "status",
+                    "displayName": "Status"
+                  },
+                  {
+                    "fieldName": "severity",
+                    "displayName": "Severity"
+                  },
+                  {
+                    "fieldName": "measure",
+                    "displayName": "Numbers, owner and action"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Every budget and target",
+                "showDescription": true,
+                "description": "Failing first. REPORT: nothing to measure yet, or a share to read."
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 6,
+            "width": 6,
+            "height": 7
+          }
+        },
+        {
+          "widget": {
+            "name": "s_cost_task",
+            "multilineTextboxSpec": {
+              "lines": [
+                "### Cost per resolved coding-agent task\n"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 13,
+            "width": 6,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "tb_cost_task",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "cost_per_task",
+                  "fields": [
+                    {
+                      "name": "model",
+                      "expression": "`model`"
+                    },
+                    {
+                      "name": "tier",
+                      "expression": "`tier`"
+                    },
+                    {
+                      "name": "max_new_tokens",
+                      "expression": "`max_new_tokens`"
+                    },
+                    {
+                      "name": "thinking",
+                      "expression": "`thinking`"
+                    },
+                    {
+                      "name": "cache_reused",
+                      "expression": "`cache_reused`"
+                    },
+                    {
+                      "name": "budget_minutes",
+                      "expression": "`budget_minutes`"
+                    },
+                    {
+                      "name": "tasks",
+                      "expression": "`tasks`"
+                    },
+                    {
+                      "name": "resolved",
+                      "expression": "`resolved`"
+                    },
+                    {
+                      "name": "gpu_hours",
+                      "expression": "`gpu_hours`"
+                    },
+                    {
+                      "name": "gpu_hours_per_resolved_task",
+                      "expression": "`gpu_hours_per_resolved_task`"
+                    },
+                    {
+                      "name": "est_cost_usd_per_resolved_task",
+                      "expression": "`est_cost_usd_per_resolved_task`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "model",
+                    "displayName": "Model"
+                  },
+                  {
+                    "fieldName": "tier",
+                    "displayName": "Tier"
+                  },
+                  {
+                    "fieldName": "max_new_tokens",
+                    "displayName": "Max new tokens"
+                  },
+                  {
+                    "fieldName": "thinking",
+                    "displayName": "Thinking"
+                  },
+                  {
+                    "fieldName": "cache_reused",
+                    "displayName": "Cache reused"
+                  },
+                  {
+                    "fieldName": "budget_minutes",
+                    "displayName": "Budget (min)"
+                  },
+                  {
+                    "fieldName": "tasks",
+                    "displayName": "Tasks"
+                  },
+                  {
+                    "fieldName": "resolved",
+                    "displayName": "Resolved"
+                  },
+                  {
+                    "fieldName": "gpu_hours",
+                    "displayName": "GPU-hours"
+                  },
+                  {
+                    "fieldName": "gpu_hours_per_resolved_task",
+                    "displayName": "GPU-hours per resolved"
+                  },
+                  {
+                    "fieldName": "est_cost_usd_per_resolved_task",
+                    "displayName": "Est. USD per resolved (ESTIMATE)"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "By model, tier and settings",
+                "showDescription": true,
+                "description": "Measured with this repository's harness, not the competition's evaluator. Blank cost: the run came before cost was recorded."
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 14,
             "width": 6,
             "height": 7
           }

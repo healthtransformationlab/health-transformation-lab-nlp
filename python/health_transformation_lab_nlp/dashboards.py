@@ -141,6 +141,7 @@ ORDER BY missing_pct DESC""",
 SELECT clinic_code AS clinic, check_category_code AS category, check_name, checked_count AS n_checked,
   failed_count AS n_fail, ROUND(100 * pass_ratio, 2) AS pass_pct, check_status_code AS status
 FROM {gold}.dq_check
+WHERE check_category_code IN ('conformance', 'completeness', 'plausibility')   -- the record checks (spend: Governance)
 ORDER BY CASE WHEN clinic_code = 'All' THEN 0 ELSE 1 END, clinic_code, check_category_code, check_name""",
     "accuracy": "\nUNION ALL\n".join(f"""
 SELECT clinic_code AS clinic, '{label}' AS evidence_source,
@@ -562,9 +563,70 @@ def doctor_dashboard() -> dict:
                    ("freshness_hours", "Freshness (h)"), ("volume_ratio", "Volume ×"), ("schema_state", "Schema"),
                    ("quality_pct", "Checks passed (%)"), ("duration_ratio", "Duration ×"),
                    ("cost_ratio", "Cost ×")], "Signals per run, newest first", "", (0, 28, 6, 7))]
-    return {"datasets": [_dataset(n, s) for n, s in DOCTOR_SQL.items()],
+    return {"datasets": [_dataset(n, s) for n, s in {**DOCTOR_SQL, **GOV_SQL}.items()],
             "pages": [{"name": "pipeline_doctor", "displayName": "Pipeline doctor", "pageType": "PAGE_TYPE_CANVAS",
-                       "layout": layout}]}
+                       "layout": layout}, _governance_page()]}
+
+
+# ---------------------------------------------------------------- Governance (spec 036 T012, T009)
+
+GOV_SQL = {
+    "gov_tiles": """
+SELECT COUNT(*) AS checks,
+  SUM(CASE WHEN check_status_code = 'FAIL' THEN 1 ELSE 0 END) AS failing,
+  SUM(CASE WHEN severity_code = 'SEV3' THEN 1 ELSE 0 END) AS daily_digest,
+  SUM(CASE WHEN severity_code = 'SEV4' THEN 1 ELSE 0 END) AS weekly_digest
+FROM {gold}.dq_check
+WHERE check_category_code IN ('cost', 'performance')""",
+    "gov_checks": """
+SELECT check_category_code AS category, check_name AS check, check_status_code AS status, severity_code AS severity,
+  measure_text AS measure
+FROM {gold}.dq_check
+WHERE check_category_code IN ('cost', 'performance')
+ORDER BY CASE check_status_code WHEN 'FAIL' THEN 0 WHEN 'REPORT' THEN 1 ELSE 2 END, check_category_code, check_name""",
+    "cost_per_task": """
+SELECT model_name AS model, tier_code AS tier, max_new_token_count AS max_new_tokens, is_thinking AS thinking,
+  is_cache_reused AS cache_reused, ROUND(time_budget_seconds / 60, 0) AS budget_minutes, COUNT(*) AS tasks,
+  SUM(CASE WHEN is_resolved THEN 1 ELSE 0 END) AS resolved, ROUND(SUM(gpu_hours), 2) AS gpu_hours,
+  ROUND(SUM(gpu_hours) / NULLIF(SUM(CASE WHEN is_resolved THEN 1 ELSE 0 END), 0), 2) AS gpu_hours_per_resolved_task,
+  ROUND(SUM(estimated_cost_usd) / NULLIF(SUM(CASE WHEN is_resolved THEN 1 ELSE 0 END), 0), 2)
+    AS est_cost_usd_per_resolved_task
+FROM {gold}.fact_agent_task_run
+WHERE NOT is_calibration
+GROUP BY model_name, tier_code, max_new_token_count, is_thinking, is_cache_reused, time_budget_seconds
+ORDER BY model_name, tier_code""",
+}
+
+GOV_BANNER = """## Governance: spend and speed against their budgets and targets
+Each budget and target in `ops/budgets.yaml`, checked every time Load results runs, beside the record checks: a
+weekly budget fails on its projection for the whole week. A failing check carries the severity the digests route by
+(SEV3 daily, SEV4 weekly) and its action. Cost per resolved task is an ESTIMATE at a cloud's T4 price; Kaggle's GPUs
+are free to us. Calibration runs (`calib:`) are left out of every model's figures."""
+
+
+def _governance_page() -> dict:
+    tiles = [("g_checks", "checks", "Budget and target checks", "Cost and performance rows in dq_check."),
+             ("g_failing", "failing", "Failing", "Over budget or target: each names its action."),
+             ("g_daily", "daily_digest", "For the daily digest", "SEV3: a passed budget, cost data that fails, a late "
+              "pipeline."),
+             ("g_weekly", "weekly_digest", "For the weekly digest", "SEV4: performance drift.")]
+    layout = [_text("gov_banner", GOV_BANNER, (0, 0, 6, 3))]
+    layout += [_counter(n, "gov_tiles", f, t, d, (i, 3, 1, 3)) for i, (n, f, t, d) in enumerate(tiles)]
+    layout += [_table("tb_gov", "gov_checks", [("category", "Category"), ("check", "Check"), ("status", "Status"),
+                                                ("severity", "Severity"), ("measure", "Numbers, owner and action")],
+                      "Every budget and target", "Failing first. REPORT: nothing to measure yet, or a share to read.",
+                      (0, 6, 6, 7)),
+               _text("s_cost_task", "### Cost per resolved coding-agent task", (0, 13, 6, 1)),
+               _table("tb_cost_task", "cost_per_task", [
+                   ("model", "Model"), ("tier", "Tier"), ("max_new_tokens", "Max new tokens"),
+                   ("thinking", "Thinking"), ("cache_reused", "Cache reused"), ("budget_minutes", "Budget (min)"),
+                   ("tasks", "Tasks"), ("resolved", "Resolved"), ("gpu_hours", "GPU-hours"),
+                   ("gpu_hours_per_resolved_task", "GPU-hours per resolved"),
+                   ("est_cost_usd_per_resolved_task", "Est. USD per resolved (ESTIMATE)")],
+                   "By model, tier and settings",
+                   "Measured with this repository's harness, not the competition's evaluator. Blank cost: the run "
+                   "came before cost was recorded.", (0, 14, 6, 7))]
+    return {"name": "governance", "displayName": "Governance", "pageType": "PAGE_TYPE_CANVAS", "layout": layout}
 
 
 DASHBOARDS = {"dq_grader": dq_grader, "lab_grader": lab_grader, "pipeline_doctor": doctor_dashboard}
@@ -588,7 +650,7 @@ def _space(tables: list[str], instructions: list[str], questions: list[str]) -> 
 
 DQ_TABLES = ["dq_check", "dq_column_missing", "dq_prevalence", "dq_temporal_change", "dq_stage_transition",
              "dq_source_concordance", "fact_visit_evidence", "dq_injected_error", "fact_case_profile_item",
-             "fact_record_mismatch", "dq_mismatch_rule"]
+             "fact_record_mismatch", "dq_mismatch_rule", "fact_agent_task_run"]
 
 DQ_INSTRUCTIONS = [
     ("Every table holds synthetic data from the study's generator, scored against its own truth. Start every "
@@ -614,6 +676,17 @@ DQ_INSTRUCTIONS = [
      "simulated, so never report a reliability figure."),
     ("dq_check holds each check per clinic; clinic_code = 'All' is every clinic together. Do not add the clinic rows "
      "to the 'All' rows."),
+    ("dq_check also holds spend and speed (spec 036): rows with check_category_code 'cost' or 'performance' check a "
+     "budget or target from ops/budgets.yaml, not the dental record. Leave them out of any answer about record "
+     "quality (use check_category_code IN ('conformance', 'completeness', 'plausibility')). For 'are we within budget "
+     "this week?', list the cost and performance rows: check_status_code FAIL means over (a weekly budget fails on "
+     "its projection for the whole week), measure_text gives the numbers, the owner and the action, and severity_code "
+     "says which digest it goes to (SEV3 daily, SEV4 weekly)."),
+    ("fact_agent_task_run has one row per coding-agent task run: model_name, tier_code, is_resolved, the settings, "
+     "gpu_hours and estimated_cost_usd. estimated_cost_usd is an estimate at a cloud's T4 price (price_basis_text); "
+     "Kaggle's GPUs are free to us, so always call it an estimate. Leave out rows where is_calibration is true from "
+     "any model's figures. Cost per resolved task = SUM(gpu_hours) or SUM(estimated_cost_usd) over the count of "
+     "is_resolved rows. The harness is this repository's, not the competition's evaluator."),
     ("fact_case_profile_item is each visit's case profile (spec 026, after KEEPER): one row per visit and item, "
      "grouped by category_name in category_order_num order, items in item_order_num order. item_value_name is the "
      "value as shown, with item_unit_name; 'not recorded' means the record lacks it, 'not taken' means no probing "
@@ -635,6 +708,8 @@ DQ_INSTRUCTIONS = [
 ]
 
 DQ_QUESTIONS = [
+    "Are we within budget this week, and which checks are failing?",
+    "How many GPU-hours does each model take per resolved coding task?",
     "Which evidence source is missing most often?",
     "Which clinic has the highest periodontitis prevalence, and what is its 95% interval?",
     "How often does the exam form agree with the truth when it is filled in?",

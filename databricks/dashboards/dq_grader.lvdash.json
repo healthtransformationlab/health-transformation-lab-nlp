@@ -35,6 +35,7 @@
         "SELECT clinic_code AS clinic, check_category_code AS category, check_name, checked_count AS n_checked,\n",
         "  failed_count AS n_fail, ROUND(100 * pass_ratio, 2) AS pass_pct, check_status_code AS status\n",
         "FROM health_transformation_lab.gold_perio_bench.dq_check\n",
+        "WHERE check_category_code IN ('conformance', 'completeness', 'plausibility')   -- the record checks (spend: Governance)\n",
         "ORDER BY CASE WHEN clinic_code = 'All' THEN 0 ELSE 1 END, clinic_code, check_category_code, check_name\n"
       ]
     },

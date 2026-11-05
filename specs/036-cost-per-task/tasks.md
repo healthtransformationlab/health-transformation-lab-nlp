@@ -20,7 +20,8 @@
 ## US3 - Cost and duration recommendations, and the view #570
 - [x] T008 Failing tests, then `duration_drift` in `doctor.classify` (over 2x the trailing median, no other class,
   SEV4) and the runbook's `fix_text` (file and setting) for it and `cost_anomaly`, in every recommendation's text
-- [ ] T009 Cost per resolved task on the grader dashboards and in Genie
+- [x] T009 Cost per resolved task on the grader dashboards and in Genie: the Governance page's table by model, tier
+  and settings (calibration left out, the cost an estimate), and the DQ Genie space reads `fact_agent_task_run`
 
 ## US4 - The data-quality report covers spend and speed against budgets and targets #576
 - [x] T010 Failing tests, then `ops/budgets.yaml` (each budget and target with its period, limit, owner and action)
@@ -30,4 +31,6 @@
   route by: a passed budget and failing cost data SEV3 (daily), performance at the runbook's level (`duration_drift`
   SEV4, `source_late` SEV3); a pass or a report carries none (FR-016). The digest job that sends them is spec 027
   T023, not built yet; a cap that stops a run shows as the allowance budget's row
-- [ ] T012 A Governance page on the grader dashboards and Genie instructions from the same rows (FR-017)
+- [x] T012 A Governance page on the pipeline doctor dashboard (every budget and target check, failing first, with
+  its severity and numbers) and Genie instructions from the same rows (FR-017); the DQ grader's record checks leave
+  the cost and performance rows out
