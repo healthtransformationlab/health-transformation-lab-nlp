@@ -91,7 +91,7 @@ jobs:
         run: |
           python kaggle/prepare_kernel.py --job tasks-quickstart --out build/tasks-quickstart --username "$KAGGLE_USERNAME"
           kaggle kernels push -p build/tasks-quickstart
-          k="$KAGGLE_USERNAME/health-transformation-lab-coding-agent-tasks-quickstart"
+          k="$KAGGLE_USERNAME/coding-agent-tasks-quickstart"
           for i in $(seq 1 30); do
             s=$(kaggle kernels status "$k" 2>&1); echo "$(date -u +%H:%M) $s"
             case "${s,,}" in

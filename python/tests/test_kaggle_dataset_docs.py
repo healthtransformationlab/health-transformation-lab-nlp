@@ -3,6 +3,7 @@ frequency (the parts of Kaggle's usability score our datasets lacked)."""
 import importlib.util
 import json
 import shutil
+from pathlib import Path
 import sys
 
 import pytest
@@ -111,6 +112,12 @@ class FakeApi:
 
     def dataset_metadata_update(self, ref, path):
         self.calls.append(("metadata", ref, path))
+
+    def dataset_list_files(self, ref, page_token=None, page_size=200):   # #602: the new version's files are live
+        folder = Path(self.calls[0][1])
+        files = [type("F", (), {"name": str(f.relative_to(folder))})() for f in folder.rglob("*")
+                 if f.is_file() and f.name != "dataset-metadata.json"]
+        return type("P", (), {"files": files, "next_page_token": None})()
 
 
 @pytest.mark.parametrize("exists", [False, True])

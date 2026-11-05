@@ -66,7 +66,8 @@ def test_the_kaggle_kernel_attaches_the_task_set_and_needs_no_gpu(tmp_path):
     subprocess.run([sys.executable, str(REPO_ROOT / "kaggle" / "prepare_kernel.py"), "--job", "tasks-quickstart",
                     "--out", str(tmp_path / "k"), "--username", "someone"], check=True)
     meta = json.loads((tmp_path / "k" / "kernel-metadata.json").read_text())
-    assert meta["id"] == "someone/health-transformation-lab-coding-agent-tasks-quickstart"
+    assert meta["id"] == "someone/coding-agent-tasks-quickstart"
+    assert len(meta["title"]) <= 50   # #602: Kaggle refuses a longer kernel title with a bare 400
     assert meta["is_private"] is False and meta["enable_gpu"] is False and meta["enable_internet"] is False
     assert meta["dataset_sources"] == ["someone/health-transformation-lab-coding-agent-tasks"]
     assert (tmp_path / "k" / meta["code_file"]).read_text() == NB.read_text()
@@ -77,3 +78,4 @@ def test_the_task_set_workflow_publishes_the_notebook():
     wf = yaml.safe_load((REPO_ROOT / ".github" / "workflows" / "kaggle-publish-tasks.yml").read_text())
     steps = " ".join(s.get("run", "") for s in wf["jobs"]["publish"]["steps"])
     assert "--job tasks-quickstart" in steps and "kaggle kernels push -p build/tasks-quickstart" in steps
+    assert '$KAGGLE_USERNAME/coding-agent-tasks-quickstart"' in steps   # polls the kernel it pushed
