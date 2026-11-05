@@ -3,7 +3,7 @@
 Closes #607. Reviewed against `.claude/review-rubric.md` and AGENTS.md.
 
 ## Verdict
-One blocker: the PNGs aren't rendered. Hold the merge until the owner renders them or accepts `.drawio` links.
+Nothing blocking. The PNGs were rendered with `drawio_render.js` against a local draw.io viewer, with the owner's approval.
 
 ## Checks
 - **Format:** d3 uses `dictionary_erd`, like gold and silver, with the same legend, subject areas, colours and
@@ -16,7 +16,3 @@ One blocker: the PNGs aren't rendered. Hold the merge until the owner renders th
   measurement and the perio_chart pivot are all kept. The local concepts are now concept rows, profiled.
   The design A/B/C note now sits in the open-question text on `measurement.tooth_number`.
 - **Wording:** no use of "diagnose". The note_nlp row says "the status found".
-
-## Blocking
-- The PNGs (`d3_erd_omop_dental_full.png`, `_entity.png`) aren't rendered. GitHub doesn't preview `.drawio`, so
-  until they are, d3 shows no picture.

@@ -112,6 +112,7 @@ def test_d3_is_no_longer_hand_drawn():   # #607: d3 was drawn by hand in build_d
     assert not (ROOT / "diagrams" / "d3_erd_omop_dental.drawio").exists()
     for view in ("full", "entity"):
         assert (ROOT / "diagrams" / f"d3_erd_omop_dental_{view}.drawio").exists()
+        assert (ROOT / "diagrams" / f"d3_erd_omop_dental_{view}.png").exists()
 
 
 def test_d3_profiles_the_synthetic_omop_tables_but_never_note_text():
