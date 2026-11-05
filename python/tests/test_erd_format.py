@@ -41,16 +41,32 @@ def test_the_gold_model_declares_subject_areas_and_kinds():
     assert g.PHI == set() and isinstance(g.QUESTIONS, dict)
 
 
+def _arrangement(d, m):
+    """Where each subject area sits relative to the others, and the order of its tables: what the views share."""
+    order = {}
+    for (title, col, tables), area in zip(m.GROUPS, d.areas):
+        order[title] = (col, sorted(tables, key=lambda t: (round(d.tables[t][1]), d.tables[t][0])))
+    columns = sorted({col for _, col, _ in m.GROUPS})
+    lefts = {col: min(a[0] for (_, c, _), a in zip(m.GROUPS, d.areas) if c == col) for col in columns}
+    return order, sorted(columns, key=lefts.get)
+
+
 @pytest.mark.parametrize("name", list(MODELS))
-def test_the_entity_view_keeps_the_full_views_layout(name):
+def test_the_entity_view_keeps_the_full_views_arrangement_without_the_empty_space(name):
+    # #601: the entity view is the full view's layout (same areas, same page columns, same table order) without the
+    # details, and without the empty space the full-size places would leave
     m = MODELS[name]
     full, entity = DIC.build(m), DIC.build(m, entity=True)
-    assert entity.areas == full.areas, "same subject areas, same places"
     assert set(entity.tables) == set(full.tables) == set(m.TABLES)
-    for t, (x, y, w, _) in full.tables.items():
-        ex, ey, ew, eh = entity.tables[t]
-        assert (ex, ey, ew) == (x, y, w), f"{t} moved in the entity view"
-        assert eh <= full.tables[t][3]
+    assert _arrangement(entity, m) == _arrangement(full, m)
+    def space(d):
+        return sum(w * h for _, _, w, h in d.areas)
+    assert space(entity) < 0.6 * space(full), "the entity view's areas shrink to their tables"
+    for t in m.TABLES:
+        assert entity.tables[t][3] <= full.tables[t][3]
+    for (x, y, w, h), (ax, ay, aw, ah) in ((entity.tables[t], a) for (_, _, ts), a in zip(m.GROUPS, entity.areas)
+                                            for t in ts):
+        assert ax <= x and x + w <= ax + aw and ay <= y and y + h <= ay + ah, "each table inside its area"
     assert len(entity.routes) == len(m.RELATIONSHIPS)
 
 

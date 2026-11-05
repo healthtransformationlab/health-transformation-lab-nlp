@@ -13,8 +13,8 @@ verdict: approve
 ## Summary
 Every ERD now has two draw.io views in the owner's data-dictionary format (`dictionary_erd.py`, #379, #403): gold,
 Open Dental silver and OMOP silver. The **full** view has subject areas, row count and grain, and every column with
-its type and meaning, plus a profile for silver. The **entity** view has the same layout: identical subject areas,
-table places and widths, with each table cut to its header and key columns (keys, and every column a relationship
+its type and meaning, plus a profile for silver. The **entity** view keeps that arrangement (the same subject areas in the same
+page columns, tables in the same order), each table cut to its header and key columns and each area shrunk to fit (keys, and every column a relationship
 joins on, so each line has a row to meet). The gold model gains subject areas (from its existing areas), kinds by its
 prefixes (fact, dimension, summary) and `PROFILE = False`, since its rows live in Databricks. The separate
 `_dictionary` files are gone, because `_full` is that format now. The old grid writer is removed: nothing called it.
@@ -38,7 +38,11 @@ None.
 ### 🟡 Should fix (Important, non-blocking)
 None.
 ### 🔵 Nits / suggestions (Minor)
-- The entity views keep the full views' positions, as asked, so their subject areas have a lot of white space.
+- First pass kept the full views' exact positions; the owner asked for less empty space, so the entity view now keeps
+  the full view's arrangement (same subject areas in the same page columns, tables in the same order) with each table
+  sized to its keys and each area shrunk to fit: the Open Dental entity PNG went from 11,670 × 10,638 px to
+  6,054 × 4,078, gold from 8,060 × 12,590 to 5,240 × 4,512. A test checks the arrangement is the same and the areas
+  take under 60% of the full view's.
 - The PNGs were rendered with draw.io's viewer script fetched from jgraph/drawio on GitHub and served locally
   (`VIEWER=`, render.md), because viewer.diagrams.net is blocked from the agent sandbox. The output is the same viewer.
 

@@ -144,13 +144,28 @@ def entity_columns(m, name):
     return [c for c in m.TABLES[name].columns if "PK" in c.key or "FK" in c.key or c.name in joined]
 
 
+ENTITY_WIDTH = (180, 300)        # min, max width of an entity-view table
+
+
+def _entity_row(col):
+    return col.name + (f" {col.key}" if col.key else "")
+
+
+def entity_size(m, name, stats):
+    """An entity-view table's (width, height): as wide as its longest key row (within ENTITY_WIDTH), its header
+    wrapped to that width, one row per key column."""
+    cols = entity_columns(m, name)
+    w = _fit([_entity_row(c) for c in cols] + [name], *ENTITY_WIDTH)
+    return w, _head_height(m, name, stats, w) + (LINE + 6) * len(cols) + (4 if not cols else 0)
+
+
 def _draw_entity_table(d, m, name, x, y, stats, w, anchors):
-    """The entity view's table: at the full view's place and width, its header (name, row count, grain) and one row
-    per key column, coloured as in the full view, with no types, meanings or profiles (#601)."""
+    """The entity view's table: its header (name, row count, grain) and one row per key column, coloured as in the
+    full view, with no types, meanings or profiles (#601)."""
     head_h = _head_height(m, name, stats, w)
     cols = entity_columns(m, name)
     rh = LINE + 6
-    h = head_h + rh * len(cols) + (4 if not cols else 0)
+    h = entity_size(m, name, stats)[1]
     title, count, desc = _head_text(m, name, stats)
     d.v("", x, y, w, h, f"rounded=1;arcSize=2;absoluteArcSize=1;fillColor=#FFFFFF;strokeColor={INK};strokeWidth=1.5;")
     hid = d.v(f"<b>{_esc(title)}</b><br>{_esc(count)}<br>{_esc(desc)}", x + 1, y + 1, w - 2, head_h - 1,
@@ -184,7 +199,7 @@ def _legend_items(entity=False, summary=False, profiled=True):
                  ("#FFFFFF", QUESTION, "red text in the meaning = an open question or issue"),
                  *([("#FFFFFF", INK, "profile: null=n (p%); n_distinct=k; values or top results, from the data (synthetic)")]
                    if profiled else [])]),
-             *([("#FFFFFF", INK, "entity view: the full view's layout, each table's header and key columns only")]
+             *([("#FFFFFF", INK, "entity view: the full view's areas and order, each table's header and key columns only")]
                if entity else []),
              ("#FFFFFF", INK, "lines: crow's foot = many, bar = one; dashed = matched, not a key")]
 
@@ -207,11 +222,12 @@ def _layout(tables, sizes):
     return rows, gw, gh
 
 
-def group_tops(m, stats, top=0):
+def group_tops(m, stats, top=0, sizes=None):
     """{subject area: y}: stacked down each column, the column then placed by COLUMN_ALIGN (top, middle or bottom)
-    against the tallest column."""
-    widths = table_widths(m, stats)
-    sizes = {n: _size(m, n, stats, widths[n]) for n in m.TABLES}
+    against the tallest column. sizes: each table's (width, height); the full view's by default."""
+    if sizes is None:
+        widths = table_widths(m, stats)
+        sizes = {n: _size(m, n, stats, widths[n]) for n in m.TABLES}
     heights = {}
     for title, c, tables in m.GROUPS:
         heights.setdefault(c, []).append((title, _layout(tables, sizes)[2]))
@@ -356,13 +372,14 @@ def _corners(pts, keep_ends=False):
 
 def build(m, stats=None, entity=False):
     """m: a model with TABLES, RELATIONSHIPS, GROUPS, KINDS, PHI, QUESTIONS. stats: table_profile.profile() output;
-    a table missing from it says its rows aren't measured yet. entity: the entity view, laid out exactly as the full
-    view (the same subject areas, table places and widths) with each table cut to its header and key columns."""
+    a table missing from it says its rows aren't measured yet. entity: the entity view, laid out as the full view is
+    (the same subject areas in the same page columns, the tables in the same order) with each table cut to its header
+    and key columns, and every area shrunk to fit them."""
     stats = stats or {}
     d = Diagram()
     legend_h = _legend(d, 10, 10, entity, "summary" in m.KINDS.values(), getattr(m, "PROFILE", True))
     widths = table_widths(m, stats)
-    sizes = {n: _size(m, n, stats, widths[n]) for n in m.TABLES}
+    sizes = {n: entity_size(m, n, stats) if entity else _size(m, n, stats, widths[n]) for n in m.TABLES}
 
     def layout(tables):
         return _layout(tables, sizes)
@@ -373,7 +390,7 @@ def build(m, stats=None, entity=False):
     for c in columns:
         col_x[c] = x
         x += col_w[c] + GAP
-    tops = group_tops(m, stats, 10 + legend_h + GAP)
+    tops = group_tops(m, stats, 10 + legend_h + GAP, sizes)
     anchors, tables_drawn, areas = {}, [], []
     d.tables, d.columns = {}, {}
     for title, c, tables in m.GROUPS:
