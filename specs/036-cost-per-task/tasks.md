@@ -21,3 +21,11 @@
 - [x] T008 Failing tests, then `duration_drift` in `doctor.classify` (over 2x the trailing median, no other class,
   SEV4) and the runbook's `fix_text` (file and setting) for it and `cost_anomaly`, in every recommendation's text
 - [ ] T009 Cost per resolved task on the grader dashboards and in Genie
+
+## US4 - The data-quality report covers spend and speed against budgets and targets #576
+- [x] T010 Failing tests, then `ops/budgets.yaml` (each budget and target with its period, limit, owner and action)
+  and `governance.py`: the budget and target checks and the cost data's own checks, in `dq_check`'s columns plus
+  `measure_text`, added to `dq_check` by Load results; agent runs carry `run_ts` for the weekly allowance
+- [ ] T011 Routing: a failing budget, or a cap that stopped a run, to the daily digest (SEV3); drift alone stays SEV4
+  (FR-016)
+- [ ] T012 A Governance page on the grader dashboards and Genie instructions from the same rows (FR-017)

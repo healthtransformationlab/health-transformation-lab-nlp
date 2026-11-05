@@ -42,7 +42,7 @@ OUT_DIR = TASKS_DIR / "agent_runs"
 MODELS = {"gemma-4-e4b-it": "google/gemma-4/transformers/gemma-4-e4b-it/1"}
 EXTRA = ["kaggle_kernel_url", "time_minutes", "max_new_tokens", "is_thinking", "is_cache_reused", "max_prompt_tokens",
          "prompt_token_count", "prefill_token_count", "output_token_count", "model_seconds", "load_seconds",
-         "script_seconds", "session_seconds", "gpu_count", "allowance_hours", "kaggle_allowance_ratio", "gpu_hours",
+         "run_ts", "script_seconds", "session_seconds", "gpu_count", "allowance_hours", "kaggle_allowance_ratio", "gpu_hours",
          "estimated_cost_usd", "price_basis_text", "error_text"]   # the cost columns: spec 036 US2 (#569)
 POLL_SECONDS, MAX_WAIT_SECONDS = 30, 4 * 3600
 
@@ -142,7 +142,8 @@ def row_for(task: dict, result: dict, snapshot: Path, work: Path, kernel_url: st
              "prefill_token_count": sum(t.get("prefill_tokens", t["prompt_tokens"]) for t in turns),
              "output_token_count": sum(t["output_tokens"] for t in turns),
              "model_seconds": round(sum(t["seconds"] for t in turns), 1), "load_seconds": result.get("load_seconds"),
-             "script_seconds": _script_seconds(result), **cost, "error_text": result.get("error")}
+             "script_seconds": _script_seconds(result), **cost, "error_text": result.get("error"),
+             "run_ts": pd.Timestamp.now(tz="UTC").isoformat()}   # when it was scored: the weekly allowance budget
     if "row" not in result:
         return {"instance_id": task["instance_id"], "harness_name": ah.HARNESS_NAME, "model_name": settings["name"],
                 "is_resolved": False, "reason_text": "kernel failed", **extra}

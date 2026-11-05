@@ -221,12 +221,14 @@ TABLES = {
     "dq_check": Table(
         "dq", "One per (data-quality check, clinic); clinic_code All = every clinic", "Load results: overwrite", [
             C("check_name", "string", "e.g. plausibility:temporal_stage_drop"),
-            C("check_category_code", "string", "conformance · completeness · plausibility"),
+            C("check_category_code", "string", "conformance · completeness · plausibility · cost · performance (spec 036)"),
             C("checked_count", "bigint", "rows the check looked at"),
             C("failed_count", "bigint", "rows that failed it"),
             C("pass_ratio", "double", "1 - failed / checked"),
             C("check_status_code", "string", "PASS (none allowed, none found) · REPORT (a rate to read)"),
             C("clinic_code", "string", "1-8, or All"),
+            C("measure_text", "string", "cost and performance checks: the numbers behind the status, the owner and "
+              "the action (ops/budgets.yaml); empty for the record checks"),
             *DQ_PROV]),
     "dq_column_missing": Table(
         "dq", "One per evidence column", "Load results: overwrite", [
@@ -375,6 +377,7 @@ TABLES = {
         "by this repo's harness (spec 035), not the competition's evaluator", "Load results: overwrite", [
             C("run_file_name", "string", "the run table it came from: <model>_<tasks>.csv or <model>_kaggle.csv", "PK"),
             C("instance_id", "string", "the task (spec 028 task set)", "PK"),
+            C("run_ts", "timestamp", "when the run was scored (Kaggle runs since spec 036 US4; empty before)"),
             C("tier_code", "string", "the task's fidelity tier: A · B · C"),
             C("harness_name", "string", "the harness that ran and scored it"),
             C("model_name", "string", "the model; calib:oracle and calib:null bound the harness"),

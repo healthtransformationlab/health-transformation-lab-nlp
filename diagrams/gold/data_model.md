@@ -250,12 +250,13 @@ erDiagram
     }
     dq_check {
         string check_name "e.g. plausibility:temporal_stage_drop"
-        string check_category_code "conformance · completeness · plausibility"
+        string check_category_code "conformance · completeness · plausibility · cost · performance (spec 036)"
         bigint checked_count "rows the check looked at"
         bigint failed_count "rows that failed it"
         double pass_ratio "1 - failed / checked"
         string check_status_code "PASS (none allowed, none found) · REPORT (a rate to read)"
         string clinic_code "1-8, or All"
+        string measure_text "cost and performance checks: the numbers behind the status, the owner and the action (ops/budgets.yaml); empty for the record checks"
         string source_files_text "the committed CSVs the table is built from"
         string file_sha256 "SHA-256 of those files together: the version"
         string git_commit_sha "commit the job was deployed from"
@@ -431,6 +432,7 @@ erDiagram
     fact_agent_task_run {
         string run_file_name PK "the run table it came from: <model>_<tasks>.csv or <model>_kaggle.csv"
         string instance_id PK "the task (spec 028 task set)"
+        timestamp run_ts "when the run was scored (Kaggle runs since spec 036 US4; empty before)"
         string tier_code "the task's fidelity tier: A · B · C"
         string harness_name "the harness that ran and scored it"
         string model_name "the model; calib:oracle and calib:null bound the harness"
@@ -807,12 +809,13 @@ One per (data-quality check, clinic); clinic_code All = every clinic. Written by
 | Key | Column | Type | Description |
 |---|---|---|---|
 |  | `check_name` | string | e.g. plausibility:temporal_stage_drop |
-|  | `check_category_code` | string | conformance · completeness · plausibility |
+|  | `check_category_code` | string | conformance · completeness · plausibility · cost · performance (spec 036) |
 |  | `checked_count` | bigint | rows the check looked at |
 |  | `failed_count` | bigint | rows that failed it |
 |  | `pass_ratio` | double | 1 - failed / checked |
 |  | `check_status_code` | string | PASS (none allowed, none found) · REPORT (a rate to read) |
 |  | `clinic_code` | string | 1-8, or All |
+|  | `measure_text` | string | cost and performance checks: the numbers behind the status, the owner and the action (ops/budgets.yaml); empty for the record checks |
 |  | `source_files_text` | string | the committed CSVs the table is built from |
 |  | `file_sha256` | string | SHA-256 of those files together: the version |
 |  | `git_commit_sha` | string | commit the job was deployed from |
@@ -1053,6 +1056,7 @@ One per task per run table in data/tasks/agent_runs/: an agent's attempt at one 
 |---|---|---|---|
 | PK | `run_file_name` | string | the run table it came from: <model>_<tasks>.csv or <model>_kaggle.csv |
 | PK | `instance_id` | string | the task (spec 028 task set) |
+|  | `run_ts` | timestamp | when the run was scored (Kaggle runs since spec 036 US4; empty before) |
 |  | `tier_code` | string | the task's fidelity tier: A · B · C |
 |  | `harness_name` | string | the harness that ran and scored it |
 |  | `model_name` | string | the model; calib:oracle and calib:null bound the harness |

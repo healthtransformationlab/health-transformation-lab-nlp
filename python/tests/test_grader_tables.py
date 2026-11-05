@@ -49,7 +49,10 @@ def test_no_note_text_reaches_a_dq_table(dq):
     statuses = {"unknown", "healthy_gingivitis", "healthy", "gingivitis"} | {f"periodontitis_stage_{i}" for i in range(1, 5)}
     for col in ("notes", "exam_form", "probing_chart", "algorithm_design", "truth_status"):
         assert set(dq["fact_visit_evidence"][col].dropna()) <= statuses, col
-    assert "text" not in " ".join(c for df in dq.values() for c in df.columns)
+    # spec 036: measure_text carries a budget check's numbers, owner and action (ops/budgets.yaml, governance.py),
+    # never record content: every row built from the records leaves it empty
+    assert "text" not in " ".join(c for df in dq.values() for c in df.columns if c != "measure_text")
+    assert dq["dq_check"]["measure_text"].isna().all()
 
 
 def test_checks_hold_the_overall_rows_and_every_clinic(dq):

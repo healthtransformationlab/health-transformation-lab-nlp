@@ -53,6 +53,7 @@ def dq_tables(datasets_dir: Path) -> dict[str, pd.DataFrame]:
     overall = _read(d, f[0]).assign(clinic="All")
     by_clinic = _read(d, f[1]).assign(clinic=lambda x: x.clinic_id.astype(int).astype(str)).drop(columns="clinic_id")
     checks = pd.concat([overall, by_clinic], ignore_index=True).rename(columns={"check": "check_name"})
+    checks = checks.assign(measure_text=None)   # spec 036: the cost and performance rows' numbers (governance.py)
     out["dq_check"] = _with_provenance(checks, d, f)   # `check` and `column` are reserved words in SQL
 
     f = ["data_quality/completeness_columns.csv"]
@@ -173,7 +174,7 @@ def lab_tables(datasets_dir: Path) -> dict[str, pd.DataFrame]:
 # ---------------------------------------------------------------- coding-agent task runs (spec 036 US2, #569)
 
 # In the gold table's order (diagrams/_build/gold_model.py): what ran, how it came out, what it cost.
-AGENT_COLUMNS = ["run_file_name", "instance_id", "tier_code", "harness_name", "model_name", "is_calibration",
+AGENT_COLUMNS = ["run_file_name", "instance_id", "run_ts", "tier_code", "harness_name", "model_name", "is_calibration",
                  "is_resolved", "is_patch_submitted", "agent_patch_bytes", "files_changed_count", "tool_call_count",
                  "turn_count", "nudge_count", "agent_seconds", "verify_exit_code", "verify_passed_count",
                  "verify_failed_count", "verify_error_count", "reason_text", "kaggle_kernel_url",

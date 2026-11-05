@@ -32,7 +32,8 @@ import re
 from pathlib import Path
 
 import pandas as pd
-from health_transformation_lab_nlp import gold_names, grader_tables, results_store, table_comments, tracking
+from health_transformation_lab_nlp import (agent_cost, doctor, gold_names, governance, grader_tables, results_store,
+                                           table_comments, tracking)
 from pyspark.sql import functions as F
 
 dbutils.widgets.text("git_commit", "")  # noqa: F821  set by the job: the commit it was deployed from
@@ -129,8 +130,20 @@ print("loaded:", list(new.file) or "nothing new")
 # Spec 036 US2 (#569): the coding-agent task runs and what each cost, from data/tasks/agent_runs/ (deployed with the
 # bundle like data/datasets/), the same way.
 tasks_dir = Path("../../data/tasks").resolve()
-for name, df in {**grader_tables.dq_tables(data_dir), **grader_tables.lab_tables(data_dir),
-                 **grader_tables.agent_tables(tasks_dir)}.items():
+tables = {**grader_tables.dq_tables(data_dir), **grader_tables.lab_tables(data_dir),
+          **grader_tables.agent_tables(tasks_dir)}
+# Spec 036 US4 (#576): spend and speed beside the record checks. Each budget and target in ops/budgets.yaml, and the
+# cost data's own checks, as cost and performance rows of dq_check; job runs from the doctor's fact_pipeline_run.
+runs_table = table("fact_pipeline_run")
+pipeline_runs = (spark.table(runs_table).toPandas() if spark.catalog.tableExists(runs_table)  # noqa: F821
+                 else pd.DataFrame(columns=["pipeline_name", "run_id", "started_ts", "ended_ts", "run_status_code",
+                                            "duration_seconds", "cost_usd"]))
+gov = governance.checks(governance.load_budgets(), tables["fact_agent_task_run"], pipeline_runs, doctor.load_config(),
+                        agent_cost.load_settings(), now)
+gov = governance.with_provenance(gov)
+tables["dq_check"] = pd.concat([tables["dq_check"], gov[tables["dq_check"].columns]], ignore_index=True)
+print(f"dq_check: {len(gov)} cost and performance rows, {int((gov['status'] == 'FAIL').sum())} failing")
+for name, df in tables.items():
     df = gold_names.to_gold(df.assign(git_commit=commit, loaded_at=now), name)   # gold column names
     empty = [c for c in df.columns if df[c].isna().all()]
     spark.createDataFrame(df.astype({c: "string" for c in empty})) \
