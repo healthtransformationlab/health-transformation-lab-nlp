@@ -1,7 +1,8 @@
 """opendental_silver_model.py and omop_silver_model.py -> their ERDs, drawn by gold_erd.py's writer (spec 029, #379).
-Writes   ../silver/source/{opendental,omop}_silver_{entity,full}.{mmd,drawio}
-         ../silver/source/{opendental,omop}_silver_dictionary.drawio   the data-dictionary format (dictionary_erd.py),
-             profiled from the seeded synthetic extract the load job writes (open_dental.py, spec 029)
+Writes   ../silver/source/{opendental,omop}_silver_{entity,full}.mmd
+         ../silver/source/{opendental,omop}_silver_{entity,full}.drawio   the data-dictionary format (dictionary_erd.py,
+             #601): the full view profiled from the seeded synthetic extract the load job writes (open_dental.py, spec
+             029), and the entity view in the same layout with each table's header and key columns only
          ../silver/data_model.md   both models as Mermaid (GitHub renders them) and every column
 Run: python3 silver_erd.py   (then render: render.md)
 """
@@ -54,9 +55,9 @@ def markdown() -> str:
     for prefix, m in MODELS:
         title, intro = TITLES[prefix]
         lines += [f"## {title}", "", intro, "",
-                  (f"Draw.io: [entity](source/{prefix}_entity.drawio) · [full](source/{prefix}_full.drawio) · "
-                   f"[data dictionary](source/{prefix}_dictionary.drawio) (subject areas, row counts, nulls, distinct "
-                   "and top values)"), "",
+                  (f"Draw.io, in the data-dictionary format: [full](source/{prefix}_full.drawio) (subject areas, row "
+                   f"counts, nulls, distinct and top values) · [entity](source/{prefix}_entity.drawio) (the same "
+                   "layout, each table's header and key columns)"), "",
                   "```mermaid", gold_erd.mermaid(False, m).rstrip(), "```", ""]
         for name, t in m.TABLES.items():
             lines += [f"### `{name}`", "", f"{t.description}. {t.writer}.", "",
@@ -69,14 +70,10 @@ def markdown() -> str:
 if __name__ == "__main__":
     SRC.mkdir(parents=True, exist_ok=True)
     for prefix, m in MODELS:
-        names = list(m.TABLES)
-        edges = [(r.parent, r.child) for r in m.RELATIONSHIPS if r.parent != r.child]
-        grid = gold_erd.arrange(names, edges, {n: gold_erd.full_size(n, m) for n in names})
         for stem, full in ((f"{prefix}_entity", False), (f"{prefix}_full", True)):
             (SRC / f"{stem}.mmd").write_text(gold_erd.mermaid(full, m))
-            (SRC / f"{stem}.drawio").write_text(gold_erd.build(grid, full, m).xml(stem))
-            print("wrote", f"diagrams/silver/source/{stem}.drawio, .mmd")
-    for prefix, m in MODELS:
-        print("wrote", dictionary_erd.write(prefix, m, extract_stats() if prefix == "opendental_silver" else None))
+        stats = extract_stats() if prefix == "opendental_silver" else None
+        for path in dictionary_erd.write(prefix, m, stats, SRC):
+            print("wrote", path.relative_to(OUT.parent.parent))
     (OUT / "data_model.md").write_text(markdown())
     print("wrote diagrams/silver/data_model.md")
