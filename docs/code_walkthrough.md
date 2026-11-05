@@ -11,7 +11,7 @@ has one section per step below, with a cell that shows that step's output.
 Every number from these steps is from synthetic patients and simulated reviewers.
 
 Pictures of the same: [medallion architecture](../diagrams/d0_medallion_architecture.png), [study process](../diagrams/d1_study_process.png), [platform](../diagrams/d2_platform_architecture.png),
-[ERD](../diagrams/d3_erd_omop_dental.png), [site storage designs](../diagrams/d4_site_storage_designs.png),
+[ERD](../diagrams/d3_erd_omop_dental_full.drawio), [site storage designs](../diagrams/d4_site_storage_designs.png),
 [MLOps](../diagrams/d5_mlops_lifecycle.png), [run order](../diagrams/flows/01_run_order.png) ([all diagrams](../diagrams/README.md)).
 
 ## The steps in run order
