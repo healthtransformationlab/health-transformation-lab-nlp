@@ -257,6 +257,7 @@ erDiagram
         string check_status_code "PASS (none allowed, none found) · REPORT (a rate to read)"
         string clinic_code "1-8, or All"
         string measure_text "cost and performance checks: the numbers behind the status, the owner and the action (ops/budgets.yaml); empty for the record checks"
+        string severity_code "a failing cost or performance check's severity, which the digests route by (SEV3 daily, SEV4 weekly; spec 036 T011); empty for a pass, a report and the record checks"
         string source_files_text "the committed CSVs the table is built from"
         string file_sha256 "SHA-256 of those files together: the version"
         string git_commit_sha "commit the job was deployed from"
@@ -816,6 +817,7 @@ One per (data-quality check, clinic); clinic_code All = every clinic. Written by
 |  | `check_status_code` | string | PASS (none allowed, none found) · REPORT (a rate to read) |
 |  | `clinic_code` | string | 1-8, or All |
 |  | `measure_text` | string | cost and performance checks: the numbers behind the status, the owner and the action (ops/budgets.yaml); empty for the record checks |
+|  | `severity_code` | string | a failing cost or performance check's severity, which the digests route by (SEV3 daily, SEV4 weekly; spec 036 T011); empty for a pass, a report and the record checks |
 |  | `source_files_text` | string | the committed CSVs the table is built from |
 |  | `file_sha256` | string | SHA-256 of those files together: the version |
 |  | `git_commit_sha` | string | commit the job was deployed from |

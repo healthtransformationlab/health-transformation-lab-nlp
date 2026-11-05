@@ -53,7 +53,7 @@ def dq_tables(datasets_dir: Path) -> dict[str, pd.DataFrame]:
     overall = _read(d, f[0]).assign(clinic="All")
     by_clinic = _read(d, f[1]).assign(clinic=lambda x: x.clinic_id.astype(int).astype(str)).drop(columns="clinic_id")
     checks = pd.concat([overall, by_clinic], ignore_index=True).rename(columns={"check": "check_name"})
-    checks = checks.assign(measure_text=None)   # spec 036: the cost and performance rows' numbers (governance.py)
+    checks = checks.assign(measure_text=None, severity_code=None)   # spec 036: cost and performance rows (governance.py)
     out["dq_check"] = _with_provenance(checks, d, f)   # `check` and `column` are reserved words in SQL
 
     f = ["data_quality/completeness_columns.csv"]

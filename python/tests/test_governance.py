@@ -9,7 +9,8 @@ from health_transformation_lab_nlp import governance as gv
 from health_transformation_lab_nlp.paths import REPO_ROOT
 
 NOW = pd.Timestamp("2026-11-05 12:00", tz="UTC")          # a Thursday: 3.5 of the week's 7 days gone
-COLUMNS = ["check_name", "category", "clinic", "n_checked", "n_fail", "pass_rate", "status", "measure_text"]
+COLUMNS = ["check_name", "category", "clinic", "n_checked", "n_fail", "pass_rate", "status", "measure_text",
+           "severity_code"]
 
 
 def _budget(**kw):
@@ -161,3 +162,41 @@ def test_governance_rows_become_dq_check_rows_with_provenance():
     gold = gold_names.to_gold(both.assign(git_commit="abc", loaded_at=NOW), "dq_check")
     assert set(gold["check_category_code"]) >= {"cost", "conformance"} and gold["measure_text"].notna().any()
     assert gov["source_files"].iloc[0] == "ops/budgets.yaml,ops/cost_settings.yaml"
+
+
+# --- routing (T011, FR-016): a failing row carries the severity the digests route by -------------------------------
+
+def test_a_passed_budget_goes_to_the_daily_digest_and_a_pass_has_no_severity():
+    runs = pd.DataFrame([_agent(allowance_hours=12.0)])
+    out = gv.checks([_budget(), _budget(budget_name="ok", limit=100)], runs, pd.DataFrame([_pipe()]), CONFIG,
+                    SETTINGS, NOW).set_index("check_name")
+    assert out.loc["cost:b", "severity_code"] == "SEV3"
+    assert pd.isna(out.loc["cost:ok", "severity_code"])
+
+
+def test_performance_drift_is_weekly_and_a_late_pipeline_daily_as_the_runbook_says():
+    pipes = pd.DataFrame([_pipe(run_id=str(i), duration_seconds=600.0 * (i + 1),
+                                started_ts=NOW - pd.Timedelta(days=10)) for i in range(20)])
+    p95 = _budget(budget_name="p95", category="performance", measure="p95_duration_seconds", period="month",
+                  limit=3600, unit="seconds")
+    fresh = _budget(budget_name="fresh", category="performance", measure="freshness_seconds", period="now",
+                    limit=None, unit="seconds")
+    out = gv.checks([p95, fresh], pd.DataFrame([_agent()]), pipes, CONFIG, SETTINGS, NOW).set_index("check_name")
+    assert out.loc["performance:p95:study_benchmark", "severity_code"] == "SEV4"         # duration_drift
+    assert out.loc["performance:fresh:study_benchmark", "severity_code"] == "SEV3"       # source_late
+
+
+def test_cost_data_that_fails_its_own_checks_goes_to_the_daily_digest():
+    pipes = pd.DataFrame([_pipe(cost_usd=-1.0)])
+    out = gv.checks([], pd.DataFrame([_agent()]), pipes, CONFIG, SETTINGS, NOW).set_index("check_name")
+    assert out.loc["cost:plausibility", "severity_code"] == "SEV3"
+    assert out.loc["cost:completeness:pipeline_runs", "status"] == "REPORT"
+    assert pd.isna(out.loc["cost:completeness:pipeline_runs", "severity_code"])           # a report is not an alert
+
+
+def test_dq_check_carries_the_severity_in_gold():
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("gold_model", REPO_ROOT / "diagrams" / "_build" / "gold_model.py")
+    gm = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(gm)
+    assert "severity_code" in [c.name for c in gm.TABLES["dq_check"].columns]

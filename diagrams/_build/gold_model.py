@@ -229,6 +229,8 @@ TABLES = {
             C("clinic_code", "string", "1-8, or All"),
             C("measure_text", "string", "cost and performance checks: the numbers behind the status, the owner and "
               "the action (ops/budgets.yaml); empty for the record checks"),
+            C("severity_code", "string", "a failing cost or performance check's severity, which the digests route by "
+              "(SEV3 daily, SEV4 weekly; spec 036 T011); empty for a pass, a report and the record checks"),
             *DQ_PROV]),
     "dq_column_missing": Table(
         "dq", "One per evidence column", "Load results: overwrite", [

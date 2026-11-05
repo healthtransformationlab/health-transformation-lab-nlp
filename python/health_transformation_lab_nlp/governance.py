@@ -26,7 +26,14 @@ MEASURES = ("allowance_hours", "pipeline_cost_usd", "gpu_hours_per_resolved_task
             "freshness_seconds")
 PERIODS = ("week", "month", "all", "now")
 FIELDS = ("budget_name", "category", "measure", "period", "limit", "unit", "owner_name", "action_text")
-COLUMNS = ["check_name", "category", "clinic", "n_checked", "n_fail", "pass_rate", "status", "measure_text"]
+COLUMNS = ["check_name", "category", "clinic", "n_checked", "n_fail", "pass_rate", "status", "measure_text",
+           "severity_code"]
+# T011 (FR-016): the severity a failing row is routed by (AGENTS.md "Alerts and severity"). A passed budget, or cost
+# data failing its own checks, is a check below threshold: SEV3, the daily digest. Performance takes the runbook's
+# level for the matching failure class: drift (duration_drift) SEV4, a late pipeline (source_late) SEV3. A REPORT or a
+# PASS has no severity: it isn't an alert.
+COST_SEVERITY = "SEV3"
+RUNBOOK_CLASS = {"p95_duration_seconds": "duration_drift", "freshness_seconds": "source_late"}
 SETTINGS_MAX_AGE_DAYS = 90
 
 
@@ -43,10 +50,19 @@ def load_budgets(path: Path = BUDGETS) -> list[dict]:
     return out
 
 
-def _row(name, category, n_checked, n_fail, status, text):
+def _row(name, category, n_checked, n_fail, status, text, severity=None):
     return {"check_name": name, "category": category, "clinic": "All", "n_checked": int(n_checked),
             "n_fail": int(n_fail), "pass_rate": (1 - n_fail / n_checked) if n_checked else float("nan"),
-            "status": status, "measure_text": text}
+            "status": status, "measure_text": text, "severity_code": severity if status == "FAIL" else None}
+
+
+def _severity(measure: str) -> str:
+    cls = RUNBOOK_CLASS.get(measure)
+    if cls is None:
+        return COST_SEVERITY
+    from .doctor import load_runbook
+    rb = load_runbook().set_index("failure_class_code")
+    return str(rb.loc[cls, "severity_code"])
 
 
 def _fmt(value: float, unit: str) -> str:
@@ -83,7 +99,8 @@ def _weekly(b, values: pd.Series, when: pd.Series, now) -> dict:
     status = "FAIL" if projected > b["limit"] else "PASS"
     text = (f"{_fmt(used, b['unit'])} of {b['limit']:g} {b['unit']} this week, {_fmt(projected, b['unit'])} projected. "
             f"Owner: {b['owner_name']}. Action: {b['action_text']}")
-    return _row(f"{b['category']}:{b['budget_name']}", b["category"], 1, status == "FAIL", status, text)
+    return _row(f"{b['category']}:{b['budget_name']}", b["category"], 1, status == "FAIL", status, text,
+                _severity(b["measure"]))
 
 
 @traced
@@ -107,7 +124,8 @@ def budget_checks(budgets: list[dict], agent_runs: pd.DataFrame, pipeline_runs: 
                 per = g["gpu_hours"].sum() / resolved if resolved else math.inf
                 status = "FAIL" if per > b["limit"] else "PASS"
                 rows.append(_row(f"{name}:{model}", cat, 1, status == "FAIL", status,
-                                 f"{per:.2f} {b['unit']} ({resolved} resolved of {len(g)}); limit {b['limit']:g}. {tail}"))
+                                 f"{per:.2f} {b['unit']} ({resolved} resolved of {len(g)}); limit {b['limit']:g}. {tail}",
+                                 _severity(m)))
         elif m == "p95_duration_seconds":
             ok = _ok(pipeline_runs)
             ok = ok[_ts(ok["started_ts"]) >= now - pd.Timedelta(days=30)]
@@ -115,7 +133,7 @@ def budget_checks(budgets: list[dict], agent_runs: pd.DataFrame, pipeline_runs: 
                 p95 = float(g["duration_seconds"].quantile(0.95))
                 status = "FAIL" if p95 > b["limit"] else "PASS"
                 rows.append(_row(f"{name}:{pipe}", cat, 1, status == "FAIL", status,
-                                 f"p95 {p95:.0f} s over {len(g)} ok runs; limit {b['limit']:g} s. {tail}"))
+                                 f"p95 {p95:.0f} s over {len(g)} ok runs; limit {b['limit']:g} s. {tail}", _severity(m)))
         elif m == "freshness_seconds":
             sla = dict(zip(config["pipeline_name"], config["sla_seconds"]))
             ok = _ok(pipeline_runs)
@@ -128,7 +146,7 @@ def budget_checks(budgets: list[dict], agent_runs: pd.DataFrame, pipeline_runs: 
                     continue
                 status = "FAIL" if age > float(limit) else "PASS"
                 rows.append(_row(f"{name}:{pipe}", cat, 1, status == "FAIL", status,
-                                 f"{age:.0f} s since its last ok run; SLA {float(limit):.0f} s. {tail}"))
+                                 f"{age:.0f} s since its last ok run; SLA {float(limit):.0f} s. {tail}", _severity(m)))
     return pd.DataFrame(rows, columns=COLUMNS)
 
 
@@ -146,20 +164,21 @@ def cost_data_checks(agent_runs: pd.DataFrame, pipeline_runs: pd.DataFrame, sett
     c, d = pipeline_runs["cost_usd"], pipeline_runs["duration_seconds"]
     bad = (c < 0) | ((c == 0) & (d > 0))
     rows.append(_row("cost:plausibility", "cost", int(has.sum()), int(bad.sum()), "FAIL" if bad.any() else "PASS",
-                     "no negative cost, and no zero cost on a run that took time"))
+                     "no negative cost, and no zero cost on a run that took time", COST_SEVERITY))
     stale = [k for k, v in settings.items() if isinstance(v, dict) and "read_date" in v
              and (now - pd.Timestamp(v["read_date"], tz="UTC")).days > SETTINGS_MAX_AGE_DAYS]
     n = sum(1 for v in settings.values() if isinstance(v, dict) and "read_date" in v)
     rows.append(_row("cost:settings_current", "cost", n, len(stale), "FAIL" if stale else "PASS",
                      f"read within {SETTINGS_MAX_AGE_DAYS} days (ops/cost_settings.yaml)"
-                     + (f"; stale: {', '.join(stale)}" if stale else "")))
+                     + (f"; stale: {', '.join(stale)}" if stale else ""), COST_SEVERITY))
     est = agent_runs[agent_runs["estimated_cost_usd"].notna()]
     unlabelled = ~est["price_basis_text"].astype(str).str.startswith("estimate:")
     calib = agent_runs["model_name"].astype(str).str.startswith("calib:")
     mislabelled = calib & ~agent_runs.get("is_calibration", pd.Series(False, index=agent_runs.index)).fillna(False).astype(bool)
     n_fail = int(unlabelled.sum() + mislabelled.sum())
     rows.append(_row("cost:estimates_labelled", "cost", len(est) + int(calib.sum()), n_fail,
-                     "FAIL" if n_fail else "PASS", "every estimate says so; every calib: run is labelled calibration"))
+                     "FAIL" if n_fail else "PASS", "every estimate says so; every calib: run is labelled calibration",
+                     COST_SEVERITY))
     return pd.DataFrame(rows, columns=COLUMNS)
 
 
