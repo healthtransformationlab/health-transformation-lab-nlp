@@ -477,6 +477,41 @@ TABLES = {
             C("decided_ts", "timestamp", "when the decision was recorded"),
             C("is_match", "boolean", "decided = recommended; null until decided"),
             *DOCTOR_PROV]),
+    # spec 027 US8 T023 (#359): the daily and weekly digests, built by pipeline-doctor's digest
+    "fact_digest_item": Table(
+        "ops", "One per (digest date, period, owner, subject, failure class): an open SEV3 or SEV4 problem in that "
+        "day's daily or that week's weekly digest", "Pipeline digest: delete-then-append by digest_key", [
+            C("digest_key", "string", "<digest_date>/<period_code>: the batch a rerun replaces", "PK"),
+            C("digest_date", "date", "the day the digest was built (UTC)", "PK"),
+            C("period_code", "string", "daily (SEV3) · weekly (SEV4, Mondays)", "PK"),
+            C("owner_name", "string", "who it goes to", "PK"),
+            C("subject_name", "string", "the budget check, pipeline run, credential or dependency", "PK"),
+            C("subject_kind_code", "string", "budget · pipeline_run · credential · pipeline · model · runtime · ..."),
+            C("pipeline_names_text", "string", "the pipelines it touches"),
+            C("predicted_failure_class_code", "string", "the failure class (ops/runbook.yaml)", "PK"),
+            C("predicted_date", "date", "when it fails or failed (a forecast's date, a run's day); empty for a budget"),
+            C("days_until_count", "bigint", "days from the digest to that date (forecasts)"),
+            C("severity_code", "string", "SEV3 or SEV4"),
+            C("recommended_action_code", "string", "the first allowed runbook action"),
+            C("evidence_text", "string", "the numbers or the reason: names and codes, never row data"),
+            C("alert_count", "bigint", "how many alerts the item stands for (pipelines, runs)"),
+            C("is_repeat", "boolean", "in the previous digest of this period too"),
+            C("is_level_review", "boolean", "a repeating SEV2: fix the cause or lower the level"),
+            C("digest_run_id", "string", "the Pipeline digest run that wrote the row (batch key)"),
+            C("loaded_ts", "timestamp", "when it wrote it"),
+            C("git_commit_sha", "string", "commit the job was deployed from")]),
+    "fact_digest_message": Table(
+        "ops", "One per (digest date, period, owner): the plain-text digest a Databricks SQL alert emails",
+        "Pipeline digest: delete-then-append by digest_key", [
+            C("digest_key", "string", "<digest_date>/<period_code>: the batch a rerun replaces", "PK"),
+            C("digest_date", "date", "the day the digest was built (UTC)", "PK"),
+            C("period_code", "string", "daily · weekly", "PK"),
+            C("owner_name", "string", "who it goes to", "PK"),
+            C("item_count", "bigint", "open problems in it"),
+            C("message_text", "string", "the digest as pipeline-doctor renders it: by severity, then subject"),
+            C("digest_run_id", "string", "the Pipeline digest run that wrote the row (batch key)"),
+            C("loaded_ts", "timestamp", "when it wrote it"),
+            C("git_commit_sha", "string", "commit the job was deployed from")]),
     # spec 029 US3 (#371): in health_transformation_lab.gold_opendental_perio, not gold_perio_bench
     "fact_tooth_loss_prediction": Table(
         "tooth", "Schema gold_opendental_perio. One per (synthetic patient, missing or labelled tooth, label set, "

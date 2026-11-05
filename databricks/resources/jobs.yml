@@ -243,6 +243,35 @@ resources:
     # writes fact_pipeline_signal and fact_remediation_decision, delete-then-append by run_id. A new SEV1/SEV2
     # decision fails the run with the drafted notification; SEV3/SEV4 wait in the table for the digest. It acts
     # on nothing. Created paused in every target: running it is the owner's decision. Serverless CPU.
+    # Spec 027 US8 T023 (#359): the daily and weekly digests (pipeline-doctor's digest), emailed by two Databricks SQL
+    # alerts the notebook keeps up to date. A SEV1/SEV2 forecast fails the run, so its failure email pages the owner.
+    pipeline_digest:
+      name: Pipeline digest
+      max_concurrent_runs: 1
+      email_notifications:
+        on_failure: ${var.alert_emails}
+      tags:
+        project: health-transformation-lab-nlp
+        data: synthetic
+        git_commit: ${bundle.git.commit}   # the commit this job was deployed from
+      schedule:
+        quartz_cron_expression: "0 32 7 * * ?"   # daily 07:32 UTC, after the doctor (07:17); weekly on Mondays
+        timezone_id: UTC
+        pause_status: PAUSED                     # uat and prod are mode: production, which would unpause it
+      tasks:
+        - task_key: digest
+          max_retries: 1                         # a network blip passes; a page (SEV1/SEV2) fails again and stays
+          min_retry_interval_millis: 600000
+          timeout_seconds: 1200
+          notebook_task:
+            notebook_path: ../notebooks/14_pipeline_digest.py
+            base_parameters:
+              git_commit: ${bundle.git.commit}
+              run_id: "{{job.run_id}}"
+              catalog: ${resources.schemas.perio_bench_gold.catalog_name}
+              schema: ${resources.schemas.perio_bench_gold.name}
+              digest_email: ${var.digest_email}
+
     pipeline_doctor:
       name: Pipeline doctor
       max_concurrent_runs: 1

@@ -61,7 +61,7 @@ jobs:
         # a complex bundle variable can't come from BUNDLE_VAR_*; the bundle reads this file for the target
         run: |
           mkdir -p ".databricks/bundle/$TARGET"
-          python3 -c 'import json, os; print(json.dumps({"alert_emails": [os.environ["ALERT_EMAIL"].strip()]}))' \
+          python3 -c 'import json, os; e = os.environ["ALERT_EMAIL"].strip(); print(json.dumps({"alert_emails": [e], "digest_email": e}))' \
             > ".databricks/bundle/$TARGET/variable-overrides.json"
       - name: Stop if this environment isn't configured
         if: env.DATABRICKS_CLIENT_SECRET == ''

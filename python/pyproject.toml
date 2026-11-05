@@ -2,7 +2,7 @@
 name = "health-transformation-lab-nlp"
 version = "0.1.0"
 description = "Synthetic dental notes -> OMOP -> periodontal status benchmark (Python side)"
-requires-python = ">=3.10"
+requires-python = ">=3.11"   # pipeline-doctor needs 3.11; CI and Databricks serverless (environment 4) run 3.12
 license = { text = "MIT" }
 dependencies = [
   "pandas>=2.0",
@@ -11,6 +11,8 @@ dependencies = [
   "scikit-learn>=1.3",
   "opentelemetry-api>=1.25",       # pipeline telemetry (spec 014); no-op unless DENTAL_TELEMETRY is set
   "opentelemetry-sdk>=1.25",
+  # forecast and digest (spec 027 US8, T023): the shared package, pinned to a commit (it has no release tags yet)
+  "pipeline-doctor @ git+https://github.com/healthtransformationlab/pipeline-doctor@ff2feeef3f0d541ec5459f5e2c1097bb3cfcdf1c",
 ]
 
 [project.optional-dependencies]

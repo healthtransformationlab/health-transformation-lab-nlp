@@ -27,7 +27,8 @@ def test_the_model_declares_the_gold_tables_the_jobs_write():
                     "fact_tooth_loss_prediction",                                              # spec 029
                     # spec 031: the Benchmark job's tables
                     "dim_study_note", "benchmark_metric",
-                    "fact_agent_task_run"}                                                      # spec 036
+                    "fact_agent_task_run",
+                    "fact_digest_item", "fact_digest_message"}                                  # spec 027 T023                                                      # spec 036
 
 
 def test_every_relationship_joins_declared_columns():
