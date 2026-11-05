@@ -488,7 +488,7 @@ erDiagram
         string error_type_name "exception type (span export), else the run's termination code"
         string error_text "first line of the error (span export); never row data"
         double duration_seconds "run length"
-        double cost_usd "run cost (span export)"
+        double cost_usd "run cost: its billing usage at the USD list price in effect then (spec 036), or the span export's; empty when neither is readable, never zero"
         string git_commit_sha "commit the pipeline ran (span export)"
         string data_label_code "synthetic · public · simulated, from the pipeline's config"
         string doctor_run_id "the Pipeline doctor run that wrote the row (batch key)"
@@ -1115,7 +1115,7 @@ One per finished run of a bundle job (step_name job), from the Jobs API's run li
 |  | `error_type_name` | string | exception type (span export), else the run's termination code |
 |  | `error_text` | string | first line of the error (span export); never row data |
 |  | `duration_seconds` | double | run length |
-|  | `cost_usd` | double | run cost (span export) |
+|  | `cost_usd` | double | run cost: its billing usage at the USD list price in effect then (spec 036), or the span export's; empty when neither is readable, never zero |
 |  | `git_commit_sha` | string | commit the pipeline ran (span export) |
 |  | `data_label_code` | string | synthetic · public · simulated, from the pipeline's config |
 |  | `doctor_run_id` | string | the Pipeline doctor run that wrote the row (batch key) |

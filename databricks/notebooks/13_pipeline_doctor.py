@@ -70,8 +70,8 @@ except Exception as e:  # noqa: BLE001
 if settings["span_table"] and not spark.catalog.tableExists(settings["span_table"]):  # noqa: F821
     raise RuntimeError(f"span_table: {settings['span_table']} does not exist; set it to none to run without it")
 if not settings["span_table"]:
-    print("warning: span_table is none, so runs carry state, times and termination codes only (no counts, schema "
-          "hash, checks or cost); classes that need them fall to unknown")
+    print("warning: span_table is none, so runs carry state, times and termination codes, and cost from billing "
+          "when it can be read (no counts, schema hash or checks); classes that need them fall to unknown")
 if not settings["judge_endpoint"]:
     print("judge_endpoint is none: the root-cause rung is off")
 
@@ -84,6 +84,15 @@ timeline = doctor_job.api_runs([r.as_dict() for r in jobs_api.list_runs(complete
 
 config, runbook, lineage = doctor.load_config(), doctor.load_runbook(), doctor.load_lineage()
 runs = doctor_job.timeline_runs(timeline, config, doctor_job.job_names())
+# Spec 036 US1 (#568): each run's cost from the billing system tables, when this identity can read them (else one
+# warning and empty costs, never zero); a span export's cost, merged next, wins.
+billing = doctor_job.read_billing(spark, doctor_job.HISTORY_DAYS)  # noqa: F821
+if billing is not None:
+    costs, missing = doctor_job.billing_costs(*billing)
+    runs = doctor_job.merge_billing(runs, costs)
+    if missing:
+        print(f"warning: no USD list price for {', '.join(missing)}: runs using them have no cost")
+    print(f"{int(runs['cost_usd'].notna().sum())} of {len(runs)} runs have a cost from billing")
 if settings["span_table"]:
     spans = spark.table(settings["span_table"]).toPandas()  # noqa: F821
     runs = doctor_job.merge_spans(runs, spans)

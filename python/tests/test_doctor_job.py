@@ -281,3 +281,81 @@ def test_api_runs_feed_the_same_run_rows_as_the_timeline(config):
 def test_no_api_runs_give_an_empty_timeline():
     out = doctor_job.api_runs([])
     assert out.empty and list(out.columns)[0] == "job_name"
+
+
+# --- what each job run cost, from the billing system tables (spec 036 US1, #568) ---------------------------------
+
+T = pd.Timestamp
+
+
+def _usage(*rows):
+    return pd.DataFrame(rows, columns=["job_run_id", "sku_name", "usage_unit", "usage_quantity", "usage_start_time"])
+
+
+PRICES = pd.DataFrame([
+    ["JOBS_SERVERLESS", "DBU", 0.35, T("2026-01-01", tz="UTC"), T("2026-10-01", tz="UTC")],
+    ["JOBS_SERVERLESS", "DBU", 0.40, T("2026-10-01", tz="UTC"), pd.NaT],                 # the price in effect now
+    ["SQL_SERVERLESS", "DBU", 0.70, T("2026-01-01", tz="UTC"), pd.NaT]],
+    columns=["sku_name", "usage_unit", "price_usd", "price_start_time", "price_end_time"])
+
+
+def test_a_run_costs_its_usage_at_the_list_price_in_effect_when_it_was_used():
+    usage = _usage(["1", "JOBS_SERVERLESS", "DBU", 2.0, T("2026-09-15", tz="UTC")],     # old price: 0.70
+                   ["1", "JOBS_SERVERLESS", "DBU", 1.0, T("2026-10-15", tz="UTC")],     # new price: 0.40
+                   ["1", "SQL_SERVERLESS", "DBU", 1.0, T("2026-10-15", tz="UTC")],      # 0.70
+                   ["2", "JOBS_SERVERLESS", "DBU", 0.5, T("2026-11-01", tz="UTC")])
+    costs, missing = doctor_job.billing_costs(usage, PRICES)
+    got = dict(zip(costs["run_id"], costs["cost_usd"]))
+    assert got["1"] == pytest.approx(0.70 + 0.40 + 0.70) and got["2"] == pytest.approx(0.20)
+    assert missing == []
+
+
+def test_a_sku_with_no_price_leaves_its_run_without_a_cost_and_is_named():
+    usage = _usage(["3", "GPU_SERVERLESS", "DBU", 4.0, T("2026-10-15", tz="UTC")],
+                   ["3", "JOBS_SERVERLESS", "DBU", 1.0, T("2026-10-15", tz="UTC")])
+    costs, missing = doctor_job.billing_costs(usage, PRICES)
+    assert costs.set_index("run_id")["cost_usd"].isna().all()       # never a partial cost
+    assert missing == ["GPU_SERVERLESS"]
+
+
+def test_billing_fills_cost_where_it_has_one_and_a_span_still_wins():
+    runs = pd.DataFrame({"pipeline_name": ["p", "p", "p"], "run_id": ["1", "2", "9"],
+                         "cost_usd": [float("nan")] * 3})
+    costs = pd.DataFrame({"run_id": ["1", "2"], "cost_usd": [1.8, 0.2]})
+    out = doctor_job.merge_billing(runs, costs)
+    assert out["cost_usd"].tolist()[:2] == [1.8, 0.2] and pd.isna(out["cost_usd"].iloc[2])   # no usage: empty, not 0
+    runs.loc[0, "cost_usd"] = 5.0                                                          # already set (a span)
+    assert doctor_job.merge_billing(runs, costs)["cost_usd"].iloc[0] == 5.0
+
+
+class _Spark:
+    def __init__(self, fail=None):
+        self.fail, self.queries = fail, []
+
+    def sql(self, q):
+        self.queries.append(q)
+        if self.fail:
+            raise RuntimeError(self.fail)
+        frame = _usage() if "billing.usage" in q else PRICES.iloc[0:0]
+        return type("DF", (), {"toPandas": lambda s: frame})()
+
+
+def test_billing_that_cant_be_read_warns_once_and_leaves_costs_empty(capsys):
+    assert doctor_job.read_billing(_Spark(fail="PERMISSION_DENIED: system.billing"), days=60) is None
+    out = capsys.readouterr().out
+    assert out.count("warning:") == 1 and "system.billing" in out and "account admin" in out
+
+
+def test_billing_reads_only_job_usage_in_the_lookback_and_usd_prices():
+    spark = _Spark()
+    usage, prices = doctor_job.read_billing(spark, days=60)
+    u, p = spark.queries
+    assert "system.billing.usage" in u and "usage_metadata.job_run_id is not null" in u and "interval 60 days" in u
+    assert "system.billing.list_prices" in p and "currency_code = 'USD'" in p
+    assert list(usage.columns) == ["job_run_id", "sku_name", "usage_unit", "usage_quantity", "usage_start_time"]
+
+
+def test_the_doctor_reads_billing_before_the_span_export():
+    nb = (ROOT / "databricks" / "notebooks" / "13_pipeline_doctor.py").read_text()
+    assert nb.index("doctor_job.read_billing(") < nb.index("doctor_job.merge_spans(")   # a span's cost wins
+    assert "doctor_job.merge_billing(runs, costs)" in nb
