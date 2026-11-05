@@ -120,4 +120,4 @@ def test_d3_profiles_the_synthetic_omop_tables_but_never_note_text():
     stats = d3.stats()
     assert stats["person"]["rows"] > 0 and stats["measurement"]["rows"] > 0
     assert "note_text" not in stats["note"]["columns"], "free text is never profiled into a diagram"
-    assert "PERIO_MAX_PD" in stats["concept"]["columns"]["concept_code"]
+    assert stats["concept"]["rows"] == 31 and "n_distinct=31" in stats["concept"]["columns"]["concept_code"]
