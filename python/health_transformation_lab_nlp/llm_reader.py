@@ -226,6 +226,18 @@ def pick_dtype(cuda: bool, capability: tuple | None, total_gb: float) -> str:
     return "float32" if total_gb >= 20 else "float16"
 
 
+@traced
+def dtype_kwarg(dtype, version: str | None = None) -> dict:
+    """from_pretrained's dtype keyword for the installed transformers (#136): `dtype` from 4.56, which warns on the old
+    `torch_dtype`; `torch_dtype` before it (the repo allows >= 4.50)."""
+    if version is None:  # pragma: no cover - needs transformers
+        import transformers
+        version = transformers.__version__
+    major, minor = (int("".join(c for c in p if c.isdigit()) or 0) for p in version.split(".")[:2])
+    key = "dtype" if (major, minor) >= (4, 56) else "torch_dtype"
+    return {key: dtype}
+
+
 def _hardware_dtype() -> str:  # pragma: no cover - needs torch
     import torch
     if not torch.cuda.is_available():
@@ -261,7 +273,7 @@ class HFChat:  # pragma: no cover - needs model weights and the [llm] extra
         )
         dtype = _hardware_dtype() if self.dtype == "auto" else self.dtype
         print(f"loading {self.hf_id} as {dtype}, revision {self.revision or 'latest (not pinned)'}", flush=True)
-        kw = {"torch_dtype": getattr(torch, dtype), "device_map": self.device_map}
+        kw = {**dtype_kwarg(getattr(torch, dtype)), "device_map": self.device_map}
         if self.modality == "multimodal":
             self.proc = AutoProcessor.from_pretrained(self.hf_id, revision=self.revision)
             self.model = AutoModelForImageTextToText.from_pretrained(self.hf_id, revision=self.revision, **kw)
