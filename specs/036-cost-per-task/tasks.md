@@ -26,6 +26,8 @@
 - [x] T010 Failing tests, then `ops/budgets.yaml` (each budget and target with its period, limit, owner and action)
   and `governance.py`: the budget and target checks and the cost data's own checks, in `dq_check`'s columns plus
   `measure_text`, added to `dq_check` by Load results; agent runs carry `run_ts` for the weekly allowance
-- [ ] T011 Routing: a failing budget, or a cap that stopped a run, to the daily digest (SEV3); drift alone stays SEV4
-  (FR-016)
+- [x] T011 Routing: every failing cost or performance row in `dq_check` carries `severity_code`, the level the digests
+  route by: a passed budget and failing cost data SEV3 (daily), performance at the runbook's level (`duration_drift`
+  SEV4, `source_late` SEV3); a pass or a report carries none (FR-016). The digest job that sends them is spec 027
+  T023, not built yet; a cap that stops a run shows as the allowance budget's row
 - [ ] T012 A Governance page on the grader dashboards and Genie instructions from the same rows (FR-017)
