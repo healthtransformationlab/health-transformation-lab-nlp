@@ -13,8 +13,9 @@
 ## US1 - Every Databricks job run carries its DBUs and cost #568
 - [x] T006 Check: can the job's identity read the billing system tables in dev? No: account admins only (plan.md);
   the jobs' service principals need a grant from an account admin (owner)
-- [ ] T007 Failing tests, then `doctor_job.billing_costs` and the join onto the timeline runs; the warning when
-  the tables are missing
+- [x] T007 Failing tests, then `doctor_job.read_billing`, `billing_costs` and `merge_billing` onto the timeline runs
+  (before the span export, which wins); one warning when the tables can't be read. A DBU column waits for a suffix
+  (DBUs are fractional: not `_count`)
 
 ## US3 - Cost and duration recommendations, and the view #570
 - [x] T008 Failing tests, then `duration_drift` in `doctor.classify` (over 2x the trailing median, no other class,

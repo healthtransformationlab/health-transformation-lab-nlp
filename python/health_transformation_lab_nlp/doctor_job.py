@@ -178,6 +178,66 @@ def timeline_runs(timeline: pd.DataFrame, config: pd.DataFrame, names: dict[str,
     return out.sort_values(["pipeline_name", "started_ts"], kind="stable").reset_index(drop=True)
 
 
+# --- what each run cost, from the billing system tables (spec 036 US1, #568) --------------------------------------
+
+BILLING_USAGE_SQL = """
+select usage_metadata.job_run_id as job_run_id, sku_name, usage_unit, usage_quantity, usage_start_time
+from system.billing.usage
+where usage_metadata.job_run_id is not null
+  and usage_date >= current_date() - interval {days} days
+"""
+BILLING_PRICES_SQL = """
+select sku_name, usage_unit, cast(pricing.default as double) as price_usd, price_start_time, price_end_time
+from system.billing.list_prices
+where currency_code = 'USD'
+"""
+
+
+@traced
+def read_billing(spark, days: int = HISTORY_DAYS):
+    """(usage, prices) from the billing system tables, or None with one warning when this identity can't read them:
+    system.billing is account admins' unless one grants it (spec 036 T006). Costs then stay empty, never zero."""
+    try:
+        usage = spark.sql(BILLING_USAGE_SQL.format(days=int(days))).toPandas()
+        prices = spark.sql(BILLING_PRICES_SQL).toPandas()
+    except Exception as e:  # noqa: BLE001 - optional data: warn and carry on (AGENTS.md, configuration)
+        print(f"warning: can't read system.billing ({type(e).__name__}): run costs stay empty. An account admin "
+              "grants USE SCHEMA and SELECT on system.billing to this job's identity (spec 036 plan, US1)")
+        return None
+    return usage, prices
+
+
+@traced
+def billing_costs(usage: pd.DataFrame, prices: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
+    """Each job run's cost: its usage at the list price in effect when it was used (same SKU and unit). A run with a
+    SKU no price covers gets no cost at all, never a partial one; those SKUs are returned to be named."""
+    if usage is None or not len(usage):
+        return pd.DataFrame(columns=["run_id", "cost_usd"]), []
+    u = usage.assign(run_id=usage["job_run_id"].astype(str), _row=range(len(usage)))
+    u["usage_start_time"] = pd.to_datetime(u["usage_start_time"], utc=True)
+    p = prices.assign(price_start_time=pd.to_datetime(prices["price_start_time"], utc=True),
+                      price_end_time=pd.to_datetime(prices["price_end_time"], utc=True))
+    m = u.merge(p, on=["sku_name", "usage_unit"], how="left")
+    inside = (m["price_start_time"] <= m["usage_start_time"]) & (
+        m["price_end_time"].isna() | (m["usage_start_time"] < m["price_end_time"]))
+    priced = m[inside].drop_duplicates("_row")
+    u = u.merge(priced[["_row", "price_usd"]], on="_row", how="left")
+    u["line_usd"] = u["usage_quantity"].astype(float) * u["price_usd"]
+    missing = sorted(u.loc[u["price_usd"].isna(), "sku_name"].astype(str).unique())
+    costs = u.groupby("run_id")["line_usd"].agg(lambda s: s.sum() if s.notna().all() else float("nan"))
+    return costs.rename("cost_usd").reset_index(), missing
+
+
+@traced
+def merge_billing(runs: pd.DataFrame, costs: pd.DataFrame) -> pd.DataFrame:
+    """runs with cost_usd filled from billing where it is still empty (a span export's value, merged later, wins)."""
+    out = runs.copy()
+    by_run = dict(zip(costs["run_id"].astype(str), costs["cost_usd"]))
+    fill = out["cost_usd"].isna() & out["run_id"].astype(str).isin(by_run)
+    out.loc[fill, "cost_usd"] = out.loc[fill, "run_id"].astype(str).map(by_run)
+    return out
+
+
 @traced
 def merge_spans(runs: pd.DataFrame, spans: pd.DataFrame | None) -> pd.DataFrame:
     """Fill each run from the span export: one row per (pipeline_name, run_id) with any of fact_pipeline_run's
