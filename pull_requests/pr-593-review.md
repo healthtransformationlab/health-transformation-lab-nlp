@@ -34,6 +34,11 @@ checked for cents before another full run (about $6). Verdict: approve.
 Clean. The model scores in the doc come from Kaggle's run outputs, with the workflow runs named, and are labelled
 as agreement with the synthetic answer key.
 
+## CI fix in this PR
+The first CI run failed in `python`: `AttributeError: module 'hishel' has no attribute 'BaseFilter'`. hishel 2.0.0,
+released since #539 put the `kbench` extra in CI, breaks `kaggle-benchmarks` 0.6.2's import. The `kbench` extra now pins
+`hishel<2`. Without it, `main`'s next CI run would fail the same way, and so would the benchmark workflow's install.
+
 ## Findings
 ### 🔴 Blocking (Critical)
 None.
