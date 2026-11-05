@@ -181,12 +181,13 @@ erDiagram
     }
     dq_check {
         string check_name "e.g. plausibility:temporal_stage_drop"
-        string check_category_code "conformance · completeness · plausibility"
+        string check_category_code "conformance · completeness · plausibility · cost · performance (spec 036)"
         bigint checked_count "rows the check looked at"
         bigint failed_count "rows that failed it"
         double pass_ratio "1 - failed / checked"
         string check_status_code "PASS (none allowed, none found) · REPORT (a rate to read)"
         string clinic_code "1-8, or All"
+        string measure_text "cost and performance checks: the numbers behind the status, the owner and the action (ops/budgets.yaml); empty for the record checks"
         string source_files_text "the committed CSVs the table is built from"
         string file_sha256 "SHA-256 of those files together: the version"
         string git_commit_sha "commit the job was deployed from"
@@ -362,6 +363,7 @@ erDiagram
     fact_agent_task_run {
         string run_file_name PK "the run table it came from: <model>_<tasks>.csv or <model>_kaggle.csv"
         string instance_id PK "the task (spec 028 task set)"
+        timestamp run_ts "when the run was scored (Kaggle runs since spec 036 US4; empty before)"
         string tier_code "the task's fidelity tier: A · B · C"
         string harness_name "the harness that ran and scored it"
         string model_name "the model; calib:oracle and calib:null bound the harness"
