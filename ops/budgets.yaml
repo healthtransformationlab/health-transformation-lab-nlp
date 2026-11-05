@@ -1,0 +1,60 @@
+# Spec 036 US4 (#576): each budget or performance target, declared once. The data-quality report checks every one of
+# them each period, in dq_check's own columns (categories cost and performance), beside the record checks.
+#
+#   budget_name   short name; the check is <category>:<budget_name>[:<subject>]
+#   category      cost or performance
+#   measure       what is measured (governance.MEASURES):
+#                   allowance_hours              Kaggle GPU allowance used by the agent runs (fact_agent_task_run)
+#                   pipeline_cost_usd            Databricks job runs at list price (fact_pipeline_run.cost_usd)
+#                   gpu_hours_per_resolved_task  per model, calibration runs left out
+#                   p95_duration_seconds         per pipeline, its ok runs
+#                   freshness_seconds            per pipeline, since its last ok run; the limit is its sla_seconds
+#                                                (ops/pipeline_config.yaml), so limit is empty here
+#   period        week (Monday 00:00 UTC on; a week's budget fails on the projection for the whole week),
+#                 month (the last 30 days), all (every run), now (the moment the report is built)
+#   limit, unit   the limit and what it's counted in
+#   owner_name    who the failing check goes to (AGENTS.md, "Alerts and severity")
+#   action_text   what to do when it fails: a file and a setting, or a step
+#
+# The first limits are starting points (Nov 2026), set before any priced run existed; change them by pull request.
+budgets:
+  - budget_name: kaggle_gpu_allowance
+    category: cost
+    measure: allowance_hours
+    period: week
+    limit: 20
+    unit: allowance hours (of about 30 a week; the rest is left for other GPU jobs)
+    owner_name: repo owner
+    action_text: "python/scripts/60_kaggle_agent.py: lower --max-gpu-hours, or wait for next week's allowance"
+  - budget_name: databricks_list_cost
+    category: cost
+    measure: pipeline_cost_usd
+    period: week
+    limit: 25
+    unit: USD at list price
+    owner_name: repo owner
+    action_text: "databricks/resources/jobs.yml: the schedules of jobs that needn't run weekly"
+  - budget_name: agent_gpu_hours_per_resolved_task
+    category: cost
+    measure: gpu_hours_per_resolved_task
+    period: all
+    limit: 1.0
+    unit: GPU-hours per resolved task
+    owner_name: repo owner
+    action_text: "python/scripts/60_kaggle_agent.py: --max-new-tokens, --time-minutes or a smaller model"
+  - budget_name: job_p95_duration
+    category: performance
+    measure: p95_duration_seconds
+    period: month
+    limit: 7200
+    unit: seconds
+    owner_name: repo owner
+    action_text: "ops/runbook.yaml duration_drift: the job's timeout_seconds and hardware_accelerator"
+  - budget_name: pipeline_freshness
+    category: performance
+    measure: freshness_seconds
+    period: now
+    limit:
+    unit: seconds since the last ok run (limit, the pipeline's sla_seconds)
+    owner_name: repo owner
+    action_text: "ops/pipeline_config.yaml: the pipeline's schedule and sla_seconds"

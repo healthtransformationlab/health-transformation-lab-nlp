@@ -88,7 +88,7 @@ _DQ_PROV = {"source_files": "source_files_text", "sha256": "file_sha256", "git_c
 TABLES |= {
     "dq_check": {"check_name": "check_name", "category": "check_category_code", "n_checked": "checked_count",
                  "n_fail": "failed_count", "pass_rate": "pass_ratio", "status": "check_status_code",
-                 "clinic": "clinic_code", **_DQ_PROV},
+                 "clinic": "clinic_code", "measure_text": "measure_text", **_DQ_PROV},
     "dq_column_missing": {"evidence_column": "evidence_column_name", "n_rows": "row_count",
                           "n_missing": "missing_count", "pct_missing": "missing_pct", **_DQ_PROV},
     "dq_prevalence": {"method": "method_name", "level": "level_code", "group_name": "group_name",
@@ -153,7 +153,7 @@ TABLES |= {
 }
 # spec 036 US2 (#569): the coding-agent task runs; most run-table columns already have their gold names
 TABLES["fact_agent_task_run"] = {
-    "run_file_name": "run_file_name", "instance_id": "instance_id", "tier_code": "tier_code",
+    "run_file_name": "run_file_name", "instance_id": "instance_id", "run_ts": "run_ts", "tier_code": "tier_code",
     "harness_name": "harness_name", "model_name": "model_name", "is_calibration": "is_calibration",
     "is_resolved": "is_resolved", "is_patch_submitted": "is_patch_submitted",
     "agent_patch_bytes": "agent_patch_byte_count", "files_changed_count": "changed_file_count",
