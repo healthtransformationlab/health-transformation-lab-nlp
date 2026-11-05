@@ -1,4 +1,4 @@
-# PR review: 034 BUG2, the published descriptions give 223 review notes (#598)
+# PR #599 review: 034 BUG2, the published descriptions give 223 review notes (#598)
 
 Reviewed against `.claude/review-rubric.md` and AGENTS.md.
 
