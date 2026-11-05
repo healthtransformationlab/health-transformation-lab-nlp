@@ -84,3 +84,20 @@ jobs:
           [ "$METADATA_ONLY" = true ] && only="--metadata-only" || only=""
           python kaggle/publish_tasks.py --out build/tasks --username "$KAGGLE_USERNAME" --commit "$SHA" \
             --upload --message "$MESSAGE" $only | tee -a "$GITHUB_STEP_SUMMARY"
+
+      # #535: the public notebook that loads the task set; it runs once on Kaggle (CPU, about a minute), which proves
+      # it works on the published files, and its run is the published version
+      - name: Publish the quickstart notebook and wait for its run
+        run: |
+          python kaggle/prepare_kernel.py --job tasks-quickstart --out build/tasks-quickstart --username "$KAGGLE_USERNAME"
+          kaggle kernels push -p build/tasks-quickstart
+          k="$KAGGLE_USERNAME/health-transformation-lab-coding-agent-tasks-quickstart"
+          for i in $(seq 1 30); do
+            s=$(kaggle kernels status "$k" 2>&1); echo "$(date -u +%H:%M) $s"
+            case "${s,,}" in
+              *complete*) echo "Quickstart: https://www.kaggle.com/code/$k" >> "$GITHUB_STEP_SUMMARY"; exit 0 ;;
+              *error*|*cancel*) echo "::error::The quickstart failed on Kaggle: $s"; exit 1 ;;
+            esac
+            sleep 30
+          done
+          echo "::error::The quickstart was still running after 15 minutes: $s"; exit 1

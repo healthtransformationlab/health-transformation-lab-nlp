@@ -32,8 +32,13 @@ JOBS = {   # notebook, slug, title: Kaggle derives the slug from the title, so k
     "encoders": ("encoder_gpu.ipynb", "perio-bench-encoder-gpu", "perio bench encoder gpu"),
     # spec 025: the quickstart, as published; reads the two attached datasets, so no GPU and no internet
     "quickstart": ("../notebooks/perio_bench_quickstart.ipynb", "perio-bench-quickstart", "perio bench quickstart"),
+    # #535: loads the coding-agent task set (kaggle-publish-tasks.yml); CPU, no internet
+    "tasks-quickstart": ("../notebooks/agent_tasks_quickstart.ipynb",
+                         "health-transformation-lab-coding-agent-tasks-quickstart",
+                         "health transformation lab coding agent tasks quickstart"),
 }
-QUICKSTART_DATASETS = ("perio-bench-notes", "perio-bench-results")
+QUICKSTART_DATASETS = {"quickstart": ("perio-bench-notes", "perio-bench-results"),
+                       "tasks-quickstart": ("health-transformation-lab-coding-agent-tasks",)}
 
 
 def bundle_default(name: str) -> str:
@@ -50,17 +55,18 @@ def settings(source: str, values: dict) -> str:
     return source
 
 
-def quickstart(out: Path, username: str, notebook: str, slug: str, title: str) -> None:
-    """The quickstart notebook unchanged, attached to both datasets (spec 025 US2)."""
+def quickstart(out: Path, username: str, notebook: str, slug: str, title: str,
+               datasets: tuple = QUICKSTART_DATASETS["quickstart"]) -> None:
+    """A quickstart notebook unchanged, attached to its datasets (spec 025 US2; the task set's, #535)."""
     src = (HERE / notebook).resolve()
     out.mkdir(parents=True, exist_ok=True)
     (out / src.name).write_text(src.read_text())
     meta = {"id": f"{username}/{slug}", "title": title, "code_file": src.name, "language": "python",
             "kernel_type": "notebook", "is_private": False, "enable_gpu": False, "enable_tpu": False,
-            "enable_internet": False, "dataset_sources": [f"{username}/{d}" for d in QUICKSTART_DATASETS],
+            "enable_internet": False, "dataset_sources": [f"{username}/{d}" for d in datasets],
             "competition_sources": [], "kernel_sources": [], "model_sources": []}
     (out / "kernel-metadata.json").write_text(json.dumps(meta, indent=1) + "\n")
-    print(f"prepared {meta['id']}: the quickstart, attached to {', '.join(meta['dataset_sources'])}")
+    print(f"prepared {meta['id']}: a quickstart, attached to {', '.join(meta['dataset_sources'])}")
 
 
 def main() -> None:
@@ -80,8 +86,8 @@ def main() -> None:
     ap.add_argument("--save-model", default="", help="encoders: the rung whose fine-tuned weights to keep (spec 020 US3)")
     a = ap.parse_args()
     notebook, slug, title = JOBS[a.job]
-    if a.job == "quickstart":
-        return quickstart(a.out, a.username, notebook, slug, title)
+    if a.job in QUICKSTART_DATASETS:
+        return quickstart(a.out, a.username, notebook, slug, title, QUICKSTART_DATASETS[a.job])
 
     values = {"BRANCH": json.dumps(a.branch), "COMMIT": json.dumps(a.commit), "TEST_NOTES": str(a.limit or 10),
               "FULL_RUN": str(a.limit == 0)}
