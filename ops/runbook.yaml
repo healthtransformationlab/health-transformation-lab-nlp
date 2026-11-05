@@ -84,6 +84,15 @@ entries:
     is_reversible: true
     severity_code: SEV4
     escalate_to_name: repo owner
+    # spec 036 FR-009: where to look, "<file>: <setting>" separated by ";", for a person or an agent session's PR
+    fix_text: "databricks/resources/jobs.yml: the job's max_retries; databricks.yml: judge_max_usd; models.yaml: the rung's model"
+  - failure_class_code: duration_drift
+    description_text: run over twice its trailing median length, with no other class (a slow step, a GPU queue, more data)
+    allowed_action_codes: [investigate, page_owner]
+    is_reversible: true
+    severity_code: SEV4
+    escalate_to_name: repo owner
+    fix_text: "databricks/resources/jobs.yml: the job's timeout_seconds and hardware_accelerator; ops/pipeline_config.yaml: the pipeline's sla_seconds"
   - failure_class_code: unknown
     description_text: no rule fired; the only class the root-cause rung (LLM) sees
     allowed_action_codes: [investigate, page_owner]

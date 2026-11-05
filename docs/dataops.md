@@ -33,7 +33,8 @@ median. Duration and cost are the OpenTelemetry metrics `pipeline.run.duration_s
 1. **Deterministic**: retry, rerun, hold downstream (already in the jobs and `runlog.py`).
 2. **Classify** (`doctor.classify`, rules in order): the configuration-management classes first
    (`credential_expiry`, `vulnerability`, `deprecation`, `config_drift`, `config`), then `platform`,
-   `schema_drift`, `volume_anomaly`, `quality_fail`, `cost_anomaly`, `source_late`, `unknown`.
+   `schema_drift`, `volume_anomaly`, `quality_fail`, `cost_anomaly`, `source_late`, `duration_drift` (spec 036: a run
+   over twice its trailing median length), `unknown`.
 3. **Root cause** (LLM, `unknown` only; planned): run row, last N runs, lineage one hop, runbook entry.
 4. **Recommend** (`doctor.recommend`): first allowed action, impact one hop down the lineage, severity,
    owner, templated notification. Never an action off the runbook's list.

@@ -41,10 +41,11 @@ RUN_COLUMNS = ["pipeline_name", "step_name", "run_id", "started_ts", "ended_ts",
 SIGNAL_NAMES = ["freshness_seconds", "volume_ratio", "is_schema_changed", "quality_ratio", "duration_ratio",
                 "cost_ratio"]
 CLASSES = ["credential_expiry", "vulnerability", "deprecation", "config_drift", "config", "platform", "schema_drift",
-           "volume_anomaly", "quality_fail", "cost_anomaly", "source_late", "unknown"]
+           "volume_anomaly", "quality_fail", "cost_anomaly", "source_late", "duration_drift", "unknown"]
 TRAILING_RUNS = 5
 VOLUME_BOUNDS = (0.5, 2.0)
 COST_BOUND = 3.0
+DURATION_BOUND = 2.0   # spec 036 US3: a run over twice its pipeline's trailing median length, with no other class
 
 # Configuration-management failures come first: they are invisible in logs until the damage is done and
 # visible in tables before it. They are what pages people in practice.
@@ -239,6 +240,9 @@ def classify(run: dict, history: pd.DataFrame, config: pd.DataFrame, now=None) -
     f = s["freshness_seconds"]
     if pd.isna(started) or (not math.isnan(f) and not math.isnan(sla) and f > sla):
         return hit("source_late", "never_started_or_freshness_over_sla")
+    d = s["duration_ratio"]
+    if not math.isnan(d) and d > DURATION_BOUND:
+        return hit("duration_drift", "duration_vs_trailing_median")
     return hit("unknown", "no_rule")
 
 
@@ -265,11 +269,13 @@ def _impact_known(pipeline: str, config: pd.DataFrame, lineage: pd.DataFrame) ->
         bool(lineage["upstream_name"].isin(outputs).any())
 
 
-def _notification(run: dict, cls: str, action: str, severity: str, owner: str, impact: list[str]) -> str:
+def _notification(run: dict, cls: str, action: str, severity: str, owner: str, impact: list[str],
+                  fix: str = "") -> str:
     etype = _text(run.get("error_type_name")) or "no error type"
     affects = ", ".join(impact) if impact else "no downstream on record"
+    fix = f"Fix: {fix}. " if fix else ""   # spec 036 FR-009: the file and setting to change, for a person or an agent's PR
     return (f"{severity} · {run['pipeline_name']} run {run.get('run_id')} classified {cls} ({etype}). "
-            f"Recommended action: {action}. Affects: {affects}. Owner: {owner}. "
+            f"Recommended action: {action}. {fix}Affects: {affects}. Owner: {owner}. "
             f"Approve or override; the decision is recorded.")
 
 
@@ -292,7 +298,8 @@ def recommend(run: dict, history: pd.DataFrame, config: pd.DataFrame, runbook: p
     return {"pipeline_name": run["pipeline_name"], "run_id": run.get("run_id"), "failure_class_code": cls,
             "recommended_action_code": action, "downstream_names": impact, "is_reversible": bool(entry["is_reversible"]),
             "severity_code": entry["severity_code"], "owner_name": owner,
-            "notification_text": _notification(run, cls, action, entry["severity_code"], owner, impact)}
+            "notification_text": _notification(run, cls, action, entry["severity_code"], owner, impact,
+                                               _text(entry.get("fix_text")))}
 
 
 # --- US3: graduation --------------------------------------------------------------------------------
