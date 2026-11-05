@@ -193,6 +193,28 @@ neither can be told apart from the encoder. On L1 / L2 / L3, 1.5 gets 100% / 97%
 charts from their findings and handles old terms and copied-forward text worse ([details](../medgemma.md)). Few-shot and LoRA not run yet (gated: accept the [HAI-DEF terms](https://developers.google.com/health-ai-developer-foundations/terms) on Hugging Face and set `HF_TOKEN`; LoRA needs a GPU:
 [notebook 03](../../databricks/notebooks/03_medgemma_reader.py)); `--simulated` is a dry run, not a result.
 
+## Tooth-level model: was a missing tooth lost to gum disease? (spec 029)
+
+Everything above is one status per chart. One input to it is counted tooth by tooth: stage IV needs five or more
+teeth lost to periodontitis, and records seldom say why a tooth is missing. The tooth-loss model reads a synthetic
+extract in Open Dental's own table format, one row per patient and tooth, and gives each missing tooth with no
+recorded reason a probability that gum disease took it. It learns from extractions that do carry a recorded diagnosis
+item (periodontal or another reason), using only what was charted on or before the loss. The stage can then be
+recounted with the expected number of teeth lost to periodontitis (`labels.stage4_rule`, rule `expected_perio_loss`).
+It explains a loss already in the record; it doesn't predict future loss.
+
+- **Models:** logistic regression and XGBoost, each on two label sets: completed extractions, and completed plus planned.
+  The split is by patient.
+- **Measures:** sensitivity, specificity, predictive values and F1 at 0.5 lead, as the study lead asked. AUC with a
+  95% interval and the Brier score sit beside them. Stability is checked over five generator seeds.
+- **SYNTHETIC results** (6,000 patients, 88 held-out extractions, 14 of them periodontal): AUC 0.89–0.92 and
+  sensitivity 0.57–0.71 at specificity 0.95–0.96 across the four models.
+  This is agreement with the generator's answer key, not a finding about any practice.
+
+Details, the tables and what a real extract can and can't check: **[tooth_loss.md](../tooth_loss.md)**. The method,
+pre-specified in TRIPOD+AI order: [analysis plan](../../specs/029-tooth-loss/analysis_plan.md). Requirements:
+[spec 029](../../specs/029-tooth-loss/spec.md).
+
 ## Action items
 
 Differences from the study design and open decisions: **[docs/action_items.md](../action_items.md)**. Decisions made: [docs/adr/](../adr/README.md).
@@ -206,6 +228,7 @@ Also: [how we work](../../AGENTS.md) · [references](../references.md) · [proto
 | **Where each diagnosis algorithm comes from**: published or designed here, with citations, and how each scores | [algorithms.md](../algorithms.md) |
 | **What OMOP and NLP are**, in plain words | [omop_and_nlp.md](../omop_and_nlp.md) |
 | **Diagrams**: [medallion architecture](../../diagrams/d0_medallion_architecture.png), study process, platform, ERD, site storage, MLOps, flows | [diagrams/](../../diagrams/README.md) |
+| **Tooth-level model**: was a missing tooth lost to gum disease? Logistic and XGBoost on a synthetic Open Dental extract, and the stage IV recount | [tooth_loss.md](../tooth_loss.md), [analysis plan](../../specs/029-tooth-loss/analysis_plan.md), [spec 029](../../specs/029-tooth-loss/spec.md) |
 | Tooth-by-tooth data in OMOP; 2017 AAP/EFP **and 2012 CDC/AAP**; storage designs on Postgres/Lakebase | [site_level_omop.md](../site_level_omop.md) |
 | Study design vs this repo; open decisions | [process.md](../process.md#integrated-phenotype-and-validation-spec-005), [action_items.md](../action_items.md) |
 | Dental vs medical data in OMOP; synthetic notes, review set, public datasets | [omop_dental_vs_medical.md](../omop_dental_vs_medical.md), [note_realism.md](../note_realism.md), [data_sources.md](../data_sources.md) |
