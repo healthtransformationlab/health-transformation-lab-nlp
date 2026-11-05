@@ -12,4 +12,6 @@ Reviewed against `.claude/review-rubric.md` and AGENTS.md.
 | Publishing | merging publishes nothing: the notebook goes live when the owner runs the task-set workflow |
 | Tests | full Python suite: 2158 passed |
 
+| CI | the first run failed on `hishel` 2.0.0 (dropped `BaseFilter`, which kaggle-benchmarks imports), not this PR's; main's #594 pins `hishel<2`, merged in at e7ea624 |
+
 Nothing blocking.
