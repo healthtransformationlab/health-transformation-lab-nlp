@@ -11,7 +11,8 @@
 - [ ] T005 The full Gemma run under a cap the owner sets (spec 035 T005; owner's go-ahead)
 
 ## US1 - Every Databricks job run carries its DBUs and cost #568
-- [ ] T006 Check: can the job's identity read the billing system tables in dev? Record the answer in plan.md
+- [x] T006 Check: can the job's identity read the billing system tables in dev? No: account admins only (plan.md);
+  the jobs' service principals need a grant from an account admin (owner)
 - [ ] T007 Failing tests, then `doctor_job.billing_costs` and the join onto the timeline runs; the warning when
   the tables are missing
 
