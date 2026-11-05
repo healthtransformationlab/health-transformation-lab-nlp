@@ -243,3 +243,38 @@ def test_the_doctor_never_imports_the_notes():
     names |= {n.module or "" for n in ast.walk(tree) if isinstance(n, ast.ImportFrom)}
     names |= {a.name for n in ast.walk(tree) if isinstance(n, ast.ImportFrom) for a in n.names}
     assert not names & {"notes", "clinical_notes", "note_reader", "llm_reader", "labels"}, names
+
+
+# --- spec 036 US3 (#570): duration drift, and fixes that name a file and a setting -----------------------------------
+
+def test_a_run_well_past_its_usual_length_is_duration_drift(history, config):
+    got = doctor.classify(_run(status="ok", seconds=1500), history, config, now=T0 + pd.Timedelta(hours=1))
+    assert got["failure_class_code"] == "duration_drift" and got["rule_name"] == "duration_vs_trailing_median"
+    assert got["signals"]["duration_ratio"] == pytest.approx(2.5)
+
+
+def test_a_somewhat_longer_run_is_not_drift(history, config):
+    got = doctor.classify(_run(status="ok", seconds=900), history, config, now=T0 + pd.Timedelta(hours=1))
+    assert got["failure_class_code"] != "duration_drift"
+
+
+def test_cost_anomaly_wins_over_duration_drift(history, config):
+    hist = history.assign(cost_usd=1.0)
+    run = {**_run(status="ok", seconds=1500), "cost_usd": 5.0}
+    assert doctor.classify(run, hist, config, now=T0 + pd.Timedelta(hours=1))["failure_class_code"] == "cost_anomaly"
+
+
+@pytest.mark.parametrize("cls", ["cost_anomaly", "duration_drift"])
+def test_cost_and_duration_classes_are_sev4_with_a_fix_naming_a_file_and_a_setting(runbook, cls):
+    entry = runbook.set_index("failure_class_code").loc[cls]
+    assert entry["severity_code"] == "SEV4"                       # AGENTS.md: cost drift goes to the weekly digest
+    files = [part.split(":")[0].strip() for part in str(entry["fix_text"]).split(";")]
+    assert files and all((REPO_ROOT / f).exists() for f in files), files
+    assert all(":" in part for part in str(entry["fix_text"]).split(";"))   # each names its setting after the file
+
+
+def test_the_notification_carries_the_fix(history, config, runbook, lineage):
+    rec = doctor.recommend(_run(status="ok", seconds=1500), history, config, runbook, lineage,
+                           now=T0 + pd.Timedelta(hours=1))
+    assert rec["failure_class_code"] == "duration_drift" and rec["severity_code"] == "SEV4"
+    assert "Fix: " in rec["notification_text"] and "databricks/resources/jobs.yml" in rec["notification_text"]
