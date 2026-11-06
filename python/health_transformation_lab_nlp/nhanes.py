@@ -262,6 +262,12 @@ def missing_teeth_by_age(den: pd.DataFrame, demo: pd.DataFrame, bands=MISSING_AG
         if dom.any():
             w = p.loc[dom, "w"]
             row["mean_missing_num"] = float((w * p.loc[dom, "lost"]).sum() / w.sum())
+            dentate = dom & p["lost"].lt(28)          # with teeth: the extract's edentulism is calibrated apart
+            wd = p.loc[dentate, "w"]
+            row["dentate_mean_missing_num"] = float((wd * p.loc[dentate, "lost"]).sum() / wd.sum()) if dentate.any() \
+                else float("nan")
+            row["dentate_none_lost_pct"] = float(100 * wd[p.loc[dentate, "lost"].eq(0)].sum() / wd.sum()) \
+                if dentate.any() else float("nan")
             for name, cat in (("none_lost", p["lost"].eq(0)), ("six_or_more", p["lost"].ge(6))):
                 s = weighted_prevalence(p.assign(domain=dom, category=cat.map({True: "yes", False: "no"})),
                                         "category").set_index("category")

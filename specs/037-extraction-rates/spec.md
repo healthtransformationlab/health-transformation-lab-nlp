@@ -81,6 +81,11 @@ little history.
 
 ## Not done, and why
 
+- The periodontal share among teeth missing at entry at 25-34 is about 0.19, against Suzuki's 0.064: NHANES gives
+  1.1 teeth lost at that age, and the spec 006 mouth (shared with the benchmark notes, out of scope here) gives
+  periodontitis to about 40% of 25-34s, so its own losses are most of them. Padding the count with other-reason
+  teeth, as 029 US7 did, would break the NHANES count (4.9 lost instead of 1.1); the count wins.
+
 - Extraction rate by age: the source's abstract gives a U shape (lowest at 35-49) but its per-band figures weren't
   readable from here, so the rate is the same at every age.
 - NHANES counts every absent tooth (orthodontic and congenital included); BRFSS counts teeth removed for decay or

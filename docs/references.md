@@ -314,6 +314,21 @@ Everything this repo relies on, and what it's used for.
     adults 18–64 with private health insurance, 50.2% had dental coverage all year (45.6% to 57.1% by region). → a
     candidate for regional insurance shares in [synthetic_data.md](synthetic_data.md); not used (the extract has no
     regions). Checked against the page.
+87. **Vehkalahti MM, Ventä I, Valaste M.** *Frequency and type of tooth extractions in adults vary by age:
+    register-based nationwide observations in 2012–2017.* Acta Odontol Scand 2023;81(4):259–266.
+    [doi:10.1080/00016357.2022.2130977](https://doi.org/10.1080/00016357.2022.2130977). Finland's national register of
+    adults seen by private dentists (6.25 million patients): about 0.17 extractions per patient in 2012 and 0.18 in
+    2017, lowest at 35–49 and highest under 25 and over 84. → spec 037 US1: `open_dental.Params.extraction_per_year`
+    (0.17), the same at every age. Checked against the abstract only; the per-age figures weren't readable here.
+88. **CDC, National Center for Chronic Disease Prevention and Health Promotion.** *U.S. Chronic Disease
+    Indicators*, indicators ORH01 "No teeth lost among adults aged 18-64 years" and ORH02 "Six or more teeth lost
+    among adults aged 65 years and older", BRFSS 2022, crude prevalence by state. data.cdc.gov dataset `hksd-2xuw`
+    ([data.cdc.gov/resource/hksd-2xuw.json?questionid=ORH02&yearstart=2022&stratificationid1=OVR&datavaluetypeid=CRDPREV](https://data.cdc.gov/resource/hksd-2xuw.json?questionid=ORH02&yearstart=2022&stratificationid1=OVR&datavaluetypeid=CRDPREV)),
+    read 2026-11-06; Open Database License. United States: 65.3% of adults 18-64 with no teeth lost (52.7% West
+    Virginia to 71.8% Utah); 30.6% of adults 65+ with six or more lost (17.6% Hawaii to 50.8% West Virginia). BRFSS
+    counts teeth removed for decay or gum disease. → spec 037 US5: `open_dental.STATE_SIX_PLUS_LOST_65_PCT`, which scales
+    teeth missing at entry when clinics are given states; saved by `scripts/61_tooth_loss_targets.py` to
+    `data/datasets/brfss/brfss_teeth_lost_by_state.csv`. Checked in the dataset itself.
 
 58. **Open Dental Software.** *Open Dental* source code, `OpenDentBusiness/TableTypes` (one class per database
     table). [github.com/OpenDental/OpenDental](https://github.com/OpenDental/OpenDental), branch `24_3`, commit

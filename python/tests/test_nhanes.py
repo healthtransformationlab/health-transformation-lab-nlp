@@ -187,4 +187,6 @@ def test_missing_teeth_by_age_band_counts_lost_natural_teeth_weighted():
     assert out.loc[25, "six_or_more_pct"] == pytest.approx(0.0)
     assert out.loc[65, "six_or_more_pct"] == pytest.approx(100.0)
     assert out.loc[65, "mean_missing_num"] == pytest.approx(17.0)
+    assert out.loc[65, "dentate_mean_missing_num"] == pytest.approx(6.0)        # the edentulous 72-year-old out
+    assert out.loc[25, "dentate_none_lost_pct"] == pytest.approx(25.0)
     assert out.loc[25, "n_domain"] == 2
