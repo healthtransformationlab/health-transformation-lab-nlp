@@ -57,9 +57,39 @@ def conform(tables: dict[str, pd.DataFrame]) -> dict[str, pd.DataFrame]:
 
 
 def _statements(sql: str, schema: str) -> list[str]:
+    """The statements in a SQL file, `@cdmDatabaseSchema` filled in. Splits on `;` only outside single-quoted strings
+    (with `''` escapes), double-quoted identifiers and comments, and drops `--` and `/* */` comments outside quotes,
+    so a comment or literal that holds `--` or `;` stays whole (#624)."""
     sql = sql.replace("@cdmDatabaseSchema", schema)
-    body = "\n".join(ln for ln in sql.splitlines() if not ln.strip().startswith("--"))
-    return [s.strip() for s in body.split(";") if s.strip()]
+    out, cur, i, n = [], [], 0, len(sql)
+    while i < n:
+        ch = sql[i]
+        if ch in "'\"":                                     # a literal or quoted identifier, to its closing quote
+            j = i + 1
+            while j < n:
+                if sql[j] == ch:
+                    if j + 1 < n and sql[j + 1] == ch:      # a doubled quote is an escaped one
+                        j += 2
+                        continue
+                    break
+                j += 1
+            cur.append(sql[i:j + 1])
+            i = j + 1
+        elif sql.startswith("--", i):                      # a line comment: drop it, keep the line break
+            j = sql.find("\n", i)
+            i = n if j < 0 else j
+        elif sql.startswith("/*", i):                      # a block comment
+            j = sql.find("*/", i + 2)
+            i = n if j < 0 else j + 2
+        elif ch == ";":
+            out.append("".join(cur))
+            cur = []
+            i += 1
+        else:
+            cur.append(ch)
+            i += 1
+    out.append("".join(cur))
+    return [s.strip() for s in out if s.strip()]
 
 
 @traced
