@@ -127,16 +127,28 @@ if args.stage_recount:
     print("\nSYNTHETIC stage III vs IV, main seed:")
     print(st[st["generator_seed"] == args.seed].drop(columns=["generator_seed", "data_label"]).to_string(index=False))
 
-# MLflow: the run's main metrics and the SHAP-by-outcome drilldown as an artifact (#625); no-op without tracking
+# The gauges (#628): each measure as a question, XGBoost against logistic regression, on the main seed's held-out
+# teeth at the threshold chosen on the training teeth (Youden). Written beside the results and logged below.
 import tempfile
 from pathlib import Path
 
+from health_transformation_lab_nlp import model_gauges
 from health_transformation_lab_nlp.tracking import track
+
+gauges = model_gauges.gauge_table(s[s["generator_seed"] == args.seed])
+gauge_page = RESULTS_DIR / f"{prefix}gauges.html"
+gauge_page.write_text(model_gauges.gauges_html(gauges, "Tooth-loss model: periodontal or other loss (SYNTHETIC)"))
+print(f"\nSYNTHETIC gauges (XGBoost vs logistic regression), wrote {gauge_page}:")
+print(gauges[["label", "value", "reference_value", "difference_pts", "band", "reading"]].round(3).to_string(index=False))
+
+# MLflow: the run's main metrics, the gauges and the SHAP-by-outcome drilldown as artifacts (#625, #628); a no-op
+# without tracking
 
 with track("51_tooth_loss_model", f"{prefix}tooth_loss_model", simulated=True,
            params={"patients": args.patients, "seed": args.seed}) as run:
     m = main[main["eval_set"] == "held_out"]
     run.log_metrics({f"{r.metric}_{r.label_set}_{r.feature_set}_{r.model}": float(r.value) for r in m.itertuples()})
+    run.log_artifact(gauge_page)
     if drilldown is not None and len(drilldown):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / f"{prefix}tooth_loss_shap_drilldown.csv"
