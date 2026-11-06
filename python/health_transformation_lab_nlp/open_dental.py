@@ -1234,7 +1234,8 @@ def plant_faults(tables: dict[str, pd.DataFrame], seed: int = 0, switch_date: da
     mob = pm.index[pm["sequencetype"] == SEQ_MOBILITY].tolist()
     pm.loc[rng.sample(mob, f["mobility_out_of_range"]), "toothvalue"] = 7
     ti = t["toothinitial"]
-    ti.loc[rng.sample(ti.index.tolist(), f["tooth_number_out_of_range"]), "toothnum"] = "40"
+    one_each = ti.drop_duplicates(["patnum", "initialtype"]).index.tolist()   # two on one patient would share a key
+    ti.loc[rng.sample(one_each, f["tooth_number_out_of_range"]), "toothnum"] = "40"
     late = take([i for i in ext_done if pd.notna(pl.at[i, "datecomplete"])], f["dates_out_of_order"])
     pl.loc[late, "datecomplete"] = (pd.to_datetime(pl.loc[late, "datetp"]) - pd.Timedelta(days=30)).values
     t["procedurecode"] = pd.concat([pc, pd.DataFrame([{**pc.iloc[0].to_dict(), "codenum": int(pc["codenum"].max()) + 1,
