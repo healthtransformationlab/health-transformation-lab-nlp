@@ -86,7 +86,7 @@ def test_the_truth_stays_out_of_the_extract(built):
 
 
 def test_extraction_diagnoses_follow_the_declared_rates():
-    p = od.Params(n_patients=800, planned_not_done_per_visit=0.6, other_extraction_per_visit=0.3)  # many extractions
+    p = od.Params(n_patients=800, planned_not_done_per_visit=0.6, extraction_per_year=0.6)  # many extractions
     tables, truth = od.build(p, seed=3)
     ext = od.extractions(tables, truth)                   # one row per extraction with its truth and mapped diagnosis
     assert len(ext) > 1000
@@ -361,8 +361,14 @@ def test_the_periodontal_share_at_entry_follows_the_published_mix_by_age(pooled_
     share = entry.assign(perio=entry["true_reason_code"].eq("perio")).groupby("age_band_num")["perio"].mean()
     assert list(share.index) == [low for low, _ in od.ENTRY_PERIO_SHARE_BY_AGE]
     for low, target in od.ENTRY_PERIO_SHARE_BY_AGE:
+        if low == 25:
+            # spec 037 US4: at 25-34 NHANES gives 1.1 teeth lost, and the spec 006 mouth alone (periodontitis in about
+            # 40% of 25-34s) gives most of them as periodontal; the share can't reach 0.064 without padding the count
+            # again, so the count (NHANES) wins and the share is only held below 0.25 (specs/037-extraction-rates)
+            assert share[low] < 0.25, share[low]
+            continue
         assert abs(share[low] - target) < 0.05, (low, share[low], target)
-    assert share[25] < share[35] < share[55]                           # periodontal losses rise with age
+    assert share[35] < share[55]                                       # periodontal losses rise with age
 
 
 def test_non_periodontal_losses_at_entry_dont_follow_attachment_loss(large):
@@ -382,7 +388,10 @@ def test_non_periodontal_losses_at_entry_dont_follow_attachment_loss(large):
     assert resid["perio"].corr(resid["worst_cal"]) > 0.1               # periodontal losses do follow CAL
     # since US8 (#433) smoking and diabetes raise both, so compare within age band and risk group
     within = df[cols] - df.groupby(["age_band_num", "smoking", "diabetes"])[cols].transform("mean")
-    assert abs(within["other"].corr(within["worst_cal"])) < 0.05      # chosen by tooth type, never by CAL
+    # chosen by tooth type, never by CAL: never a positive correlation. Since spec 037 US4 (NHANES counts, 3-4 such
+    # teeth at older ages) it runs negative, because the worst CAL in the record is a maximum over the sites charted,
+    # and a mouth missing more teeth has fewer sites to take it over
+    assert within["other"].corr(within["worst_cal"]) < 0.05
 
 
 def test_the_reasons_draw_on_their_own_stream():
@@ -391,8 +400,10 @@ def test_the_reasons_draw_on_their_own_stream():
     t2, truth2 = od.build(p, seed=21)
     pd.testing.assert_frame_equal(truth1, truth2)
     pd.testing.assert_frame_equal(t1["toothinitial"], t2["toothinitial"])
-    zero = tuple((low, 0.0) for low, _ in od.Params().entry_other_teeth_by_age)
-    t0, truth0 = od.build(od.Params(n_patients=60, entry_other_teeth_by_age=zero), seed=21)
+    zero = tuple((low, 0.0, z) for low, _, z in od.Params().entry_other_missing_by_age)
+    no_perio = tuple((low, 0.0) for low, _ in od.Params().entry_perio_added_by_age)
+    t0, truth0 = od.build(od.Params(n_patients=60, entry_other_missing_by_age=zero, entry_perio_added_by_age=no_perio),
+                          seed=21)
     assert set(od.entry_reasons(t0, truth0)["true_reason_code"]) == {"perio"}   # no rate: only periodontal again
     assert (truth1["true_reason_code"] == "other").sum() > (truth0["true_reason_code"] == "other").sum()
 
@@ -430,10 +441,10 @@ def test_the_norm_keeps_each_age_bands_mean():
     assert od.entry_other_rate_norm(p) == pytest.approx(sum(ratios) / len(ratios), abs=0.01)
     assert 1.0 < od.entry_other_rate_norm(p) < 1.1
     # the band's mean over patients is the US7 mean: a never-smoker without diabetes sits a little under it
-    assert od.entry_other_mean(30, RiskFactors(0, None), p) == pytest.approx(3.61 / od.entry_other_rate_norm(p))
+    assert od.entry_other_mean(30, RiskFactors(0, None), p) == pytest.approx(1.02 / od.entry_other_rate_norm(p))
     neutral = od.Params(entry_other_smoking_ratios=((1, 1.0), (20, 1.0)), entry_other_diabetes_ratio=1.0)
     assert od.entry_other_rate_norm(neutral) == 1.0
-    for low, mean in neutral.entry_other_teeth_by_age:                  # neutral ratios: exactly US7's means
+    for low, mean, _ in neutral.entry_other_missing_by_age:             # neutral ratios: exactly the band means
         assert od.entry_other_mean(low, RiskFactors(25, 9.0), neutral) == mean
 
 
@@ -604,3 +615,93 @@ def test_a_state_extract_has_more_edentulous_patients_where_the_state_rate_is_hi
     low, _ = od.build(od.Params(n_patients=3000, clinic_states=("HI",) * 4), seed=9)
     share = lambda t: len(od.edentulous_patients(t)) / len(t["patient"])
     assert share(high) > 2.5 * share(low)
+
+
+# ---- spec 037: extractions in the record follow published rates (#610, #611, #612)
+
+@pytest.fixture(scope="module")
+def rate_extracts():
+    """Two 4,000-patient extracts (seeds 21, 22): enough extractions per age band for the shares."""
+    return [od.build(od.Params(n_patients=4000), seed=s)[:2] for s in (21, 22)]
+
+
+@pytest.fixture(scope="module")
+def pooled_rates(rate_extracts):
+    parts = [od.extraction_rates(t, truth) for t, truth in rate_extracts]
+    cols = ["patient_years", "extractions", "periodontal"]
+    return pd.concat(parts).groupby("age_band", sort=False)[cols].sum()
+
+
+def test_extraction_rate_per_patient_year_follows_the_published_rate(pooled_rates):
+    # #610: about 0.17 per adult patient per year (Vehkalahti et al. 2023)
+    rate = pooled_rates["extractions"].sum() / pooled_rates["patient_years"].sum()
+    assert 0.15 <= rate <= 0.20, rate
+
+
+def test_extractions_in_the_record_are_periodontal_at_the_published_share_by_age(pooled_rates):
+    # #611: Suzuki et al. 2022, the shares already used for teeth missing at entry
+    targets = dict(zip(od.age_band(pd.Series([a for a, _ in od.ENTRY_PERIO_SHARE_BY_AGE])),
+                       [s for _, s in od.ENTRY_PERIO_SHARE_BY_AGE]))
+    for band, row in pooled_rates.iterrows():
+        share = row["periodontal"] / row["extractions"]
+        assert abs(share - targets[band]) <= 0.07, (band, round(share, 3), targets[band])
+
+
+def test_patients_have_up_to_ten_years_of_record_and_none_after_2025(rate_extracts):
+    # #612: 2-20 recall visits, every visit on or before 2025-12-31
+    for tables, _ in rate_extracts:
+        exams = tables["perioexam"]
+        assert pd.to_datetime(tables["procedurelog"]["procdate"]).max() <= pd.Timestamp("2025-12-31")
+        assert pd.to_datetime(exams["examdate"]).max() <= pd.Timestamp("2025-12-31")
+    rates = od.extraction_rates(*rate_extracts[0])
+    years = rates["patient_years"].sum() / rates["patients"].sum()
+    assert 3 < years <= 10, years
+
+
+# ---- spec 037 US4 (#613): how many teeth are missing at entry follows NHANES by age
+
+def test_teeth_missing_at_entry_follow_nhanes_counts_by_age(large):
+    from health_transformation_lab_nlp.paths import DATASETS_DIR
+    nh = pd.read_csv(DATASETS_DIR / "nhanes" / "nhanes_missing_teeth_by_age.csv").set_index("age_band_low_num")
+    tables, _ = large
+    pats = pd.DataFrame({"patient_id": tables["patient"]["patnum"].to_numpy(),
+                         "age_band_num": od.age_band(od.patient_age(tables)).to_numpy()})
+    pats = pats[~pats["patient_id"].isin(od.edentulous_patients(tables))]
+    seed13 = od.entry_reasons(*large)
+    n = pats.merge(seed13.groupby("patient_id").size().rename("lost"), left_on="patient_id", right_index=True,
+                   how="left").fillna({"lost": 0})
+    by = n.groupby("age_band_num")["lost"]
+    for low, mean in by.mean().items():
+        target = nh.loc[low, "dentate_mean_missing_num"]
+        # 25-34: the spec 006 mouth's own periodontal losses push the mean up (see the share test): 30% there
+        assert abs(mean - target) <= (0.3 if low == 25 else 0.2) * target, (low, round(mean, 2), round(target, 2))
+        none = (n.loc[n["age_band_num"] == low, "lost"] == 0).mean()
+        assert abs(none - nh.loc[low, "dentate_none_lost_pct"] / 100) <= 0.08, (low, round(none, 3))
+
+
+def test_the_negative_binomial_shape_gives_the_share_with_none_lost():
+    for mean, none in ((1.089, 0.648), (6.207, 0.185), (8.34, 0.09)):
+        r = od.entry_missing_shape(mean, none)
+        assert (r / (r + mean)) ** r == pytest.approx(none, abs=1e-6)
+    assert od.entry_missing_shape(2.0, 0.1) == float("inf")             # below a Poisson's zeros: a Poisson
+
+
+# ---- spec 037 US5 (#614): partial tooth loss varies by state like BRFSS
+
+def test_the_state_table_for_six_or_more_lost_is_brfss():
+    from health_transformation_lab_nlp.paths import DATASETS_DIR
+    b = pd.read_csv(DATASETS_DIR / "brfss" / "brfss_teeth_lost_by_state.csv").set_index("state_code")
+    assert od.STATE_SIX_PLUS_LOST_65_PCT == {s: float(v) for s, v in b["six_or_more_lost_65_pct"].dropna().items()
+                                             if s in od.STATE_EDENTULOUS_65_PCT}
+    assert od.entry_state_ratio(None) == 1.0
+    assert od.entry_state_ratio("WV") == pytest.approx(od.STATE_SIX_PLUS_LOST_65_PCT["WV"]
+                                                      / od.STATE_SIX_PLUS_LOST_65_PCT["US"])
+
+
+def test_a_state_extract_has_more_teeth_missing_where_the_state_rate_is_higher():
+    def mean_lost(state):
+        t, truth = od.build(od.Params(n_patients=1500, clinic_states=(state,) * 4), seed=9)
+        e = od.entry_reasons(t, truth)
+        dentate = len(t["patient"]) - len(od.edentulous_patients(t))
+        return len(e) / dentate
+    assert mean_lost("WV") > 1.8 * mean_lost("HI")       # BRFSS: 50.8% vs 17.6% with six or more lost at 65+

@@ -233,3 +233,48 @@ def classify_people(per: pd.DataFrame, den: pd.DataFrame, demo: pd.DataFrame, la
     for c in ("cdc_aap", "aces", "aces_no_complexity"):
         p.loc[p["edentulous"], c] = "edentulous"
     return p
+
+
+# spec 037: age bands for teeth lost (lower, upper inclusive; None open), the synthetic Open Dental extract's bands
+MISSING_AGE_BANDS = ((25, 34), (35, 44), (45, 54), (55, 64), (65, 74), (75, None))
+
+
+@traced
+def missing_teeth_by_age(den: pd.DataFrame, demo: pd.DataFrame, bands=MISSING_AGE_BANDS) -> pd.DataFrame:
+    """How many natural teeth (third molars aside) adults have lost, by age band (spec 037): the weighted mean, and
+    the weighted shares with none lost and with six or more lost (every tooth lost included), with linearized 95% CIs
+    for the shares. A tooth is lost when its count code isn't 2 or 5 (present); only people whose dentition exam was
+    done (OHDDESTS 1) and every natural tooth coded count. `demo` needs WTMEC2YR, SDMVSTRA and SDMVPSU; with several
+    cycles pooled, divide the weight first. Aggregates only."""
+    tc = [c for c in den if TOOTH_COUNT.match(c) and int(c[3:5]) not in (1, 16, 17, 32)]
+    d = den.set_index("SEQN")
+    coded = d[tc].notna().all(axis=1) & d["OHDDESTS"].eq(1)
+    lost = (~d[tc].isin(list(PRESENT_CODES))).sum(axis=1)
+    p = demo[["SEQN", "RIDAGEYR", "WTMEC2YR", "SDMVSTRA", "SDMVPSU"]].copy()
+    p["coded"] = p["SEQN"].map(coded).fillna(False).astype(bool)
+    p["lost"] = p["SEQN"].map(lost)
+    p = p.rename(columns={"WTMEC2YR": "w", "SDMVSTRA": "strata", "SDMVPSU": "psu"}).dropna(subset=["w"])
+    rows = []
+    for low, high in bands:
+        age = p["RIDAGEYR"]
+        dom = (age >= low) & ((age <= high) if high is not None else True) & p["coded"]
+        row = {"age_band_low_num": low, "age_band_high_num": high, "n_domain": int(dom.sum())}
+        if dom.any():
+            w = p.loc[dom, "w"]
+            row["mean_missing_num"] = float((w * p.loc[dom, "lost"]).sum() / w.sum())
+            dentate = dom & p["lost"].lt(28)          # with teeth: the extract's edentulism is calibrated apart
+            wd = p.loc[dentate, "w"]
+            row["dentate_mean_missing_num"] = float((wd * p.loc[dentate, "lost"]).sum() / wd.sum()) if dentate.any() \
+                else float("nan")
+            row["dentate_none_lost_pct"] = float(100 * wd[p.loc[dentate, "lost"].eq(0)].sum() / wd.sum()) \
+                if dentate.any() else float("nan")
+            for name, cat in (("none_lost", p["lost"].eq(0)), ("six_or_more", p["lost"].ge(6))):
+                s = weighted_prevalence(p.assign(domain=dom, category=cat.map({True: "yes", False: "no"})),
+                                        "category").set_index("category")
+                hit = s.loc["yes"] if "yes" in s.index else None
+                for k in ("pct", "ci_low", "ci_high"):
+                    row[f"{name}_{k}"] = float(hit[k]) if hit is not None else 0.0
+        rows.append(row)
+    out = pd.DataFrame(rows)
+    out["age_band_high_num"] = out["age_band_high_num"].astype("Int64")
+    return out

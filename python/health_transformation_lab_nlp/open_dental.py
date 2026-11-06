@@ -47,6 +47,7 @@ each age band's mean stays the same (`entry_other_mean`, US8, #433).
 
 from __future__ import annotations
 
+import math
 import random
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
@@ -195,6 +196,17 @@ STATE_EDENTULOUS_65_PCT = {
     "NE": 9.5, "NV": 12.1, "NH": 10.7, "NJ": 10.1, "NM": 11.8, "NY": 11.9, "NC": 16.5, "ND": 11.8, "OH": 15.6,
     "OK": 16.9, "OR": 10.1, "PA": 13.1, "RI": 11.4, "SC": 12.9, "SD": 10.3, "TN": 18.2, "TX": 13.0, "UT": 8.6,
     "VT": 13.3, "VA": 10.8, "WA": 8.5, "WV": 25.1, "WI": 9.0, "WY": 13.5, "US": 12.1}
+# spec 037 US5 (#614): adults 65 and over with six or more teeth lost (all lost included), % by state, BRFSS 2022 via
+# CDC's U.S. Chronic Disease Indicators (ORH02, crude prevalence; data/datasets/brfss/brfss_teeth_lost_by_state.csv,
+# scripts/61_tooth_loss_targets.py). Used only as a ratio to the US figure, to scale teeth missing at entry
+STATE_SIX_PLUS_LOST_65_PCT = {
+    "AL": 39.6, "AK": 28.5, "AZ": 27.9, "AR": 40.7, "CA": 23.6, "CO": 19.5, "CT": 24.1, "DE": 32.4, "DC": 29.6,
+    "FL": 31.0, "GA": 36.7, "HI": 17.6, "ID": 29.0, "IL": 26.7, "IN": 36.0, "IA": 28.4, "KS": 27.3, "KY": 47.2,
+    "LA": 39.7, "ME": 33.1, "MD": 28.4, "MA": 27.3, "MI": 26.4, "MN": 22.6, "MS": 43.8, "MO": 35.8, "MT": 27.6,
+    "NE": 24.3, "NV": 32.3, "NH": 28.1, "NJ": 26.1, "NM": 33.1, "NY": 30.9, "NC": 37.4, "ND": 32.9, "OH": 34.5,
+    "OK": 38.8, "OR": 27.8, "PA": 35.0, "RI": 27.9, "SC": 34.4, "SD": 24.2, "TN": 38.9, "TX": 29.7, "UT": 22.4,
+    "VT": 30.1, "VA": 29.7, "WA": 23.1, "WV": 50.8, "WI": 24.7, "WY": 31.5, "US": 30.6
+}
 _TOOTH_KIND = {**{t: "incisor" for t in (7, 8, 9, 10, 23, 24, 25, 26)}, **{t: "canine" for t in (6, 11, 22, 27)},
                **{t: "premolar" for t in (4, 5, 12, 13, 20, 21, 28, 29)}, **{t: "molar" for t in MOLARS}}
 
@@ -203,10 +215,18 @@ _TOOTH_KIND = {**{t: "incisor" for t in (7, 8, 9, 10, 23, 24, 25, 26)}, **{t: "c
 class Params:
     """Every rate and date is a named parameter with a fixed default (AGENTS.md: seeds and defaults fixed)."""
     n_patients: int = 2000                   # enough extractions with a diagnosis to train on (spec 029 US3)
-    visits: tuple = (2, 8)                    # recall visits per patient, inclusive
+    visits: tuple = (2, 20)                   # recall visits per patient, inclusive: up to ten years (spec 037 US3,
+                                              # placeholder: no published figure for time in a practice's records)
+    last_visit: date = date(2025, 12, 31)     # no visit after this: a patient whose visits would run later has fewer
     first_years: tuple = (2012, 2022)         # first visit falls in these years
     entry_as_existing: float = 0.3            # teeth missing at entry recorded as an extraction done elsewhere
-    other_extraction_per_visit: float = 0.04  # an extraction for another reason (caries, fracture) between visits
+    # spec 037 US1-US2: completed extractions per patient-year, all reasons (Vehkalahti et al., Acta Odontol Scand
+    # 2023: about 0.17 per adult patient per year), split by ENTRY_PERIO_SHARE_BY_AGE into periodontal and other
+    extraction_per_year: float = 0.17
+    # periodontal extractions beyond the chart's own losses go to patients with attachment loss (worst CAL 3 mm or
+    # more); this scales their mean so each age band as a whole reaches its share. Set by measurement (spec 037,
+    # docs/synthetic_data.md), not a cited figure
+    perio_topup_scale_by_age: tuple = ((25, 1.4), (35, 3.0), (45, 3.0), (55, 2.45), (65, 2.6), (75, 2.3))
     planned_not_done_per_visit: float = 0.10  # a periodontal extraction planned and never completed in the record
     planned_then_missing: float = 0.5         # SYNTHETIC placeholder (029 US9): ... and its tooth recorded missing,
                                               # extracted by another provider, at a later visit (drawn on its own
@@ -240,11 +260,20 @@ class Params:
     bitewing_per_visit: float = 0.35          # bitewings at a later visit
     pano_per_visit: float = 0.03              # a panoramic image at a later visit
     reading_missing: float = 0.15             # a tooth on a radiograph that the (simulated) reading leaves unread
-    # why teeth are missing at entry (US7, #429): the mean number of teeth (third molars aside) missing at the first
-    # visit for a reason other than periodontitis, by age band (lower bound, years). Set so the periodontal share
-    # among teeth missing at entry matches ENTRY_PERIO_SHARE_BY_AGE, given the spec 006 periodontal losses
-    # (specs/029-tooth-loss/research.md, "How the generator reaches the shares")
-    entry_other_teeth_by_age: tuple = ((25, 3.61), (35, 0.96), (45, 0.54), (55, 0.33), (65, 0.28), (75, 0.35))
+    # how many teeth (third molars aside) are missing at the first visit (spec 037 US4, #613): per age band (lower
+    # bound), the mean and the share with none lost among dentate adults, NHANES 2009-2014, survey-weighted
+    # (data/datasets/nhanes/nhanes_missing_teeth_by_age.csv, scripts/61_tooth_loss_targets.py): the targets
+    entry_missing_by_age: tuple = ((25, 1.089, 0.648), (35, 2.060, 0.465), (45, 3.401, 0.358), (55, 4.882, 0.258),
+                                   (65, 6.207, 0.185), (75, 8.340, 0.090))
+    # how the generator reaches them and 029 US7's periodontal share (set by measurement, docs/synthetic_data.md; not
+    # cited figures). Teeth lost for another reason: a negative binomial per band (mean, share with none),
+    # independent of the gums (US8's smoking and diabetes ratios apply). Teeth lost to periodontitis beyond the spec
+    # 006 mouth's own: a Poisson in a mouth with periodontitis only, the band's mean times a weight by stage (I to IV),
+    # on the teeth with the most attachment loss
+    entry_other_missing_by_age: tuple = ((25, 1.02, 0.76), (35, 1.63, 0.55), (45, 2.28, 0.61), (55, 2.54, 0.54),
+                                         (65, 3.10, 0.37), (75, 4.42, 0.19))
+    entry_perio_added_by_age: tuple = ((25, 0.0), (35, 0.48), (45, 1.85), (55, 3.8), (65, 5.6), (75, 6.9))
+    entry_perio_stage_weights: tuple = ((1, 0.5), (2, 1.0), (3, 1.6), (4, 2.2))
     # which teeth those are: a weight per tooth type (this repo's choice, not a cited figure; research.md)
     entry_other_tooth_weights: tuple = (("molar", 3.0), ("premolar", 2.0), ("canine", 1.0), ("incisor", 1.0))
     # how much more often a smoker or a patient with diabetes has them (US8, #433; specs/029-tooth-loss/research.md,
@@ -368,37 +397,90 @@ def entry_other_rate_norm(p: Params | None = None) -> float:
 
 @traced
 def entry_other_mean(age: int, risk: RiskFactors, p: Params | None = None) -> float:
-    """The Poisson mean of this patient's non-periodontal teeth missing at entry: the age band's mean
-    (`Params.entry_other_teeth_by_age`, US7) times the rate ratio over its mean (US8)."""
+    """The mean of this patient's teeth missing at entry for a reason other than periodontitis (spec 037 US4): the age
+    band's mean (`Params.entry_other_missing_by_age`) times the rate ratio over its mean (US8)."""
     p = p or Params()
-    base = dict(p.entry_other_teeth_by_age)[_band(age, p.entry_other_teeth_by_age)]
+    bands = [(low, mean) for low, mean, _ in p.entry_other_missing_by_age]
+    base = dict(bands)[_band(age, bands)]
     ratio, norm = entry_other_rate_ratio(risk, p), entry_other_rate_norm(p)
     return base * ratio / norm
 
 
+_SHAPES: dict[tuple, float] = {}
+
+
+@traced
+def entry_missing_shape(mean: float, none_share: float) -> float:
+    """The negative binomial shape r whose share of zeros, (r / (r + mean)) ** r, is none_share (bisection on log r;
+    the share falls as r grows, to exp(-mean) for a Poisson). A share at or below exp(-mean) gives a Poisson (inf)."""
+    if mean <= 0 or none_share <= math.exp(-mean):
+        return math.inf
+    key = (round(mean, 6), round(none_share, 6))
+    if key not in _SHAPES:
+        lo, hi = -10.0, 10.0
+        for _ in range(100):
+            mid = (lo + hi) / 2
+            r = math.exp(mid)
+            lo, hi = (mid, hi) if (r / (r + mean)) ** r > none_share else (lo, mid)
+        _SHAPES[key] = math.exp((lo + hi) / 2)
+    return _SHAPES[key]
+
+
 def _entry_other_teeth(age: int, risk: RiskFactors, chart, site_cols: dict, teeth: dict, p: Params,
-                       rng: random.Random) -> list[int]:
-    """Teeth present in the spec 006 mouth that were in fact lost before the first visit for another reason (US7).
-    How many: a Poisson draw with the patient's mean (`entry_other_mean`: age band, smoking, diabetes). Which: by tooth type weight, never by attachment loss; third
-    molars (their own rule in sites.draw_mouth_columns) and the teeth holding the mouth's worst CAL and probing depth
-    stay, so the charted measures stay the chart's; a mouth below stage IV keeps 20 teeth, as in draw_mouth_columns."""
+                       rng: random.Random, state_ratio: float = 1.0) -> list[tuple[int, str]]:
+    """Teeth present in the spec 006 mouth that were in fact lost before the first visit (spec 037 US4; US7), with
+    their reason. Two counts, drawn apart so one doesn't crowd the other out:
+    - lost to periodontitis, beyond the mouth's own: in a mouth with periodontitis only, a Poisson with the band's
+      `entry_perio_added_by_age` mean times the stage's weight, on the teeth with the most attachment loss;
+    - lost for another reason: a negative binomial with the patient's mean (`entry_other_mean`: age band, smoking,
+      diabetes) and the band's share with none (`entry_other_missing_by_age`), by tooth type weight, never by
+      attachment loss.
+    Both are scaled by the clinic's state ratio (US5). Third molars (their own rule in sites.draw_mouth_columns) and the
+    teeth holding the mouth's worst CAL and probing depth stay, so the charted measures stay the chart's; only a stage
+    III mouth keeps 20 teeth (fewer would make it stage IV)."""
     present = [t for t, ok in zip(teeth["tooth"], teeth["present"]) if ok]
-    n = _poisson(entry_other_mean(age, risk, p), rng)
-    if not n or not present:
+    stage = label_chart(chart).value
+    perio_mean = 0.0
+    if stage.startswith("periodontitis"):
+        bands = p.entry_perio_added_by_age
+        perio_mean = dict(bands)[_band(age, bands)] * dict(p.entry_perio_stage_weights)[int(stage[-1])] * state_ratio
+    n_perio = _poisson(perio_mean, rng)
+    other_mean = entry_other_mean(age, risk, p) * state_ratio
+    zeros = [(low, z) for low, _, z in p.entry_other_missing_by_age]
+    shape = entry_missing_shape(other_mean, dict(zeros)[_band(age, zeros)])
+    lam = other_mean if math.isinf(shape) else rng.gammavariate(shape, other_mean / shape)
+    n_other = _poisson(lam, rng)
+    if not (n_perio or n_other) or not present:
         return []
     cal, pd_ = site_cols["cal_mm"], site_cols["pd_mm"]
     keep = {site_cols["tooth"][cal.index(max(cal))], site_cols["tooth"][pd_.index(max(pd_))]} if cal else set()
     pool = [t for t in present if t not in THIRD_MOLARS and t not in keep]
-    stage = label_chart(chart).value
-    if not stage.startswith("periodontitis") or int(stage[-1]) < 4:
-        n = min(n, max(0, len(present) - 20))
-    weight = dict(p.entry_other_tooth_weights)
+    room = len(pool)
+    if stage == "periodontitis_stage_3":
+        room = min(room, max(0, len(present) - 20))
+    worst = {}
+    for t, c in zip(site_cols["tooth"], cal):
+        worst[t] = max(worst.get(t, 0), c)
     chosen = []
-    for _ in range(min(n, len(pool))):
-        t = rng.choices(pool, weights=[weight[_TOOTH_KIND[t]] for t in pool])[0]
+    for _ in range(min(n_perio, room)):
+        t = max(pool, key=lambda x: (worst.get(x, 0), -x))
         pool.remove(t)
-        chosen.append(t)
+        chosen.append((t, "perio"))
+    weight = dict(p.entry_other_tooth_weights)
+    for _ in range(min(n_other, room - len(chosen))):
+        t = rng.choices(pool, weights=[weight[_TOOTH_KIND[x]] for x in pool])[0]
+        pool.remove(t)
+        chosen.append((t, "other"))
     return sorted(chosen)
+
+
+@traced
+def entry_state_ratio(state: str | None) -> float:
+    """How much more partial tooth loss a clinic's state has than the US (spec 037 US5): its BRFSS rate of six or more
+    teeth lost at 65+ over the US rate; 1 with no state."""
+    if not state:
+        return 1.0
+    return STATE_SIX_PLUS_LOST_65_PCT[state] / STATE_SIX_PLUS_LOST_65_PCT["US"]
 
 
 @traced
@@ -461,6 +543,7 @@ def edentulous_patients(tables: dict[str, pd.DataFrame]) -> set:
     ti = _numeric(tables["toothinitial"], ["patnum", "toothnum", "initialtype"])
     pl = _numeric(tables["procedurelog"], ["patnum", "procstatus", "codenum", "toothnum"])
     elsewhere = pl[(pl["procstatus"] == EXISTING_OTHER) & pl["codenum"].isin(extraction_codenums(tables))]
+    elsewhere = elsewhere[~_recorded_later(elsewhere, tables["patient"])]     # at the first visit, not later (US9)
     entry = pd.concat([ti.loc[ti["initialtype"] == 0, ["patnum", "toothnum"]], elsewhere[["patnum", "toothnum"]]])
     entry = entry[entry["toothnum"].between(1, 32)].drop_duplicates()
     n = entry.groupby("patnum")["toothnum"].nunique()
@@ -557,6 +640,9 @@ def build_with_readings(p: Params | None = None, seed: int = 42) -> tuple[dict[s
         age = rng.randint(25, 85)
         first = date(rng.randint(*p.first_years), rng.randint(1, 12), rng.randint(1, 28))
         n_vis = rng.randint(*p.visits)
+        fit = 1 + int(((p.last_visit - first).days - 20) // 183)   # spec 037 US3: no visit after p.last_visit
+                                                                 # (visits are 182.5 days apart, give or take 20)
+        n_vis = max(min(p.visits), min(n_vis, fit))
         risk = draw_risk(rng, **risk_kw)
         hist = draw_history(age, n_vis, risk, rng, months_between=6.0)
         dates = [first + timedelta(days=round(182.5 * k + rng.uniform(-20, 20))) if k else first for k in range(n_vis)]
@@ -572,7 +658,8 @@ def build_with_readings(p: Params | None = None, seed: int = 42) -> tuple[dict[s
                     datefirstvisit=first, smokingsnomed=smoke, zip=f"0{rng.randint(1000, 9999)}", guarantor=0,
                     medurgnote="", premed=False, language=rng.choices(["eng", "spa"], weights=[0.9, 0.1])[0],
                     admitdate=(first - timedelta(days=rng.randint(30, 900))) if site else None, sitenum=site,
-                    responsparty=0, datetimedeceased=(last + timedelta(days=rng.randint(30, 400))) if status == 5 else None)
+                    responsparty=0, datetimedeceased=min(last + timedelta(days=rng.randint(30, 400)), p.last_visit)
+                    if status == 5 else None)
         row = r.rows["patient"][-1]
         row["guarantor"] = pat
         if rng.random() < 0.05:
@@ -613,8 +700,9 @@ def build_with_readings(p: Params | None = None, seed: int = 42) -> tuple[dict[s
         # ---- the mouth at the first exam: who is missing, and why (the truth)
         chart0 = hist[0].chart
         site_cols, teeth = draw_mouth_columns(chart0, draw_pct_teeth_involved(chart0, rng), rng)
-        for t in _entry_other_teeth(age, risk, chart0, site_cols, teeth, p, entry_rng):
-            teeth["present"][t - 1], teeth["missing_reason"][t - 1] = False, "other"
+        for t, why in _entry_other_teeth(age, risk, chart0, site_cols, teeth, p, entry_rng,
+                                         entry_state_ratio(clinic_state[clinic])):
+            teeth["present"][t - 1], teeth["missing_reason"][t - 1] = False, why
         base = {(t, s): (pd_, cal, b) for t, s, pd_, cal, b in zip(site_cols["tooth"], site_cols["site"],
                                                                     site_cols["pd_mm"], site_cols["cal_mm"],
                                                                     site_cols["bop"])}
@@ -698,8 +786,8 @@ def build_with_readings(p: Params | None = None, seed: int = 42) -> tuple[dict[s
                 true_cal[t] = max(cals)
 
             # perio chart, as messy as real ones (#385): not done, partial, copied, uniform, out of range
-            if rng.random() < (p.chart_site if site else p.chart_office):
-                exam = w("perioexam", patnum=pat, examdate=d, provnum=hyg)
+            if rng.random() < (p.chart_site if site else p.chart_office) and present:   # no chart of a mouth
+                exam = w("perioexam", patnum=pat, examdate=d, provnum=hyg)             # with no teeth left
                 charted = sorted(present)
                 if rng.random() < p.partial_chart and len(charted) > 4:
                     charted = sorted(rng.sample(charted, max(1, round(len(charted) * rng.uniform(0.4, 0.8)))))
@@ -773,9 +861,18 @@ def build_with_readings(p: Params | None = None, seed: int = 42) -> tuple[dict[s
                 worst = sorted(present - THIRD_MOLARS, key=lambda t: (t not in MOLARS, -cal_tooth.get(t, 0)))
                 for t in worst[:n_lost]:
                     new_plans.append((t, "perio", dates[k + 1] - timedelta(days=rng.randint(7, 120))))
-                if rng.random() < p.other_extraction_per_visit:
+                # spec 037: half a year's extractions at the published rate, split by the band's periodontal share
+                share = dict(ENTRY_PERIO_SHARE_BY_AGE)[_band(age, ENTRY_PERIO_SHARE_BY_AGE)]
+                if chart.max_cal_mm >= 3:
+                    scale = dict(p.perio_topup_scale_by_age)[_band(age, p.perio_topup_scale_by_age)]
+                    taken = {t for t, _, _ in new_plans}
+                    room = max(0, len(present) - 1 - len(taken))         # the last tooth stays: no mouth emptied here
+                    extra = [t for t in worst if t not in taken][:min(room, _poisson(0.5 * p.extraction_per_year * share * scale, rng))]
+                    for t in extra:
+                        new_plans.append((t, "perio", dates[k + 1] - timedelta(days=rng.randint(7, 120))))
+                for _ in range(_poisson(0.5 * p.extraction_per_year * (1 - share), rng)):
                     left = sorted(present - {t for t, _, _ in new_plans})
-                    if left:
+                    if len(left) > 1:
                         new_plans.append((rng.choice(left), "other", dates[k + 1] - timedelta(days=rng.randint(7, 120))))
             if chart.max_cal_mm >= 5 and rng.random() < p.planned_not_done_per_visit:
                 left = sorted(present - {t for t, _, _ in new_plans} - {o["tooth"] for o in planned_open})
@@ -943,11 +1040,41 @@ def age_band(age: pd.Series) -> pd.Series:
     return age.map(lambda a: _band(a, ENTRY_PERIO_SHARE_BY_AGE)).rename("age_band_num")
 
 
+@traced
+def extraction_rates(tables: dict[str, pd.DataFrame], truth: pd.DataFrame) -> pd.DataFrame:
+    """Extractions completed in the record per patient-year, and the share periodontal, by age band (spec 037): one
+    row per band with patients, patient_years, extractions, periodontal and their ratios. Counts only. Patient-years
+    run from the first to the last visit, the span in which the record can hold an extraction; patients with no
+    natural teeth are left out (they have no extractions to make)."""
+    pat = tables["patient"]
+    age = patient_age(tables)
+    pl = tables["procedurelog"]
+    visits = pl[pl["procdate"].notna()].groupby("patnum")["procdate"].agg(["min", "max"])
+    years = (pd.to_datetime(visits["max"]) - pd.to_datetime(visits["min"])).dt.days / 365.25
+    people = pd.DataFrame({"patnum": pat["patnum"].to_numpy(), "age_band": age_band(age).to_numpy()})
+    people["years"] = people["patnum"].map(years).fillna(0.0)
+    ext = pl[pl["codenum"].isin(extraction_codenums(tables)) & (pl["procstatus"] == COMPLETE)
+             & pd.to_numeric(pl["toothnum"], errors="coerce").between(1, 32)]
+    reasons = truth.set_index(["patient_id", "tooth_num"])["true_reason_code"]
+    keys = list(zip(ext["patnum"], pd.to_numeric(ext["toothnum"]).astype(int)))
+    perio = pd.Series([reasons.get(k) == "perio" for k in keys], index=ext.index)
+    with_teeth = set(ext["patnum"]) | set(tables["perioexam"]["patnum"])
+    people = people[people["patnum"].isin(with_teeth)]
+    band = people.set_index("patnum")["age_band"]
+    out = people.groupby("age_band").agg(patients=("patnum", "size"), patient_years=("years", "sum"))
+    out["extractions"] = ext["patnum"].map(band).value_counts().reindex(out.index, fill_value=0)
+    out["periodontal"] = ext.loc[perio, "patnum"].map(band).value_counts().reindex(out.index, fill_value=0)
+    out["rate_per_patient_year"] = out["extractions"] / out["patient_years"]
+    out["periodontal_share"] = out["periodontal"] / out["extractions"].where(out["extractions"] > 0)
+    return out
+
+
 def _recorded_later(away: pd.DataFrame, patient: pd.DataFrame) -> pd.Series:
     """Extractions done elsewhere (ProcStatus 4) dated after the patient's first visit: recorded missing at a later
     visit (029 US9), not missing at entry."""
     first = pd.Series(pd.to_datetime(patient["datefirstvisit"]).to_numpy(),
                       index=pd.to_numeric(patient["patnum"], errors="coerce").to_numpy())
+    first = first[~first.index.duplicated()]          # a patient key used twice (a data-quality fault): its first row
     on = pd.to_datetime(away["procdate"], errors="coerce").dt.normalize()      # by calendar day, as R reads it
     return on.notna() & (on > pd.to_numeric(away["patnum"], errors="coerce").map(first.dt.normalize()))
 
@@ -1041,7 +1168,7 @@ def chart_quality(tables: dict[str, pd.DataFrame]) -> pd.DataFrame:
     q["has_margin"] = q["has_margin"].astype("boolean").fillna(False).astype(bool)
     q["has_bleeding"] = q["has_bleeding"].astype("boolean").fillna(False).astype(bool)
     q["is_buccal_only"] = (q["site_count"] > 0) & (q["lingual_count"] == 0)
-    q["is_uniform"] = (q["site_count"] >= 6) & (q["lo"] == q["hi"])
+    q["is_uniform"] = (q["site_count"] >= 12) & (q["lo"] == q["hi"])   # one tooth may be even all round
 
     # teeth the record says are present at each exam: 32, less those missing at entry and those extracted before it
     pl = _numeric(tables["procedurelog"], ["patnum", "procstatus", "codenum", "toothnum"])
@@ -1057,7 +1184,7 @@ def chart_quality(tables: dict[str, pd.DataFrame]) -> pd.DataFrame:
     done = done.sort_values("datecomplete").drop_duplicates(["patnum", "toothnum"])     # each tooth lost once
     n_entry = entry.groupby("patnum").size()
     lost = q[["perioexamnum", "patnum", "examdate"]].merge(done, on="patnum")
-    lost = lost[lost["datecomplete"] < lost["examdate"]]
+    lost = lost[lost["datecomplete"] <= lost["examdate"]]   # a tooth recorded missing at the exam isn't charted
     q["expected_teeth_count"] = 32 - q["patnum"].map(n_entry).fillna(0).astype(int) - \
         q["perioexamnum"].map(lost.groupby("perioexamnum").size()).fillna(0).astype(int)
     q["is_partial"] = (q["teeth_charted_count"] > 0) & (q["teeth_charted_count"] < 0.9 * q["expected_teeth_count"])
@@ -1185,7 +1312,8 @@ def plant_faults(tables: dict[str, pd.DataFrame], seed: int = 0, switch_date: da
     mob = pm.index[pm["sequencetype"] == SEQ_MOBILITY].tolist()
     pm.loc[rng.sample(mob, f["mobility_out_of_range"]), "toothvalue"] = 7
     ti = t["toothinitial"]
-    ti.loc[rng.sample(ti.index.tolist(), f["tooth_number_out_of_range"]), "toothnum"] = "40"
+    one_each = ti.drop_duplicates(["patnum", "initialtype"]).index.tolist()   # two on one patient would share a key
+    ti.loc[rng.sample(one_each, f["tooth_number_out_of_range"]), "toothnum"] = "40"
     late = take([i for i in ext_done if pd.notna(pl.at[i, "datecomplete"])], f["dates_out_of_order"])
     pl.loc[late, "datecomplete"] = (pd.to_datetime(pl.loc[late, "datetp"]) - pd.Timedelta(days=30)).values
     t["procedurecode"] = pd.concat([pc, pd.DataFrame([{**pc.iloc[0].to_dict(), "codenum": int(pc["codenum"].max()) + 1,

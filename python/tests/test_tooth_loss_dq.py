@@ -152,7 +152,7 @@ def test_flags_compare_each_group_with_the_rest():
 
 
 def test_small_groups_are_reported_but_never_flagged():
-    tables, _ = open_dental.build(open_dental.Params(n_patients=300, **open_dental.NO_MESS), seed=11)
+    tables, _ = open_dental.build(open_dental.Params(n_patients=60, **open_dental.NO_MESS), seed=11)
     g = tooth_loss_dq.group_consistency(tables)
     small = g[g["chart_count"] < tooth_loss_dq.MIN_CHARTS]
     assert len(small) and not small["is_flagged"].any()

@@ -207,8 +207,10 @@ It explains a loss already in the record; it doesn't predict future loss.
   The split is by patient.
 - **Measures:** sensitivity, specificity, predictive values and F1 at 0.5 lead, as the study lead asked. AUC with a
   95% interval and the Brier score sit beside them. Stability is checked over five generator seeds.
-- **SYNTHETIC results** (6,000 patients, 88 held-out extractions, 14 of them periodontal): AUC 0.89–0.92 and
-  sensitivity 0.57–0.71 at specificity 0.95–0.96 across the four models.
+- **SYNTHETIC results** (6,000 patients, 448 held-out extractions, 153 of them periodontal, since spec 037 set the
+  extract's tooth loss from published rates): AUC 0.91–0.92 and sensitivity 0.82–0.84 at specificity 0.89–0.92 across
+  the four models. On the teeth already missing at the first visit, which now follow NHANES's counts, the AUC is
+  0.60–0.67.
   This is agreement with the generator's answer key, not a finding about any practice.
 
 Details, the tables and what a real extract can and can't check: **[tooth_loss.md](../tooth_loss.md)**. The method,

@@ -163,3 +163,30 @@ def test_edentulism_by_age_band_is_weighted_within_each_band():
     assert out.loc[65, "edentulous_pct"] == pytest.approx(50.0)
     assert out.loc[30, "age_band_high_num"] == 34 and pd.isna(out.loc[75, "age_band_high_num"])
     assert out.loc[75, "n_domain"] == 0 and pd.isna(out.loc[75, "edentulous_pct"])
+
+
+def test_missing_teeth_by_age_band_counts_lost_natural_teeth_weighted():
+    """Spec 037: how many natural teeth (third molars aside) adults have lost, by age band: the weighted mean and the
+    shares with none lost and with six or more lost (all lost included), among people with a dentition exam."""
+    from health_transformation_lab_nlp.nhanes import MISSING_AGE_BANDS, missing_teeth_by_age
+
+    teeth = [t for t in range(1, 33) if t not in (1, 16, 17, 32)]
+    def person(seqn, missing, status=1):
+        row = {"SEQN": seqn, "OHDDESTS": status}
+        row.update({f"OHX{t:02d}TC": (4 if i < missing else 2) for i, t in enumerate(teeth)})
+        return row
+    den = pd.DataFrame([person(1, 0), person(2, 2), person(3, 6), person(4, 28), person(5, 0, status=3),
+                        person(6, 1)])
+    demo = pd.DataFrame({"SEQN": [1, 2, 3, 4, 5, 6], "RIDAGEYR": [30, 31, 70, 72, 30, 20],
+                         "WTMEC2YR": [1.0, 3.0, 1.0, 1.0, 9.0, 9.0], "SDMVSTRA": [1, 1, 2, 2, 1, 1],
+                         "SDMVPSU": [1, 2, 1, 2, 1, 2]})
+    out = missing_teeth_by_age(den, demo).set_index("age_band_low_num")
+    assert list(out.index) == [low for low, _ in MISSING_AGE_BANDS]
+    assert out.loc[25, "mean_missing_num"] == pytest.approx((0 * 1 + 2 * 3) / 4)   # no exam (5) and age 20 (6) out
+    assert out.loc[25, "none_lost_pct"] == pytest.approx(25.0)
+    assert out.loc[25, "six_or_more_pct"] == pytest.approx(0.0)
+    assert out.loc[65, "six_or_more_pct"] == pytest.approx(100.0)
+    assert out.loc[65, "mean_missing_num"] == pytest.approx(17.0)
+    assert out.loc[65, "dentate_mean_missing_num"] == pytest.approx(6.0)        # the edentulous 72-year-old out
+    assert out.loc[25, "dentate_none_lost_pct"] == pytest.approx(25.0)
+    assert out.loc[25, "n_domain"] == 2
