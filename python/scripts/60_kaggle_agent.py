@@ -84,6 +84,26 @@ def _wait_dataset(api, ref: str) -> None:
     raise SystemExit(f"{ref}: not ready after {MAX_WAIT_SECONDS} s")
 
 
+def graph_files(task: dict, graphs: Path, embeddings: Path) -> tuple[Path, Path]:
+    """The task's code graph and embeddings: the published names (`<repo>_<base_commit>`) first, then a local
+    build's (`<instance_id>`, 55_build_tasks.py). The first full run shipped none from a local build (#621)."""
+    for stem in (f"{task['repo'].split('/')[-1]}_{task['base_commit']}", task["instance_id"]):
+        g, e = graphs / f"{stem}.json", embeddings / f"{stem}.npz"
+        if g.exists():
+            return g, e
+    return graphs / f"{task['instance_id']}.json", embeddings / f"{task['instance_id']}.npz"
+
+
+def check_graphs(tasks: list[dict], graphs: Path, embeddings: Path, tools: list[str]) -> None:
+    """An agent given the graph tools gets every task's graph and embeddings, or the run stops before any upload."""
+    if not set(tools) & ah.GRAPH_TOOLS:
+        return
+    missing = [t["instance_id"] for t in tasks if not all(p.exists() for p in graph_files(t, graphs, embeddings))]
+    if missing:
+        raise SystemExit(f"no code graph or embeddings in {graphs} / {embeddings} for {len(missing)} tasks: "
+                         f"{', '.join(missing[:10])}")
+
+
 def _upload_bundle(api, folder: Path, ref: str) -> None:
     try:
         api.dataset_status(ref)
@@ -216,6 +236,8 @@ def main() -> int:
     if missing:
         sys.exit(f"not in {a.tasks.name} or no snapshot: {', '.join(missing)}")
     instruction, tools, budget, unsupported = run_agent.agent_config(a.agent_dir)
+    if not a.collect:
+        check_graphs([tasks[i] for i in ids], a.graphs, a.embeddings, tools)
     budget.time_minutes = a.time_minutes
     if unsupported:
         print(f"not supported by this harness, left out: {', '.join(unsupported)}")
@@ -257,10 +279,9 @@ def main() -> int:
         work = a.work / iid
         k = None
         if not a.collect:
-            stem = f"{task['repo'].split('/')[-1]}_{task['base_commit']}"
             shutil.rmtree(work, ignore_errors=True)
-            b = bundle.build(task, a.snapshots / f"{iid}.tgz", a.graphs / f"{stem}.json",
-                             a.embeddings / f"{stem}.npz", work / "bundle", instruction, tools, budget, user, model_cfg)
+            b = bundle.build(task, a.snapshots / f"{iid}.tgz", *graph_files(task, a.graphs, a.embeddings),
+                             work / "bundle", instruction, tools, budget, user, model_cfg)
             print(f"[{n}/{len(ids)}] {iid}: uploading its bundle to {user}/{slug} (private)", flush=True)
             _upload_bundle(api, b, f"{user}/{slug}")
             k = work / "kernel"

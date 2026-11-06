@@ -18,7 +18,7 @@ on:
         description: "Tasks: all (the oracle-resolved set, skipping ones with a row) or comma-separated instance ids"
         default: all
       max_gpu_hours:
-        description: "Kaggle allowance hours this dispatch may use (at most 5.5: one job lasts under 6 h)"
+        description: "Kaggle allowance hours this dispatch may use (at most 5: a task runs past its expected time, and the job stops at 355 min)"
         default: "5"
       agent_ref:
         description: "gemma-developer-agent commit or branch (its prompt, tools and budgets)"
@@ -43,7 +43,7 @@ jobs:
         env:
           H: ${{ inputs.max_gpu_hours }}
         run: |
-          python -c "import sys; h = float('$H'); sys.exit(0 if 0 < h <= 5.5 else 'max_gpu_hours must be above 0 and at most 5.5')"
+          python -c "import sys; h = float('$H'); sys.exit(0 if 0 < h <= 5 else 'max_gpu_hours must be above 0 and at most 5')"
 
       - name: Kaggle credentials (values stay masked)
         env:
@@ -90,6 +90,16 @@ jobs:
           python scripts/60_kaggle_agent.py --ids "$IDS" --max-gpu-hours "$H" --tasks "$T/tasks_gated.jsonl" \
             --snapshots "$T/snapshots" --graphs "$T/graphs" --embeddings "$T/embeddings" \
             --agent-dir "$RUNNER_TEMP/agent" --work "$RUNNER_TEMP/work"
+
+      # Each task's transcript and patch (result.json, the kernel log), for reading why a task failed (#621)
+      - name: Keep the kernels' outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kaggle-agent-outputs-${{ github.run_id }}
+          path: ${{ runner.temp }}/work/*/output/
+          if-no-files-found: ignore
+          retention-days: 30
 
       # Kept even when a step failed or the job timed out mid-run: each finished task's row is already in the file.
       - name: Commit the rows to ${{ github.ref_name }}

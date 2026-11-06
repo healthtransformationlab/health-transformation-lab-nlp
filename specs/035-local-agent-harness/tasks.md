@@ -11,6 +11,7 @@
 ## US2 - The Gemma agent on a Kaggle GPU #544
 - [ ] T005 Gemma 4 on a Kaggle GPU, one task per private kernel (spec, "No answers on Kaggle"): `gemma_agent.py`, `kaggle/agent_bundle.py`, `kaggle/agent_kernel.py`, `scripts/60_kaggle_agent.py`; a pilot of three tasks, then the full run on the owner's go-ahead (about 113 GPU runs)
   - Pilot (Nov 4, 2026, 2x T4, 30-minute budget, thinking off): `gemma-4-e4b-it` resolves 2 of 3, `htlnlp_143` and `htlnlp_174`; `htlnlp_170`'s patch fails one required test. 2 to 4 tool calls and 4 to 6 minutes of agent time each, prompts up to 11,067 tokens (`data/tasks/agent_runs/gemma-4-e4b-it_kaggle.csv`). Measured with this repository's harness, not the competition's evaluator. The full run waits for the owner's go-ahead.
+  - Full run, first 10 h (Nov 5-6, 2026; PR 620): 56 rows, 5 resolved. Two harness faults found in its transcripts (#621): the 20 tasks run from the published task set came back with empty patches (git refused the snapshot's files, owned by the user that built them), and the 36 run from a local build shipped no code graph or embeddings. Fixed in #621; the 20 rows are dropped and those tasks run again, the 36 are kept and noted.
 
 ## US3 - Resolution rates per tier #545
 - [ ] T006 Rates overall and per tier, with and without the skill, in spec 028 T012

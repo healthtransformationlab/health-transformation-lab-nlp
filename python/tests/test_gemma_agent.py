@@ -360,3 +360,30 @@ def test_the_workflow_runs_the_batch_and_keeps_its_rows():   # #615: not tied to
     keep = [s for s in job["steps"] if "git push" in str(s.get("run", ""))]
     assert keep and keep[0].get("if") == "always()"                          # rows kept even when a step fails
     assert "concurrency" in wf
+
+
+def test_the_graph_is_found_under_either_name(runner, tmp_path):   # #621: local builds name it by instance id
+    task = {"instance_id": "htlnlp_9", "repo": "o/r", "base_commit": "abc"}
+    (tmp_path / "g").mkdir(), (tmp_path / "e").mkdir()
+    (tmp_path / "g" / "htlnlp_9.json").write_text("{}")
+    (tmp_path / "e" / "htlnlp_9.npz").write_bytes(b"")
+    assert runner.graph_files(task, tmp_path / "g", tmp_path / "e") == (tmp_path / "g" / "htlnlp_9.json",
+                                                                       tmp_path / "e" / "htlnlp_9.npz")
+    (tmp_path / "g" / "r_abc.json").write_text("{}")
+    assert runner.graph_files(task, tmp_path / "g", tmp_path / "e")[0] == tmp_path / "g" / "r_abc.json"
+
+
+def test_a_task_without_its_graph_stops_the_run_before_any_upload(runner, tmp_path):
+    task = {"instance_id": "htlnlp_9", "repo": "o/r", "base_commit": "abc"}
+    with pytest.raises(SystemExit, match="htlnlp_9"):
+        runner.check_graphs([task], tmp_path, tmp_path, ["read_file", "search_similar_code"])
+    runner.check_graphs([task], tmp_path, tmp_path, ["read_file", "edit_file"])   # no graph tools: nothing needed
+
+
+def test_the_workflow_keeps_the_transcripts_and_ends_inside_the_job():   # #621
+    import yaml
+    wf = yaml.safe_load((REPO_ROOT / ".github" / "workflows" / "kaggle-agent.yml").read_text())
+    steps = wf["jobs"]["run"]["steps"]
+    keep = [s for s in steps if "upload-artifact" in str(s.get("uses", ""))]
+    assert keep and keep[0]["if"] == "always()" and "/output" in keep[0]["with"]["path"]
+    assert "h <= 5 " in "\n".join(str(s.get("run", "")) for s in steps)
