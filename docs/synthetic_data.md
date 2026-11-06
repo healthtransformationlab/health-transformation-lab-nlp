@@ -186,6 +186,54 @@ lost, BRFSS 2022: 12.1% in the US, 5.4% in Hawaii to 25.1% in West Virginia; ite
 over only, so the same ratio is applied at every age, a placeholder assumption. Off by default: the default extract's
 clinics keep the state `ZZ` and every committed result uses the national shares.
 
+## Tooth loss before and during the record: synthetic against published (spec 037)
+
+Before spec 037 the extract matched the published *reasons* teeth are missing (029 US7) but not *how many*, and
+nothing set the extractions recorded while a patient is in the record, the tooth-loss model's only labels. So the
+model's held-out set had 88 extractions, 14 of them periodontal.
+
+**Extractions in the record** (US1-US3). Each patient has 2 to 20 recall visits six months apart, none after 2025
+(4.5 years of record on average; a placeholder: no published figure for time in a practice's records was found).
+Per half-year, extractions follow `Params.extraction_per_year` (0.17, item 87), split by age at
+`ENTRY_PERIO_SHARE_BY_AGE` (item 63): other reasons on a random tooth, periodontal on the worst-CAL teeth of
+patients with attachment loss (worst CAL 3 mm or more), scaled by `perio_topup_scale_by_age` so each band as a
+whole reaches its share. Measured on two 4,000-patient extracts (seeds 31-32), SYNTHETIC:
+
+| Age band | Patient-years | Extractions | Per patient-year | Share periodontal | Published share (item 63) |
+|---|---|---|---|---|---|
+| 25-34 | 5,931 | 1,071 | 0.181 | 0.070 | 0.064 |
+| 35-44 | 5,547 | 894 | 0.161 | 0.182 | 0.209 |
+| 45-54 | 5,336 | 913 | 0.171 | 0.298 | 0.329 |
+| 55-64 | 5,431 | 899 | 0.166 | 0.472 | 0.480 |
+| 65-74 | 5,428 | 919 | 0.169 | 0.508 | 0.500 |
+| 75+ | 5,360 | 853 | 0.159 | 0.426 | 0.470 |
+| all | 33,032 | 5,549 | 0.168 | | about 0.17 per patient-year (item 87) |
+
+The published rate is the same at every age here; its source finds it lowest at 35-49 (not modelled).
+
+**Teeth missing at the first visit** (US4). Two counts, drawn apart so one doesn't crowd the other out: teeth lost
+for another reason, a negative binomial per band (`entry_other_missing_by_age`, independent of the gums; the US8
+smoking and diabetes ratios apply), and teeth lost to periodontitis beyond the spec 006 mouth's own, a Poisson in a
+mouth with periodontitis only (`entry_perio_added_by_age` times `entry_perio_stage_weights`), on the worst-CAL teeth.
+Only a stage III mouth keeps 20 teeth (fewer would make it stage IV). Both parameter sets were set by measurement so
+the counts follow NHANES 2009-2014 among dentate adults (this repo's run, `scripts/61_tooth_loss_targets.py`) and the
+periodontal share follows item 63. Three 6,000-patient extracts (seeds 13-15), patients with teeth, SYNTHETIC:
+
+| Age band | Mean lost | NHANES | None lost | NHANES | Share periodontal | Published (item 63) |
+|---|---|---|---|---|---|---|
+| 25-34 | 1.21 | 1.09 | 70.8% | 64.8% | 0.21 | 0.064 |
+| 35-44 | 2.02 | 2.06 | 44.5% | 46.5% | 0.22 | 0.209 |
+| 45-54 | 3.14 | 3.40 | 38.9% | 35.8% | 0.35 | 0.329 |
+| 55-64 | 4.54 | 4.88 | 27.3% | 25.8% | 0.48 | 0.480 |
+| 65-74 | 5.68 | 6.21 | 18.4% | 18.5% | 0.52 | 0.500 |
+| 75+ | 7.34 | 8.34 | 9.6% | 9.0% | 0.46 | 0.470 |
+
+Third molars aside, as in NHANES. Before spec 037 the same extract had 4.9 teeth lost at 25-34 and 4.7 at 65-74.
+At 25-34 the periodontal share can't reach item 63's 0.064: NHANES gives 1.1 teeth lost there, and the spec 006
+mouth (shared with the benchmark notes) gives periodontitis to about 40% of 25-34s, so its own losses are most of
+them. NHANES counts every absent tooth; BRFSS (item 88) counts teeth removed for decay or gum disease, so it sets
+only the state ratios (`STATE_SIX_PLUS_LOST_65_PCT`, used when `Params.clinic_states` is set).
+
 ## Sources checked for this card
 
 Items 72 to 86 of [references.md](references.md) were added for this card, each checked against its full text or,
