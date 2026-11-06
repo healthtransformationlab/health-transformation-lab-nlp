@@ -102,6 +102,40 @@ These options can also be run together as a named preset, beside today's default
 cd python && python scripts/51_tooth_loss_model.py --patients 6000 --stability-seeds 5 --n-boot 1000
 ```
 
+**On the spec 037 extract** (the defaults since spec 037, SYNTHETIC; tooth level only). Spec 037 set the extract's
+tooth loss from published figures: extractions in the record at about 0.17 per patient-year (item 87), periodontal at
+Suzuki's share by age (item 63), up to ten years of record per patient, and teeth missing at the first visit at
+NHANES 2009-2014's counts by age ([synthetic_data.md](synthetic_data.md)). The analysis is unchanged. Same command,
+6,000 patients, five generator seeds, 1,000 bootstrap resamples. Of the 192,000 teeth, 14,368 belong to patients with
+no natural teeth, 606 are extractions with no diagnosis, 22,175 are other third molars and 79,704 are lost (or first
+charted) before the start date, so 75,147 are left. The completed set trains on 1,881 teeth and the completed +
+planned set on 1,937, against 348 and 391 before.
+
+Held-out extractions (448 teeth, 320 patients, 153 periodontal; 88 teeth and 14 periodontal before), shared
+predictors, generator seed 42:
+
+| At a threshold of 0.5 | completed: logistic | completed: XGBoost | completed + planned: logistic | completed + planned: XGBoost |
+|---|---|---|---|---|
+| sensitivity (of 153 periodontal) | 0.82 | 0.82 | 0.82 | 0.84 |
+| specificity (of 295 other) | 0.90 | 0.92 | 0.89 | 0.91 |
+| positive predictive value | 0.81 | 0.84 | 0.79 | 0.82 |
+| negative predictive value | 0.91 | 0.91 | 0.90 | 0.91 |
+| F1 | 0.82 | 0.83 | 0.80 | 0.83 |
+| AUC (95% CI) | 0.91 (0.87-0.94) | 0.92 (0.89-0.95) | 0.91 (0.87-0.94) | 0.92 (0.88-0.95) |
+| Brier score | 0.106 | 0.095 | 0.109 | 0.101 |
+
+The intervals are about a third as wide as before, and across the five generator seeds the held-out AUC of the shared
+models runs 0.86-0.92 (0.60-0.93 before): the earlier spread was mostly the 14 periodontal teeth.
+
+On the teeth missing at the first visit (10,761 teeth, 1,732 patients; scored against the synthetic answer key) the
+AUC falls to 0.60 / 0.62 (completed) and 0.62 / 0.67 (completed + planned), 0.59-0.74 across seeds, from 0.92-0.96.
+Before spec 037 nearly every tooth missing at entry was periodontal and sat in a mouth with attachment loss, an easy
+set; now 57% are lost for other reasons, spread over every kind of mouth as NHANES's counts require, and a model
+trained on extractions with a recorded reason tells them apart far less well. This is the harder, more realistic
+set; what a real extract shows is still open.
+
+The tables below are from before spec 037, kept as the record.
+
 **Under the study lead's answers since 029 US10** (#529; the defaults, SYNTHETIC; tooth level only). Extractions are
 D7111, D7140, D7210 and D7250; extractions with no diagnosis are dropped; a planned extraction counts if the tooth
 goes missing within 548 days of its most recent plan; no age cut-off; the 2018-01-01 start date stays until confirmed.

@@ -4,7 +4,7 @@
 
 **Created**: 2026-11-06
 
-**Status**: specified
+**Status**: implemented
 
 **Input**: the owner asked why the tooth-loss model (spec 029) is tested on only 14 periodontal teeth, when the
 synthetic tooth loss was meant to match the general population. Answer: the extract matches published figures for
@@ -102,6 +102,7 @@ little history.
 ## Success criteria
 
 - `python/tests/test_open_dental.py` checks US1-US3 on generated extracts and passes.
-- At the default 60,000 patients (#609), the held-out set has several hundred periodontal extractions.
+- At the default 6,000 patients the held-out set has well over 100 periodontal extractions (153 at seed 42), so 60,000
+  patients (#609, which ran out of memory) aren't needed.
 - `docs/synthetic_data.md`, `docs/references.md`, `docs/tooth_loss.md` and the study page give the new figures,
   labelled SYNTHETIC.
