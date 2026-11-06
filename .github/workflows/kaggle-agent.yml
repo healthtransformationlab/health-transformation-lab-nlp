@@ -1,0 +1,109 @@
+# Run the Gemma agent on the coding-agent tasks, one private Kaggle GPU kernel per task (spec 035 US2, spec 036),
+# from here rather than a cloud session, whose container can be replaced mid-run (#615). Start it from the Actions
+# tab: "Run the Gemma agent on Kaggle GPUs" -> pick the results branch in "Use workflow from" -> Run workflow.
+#
+# Each dispatch skips tasks that already have a row on that branch, runs until its GPU-hour cap, and commits the
+# rows back to the same branch (even when a step fails), so the next dispatch carries on. Every run uses the shared
+# Kaggle GPU allowance (AGENTS.md, Branches and issues 6): set the cap with the week's budget in mind
+# (ops/budgets.yaml, kaggle_gpu_allowance).
+#
+# Needs, in the GitHub environment `dev`: KAGGLE_USERNAME (variable or secret) and KAGGLE_API_TOKEN or KAGGLE_KEY.
+name: Run the Gemma agent on Kaggle GPUs
+run-name: "Gemma agent on Kaggle: ${{ inputs.ids }}, cap ${{ inputs.max_gpu_hours }} h, rows to ${{ github.ref_name }}"
+
+on:
+  workflow_dispatch:
+    inputs:
+      ids:
+        description: "Tasks: all (the oracle-resolved set, skipping ones with a row) or comma-separated instance ids"
+        default: all
+      max_gpu_hours:
+        description: "Kaggle allowance hours this dispatch may use (at most 5.5: one job lasts under 6 h)"
+        default: "5"
+      agent_ref:
+        description: "gemma-developer-agent commit or branch (its prompt, tools and budgets)"
+        default: 9c1d9fae69c3f0e1e7affb4a38c33c65a067e8c1
+
+concurrency: kaggle-agent   # two runs would push the same tasks' kernels
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    environment: dev
+    timeout-minutes: 355
+    permissions:
+      contents: write          # commit the rows back to the branch
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with: {python-version: "3.13"}   # the tasks' sandbox is Python 3.13
+      - run: pip install --quiet -e "python[dev]" "kaggle==2.2.5" six
+
+      - name: Check the settings
+        env:
+          H: ${{ inputs.max_gpu_hours }}
+        run: |
+          python -c "import sys; h = float('$H'); sys.exit(0 if 0 < h <= 5.5 else 'max_gpu_hours must be above 0 and at most 5.5')"
+
+      - name: Kaggle credentials (values stay masked)
+        env:
+          U: ${{ vars.KAGGLE_USERNAME || secrets.KAGGLE_USERNAME }}
+          T: ${{ secrets.KAGGLE_API_TOKEN }}
+          K: ${{ secrets.KAGGLE_KEY }}
+        run: |
+          [ -n "$U" ] || { echo "::error::KAGGLE_USERNAME is not set in the GitHub environment 'dev' (variable or secret)"; exit 1; }
+          tok="${T:-$K}"
+          [ -n "$tok" ] || { echo "::error::Set KAGGLE_API_TOKEN (or KAGGLE_KEY) in the GitHub environment 'dev'"; exit 1; }
+          echo "KAGGLE_USERNAME=$U" >> "$GITHUB_ENV"
+          echo "KAGGLE_API_TOKEN=$tok" >> "$GITHUB_ENV"
+          [ -n "$K" ] && echo "KAGGLE_KEY=$K" >> "$GITHUB_ENV"
+          true
+
+      - name: Check Kaggle accepts the credentials
+        run: |
+          kaggle kernels list --mine --page-size 1 >/dev/null 2>err.txt || {
+            head -5 err.txt; echo "::error::Kaggle rejected the credentials (KAGGLE_USERNAME, KAGGLE_API_TOKEN in 'dev')"; exit 1; }
+
+      - name: The scoring sandbox needs unprivileged user namespaces (unshare)
+        run: |
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          unshare --user --map-root-user --mount --net --pid --fork true
+
+      - name: The published task set (gated tasks, snapshots, graphs, embeddings) and the agent
+        env:
+          AGENT_REF: ${{ inputs.agent_ref }}
+        run: |
+          kaggle datasets download -d "$KAGGLE_USERNAME/health-transformation-lab-coding-agent-tasks" -p "$RUNNER_TEMP/tasks" --unzip -q
+          # published as tasks.jsonl; the runner finds its oracle rows by the gated set's own name
+          mv "$RUNNER_TEMP/tasks/tasks.jsonl" "$RUNNER_TEMP/tasks/tasks_gated.jsonl"
+          ls "$RUNNER_TEMP/tasks"
+          git clone --quiet https://github.com/healthtransformationlab/gemma-developer-agent "$RUNNER_TEMP/agent"
+          git -C "$RUNNER_TEMP/agent" checkout --quiet "$AGENT_REF"
+
+      - name: Run the agent, one task per Kaggle kernel
+        working-directory: python
+        env:
+          IDS: ${{ inputs.ids }}
+          H: ${{ inputs.max_gpu_hours }}
+        run: |
+          T="$RUNNER_TEMP/tasks"
+          python scripts/60_kaggle_agent.py --ids "$IDS" --max-gpu-hours "$H" --tasks "$T/tasks_gated.jsonl" \
+            --snapshots "$T/snapshots" --graphs "$T/graphs" --embeddings "$T/embeddings" \
+            --agent-dir "$RUNNER_TEMP/agent" --work "$RUNNER_TEMP/work"
+
+      # Kept even when a step failed or the job timed out mid-run: each finished task's row is already in the file.
+      - name: Commit the rows to ${{ github.ref_name }}
+        if: always()
+        env:
+          AGENT_REF: ${{ inputs.agent_ref }}
+        run: |
+          [ -n "$(git status --porcelain data/tasks/agent_runs)" ] || { echo "No new rows"; exit 0; }
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/tasks/agent_runs
+          git commit --quiet -m "Gemma agent rows from Kaggle (run $GITHUB_RUN_ID, gemma-developer-agent $AGENT_REF)"
+          for i in 1 2 3; do
+            git pull --quiet --rebase origin "$GITHUB_REF_NAME" && git push --quiet origin "HEAD:$GITHUB_REF_NAME" && exit 0
+            sleep $((i * 10))
+          done
+          echo "::error::Couldn't push the rows to $GITHUB_REF_NAME"; exit 1

@@ -312,3 +312,51 @@ def test_the_queue_runs_cheapest_first_and_small_fixes_first_among_the_unrun(run
     q = runner.queue(["a", "b", "c"], tasks, past={"c": 300.0, "d": 900.0})
     assert list(q) == ["c", "b", "a"]                     # c ran in 5 min; b and a expect the median, smaller first
     assert q["a"] == q["b"] == 600.0
+
+
+def test_an_upload_kaggle_drops_is_tried_again(runner, tmp_path, monkeypatch):   # a 499 ended a stretch (#615)
+    monkeypatch.setattr(runner.time, "sleep", lambda s: None)
+    monkeypatch.setattr(runner, "_wait_dataset", lambda api, ref: None)
+
+    class Api:
+        calls = 0
+
+        def dataset_status(self, ref):
+            raise RuntimeError("404")
+
+        def dataset_create_new(self, folder, public, dir_mode):
+            Api.calls += 1
+            if Api.calls < 3:
+                raise RuntimeError("499 Client Error")
+            return type("R", (), {"status": "ok"})()
+
+    runner._upload_bundle(Api(), tmp_path, "u/x")
+    assert Api.calls == 3
+
+
+def test_an_upload_that_keeps_failing_still_fails(runner, tmp_path, monkeypatch):
+    monkeypatch.setattr(runner.time, "sleep", lambda s: None)
+
+    class Api:
+        def dataset_status(self, ref):
+            raise RuntimeError("404")
+
+        def dataset_create_new(self, folder, public, dir_mode):
+            raise RuntimeError("499 Client Error")
+
+    with pytest.raises(RuntimeError):
+        runner._upload_bundle(Api(), tmp_path, "u/x")
+
+
+def test_the_workflow_runs_the_batch_and_keeps_its_rows():   # #615: not tied to a cloud session's container
+    import yaml
+    wf = yaml.safe_load((REPO_ROOT / ".github" / "workflows" / "kaggle-agent.yml").read_text())
+    job = wf["jobs"]["run"]
+    assert job["environment"] == "dev" and job["timeout-minutes"] < 360
+    text = "\n".join(str(s.get("run", "")) for s in job["steps"])
+    assert "health-transformation-lab-coding-agent-tasks" in text            # the published, gated set
+    assert "apparmor_restrict_unprivileged_userns=0" in text                  # the scoring sandbox's unshare
+    assert "60_kaggle_agent.py --ids" in text and "--max-gpu-hours" in text
+    keep = [s for s in job["steps"] if "git push" in str(s.get("run", ""))]
+    assert keep and keep[0].get("if") == "always()"                          # rows kept even when a step fails
+    assert "concurrency" in wf
