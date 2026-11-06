@@ -103,3 +103,10 @@ from health_transformation_lab_nlp.tracking import track
 with track("40_classify_status", stem, simulated=True, params=s["params"] | {"scheme": a.scheme}) as run:
     run.log_metrics({k: s[k] for k in ("accuracy", "macro_f1", "cv_macro_f1")})
     run.log_artifact(out / f"{stem}_shap_importance.csv")
+    # SHAP by outcome within each metric's population (#625): an artifact only, from a temporary file
+    import tempfile
+    from pathlib import Path
+    with tempfile.TemporaryDirectory() as tmp:
+        drill = Path(tmp) / f"{stem}_shap_drilldown.csv"
+        res["shap_drilldown"].round(5).to_csv(drill, index=False)
+        run.log_artifact(drill)

@@ -494,3 +494,12 @@ def test_a_run_with_a_start_date_counts_every_lost_tooth_in_the_stage_recount():
     assert len(sp) == unlabelled.sum()
     assert sp.groupby("patient_id")["probability"].sum().reindex(one.index, fill_value=0.0).to_numpy() == \
         pytest.approx(one["unlabelled_prob_sum"].to_numpy())
+
+
+def test_a_run_gives_the_xgboost_shap_by_outcome_as_an_artifact_only(small_run):
+    # #625: why XGBoost misses periodontal losses or raises false alarms, on the held-out teeth
+    d = small_run["shap_drilldown"]
+    assert set(d["model"]) == {"xgboost"} and set(d["label_set"]) == {"completed", "completed_planned"}
+    assert set(d["population"]) <= {"sensitivity", "specificity", "ppv", "npv"} and "bias" in set(d["feature"])
+    assert d["mean_shap"].notna().all() and (d["mean_abs_shap"] >= 0).all()
+    assert "shap_drilldown" not in tm.outputs_to_write(small_run, stage_recount=True)   # never written to files or gold

@@ -113,3 +113,47 @@ def test_folds_missing_a_class_are_skipped_in_tuning(visits):
     keep = tr[(tr["y"] != 4) | tr["person_id"].isin(stage4_people[:1])].reset_index(drop=True)
     best = cs.tune(keep[cs.FEATURES], keep["y"].to_numpy(), keep["person_id"].to_numpy(), 5, seed=1, grid=SMALL, folds=5)
     assert 0 < best["cv_macro_f1"] <= 1 and best["cv_folds_used"] == 4
+
+
+# ---------- #625: SHAP by outcome within each metric's population
+
+def test_shap_drilldown_by_outcome_splits_each_population_into_right_and_wrong():
+    # four teeth: TP, FN, TN, FP; two features plus the bias (the last column)
+    phi = np.array([[2.0, 1.0, -0.5], [-1.0, 0.5, -0.5], [-2.0, -1.0, -0.5], [1.0, -0.5, -0.5]])
+    y_true, y_pred = np.array([1, 1, 0, 0]), np.array([1, 0, 0, 1])
+    d = cs.shap_drilldown_by_outcome(phi, y_true, y_pred, ["a", "b"])
+    assert set(d["population"]) == {"sensitivity", "specificity", "ppv", "npv"}
+    assert set(d["outcome"]) == {"correct", "incorrect"}
+    assert set(d["feature"]) == {"a", "b", "bias"}
+    row = d.set_index(["population", "outcome", "feature"])
+    assert row.loc[("sensitivity", "correct", "a"), "mean_shap"] == 2.0        # the TP
+    assert row.loc[("sensitivity", "incorrect", "a"), "mean_shap"] == -1.0     # the FN
+    assert row.loc[("ppv", "incorrect", "b"), "mean_abs_shap"] == 0.5         # the FP
+    assert (d["n"] == 1).all()
+    # the additivity holds on the means: bias + the features' mean SHAP = the group's mean margin
+    margin = phi.sum(axis=1)
+    groups = {"sensitivity": y_true == 1, "specificity": y_true == 0, "ppv": y_pred == 1, "npv": y_pred == 0}
+    for (pop, out), g in d.groupby(["population", "outcome"]):
+        rows = groups[pop] & ((y_true == y_pred) == (out == "correct"))
+        assert abs(g["mean_shap"].sum() - margin[rows].mean()) < 1e-12, (pop, out)
+
+
+def test_shap_drilldown_leaves_out_empty_groups():
+    phi = np.array([[1.0, 0.0], [0.5, 0.0]])
+    d = cs.shap_drilldown_by_outcome(phi, np.array([1, 1]), np.array([1, 1]), ["a"])
+    assert set(zip(d["population"], d["outcome"])) == {("sensitivity", "correct"), ("ppv", "correct")}
+
+
+def test_train_eval_returns_the_drilldown_one_vs_rest_per_class(result):
+    d = result["shap_drilldown"]
+    assert set(d["class"]) == set(cs.CLASS_NAMES["5level"])          # every class, one-vs-rest
+    assert set(d["feature"]) == {*cs.FEATURES, "bias"}
+    per = result["shap_test"]
+    preds = result["test_predictions"].set_index("visit_id")
+    for k, name in enumerate(cs.CLASS_NAMES["5level"]):
+        rows = per[per["class"] == name].set_index("visit_id")
+        truth, hit = preds.loc[rows.index, "y"] == k, preds.loc[rows.index, "pred"] == k
+        margin = rows[[*cs.FEATURES, "bias"]].sum(axis=1)
+        sub = d[(d["class"] == name) & (d["population"] == "sensitivity") & (d["outcome"] == "correct")]
+        if (truth & hit).any():
+            assert abs(sub["mean_shap"].sum() - margin[truth & hit].mean()) < 1e-6, name

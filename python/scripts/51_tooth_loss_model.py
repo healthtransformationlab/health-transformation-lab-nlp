@@ -83,6 +83,7 @@ if window != tlm.DEFAULT.planned_window_days:          # beside the default resu
 telemetry.setup()
 telemetry.start_script("51_tooth_loss_model", data_label="synthetic")
 frames: dict[str, list[pd.DataFrame]] = {}
+drilldown = None                   # the main seed's SHAP by outcome (#625)
 for k in range(max(1, args.stability_seeds)):
     gen_seed = args.seed + k
     tables, truth, readings = open_dental.build_with_readings(open_dental.Params(n_patients=args.patients), gen_seed)
@@ -98,6 +99,8 @@ for k in range(max(1, args.stability_seeds)):
               f"{out['validation'].drop(columns=['data_label']).to_string(index=False)}")
     if not changed:                # the default results keep their files; the validation is printed above
         out = {n: df for n, df in out.items() if n != "validation"}
+    if k == 0:                     # #625: SHAP by outcome, main seed, logged below as an MLflow artifact only
+        drilldown = out.get("shap_drilldown")
     out = tlm.outputs_to_write(out, args.stage_recount)       # tooth level only by default (029 US10)
     keep = out if k == 0 else {n: out[n] for n in ("scores", "stage_recount") if n in out}   # stability: the spread
     for name, df in keep.items():
@@ -123,3 +126,19 @@ if args.stage_recount:
     st = pd.concat(frames["stage_recount"], ignore_index=True)
     print("\nSYNTHETIC stage III vs IV, main seed:")
     print(st[st["generator_seed"] == args.seed].drop(columns=["generator_seed", "data_label"]).to_string(index=False))
+
+# MLflow: the run's main metrics and the SHAP-by-outcome drilldown as an artifact (#625); no-op without tracking
+import tempfile
+from pathlib import Path
+
+from health_transformation_lab_nlp.tracking import track
+
+with track("51_tooth_loss_model", f"{prefix}tooth_loss_model", simulated=True,
+           params={"patients": args.patients, "seed": args.seed}) as run:
+    m = main[main["eval_set"] == "held_out"]
+    run.log_metrics({f"{r.metric}_{r.label_set}_{r.feature_set}_{r.model}": float(r.value) for r in m.itertuples()})
+    if drilldown is not None and len(drilldown):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / f"{prefix}tooth_loss_shap_drilldown.csv"
+            drilldown.round(5).to_csv(path, index=False)
+            run.log_artifact(path)

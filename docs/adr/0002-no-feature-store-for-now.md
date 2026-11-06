@@ -30,3 +30,8 @@ the way they are now.
   serving-time risk score), or
 - a model is served online and needs features looked up per request, or
 - we need point-in-time-correct training sets that we can't easily build from the OMOP tables.
+
+## Confirmations
+
+- 2026-11-06 (#625): still holds. The SHAP-by-outcome drilldown (`classify_status.shap_drilldown_by_outcome`) explains
+  existing models' answers from their own inputs; it adds no shared or served feature.
