@@ -325,11 +325,14 @@ class _Logistic:
     def __init__(self, seed: int):
         self.seed = seed
 
-    def _z(self, X: pd.DataFrame) -> np.ndarray:
+    def _frame(self, X: pd.DataFrame) -> pd.DataFrame:
         Z = X.fillna(self.median)
         for g in self.indicators:
             Z[f"{g}_missing"] = X[[c for c in X.columns if _predictor(c) == g]].isna().any(axis=1).astype(float)
-        return Z.to_numpy(float)
+        return Z
+
+    def _z(self, X: pd.DataFrame) -> np.ndarray:
+        return self._frame(X).to_numpy(float)
 
     @traced
     def fit(self, X: pd.DataFrame, y: np.ndarray) -> _Logistic:
@@ -345,6 +348,15 @@ class _Logistic:
     @traced
     def predict(self, X: pd.DataFrame) -> np.ndarray:
         return self.model.predict_proba(self.scaler.transform(self._z(X)))[:, 1].astype(float)
+
+    @traced
+    def shap(self, X: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
+        """Exact linear SHAP (#628): on the standardised inputs the training mean is 0, so each input's value is its
+        coefficient times its standardised value and the bias is the intercept; each row adds up to the log-odds.
+        Returns (teeth x (inputs + bias), the input names, missing indicators included)."""
+        Z = self._frame(X)
+        phi = self.scaler.transform(Z.to_numpy(float)) * self.model.coef_[0]
+        return np.column_stack([phi, np.full(len(Z), float(self.model.intercept_[0]))]), list(Z.columns)
 
 
 class _XGBoost:
@@ -363,11 +375,12 @@ class _XGBoost:
         return self.model.predict_proba(X.to_numpy(float))[:, 1].astype(float)
 
     @traced
-    def shap(self, X: pd.DataFrame) -> np.ndarray:
-        """Exact TreeSHAP from XGBoost (pred_contribs): (teeth, predictors + bias); each row adds up to the log-odds."""
+    def shap(self, X: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
+        """Exact TreeSHAP from XGBoost (pred_contribs): (teeth x (predictors + bias), the predictor names); each row
+        adds up to the log-odds."""
         from xgboost import DMatrix
-        return np.asarray(self.model.get_booster().predict(DMatrix(X.to_numpy(float), missing=np.nan),
-                                                           pred_contribs=True))
+        phi = self.model.get_booster().predict(DMatrix(X.to_numpy(float), missing=np.nan), pred_contribs=True)
+        return np.asarray(phi), list(X.columns)
 
 
 @traced
@@ -711,14 +724,13 @@ def run(x: dict[str, pd.DataFrame], truth: pd.DataFrame, params: ModelParams = D
                 for ev in EVAL_SETS:
                     if not (fs == "own" and ev == "missing_at_entry"):      # no own measures there
                         score(ls, fs, model, ev, p, thresholds, boot=True)
-                if model == "xgboost":     # #625: SHAP by outcome on the held-out teeth, at the run's threshold
-                    m = eval_masks["held_out"].to_numpy()
-                    if m.any():
-                        y_held = eval_y["held_out"][m].to_numpy(float).astype(int)
-                        d = shap_drilldown_by_outcome(fitted.shap(X[m]), y_held, p[m] >= params.threshold,
-                                                      list(X.columns))
-                        drilldowns.append(d.assign(**tag, label_set=ls, feature_set=fs, model=model,
-                                                   eval_set="held_out", threshold=params.threshold))
+                m = eval_masks["held_out"].to_numpy()   # #625, #628: SHAP by outcome on the held-out teeth
+                if m.any():
+                    y_held = eval_y["held_out"][m].to_numpy(float).astype(int)
+                    phi, names = fitted.shap(X[m])
+                    d = shap_drilldown_by_outcome(phi, y_held, p[m] >= params.threshold, names)
+                    drilldowns.append(d.assign(**tag, label_set=ls, feature_set=fs, model=model,
+                                               eval_set="held_out", threshold=params.threshold))
                 rows = keep & ~((fs == "own") & (status == "missing_at_entry").to_numpy())
                 preds.append(pd.DataFrame({
                     "patient_id": el.loc[rows, "patient_id"].astype("int64").to_numpy(),

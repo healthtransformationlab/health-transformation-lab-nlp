@@ -496,10 +496,30 @@ def test_a_run_with_a_start_date_counts_every_lost_tooth_in_the_stage_recount():
         pytest.approx(one["unlabelled_prob_sum"].to_numpy())
 
 
-def test_a_run_gives_the_xgboost_shap_by_outcome_as_an_artifact_only(small_run):
-    # #625: why XGBoost misses periodontal losses or raises false alarms, on the held-out teeth
+def test_a_run_gives_shap_by_outcome_as_an_artifact_only(small_run):
+    # #625: why a model misses periodontal losses or raises false alarms, on the held-out teeth
     d = small_run["shap_drilldown"]
-    assert set(d["model"]) == {"xgboost"} and set(d["label_set"]) == {"completed", "completed_planned"}
+    assert set(d["label_set"]) == {"completed", "completed_planned"}
     assert set(d["population"]) <= {"sensitivity", "specificity", "ppv", "npv"} and "bias" in set(d["feature"])
     assert d["mean_shap"].notna().all() and (d["mean_abs_shap"] >= 0).all()
     assert "shap_drilldown" not in tm.outputs_to_write(small_run, stage_recount=True)   # never written to files or gold
+
+
+def test_logistic_shap_is_exact_linear_shap_on_the_standardised_inputs():
+    # #628: coefficient x standardised value per input, the intercept as the bias; each row adds up to the log-odds
+    rng = np.random.default_rng(0)
+    X = pd.DataFrame({"a": rng.normal(size=200), "b": rng.normal(size=200)})
+    X.loc[::7, "b"] = np.nan                                                # gives a missing indicator
+    y = (X["a"] + rng.normal(scale=0.5, size=200) > 0).to_numpy(int)
+    m = tm.fit("logistic", X, y)
+    phi, names = m.shap(X)
+    assert names == ["a", "b", "b_missing"] and phi.shape == (200, 4)
+    p = m.predict(X)
+    assert np.allclose(phi.sum(axis=1), np.log(p / (1 - p)), atol=1e-8)
+
+
+def test_both_models_get_shap_by_outcome(small_run):
+    d = small_run["shap_drilldown"]
+    assert set(d["model"]) == {"logistic", "xgboost"}                       # #628: logistic regression too
+    for model, g in d.groupby("model"):
+        assert "bias" in set(g["feature"]), model
