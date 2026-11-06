@@ -45,6 +45,7 @@ EXTRA = ["kaggle_kernel_url", "time_minutes", "max_new_tokens", "is_thinking", "
          "run_ts", "script_seconds", "session_seconds", "gpu_count", "allowance_hours", "kaggle_allowance_ratio", "gpu_hours",
          "estimated_cost_usd", "price_basis_text", "error_text"]   # the cost columns: spec 036 US2 (#569)
 POLL_SECONDS, MAX_WAIT_SECONDS = 30, 4 * 3600
+UPLOAD_TRIES, UPLOAD_RETRY_SECONDS = 4, 60
 
 
 def kernel_slug(instance_id: str) -> str:
@@ -89,8 +90,16 @@ def _upload_bundle(api, folder: Path, ref: str) -> None:
         exists = True
     except Exception:  # noqa: BLE001 - a missing dataset is an HTTP error here
         exists = False
-    r = (api.dataset_create_version(str(folder), "This task's bundle", dir_mode="zip") if exists
-         else api.dataset_create_new(str(folder), public=False, dir_mode="zip"))
+    for attempt in range(UPLOAD_TRIES):   # Kaggle sometimes drops a create (HTTP 499): it passes on a retry (#615)
+        try:
+            r = (api.dataset_create_version(str(folder), "This task's bundle", dir_mode="zip") if exists
+                 else api.dataset_create_new(str(folder), public=False, dir_mode="zip"))
+            break
+        except Exception as e:  # noqa: BLE001 - the client raises plain HTTP errors
+            if attempt == UPLOAD_TRIES - 1:
+                raise
+            print(f"upload of {ref} failed ({e}); trying again in {UPLOAD_RETRY_SECONDS} s", flush=True)
+            time.sleep(UPLOAD_RETRY_SECONDS)
     if r is None or str(r.status).lower() != "ok":
         raise SystemExit(f"Kaggle refused {ref}: {getattr(r, 'error', None)}")
     time.sleep(10)
