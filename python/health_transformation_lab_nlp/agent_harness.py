@@ -82,6 +82,10 @@ def _git(cwd: Path, *args: str, stdin: str | None = None) -> subprocess.Complete
 
 # --- the workspace ------------------------------------------------------------------------------------------------
 
+def _own(member: tarfile.TarInfo, path: str) -> tarfile.TarInfo:
+    return tarfile.tar_filter(member, path).replace(uid=os.getuid(), gid=os.getgid(), uname="", gname="", deep=False)
+
+
 @traced
 def prepare_workspace(task: dict, source: Path, dest: Path) -> Path:
     """The task's files at base_commit in `dest`, as one commit on main tagged _swegemma_baseline. `source` is a
@@ -89,8 +93,8 @@ def prepare_workspace(task: dict, source: Path, dest: Path) -> Path:
     source, dest = Path(source), Path(dest)
     dest.mkdir(parents=True, exist_ok=False)
     if source.is_file():
-        with tarfile.open(source) as t:
-            t.extractall(dest, filter="tar")
+        with tarfile.open(source) as t:   # as whoever runs the harness: git refuses a repository another user
+            t.extractall(dest, filter=_own)   # owns, and a snapshot tarred elsewhere keeps its owner (#621)
     else:
         tar = subprocess.run(["git", "archive", "--format=tar", task["base_commit"]], cwd=source,
                              capture_output=True, check=True).stdout
@@ -389,6 +393,8 @@ def extract_patch(workdir: Path) -> str:
     diff = _git(workdir, "diff", "--binary", "_swegemma_baseline")
     if diff.returncode != 0:
         diff = _git(workdir, "diff", "--binary", "HEAD")
+    if diff.returncode != 0:   # never an empty patch for a diff git couldn't make (#621)
+        raise RuntimeError(f"git diff failed in {workdir}: {diff.stderr.strip()[:300]}")
     return tgate.strip_protected(diff.stdout)[0]
 
 

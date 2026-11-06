@@ -448,3 +448,32 @@ def test_commands_find_the_running_python_first(session):
     unsandboxed = ah.Session(session.workdir, session.budget, sandbox=None)
     out = call(unsandboxed, "run_command", command="python3 -c 'import sys; print(sys.prefix)'")
     assert out["stdout"].strip() == sys.prefix
+
+
+# --- snapshots built by another user (#621) ----------------------------------------------------------------------
+
+def test_a_snapshot_owned_by_another_user_still_gives_the_agents_patch(repo, task, tmp_path):
+    """The published snapshots were tarred on a GitHub runner (owner `runner`); extracted as root on Kaggle, git
+    refused the repository as of "dubious ownership" and every patch came back empty."""
+    import os
+    import tarfile
+    src = ah.prepare_workspace(task, repo, tmp_path / "src")
+    snap = tmp_path / "snap.tgz"
+
+    def other_owner(info):
+        info.uid, info.gid, info.uname, info.gname = os.getuid() + 1001, os.getgid() + 1001, "runner", "runner"
+        return info
+
+    with tarfile.open(snap, "w:gz") as t:
+        for p in sorted(src.iterdir()):
+            t.add(p, arcname=p.name, filter=other_owner)
+    ws = ah.prepare_workspace(task, snap, tmp_path / "ws")
+    assert all(p.stat().st_uid == os.getuid() for p in [ws, ws / ".git", ws / "python/pkg/calc.py"])
+    (ws / "python/pkg/calc.py").write_text(FIXED)
+    assert "+    return a + b" in ah.extract_patch(ws)
+
+
+def test_a_patch_git_cant_read_is_an_error_not_an_empty_patch(tmp_path):
+    (tmp_path / "f.txt").write_text("x")          # no repository here: git diff fails both ways
+    with pytest.raises(RuntimeError, match="git diff"):
+        ah.extract_patch(tmp_path)
