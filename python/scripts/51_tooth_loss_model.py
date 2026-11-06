@@ -1,7 +1,7 @@
 """Was a missing tooth lost to periodontitis? The tooth-level model on the synthetic Open Dental extract (spec 029 US3,
 #371), following specs/029-tooth-loss/analysis_plan.md.
 
-    python scripts/51_tooth_loss_model.py [--patients 6000] [--seed 42] [--stability-seeds 5] [--n-boot 1000]
+    python scripts/51_tooth_loss_model.py [--patients 60000] [--seed 42] [--stability-seeds 5] [--n-boot 1000]
                                           [--min-age N] [--third-molars]
                                           [--split-unit person|visit] [--test-share 0.2] [--cv-folds K]
                                           [--start-date 2018-01-01] [--planned-window-days 548|none]
@@ -53,7 +53,8 @@ from health_transformation_lab_nlp import tooth_loss_model as tlm
 from health_transformation_lab_nlp.paths import RESULTS_DIR
 
 ap = argparse.ArgumentParser()
-ap.add_argument("--patients", type=int, default=6000, help="synthetic patients per extract (analysis plan s. 6)")
+ap.add_argument("--patients", type=int, default=60000,
+                help="synthetic patients per extract (analysis plan s. 6; 60,000 since #609, for enough periodontal test teeth)")
 ap.add_argument("--seed", type=int, default=42, help="generator seed of the main run; the model seed is fixed")
 ap.add_argument("--stability-seeds", type=int, default=5, help="generator seeds in all, the main one included")
 ap.add_argument("--n-boot", type=int, default=1000, help="bootstrap resamples of patients (main seed only)")

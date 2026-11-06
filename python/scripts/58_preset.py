@@ -21,7 +21,7 @@ generator seed), runs every part (presets.run_preset) and writes, one file per p
     synthetic_preset_<name>_icc.csv                      the CAL reliability ICC (when the preset turns it on)
 
 To keep the run to minutes it uses one generator seed and no bootstrap intervals (--n-boot 0), where
-scripts/51_tooth_loss_model.py uses five seeds and 1000 resamples (both use 6000 patients). Every number is SYNTHETIC:
+scripts/51_tooth_loss_model.py uses five seeds, 1000 resamples and 60000 patients (#609; presets use 6000). Every number is SYNTHETIC:
 agreement with a synthetic answer key, not a finding about any practice or patient. Needs the `ml` extra (xgboost). The other
 committed results don't change: a preset run writes only these files.
 """
