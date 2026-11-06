@@ -37,14 +37,30 @@ python ../kaggle/perio_bench_task.py                   # dry run: prints a SIMUL
 
 A dry run is labelled `SIMULATED (scripted model, not a result)` and is never a number to report.
 
-## First runs on Kaggle (2026-11-04 and 2026-11-05)
+## Runs on Kaggle
+
+**PerioBench is public on Kaggle Benchmarks:** [jcblearning/perio-bench](https://www.kaggle.com/benchmarks/tasks/jcblearning/perio-bench/3)
+(task version 3, published 2026-11-06 by workflow run 42179437319).
 
 Three models, one each from Google, Anthropic and OpenAI, read all 223 review notes through Kaggle's model proxy,
-twice. The notes are synthetic, so each score is **agreement with the generator's answer key, not accuracy on real
-patients** ([how scoring works](scoring.md)). Every note was answered both times (`errored_count` 0), but Kaggle
-marked every added model's run ERRORED after it finished, with "The task code doesn't contain any statement to use
-the `kbench.llm` model". So these runs are not on a leaderboard; the scores are read from the runs' outputs
-(`kaggle b t log` and `kaggle b t download perio-bench`). #547 and #593 change the task file to Kaggle's cookbook form.
+plus Kaggle's default model on each push. The notes are synthetic, so each score is **agreement with the generator's
+answer key, not accuracy on real patients** ([how scoring works](scoring.md)).
+
+**2026-11-06, the first clean run** (workflow run 42173351209, task version 3). Every run came back Completed, with
+every note answered (`errored_count` 0), and is on the task's leaderboard. The judge was Kaggle's default evaluation
+model, `google/gemini-3.8-flash`, for every model, so it judged its own answers in its row.
+
+| Model | Sensitivity | Specificity | Macro F1 (five groups) | Agreement with the key | Quote check passed | Judge agreed |
+|---|---|---|---|---|---|---|
+| `anthropic/claude-sonnet-5@default` | 0.993 | 0.845 | 0.857 | 0.848 | 0.978 | 0.951 |
+| `google/gemini-3-flash-preview` | 1.000 | 0.810 | 0.856 | 0.839 | 0.991 | 0.951 |
+| `google/gemini-3.8-flash` | 1.000 | 0.762 | 0.849 | 0.825 | 1.000 | 0.991 |
+| `openai/gpt-5.4-nano-2026-03-17` | 0.813 | 0.976 | 0.649 | 0.695 | 0.892 | 0.650 |
+
+**Earlier runs, not on a leaderboard.** On 2026-11-04 and 2026-11-05 every note was answered too, but Kaggle marked
+every added model's run ERRORED after it finished: "The task code doesn't contain any statement to use the
+`kbench.llm` model". #541, #547 and #593 changed the task file to Kaggle's cookbook form, which fixed it. Their scores
+were read from the runs' outputs (`kaggle b t log`, `kaggle b t download perio-bench`).
 
 **2026-11-05** (workflow run 41978154454, task version 2). The judge was Kaggle's default evaluation model,
 `google/gemini-3.8-flash`, for every model. Its own run is the push's default-model run, which completed.
@@ -64,9 +80,10 @@ the `kbench.llm` model". So these runs are not on a leaderboard; the scores are 
 | `google/gemini-3-flash-preview` | 0.993 | 0.821 | 0.840 | 0.825 | 0.991 | 0.946 |
 | `openai/gpt-5.4-nano-2026-03-17` | 0.827 | 0.976 | 0.669 | 0.722 | 0.928 | 0.664 |
 
-The larger models find (nearly) every periodontitis chart but call some healthy or gingivitis charts periodontitis.
-The smaller OpenAI model is the reverse. The numbers move between days because the models' answers vary and Kaggle's
-default judge changed, so quote a model's score from more than one run. Sensitivity, the leaderboard's main number,
+Across all three days the picture holds. The larger models find (nearly) every periodontitis chart but call some
+healthy or gingivitis charts periodontitis; the smaller OpenAI model is the reverse, missing about one in five. The
+numbers move by a few points between days because the models' answers vary and Kaggle's default judge changed, so
+quote a model's score from more than one run. Sensitivity, the leaderboard's main number,
 is the share of periodontitis charts found.
 
 ## Push it to Kaggle
@@ -112,8 +129,8 @@ three-model run costs, and never publishes it: check a change to the task file t
 
 ## Getting involved: three routes
 
-1. **Publish the task** (free, no application). `kaggle b t publish perio-bench` after a clean run on two
-   or three models. That puts PerioBench on kaggle.com/benchmarks with the dataset attached.
+1. **Publish the task** (free, no application). **Done 2026-11-06:** after a clean run on three models,
+   `publish` put PerioBench on kaggle.com/benchmarks with the dataset attached ([the task page](https://www.kaggle.com/benchmarks/tasks/jcblearning/perio-bench/3)).
 2. **Benchmarks Resource Grant** (compute, frontier-model access, Kaggle keeps the leaderboard updated,
    marketing). Application: the form linked from kaggle.com/research-grants. What it wants, and where we
    stand:
