@@ -203,10 +203,18 @@ _TOOTH_KIND = {**{t: "incisor" for t in (7, 8, 9, 10, 23, 24, 25, 26)}, **{t: "c
 class Params:
     """Every rate and date is a named parameter with a fixed default (AGENTS.md: seeds and defaults fixed)."""
     n_patients: int = 2000                   # enough extractions with a diagnosis to train on (spec 029 US3)
-    visits: tuple = (2, 8)                    # recall visits per patient, inclusive
+    visits: tuple = (2, 20)                   # recall visits per patient, inclusive: up to ten years (spec 037 US3,
+                                              # placeholder: no published figure for time in a practice's records)
+    last_visit: date = date(2025, 12, 31)     # no visit after this: a patient whose visits would run later has fewer
     first_years: tuple = (2012, 2022)         # first visit falls in these years
     entry_as_existing: float = 0.3            # teeth missing at entry recorded as an extraction done elsewhere
-    other_extraction_per_visit: float = 0.04  # an extraction for another reason (caries, fracture) between visits
+    # spec 037 US1-US2: completed extractions per patient-year, all reasons (Vehkalahti et al., Acta Odontol Scand
+    # 2023: about 0.17 per adult patient per year), split by ENTRY_PERIO_SHARE_BY_AGE into periodontal and other
+    extraction_per_year: float = 0.17
+    # periodontal extractions beyond the chart's own losses go to patients with attachment loss (worst CAL 3 mm or
+    # more); this scales their mean so each age band as a whole reaches its share. Set by measurement (spec 037,
+    # docs/synthetic_data.md), not a cited figure
+    perio_topup_scale_by_age: tuple = ((25, 1.4), (35, 3.0), (45, 3.0), (55, 2.45), (65, 2.6), (75, 2.3))
     planned_not_done_per_visit: float = 0.10  # a periodontal extraction planned and never completed in the record
     planned_then_missing: float = 0.5         # SYNTHETIC placeholder (029 US9): ... and its tooth recorded missing,
                                               # extracted by another provider, at a later visit (drawn on its own
@@ -557,6 +565,9 @@ def build_with_readings(p: Params | None = None, seed: int = 42) -> tuple[dict[s
         age = rng.randint(25, 85)
         first = date(rng.randint(*p.first_years), rng.randint(1, 12), rng.randint(1, 28))
         n_vis = rng.randint(*p.visits)
+        fit = 1 + int(((p.last_visit - first).days - 20) // 183)   # spec 037 US3: no visit after p.last_visit
+                                                                 # (visits are 182.5 days apart, give or take 20)
+        n_vis = max(min(p.visits), min(n_vis, fit))
         risk = draw_risk(rng, **risk_kw)
         hist = draw_history(age, n_vis, risk, rng, months_between=6.0)
         dates = [first + timedelta(days=round(182.5 * k + rng.uniform(-20, 20))) if k else first for k in range(n_vis)]
@@ -572,7 +583,8 @@ def build_with_readings(p: Params | None = None, seed: int = 42) -> tuple[dict[s
                     datefirstvisit=first, smokingsnomed=smoke, zip=f"0{rng.randint(1000, 9999)}", guarantor=0,
                     medurgnote="", premed=False, language=rng.choices(["eng", "spa"], weights=[0.9, 0.1])[0],
                     admitdate=(first - timedelta(days=rng.randint(30, 900))) if site else None, sitenum=site,
-                    responsparty=0, datetimedeceased=(last + timedelta(days=rng.randint(30, 400))) if status == 5 else None)
+                    responsparty=0, datetimedeceased=min(last + timedelta(days=rng.randint(30, 400)), p.last_visit)
+                    if status == 5 else None)
         row = r.rows["patient"][-1]
         row["guarantor"] = pat
         if rng.random() < 0.05:
@@ -773,7 +785,15 @@ def build_with_readings(p: Params | None = None, seed: int = 42) -> tuple[dict[s
                 worst = sorted(present - THIRD_MOLARS, key=lambda t: (t not in MOLARS, -cal_tooth.get(t, 0)))
                 for t in worst[:n_lost]:
                     new_plans.append((t, "perio", dates[k + 1] - timedelta(days=rng.randint(7, 120))))
-                if rng.random() < p.other_extraction_per_visit:
+                # spec 037: half a year's extractions at the published rate, split by the band's periodontal share
+                share = dict(ENTRY_PERIO_SHARE_BY_AGE)[_band(age, ENTRY_PERIO_SHARE_BY_AGE)]
+                if chart.max_cal_mm >= 3:
+                    scale = dict(p.perio_topup_scale_by_age)[_band(age, p.perio_topup_scale_by_age)]
+                    taken = {t for t, _, _ in new_plans}
+                    extra = [t for t in worst if t not in taken][:_poisson(0.5 * p.extraction_per_year * share * scale, rng)]
+                    for t in extra:
+                        new_plans.append((t, "perio", dates[k + 1] - timedelta(days=rng.randint(7, 120))))
+                for _ in range(_poisson(0.5 * p.extraction_per_year * (1 - share), rng)):
                     left = sorted(present - {t for t, _, _ in new_plans})
                     if left:
                         new_plans.append((rng.choice(left), "other", dates[k + 1] - timedelta(days=rng.randint(7, 120))))
@@ -941,6 +961,35 @@ def patient_age(tables: dict[str, pd.DataFrame]) -> pd.Series:
 def age_band(age: pd.Series) -> pd.Series:
     """The lower bound of the ENTRY_PERIO_SHARE_BY_AGE band each age falls in."""
     return age.map(lambda a: _band(a, ENTRY_PERIO_SHARE_BY_AGE)).rename("age_band_num")
+
+
+@traced
+def extraction_rates(tables: dict[str, pd.DataFrame], truth: pd.DataFrame) -> pd.DataFrame:
+    """Extractions completed in the record per patient-year, and the share periodontal, by age band (spec 037): one
+    row per band with patients, patient_years, extractions, periodontal and their ratios. Counts only. Patient-years
+    run from the first to the last visit, the span in which the record can hold an extraction; patients with no
+    natural teeth are left out (they have no extractions to make)."""
+    pat = tables["patient"]
+    age = patient_age(tables)
+    pl = tables["procedurelog"]
+    visits = pl[pl["procdate"].notna()].groupby("patnum")["procdate"].agg(["min", "max"])
+    years = (pd.to_datetime(visits["max"]) - pd.to_datetime(visits["min"])).dt.days / 365.25
+    people = pd.DataFrame({"patnum": pat["patnum"].to_numpy(), "age_band": age_band(age).to_numpy()})
+    people["years"] = people["patnum"].map(years).fillna(0.0)
+    ext = pl[pl["codenum"].isin(extraction_codenums(tables)) & (pl["procstatus"] == COMPLETE)
+             & pd.to_numeric(pl["toothnum"], errors="coerce").between(1, 32)]
+    reasons = truth.set_index(["patient_id", "tooth_num"])["true_reason_code"]
+    keys = list(zip(ext["patnum"], pd.to_numeric(ext["toothnum"]).astype(int)))
+    perio = pd.Series([reasons.get(k) == "perio" for k in keys], index=ext.index)
+    with_teeth = set(ext["patnum"]) | set(tables["perioexam"]["patnum"])
+    people = people[people["patnum"].isin(with_teeth)]
+    band = people.set_index("patnum")["age_band"]
+    out = people.groupby("age_band").agg(patients=("patnum", "size"), patient_years=("years", "sum"))
+    out["extractions"] = ext["patnum"].map(band).value_counts().reindex(out.index, fill_value=0)
+    out["periodontal"] = ext.loc[perio, "patnum"].map(band).value_counts().reindex(out.index, fill_value=0)
+    out["rate_per_patient_year"] = out["extractions"] / out["patient_years"]
+    out["periodontal_share"] = out["periodontal"] / out["extractions"].where(out["extractions"] > 0)
+    return out
 
 
 def _recorded_later(away: pd.DataFrame, patient: pd.DataFrame) -> pd.Series:

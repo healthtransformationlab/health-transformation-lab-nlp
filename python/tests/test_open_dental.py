@@ -86,7 +86,7 @@ def test_the_truth_stays_out_of_the_extract(built):
 
 
 def test_extraction_diagnoses_follow_the_declared_rates():
-    p = od.Params(n_patients=800, planned_not_done_per_visit=0.6, other_extraction_per_visit=0.3)  # many extractions
+    p = od.Params(n_patients=800, planned_not_done_per_visit=0.6, extraction_per_year=0.6)  # many extractions
     tables, truth = od.build(p, seed=3)
     ext = od.extractions(tables, truth)                   # one row per extraction with its truth and mapped diagnosis
     assert len(ext) > 1000
@@ -604,3 +604,44 @@ def test_a_state_extract_has_more_edentulous_patients_where_the_state_rate_is_hi
     low, _ = od.build(od.Params(n_patients=3000, clinic_states=("HI",) * 4), seed=9)
     share = lambda t: len(od.edentulous_patients(t)) / len(t["patient"])
     assert share(high) > 2.5 * share(low)
+
+
+# ---- spec 037: extractions in the record follow published rates (#610, #611, #612)
+
+@pytest.fixture(scope="module")
+def rate_extracts():
+    """Two 4,000-patient extracts (seeds 21, 22): enough extractions per age band for the shares."""
+    return [od.build(od.Params(n_patients=4000), seed=s)[:2] for s in (21, 22)]
+
+
+@pytest.fixture(scope="module")
+def pooled_rates(rate_extracts):
+    parts = [od.extraction_rates(t, truth) for t, truth in rate_extracts]
+    cols = ["patient_years", "extractions", "periodontal"]
+    return pd.concat(parts).groupby("age_band", sort=False)[cols].sum()
+
+
+def test_extraction_rate_per_patient_year_follows_the_published_rate(pooled_rates):
+    # #610: about 0.17 per adult patient per year (Vehkalahti et al. 2023)
+    rate = pooled_rates["extractions"].sum() / pooled_rates["patient_years"].sum()
+    assert 0.15 <= rate <= 0.20, rate
+
+
+def test_extractions_in_the_record_are_periodontal_at_the_published_share_by_age(pooled_rates):
+    # #611: Suzuki et al. 2022, the shares already used for teeth missing at entry
+    targets = dict(zip(od.age_band(pd.Series([a for a, _ in od.ENTRY_PERIO_SHARE_BY_AGE])),
+                       [s for _, s in od.ENTRY_PERIO_SHARE_BY_AGE]))
+    for band, row in pooled_rates.iterrows():
+        share = row["periodontal"] / row["extractions"]
+        assert abs(share - targets[band]) <= 0.07, (band, round(share, 3), targets[band])
+
+
+def test_patients_have_up_to_ten_years_of_record_and_none_after_2025(rate_extracts):
+    # #612: 2-20 recall visits, every visit on or before 2025-12-31
+    for tables, _ in rate_extracts:
+        exams = tables["perioexam"]
+        assert pd.to_datetime(tables["procedurelog"]["procdate"]).max() <= pd.Timestamp("2025-12-31")
+        assert pd.to_datetime(exams["examdate"]).max() <= pd.Timestamp("2025-12-31")
+    rates = od.extraction_rates(*rate_extracts[0])
+    years = rates["patient_years"].sum() / rates["patients"].sum()
+    assert 3 < years <= 10, years
