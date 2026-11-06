@@ -6185,8 +6185,8 @@
    {
     "metric": "uniform_chart_share",
     "label": "Charts with one depth everywhere",
-    "pct": 3.6,
-    "numerator": 478,
+    "pct": 3.7,
+    "numerator": 480,
     "denominator": 13117
    },
    {

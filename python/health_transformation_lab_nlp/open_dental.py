@@ -1168,7 +1168,7 @@ def chart_quality(tables: dict[str, pd.DataFrame]) -> pd.DataFrame:
     q["has_margin"] = q["has_margin"].astype("boolean").fillna(False).astype(bool)
     q["has_bleeding"] = q["has_bleeding"].astype("boolean").fillna(False).astype(bool)
     q["is_buccal_only"] = (q["site_count"] > 0) & (q["lingual_count"] == 0)
-    q["is_uniform"] = (q["teeth_charted_count"] >= 3) & (q["lo"] == q["hi"])   # one or two teeth may be even
+    q["is_uniform"] = (q["site_count"] >= 12) & (q["lo"] == q["hi"])   # one tooth may be even all round
 
     # teeth the record says are present at each exam: 32, less those missing at entry and those extracted before it
     pl = _numeric(tables["procedurelog"], ["patnum", "procstatus", "codenum", "toothnum"])
