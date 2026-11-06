@@ -1,5 +1,5 @@
-"""The data-dictionary ERD (#379): a third format beside the entity and full views, for reading a source's tables
-with their data. Tables sit in titled subject areas. Each table's header gives its name, its row count and what one
+"""The data-dictionary ERD (#379), the format of every ERD here (#601): the full view, for reading a source's tables
+with their data, and the entity view, the same layout with only each table's header and key columns. Tables sit in titled subject areas. Each table's header gives its name, its row count and what one
 row is. Each column row gives the name, the type and meaning, and its profile (nulls, distinct values, and every
 value's count when there are few, else the most common, from table_profile.py, one fact per line), or says it isn't
 measured yet.
@@ -10,7 +10,7 @@ the foreign-key row to the side of the key row it points at, with crow's feet an
 a key). Router finds each line's path: never through a table, in the gaps between tables and subject areas, spread
 into separate lanes, and never round the outside of the whole diagram.
 
-Colours: green header fact table, orange header dimension; name in blue primary key, purple foreign key, red would
+Colours: green header fact table, orange header dimension, blue header summary (gold's <subject>_<noun> tables); name in blue primary key, purple foreign key, red would
 hold PHI in a real extract (de-identify), grey not linked; red text an open question or issue.
 Each model declares GROUPS, KINDS, PHI and QUESTIONS beside its TABLES.
 Run: python3 silver_erd.py (writes these too), then render with drawio_render.js (render.md).
@@ -24,7 +24,8 @@ from gold_erd import CARD, INK, MUTED, Diagram
 SRC = Path(__file__).resolve().parent.parent / "silver" / "source"
 LIMITS = ((90, 170), (80, 220), (110, 210))     # min, max width of: name, type and meaning, profile
 CHAR, LINE, PAD, GAP, HEAD_LINE = 5.6, 13, 56, 120, 14
-FACT, DIM, AREA, BAND = "#E3F8DF", "#FFD9A8", "#FDF8C8", "#E6E6E6"
+FACT, DIM, SUMMARY, AREA, BAND = "#E3F8DF", "#FFD9A8", "#DCE9F7", "#FDF8C8", "#E6E6E6"
+HEADER = {"fact": FACT, "dimension": DIM, "summary": SUMMARY}
 PK, FK, PHI_RED, PLAIN, QUESTION = "#1F5FBF", "#6A3FB5", "#C62828", "#4B5563", "#C62828"
 NOT_YET = "not profiled yet"
 
@@ -52,13 +53,15 @@ def _fit(texts, lo, hi):
 
 
 def table_widths(m, stats):
-    """{table: (name, meaning, profile) widths}: each column sized to its own longest line, within LIMITS."""
+    """{table: (name, meaning, profile) widths}: each column sized to its own longest line, within LIMITS. A model
+    with PROFILE = False (gold: its rows live in Databricks, not here) has no profile column: width 0."""
     out = {}
+    profiled = getattr(m, "PROFILE", True)
     for name, t in m.TABLES.items():
         rows = [_cells(m, name, c, stats.get(name)) for c in t.columns]
         out[name] = (_fit([r[0] for r in rows], *LIMITS[0]),
                      _fit([r[1] for r in rows] + [r[2] or "" for r in rows], *LIMITS[1]),
-                     _fit([r[3] for r in rows], *LIMITS[2]))
+                     _fit([r[3] for r in rows], *LIMITS[2]) if profiled else 0)
     return out
 
 
@@ -75,7 +78,7 @@ def _head_height(m, name, stats, width):
 def _row_height(cells, widths):
     name, meaning, question, profile = cells
     lines = max(_lines(name, widths[0]), _lines(meaning + ("\n" + question if question else ""), widths[1]),
-                _lines(profile, widths[2]))
+                _lines(profile, widths[2]) if widths[2] else 1)
     return lines * LINE + 6
 
 
@@ -99,7 +102,7 @@ def _draw_table(d, m, name, x, y, stats, widths, anchors):
     tstats = stats.get(name)
     w, h = _size(m, name, stats, widths)
     head_h = _head_height(m, name, stats, w)
-    fill = FACT if m.KINDS[name] == "fact" else DIM
+    fill = HEADER[m.KINDS[name]]
     title, count, desc = _head_text(m, name, stats)
     # the outline: rounded, white body, the header filled
     d.v("", x, y, w, h, f"rounded=1;arcSize=2;absoluteArcSize=1;fillColor=#FFFFFF;strokeColor={INK};strokeWidth=1.5;")
@@ -120,33 +123,95 @@ def _draw_table(d, m, name, x, y, stats, widths, anchors):
         meaning = _esc(cells[1]) + (f"<br><span style='color:{QUESTION}'>{_esc(cells[2])}</span>" if cells[2] else "")
         for (text, colour_), cw in zip(((name_text, colour), (meaning, INK),
                                         (_esc(cells[3]), MUTED if cells[3] == NOT_YET else INK)), widths):
-            d.v(text, cx, cy, cw - (2 if cx + cw >= x + w - 1 else 0), rh, cell + f"fontColor={colour_};")
+            if cw:
+                d.v(text, cx, cy, cw - (2 if cx + cw >= x + w - 1 else 0), rh, cell + f"fontColor={colour_};")
             cx += cw
         # an invisible box the width of the table, so lines meet the side of this row
         anchors[(name, col.name)] = (d.v("", x, cy, w, rh, "fillColor=none;strokeColor=none;"), x, cy, w, rh)
         cy += rh
     vx = x
-    for cw in widths[:-1]:                     # the vertical column lines
+    for cw, nxt in pairwise(widths):                 # the vertical column lines, between drawn columns
         vx += cw
-        d.v("", vx, y + head_h, 1.5, h - head_h, f"rounded=0;fillColor={INK};strokeColor=none;")
+        if nxt:
+            d.v("", vx, y + head_h, 1.5, h - head_h, f"rounded=0;fillColor={INK};strokeColor=none;")
     return w, h
 
 
-def _legend(d, x, y):
-    items = [(FACT, INK, "green header = FACT table (one row per event)"),
+def entity_columns(m, name):
+    """The columns an entity view keeps: keys, and every column a relationship joins on (so each line has a row)."""
+    joined = {c for r in m.RELATIONSHIPS if r.parent == name for c in r.parent_cols}
+    joined |= {c for r in m.RELATIONSHIPS if r.child == name for c in r.child_cols}
+    return [c for c in m.TABLES[name].columns if "PK" in c.key or "FK" in c.key or c.name in joined]
+
+
+ENTITY_WIDTH = (180, 300)        # min, max width of an entity-view table
+
+
+def _entity_row(col):
+    return col.name + (f" {col.key}" if col.key else "")
+
+
+def entity_size(m, name, stats):
+    """An entity-view table's (width, height): as wide as its longest key row (within ENTITY_WIDTH), its header
+    wrapped to that width, one row per key column."""
+    cols = entity_columns(m, name)
+    w = _fit([_entity_row(c) for c in cols] + [name], *ENTITY_WIDTH)
+    return w, _head_height(m, name, stats, w) + (LINE + 6) * len(cols) + (4 if not cols else 0)
+
+
+def _draw_entity_table(d, m, name, x, y, stats, w, anchors):
+    """The entity view's table: its header (name, row count, grain) and one row per key column, coloured as in the
+    full view, with no types, meanings or profiles (#601)."""
+    head_h = _head_height(m, name, stats, w)
+    cols = entity_columns(m, name)
+    rh = LINE + 6
+    h = entity_size(m, name, stats)[1]
+    title, count, desc = _head_text(m, name, stats)
+    d.v("", x, y, w, h, f"rounded=1;arcSize=2;absoluteArcSize=1;fillColor=#FFFFFF;strokeColor={INK};strokeWidth=1.5;")
+    hid = d.v(f"<b>{_esc(title)}</b><br>{_esc(count)}<br>{_esc(desc)}", x + 1, y + 1, w - 2, head_h - 1,
+              f"rounded=1;arcSize=2;absoluteArcSize=1;fillColor={HEADER[m.KINDS[name]]};strokeColor=none;fontSize=10;"
+              f"fontColor={INK};align=center;verticalAlign=top;spacingTop=2;")
+    anchors[(name, None)] = (hid, x, y, w, head_h)
+    if cols:
+        d.v("", x, y + head_h, w, 1.5, f"rounded=0;fillColor={INK};strokeColor=none;")
+    cy = y + head_h
+    for i, col in enumerate(cols):
+        colour, bold = _key_colour(m, name, col)
+        band = f"fillColor={BAND};" if i % 2 else "fillColor=none;"
+        text = f"<b>{_esc(col.name)}</b>" if bold else _esc(col.name)
+        tag = f" <span style='color:{MUTED}'>{_esc(col.key)}</span>" if col.key else ""
+        d.v(text + tag, x + 1, cy, w - 2, rh, f"rounded=0;strokeColor=none;fontSize=10;align=left;verticalAlign=middle;"
+            f"spacingLeft=3;{band}fontColor={colour};")
+        anchors[(name, col.name)] = (d.v("", x, cy, w, rh, "fillColor=none;strokeColor=none;"), x, cy, w, rh)
+        cy += rh
+    return w, h, [c.name for c in cols]
+
+
+def _legend_items(entity=False, summary=False, profiled=True):
+    return [(FACT, INK, "green header = FACT table (one row per event)"),
              (DIM, INK, "orange header = DIMENSION table (one row per thing)"),
+             *([(SUMMARY, INK, "blue header = SUMMARY table (one row per measure or group)")] if summary else []),
              ("#FFFFFF", PK, "blue name = primary key"),
              ("#FFFFFF", FK, "purple name = foreign key"),
              ("#FFFFFF", PHI_RED, "red name = would hold PHI in a real extract: de-identify"),
              ("#FFFFFF", PLAIN, "grey name = not linked"),
-             ("#FFFFFF", QUESTION, "red text in the meaning = an open question or issue"),
-             ("#FFFFFF", INK, "profile: null=n (p%); n_distinct=k; values or top results, from the data (synthetic)"),
+             *([] if entity else [
+                 ("#FFFFFF", QUESTION, "red text in the meaning = an open question or issue"),
+                 *([("#FFFFFF", INK, "profile: null=n (p%); n_distinct=k; values or top results, from the data (synthetic)")]
+                   if profiled else [])]),
+             *([("#FFFFFF", INK, "entity view: the full view's areas and order, each table's header and key columns only")]
+               if entity else []),
              ("#FFFFFF", INK, "lines: crow's foot = many, bar = one; dashed = matched, not a key")]
+
+
+def _legend(d, x, y, entity=False, summary=False, profiled=True):
+    """Draws the legend; returns the height the full view's legend takes, so both views share one layout."""
+    items = _legend_items(entity, summary, profiled)
     h = 34 + 22 * len(items)
     d.v("<b>Legend</b>", x, y, 500, h, f"rounded=1;fillColor=#EEF0FA;strokeColor={INK};fontSize=13;verticalAlign=top;")
     for i, (fill, colour, text) in enumerate(items):
         d.v(text, x + 12, y + 30 + 22 * i, 476, 18, f"rounded=0;fillColor={fill};strokeColor={INK};fontSize=10;fontColor={colour};align=left;spacingLeft=4;")
-    return h
+    return 34 + 22 * len(_legend_items(False, summary, profiled))
 
 
 def _layout(tables, sizes):
@@ -157,11 +222,12 @@ def _layout(tables, sizes):
     return rows, gw, gh
 
 
-def group_tops(m, stats, top=0):
+def group_tops(m, stats, top=0, sizes=None):
     """{subject area: y}: stacked down each column, the column then placed by COLUMN_ALIGN (top, middle or bottom)
-    against the tallest column."""
-    widths = table_widths(m, stats)
-    sizes = {n: _size(m, n, stats, widths[n]) for n in m.TABLES}
+    against the tallest column. sizes: each table's (width, height); the full view's by default."""
+    if sizes is None:
+        widths = table_widths(m, stats)
+        sizes = {n: _size(m, n, stats, widths[n]) for n in m.TABLES}
     heights = {}
     for title, c, tables in m.GROUPS:
         heights.setdefault(c, []).append((title, _layout(tables, sizes)[2]))
@@ -304,14 +370,16 @@ def _corners(pts, keep_ends=False):
     return [pts[0], *out, pts[-1]] if keep_ends else out
 
 
-def build(m, stats=None):
+def build(m, stats=None, entity=False):
     """m: a model with TABLES, RELATIONSHIPS, GROUPS, KINDS, PHI, QUESTIONS. stats: table_profile.profile() output;
-    a table missing from it says its rows aren't measured yet."""
+    a table missing from it says its rows aren't measured yet. entity: the entity view, laid out as the full view is
+    (the same subject areas in the same page columns, the tables in the same order) with each table cut to its header
+    and key columns, and every area shrunk to fit them."""
     stats = stats or {}
     d = Diagram()
-    legend_h = _legend(d, 10, 10)
+    legend_h = _legend(d, 10, 10, entity, "summary" in m.KINDS.values(), getattr(m, "PROFILE", True))
     widths = table_widths(m, stats)
-    sizes = {n: _size(m, n, stats, widths[n]) for n in m.TABLES}
+    sizes = {n: entity_size(m, n, stats) if entity else _size(m, n, stats, widths[n]) for n in m.TABLES}
 
     def layout(tables):
         return _layout(tables, sizes)
@@ -322,8 +390,9 @@ def build(m, stats=None):
     for c in columns:
         col_x[c] = x
         x += col_w[c] + GAP
-    tops = group_tops(m, stats, 10 + legend_h + GAP)
+    tops = group_tops(m, stats, 10 + legend_h + GAP, sizes)
     anchors, tables_drawn, areas = {}, [], []
+    d.tables, d.columns = {}, {}
     for title, c, tables in m.GROUPS:
         rows, _, gh = layout(tables)
         gx, gy = col_x[c], tops[title]
@@ -334,8 +403,13 @@ def build(m, stats=None):
         for i, row in enumerate(rows):
             tx = gx + PAD
             for n in row:
-                w, h = _draw_table(d, m, n, tx, ty, stats, widths[n], anchors)
+                if entity:
+                    w, h, d.columns[n] = _draw_entity_table(d, m, n, tx, ty, stats, sizes[n][0], anchors)
+                else:
+                    w, h = _draw_table(d, m, n, tx, ty, stats, widths[n], anchors)
+                    d.columns[n] = [c.name for c in m.TABLES[n].columns]
                 tables_drawn.append((tx, ty, w, h))
+                d.tables[n] = (tx, ty, w, h)
                 tx += w + PAD
             ty += max(sizes[n][1] for n in row) + PAD
     router = Router(tables_drawn + [(10, 10, 500, legend_h)], areas, [a[1:] for a in anchors.values()])
@@ -360,8 +434,12 @@ def build(m, stats=None):
     return d
 
 
-def write(prefix, m, stats=None):
-    SRC.mkdir(parents=True, exist_ok=True)
-    stem = f"{prefix}_dictionary"
-    (SRC / f"{stem}.drawio").write_text(build(m, stats).xml(stem))
-    return SRC / f"{stem}.drawio"
+def write(prefix, m, stats=None, src=SRC):
+    """<prefix>_full.drawio (the data dictionary) and <prefix>_entity.drawio (its layout, keys only) in src."""
+    src.mkdir(parents=True, exist_ok=True)
+    out = []
+    for view, entity in (("full", False), ("entity", True)):
+        stem = f"{prefix}_{view}"
+        (src / f"{stem}.drawio").write_text(build(m, stats, entity).xml(stem))
+        out.append(src / f"{stem}.drawio")
+    return out

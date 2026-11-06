@@ -1,6 +1,6 @@
 # Gold data model: `health_transformation_lab.gold_perio_bench`
 
-Generated from [`_build/gold_model.py`](../_build/gold_model.py) by `_build/gold_erd.py`; `python/tests/test_gold_model.py` checks the columns against the CSV twins and `results_store`. Names follow AGENTS.md, SQL and data names (spec 018). Keys are logical: Delta enforces none. Solid lines are keys; dashed lines are summaries or matches, not keys. PNGs are in this folder; the draw.io and Mermaid sources are in `source/`. Who writes each table and why: [docs/gold_tables.md](../../docs/gold_tables.md). Synthetic data only.
+Generated from [`_build/gold_model.py`](../_build/gold_model.py) by `_build/gold_erd.py`; `python/tests/test_gold_model.py` checks the columns against the CSV twins and `results_store`. Names follow AGENTS.md, SQL and data names (spec 018). Keys are logical: Delta enforces none. Solid lines are keys; dashed lines are summaries or matches, not keys. The PNGs are in the data-dictionary format: tables in subject areas (green fact, orange dimension, blue summary), and the entity view has the full view's layout with each table's header and keys only. PNGs are in this folder; the draw.io and Mermaid sources are in `source/`. Who writes each table and why: [docs/gold_tables.md](../../docs/gold_tables.md). Synthetic data only.
 
 ![entity](gold_data_model_entity.png)
 
@@ -494,6 +494,7 @@ erDiagram
         string error_text "first line of the error (span export); never row data"
         double duration_seconds "run length"
         double cost_usd "run cost: its billing usage at the USD list price in effect then (spec 036), or the span export's; empty when neither is readable, never zero"
+        double billed_dbu "the run's Databricks Units from billing usage in DBU (#597); empty when billing can't be read"
         string git_commit_sha "commit the pipeline ran (span export)"
         string data_label_code "synthetic · public · simulated, from the pipeline's config"
         string doctor_run_id "the Pipeline doctor run that wrote the row (batch key)"
@@ -1156,6 +1157,7 @@ One per finished run of a bundle job (step_name job), from the Jobs API's run li
 |  | `error_text` | string | first line of the error (span export); never row data |
 |  | `duration_seconds` | double | run length |
 |  | `cost_usd` | double | run cost: its billing usage at the USD list price in effect then (spec 036), or the span export's; empty when neither is readable, never zero |
+|  | `billed_dbu` | double | the run's Databricks Units from billing usage in DBU (#597); empty when billing can't be read |
 |  | `git_commit_sha` | string | commit the pipeline ran (span export) |
 |  | `data_label_code` | string | synthetic · public · simulated, from the pipeline's config |
 |  | `doctor_run_id` | string | the Pipeline doctor run that wrote the row (batch key) |

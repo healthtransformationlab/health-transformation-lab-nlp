@@ -144,8 +144,8 @@ def test_the_dictionary_shows_counts_or_says_they_are_not_measured():
     assert widths["procedurelog"] != widths["clinic"]
     assert all(sum(w) <= 640 for w in widths.values())
     assert "exitX=" in xml and "entryX=" in xml
-    assert (dic.SRC / "opendental_silver_dictionary.drawio").exists()
-    assert (dic.SRC / "omop_silver_dictionary.drawio").exists()
+    assert (dic.SRC / "opendental_silver_full.drawio").exists()         # the full view is the data dictionary (#601)
+    assert (dic.SRC / "omop_silver_full.drawio").exists()
 
 
 def test_the_open_dental_areas_sit_in_the_reference_layout():

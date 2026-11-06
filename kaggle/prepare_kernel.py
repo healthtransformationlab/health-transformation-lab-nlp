@@ -33,9 +33,9 @@ JOBS = {   # notebook, slug, title: Kaggle derives the slug from the title, so k
     # spec 025: the quickstart, as published; reads the two attached datasets, so no GPU and no internet
     "quickstart": ("../notebooks/perio_bench_quickstart.ipynb", "perio-bench-quickstart", "perio bench quickstart"),
     # #535: loads the coding-agent task set (kaggle-publish-tasks.yml); CPU, no internet
-    "tasks-quickstart": ("../notebooks/agent_tasks_quickstart.ipynb",
-                         "health-transformation-lab-coding-agent-tasks-quickstart",
-                         "health transformation lab coding agent tasks quickstart"),
+    # #602: Kaggle caps a kernel title at 50 characters
+    "tasks-quickstart": ("../notebooks/agent_tasks_quickstart.ipynb", "coding-agent-tasks-quickstart",
+                         "coding agent tasks quickstart"),
 }
 QUICKSTART_DATASETS = {"quickstart": ("perio-bench-notes", "perio-bench-results"),
                        "tasks-quickstart": ("health-transformation-lab-coding-agent-tasks",)}

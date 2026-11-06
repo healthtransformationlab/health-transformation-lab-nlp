@@ -173,3 +173,45 @@ def test_the_readme_does_not_ask_for_a_public_collection():
     section = readme.split("## The collection", 1)[1].split("\n## ", 1)[0]
     assert "Make it public" not in section and "private" in section
     assert "What's on Kaggle" in section
+
+
+# ---- #602: Kaggle processes a new version for a minute or two; the metadata update must wait for its files
+
+class _Page:
+    def __init__(self, names):
+        self.files, self.next_page_token = [type("F", (), {"name": n})() for n in names], None
+
+
+class _SlowApi(_Api):
+    """Lists the old version's files for the first `lag` listings, then the new version's."""
+    def __init__(self, old, new, lag):
+        super().__init__(True, _Result())
+        self.old, self.new, self.lag, self.sent = old, new, lag, None
+
+    def dataset_list_files(self, ref, page_token=None, page_size=200):
+        self.lag -= 1
+        return _Page(self.old if self.lag >= 0 else self.new)
+
+    def dataset_metadata_update(self, ref, path):
+        super().dataset_metadata_update(ref, path)
+        self.sent = json.loads((pub.Path(path) / "dataset-metadata.json").read_text())
+
+
+def _folder(tmp_path, paths):
+    meta = {"id": "o/perio-bench-results", "licenses": [{"name": "CC-BY-4.0"}],
+            "resources": [{"path": p} for p in paths]}
+    (tmp_path / "dataset-metadata.json").write_text(json.dumps(meta))
+    return tmp_path
+
+
+def test_upload_waits_for_the_new_versions_files_before_sending_metadata(tmp_path):
+    api = _SlowApi(["a.csv"], ["a.csv", "b.csv"], lag=2)
+    pub.upload(_folder(tmp_path, ["a.csv", "b.csv"]), "o/perio-bench-results", "n", api, sleep=lambda s: None)
+    assert [r["path"] for r in api.sent["resources"]] == ["a.csv", "b.csv"]
+
+
+def test_upload_describes_only_live_files_when_the_version_is_still_processing(tmp_path, capsys):
+    api = _SlowApi(["a.csv"], ["a.csv", "b.csv"], lag=10_000)
+    pub.upload(_folder(tmp_path, ["a.csv", "b.csv"]), "o/perio-bench-results", "n", api, sleep=lambda s: None)
+    assert [r["path"] for r in api.sent["resources"]] == ["a.csv"]
+    assert "b.csv" in capsys.readouterr().out

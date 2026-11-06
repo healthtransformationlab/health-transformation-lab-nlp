@@ -3,6 +3,7 @@ frequency (the parts of Kaggle's usability score our datasets lacked)."""
 import importlib.util
 import json
 import shutil
+from pathlib import Path
 import sys
 
 import pytest
@@ -112,6 +113,12 @@ class FakeApi:
     def dataset_metadata_update(self, ref, path):
         self.calls.append(("metadata", ref, path))
 
+    def dataset_list_files(self, ref, page_token=None, page_size=200):   # #602: the new version's files are live
+        folder = Path(self.calls[0][1])
+        files = [type("F", (), {"name": str(f.relative_to(folder))})() for f in folder.rglob("*")
+                 if f.is_file() and f.name != "dataset-metadata.json"]
+        return type("P", (), {"files": files, "next_page_token": None})()
+
 
 @pytest.mark.parametrize("exists", [False, True])
 def test_every_upload_then_sends_the_metadata_with_the_cover(tmp_path, exists):
@@ -193,3 +200,17 @@ def test_dataset_docs_has_no_duplicate_keys():
 
     Strict.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, no_dupes)
     yaml.load((REPO_ROOT / "kaggle" / "dataset_docs.yaml").read_text(), Loader=Strict)
+
+
+def test_published_descriptions_give_the_review_sets_own_size():
+    # #598: the review set went from 240 notes to 223 (#467); what we publish says the answer key's count
+    import pandas as pd
+
+    from health_transformation_lab_nlp.paths import DATASETS_DIR, REPO_ROOT
+    n = len(pd.read_csv(DATASETS_DIR / "answer_key" / "review_key.csv"))
+    files = [REPO_ROOT / "kaggle" / "dataset_docs.yaml", *(REPO_ROOT / "kaggle" / "cards").glob("*.md"),
+             *(REPO_ROOT / "huggingface" / "cards").glob("*.md")]
+    for f in files:
+        text = f.read_text()
+        assert "240 review" not in text and "of the 240" not in text, f.name
+    assert f"{n} review notes" in (REPO_ROOT / "kaggle" / "dataset_docs.yaml").read_text()

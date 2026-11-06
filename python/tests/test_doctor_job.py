@@ -359,3 +359,20 @@ def test_the_doctor_reads_billing_before_the_span_export():
     nb = (ROOT / "databricks" / "notebooks" / "13_pipeline_doctor.py").read_text()
     assert nb.index("doctor_job.read_billing(") < nb.index("doctor_job.merge_spans(")   # a span's cost wins
     assert "doctor_job.merge_billing(runs, costs)" in nb
+
+
+def test_a_run_carries_its_dbus_beside_its_cost():   # #597: billed_dbu, summed over the DBU-unit usage lines
+    usage = _usage(["1", "JOBS_SERVERLESS", "DBU", 2.0, T("2026-10-15", tz="UTC")],
+                   ["1", "SQL_SERVERLESS", "DBU", 1.5, T("2026-10-15", tz="UTC")])
+    costs, _ = doctor_job.billing_costs(usage, PRICES)
+    row = costs.set_index("run_id").loc["1"]
+    assert row["billed_dbu"] == pytest.approx(3.5) and row["cost_usd"] == pytest.approx(0.8 + 1.05)
+    runs = pd.DataFrame({"pipeline_name": ["p"], "run_id": ["1"], "cost_usd": [float("nan")]})
+    out = doctor_job.merge_billing(runs, costs)
+    assert out["billed_dbu"].iloc[0] == pytest.approx(3.5)
+
+
+def test_fact_pipeline_run_declares_billed_dbu_after_cost():
+    cols = [c for c, _ in doctor_job.TABLES["fact_pipeline_run"]]
+    assert cols.index("billed_dbu") == cols.index("cost_usd") + 1
+    assert dict(doctor_job.TABLES["fact_pipeline_run"])["billed_dbu"] == "double"

@@ -438,6 +438,8 @@ TABLES = {
             C("duration_seconds", "double", "run length"),
             C("cost_usd", "double", "run cost: its billing usage at the USD list price in effect then (spec 036), "
               "or the span export's; empty when neither is readable, never zero"),
+            C("billed_dbu", "double", "the run's Databricks Units from billing usage in DBU (#597); empty when billing "
+              "can't be read"),
             C("git_commit_sha", "string", "commit the pipeline ran (span export)"),
             C("data_label_code", "string", "synthetic · public · simulated, from the pipeline's config"),
             *DOCTOR_PROV]),
@@ -613,3 +615,18 @@ AREAS = {   # fill, legend label
     "agent": ("#F3EBDD", "gold · coding-agent task runs and their cost (specs 035, 036)"),
     "file": ("#E4E7EA", "file in git, not a table"),
 }
+
+# ---------- the data-dictionary view (dictionary_erd.py, #601) ----------
+# subject areas: one per area above, (title, column on the page, tables in declaration order); the columns put the
+# results and their files on the left, the judge next, the data-quality grader (the biggest area) in the middle, and
+# the lab grader, the models and the run metadata on the right
+GROUP_COLUMNS = {"results": 0, "file": 0, "deid": 0, "study": 0, "judge": 1, "corpus": 1, "dq": 2,
+                 "lab": 3, "tooth": 3, "agent": 3, "ops": 3}
+GROUPS = [(AREAS[area][1], col, [n for n, t in TABLES.items() if t.area == area])
+          for area, col in GROUP_COLUMNS.items()]
+# kinds follow the gold prefixes (AGENTS.md, "SQL and data names"): fact_ one row per event, dim_ one row per thing,
+# the rest summary tables named <subject>_<noun>
+KINDS = {n: "fact" if n.startswith("fact_") else "dimension" if n.startswith("dim_") else "summary" for n in TABLES}
+PHI: set = set()        # gold holds no PHI: synthetic and de-identified only
+QUESTIONS: dict = {}    # open questions on gold columns, shown in red, as (table, column): text
+PROFILE = False         # gold's rows live in Databricks, not in the repo: the full view has no profile column

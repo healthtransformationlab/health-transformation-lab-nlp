@@ -26,7 +26,7 @@ datasets:
         Every synthetic visit's structured record: patient, clinic, visit order and date, risk factors, the
         recorded chart measurements, and the status each evidence source in the record supports.
       review_key.csv: >-
-        Answer key for the 240 review notes: the true status, grade and extent, the note's style and difficulty,
+        Answer key for the 223 review notes: the true status, grade and extent, the note's style and difficulty,
         what each evidence source supports, and what two rule-based readings decided. Score models here; don't
         train on it.
       visits_truth.csv: >-
@@ -34,18 +34,18 @@ datasets:
       clinic_profiles.csv: >-
         The 8 synthetic clinics: case mix, how often they chart probing, and how many patients they see.
       review_tasks.json: >-
-        The 240 review notes as Label Studio tasks, to load the review set for human chart review.
+        The 223 review notes as Label Studio tasks, to load the review set for human chart review.
   perio-bench-results:
     update_frequency: monthly
     sources: >-
-      Each model's answers on the 240 synthetic review notes of the perio-bench-notes dataset, from
+      Each model's answers on the 223 synthetic review notes of the perio-bench-notes dataset, from
       python/scripts/11_ai_predict.py (one run per model) in
       https://github.com/healthtransformationlab/health-transformation-lab-nlp; the leaderboard files from
       28_ladder_vs_truth.py. Scores are measured against the generator's truth on synthetic notes, not evidence
       about any model or product. Simulated dry runs are left out.
     files:
       "ai_predictions_*.csv": >-
-        One model's answers: the predicted periodontal status for each of the 240 review notes and, where the
+        One model's answers: the predicted periodontal status for each of the 223 review notes and, where the
         model gives them, its probability for each status. The file name names the method.
       "llm_details_*.csv": >-
         An LLM reader's raw answer for each review note, with the quoted evidence, the quote check, tokens and
@@ -142,7 +142,7 @@ columns:
   case_mix: How much the clinic's patients lean toward more severe disease (negative is healthier), from -0.08 to 0.10.
   charted_share: Share of the clinic's visits with a probing chart (0.6-0.95).
   patient_weight: The clinic's relative share of patients (0.5-1.5) when patients are assigned to clinics.
-  in_review: True when the visit is one of the 240 review notes.
+  in_review: True when the visit is one of the 223 review notes.
 
   # measurements: recorded (rec_) and true
   rec_max_probing_depth_mm: Deepest probing depth recorded at the visit, in mm; empty when not charted.

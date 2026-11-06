@@ -16,6 +16,7 @@ import csv
 import json
 import shutil
 import sys
+import time
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -163,7 +164,20 @@ def metadata_only(out: Path, meta: dict, api) -> dict:
     return sent
 
 
-def upload(folder: Path, ref: str, message: str, api) -> str:
+def wait_for_files(api, ref: str, paths: set[str], tries: int = 40, wait: float = 15, sleep=time.sleep) -> set[str]:
+    """Wait (up to tries x wait seconds) until the live dataset lists every path: Kaggle processes a new version
+    for a minute or two and lists the old files meanwhile (#602). Returns the paths still missing."""
+    missing = set(paths)
+    for i in range(tries):
+        missing = set(paths) - live_files(api, ref)
+        if not missing:
+            break
+        if i < tries - 1:
+            sleep(wait)
+    return missing
+
+
+def upload(folder: Path, ref: str, message: str, api, sleep=time.sleep) -> str:
     """Create the dataset public, or add a version, then send its metadata; fail unless Kaggle answers ok.
     Returns its URL."""
     try:
@@ -180,7 +194,13 @@ def upload(folder: Path, ref: str, message: str, api) -> str:
     if result.invalidTags:
         print(f"Kaggle dropped tags it doesn't know: {result.invalidTags}")
     print(f"{'versioned' if exists else 'created'} {ref}: {result.url}")
-    update_metadata(folder, ref, api)   # a version doesn't carry the cover or column descriptions (spec 034)
+    built = folder / "dataset-metadata.json"
+    if built.exists():   # a version doesn't carry the cover or column descriptions (spec 034); wait for its files
+        meta = json.loads(built.read_text())
+        wait_for_files(api, ref, {r["path"] for r in meta.get("resources", [])}, sleep=sleep)
+        metadata_only(folder, meta, api)   # describes the live files, naming any still processing
+    else:
+        update_metadata(folder, ref, api)
     return result.url
 
 
