@@ -12,7 +12,8 @@ both sides, which flatters the score, so the result's `validation` counts those 
 
 SHAP: exact TreeSHAP computed by XGBoost itself (pred_contribs), the algorithm of Lundberg et al. 2020 that
 the `shap` package uses for trees. For each held-out visit and class, the values plus a bias add up to the
-model's margin (log-odds) for that class. Each feature carries its role in the 2017 AAP/EFP classification
+model's margin (log-odds) for that class. `shap_drilldown` splits them by whether the answer was right within each
+metric's population (sensitivity, specificity, PPV, NPV; #625). Each feature carries its role in the 2017 AAP/EFP classification
 (Tonetti, Greenwell & Kornman 2018), so the ranking can be read against it.
 
 Synthetic data: the labels come from the AAP rules applied to the same chart, so stage criteria should
@@ -171,6 +172,40 @@ def shap_values(model, X: pd.DataFrame) -> np.ndarray:
     return np.asarray(phi).reshape(len(X), -1, X.shape[1] + 1)
 
 
+# The population each metric is computed on, and the right answer within it (truth, prediction): sensitivity counts
+# the truly positive (right: predicted positive), specificity the truly negative, PPV the predicted positive (right:
+# truly positive) and NPV the predicted negative.
+DRILLDOWN_POPULATIONS = {"sensitivity": (True, None), "specificity": (False, None),
+                         "ppv": (None, True), "npv": (None, False)}
+
+
+@traced
+def shap_drilldown_by_outcome(phi: np.ndarray, y_true, y_pred, feature_names: list[str]) -> pd.DataFrame:
+    """SHAP split by whether the answer was right, within each metric's population (#625): why a model misses cases
+    (sensitivity's wrong group) or raises false alarms (PPV's), not only that it does.
+
+    phi: (rows, features + bias), the bias last, for one binary outcome (a class, one-vs-rest). y_true, y_pred: 0/1.
+    One row per (population, outcome, feature or "bias") with the group's row count `n`, `mean_shap` and
+    `mean_abs_shap`. The additivity holds on the means: in each group the bias plus the features' mean SHAP is the
+    group's mean margin (log-odds). Empty groups are left out."""
+    phi = np.asarray(phi, dtype=float)
+    t, p = np.asarray(y_true).astype(bool), np.asarray(y_pred).astype(bool)
+    names = [*feature_names, "bias"]
+    if phi.shape != (len(t), len(names)):
+        raise ValueError(f"phi is {phi.shape}; expected ({len(t)}, {len(names)}): one column per feature plus the bias")
+    rows = []
+    for population, (truth, pred) in DRILLDOWN_POPULATIONS.items():
+        base = (t == truth) if truth is not None else (p == pred)
+        for outcome, right in (("correct", True), ("incorrect", False)):
+            m = base & ((t == p) == right)
+            if not m.any():
+                continue
+            mean, mean_abs = phi[m].mean(axis=0), np.abs(phi[m]).mean(axis=0)
+            rows += [{"population": population, "outcome": outcome, "feature": f, "n": int(m.sum()),
+                      "mean_shap": float(mean[j]), "mean_abs_shap": float(mean_abs[j])} for j, f in enumerate(names)]
+    return pd.DataFrame(rows, columns=["population", "outcome", "feature", "n", "mean_shap", "mean_abs_shap"])
+
+
 @traced
 def train_eval(f: pd.DataFrame, scheme: str, seed: int = 0, grid: dict | None = None, folds: int = 5,
                split_unit: str = "person", test_share: float = 0.2) -> dict:
@@ -211,6 +246,8 @@ def train_eval(f: pd.DataFrame, scheme: str, seed: int = 0, grid: dict | None = 
                      .assign(visit_id=f.loc[te, "visit_id"].to_numpy(), **{"class": name})
                      for k, name in enumerate(names)], ignore_index=True)
     per = per[["visit_id", "class", *FEATURES, "bias"]]
+    drill = pd.concat([shap_drilldown_by_outcome(phi[:, k, :], yt == k, pred == k, FEATURES).assign(**{"class": name})
+                       for k, name in enumerate(names)], ignore_index=True)
 
     summary = {"scheme": scheme, "n_train": int((~te).sum()), "n_test": int(te.sum()),
                "people_test": int(f.loc[te, "person_id"].nunique()), "accuracy": float(accuracy_score(yt, pred)),
@@ -219,7 +256,7 @@ def train_eval(f: pd.DataFrame, scheme: str, seed: int = 0, grid: dict | None = 
     validation = {"split_unit": split_unit, "test_share": test_share, "cv_folds": folds,
                   "people_in_both_count": people_in_both(f, te)}
     return {"summary": summary, "validation": validation, "metrics": metrics, "shap_importance": imp,
-            "shap_test": per, "model": model,
+            "shap_test": per, "shap_drilldown": drill, "model": model,
             "X_test": Xt, "test_predictions": pd.DataFrame({"visit_id": f.loc[te, "visit_id"].to_numpy(),
                                                             "y": yt, "pred": pred})}
 

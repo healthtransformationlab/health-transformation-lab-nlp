@@ -50,6 +50,7 @@ from scipy.stats import rankdata
 
 from . import labels
 from . import tooth_loss as tl
+from .classify_status import shap_drilldown_by_outcome
 from .sites import THIRD_MOLARS
 from .telemetry import traced
 
@@ -102,13 +103,15 @@ DEFAULT = ModelParams()
 
 
 STAGE_OUTPUTS = ("stage_recount", "patient_stage", "stage_probabilities")   # the person-level recount
+ARTIFACT_OUTPUTS = ("shap_drilldown",)   # logged as an MLflow artifact by script 51, never written to files or gold
 
 
 @traced
 def outputs_to_write(out: dict[str, pd.DataFrame], stage_recount: bool = False) -> dict[str, pd.DataFrame]:
     """The frames of a run to write: tooth level only unless the stage recount is asked for (029 US10, #529). Summing
-    to the person is a separate, later decision."""
-    return {n: df for n, df in out.items() if stage_recount or n not in STAGE_OUTPUTS}
+    to the person is a separate, later decision. Artifacts (ARTIFACT_OUTPUTS, #625) are never written."""
+    return {n: df for n, df in out.items()
+            if n not in ARTIFACT_OUTPUTS and (stage_recount or n not in STAGE_OUTPUTS)}
 
 
 @traced
@@ -358,6 +361,13 @@ class _XGBoost:
     @traced
     def predict(self, X: pd.DataFrame) -> np.ndarray:
         return self.model.predict_proba(X.to_numpy(float))[:, 1].astype(float)
+
+    @traced
+    def shap(self, X: pd.DataFrame) -> np.ndarray:
+        """Exact TreeSHAP from XGBoost (pred_contribs): (teeth, predictors + bias); each row adds up to the log-odds."""
+        from xgboost import DMatrix
+        return np.asarray(self.model.get_booster().predict(DMatrix(X.to_numpy(float), missing=np.nan),
+                                                           pred_contribs=True))
 
 
 @traced
@@ -645,7 +655,7 @@ def run(x: dict[str, pd.DataFrame], truth: pd.DataFrame, params: ModelParams = D
     worst_cal = patient_worst_cal(x)
     tag = {"generator_seed": generator_seed}
     scores, cals, preds, eval_rows, stage_parts, missing, validation = [], [], [], [], [], [], []
-    stage_probs = []
+    stage_probs, drilldowns = [], []
     st_unlabelled = st["tooth_status_code"].isin(STAGE_UNLABELLED_STATUSES).to_numpy()
 
     def score(ls, fs, model, ev, p, thresholds, boot):
@@ -701,6 +711,14 @@ def run(x: dict[str, pd.DataFrame], truth: pd.DataFrame, params: ModelParams = D
                 for ev in EVAL_SETS:
                     if not (fs == "own" and ev == "missing_at_entry"):      # no own measures there
                         score(ls, fs, model, ev, p, thresholds, boot=True)
+                if model == "xgboost":     # #625: SHAP by outcome on the held-out teeth, at the run's threshold
+                    m = eval_masks["held_out"].to_numpy()
+                    if m.any():
+                        y_held = eval_y["held_out"][m].to_numpy(float).astype(int)
+                        d = shap_drilldown_by_outcome(fitted.shap(X[m]), y_held, p[m] >= params.threshold,
+                                                      list(X.columns))
+                        drilldowns.append(d.assign(**tag, label_set=ls, feature_set=fs, model=model,
+                                                   eval_set="held_out", threshold=params.threshold))
                 rows = keep & ~((fs == "own") & (status == "missing_at_entry").to_numpy())
                 preds.append(pd.DataFrame({
                     "patient_id": el.loc[rows, "patient_id"].astype("int64").to_numpy(),
@@ -742,4 +760,5 @@ def run(x: dict[str, pd.DataFrame], truth: pd.DataFrame, params: ModelParams = D
             "stage_probabilities": label(pd.concat(stage_probs, ignore_index=True)),
             "predictions": pd.concat(preds, ignore_index=True), "missing": label(pd.DataFrame(missing)),
             "eval_rows": label(pd.concat(eval_rows, ignore_index=True)),
-            "validation": label(pd.DataFrame(validation))}
+            "validation": label(pd.DataFrame(validation)),
+            "shap_drilldown": label(pd.concat(drilldowns, ignore_index=True)) if drilldowns else label(pd.DataFrame())}
