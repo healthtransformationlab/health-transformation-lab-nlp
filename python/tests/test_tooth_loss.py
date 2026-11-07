@@ -40,7 +40,10 @@ def _extract(procs=(), initial=(), exams=(), measures=(), plans=(), smoke="26691
                          toothvalue=vals if not isinstance(vals, (list, tuple)) else -1, **sites))
     t["periomeasure"] = pd.DataFrame(rows, columns=od.TABLES["periomeasure"])
     t["proctp"] = pd.DataFrame([{"proctpnum": i + 1, "treatplannum": i + 1, "patnum": 1, "procnumorig": p, "datetp": D(d)}
-                                for i, (p, d) in enumerate(plans)], columns=od.TABLES["proctp"])
+                                for i, (p, d, *_) in enumerate(plans)], columns=od.TABLES["proctp"])
+    t["treatplan"] = pd.DataFrame([{"treatplannum": i + 1, "patnum": 1, "datetp": D(tp[0] if tp else d), "tpstatus": 0,
+                                    "signature": ""} for i, (p, d, *tp) in enumerate(plans)],
+                                  columns=od.TABLES["treatplan"])
     t["diseasedef"] = pd.DataFrame([{"diseasedefnum": 1, "diseasename": "Type 2 diabetes mellitus", "icd10code": "E11.9"}],
                                    columns=od.TABLES["diseasedef"])
     t["disease"] = pd.DataFrame([{"diseasenum": i + 1, "patnum": 1, "diseasedefnum": 1} for i in range(len(diseases))],
@@ -306,3 +309,79 @@ def test_each_tooth_says_how_good_its_last_chart_was():
     assert _row(t, 3)["last_chart_quality_code"] == "uniform"
     assert _row(t, 5)["last_chart_quality_code"] == "partial"  # one tooth of 32 charted
     assert pd.isna(_row(t, 9)["last_chart_quality_code"])      # never charted
+
+
+def test_the_window_counts_from_the_most_recent_plan_copy_before_the_loss():
+    # #631: procedurelog.datetp is the first time the procedure was planned; the copies in later treatment plans
+    # (proctp -> treatplan dates) carry the re-plans. The window runs from the latest copy on or before the loss.
+    x = _extract(procs=[(13, 30, od.PLANNED, "Periodontitis, stage IV", "2020-01-01", None),
+                        (16, 30, od.EXISTING_OTHER, "", None, None, "2022-01-01"),
+                        (14, 29, od.PLANNED, "Periodontitis, stage IV", "2020-01-01", None),     # first planned
+                        (15, 29, od.PLANNED, "Caries, non-restorable", "2020-06-01", None),      # then a caries plan
+                        (17, 29, od.EXISTING_OTHER, "", None, None, "2022-01-01")],
+                 plans=[(13, "2020-01-01"), (13, "2021-07-01"), (13, "2022-06-01"),            # a copy after the loss
+                        (14, "2020-01-01"), (14, "2021-09-01", "2021-09-01"), (15, "2020-06-01")])
+    t = tl.tooth_table(x)
+    r = _row(t, 30)
+    assert r["tooth_status_code"] == "planned_then_missing_perio"
+    assert r["plan_to_missing_days"] == 184                       # 2021-07-01 -> 2022-01-01, not from 2020-01-01
+    r = _row(t, 29)
+    assert r["tooth_status_code"] == "planned_then_missing_perio"  # the perio plan was re-copied last (2021-09-01)
+    assert r["plan_to_missing_days"] == 122
+    pe = tl.planned_extraction(x)
+    assert pe.set_index("procedure_id").loc[13, "last_plan_date"] == D("2022-06-01")
+
+
+def test_a_completed_extraction_with_no_completion_date_does_not_read_later_exams():
+    # #631: datecomplete missing falls back to procdate; with neither, the tooth has no own or neighbour measures
+    exams = [(1, "2020-01-01"), (2, "2021-06-01")]
+    measures = [(1, 3, od.SEQ_PROBING, [3] * 6), (1, 3, od.SEQ_MARGIN, [0] * 6),
+                (1, 4, od.SEQ_PROBING, [4] * 6), (1, 4, od.SEQ_MARGIN, [0] * 6),
+                (2, 3, od.SEQ_PROBING, [9] * 6), (2, 3, od.SEQ_MARGIN, [0] * 6),
+                (2, 4, od.SEQ_PROBING, [9] * 6), (2, 4, od.SEQ_MARGIN, [0] * 6)]
+    x = _extract(procs=[(10, 3, od.COMPLETE, "Periodontitis, stage IV", "2020-03-01", None, "2020-09-01")],
+                 exams=exams, measures=measures)
+    r = _row(tl.tooth_table(x), 3)
+    assert r["tooth_status_code"] == "extracted_perio" and r["loss_date"] == D("2020-09-01")
+    assert r["last_max_pd_mm"] == 3 and r["neighbour_max_cal_mm"] == 4
+    x = _extract(procs=[(10, 3, od.COMPLETE, "Periodontitis, stage IV", None, None)], exams=exams, measures=measures)
+    x["procedurelog"]["procdate"] = pd.NaT
+    r = _row(tl.tooth_table(x), 3)
+    assert r["tooth_status_code"] == "extracted_perio" and pd.isna(r["loss_date"])
+    assert pd.isna(r["last_max_pd_mm"]) and pd.isna(r["last_exam_date"]) and pd.isna(r["neighbour_max_cal_mm"])
+    assert r["mouth_max_pd_mm"] == 4                              # mouth-level measures are from the first exam
+
+
+def test_an_extraction_existing_from_the_current_provider_reads_as_done_elsewhere():
+    # #631: ProcStatus 3 (existing, current provider) is a tooth gone like ProcStatus 4
+    x = _extract(procs=[(13, 30, od.PLANNED, "Periodontitis, stage IV", "2021-01-01", None),
+                        (16, 30, od.EXISTING_CURRENT, "", None, None, "2021-09-01"),
+                        (17, 28, od.EXISTING_CURRENT, "", None, None)])
+    x["procedurelog"].loc[x["procedurelog"]["procnum"] == 17, "procdate"] = pd.NaT
+    t = tl.tooth_table(x)
+    assert _row(t, 30)["tooth_status_code"] == "planned_then_missing_perio"
+    assert _row(t, 28)["tooth_status_code"] == "missing_at_entry"
+
+
+def test_own_and_neighbour_measures_are_nulled_only_on_the_teeth_the_rules_name():
+    # #631: the masks that blank a tooth's measures must follow the rows through each merge_asof (which re-sorts
+    # ties); on a many-patient extract a misaligned mask blanked present teeth and left entry teeth without their
+    # first-exam neighbours
+    x = od.clean(od.build(od.Params(n_patients=120), seed=7)[0])
+    t = tl.tooth_table(x)
+    charted = tl._exam_teeth(x).merge(tl._exams(x), on="perioexamnum")
+    charted = charted.dropna(subset=["max_pd"]).merge(t[["patient_id", "tooth_num", "tooth_status_code", "loss_date"]],
+                                                       on=["patient_id", "tooth_num"])
+    present = charted[charted["tooth_status_code"] == "present"]
+    has_chart = set(zip(present["patient_id"], present["tooth_num"]))
+    rows = t[t["tooth_status_code"] == "present"]
+    got = set(zip(rows.loc[rows["last_max_pd_mm"].notna(), "patient_id"], rows.loc[rows["last_max_pd_mm"].notna(), "tooth_num"]))
+    assert got == has_chart                                   # every charted present tooth keeps its own measures
+    entry = t[t["tooth_status_code"] == "missing_at_entry"]
+    assert entry["last_max_pd_mm"].isna().all() and entry["last_exam_date"].isna().all()
+    first = tl._exams(x).drop_duplicates("patient_id")       # neighbours of an entry tooth: at the first exam
+    nb = tl._neighbours(tl._exam_teeth(x)).merge(first, on="perioexamnum")
+    expect = set(zip(nb["patient_id"], nb["tooth_num"])) & set(zip(entry["patient_id"], entry["tooth_num"]))
+    got = set(zip(entry.loc[entry["neighbour_max_cal_mm"].notna(), "patient_id"],
+                  entry.loc[entry["neighbour_max_cal_mm"].notna(), "tooth_num"]))
+    assert got == expect

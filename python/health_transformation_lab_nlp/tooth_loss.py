@@ -8,21 +8,24 @@ Status, first rule that applies:
 1. a completed extraction (ProcStatus 2): extracted_perio, extracted_other or extracted_no_dx, by its diagnosis item's
    code through `open_dental.diagnosis_classes` (PE1-PE4 and P1-P4 periodontal, 029 US11) (a planned extraction later completed is the same row, so it counts
    once, as completed);
-2. missing at entry: a `toothinitial` row of InitialType 0, or an extraction done elsewhere (ProcStatus 4) with no
-   date or dated on or before the patient's first visit;
+2. missing at entry: a `toothinitial` row of InitialType 0, or an extraction done elsewhere (ProcStatus 3, existing
+   from the current provider, or 4, from another; #631) with no date or dated on or before the patient's first visit;
 3. missing at a later visit (029 US9, #507): an extraction done elsewhere dated after the first visit. After a planned
    extraction of that tooth with a diagnosis, planned on or before that date, it is planned_then_missing_perio or
-   planned_then_missing_other, labelled by the plan's diagnosis, with `plan_to_missing_days` from the plan (the
-   procedure's own DateTP, the first time it was planned) to the date it was recorded missing; else missing_later,
-   unlabelled. (On a real extract the date a tooth went missing may come from a dated `toothinitial` instead; this
-   one dates it by the procedure row.)
+   planned_then_missing_other, labelled by the plan's diagnosis, with `plan_to_missing_days` from the plan to the
+   date it was recorded missing; else missing_later, unlabelled. The plan date is the most recent treatment-plan copy
+   of the procedure on or before that date (`proctp` -> `treatplan` DateTP; the procedure's own DateTP, the first
+   time it was planned, only when it has no copies; #631), since Open Dental carries the first date forward. (On a
+   real extract the date a tooth went missing may come from a dated `toothinitial` instead; this one dates it by the
+   procedure row.)
 4. a planned extraction (ProcStatus 1) with a diagnosis, the tooth still in the record: planned_perio or
    planned_other;
 5. otherwise present (a planned extraction with no diagnosis leaves the tooth present and unlabelled).
 Which of these the model trains on is its label set's choice (`tooth_loss_model.label_set`).
 
-Own measures come from the last perio exam on or before the event date that charted the tooth (extraction date, or
-the plan date for a planned one; an exam on the extraction day is charted first; a present tooth uses the last), with
+Own measures come from the last perio exam on or before the event date that charted the tooth (extraction date,
+DateComplete or else ProcDate, or the plan date for a planned one; an exam on the extraction day is charted first; a
+present tooth uses the last; an extracted tooth with no date at all has no own or neighbour measures, #631), with
 that chart's quality (complete, partial, copied, uniform: open_dental.chart_quality), since real charts are often
 missing or partial (#385). Neighbours come from the patient's last exam on or before the event. Own radiographic bone
 loss is the last radiograph reading on or before the event (`radiograph_bone_level`, a SIMULATED reading; optional).
@@ -132,8 +135,33 @@ def _neighbours(teeth: pd.DataFrame) -> pd.DataFrame:
         columns={"max_cal": "neighbour_max_cal_mm"})
 
 
+def _plan_copy_dates(x: dict[str, pd.DataFrame]) -> pd.DataFrame:
+    """Each treatment-plan copy of a planned procedure, dated by its plan: procnumorig and `on`, sorted by date
+    (`treatplan` DateTP through treatplannum, else the copy's own DateTP). Open Dental copies the first plan date
+    into procedurelog and proctp, so these are the only record of re-plans (#631)."""
+    tp = x["proctp"]
+    out = pd.DataFrame({"procnumorig": _num(tp["procnumorig"]), "on": _date(tp["datetp"])})
+    if "treatplan" in x and len(x["treatplan"]):
+        plans = x["treatplan"]
+        when = pd.Series(_date(plans["datetp"]).to_numpy(), index=_num(plans["treatplannum"]).to_numpy())
+        when = when[~when.index.duplicated()]
+        out["on"] = _num(tp["treatplannum"]).map(when).fillna(out["on"])
+    return out.dropna().sort_values("on")
+
+
+def _latest_plan_on_or_before(copies: pd.Series, procnum: float, first: pd.Timestamp, on=None) -> pd.Timestamp:
+    """The most recent plan date of a procedure on or before `on` (any, when None): its copies, else its DateTP."""
+    dates = copies.get(procnum)
+    if dates is not None:
+        dates = dates if on is None else dates[dates <= on]
+        if len(dates):
+            return dates.max()
+    return first
+
+
 def _statuses(x: dict[str, pd.DataFrame], patients: pd.Series) -> pd.DataFrame:
     ext = _extractions(x)
+    copies = _plan_copy_dates(x).groupby("procnumorig")["on"].apply(lambda s: s.to_numpy())
     grid = pd.MultiIndex.from_product([sorted(patients), list(TEETH)], names=["patient_id", "tooth_num"])
     t = pd.DataFrame(index=grid).reset_index()
     t["tooth_status_code"], t["label_source_code"] = "present", "none"
@@ -142,21 +170,27 @@ def _statuses(x: dict[str, pd.DataFrame], patients: pd.Series) -> pd.DataFrame:
     t["plan_to_missing_days"] = pd.Series(pd.NA, index=t.index, dtype="Int64")
     t = t.set_index(["patient_id", "tooth_num"])
 
-    planned = ext[(ext["procstatus"] == od.PLANNED) & (ext["dx_class"] != "none")]
-    # the most recent planned extraction of the tooth gives its label and its plan date (029 US10, #529)
-    # (an undated plan counts as the oldest, as the R twin reads it)
-    planned = planned.sort_values(["datetp", "procnum"], na_position="first").drop_duplicates(
+    planned = ext[(ext["procstatus"] == od.PLANNED) & (ext["dx_class"] != "none")].copy()
+    # the most recent planned extraction of the tooth gives its label and its plan date (029 US10, #529), dated by
+    # its latest treatment-plan copy (#631); an undated plan counts as the oldest, as the R twin reads it
+    planned["procnum"] = _num(planned["procnum"])
+    planned["plan_date"] = [_latest_plan_on_or_before(copies, p, d)
+                            for p, d in zip(planned["procnum"], planned["datetp"])]
+    planned["plan_date"] = _date(planned["plan_date"])
+    planned = planned.sort_values(["plan_date", "procnum"], na_position="first").drop_duplicates(
         ["patient_id", "tooth_num"], keep="last")
     idx = pd.MultiIndex.from_frame(planned[["patient_id", "tooth_num"]])
     t.loc[idx, "tooth_status_code"] = ("planned_" + planned["dx_class"]).to_numpy()
     t.loc[idx, "label_source_code"] = "planned"
-    t.loc[idx, "event_date"] = planned["datetp"].to_numpy()
+    t.loc[idx, "event_date"] = planned["plan_date"].to_numpy()
     t.loc[idx, "dx_def_id"] = planned["dx"].astype("int64").to_numpy()
+    plan_proc = pd.Series(planned["procnum"].to_numpy(), index=idx)
+    plan_first = pd.Series(planned["datetp"].to_numpy(), index=idx)
 
     # done elsewhere: at entry when undated or dated on or before the first visit, else missing at a later visit
     pat = x["patient"]
     first_visit = pd.Series(_date(pat["datefirstvisit"]).to_numpy(), index=_num(pat["patnum"]).to_numpy())
-    elsewhere = ext[ext["procstatus"] == od.EXISTING_OTHER]
+    elsewhere = ext[ext["procstatus"].isin(od.DONE_ELSEWHERE)]
     elsewhere = elsewhere.assign(procdate=elsewhere["procdate"].dt.normalize())     # by calendar day, as R reads it
     is_later = elsewhere["procdate"].notna() & (
         elsewhere["procdate"] > elsewhere["patient_id"].map(first_visit.dt.normalize()))
@@ -164,8 +198,12 @@ def _statuses(x: dict[str, pd.DataFrame], patients: pd.Series) -> pd.DataFrame:
     later = later[[k in t.index for k in zip(later["patient_id"], later["tooth_num"])]]
     if len(later):
         keys = list(zip(later["patient_id"], later["tooth_num"]))
-        plan_date = t.loc[keys, "event_date"].to_numpy()
         status = t.loc[keys, "tooth_status_code"].to_numpy()
+        # the latest plan copy on or before the day the tooth was recorded missing (#631)
+        plan_date = _date(pd.Series([
+            _latest_plan_on_or_before(copies, plan_proc[k], plan_first[k], on) if k in plan_proc.index else pd.NaT
+            for k, on in zip(keys, later["procdate"])])).to_numpy()
+        t.loc[keys, "event_date"] = plan_date
         after_plan = pd.Series(status).str.startswith("planned_").to_numpy() & (plan_date <= later["procdate"].to_numpy())
         days = (later["procdate"].to_numpy() - plan_date).astype("timedelta64[D]").astype("float64")
         for (key, on, ok, plan_status, gap) in zip(keys, later["procdate"], after_plan, status, days):
@@ -188,12 +226,13 @@ def _statuses(x: dict[str, pd.DataFrame], patients: pd.Series) -> pd.DataFrame:
     t.loc[missing, ["event_date", "loss_date"]] = pd.NaT
     t.loc[missing, ["dx_def_id", "plan_to_missing_days"]] = pd.NA
 
-    done = ext[ext["procstatus"] == od.COMPLETE].sort_values(["datecomplete", "procnum"])
-    done = done.drop_duplicates(["patient_id", "tooth_num"])
+    done = ext[ext["procstatus"] == od.COMPLETE].copy()
+    done["done_on"] = done["datecomplete"].fillna(done["procdate"])       # DateComplete, else ProcDate (#631)
+    done = done.sort_values(["done_on", "procnum"]).drop_duplicates(["patient_id", "tooth_num"])
     idx = pd.MultiIndex.from_frame(done[["patient_id", "tooth_num"]])
     t.loc[idx, "tooth_status_code"] = ("extracted_" + done["dx_class"].replace("none", "no_dx")).to_numpy()
     t.loc[idx, "label_source_code"] = done["dx_class"].map(lambda c: "none" if c == "none" else "completed").to_numpy()
-    t.loc[idx, "loss_date"] = t.loc[idx, "event_date"] = done["datecomplete"].to_numpy()
+    t.loc[idx, "loss_date"] = t.loc[idx, "event_date"] = done["done_on"].to_numpy()
     t.loc[idx, "dx_def_id"] = done["dx"].astype("int64").where(done["dx"] != 0).astype("Int64").to_numpy()
     t.loc[idx, "plan_to_missing_days"] = pd.NA
 
@@ -269,8 +308,12 @@ def tooth_table(x: dict[str, pd.DataFrame]) -> pd.DataFrame:
     t["patient_id"], t["tooth_num"] = t["patient_id"].astype("int64"), t["tooth_num"].astype("int64")
     t = pd.merge_asof(t.sort_values("_ref"), exams[["patient_id", "perioexamnum", "examdate"]],
                       left_on="_ref", right_on="examdate", by="patient_id", direction="backward").drop(columns="examdate")
-    entry = t["tooth_status_code"] == "missing_at_entry"
-    t.loc[entry, "perioexamnum"] = float("nan")
+    # no chart can be "before the loss" for a tooth missing at entry, or an extracted tooth with no date at all (#631)
+    # (recomputed after each merge_asof, which renumbers the rows)
+    def no_chart(f):
+        return (f["tooth_status_code"] == "missing_at_entry") | (
+            f["tooth_status_code"].str.startswith("extracted_") & f["event_date"].isna())
+    t.loc[no_chart(t), "perioexamnum"] = float("nan")
 
     # own measures: the last exam on or before the event that charted this tooth (charts are often partial, #385)
     own = teeth.merge(exams, on="perioexamnum").rename(columns={
@@ -282,7 +325,7 @@ def tooth_table(x: dict[str, pd.DataFrame]) -> pd.DataFrame:
                 "last_chart_quality_code"]
     t = pd.merge_asof(t.sort_values("_ref"), own[["patient_id", "tooth_num", *own_cols]], left_on="_ref",
                       right_on="last_exam_date", by=["patient_id", "tooth_num"], direction="backward")
-    t.loc[entry, own_cols] = None
+    t.loc[no_chart(t), own_cols] = None
     t["last_exam_date"] = t["last_exam_date"].astype("datetime64[ns]")
 
     # own radiographic bone loss: the last radiograph read on or before the event (a SIMULATED reading here)
@@ -291,11 +334,12 @@ def tooth_table(x: dict[str, pd.DataFrame]) -> pd.DataFrame:
                                                                     "bone_loss_pct": "last_rbl_pct"}),
                       left_on="_ref", right_on="last_radiograph_date", by=["patient_id", "tooth_num"],
                       direction="backward")
-    t.loc[entry, ["last_rbl_pct", "last_radiograph_date"]] = [float("nan"), pd.NaT]
+    t.loc[no_chart(t), ["last_rbl_pct", "last_radiograph_date"]] = [float("nan"), pd.NaT]
     first_doc = reads.sort_values(["image_date", "document_id"]).drop_duplicates("patient_id")[["document_id"]]
     mouth_rbl = reads.merge(first_doc, on="document_id").groupby("patient_id")["bone_loss_pct"].max()
     t["mouth_max_rbl_pct"] = t["patient_id"].map(mouth_rbl).astype("float64")
     # neighbours at the reference exam, or at the first exam for a tooth missing at entry
+    entry = t["tooth_status_code"] == "missing_at_entry"
     t["_nexam"] = t["perioexamnum"].where(~entry, t["first_exam"])
     t = t.merge(_neighbours(teeth).rename(columns={"perioexamnum": "_nexam"}), on=["_nexam", "tooth_num"], how="left")
 
@@ -311,7 +355,8 @@ def planned_extraction(x: dict[str, pd.DataFrame]) -> pd.DataFrame:
     """One row per extraction that was ever on a treatment plan, with its plan copies counted once each."""
     ext = _extractions(x)
     ext = ext[ext["procstatus"].isin([od.PLANNED, od.COMPLETE])]
-    tp = x["proctp"].assign(procnumorig=_num(x["proctp"]["procnumorig"]), datetp=_date(x["proctp"]["datetp"]))
+    tp = x["proctp"].assign(procnumorig=_num(x["proctp"]["procnumorig"]))
+    tp["datetp"] = _plan_copy_dates(x)["on"].reindex(tp.index)           # dated by the plan, when it has one (#631)
     copies = tp.groupby("procnumorig").agg(plan_copy_count=("proctpnum", "size"), first_plan_date=("datetp", "min"),
                                            last_plan_date=("datetp", "max"))
     ext["procnum"] = _num(ext["procnum"])

@@ -119,7 +119,8 @@ DATES = {"datecreated", "birthdate", "datefirstvisit", "admitdate", "datetimedec
 DEFCAT_PROCCODECATS, DEFCAT_DIAGNOSIS, DEFCAT_IMAGECATS, DEFCAT_TXPRIORITIES, DEFCAT_PROGNOSIS, DEFCAT_SPECIALTIES = \
     11, 16, 18, 20, 30, 35
 IMG_RADIOGRAPH = 1                          # document.ImgType
-PLANNED, COMPLETE, EXISTING_OTHER = 1, 2, 4
+PLANNED, COMPLETE, EXISTING_CURRENT, EXISTING_OTHER = 1, 2, 3, 4
+DONE_ELSEWHERE = (EXISTING_CURRENT, EXISTING_OTHER)    # an extraction the practice didn't do: the tooth is gone (#631)
 SHEET_EXAM, TOBACCO_ASSESSED, DRUG_ALLERGY = 13, 8, 2
 POS_OFFICE, POS_NURSING, POS_MOBILE, POS_SCHOOL = 0, 4, 7, 8
 SEQ_MOBILITY, SEQ_FURCATION, SEQ_MARGIN, SEQ_PROBING, SEQ_BLEEDING = 0, 1, 2, 4, 6
@@ -1070,7 +1071,7 @@ def extraction_rates(tables: dict[str, pd.DataFrame], truth: pd.DataFrame) -> pd
 
 
 def _recorded_later(away: pd.DataFrame, patient: pd.DataFrame) -> pd.Series:
-    """Extractions done elsewhere (ProcStatus 4) dated after the patient's first visit: recorded missing at a later
+    """Extractions done elsewhere (ProcStatus 3 or 4) dated after the patient's first visit: recorded missing at a later
     visit (029 US9), not missing at entry."""
     first = pd.Series(pd.to_datetime(patient["datefirstvisit"]).to_numpy(),
                       index=pd.to_numeric(patient["patnum"], errors="coerce").to_numpy())
@@ -1087,7 +1088,7 @@ def entry_reasons(tables: dict[str, pd.DataFrame], truth: pd.DataFrame) -> pd.Da
     teeth (`edentulous_patients`, spec 033 US4) are left out: why they lost their teeth isn't modelled."""
     ti = tables["toothinitial"]
     pl = tables["procedurelog"]
-    done_elsewhere = pl[(pl["procstatus"] == EXISTING_OTHER) & pl["codenum"].isin(extraction_codenums(tables))]
+    done_elsewhere = pl[pl["procstatus"].isin(DONE_ELSEWHERE) & pl["codenum"].isin(extraction_codenums(tables))]
     done_elsewhere = done_elsewhere[~_recorded_later(done_elsewhere, tables["patient"])]    # not missing at entry
     entry = pd.concat([ti.loc[ti["initialtype"] == 0, ["patnum", "toothnum"]], done_elsewhere[["patnum", "toothnum"]]])
     entry = pd.DataFrame({"patient_id": entry["patnum"].astype(int).to_numpy(),
@@ -1174,7 +1175,7 @@ def chart_quality(tables: dict[str, pd.DataFrame]) -> pd.DataFrame:
     pl = _numeric(tables["procedurelog"], ["patnum", "procstatus", "codenum", "toothnum"])
     ext = pl[pl["codenum"].isin(extraction_codenums(tables)) & pl["toothnum"].between(1, 32)]
     ti = _numeric(tables["toothinitial"], ["patnum", "toothnum", "initialtype"])
-    away = ext[ext["procstatus"] == EXISTING_OTHER]
+    away = ext[ext["procstatus"].isin(DONE_ELSEWHERE)]
     later = _recorded_later(away, tables["patient"])     # 029 US9: recorded missing at a later visit, from that date
     entry = pd.concat([ti.loc[ti["initialtype"] == 0, ["patnum", "toothnum"]],
                        away.loc[~later, ["patnum", "toothnum"]]]).drop_duplicates()

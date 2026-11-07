@@ -6,7 +6,8 @@
 PERIO_CODES_029 <- c("PE1", "PE2", "PE3", "PE4", "P1", "P2", "P3", "P4")
 EXTRACTIONS_029 <- c("D7111", "D7140", "D7210", "D7250")   # the study lead's list (029 US10, #529)
 DEFCAT_DIAGNOSIS_029 <- 16
-PLANNED_029 <- 1; COMPLETE_029 <- 2; EXISTING_OTHER_029 <- 4
+PLANNED_029 <- 1; COMPLETE_029 <- 2; EXISTING_CURRENT_029 <- 3; EXISTING_OTHER_029 <- 4
+DONE_ELSEWHERE_029 <- c(EXISTING_CURRENT_029, EXISTING_OTHER_029)   # the tooth is gone either way (#631)
 
 extractions_029 <- function(pl, pc, defs) {
   codes <- pc$codenum[pc$proccode %in% EXTRACTIONS_029]
@@ -24,8 +25,23 @@ extractions_029 <- function(pl, pc, defs) {
 # elsewhere dated after the first visit; after a planned extraction with a diagnosis it is planned_then_missing_*),
 # then a planned extraction with a diagnosis (the most recent one, 029 US10), else present.
 # patients: patnum, or a data frame with patnum and datefirstvisit (needed to tell a later visit from the first).
-tooth_status_029 <- function(pl, pc, defs, ti, patients) {
+# tp, treatplan (#631): the plan copies (proctpnum, treatplannum, procnumorig, datetp) and the plans (treatplannum,
+# datetp): a planned procedure is dated by its most recent copy on or before the loss, else by its own datetp.
+tooth_status_029 <- function(pl, pc, defs, ti, patients, tp = NULL, treatplan = NULL) {
   e <- extractions_029(pl, pc, defs)
+  copies <- if (is.null(tp)) data.frame(procnumorig = integer(0), on = as.Date(character(0))) else {
+    on <- as.Date(substr(as.character(tp$datetp), 1, 10))
+    if (!is.null(treatplan)) {
+      plan_on <- as.Date(substr(as.character(treatplan$datetp), 1, 10))[match(tp$treatplannum, treatplan$treatplannum)]
+      on <- as.Date(ifelse(is.na(plan_on), on, plan_on), origin = "1970-01-01")
+    }
+    data.frame(procnumorig = tp$procnumorig, on = on)[!is.na(on), ]
+  }
+  latest_plan <- function(procnum, first, before = NULL) {   # the most recent copy on or before `before`, else first
+    d <- copies$on[copies$procnumorig == procnum]
+    if (!is.null(before)) d <- d[d <= before]
+    if (length(d)) max(d) else first
+  }
   pat <- if (is.data.frame(patients)) patients else data.frame(patnum = patients, datefirstvisit = NA)
   grid <- expand.grid(tooth_num = 1:32, patient_id = sort(pat$patnum))[, c("patient_id", "tooth_num")]
   key <- paste(grid$patient_id, grid$tooth_num)
@@ -33,12 +49,17 @@ tooth_status_029 <- function(pl, pc, defs, ti, patients) {
   plan_date <- rep(as.Date(NA), nrow(grid)); days <- rep(NA_integer_, nrow(grid))
 
   p <- e[e$procstatus == PLANNED_029 & e$dx_class != "none", ]
-  p <- p[order(as.Date(p$datetp), p$procnum, decreasing = TRUE), ]   # the most recent plan (029 US10)
+  p$first <- as.Date(substr(as.character(p$datetp), 1, 10))
+  p$plan_on <- if (nrow(p)) as.Date(mapply(function(n, f) latest_plan(n, f), p$procnum, p$first),
+                                     origin = "1970-01-01") else as.Date(character(0))   # mapply on nothing is a list
+  p <- p[order(p$plan_on, p$procnum, decreasing = TRUE), ]   # the most recent plan (029 US10), by its copies (#631)
   p <- p[!duplicated(paste(p$patnum, p$tooth_num)), ]
   i <- match(paste(p$patnum, p$tooth_num), key)
-  status[i] <- paste0("planned_", p$dx_class); source[i] <- "planned"; plan_date[i] <- as.Date(p$datetp)
+  status[i] <- paste0("planned_", p$dx_class); source[i] <- "planned"; plan_date[i] <- p$plan_on
+  plan_proc <- rep(NA_integer_, nrow(grid)); plan_first <- rep(as.Date(NA), nrow(grid))
+  plan_proc[i] <- p$procnum; plan_first[i] <- p$first
 
-  away <- e[e$procstatus == EXISTING_OTHER_029, ]
+  away <- e[e$procstatus %in% DONE_ELSEWHERE_029, ]
   on <- if ("procdate" %in% names(away)) as.Date(substr(away$procdate, 1, 10)) else rep(as.Date(NA), nrow(away))
   first <- as.Date(substr(pat$datefirstvisit[match(away$patnum, pat$patnum)], 1, 10))
   later <- !is.na(on) & !is.na(first) & on > first
@@ -48,7 +69,12 @@ tooth_status_029 <- function(pl, pc, defs, ti, patients) {
   i <- match(paste(lt$patnum, lt$tooth_num), key)
   ok <- !is.na(i)
   lt <- lt[ok, ]; i <- i[ok]
-  after <- startsWith(status[i], "planned_") & !is.na(plan_date[i]) & plan_date[i] <= lt$on
+  planned_i <- startsWith(status[i], "planned_")
+  if (any(planned_i)) {   # the latest copy on or before the day the tooth was recorded missing (#631)
+    plan_date[i[planned_i]] <- as.Date(mapply(function(n, f, b) latest_plan(n, f, b), plan_proc[i[planned_i]],
+                                              plan_first[i[planned_i]], lt$on[planned_i]), origin = "1970-01-01")
+  }
+  after <- planned_i & !is.na(plan_date[i]) & plan_date[i] <= lt$on
   status[i] <- ifelse(after, sub("^planned_", "planned_then_missing_", status[i]), "missing_later")
   source[i] <- ifelse(after, "planned_then_missing", "none")
   days[i] <- ifelse(after, as.integer(lt$on - plan_date[i]), NA_integer_)
@@ -60,7 +86,11 @@ tooth_status_029 <- function(pl, pc, defs, ti, patients) {
   status[i] <- "missing_at_entry"; source[i] <- "none"; days[i] <- NA_integer_
 
   done <- e[e$procstatus == COMPLETE_029, ]
-  done <- done[order(as.Date(done$datecomplete), done$procnum), ]
+  done_on <- as.Date(substr(as.character(done$datecomplete), 1, 10))     # DateComplete, else ProcDate (#631)
+  if ("procdate" %in% names(done)) {
+    pd <- as.Date(substr(as.character(done$procdate), 1, 10)); done_on[is.na(done_on)] <- pd[is.na(done_on)]
+  }
+  done <- done[order(done_on, done$procnum), ]
   done <- done[!duplicated(paste(done$patnum, done$tooth_num)), ]
   i <- match(paste(done$patnum, done$tooth_num), key)
   status[i] <- paste0("extracted_", ifelse(done$dx_class == "none", "no_dx", done$dx_class))
