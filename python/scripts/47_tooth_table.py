@@ -5,7 +5,7 @@
 Builds the extract (open_dental.build), cleans it as silver (open_dental.clean) and derives one row per patient and
 tooth (tooth_loss.tooth_table) and one per planned extraction (tooth_loss.planned_extraction). Writes
 data/datasets/tooth_loss/: the Open Dental columns the status rules read (procedurelog, procedurecode, definition,
-toothinitial, proctp, patient), patient_tooth.csv and planned_extraction.csv. r/tests/test_parity.R recomputes the
+toothinitial, proctp, treatplan, patient), patient_tooth.csv and planned_extraction.csv. r/tests/test_parity.R recomputes the
 statuses and plan-copy counts from the same inputs in base R. Synthetic data only; the answer key is not written here.
 """
 
@@ -29,7 +29,8 @@ out.mkdir(parents=True, exist_ok=True)
 INPUTS = {"procedurelog": ["procnum", "patnum", "procstatus", "codenum", "toothnum", "dx", "datetp", "datecomplete",
                            "procdate"],
           "procedurecode": ["codenum", "proccode"], "definition": ["defnum", "category", "itemname", "itemvalue"],
-          "toothinitial": ["patnum", "toothnum", "initialtype"], "proctp": ["proctpnum", "procnumorig", "datetp"],
+          "toothinitial": ["patnum", "toothnum", "initialtype"],
+          "proctp": ["proctpnum", "treatplannum", "procnumorig", "datetp"], "treatplan": ["treatplannum", "datetp"],
           "patient": ["patnum", "datefirstvisit"]}
 for name, cols in INPUTS.items():
     x[name][cols].to_csv(out / f"{name}.csv", index=False)

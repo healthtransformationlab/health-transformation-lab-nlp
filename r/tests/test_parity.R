@@ -659,7 +659,7 @@ if (file.exists(file.path(td, "patient_tooth.csv"))) {
   source("r/R/16_spec029.R")
   rd <- function(n) read.csv(file.path(td, paste0(n, ".csv")), stringsAsFactors = FALSE)
   pl <- rd("procedurelog"); pc <- rd("procedurecode"); defs <- rd("definition"); ti <- rd("toothinitial")
-  r_t <- tooth_status_029(pl, pc, defs, ti, rd("patient"))
+  r_t <- tooth_status_029(pl, pc, defs, ti, rd("patient"), rd("proctp"), rd("treatplan"))
   py_t <- rd("patient_tooth")
   m <- merge(r_t, py_t, by = c("patient_id", "tooth_num"), suffixes = c(".r", ".p"))
   same_days <- (is.na(m$plan_to_missing_days.r) & is.na(m$plan_to_missing_days.p)) |

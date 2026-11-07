@@ -538,8 +538,11 @@ in `classification` and the scores; R and Python agree on all of it.
   - the tooth table: an extraction done elsewhere dated after the patient's first visit is a later loss, not missing
     at entry; after a planned extraction of that tooth with a diagnosis (planned on or before that date) it is
     `planned_then_missing_perio` or `planned_then_missing_other`, labelled by the plan, with `plan_to_missing_days`
-    from the procedure's DateTP; else `missing_later`, unlabelled. A completed extraction and missing at entry still
-    come first;
+    from the plan's date: the most recent treatment-plan copy of the procedure on or before the loss (`proctp` ->
+    `treatplan` DateTP), else the procedure's DateTP (#631: Open Dental carries the first plan date forward); else
+    `missing_later`, unlabelled. An extraction "existing, current provider" (ProcStatus 3) reads as done elsewhere,
+    like ProcStatus 4 (#631). A completed extraction is dated by DateComplete, else ProcDate; with neither, the tooth
+    has no own or neighbour measures (#631). A completed extraction and missing at entry still come first;
   - the label set: `completed_planned` keeps a `planned_then_missing_*` tooth when `plan_to_missing_days` is at most
     `ModelParams.planned_window_days` (default 365; `--planned-window-days`), and no planned tooth still in the
     mouth. `planned_window_days=None` is the earlier rule, reported as a sensitivity setting;

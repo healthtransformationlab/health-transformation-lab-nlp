@@ -4,17 +4,17 @@ Follows the pre-specified analysis plan, specs/029-tooth-loss/analysis_plan.md (
 are given below. Reads the silver tooth table (`tooth_loss.tooth_table`); the answer key (`tooth_loss_truth`) is read
 only to score the teeth that have no recorded reason, never as a feature. Synthetic data only.
 
-- Who (s. 3): every tooth, third molars left out by default; adults only: a minimum age (`ModelParams.min_age`,
-  default 18; None for no cut-off, a sensitivity analysis). Age is at the tooth's loss, or at the first exam when the
-  loss date isn't recorded (teeth missing at entry, planned extractions). Optionally from a start date
-  (`ModelParams.start_date`, default None: every year; spec 032 US2): a tooth counts when its loss date, or its
+- Who (s. 3): every tooth, third molars left out by default; no age cut-off (`ModelParams.min_age`, default None
+  since 029 US10; 18 and 30 are sensitivity settings). Age is at the tooth's loss, or at the first exam when the
+  loss date isn't recorded (teeth missing at entry, planned extractions). From a start date
+  (`ModelParams.start_date`, default 2018-01-01; None for every year; spec 032 US2): a tooth counts when its loss date, or its
   patient's first exam date when the loss date isn't recorded, is on or after it. Patients with no natural teeth
   (every tooth missing at the first visit; spec 033 US4) are left out of the model and of the stage recount: the 2018
   classification can't stage a mouth with no teeth, and why they lost their teeth isn't recorded.
 - Label (s. 4, FR-010): 1 = the extraction's diagnosis item is periodontal, 0 = another reason. Two label sets:
   `completed` (completed extractions) and `completed_planned` (plus planned ones; the tooth table already counts a
   tooth planned then completed once, as completed). Since 029 US9 (#507) a planned extraction counts only when the
-  tooth is recorded missing at a later visit within `ModelParams.planned_window_days` (365) of the plan
+  tooth is recorded missing at a later visit within `ModelParams.planned_window_days` (548, 029 US10) of the plan
   (planned_then_missing_*); one still in the mouth, or missing after the window, is left unlabelled.
   `planned_window_days=None` is the earlier rule, a sensitivity setting: every planned extraction with a diagnosis
   counts, in the mouth or not.
