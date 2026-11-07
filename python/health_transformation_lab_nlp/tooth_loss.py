@@ -135,8 +135,8 @@ def _neighbours(teeth: pd.DataFrame) -> pd.DataFrame:
         columns={"max_cal": "neighbour_max_cal_mm"})
 
 
-def _plan_copy_dates(x: dict[str, pd.DataFrame]) -> pd.Series:
-    """Each treatment-plan copy of a planned procedure, dated by its plan: index procnumorig, values sorted dates
+def _plan_copy_dates(x: dict[str, pd.DataFrame]) -> pd.DataFrame:
+    """Each treatment-plan copy of a planned procedure, dated by its plan: procnumorig and `on`, sorted by date
     (`treatplan` DateTP through treatplannum, else the copy's own DateTP). Open Dental copies the first plan date
     into procedurelog and proctp, so these are the only record of re-plans (#631)."""
     tp = x["proctp"]

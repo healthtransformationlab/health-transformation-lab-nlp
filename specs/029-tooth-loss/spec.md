@@ -544,7 +544,7 @@ in `classification` and the scores; R and Python agree on all of it.
     like ProcStatus 4 (#631). A completed extraction is dated by DateComplete, else ProcDate; with neither, the tooth
     has no own or neighbour measures (#631). A completed extraction and missing at entry still come first;
   - the label set: `completed_planned` keeps a `planned_then_missing_*` tooth when `plan_to_missing_days` is at most
-    `ModelParams.planned_window_days` (default 365; `--planned-window-days`), and no planned tooth still in the
+    `ModelParams.planned_window_days` (default 548 since US10, was 365; `--planned-window-days`), and no planned tooth still in the
     mouth. `planned_window_days=None` is the earlier rule, reported as a sensitivity setting;
   - the stage recount counts every tooth missing later as missing, with the model's probability; a planned tooth
     still in the mouth is a tooth left;

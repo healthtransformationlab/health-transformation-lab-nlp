@@ -50,7 +50,8 @@ tooth_status_029 <- function(pl, pc, defs, ti, patients, tp = NULL, treatplan = 
 
   p <- e[e$procstatus == PLANNED_029 & e$dx_class != "none", ]
   p$first <- as.Date(substr(as.character(p$datetp), 1, 10))
-  p$plan_on <- as.Date(mapply(function(n, f) latest_plan(n, f), p$procnum, p$first), origin = "1970-01-01")
+  p$plan_on <- if (nrow(p)) as.Date(mapply(function(n, f) latest_plan(n, f), p$procnum, p$first),
+                                     origin = "1970-01-01") else as.Date(character(0))   # mapply on nothing is a list
   p <- p[order(p$plan_on, p$procnum, decreasing = TRUE), ]   # the most recent plan (029 US10), by its copies (#631)
   p <- p[!duplicated(paste(p$patnum, p$tooth_num)), ]
   i <- match(paste(p$patnum, p$tooth_num), key)
