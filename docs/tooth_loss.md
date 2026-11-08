@@ -102,7 +102,36 @@ These options can also be run together as a named preset, beside today's default
 cd python && python scripts/51_tooth_loss_model.py --patients 6000 --stability-seeds 5 --n-boot 1000
 ```
 
-**On the spec 037 extract** (the defaults since spec 037, SYNTHETIC; tooth level only). Spec 037 set the extract's
+**After the tooth-table fixes of #631** (the current numbers, SYNTHETIC; tooth level only). PR #632 fixed four
+defects in the tooth table: the plan date is now the most recent treatment-plan copy rather than the first plan,
+an undated completed extraction no longer reads exams after the loss, ProcStatus 3 counts as the tooth gone, and the
+missing-at-entry mask is recomputed after each merge (it had blanked the own measures of about a quarter of charted
+present teeth and most entry teeth's first-exam neighbours in every earlier run). Same command, same extract
+(6,000 patients, five generator seeds, 1,000 bootstrap resamples): 75,147 teeth left as before; the completed set
+trains on 1,860 teeth and the completed + planned set on 1,968 (1,881 and 1,937 before: the plan-date rule moves a
+few planned teeth in and out of the window).
+
+Held-out extractions (469 teeth, 322 patients, 178 periodontal), shared predictors, generator seed 42:
+
+| At a threshold of 0.5 | completed: logistic | completed: XGBoost | completed + planned: logistic | completed + planned: XGBoost |
+|---|---|---|---|---|
+| sensitivity (of 178 periodontal) | 0.74 | 0.73 | 0.75 | 0.78 |
+| specificity (of 291 other) | 0.90 | 0.93 | 0.87 | 0.89 |
+| positive predictive value | 0.82 | 0.86 | 0.78 | 0.81 |
+| negative predictive value | 0.85 | 0.85 | 0.85 | 0.87 |
+| F1 | 0.78 | 0.79 | 0.77 | 0.79 |
+| AUC (95% CI) | 0.89 (0.86-0.92) | 0.90 (0.87-0.93) | 0.88 (0.85-0.92) | 0.90 (0.87-0.93) |
+| Brier score | 0.123 | 0.111 | 0.127 | 0.112 |
+
+Across the five generator seeds the held-out AUC of the shared models runs 0.87-0.92. On the teeth missing at the
+first visit (10,761 teeth, 1,732 patients; against the synthetic answer key) the AUC is 0.59 / 0.63 (completed) and
+0.64 / 0.70 (completed + planned), 0.59-0.77 across seeds. The held-out figures are a little lower than the table
+below (AUC 0.89-0.90 against 0.91-0.92, sensitivity 0.73-0.78 against 0.82-0.84) and the entry-set figures a little
+higher: the earlier run had been scoring with a quarter of the own measures and most entry neighbours missing, and
+the held-out set itself changed (469 teeth, 178 periodontal, against 448 and 153). The table below is kept as the
+record of that run.
+
+**On the spec 037 extract** (the defaults since spec 037, SYNTHETIC; tooth level only). These numbers are from before #631; see above. Spec 037 set the extract's
 tooth loss from published figures: extractions in the record at about 0.17 per patient-year (item 87), periodontal at
 Suzuki's share by age (item 63), up to ten years of record per patient, and teeth missing at the first visit at
 NHANES 2009-2014's counts by age ([synthetic_data.md](synthetic_data.md)). The analysis is unchanged. Same command,
