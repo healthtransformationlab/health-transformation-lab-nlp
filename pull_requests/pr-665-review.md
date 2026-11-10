@@ -10,7 +10,7 @@ Reviewed against `.claude/review-rubric.md` and AGENTS.md.
 | The raters were blind to the first screen: each was given the task files and the written protocol only, told not to look for other ratings, and the first screen's table was not among their files | ok |
 | The protocol's two questions and four-point scales are the first screen's, word for word | ok |
 | Compared with the 30 the owner checked: the same verdict on 30 of 30 (25 unfair, 5 fair) | ok |
-| 25 tasks were rated twice by different raters (stand-ins started when two raters wrote nothing for nine minutes; both then finished): the same verdict on all 25. The table keeps the first eight raters' ratings | ok |
+| 26 tasks were rated twice by different raters (stand-ins started when two raters wrote nothing for nine minutes; both then finished): the same verdict on all 26. The table keeps the first eight raters' ratings | ok |
 | Labelled everywhere as an AI reviewer's rating, not checked by a person outside the 30 | ok |
 | The README's counts are the table's (a test checks the pass count and the agreement) | ok |
 | Reasons were checked for the wording rules and for organisation names by the repository's tests | ok |

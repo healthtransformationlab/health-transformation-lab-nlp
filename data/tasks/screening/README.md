@@ -86,8 +86,8 @@ give (`test_needs_text`). The raters were told not to look for any other rating 
 this pass did not see the first screen's ratings or the owner's answers. Nothing was changed afterwards.
 
 Two raters were slow to write their results, so stand-in raters were started on their tasks; all the first eight
-finished, and the table keeps their ratings. That left 25 tasks rated twice by different raters, each without
-seeing the other: the same verdict on all 25.
+finished, and the table keeps their ratings. That left 26 tasks rated twice by different raters, each without
+seeing the other: the same verdict on all 26.
 
 ## What it found
 
