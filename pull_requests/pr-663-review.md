@@ -15,7 +15,20 @@ Reviewed against `.claude/review-rubric.md` and AGENTS.md.
 | Written whole on each run (idempotent); column names follow the suffix rules (`_count`, `_num`, `is_`) | ok |
 | No secrets, no real data, no organisation names; merging starts no run and publishes nothing | ok |
 
+## Second commit: what the baseline's time bought, by graph reach
+
+| Check | Result |
+|---|---|
+| Test first: `test_cost_by_graph_reach.py` failed without the script, passes with it (3 tests) | ok |
+| Every published task gets exactly one kind; the five counts add to 93 (31 + 11 + 22 + 20 + 9) | ok |
+| Cost is the agent's own time, which all 48 runs record. A first version used the session's GPU-hours and silently dropped the three earliest runs, two of them resolved; the counts came out as 45 run and 3 resolved, which is how it was caught. A run with no recorded time now stops the script | ok |
+| 48 run and 5 resolved match the paper's baseline; the shares add to 100% within rounding | ok |
+| Labelled as a description of one run under the tight limits, cheapest tasks first, not an estimate | ok |
+| No model, no GPU; merging starts no run and publishes nothing | ok |
+
 ## Notes
+- The split is of 48 runs with 5 resolved. "3 of 5 where a name or call edge leads to the fix" is a count, not a
+  rate to generalise from.
 - "In the first ten" is of a median 398 nodes. It says the edited code is near the top of what a similarity search
   returns for the statement; it does not say a model asks for that search or acts on it. In the paired rerun the
   model called a graph tool in 4 of 23 runs.
