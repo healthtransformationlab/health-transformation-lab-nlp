@@ -39,16 +39,16 @@ That truth is right because we defined it, not because anyone checked it. A synt
 
 It can't tell you how often a method is right about a real patient.
 
-Two things make the gap bigger, and the leaderboard now shows both:
+Two things make the gap bigger or harder to see, and the results now show both:
 - **Some methods share the answer key's rules.** The keyword rules, the rules baseline, the rule phenotypes, the
   "+ stage 4 rule" hybrids, and the probing chart and radiograph read alone all turn measurements into a status with
   `labels.py`. They start with an advantage real records won't give them. The leaderboard marks them with **†**
   (`ladder_eval.uses_answer_key_rules`).
 - **Some records can't be staged.** Staging needs attachment loss or bone loss. 17 of the 223 review charts have no
-  probing chart and no radiograph, so they are `not_stageable` (`ladder_eval.stageable`). There, a status can only
-  come from what the note or the codes say. The note states the true status on 12 of the 17 (`review_key.csv`), and
-  the keyword rules get 14 of the 17, about the same share as on the charts that can be staged (169 of 206). A method
-  that is right there has only repeated what the note or the codes say. On a real record, a stated diagnosis without
+  probing chart and no radiograph, so they are `not_stageable` (`ladder_eval.stageable`). There, only the note, the
+  exam form and the codes give a status, and no chart or radiograph is there to check it against. The note states the
+  true status on 12 of the 17 (`review_key.csv`). Scored at five status groups, the keyword rules get 14 of the 17,
+  about the same share as on the charts that can be staged (169 of 206). On a real record, a stated diagnosis without
   measurements can't be checked against anything. Each method's score on `stageable` and `not_stageable` records is
   in `data/datasets/ladder/ladder_by_stageable.csv`. R recomputes it in `r/tests/test_parity.R`.
 

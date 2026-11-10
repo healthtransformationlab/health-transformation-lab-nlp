@@ -1,5 +1,6 @@
 """Write docs/standards.md: the case definitions, sources and reading orders side by side, and where they disagree
-(#391). Read from committed files; nothing is re-run. Synthetic data.
+(#391). Read from committed files; no model is re-run. The two orders are scored as the leaderboard scores them, which
+reads the diagnosis codes again from the seeded build (study.scored_review, #635). Synthetic data.
 
     python scripts/48_standards_doc.py           # rewrite docs/standards.md
     python scripts/48_standards_doc.py --check   # exit 1 if it is stale

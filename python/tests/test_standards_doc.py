@@ -46,7 +46,7 @@ def test_the_review_set_size_is_the_answer_keys_not_typed_in(md):
 def test_the_charted_visits_are_counted_out_of_every_visit(md):
     visits = pd.read_csv(DATASETS_DIR / "visits_structured.csv", usecols=["charted"])
     charted = int(visits["charted"].sum())
-    assert int(pd.read_csv(REPO_ROOT / "data" / "sites" / "aap_vs_cdc.csv", index_col=0).to_numpy().sum()) == charted
+    assert int(pd.read_csv(sd.SITES / "aap_vs_cdc.csv", index_col=0).to_numpy().sum()) == charted
     assert f"{charted:,} synthetic visits with a gum chart, out of {len(visits):,}" in md
 
 
@@ -58,7 +58,7 @@ def test_the_orders_are_scored_as_the_leaderboard_scores_them(md):
     v0, design = (round(stab.loc[m, "accuracy"] * n) for m in ("algorithm_v0", "algorithm_design"))
     assert (f"On the {n} synthetic review charts, measurements first agrees with the answer key on {v0} and exam "
             f"form first on {design}") in md
-    assert "five status groups" in md
+    assert "five status groups" in md and "no gum-disease code read as healthy or gingivitis" in md
     results = (REPO_ROOT / "docs" / "results.md").read_text()
     for method, count in (("algorithm_v0", v0), ("algorithm_design", design)):
         row = next(line for line in results.splitlines() if f"| `{method}` |" in line)

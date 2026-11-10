@@ -48,7 +48,7 @@ When sources disagree, a rule set takes the first one, in a fixed order, that gi
 | **The study design's** (`algorithm_design`) | This repo's own (spec 005): Patel et al. 2022 has no exam-form step ([action item A2](action_items.md)) | exam form → diagnosis codes (done, then planned) → note → gum measurements | Not yet |
 | **This repo's** (`algorithm_v0`) | Its own placeholder | gum measurements → note → diagnosis codes → exam form → procedure codes; the X-ray reading can only raise the stage | Not yet |
 
-On the 223 synthetic review charts, measurements first agrees with the answer key on 207 and exam form first on 176, scored as the leaderboard is ([results](results.md): five status groups, with healthy and gingivitis as one). That gap flatters measurements first: the answer key was made from the measurements ([how scoring works](scoring.md)). On real records, which order is best is an open question.
+On the 223 synthetic review charts, measurements first agrees with the answer key on 207 and exam form first on 176, scored as the leaderboard is ([results](results.md)): at five status groups, with healthy and gingivitis as one, and with a treatment plan that has no gum-disease code read as healthy or gingivitis ([presets](presets.md)). That gap flatters measurements first: the answer key was made from the measurements ([how scoring works](scoring.md)). On real records, which order is best is an open question.
 
 ## 4. Where the sources disagree
 

@@ -1,5 +1,7 @@
 """docs/standards.md (#391): which case definition, which sources and which reading order, side by side, and where
-they disagree. Generated from committed files (data/sites/, data/datasets/) so the numbers can't go stale.
+they disagree. Generated from committed files (data/sites/, data/datasets/) so the numbers can't go stale. The two
+orders are scored as the leaderboard scores them, which reads the diagnosis codes again from the seeded build
+(study.scored_review), as readme_results does.
 
     python scripts/48_standards_doc.py           # rewrite docs/standards.md
     python scripts/48_standards_doc.py --check   # exit 1 if it is stale
@@ -54,7 +56,6 @@ def markdown() -> str:
     aces = pd.read_csv(SITES / "aap_vs_aces.csv", index_col=0)
     ag = agreement_rows(pd.read_csv(DATASETS_DIR / "method_agreement.csv"))
     visits = pd.read_csv(DATASETS_DIR / "visits_structured.csv")
-    n_review = len(pd.read_csv(DATASETS_DIR / "answer_key" / "review_key.csv", usecols=["visit_id"]))
     sc = _order_scores(visits)
     n_aces = int(aces.to_numpy().sum())
     aces_same = int(sum(aces.loc[s, s] for s, _ in STAGES if s in aces.index and s in aces.columns))
@@ -89,7 +90,7 @@ def markdown() -> str:
         "### Where they disagree, on the same synthetic visits",
         "",
         (f"Every one of the {int(cdc.to_numpy().sum()):,} synthetic visits with a gum chart, out of {len(visits):,} "
-         f"in the full synthetic set, classified both ways. This is a larger set than the {n_review} review charts "
+         f"in the full synthetic set, classified both ways. This is a larger set than the {sc['n']} review charts "
          "the methods are scored on, because the definitions need only the chart. 2017 AAP/EFP (rows) against 2012 "
          "CDC/AAP (columns), from `data/sites/aap_vs_cdc.csv`:"),
         "",
@@ -132,7 +133,8 @@ def markdown() -> str:
         "",
         (f"On the {sc['n']} synthetic review charts, measurements first agrees with the answer key on "
         f"{sc['algorithm_v0']} and exam form first on {sc['algorithm_design']}, scored as the leaderboard is "
-        "([results](results.md): five status groups, with healthy and gingivitis as one). That gap flatters "
+        "([results](results.md)): at five status groups, with healthy and gingivitis as one, and with a treatment "
+        "plan that has no gum-disease code read as healthy or gingivitis ([presets](presets.md)). That gap flatters "
         "measurements first: the answer key was made from the measurements ([how scoring works](scoring.md)). On "
         "real records, which order is best is an open question."),
         "",
