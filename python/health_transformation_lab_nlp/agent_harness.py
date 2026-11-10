@@ -581,7 +581,11 @@ def tool_specs(names: list[str]) -> list[dict]:
 @traced
 def fill_instruction(instruction: str, task: dict) -> str:
     hints = (task.get("hints_text") or "").strip()
-    return instruction.replace("{problem_description}", task.get("problem_statement") or "").replace("{hints}", hints)
+    out = instruction
+    for name, value in (("problem_description", task.get("problem_statement") or ""), ("hints", hints)):
+        for form in ("{" + name + "?}", "{" + name + "}"):   # the framework's optional form, then the required one
+            out = out.replace(form, value)
+    return out
 
 
 _PRUNE = {"docs", "docs_src", "tests", "examples", "benchmarks"}

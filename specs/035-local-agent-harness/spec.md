@@ -109,6 +109,10 @@ required test as unresolved.
   repository's tests run its scripts, which import the modules beside them, and the flag broke 7 tasks whose
   reference fix passes. `-p no:anyio` and `-o python_classes` are set.
 - Snapshots get no `pytest.ini` or `conftest.py` written into them.
+- A prompt variable the task does not have is filled with an empty string. The competition's framework ends the
+  agent instead, unless the prompt marks the variable optional (`{hints?}`). That hid a defect in the submission's
+  prompt until the agent was run under the competition's evaluator (November 10, 2026; gemma-developer-agent
+  issue 33): about half the published tasks have no hints. `fill_instruction` fills both forms.
 - Budgets default to gemma-developer-agent's `eval_config.yaml` (40 calls, 5 minutes, 60 turns, 120 s), not the
   guide's defaults.
 - Resolved also requires every test function the test patch adds or changes to pass, not be skipped. That's the
