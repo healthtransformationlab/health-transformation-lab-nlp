@@ -2,6 +2,8 @@
 budget and target checks (spec 036), the doctor's open recommendations and pipeline-doctor's forecaster, goes
 through pipeline-doctor's digest: one message per owner per period, each problem once, repeats flagged. A
 Databricks SQL alert per period emails the message to the owner (no new credential)."""
+import sys
+
 import pandas as pd
 import pytest
 
@@ -117,6 +119,8 @@ def test_one_alert_per_period_reads_that_periods_message_and_emails_the_owner():
 
 
 def test_ensure_alerts_creates_the_missing_and_updates_the_rest():
+    pytest.importorskip("databricks.sdk")   # ensure_alerts builds the SDK's own types; the SDK is in no extra (#650)
+
     class Api:
         def __init__(self):
             self.made, self.updated = [], []
@@ -146,7 +150,7 @@ def test_the_package_is_pinned():
 
 
 def test_the_alert_uses_the_sdks_own_types():   # the fake client can't check them; the live API would
-    from databricks.sdk.service import sql
+    sql = pytest.importorskip("databricks.sdk.service.sql")   # in no extra: mlflow brings it in CI (#650)
     src = (REPO_ROOT / "python" / "health_transformation_lab_nlp" / "digests.py").read_text()
     assert "empty_result_state=sql.AlertEvaluationState.OK" in src and hasattr(sql.AlertEvaluationState, "OK")
 
@@ -171,3 +175,27 @@ def test_a_sev2_forecast_pages_now_instead_of_waiting():
     assert dg.page_now(_alerts()) == ""                         # SEV3/SEV4 only: nothing to page
     items, _ = dg.build(a, "daily", TODAY, previous=None)
     assert items.empty                                          # never in a digest: paged instead
+
+
+# ---------- #650: the Databricks SDK is not one of this package's dependencies ----------
+def _sdk_tests():
+    return [test_ensure_alerts_creates_the_missing_and_updates_the_rest, test_the_alert_uses_the_sdks_own_types]
+
+
+@pytest.mark.parametrize("test", _sdk_tests(), ids=lambda t: t.__name__)
+def test_a_test_that_needs_the_sdk_skips_where_it_is_not_installed(test, monkeypatch):
+    """The SDK is in no extra: CI has it because mlflow (the `track` extra) brings it. The deploy workflow's test
+    step and AGENTS.md's `pip install -e ".[dev]"` have none, and there these two tests failed, which stopped every
+    deploy to dev from November 5, 2026. They skip there, as the other optional-package tests do."""
+    for name in [m for m in sys.modules if m == "databricks" or m.startswith("databricks.")]:
+        monkeypatch.delitem(sys.modules, name)
+    monkeypatch.setitem(sys.modules, "databricks", None)     # `import databricks...` now fails, as when not installed
+    with pytest.raises(pytest.skip.Exception):
+        test()
+
+
+def test_ci_installs_the_sdk_so_those_tests_run_there():
+    # a skip everywhere would test nothing: both whole-suite jobs keep the extra that brings the SDK in
+    ci = (REPO_ROOT / ".github" / "workflows" / "ci.yml").read_text()
+    whole_suite = [line for line in ci.splitlines() if "pip install -e" in line and "track" in line]
+    assert len(whole_suite) >= 2, "ci.yml: the python and python-databricks-runtime jobs install the track extra"
