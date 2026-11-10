@@ -37,8 +37,14 @@ def test_source_pairs_are_listed_least_agreeing_first():
 
 
 # ---------- #635: the page went on quoting the 240-chart note set after #467 rebuilt the notes ----------
-def test_the_review_set_size_is_the_answer_keys_not_typed_in(md):
-    n = len(pd.read_csv(DATASETS_DIR / "answer_key" / "review_key.csv"))
+def _seed_42() -> pd.DataFrame:
+    """The committed build's scores in the stability run, scored as the leaderboard scores (#472)."""
+    return pd.read_csv(DATASETS_DIR / "ladder" / "seed_stability.csv").query("seed == 42").set_index("method")
+
+
+def test_the_review_set_size_is_the_scored_charts_not_typed_in(md):
+    n = int(_seed_42().loc["algorithm_v0", "n"])
+    assert n == len(pd.read_csv(DATASETS_DIR / "answer_key" / "review_key.csv"))   # today every review chart counts
     assert f"a larger set than the {n} review charts" in md
     assert "240 review charts" not in md
 
@@ -53,13 +59,13 @@ def test_the_charted_visits_are_counted_out_of_every_visit(md):
 def test_the_orders_are_scored_as_the_leaderboard_scores_them(md):
     # the page counted an exact match on six statuses with the codes as built (205 and 169 of 223); every other page
     # gives the leaderboard's score (spec 032 US8: five status groups, the codes re-read): 207 and 176
-    stab = pd.read_csv(DATASETS_DIR / "ladder" / "seed_stability.csv").query("seed == 42").set_index("method")
-    n = int(stab.loc["algorithm_v0", "n"])       # seed 42 is the committed build, scored as the leaderboard (#472)
+    stab = _seed_42()
+    n = int(stab.loc["algorithm_v0", "n"])
     v0, design = (round(stab.loc[m, "accuracy"] * n) for m in ("algorithm_v0", "algorithm_design"))
     assert (f"On the {n} synthetic review charts, measurements first agrees with the answer key on {v0} and exam "
             f"form first on {design}") in md
     assert "five status groups" in md and "no gum-disease code read as healthy or gingivitis" in md
     results = (REPO_ROOT / "docs" / "results.md").read_text()
     for method, count in (("algorithm_v0", v0), ("algorithm_design", design)):
-        row = next(line for line in results.splitlines() if f"| `{method}` |" in line)
-        assert f"**{100 * count / n:.1f}**" in row, method
+        rows = [line for line in results.splitlines() if f"| `{method}` |" in line]
+        assert len(rows) == 1 and f"**{100 * count / n:.1f}**" in rows[0], method

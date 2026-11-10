@@ -45,12 +45,13 @@ Two things make the gap bigger or harder to see, and the results now show both:
   `labels.py`. They start with an advantage real records won't give them. The leaderboard marks them with **†**
   (`ladder_eval.uses_answer_key_rules`).
 - **Some records can't be staged.** Staging needs attachment loss or bone loss. 17 of the 223 review charts have no
-  probing chart and no radiograph, so they are `not_stageable` (`ladder_eval.stageable`). There, only the note, the
-  exam form and the codes give a status, and no chart or radiograph is there to check it against. The note states the
-  true status on 12 of the 17 (`review_key.csv`). Scored at five status groups, the keyword rules get 14 of the 17,
-  about the same share as on the charts that can be staged (169 of 206). On a real record, a stated diagnosis without
-  measurements can't be checked against anything. Each method's score on `stageable` and `not_stageable` records is
-  in `data/datasets/ladder/ladder_by_stageable.csv`. R recomputes it in `r/tests/test_parity.R`.
+  probing chart and no radiograph reading, so they are `not_stageable` (`ladder_eval.stageable`). There, only the
+  note, the exam form and the codes give a status, and no chart or radiograph reading is there to check it against.
+  The note states the true status on 12 of the 17 (`review_key.csv`). Scored at five status groups, the keyword rules
+  get 14 of the 17, about the same share as on the charts that can be staged (169 of 206). On a real record, a stated
+  diagnosis without measurements can't be checked against anything. Each note-reading method's score on `stageable`
+  and `not_stageable` records is in `data/datasets/ladder/ladder_by_stageable.csv`. R recomputes it in
+  `r/tests/test_parity.R`.
 
 ## Do the scores hold on other test sets?
 

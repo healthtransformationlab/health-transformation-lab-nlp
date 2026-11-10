@@ -84,7 +84,8 @@ def test_the_charts_that_cant_be_staged_are_counted_from_the_tables(prose, key):
     n_not, n_ok = int(split.loc["not_stageable", "n"]), int(split.loc["stageable", "n"])
     apart = key[ladder_eval.stageable(key) == "not_stageable"]
     assert len(apart) == n_not and n_not + n_ok == len(key)
-    assert f"{n_not} of the {len(key)} review charts" in prose
+    # an X-ray that is there but couldn't be read gives no reading (rad_present 0), so the page says "reading"
+    assert f"{n_not} of the {len(key)} review charts have no probing chart and no radiograph reading" in prose
     # a note states the true status when it writes a diagnosis and that diagnosis is the answer key's exact status
     stated = int(((apart["stated_status"] == apart["truth_status"]) & (apart["dx_pattern"] != "none")).sum())
     assert f"states the true status on {stated} of the {n_not}" in prose
