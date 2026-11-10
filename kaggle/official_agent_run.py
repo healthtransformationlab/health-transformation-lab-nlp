@@ -41,7 +41,9 @@ MODEL_SOURCE = "google/gemma-4/Other/gemma-4-e4b-it-qat-w4a16-ct/2"      # as th
 STARTER_MACHINE_SHAPE = "NvidiaL4"                                       # the starter notebook's accelerator
 POLL_SECONDS, UPLOAD_TRIES, UPLOAD_RETRY_SECONDS = 30, 4, 60
 COLUMNS = ["instance_id", "tier_code", "is_in_sample", "harness_name", "model_name", "is_resolved", "test_exit_code", "reason_text",
-           "agent_patch_bytes", "tool_call_count", "llm_call_count", "agent_seconds", "load_seconds",
+           "agent_patch_bytes", "tool_call_count", "llm_call_count", "graph_tool_call_count", "sub_agent_call_count",
+           "skill_call_count", "outside_workspace_call_count", "prompt_token_count", "output_token_count",
+           "agent_seconds", "load_seconds",
            "session_seconds", "gpu_count", "gpu_name", "command_timeout_seconds", "max_tool_calls", "max_time_minutes",
            "max_turns", "max_output_tokens", "thinking_budget", "kaggle_kernel_url", "run_ts", "error_text"]
 
@@ -99,6 +101,25 @@ def kernel_source(source: str, key: bytes) -> str:
     return source.replace('SEAL_KEY = ""', f'SEAL_KEY = "{key.hex()}"')
 
 
+GRAPH_TOOLS = {"get_code_neighbors", "search_similar_code", "get_code_subgraph"}
+SKILL_TOOLS = {"list_skills", "load_skill", "load_skill_resource", "run_skill_script"}
+OUTSIDE = re.compile(r"/kaggle/|/tmp/htl|\.\./\.\.|/root/|/etc/|/proc/")   # a tool argument reaching past the workspace
+
+
+def trace_counts(trace: dict) -> dict:
+    """From the evaluator's own trace of a task: its token totals, and how many tool calls were graph tools, went to
+    a sub-agent, used a skill, or named a path outside the workspace (an agent must never need to)."""
+    calls = [c for s in trace.get("steps") or [] for c in s.get("tool_calls") or []]
+    names = [c.get("function_name") or "" for c in calls]
+    core = GRAPH_TOOLS | SKILL_TOOLS | {"run_command", "read_file", "edit_file", "write_file", "get_status", "submit_patch"}
+    final = trace.get("final_metrics") or {}
+    return {"prompt_token_count": final.get("total_prompt_tokens"), "output_token_count": final.get("total_completion_tokens"),
+            "graph_tool_call_count": sum(n in GRAPH_TOOLS for n in names),
+            "sub_agent_call_count": sum(bool(n) and n not in core for n in names),
+            "skill_call_count": sum(n in SKILL_TOOLS for n in names),
+            "outside_workspace_call_count": sum(bool(OUTSIDE.search(json.dumps(c.get("arguments") or {}))) for c in calls)}
+
+
 COMPETITION_DEFAULTS = {"timeout_seconds": 300, "verification_timeout_seconds": 300, "max_tool_calls": 100,
                         "max_time_minutes": 60.0, "max_turns": None, "max_output_tokens": 16384, "thinking_budget": 4096}
 # what the starter notebook and swegemma.config.build_submission_limits use when a submission sets nothing
@@ -154,6 +175,9 @@ def row_for(result: dict, verdict: dict | None, tier: str, kernel_url: str, sess
         "test_exit_code": verdict.get("test_exit_code") if verdict else None,
         "reason_text": "", "agent_patch_bytes": len((result.get("patch") or "").encode()),
         "tool_call_count": result.get("tool_call_count"), "llm_call_count": result.get("llm_call_count"),
+        **{k: (result.get("trace_counts") or {}).get(k) for k in (
+            "graph_tool_call_count", "sub_agent_call_count", "skill_call_count", "outside_workspace_call_count",
+            "prompt_token_count", "output_token_count")},
         "agent_seconds": result.get("agent_phase_seconds"), "load_seconds": result.get("load_seconds"),
         "session_seconds": round(session_seconds, 1) if session_seconds is not None else None,
         "gpu_count": len(gpus) or None, "gpu_name": gpus[0] if gpus else None,
@@ -407,6 +431,9 @@ def main() -> int:
             res = out / "result.json"
             results[iid] = json.loads(res.read_text()) if res.exists() else {
                 "instance_id": iid, "error": f"kernel ended {status} and wrote no result.json"}
+            trace = out / "results" / "traces" / f"trace_{iid}.json"
+            if trace.exists():
+                results[iid]["trace_counts"] = trace_counts(json.loads(trace.read_text()))
             r = results[iid]
             print(f"{iid}: kernel {status}; patch {len((r.get('patch') or '').encode())} bytes, "
                   f"{r.get('tool_call_count')} tool calls, agent {r.get('agent_phase_seconds')} s, "

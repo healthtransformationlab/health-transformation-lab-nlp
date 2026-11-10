@@ -215,3 +215,20 @@ def test_a_batch_kernel_carries_its_key_and_the_committed_one_does_not(run):
     assert f'SEAL_KEY = "{bytes(range(32)).hex()}"' in keyed and 'SEAL_KEY = ""' not in keyed
     meta = run.kernel_metadata("someone", "batch", None, None)
     assert meta["id"] == "someone/htlnlp-offrun-batch" and meta["dataset_sources"][0] == "someone/htlnlp-official-batch"
+
+
+def test_a_trace_is_counted_by_tool_kind_and_outside_paths(run):
+    trace = {"final_metrics": {"total_prompt_tokens": 900, "total_completion_tokens": 70},
+             "steps": [{"tool_calls": [{"function_name": "read_file", "arguments": {"filepath": "python/a.py"}}]},
+                       {"tool_calls": [{"function_name": "search_similar_code", "arguments": {"query": "x"}},
+                                       {"function_name": "code_analyzer", "arguments": {"request": "y"}}]},
+                       {"tool_calls": [{"function_name": "load_skill", "arguments": {"name": "pipeline-doctor"}},
+                                       {"function_name": "run_command", "arguments": {"command": "ls /kaggle/input"}}]},
+                       {"message": "no tools here"}]}
+    c = run.trace_counts(trace)
+    assert c == {"prompt_token_count": 900, "output_token_count": 70, "graph_tool_call_count": 1,
+                 "sub_agent_call_count": 1, "skill_call_count": 1, "outside_workspace_call_count": 1}
+    assert run.trace_counts({})["outside_workspace_call_count"] == 0
+    row = run.row_for({"instance_id": "htlnlp_7", "patch": "", "trace_counts": c}, None, tier="B", kernel_url="k",
+                      session_seconds=None)
+    assert row["graph_tool_call_count"] == 1 and row["prompt_token_count"] == 900 and row["reason_text"] == "empty patch"
