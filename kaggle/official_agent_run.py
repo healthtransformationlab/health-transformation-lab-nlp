@@ -40,7 +40,7 @@ WHEELHOUSE = "metric/gemma-4-developer-agent-wheelhouse"                 # the c
 MODEL_SOURCE = "google/gemma-4/Other/gemma-4-e4b-it-qat-w4a16-ct/2"      # as the starter notebook attaches it
 STARTER_MACHINE_SHAPE = "NvidiaL4"                                       # the starter notebook's accelerator
 POLL_SECONDS, UPLOAD_TRIES, UPLOAD_RETRY_SECONDS = 30, 4, 60
-COLUMNS = ["instance_id", "tier_code", "harness_name", "model_name", "is_resolved", "test_exit_code", "reason_text",
+COLUMNS = ["instance_id", "tier_code", "is_in_sample", "harness_name", "model_name", "is_resolved", "test_exit_code", "reason_text",
            "agent_patch_bytes", "tool_call_count", "llm_call_count", "agent_seconds", "load_seconds",
            "session_seconds", "gpu_count", "gpu_name", "command_timeout_seconds", "max_tool_calls", "max_time_minutes",
            "max_turns", "max_output_tokens", "thinking_budget", "kaggle_kernel_url", "run_ts", "error_text"]
@@ -99,7 +99,48 @@ def kernel_source(source: str, key: bytes) -> str:
     return source.replace('SEAL_KEY = ""', f'SEAL_KEY = "{key.hex()}"')
 
 
-def row_for(result: dict, verdict: dict | None, tier: str, kernel_url: str, session_seconds: float | None) -> dict:
+COMPETITION_DEFAULTS = {"timeout_seconds": 300, "verification_timeout_seconds": 300, "max_tool_calls": 100,
+                        "max_time_minutes": 60.0, "max_turns": None, "max_output_tokens": 16384, "thinking_budget": 4096}
+# what the starter notebook and swegemma.config.build_submission_limits use when a submission sets nothing
+
+
+def settings_for(result: dict, seed: int | None, drawn: list[str], pool_count: int, machine_shape: str | None,
+                 docker_image: str | None, competition: str | None, agent_commit: str | None) -> dict:
+    """What a run used, how its sample was drawn, and each budget that differs from the competition's defaults."""
+    budgets, gen = result.get("budgets") or {}, result.get("generation_defaults") or {}
+    used = {**budgets, "max_output_tokens": gen.get("max_output_tokens"),
+            "thinking_budget": (gen.get("thinking_config") or {}).get("thinking_budget")}
+    version = (result.get("versions") or {}).get("swegemma")
+    harness = result.get("harness_name") or "swegemma"
+    return {
+        "harness_name": harness.replace("swegemma", f"swegemma {version}", 1) if version else harness,
+        "model_name": result.get("model_name"), "versions": result.get("versions"), "server": result.get("server"),
+        "budgets": budgets, "generation_defaults": gen, "context_cache": result.get("context_cache"),
+        "events_compaction": result.get("events_compaction"),
+        "kernel": {"machine_shape_asked": machine_shape, "docker_image": docker_image, "competition_attached": competition,
+                   "internet": False, "tasks_per_kernel": 1},
+        "agent_commit_sha": agent_commit,
+        "sample": {"seed": seed, "drawn_count": len(drawn), "pool_count": pool_count, "instance_ids": drawn,
+                   "method_text": "drawn with the seed from the published tasks, stratified by fidelity tier in "
+                                  "proportion to each tier's size (largest remainder); not ordered by cost or size"},
+        "differences_from_competition_defaults": [
+            {"setting_name": k, "used": used.get(k), "competition_default": v,
+             "source_text": "the submission's eval_config.yaml"}
+            for k, v in COMPETITION_DEFAULTS.items() if k in used and used.get(k) != v],
+        "notes": [
+            ("The agent loop, the model server and the verification are the competition's: swegemma's "
+             "Evaluator.evaluate_task (subprocess sandbox), vLLM from the competition's wheelhouse dataset, and "
+             "swegemma's verify_task, following the competition's starter notebook."),
+            ("Each task ran alone in a private, offline kernel beside a bundle with no reference patch and no tests, "
+             "so the evaluator's verification had nothing to verify there. The patch was verified afterwards with "
+             "the same evaluator's verify_task against the published snapshot and the task's tests."),
+            "The number format follows the GPU: bfloat16 on compute capability 8.0 or above, float16 below.",
+        ],
+    }
+
+
+def row_for(result: dict, verdict: dict | None, tier: str, kernel_url: str, session_seconds: float | None,
+            in_sample: bool = True) -> dict:
     """One table row: what the evaluator's agent phase did on Kaggle, and its verification's verdict on the patch."""
     budgets, server = result.get("budgets") or {}, result.get("server") or {}
     gen = result.get("generation_defaults") or {}
@@ -107,7 +148,7 @@ def row_for(result: dict, verdict: dict | None, tier: str, kernel_url: str, sess
     version = (result.get("versions") or {}).get("swegemma")
     harness = result.get("harness_name") or "swegemma"
     row = {
-        "instance_id": result.get("instance_id"), "tier_code": tier,
+        "instance_id": result.get("instance_id"), "tier_code": tier, "is_in_sample": bool(in_sample),
         "harness_name": harness.replace("swegemma", f"swegemma {version}", 1) if version else harness,
         "model_name": result.get("model_name"), "is_resolved": bool(verdict and verdict.get("resolved")),
         "test_exit_code": verdict.get("test_exit_code") if verdict else None,
@@ -281,6 +322,8 @@ def main() -> int:
     ap.add_argument("--kernel-minutes", type=int, default=45, help="Kaggle stops a kernel after this long")
     ap.add_argument("--work", type=Path, default=Path(os.environ.get("TMPDIR", "/tmp")) / "htl_official_agent")
     ap.add_argument("--no-table", action="store_true", help="a pilot: print the rows, write no table")
+    ap.add_argument("--outside-sample", action="store_true",
+                    help="these tasks are not part of the drawn sample (a pilot): their rows say so")
     ap.add_argument("--batch", action="store_true",
                     help="every task in ONE kernel, each sealed until its turn: for when the GPU allowance cannot pay "
                          "for a kernel's start-up per task. The order is a seeded shuffle of the tasks")
@@ -372,9 +415,13 @@ def main() -> int:
 
     verdicts = _verify(a.dataset / "tasks.jsonl", a.dataset / "snapshots", a.agent_dir,
                        {i: (r.get("patch") or "") for i, r in results.items()}, a.work / "_verify")
+    path = OUT_DIR / "gemma-4-e4b-it-qat-w4a16-ct_swegemma.csv"
+    before = pd.read_csv(path).set_index("instance_id")["session_seconds"].to_dict() if path.exists() else {}
     rows = [row_for({"instance_id": i, **results[i]}, verdicts.get(i), manifest.get(i, ""),
                     f"https://www.kaggle.com/code/{user}/{kernel_slug(i)}",
-                    None if a.collect else sessions.get(i)) for i in ids]
+                    sessions.get(i) if i in sessions and not a.collect else   # a collected run keeps its measured time
+                    (float(before[i]) if i in before and pd.notna(before[i]) else None),
+                    in_sample=not a.outside_sample) for i in ids]
     table = pd.DataFrame(rows, columns=COLUMNS)
     print(table[["instance_id", "tier_code", "is_resolved", "reason_text", "agent_patch_bytes", "tool_call_count",
                  "agent_seconds", "gpu_count", "gpu_name"]].to_string(index=False))
@@ -382,7 +429,14 @@ def main() -> int:
     if a.no_table:
         return 0
     model = next((r.get("model_name") for r in results.values() if r.get("model_name")), None)
-    print(f"-> {write_table(pd, rows, model).relative_to(REPO_ROOT)}")
+    out = write_table(pd, rows, model)
+    print(f"-> {out.relative_to(REPO_ROOT)}")
+    good = next((r for r in results.values() if r.get("budgets")), None)
+    if good and a.sample:
+        commit = subprocess.run(["git", "-C", str(a.agent_dir), "rev-parse", "HEAD"], capture_output=True, text=True,
+                                check=False).stdout.strip() or None
+        out.with_name(out.stem + "_settings.json").write_text(json.dumps(settings_for(
+            good, a.seed, ids, len(manifest), a.machine_shape, a.docker_image, a.competition, commit), indent=1) + "\n")
     return 0
 
 

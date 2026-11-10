@@ -138,9 +138,31 @@ def test_a_run_row_records_the_harness_the_settings_and_the_evaluators_verdict(r
     assert row["is_resolved"] is True and row["agent_patch_bytes"] == 19 and row["tier_code"] == "A"
     assert row["harness_name"].startswith("swegemma 0.2.11") and row["gpu_count"] == 4 and row["gpu_name"] == "NVIDIA L4"
     assert row["max_time_minutes"] == 5.0 and row["max_output_tokens"] == 16384 and row["thinking_budget"] == 4096
+    assert row["is_in_sample"] is True
     failed = run.row_for({"instance_id": "htlnlp_7", "error": "RuntimeError: no GPU"}, None, tier="A", kernel_url="k",
-                         session_seconds=60.0)
+                         session_seconds=60.0, in_sample=False)
     assert failed["is_resolved"] is False and failed["reason_text"] == "kernel failed" and "no GPU" in failed["error_text"]
+    assert failed["is_in_sample"] is False
+
+
+def test_the_settings_say_how_the_sample_was_drawn_and_what_differs_from_the_competition(run):
+    result = {"model_name": "gemma-4-e4b-it-qat-w4a16-ct", "harness_name": "swegemma (Evaluator.evaluate_task, subprocess sandbox)",
+              "versions": {"swegemma": "0.2.11", "vllm": "0.19.1"},
+              "server": {"gpus": ["NVIDIA L4"] * 4, "tensor_parallel_size": 4, "dtype": "bfloat16"},
+              "budgets": {"timeout_seconds": 120, "verification_timeout_seconds": 300, "max_tool_calls": 40,
+                          "max_time_minutes": 5.0, "max_turns": 60},
+              "generation_defaults": {"max_output_tokens": 16384, "thinking_config": {"thinking_budget": 4096}}}
+    s = run.settings_for(result, seed=7, drawn=["a", "b"], pool_count=93, machine_shape="NvidiaL4", docker_image="img",
+                         competition="gemma-4-developer-agent", agent_commit="abc123")
+    assert s["sample"] == {"seed": 7, "drawn_count": 2, "pool_count": 93, "instance_ids": ["a", "b"],
+                           "method_text": s["sample"]["method_text"]} and "stratified" in s["sample"]["method_text"]
+    assert s["harness_name"].startswith("swegemma 0.2.11") and s["agent_commit_sha"] == "abc123"
+    diffs = {d["setting_name"]: d for d in s["differences_from_competition_defaults"]}
+    assert diffs["max_time_minutes"] == {"setting_name": "max_time_minutes", "used": 5.0, "competition_default": 60.0,
+                                         "source_text": "the submission's eval_config.yaml"}
+    assert diffs["max_tool_calls"]["used"] == 40 and diffs["max_tool_calls"]["competition_default"] == 100
+    assert diffs["timeout_seconds"]["used"] == 120 and "max_output_tokens" not in diffs     # the same as the default
+    assert any("no reference patch" in n for n in s["notes"])
 
 
 # --- a batch: several tasks in one kernel, each sealed until its turn (the GPU allowance decides, #636) -----------
