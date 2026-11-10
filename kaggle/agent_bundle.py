@@ -53,7 +53,7 @@ def _check_snapshot(snapshot: Path) -> None:
     with tempfile.TemporaryDirectory() as d:
         with tarfile.open(snapshot) as t:
             t.extractall(d, filter="tar")
-        run = lambda *a: subprocess.run(["git", *a], cwd=d, capture_output=True, text=True, check=True).stdout
+        run = lambda *a: subprocess.run(["git", "-c", "safe.directory=*", *a], cwd=d, capture_output=True, text=True, check=True).stdout
         commits = int(run("rev-list", "--all", "--count").strip() or 0)
         loose = run("fsck", "--unreachable", "--no-reflogs").strip()
         if commits != 1 or loose:

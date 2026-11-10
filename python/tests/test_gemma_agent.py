@@ -387,3 +387,41 @@ def test_the_workflow_keeps_the_transcripts_and_ends_inside_the_job():   # #621
     keep = [s for s in steps if "upload-artifact" in str(s.get("uses", ""))]
     assert keep and keep[0]["if"] == "always()" and "/output" in keep[0]["with"]["path"]
     assert "h <= 5 " in "\n".join(str(s.get("run", "")) for s in steps)
+
+
+# --- the Colab run (#656) ------------------------------------------------------------------------------------------
+
+@pytest.fixture(scope="module")
+def colab():
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("colab_agent", REPO_ROOT / "python" / "scripts" / "62_colab_agent.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def test_the_colab_bundles_have_their_own_slug_and_the_fuller_settings(colab):
+    assert colab.colab_slug("htlnlp_pr56") == "htlnlp-colab-htlnlp-pr56" != runner_slug("htlnlp_pr56")
+    assert colab.MODEL_CFG["max_new_tokens"] == 16384 and colab.MODEL_CFG["thinking"] is True
+    assert (colab.BUDGET.tool_calls, colab.BUDGET.turns, colab.BUDGET.command_timeout) == (100, 500, 300)
+
+
+def runner_slug(i):
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("agent_bundle", REPO_ROOT / "kaggle" / "agent_bundle.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod.slug(i)
+
+
+def test_the_notebook_runs_one_task_at_a_time_and_resumes():
+    nb = json.loads((REPO_ROOT / "kaggle" / "colab_agent.ipynb").read_text())
+    src = "\n".join("".join(c["source"]) for c in nb["cells"])
+    assert 'userdata.get("KAGGLE_API_TOKEN")' in src and "KAGGLE_API_TOKEN=" not in src.replace('os.environ["KAGGLE_API_TOKEN"] =', "")
+    assert "shutil.rmtree(bundle" in src and "done = {p.stem" in src     # one bundle on disk; done tasks skipped
+    assert "htlnlp-colab-results" in src
+
+
+def test_the_bundle_check_reads_a_snapshot_another_user_owns():
+    src = (REPO_ROOT / "kaggle" / "agent_bundle.py").read_text()
+    assert '"safe.directory=*"' in src
