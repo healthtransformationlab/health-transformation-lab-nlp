@@ -3,7 +3,7 @@ name = "health-transformation-lab-nlp"
 version = "0.1.0"
 description = "Synthetic dental notes -> OMOP -> periodontal status benchmark (Python side)"
 requires-python = ">=3.11"   # pipeline-doctor needs 3.11; CI and Databricks serverless (environment 4) run 3.12
-license = { text = "MIT" }
+license = { text = "Apache-2.0" }
 dependencies = [
   "pandas>=2.0",
   "pyarrow>=14",

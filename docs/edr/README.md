@@ -220,7 +220,7 @@ pre-specified in TRIPOD+AI order: [analysis plan](../../specs/029-tooth-loss/ana
 ## Action items
 
 Differences from the study design and open decisions: **[docs/action_items.md](../action_items.md)**. Decisions made: [docs/adr/](../adr/README.md).
-Also: [how we work](../../AGENTS.md) · [references](../references.md) · [protocol](../labeling_protocol.md) · [plan](../plan.md) · owner John Bowyer · MIT.
+Also: [how we work](../../AGENTS.md) · [references](../references.md) · [protocol](../labeling_protocol.md) · [plan](../plan.md) · owner John Bowyer · Apache 2.0.
 
 ## Drill-downs
 
