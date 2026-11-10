@@ -78,6 +78,34 @@ def test_registered_slides_exist():
             assert (deck, sid) in real, f"docs/claims.yaml names {deck}/{sid}, which has no slide"
 
 
+def test_the_pitch_cites_noharm_by_version_and_for_severe_errors():
+    """#645: the harm slide gave 76.6%, a figure from the preprint's first two versions, as the share of "harmful
+    errors" that were omissions. In those versions it is the share of severely harmful errors (of all harmful errors
+    it is 50.2%), and the current version says "more than 80% of severe errors". "3 in 4" is not a figure the test
+    above sees, so it was never in the register. The claim names the version read, and wherever the pitch gives the
+    share it says severe."""
+    claims = [c for c in REGISTER["pitch"].get("harm", []) if c["value"] == "80%"]
+    assert len(claims) == 1, "docs/claims.yaml, pitch, harm: one entry for NOHARM's 80%"
+    assert "arXiv 2512.01241v4" in claims[0]["source"], "name the version the figure was read in"
+    assert "more than 80% of severe errors" in claims[0]["source"]
+    assert isinstance(claims[0]["checked"], datetime.date)
+    assert "severe" in claims[0]["covers"]
+    share = re.compile(r"80\s?%|80 percent|76\.6")
+    for deck, sid, section, notes in deck_slides():
+        if deck != "pitch":
+            continue
+        said = " ".join(build_decks.visible_text(section)) + " " + notes
+        for gone in ("3 in 4", "harmful AI errors", "most harmful errors", "of the harmful errors were omissions",
+                     "1,100 real medical cases"):
+            assert gone not in said, f"pitch/{sid}: '{gone}'"
+        if sid == "harm":
+            # a sentence that gives the share of errors (the footer's "The 80% is from NOHARM" only names the source)
+            sentences = [t for t in re.split(r"(?<=[.?!:])\s+", said) if share.search(t) and "error" in t]
+            assert len(sentences) >= 2, "pitch/harm: the slide and its notes both give the share"
+            for sentence in sentences:
+                assert "severe" in sentence, f"pitch/harm gives the share without saying severe: {sentence}"
+
+
 def tier_cost(t: dict) -> float:
     """US dollars for a million visits: tokens per call x list price x calls per visit."""
     per_call = (t["in_tokens"] * t["usd_per_1m_in"] + t["out_tokens"] * t["usd_per_1m_out"]) / 1e6
