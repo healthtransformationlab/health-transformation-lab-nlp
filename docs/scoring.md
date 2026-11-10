@@ -8,8 +8,8 @@ stands: [evaluation_checklist.md](evaluation_checklist.md).
 
 ## Which records each number counts
 
-The synthetic data has 1,200 patients and 4,343 visits. Different results count different parts of it, so two
-numbers that look like they conflict usually count different records:
+The synthetic study data has 3,794 visits of 1,119 patients (`visits_structured.csv`). Different results count
+different parts of it, so two numbers that look like they conflict usually count different records:
 
 | Set | Records | What it counts | Used for |
 |---|---:|---|---|
@@ -44,12 +44,13 @@ Two things make the gap bigger, and the leaderboard now shows both:
   "+ stage 4 rule" hybrids, and the probing chart and radiograph read alone all turn measurements into a status with
   `labels.py`. They start with an advantage real records won't give them. The leaderboard marks them with **†**
   (`ladder_eval.uses_answer_key_rules`).
-- **Some records can't be staged.** Staging needs attachment loss or bone loss. 13 of the 240 review charts have no
-  probing chart and no radiograph, so they are `not_stageable` (`ladder_eval.stageable`). On all 13, the note states
-  exactly the true status, because the generator wrote it there. So a method that copies the note looks right for
-  free: the keyword rules get all 13. On a real record, a stated diagnosis without measurements can't be checked
-  against anything. Each method's score on `stageable` and `not_stageable` records is in
-  `data/datasets/ladder/ladder_by_stageable.csv`. R recomputes it in `r/tests/test_parity.R`.
+- **Some records can't be staged.** Staging needs attachment loss or bone loss. 17 of the 223 review charts have no
+  probing chart and no radiograph, so they are `not_stageable` (`ladder_eval.stageable`). There, a status can only
+  come from what the note or the codes say. The note states the true status on 12 of the 17 (`review_key.csv`), and
+  the keyword rules get 14 of the 17, about the same share as on the charts that can be staged (169 of 206). A method
+  that is right there has only repeated what the note or the codes say. On a real record, a stated diagnosis without
+  measurements can't be checked against anything. Each method's score on `stageable` and `not_stageable` records is
+  in `data/datasets/ladder/ladder_by_stageable.csv`. R recomputes it in `r/tests/test_parity.R`.
 
 ## Do the scores hold on other test sets?
 

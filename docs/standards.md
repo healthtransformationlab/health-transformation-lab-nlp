@@ -20,7 +20,7 @@ Finding gum disease in dental records (phenotyping) means making three choices, 
 
 ### Where they disagree, on the same synthetic visits
 
-Every one of the 2,990 synthetic visits with a gum chart, out of the full synthetic set, classified both ways. This is a larger set than the 240 review charts the methods are scored on, because the definitions need only the chart. 2017 AAP/EFP (rows) against 2012 CDC/AAP (columns), from `data/sites/aap_vs_cdc.csv`:
+Every one of the 2,990 synthetic visits with a gum chart, out of 3,794 in the full synthetic set, classified both ways. This is a larger set than the 223 review charts the methods are scored on, because the definitions need only the chart. 2017 AAP/EFP (rows) against 2012 CDC/AAP (columns), from `data/sites/aap_vs_cdc.csv`:
 
 | 2017 ↓ / CDC/AAP → | none | mild | moderate | severe |
 |---|---:|---:|---:|---:|
@@ -48,7 +48,7 @@ When sources disagree, a rule set takes the first one, in a fixed order, that gi
 | **The study design's** (`algorithm_design`) | This repo's own (spec 005): Patel et al. 2022 has no exam-form step ([action item A2](action_items.md)) | exam form → diagnosis codes (done, then planned) → note → gum measurements | Not yet |
 | **This repo's** (`algorithm_v0`) | Its own placeholder | gum measurements → note → diagnosis codes → exam form → procedure codes; the X-ray reading can only raise the stage | Not yet |
 
-On the 223 synthetic review charts, measurements first agrees with the answer key on 205 and exam form first on 169. That gap flatters measurements first: the answer key was made from the measurements ([how scoring works](scoring.md)). On real records, which order is best is an open question.
+On the 223 synthetic review charts, measurements first agrees with the answer key on 207 and exam form first on 176, scored as the leaderboard is ([results](results.md): five status groups, with healthy and gingivitis as one). That gap flatters measurements first: the answer key was made from the measurements ([how scoring works](scoring.md)). On real records, which order is best is an open question.
 
 ## 4. Where the sources disagree
 
