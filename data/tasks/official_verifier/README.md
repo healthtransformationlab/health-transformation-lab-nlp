@@ -31,6 +31,24 @@ of Gemma's saved patches.
 Since spec 028 US6 (#641) each snapshot carries that `conftest.py` itself (`task_graph.EVALUATOR_CONFTEST`), and the
 published set holds only the tasks this table vouches for: the reference patch resolved, the empty patch not.
 
+## On the files as published (dataset version 4, November 10, 2026)
+
+`published_verification.csv` is the same check on the dataset as anyone downloads it, with nothing added: version 4
+of `jcblearning/health-transformation-lab-coding-agent-tasks`, published from commit `167daa2` by the "Publish the
+task set (Kaggle)" workflow and downloaded with the Kaggle command line.
+
+| Patch | Tasks | Resolved |
+|---|---|---|
+| The reference patch | 93 | 93 |
+| An empty patch | 93 | 0 |
+
+So every published task does what the set claims: the evaluator resolves its reference patch and does not resolve an
+empty one. The published `tasks.jsonl` holds exactly the 93 tasks the table above vouches for. Each published
+snapshot is one commit with the root `conftest.py`, and its head and tree are the ones in
+`data/tasks/snapshot_index.csv` (all 93 compared). That index was rebuilt with `task_graph.snapshot` for all 114 rows;
+`size_bytes` is the published file's size for the 93 published snapshots and the rebuild's for the other 21, since an
+archive's size varies by a few bytes from build to build while its head and tree do not.
+
 To repeat: install the evaluator's wheels and this repository's test dependencies (not the package itself) in one
 environment, then `python kaggle/official_verify.py --tasks tasks.jsonl --snapshots-dir snapshots --submission-dir
 <agent folder> --results-dir <dir> --patch oracle|null|file --out <file>` on the published files.
