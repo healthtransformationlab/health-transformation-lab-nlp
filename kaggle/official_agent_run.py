@@ -44,7 +44,7 @@ COLUMNS = ["instance_id", "tier_code", "is_in_sample", "harness_name", "model_na
            "agent_patch_bytes", "tool_call_count", "llm_call_count", "graph_tool_call_count", "sub_agent_call_count",
            "skill_call_count", "outside_workspace_call_count", "prompt_token_count", "output_token_count",
            "agent_seconds", "load_seconds",
-           "session_seconds", "gpu_count", "gpu_name", "command_timeout_seconds", "max_tool_calls", "max_time_minutes",
+           "script_seconds", "gpu_count", "gpu_name", "command_timeout_seconds", "max_tool_calls", "max_time_minutes",
            "max_turns", "max_output_tokens", "thinking_budget", "kaggle_kernel_url", "run_ts", "error_text"]
 
 _spec = importlib.util.spec_from_file_location("official_agent_bundle", HERE / "official_agent_bundle.py")
@@ -162,8 +162,16 @@ def settings_for(result: dict, seed: int | None, drawn: list[str], pool_count: i
     }
 
 
-def row_for(result: dict, verdict: dict | None, tier: str, kernel_url: str, session_seconds: float | None,
-            in_sample: bool = True) -> dict:
+def _script_seconds(result: dict) -> float | None:
+    """The kernel script's own start to end: installing the wheelhouse, loading the model, the agent."""
+    try:
+        t0, t1 = (time.mktime(time.strptime(result[k], "%Y-%m-%dT%H:%M:%SZ")) for k in ("started_ts", "finished_ts"))
+        return round(t1 - t0, 1)
+    except (KeyError, ValueError, TypeError):
+        return None
+
+
+def row_for(result: dict, verdict: dict | None, tier: str, kernel_url: str, in_sample: bool = True) -> dict:
     """One table row: what the evaluator's agent phase did on Kaggle, and its verification's verdict on the patch."""
     budgets, server = result.get("budgets") or {}, result.get("server") or {}
     gen = result.get("generation_defaults") or {}
@@ -181,13 +189,13 @@ def row_for(result: dict, verdict: dict | None, tier: str, kernel_url: str, sess
             "graph_tool_call_count", "sub_agent_call_count", "skill_call_count", "outside_workspace_call_count",
             "prompt_token_count", "output_token_count")},
         "agent_seconds": result.get("agent_phase_seconds"), "load_seconds": result.get("load_seconds"),
-        "session_seconds": round(session_seconds, 1) if session_seconds is not None else None,
+        "script_seconds": _script_seconds(result),
         "gpu_count": len(gpus) or None, "gpu_name": gpus[0] if gpus else None,
         "command_timeout_seconds": budgets.get("timeout_seconds"), "max_tool_calls": budgets.get("max_tool_calls"),
         "max_time_minutes": budgets.get("max_time_minutes"), "max_turns": budgets.get("max_turns"),
         "max_output_tokens": gen.get("max_output_tokens"),
         "thinking_budget": (gen.get("thinking_config") or {}).get("thinking_budget"),
-        "kaggle_kernel_url": kernel_url, "run_ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "kaggle_kernel_url": kernel_url, "run_ts": result.get("finished_ts"),
         "error_text": result.get("error") or result.get("agent_error"),
     }
     if "error" in result or "patch" not in result:
@@ -313,7 +321,7 @@ def run_batch(a, api, user: str, ids: list[str], tasks: dict, manifest: dict, ov
     verdicts = _verify(a.dataset / "tasks.jsonl", a.dataset / "snapshots", a.agent_dir,
                        {i: (r.get("patch") or "") for i, r in done.items()}, work / "_verify")
     rows = [row_for({"instance_id": i, **done[i]}, verdicts.get(i), manifest.get(i, ""),
-                    f"https://www.kaggle.com/code/{kref}", None) for i in order if i in done]
+                    f"https://www.kaggle.com/code/{kref}") for i in order if i in done]
     table = pd.DataFrame(rows, columns=COLUMNS)
     if len(table):
         print(table[["instance_id", "tier_code", "is_resolved", "reason_text", "agent_patch_bytes", "tool_call_count",
@@ -348,6 +356,7 @@ def main() -> int:
     ap.add_argument("--kernel-minutes", type=int, default=45, help="Kaggle stops a kernel after this long")
     ap.add_argument("--work", type=Path, default=Path(os.environ.get("TMPDIR", "/tmp")) / "htl_official_agent")
     ap.add_argument("--no-table", action="store_true", help="a pilot: print the rows, write no table")
+    ap.add_argument("--note", action="append", help="a sentence to add to the settings file's notes (repeatable)")
     ap.add_argument("--outside-sample", action="store_true",
                     help="these tasks are not part of the drawn sample (a pilot): their rows say so")
     ap.add_argument("--batch", action="store_true",
@@ -444,13 +453,8 @@ def main() -> int:
 
     verdicts = _verify(a.dataset / "tasks.jsonl", a.dataset / "snapshots", a.agent_dir,
                        {i: (r.get("patch") or "") for i, r in results.items()}, a.work / "_verify")
-    path = OUT_DIR / "gemma-4-e4b-it-qat-w4a16-ct_swegemma.csv"
-    before = pd.read_csv(path).set_index("instance_id")["session_seconds"].to_dict() if path.exists() else {}
     rows = [row_for({"instance_id": i, **results[i]}, verdicts.get(i), manifest.get(i, ""),
-                    f"https://www.kaggle.com/code/{user}/{kernel_slug(i)}",
-                    sessions.get(i) if i in sessions and not a.collect else   # a collected run keeps its measured time
-                    (float(before[i]) if i in before and pd.notna(before[i]) else None),
-                    in_sample=not a.outside_sample) for i in ids]
+                    f"https://www.kaggle.com/code/{user}/{kernel_slug(i)}", in_sample=not a.outside_sample) for i in ids]
     table = pd.DataFrame(rows, columns=COLUMNS)
     print(table[["instance_id", "tier_code", "is_resolved", "reason_text", "agent_patch_bytes", "tool_call_count",
                  "agent_seconds", "gpu_count", "gpu_name"]].to_string(index=False))
@@ -464,8 +468,9 @@ def main() -> int:
     if good and a.sample:
         commit = subprocess.run(["git", "-C", str(a.agent_dir), "rev-parse", "HEAD"], capture_output=True, text=True,
                                 check=False).stdout.strip() or None
-        out.with_name(out.stem + "_settings.json").write_text(json.dumps(settings_for(
-            good, a.seed, ids, len(manifest), a.machine_shape, a.docker_image, a.competition, commit), indent=1) + "\n")
+        settings = settings_for(good, a.seed, ids, len(manifest), a.machine_shape, a.docker_image, a.competition, commit)
+        settings["notes"] += a.note or []
+        out.with_name(out.stem + "_settings.json").write_text(json.dumps(settings, indent=1) + "\n")
     return 0
 
 

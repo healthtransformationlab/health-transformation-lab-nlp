@@ -133,14 +133,16 @@ def test_a_run_row_records_the_harness_the_settings_and_the_evaluators_verdict(r
               "budgets": {"timeout_seconds": 120, "max_tool_calls": 40, "max_time_minutes": 5.0, "max_turns": 60},
               "generation_defaults": {"max_output_tokens": 16384, "thinking_config": {"thinking_budget": 4096}}}
     verdict = {"resolved": True, "test_exit_code": 0, "error": None}
-    row = run.row_for(result, verdict, tier="A", kernel_url="https://k", session_seconds=900.0)
+    result.update(started_ts="2026-11-10T15:00:00Z", finished_ts="2026-11-10T15:10:30Z")
+    row = run.row_for(result, verdict, tier="A", kernel_url="https://k")
+    assert row["script_seconds"] == 630.0 and row["run_ts"] == "2026-11-10T15:10:30Z"
     assert list(row) == run.COLUMNS
     assert row["is_resolved"] is True and row["agent_patch_bytes"] == 19 and row["tier_code"] == "A"
     assert row["harness_name"].startswith("swegemma 0.2.11") and row["gpu_count"] == 4 and row["gpu_name"] == "NVIDIA L4"
     assert row["max_time_minutes"] == 5.0 and row["max_output_tokens"] == 16384 and row["thinking_budget"] == 4096
     assert row["is_in_sample"] is True
     failed = run.row_for({"instance_id": "htlnlp_7", "error": "RuntimeError: no GPU"}, None, tier="A", kernel_url="k",
-                         session_seconds=60.0, in_sample=False)
+                         in_sample=False)
     assert failed["is_resolved"] is False and failed["reason_text"] == "kernel failed" and "no GPU" in failed["error_text"]
     assert failed["is_in_sample"] is False
 
@@ -231,6 +233,5 @@ def test_a_trace_is_counted_by_tool_kind_and_outside_paths(run):
     assert c == {"prompt_token_count": 900, "output_token_count": 70, "graph_tool_call_count": 1,
                  "sub_agent_call_count": 1, "skill_call_count": 1, "outside_workspace_call_count": 1}
     assert run.trace_counts({})["outside_workspace_call_count"] == 0
-    row = run.row_for({"instance_id": "htlnlp_7", "patch": "", "trace_counts": c}, None, tier="B", kernel_url="k",
-                      session_seconds=None)
+    row = run.row_for({"instance_id": "htlnlp_7", "patch": "", "trace_counts": c}, None, tier="B", kernel_url="k")
     assert row["graph_tool_call_count"] == 1 and row["prompt_token_count"] == 900 and row["reason_text"] == "empty patch"
