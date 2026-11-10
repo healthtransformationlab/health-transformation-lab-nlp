@@ -77,10 +77,15 @@ Everything this repo relies on, and what it's used for.
     [arXiv 2512.01241v4](https://arxiv.org/abs/2512.01241v4), July 13, 2026. A preprint from the ARISE network, not
     peer reviewed (all four versions read November 10, 2026). Versions 1 to 3 are titled *First, do NOHARM: towards
     clinically safe large language models*.
-    → 1,100 tasks: 100 cases drawn from real physician-to-specialist consultations at one academic medical center,
-    rewritten so that no patient can be identified, and 1,000 variants with physician-selected changes. 10 medical
-    specialties, no oral health cases. Across 20 LLMs and 4 retrieval-augmented clinical AI tools, "errors of
-    omission accounting for more than 80% of severe errors"; the text gives no exact share.
+    → 1,100 tasks: 100 cases drawn from real outpatient physician-to-specialist consultations at one academic
+    medical center, rewritten so that no patient can be identified, and 1,000 variants with physician-selected
+    changes. 10 medical specialties; none is dentistry. In the main analysis of 20 LLMs and 4 retrieval-augmented
+    clinical AI tools (45 LLMs were run), "errors of omission accounting for more than 80% of severe errors"
+    (abstract). The text gives no pooled share; Extended Data Fig. 3b gives it by quarter of systems, from the best
+    performers to the weakest: omission only in 77%, 80%, 82% and 87% of cases with a severe error, and both an
+    omission and a commission in 13%, 13%, 8% and 7%. The paper's own limits: its grader is strict ("actions that
+    may be implied but not explicitly stated are often scored as an omission"), and the findings "may not
+    generalize to inpatient hospitalizations or straightforward primary care visits".
     The figure changed between versions, and it is about severe errors, not all harmful errors: v1 (December 1,
     2025) and v2 (December 17, 2025), 31 LLMs on the 100 cases, give "50.2 ± 0.1% of all harmful errors and
     76.6 ± 0.2% of severely harmful errors"; v3 (June 16, 2026, 28 LLMs) and v4 give "more than 80% of severe

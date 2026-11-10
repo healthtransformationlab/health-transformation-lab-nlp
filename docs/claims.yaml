@@ -263,9 +263,9 @@ pitch:
     # 31 LLMs, 100 cases), and there it is the share of severely harmful errors; of all harmful errors it was 50.2%
     - value: "80%"
       kind: cited
-      source: "First, do NOHARM, arXiv 2512.01241v4 (Wu, Nateghi Haredasht, Maharaj et al., July 13, 2026; a preprint): 'Across 20 notable LLMs and 4 widely used retrieval-augmented generation (RAG) clinical AI tools, direct application of recommendations carried potential for severe harm in up to 24.6% of cases, with errors of omission accounting for more than 80% of severe errors'; a 1,100-task benchmark (100 clinical cases with 1,000 physician-perturbed variants), 10 specialties. Abstract only: the text gives no exact share"
+      source: "First, do NOHARM, arXiv 2512.01241v4 (Wu, Nateghi Haredasht, Maharaj et al., July 13, 2026; a preprint): 'Across 20 notable LLMs and 4 widely used retrieval-augmented generation (RAG) clinical AI tools, direct application of recommendations carried potential for severe harm in up to 24.6% of cases, with errors of omission accounting for more than 80% of severe errors'; a 1,100-task benchmark (100 clinical cases with 1,000 physician-perturbed variants), 10 specialties. The 80% is in the abstract; the text says severe errors 'were dominated by omission', and Extended Data Fig. 3b gives it by quartile of model performance, best to weakest: omission only in 77%, 80%, 82%, 87% of cases with a severe error (both omission and commission: 13%, 13%, 8%, 7%)"
       checked: 2026-11-10
-      covers: errors with potential for severe harm in the consultation advice of 20 LLMs and 4 clinical AI tools, 10 medical specialties; the share that were omissions (shown as 'more than 80%'). Severe errors only, not all harmful errors
+      covers: "errors with potential for severe harm in the advice of 24 AI systems (20 LLMs and 4 clinical AI tools, the paper's main analysis) on 100 outpatient physician-to-specialist consultation cases from one medical center and 1,000 variants of them, 10 medical specialties; the share that were omissions (shown as 'more than 80%'). Severe errors only, not all harmful errors"
   example:
     - value: "22%"
       kind: cited
