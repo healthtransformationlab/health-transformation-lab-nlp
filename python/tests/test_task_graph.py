@@ -86,6 +86,16 @@ def _git(cwd, *args):
                            *args], cwd=cwd, check=True, capture_output=True, text=True).stdout
 
 
+def _files(repo, rev, but=None):
+    """{path: (mode, blob sha)} of a commit, optionally without one path."""
+    out = {}
+    for line in _git(repo, "ls-tree", "-r", rev).splitlines():
+        meta, path = line.split("\t", 1)
+        if path != but:
+            out[path] = tuple(meta.split()[::2])
+    return out
+
+
 def _three_commits(tmp_path, middle_message="second message"):
     src = tmp_path / "src"
     src.mkdir()
@@ -102,11 +112,11 @@ def test_snapshot_is_one_commit_with_the_base_files_and_no_history(tmp_path):
     out = tmp_path / "snap.tgz"
     info = tg.snapshot(src, base, out, work_dir=tmp_path / "work")
     assert out.exists() and info["commit_count"] == 1
-    assert info["tree_sha"] == _git(src, "rev-parse", f"{base}^{{tree}}").strip()   # the base's files exactly
     x = tmp_path / "x"
     with tarfile.open(out) as t:
         t.extractall(x, filter="data")
     repo = x
+    assert _files(repo, "HEAD", but=tg.EVALUATOR_CONFTEST) == _files(src, base)   # the base's files exactly
     assert (repo / "f.txt").read_text() == "v1\n"
     assert _git(repo, "rev-parse", "--abbrev-ref", "HEAD").strip() == "main"
     assert _git(repo, "rev-list", "--count", "--all").strip() == "1"
@@ -141,7 +151,11 @@ def test_snapshot_redacts_the_organisation_name_and_keeps_every_other_file(tmp_p
     assert (repo / "f.txt").read_text() == "v2\n" and (repo / "h.bin").read_bytes() == b"\x00\x01binary"
     assert tg.files_naming_org(repo, "HEAD") == []
     clean = tg.snapshot(src, base, tmp_path / "c.tgz", work_dir=tmp_path / "w2")
-    assert clean["redacted_paths"] == "" and clean["tree_sha"] == _git(src, "rev-parse", f"{base}^{{tree}}").strip()
+    assert clean["redacted_paths"] == ""
+    y = tmp_path / "y"
+    with tarfile.open(tmp_path / "c.tgz") as t:
+        t.extractall(y, filter="data")
+    assert _files(y, "HEAD", but=tg.EVALUATOR_CONFTEST) == _files(src, base)
 
 
 def _commit_files(tmp_path, files: dict[str, bytes], mode_exec: str | None = None):
@@ -309,3 +323,43 @@ def test_snapshot_withholds_files_without_a_redistribution_licence(tmp_path, mon
 
 def test_the_course_files_are_withheld():
     assert tg.WITHHELD_PATHS == ("data/external/maccrobat/course/",)
+
+
+# --- spec 028 US6 (#641): the competition's evaluator must be able to import the package from a snapshot ---------
+
+def test_snapshot_adds_one_root_conftest_inside_its_single_commit(tmp_path):
+    src, base = _three_commits(tmp_path)
+    info = tg.snapshot(src, base, tmp_path / "s.tgz", work_dir=tmp_path / "w")
+    x = tmp_path / "x"
+    with tarfile.open(tmp_path / "s.tgz") as t:
+        t.extractall(x, filter="data")
+    assert (x / tg.EVALUATOR_CONFTEST).read_text() == tg.EVALUATOR_CONFTEST_TEXT
+    assert info["commit_count"] == 1 and _git(x, "status", "--porcelain") == ""      # committed, nothing loose
+    assert set(_files(x, "HEAD")) - set(_files(src, base)) == {tg.EVALUATOR_CONFTEST}   # the only file added
+
+
+def test_the_added_conftest_puts_python_on_the_import_path_for_tests_and_their_scripts(tmp_path, monkeypatch):
+    """The evaluator puts the repository root on the path; the package is in python/. Loading the conftest must make
+    the package importable here and in any process a test starts (PYTHONPATH)."""
+    import os
+    import runpy
+    import sys
+    root = tmp_path / "workspace"
+    (root / "python" / "somepkg").mkdir(parents=True)
+    (root / "python" / "somepkg" / "__init__.py").write_text("VALUE = 7\n")
+    (root / tg.EVALUATOR_CONFTEST).write_text(tg.EVALUATOR_CONFTEST_TEXT)
+    monkeypatch.setattr(sys, "path", [p for p in sys.path if "workspace" not in p])
+    monkeypatch.setenv("PYTHONPATH", str(root))
+    runpy.run_path(str(root / tg.EVALUATOR_CONFTEST))
+    assert str(root / "python") == sys.path[0]
+    assert os.environ["PYTHONPATH"].split(os.pathsep) == [str(root / "python"), str(root)]
+    out = subprocess.run([sys.executable, "-c", "import somepkg; print(somepkg.VALUE)"], capture_output=True,
+                         text=True, check=False, env={**os.environ, "PYTHONSAFEPATH": "1"}, cwd=tmp_path)
+    assert out.stdout.strip() == "7", out.stderr
+
+
+def test_snapshot_refuses_a_base_that_already_has_a_root_conftest(tmp_path):
+    src, head = _commit_files(tmp_path, {"conftest.py": b"x = 1\n", "a.txt": b"x\n"})
+    with pytest.raises(RuntimeError, match="conftest.py"):
+        tg.snapshot(src, head, tmp_path / "s.tgz", work_dir=tmp_path / "w")
+    assert not (tmp_path / "s.tgz").exists()

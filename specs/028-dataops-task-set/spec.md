@@ -49,9 +49,9 @@ written only if, in the competition's sandbox image, the tests fail on `base_com
 (fail-to-pass) and the suite passes with `patch` and `test_patch` (pass-to-pass). Tasks whose fix lives in
 files the grader strips (`conftest.py`, `pytest.ini`, `pyproject.toml`, test files) are excluded and listed.
 
-The gates run with our own check (`task_gate.py`, `scripts/57_gate_tasks.py`, #453), not `swegemma eval`: the
-competition's evaluator isn't distributed (no wheel among its files, and its docker/ and sandbox/ don't install
-it; found by #449's run). The check follows the harness's documented verification: `test_patch` alone at
+The gates run with our own check (`task_gate.py`, `scripts/57_gate_tasks.py`, #453), not `swegemma eval`: when
+this was written the competition's evaluator had not been found (no wheel among the competition's files, and its
+docker/ and sandbox/ don't install it: #449's run; it ships in a separate Kaggle dataset, US6 below). The check follows the harness's documented verification: `test_patch` alone at
 `base_commit` makes the target tests (the test files `test_patch` touches) fail; `patch` with protected files
 stripped (test files; `conftest.py`, `pytest.ini`, `pyproject.toml`, `tox.ini`, `setup.cfg`, `.pytest.ini`,
 `sitecustomize.py`, `usercustomize.py`, `*.pth`) plus `test_patch` makes them exit 0 with passed > 0 and no
@@ -68,6 +68,24 @@ model stated as unverified. Wheels: the repo's dependencies for the Python 3.13 
 The set is published as a Kaggle dataset (spec 025's publish workflow) and scored with `swegemma eval`,
 first `--skip-agent-patch` (the gates), then with the agent in
 [gemma-developer-agent](https://github.com/healthtransformationlab/gemma-developer-agent).
+
+### US6 - Every published task is verified with the competition's own evaluator (P1) #641
+The competition's evaluator, `swegemma`, ships as a wheel in the Kaggle dataset
+`metric/gemma-4-developer-agent-wheelhouse`, which the starter notebook attaches (found November 10, 2026, #636;
+earlier text here and in spec 035 says it "isn't distributed", which was wrong: the check in #449 looked only among
+the competition's own files). Its verification, run on the published set (`data/tasks/official_verifier/`):
+- as published, no task can be scored: it puts the repository root on the import path and the package is in
+  `python/`, so every target test fails at import;
+- with a `conftest.py` at each snapshot's root, the reference patch resolves 93 of 113 tasks and an empty patch none;
+- 12 of the other 20 read files the snapshots withhold, so they cannot pass from a snapshot under any verifier; 6 are
+  stopped by its `PYTHONSAFEPATH=1`; 2 need Postgres or R.
+
+So: each snapshot adds one file, a root `conftest.py` that puts `python/` on the import path, inside its single
+commit (`task_graph.EVALUATOR_CONFTEST`); the set to publish holds only tasks whose reference patch the evaluator
+resolves and whose empty patch it does not (`task_gate.evaluator_verified`, from the committed
+`swegemma_verification.csv`), and every other task is a row in `tasks_excluded.csv` with the evaluator's reason; the
+publish step refuses a task without that verdict and ships the table. Our own gate is unchanged. The evaluator
+verified patches; it has not run an agent on these tasks.
 
 ## Out of scope
 Rewriting any statement text; tasks from other repositories; LoRA training.

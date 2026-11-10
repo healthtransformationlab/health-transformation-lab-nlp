@@ -1,7 +1,10 @@
 """A local runner for the Gemma 4 Developer Agent competition's documented harness (spec 035 US1, #543).
 
-The competition's evaluator, swegemma, isn't distributed (#449). Its guide (HARNESS_README.md, read from the
-competition's files and not committed) documents what it does, and this follows it:
+Written before the competition's evaluator, swegemma, was found: it is not among the competition's own files
+(#449) but ships in the Kaggle dataset metric/gemma-4-developer-agent-wheelhouse (#636). Its guide
+(HARNESS_README.md, read from the competition's files and not committed) documents what it does, and this follows
+it; `kaggle/official_verify.py` runs the evaluator's own verification, and the two agree on every agent patch
+compared (data/tasks/official_verifier/):
 
     prepare_workspace  the task's files at base_commit as one commit, tagged _swegemma_baseline, with the
                        documented .git/info/exclude patterns (section 4.2)

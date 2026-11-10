@@ -5,12 +5,14 @@
     python scripts/57_gate_tasks.py --limit 5          # the first 5 rows
     python scripts/57_gate_tasks.py --instance-ids htlnlp_143,htlnlp_200
 
-The competition's evaluator (`swegemma eval --skip-agent-patch`) isn't distributed (#449), so
-`task_gate.gate_task` follows the harness's documented verification: the target tests fail with `test_patch`
-alone at `base_commit`, and pass with `patch` (protected files stripped) plus `test_patch`.
+`task_gate.gate_task` follows the competition harness's documented verification: the target tests fail with
+`test_patch` alone at `base_commit`, and pass with `patch` (protected files stripped) plus `test_patch`. It was
+written before the competition's evaluator, `swegemma`, was found (#449 looked only among the competition's own
+files; it ships in the Kaggle dataset metric/gemma-4-developer-agent-wheelhouse, #636).
 
 Runs with THIS environment's Python and packages, not the competition's sandbox image: a dependency that differs
-can change a verdict. Official swegemma scoring happens only on Kaggle (US5, #356).
+can change a verdict. The evaluator's own verification is run by `kaggle/official_verify.py`; its committed table
+(data/tasks/official_verifier/swegemma_verification.csv) decides which gated tasks are published (US6, #641).
 
 Writes data/tasks/task_gates.csv (committed, overwritten whole, one row per gated task) and prints counts.
 A full run (no --sample, --limit or --instance-ids) also drops the failures from the set (T007a, #502):
@@ -44,17 +46,27 @@ OUT = TASKS_DIR / "task_gates.csv"            # committed
 GATED = TASKS_DIR / "tasks_gated.jsonl"       # git-ignored: the set that gets published (T007a)
 EXCLUDED = TASKS_DIR / "tasks_excluded.csv"   # committed
 MANIFEST = TASKS_DIR / "task_manifest.csv"    # committed, for each task's tier
+VERIFIED = TASKS_DIR / "official_verifier" / "swegemma_verification.csv"   # committed: the competition's evaluator
 
 
 def apply_gates(tasks: list[dict], gates: list[dict]) -> None:
     """Write the passing tasks to tasks_gated.jsonl and list the failures in tasks_excluded.csv (T007a, #502)."""
     tiers = pd.read_csv(MANIFEST, usecols=["instance_id", "tier_code"]).set_index("instance_id")["tier_code"].to_dict()
     kept = tgate.passing_tasks(tasks, gates)
+    unverified = []
+    if VERIFIED.exists():   # spec 028 US6: only tasks the competition's evaluator vouches for; publishing
+        # refuses without the table, so a missing one cannot let unverified tasks out
+        verification = pd.read_csv(VERIFIED, keep_default_na=False).to_dict("records")
+        unverified = tgate.evaluator_exclusions(kept, verification, tiers)
+        kept = tgate.evaluator_verified(kept, verification)
     GATED.write_text("".join(json.dumps(t) + "\n" for t in kept))   # overwritten whole: re-runnable
     existing = pd.read_csv(EXCLUDED, keep_default_na=False).to_dict("records") if EXCLUDED.exists() else []
     dropped = tgate.gate_exclusions(gates, tiers, task_ids={t["instance_id"] for t in tasks})
-    merged = tgate.merge_exclusions(existing, dropped)
+    merged = tgate.merge_exclusions(existing, dropped + unverified)
     pd.DataFrame(merged, columns=["instance_id", "tier_code", "reason_text"]).to_csv(EXCLUDED, index=False)
+    if unverified:
+        print(f"{len(unverified)} task(s) the competition's evaluator does not vouch for are left out "
+              f"({VERIFIED.relative_to(REPO_ROOT)})")
     print(f"{len(kept)} of {len(tasks)} tasks -> {GATED.relative_to(REPO_ROOT)}; {len(dropped)} gate failure(s)"
           f" listed in {EXCLUDED.relative_to(REPO_ROOT)}" + (": " + ", ".join(d["instance_id"] for d in dropped)
                                                              if dropped else ""))

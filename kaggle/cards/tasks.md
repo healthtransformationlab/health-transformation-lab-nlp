@@ -12,13 +12,28 @@ Kaggle, Google or the competition's organisers. The tasks are code and text from
 **not for clinical use**. Its own data is synthetic, but each snapshot is the whole repository at that commit, so
 most also carry the third-party files it keeps under `data/external/` (see the licence section).
 
+## Verified with the competition's own evaluator
+
+Every task here has been checked with the Gemma 4 Developer Agent competition's evaluator (`swegemma` 0.2.11, its
+verification step in the subprocess sandbox): **it resolves the task's reference patch and does not resolve an
+empty patch.** `swegemma_verification.csv` holds the verdict for every candidate, and `tasks_excluded.csv` names the
+ones left out and why. Candidates were left out when their tests read files the snapshots withhold, when a test
+starts a script that the evaluator's `PYTHONSAFEPATH=1` stops from importing a module beside it, or when a test
+needs Postgres or R.
+
+Each snapshot has one file its base commit did not: a root `conftest.py` that puts `python/` on the import path.
+The evaluator puts the repository root there, and this repository's package is in `python/`; without the file every
+test fails at import. Versions of this dataset before it was added (1 to 3) cannot be scored by the evaluator.
+
+The evaluator verified the patches; it has not run an agent on these tasks. Its wheel comes from the Kaggle dataset
+`metric/gemma-4-developer-agent-wheelhouse`.
+
 ## How it was made
 
 `python/scripts/46_mine_tasks.py` lists every merged pull request and direct commit. `55_build_tasks.py` keeps
 the changes that touch both code and `python/tests/`, writes each row and builds its snapshot, code graph and
-embeddings. `57_gate_tasks.py` keeps only the tasks whose tests fail without the fix and pass with it. That check
-is our own, following the competition harness's documented verification in our Python 3.13 environment, not the
-competition's sandbox (spec 028 in the repository).
+embeddings. `57_gate_tasks.py` keeps only the tasks whose tests fail without the fix and pass with it, in our own check and in
+the competition's evaluator (above).
 
 - **Statements** are never rewritten. Each task carries a fidelity tier: A from the issue, B from the pull
   request, C from the commit message.
@@ -39,7 +54,8 @@ competition's sandbox (spec 028 in the repository).
 ## Licence and citation
 
 CC BY 4.0 for the task rows, graphs, embeddings and this card. Inside the snapshots, the repository's own files
-are under its MIT licence, and third-party files keep their own licences, named in the files beside them:
+are under the MIT licence it carried at those commits (the repository has been Apache 2.0 since November 2026),
+and third-party files keep their own licences, named in the files beside them:
 
 - `data/external/maccrobat/` (in most snapshots): MACCROBAT, 200 published, de-identified clinical case reports
   from PubMed Central. **Not synthetic.** CC BY 4.0, Caufield, J. Harry (2019), *MACCROBAT*, figshare,

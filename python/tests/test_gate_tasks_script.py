@@ -25,7 +25,8 @@ def task_dir(tmp_path, monkeypatch):
     d = tmp_path / "data" / "tasks"
     d.mkdir(parents=True)
     names = {"TASKS": "tasks.jsonl", "SAMPLE": "tasks_sample.jsonl", "OUT": "task_gates.csv",
-             "GATED": "tasks_gated.jsonl", "EXCLUDED": "tasks_excluded.csv", "MANIFEST": "task_manifest.csv"}
+             "GATED": "tasks_gated.jsonl", "EXCLUDED": "tasks_excluded.csv", "MANIFEST": "task_manifest.csv",
+             "VERIFIED": "official_verifier/swegemma_verification.csv"}   # absent unless a test writes it
     for attr, name in names.items():
         monkeypatch.setattr(gate_tasks, attr, d / name)
     monkeypatch.setattr(gate_tasks, "REPO_ROOT", tmp_path)
@@ -77,3 +78,23 @@ def test_apply_only_needs_the_gate_file(task_dir, monkeypatch):
     (task_dir / "task_gates.csv").unlink()
     with pytest.raises(SystemExit, match="missing"):
         run(monkeypatch, "--apply-only")
+
+
+def test_apply_leaves_out_tasks_the_competitions_evaluator_has_not_verified(task_dir):   # spec 028 US6, #641
+    tasks = TASKS + [{"instance_id": "htlnlp_3"}]
+    gates = GATES + [{"instance_id": "htlnlp_3", "is_valid": True, "reason_text": ""}]
+    (task_dir / "official_verifier").mkdir()
+    pd.DataFrame([{"instance_id": "htlnlp_1", "patch_source_code": "reference", "is_resolved": True, "reason_text": ""},
+                  {"instance_id": "htlnlp_1", "patch_source_code": "empty", "is_resolved": False, "reason_text": ""},
+                  {"instance_id": "htlnlp_3", "patch_source_code": "reference", "is_resolved": False,
+                   "reason_text": "tests read withheld files"},
+                  {"instance_id": "htlnlp_3", "patch_source_code": "empty", "is_resolved": False, "reason_text": ""}]) \
+        .to_csv(task_dir / "official_verifier" / "swegemma_verification.csv", index=False)
+    gate_tasks.apply_gates(tasks, gates)
+    assert [json.loads(line)["instance_id"] for line in (task_dir / "tasks_gated.jsonl").read_text().splitlines()] \
+        == ["htlnlp_1"]
+    reasons = pd.read_csv(task_dir / "tasks_excluded.csv").set_index("instance_id")["reason_text"].to_dict()
+    assert reasons["htlnlp_2"].startswith(tgate.GATE_EXCLUSION_PREFIX)           # our gate's reason is kept
+    assert reasons["htlnlp_3"] == (tgate.EVALUATOR_EXCLUSION_PREFIX
+                                   + "it does not resolve the reference patch: tests read withheld files")
+    assert "htlnlp_91" in reasons

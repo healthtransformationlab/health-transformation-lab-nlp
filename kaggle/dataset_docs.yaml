@@ -113,16 +113,24 @@ datasets:
       task_gates.csv: >-
         The gate result for every candidate: whether its tests fail without the fix and pass with it, in this
         repository's Python 3.13 environment.
+      swegemma_verification.csv: >-
+        The competition's own evaluator (swegemma) on each task: whether it resolves the reference patch, an empty
+        patch, and a saved agent patch. Only tasks whose reference patch it resolves and whose empty patch it does
+        not are in the set.
       "snapshots/*.tgz": >-
         The repository at the task's base commit as a single commit on main, files and .git at the archive root,
-        no later history. Text naming one organisation the repository's rules forbid reads [org], and a folder of
-        course files without a stated licence is withheld.
+        no later history. Text naming one organisation the repository's rules forbid reads [org], a folder of
+        course files without a stated licence is withheld, and one file is added: a root conftest.py that puts
+        python/ on the import path, so the competition's evaluator can import the package.
       "graphs/*.json": >-
         A code graph of the package at a base commit: NetworkX node-link JSON, one node per module, class and
         function with its source text, and calls edges. Named <repo name>_<base_commit>, as the competition's.
       "embeddings/*.npz": >-
         One 256-dimension float32 vector per graph node, keyed by node id (EmbeddingGemma, cut from 768 dimensions
         and renormalised). Named <repo name>_<base_commit>, as the competition's.
+    file_columns:
+      swegemma_verification.csv:
+        reason_text: Why the evaluator did not resolve the task with that patch; empty when it did.
 
 columns:
   # people, visits, clinics
@@ -287,6 +295,15 @@ columns:
   problem_statement: The task's text as written at the time (issue, pull request or commit message, by fidelity tier).
   hints_text: Further text from the time (the pull request and its review), when there is one.
   created_at: When the issue, pull request or commit was created (UTC).
+
+  # task set (swegemma_verification.csv: the competition's evaluator)
+  patch_source_code: Which patch was verified - reference (the task's own fix), empty (no change) or a model's name.
+  is_resolved: True when the competition's evaluator counts the task as resolved with that patch.
+  test_exit_code: pytest's exit code in the evaluator's verification (0 passed, 1 tests failed, 2 collection error).
+  verify_seconds: Seconds the verification of that patch took.
+  evaluator_name: The evaluator and version that gave the verdict.
+  snapshot_code: Which snapshot files were verified (the published ones, with or without the added conftest.py).
+  run_ts: When the verification was run (UTC).
 
   # task set (tasks_excluded.csv, task_gates.csv)
   tier_code: Fidelity tier of the task's text, A (issue), B (pull request) or C (commit message).

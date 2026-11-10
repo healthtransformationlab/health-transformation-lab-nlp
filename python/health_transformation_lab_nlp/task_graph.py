@@ -208,6 +208,23 @@ def _blobs(cwd: Path, rev: str) -> dict[str, str]:
 WITHHELD_PATHS = ("data/external/maccrobat/course/",)
 
 
+EVALUATOR_CONFTEST = "conftest.py"   # the one file a snapshot adds to its base (spec 028 US6, #641)
+EVALUATOR_CONFTEST_TEXT = '''\
+# Added to this snapshot so the Gemma 4 Developer Agent competition's evaluator can import the package.
+# The evaluator puts the repository root on the import path; this repository's package lives in python/.
+# This puts python/ there too, for the tests and for any script a test starts.
+import os
+import sys
+from pathlib import Path
+
+_PKG = str(Path(__file__).resolve().parent / "python")
+if _PKG not in sys.path:
+    sys.path.insert(0, _PKG)
+os.environ["PYTHONPATH"] = os.pathsep.join(
+    [_PKG] + [p for p in os.environ.get("PYTHONPATH", "").split(os.pathsep) if p and p != _PKG])
+'''
+
+
 @traced
 def snapshot(repo: Path, base_commit: str, out_tgz: Path, work_dir: Path) -> dict:
     """The files at `base_commit` as one commit in a fresh repo on `main`, packed as a `.tgz` with one
@@ -215,7 +232,10 @@ def snapshot(repo: Path, base_commit: str, out_tgz: Path, work_dir: Path) -> dic
     straight into /workspace (#452). No history: earlier commit messages and files stay behind. Text files that name the
     organisation CLAUDE.md forbids have the name replaced with `[org]`, as the statements and hints are, byte for
     byte elsewhere (line endings and non-UTF-8 bytes kept); files under WITHHELD_PATHS are left out (PR #515); every
-    other file is the base's, mode and content (checked), and the redacted and withheld paths are returned (#435). The commit's author, date (the base's committer date)
+    other file is the base's, mode and content (checked), and the redacted and withheld paths are returned (#435).
+    One file is added, inside the commit: EVALUATOR_CONFTEST at the root, which puts python/ on the import path so the
+    competition's evaluator can import the package (US6, #641); a base that already has one is refused.
+    The commit's author, date (the base's committer date)
     and message ("Snapshot of <base_commit>") are fixed, so a rebuild gives the same head SHA; it differs from
     `base_commit`, which is why the head is returned. The work folder is removed whatever happens."""
     dest = work_dir / "workspace"
@@ -236,6 +256,9 @@ def snapshot(repo: Path, base_commit: str, out_tgz: Path, work_dir: Path) -> dic
         for rel in named:
             f = dest / rel
             f.write_bytes(task_mine.redact(_decode(f.read_bytes())).encode("utf-8", errors="surrogateescape"))
+        if (dest / EVALUATOR_CONFTEST).exists():   # it would be overwritten: decide by hand what to do
+            raise RuntimeError(f"{base_commit} already has a root {EVALUATOR_CONFTEST}: the snapshot adds its own")
+        (dest / EVALUATOR_CONFTEST).write_text(EVALUATOR_CONFTEST_TEXT, encoding="utf-8")
         when = _git(repo, "show", "-s", "--format=%cI", base_commit).decode().strip()
         env = {**os.environ, "GIT_AUTHOR_NAME": SNAPSHOT_AUTHOR[0], "GIT_AUTHOR_EMAIL": SNAPSHOT_AUTHOR[1],
                "GIT_COMMITTER_NAME": SNAPSHOT_AUTHOR[0], "GIT_COMMITTER_EMAIL": SNAPSHOT_AUTHOR[1],
@@ -247,7 +270,7 @@ def snapshot(repo: Path, base_commit: str, out_tgz: Path, work_dir: Path) -> dic
         head = _git(dest, "rev-parse", "HEAD").decode().strip()
         base_blobs, snap_blobs = _blobs(repo, base_commit), _blobs(dest, "HEAD")
         changed = sorted(p for p in base_blobs.keys() | snap_blobs.keys() if base_blobs.get(p) != snap_blobs.get(p))
-        if changed != sorted(named + withheld):   # only redacted or withheld files may differ; nothing added
+        if changed != sorted(named + withheld + [EVALUATOR_CONFTEST]):   # redacted, withheld, and the one added file
             raise RuntimeError(f"snapshot differs from {base_commit} beyond the redacted files: {changed[:5]}")
         if files_naming_org(dest, "HEAD"):
             raise RuntimeError(f"snapshot of {base_commit} still names the organisation CLAUDE.md forbids")
