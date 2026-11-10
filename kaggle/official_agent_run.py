@@ -332,7 +332,17 @@ def main() -> int:
                 shutil.copyfile(HERE / "official_agent_kernel.py", k / "official_agent_kernel.py")
                 (k / "kernel-metadata.json").write_text(json.dumps(
                     kernel_metadata(user, iid, a.machine_shape, a.docker_image, a.competition), indent=1))
-                api.kernels_push(str(k), timeout=str(a.kernel_minutes * 60))
+                try:
+                    pushed = api.kernels_push(str(k), timeout=str(a.kernel_minutes * 60))
+                    refused = getattr(pushed, "error", None)
+                except Exception as e:  # noqa: BLE001 - Kaggle's limit on GPU sessions at once shows up here
+                    refused = str(e)
+                if refused:
+                    if not running:
+                        raise SystemExit(f"{iid}: Kaggle refused the kernel with nothing else running: {refused}")
+                    print(f"{iid}: Kaggle refused the kernel for now ({str(refused)[:200]}); it waits its turn", flush=True)
+                    waiting.insert(0, iid)
+                    break
                 print(f"{iid}: the evaluator on a Kaggle GPU, {kref}", flush=True)
             running[iid] = time.monotonic()
         time.sleep(POLL_SECONDS)
