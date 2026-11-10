@@ -1,4 +1,24 @@
 instance_id,tier_code,reason_text
+htlnlp_100,A,"not verified by the competition's evaluator (US6): it does not resolve the reference patch: tests read data/external/maccrobat/course/, which the published snapshots withhold"
+htlnlp_122,A,"not verified by the competition's evaluator (US6): it does not resolve the reference patch: a test starts kaggle/prepare_kernel.py, which imports a module beside it; the evaluator's PYTHONSAFEPATH=1 stops that"
 htlnlp_127,A,fails our gate (T007a): tests fail with the fix
+htlnlp_141,A,"not verified by the competition's evaluator (US6): it does not resolve the reference patch: a test starts kaggle/prepare_kernel.py, which imports a module beside it; the evaluator's PYTHONSAFEPATH=1 stops that"
+htlnlp_172,A,"not verified by the competition's evaluator (US6): it does not resolve the reference patch: a test starts kaggle/prepare_kernel.py, which imports a module beside it; the evaluator's PYTHONSAFEPATH=1 stops that"
+htlnlp_185,A,"not verified by the competition's evaluator (US6): it does not resolve the reference patch: a test starts kaggle/prepare_kernel.py, which imports a module beside it; the evaluator's PYTHONSAFEPATH=1 stops that"
+htlnlp_217,A,"not verified by the competition's evaluator (US6): it does not resolve the reference patch: a test starts kaggle/prepare_kernel.py, which imports a module beside it; the evaluator's PYTHONSAFEPATH=1 stops that"
+htlnlp_82,A,"not verified by the competition's evaluator (US6): it does not resolve the reference patch: a test starts kaggle/prepare_kernel.py, which imports a module beside it; the evaluator's PYTHONSAFEPATH=1 stops that"
+htlnlp_85,A,"not verified by the competition's evaluator (US6): it does not resolve the reference patch: tests read data/external/maccrobat/course/, which the published snapshots withhold"
 htlnlp_91,A,patch names the organisation CLAUDE.md forbids; a patch can't be redacted (#435)
+htlnlp_c2e4466e,C,not verified by the competition's evaluator (US6): it does not resolve the reference patch: a required test is skipped here: test_perio_chart_view_on_postgres_matches_labels
+htlnlp_cb6ac730,C,not verified by the competition's evaluator (US6): it does not resolve the reference patch: a required test is skipped here: test_three_designs_match_python
 htlnlp_pr18,B,"patch carries data/external/maccrobat/course/, which the snapshots withhold (no stated licence, PR #515)"
+htlnlp_pr38,B,"not verified by the competition's evaluator (US6): it does not resolve the reference patch: tests read data/external/maccrobat/course/, which the published snapshots withhold"
+htlnlp_pr39,B,"not verified by the competition's evaluator (US6): it does not resolve the reference patch: tests read data/external/maccrobat/course/, which the published snapshots withhold"
+htlnlp_pr40,B,"not verified by the competition's evaluator (US6): it does not resolve the reference patch: tests read data/external/maccrobat/course/, which the published snapshots withhold"
+htlnlp_pr41,B,"not verified by the competition's evaluator (US6): it does not resolve the reference patch: tests read data/external/maccrobat/course/, which the published snapshots withhold"
+htlnlp_pr43,B,"not verified by the competition's evaluator (US6): it does not resolve the reference patch: tests read data/external/maccrobat/course/, which the published snapshots withhold"
+htlnlp_pr44,B,"not verified by the competition's evaluator (US6): it does not resolve the reference patch: tests read data/external/maccrobat/course/, which the published snapshots withhold"
+htlnlp_pr45,B,"not verified by the competition's evaluator (US6): it does not resolve the reference patch: tests read data/external/maccrobat/course/, which the published snapshots withhold"
+htlnlp_pr49,B,"not verified by the competition's evaluator (US6): it does not resolve the reference patch: tests read data/external/maccrobat/course/, which the published snapshots withhold"
+htlnlp_pr50,B,"not verified by the competition's evaluator (US6): it does not resolve the reference patch: tests read data/external/maccrobat/course/, which the published snapshots withhold"
+htlnlp_pr61,B,"not verified by the competition's evaluator (US6): it does not resolve the reference patch: tests read data/external/maccrobat/course/, which the published snapshots withhold"

@@ -57,6 +57,12 @@ def task_dir(tmp_path):
     pd.DataFrame([{"instance_id": "htlnlp_9", "tier_code": "B",
                    "reason_text": tgate.GATE_EXCLUSION_PREFIX + "tests fail with the fix"}]) \
         .to_csv(d / "tasks_excluded.csv", index=False)
+    (d / "official_verifier").mkdir()
+    pd.DataFrame([{"instance_id": r["instance_id"], "patch_source_code": source, "is_resolved": source == "reference",
+                   "test_exit_code": 0 if source == "reference" else 1, "reason_text": "", "verify_seconds": 1.0,
+                   "evaluator_name": "swegemma 0.2.11", "snapshot_code": "published", "run_ts": "2026-11-10T03:00:00Z"}
+                  for r in rows for source in ("reference", "empty")]) \
+        .to_csv(d / "official_verifier" / "swegemma_verification.csv", index=False)
     return d
 
 
@@ -68,7 +74,7 @@ def test_the_set_is_the_gated_tasks_in_the_competitions_layout(task_dir):
     files = pt.files_of(task_dir)
     assert files["tasks.jsonl"] == task_dir / "tasks_gated.jsonl"      # never the ungated candidates
     assert set(files) == {
-        "tasks.jsonl", "tasks_excluded.csv", "task_gates.csv",
+        "tasks.jsonl", "tasks_excluded.csv", "task_gates.csv", "swegemma_verification.csv",
         "snapshots/htlnlp_1.tgz", "snapshots/htlnlp_2.tgz", "snapshots/htlnlp_3.tgz",
         f"graphs/health-transformation-lab-nlp_{BASE_A}.json", f"graphs/health-transformation-lab-nlp_{BASE_B}.json",
         f"embeddings/health-transformation-lab-nlp_{BASE_A}.npz",
@@ -265,3 +271,30 @@ def test_metadata_only_describes_the_live_files_and_sends_no_data(tmp_path):
 def test_metadata_only_refuses_a_live_file_it_cannot_describe(tmp_path):
     with pytest.raises(SystemExit, match="undescribed"):
         pt.metadata_only(ListingApi(["tasks.jsonl", "notes.txt"]), tmp_path / "out", "someone", "abc1234")
+
+
+# --- spec 028 US6 (#641): nothing goes out that the competition's evaluator has not verified --------------------
+
+def test_the_verification_table_is_published_with_the_set(task_dir):
+    assert pt.files_of(task_dir)["swegemma_verification.csv"] \
+        == task_dir / "official_verifier" / "swegemma_verification.csv"
+
+
+def test_refuses_a_task_the_competitions_evaluator_has_not_verified(task_dir):
+    v = pd.read_csv(task_dir / "official_verifier" / "swegemma_verification.csv")
+    v.loc[(v["instance_id"] == "htlnlp_2") & (v["patch_source_code"] == "reference"), "is_resolved"] = False
+    v.to_csv(task_dir / "official_verifier" / "swegemma_verification.csv", index=False)
+    with pytest.raises(SystemExit, match="evaluator"):
+        pt.check(task_dir)
+
+
+def test_refuses_to_publish_without_the_verification_table(task_dir):
+    (task_dir / "official_verifier" / "swegemma_verification.csv").unlink()
+    with pytest.raises(SystemExit, match="swegemma_verification.csv"):
+        pt.check(task_dir)
+
+
+def test_the_card_says_how_the_set_was_verified(task_dir, tmp_path):
+    card = pt.build(task_dir, tmp_path / "out", "someone", "abc1234")["description"].lower()
+    for words in ("swegemma", "conftest.py", "empty patch"):
+        assert words in card, words

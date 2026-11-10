@@ -38,7 +38,8 @@ def _task_files(tmp_path):
     d.mkdir()
     shutil.copyfile(TASKS_DIR / "tasks_sample.jsonl", d / "tasks.jsonl")
     files = {"tasks.jsonl": d / "tasks.jsonl", "tasks_excluded.csv": TASKS_DIR / "tasks_excluded.csv",
-             "task_gates.csv": TASKS_DIR / "task_gates.csv"}
+             "task_gates.csv": TASKS_DIR / "task_gates.csv",
+             "swegemma_verification.csv": TASKS_DIR / "official_verifier" / "swegemma_verification.csv"}
     for dest in ("snapshots/htlnlp_1.tgz", f"graphs/health-transformation-lab-nlp_{'a' * 40}.json",
                  f"embeddings/health-transformation-lab-nlp_{'a' * 40}.npz"):
         (d / dest).parent.mkdir(parents=True, exist_ok=True)

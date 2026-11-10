@@ -1,0 +1,252 @@
+instance_id,patch_source_code,is_resolved,test_exit_code,reason_text,verify_seconds,evaluator_name,snapshot_code,run_ts
+htlnlp_100,empty,False,2,collection error,4.3,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_102,empty,False,2,collection error,3.8,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_104,empty,False,1,tests fail,4.7,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_109,empty,False,1,tests fail,5.4,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_111,empty,False,1,tests fail,3.8,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_114,empty,False,2,collection error,4.4,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_116,empty,False,1,tests fail,3.9,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_117,empty,False,2,collection error,5.0,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_119,empty,False,2,collection error,4.3,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_120,empty,False,2,collection error,3.6,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_122,empty,False,2,collection error,5.2,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_141,empty,False,2,collection error,4.7,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_143,empty,False,1,tests fail,3.4,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_144,empty,False,1,tests fail,3.9,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_152,empty,False,2,collection error,4.0,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_155,empty,False,1,tests fail,4.8,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_166,empty,False,1,tests fail,5.2,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_170,empty,False,1,tests fail,4.4,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_172,empty,False,1,tests fail,5.6,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_174,empty,False,1,tests fail,4.5,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_178,empty,False,1,tests fail,4.0,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_180,empty,False,1,tests fail,5.4,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_185,empty,False,1,tests fail,4.4,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_187,empty,False,1,tests fail,4.1,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_189,empty,False,2,collection error,3.9,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_191,empty,False,1,tests fail,5.1,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_192,empty,False,1,tests fail,3.9,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_206,empty,False,1,tests fail,3.8,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_214,empty,False,1,tests fail,4.3,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_217,empty,False,2,collection error,4.3,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_226,empty,False,1,tests fail,5.3,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_228,empty,False,1,tests fail,4.7,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_230,empty,False,1,tests fail,5.8,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_234_pr243,empty,False,2,collection error,4.3,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_235,empty,False,1,tests fail,9.3,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_236,empty,False,1,tests fail,6.5,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_244,empty,False,1,tests fail,5.9,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_249,empty,False,1,tests fail,7.4,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_255,empty,False,1,tests fail,7.5,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_276,empty,False,1,tests fail,5.0,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_345,empty,False,2,collection error,4.2,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_68,empty,False,2,collection error,3.7,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_71,empty,False,1,tests fail,6.8,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_82,empty,False,1,tests fail,6.7,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_85,empty,False,2,collection error,4.6,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_90,empty,False,2,collection error,4.2,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_94,empty,False,1,tests fail,7.0,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_c2e4466e,empty,False,2,collection error,3.8,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_c59170ee,empty,False,2,collection error,3.7,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_c5e54000,empty,False,2,collection error,3.7,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_c7300f3f,empty,False,1,tests fail,26.7,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_c791d60f,empty,False,1,tests fail,3.8,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_c7bde3d0,empty,False,1,tests fail,4.9,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_c7c49998,empty,False,2,collection error,3.9,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_c866538c,empty,False,1,tests fail,7.5,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_c95eedd3,empty,False,1,tests fail,3.4,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_ca9964a0,empty,False,2,collection error,3.6,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_cac5acf9,empty,False,2,collection error,3.6,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_cb6ac730,empty,False,2,collection error,3.6,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_cb988381,empty,False,2,collection error,3.6,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_cbb8290c,empty,False,1,tests fail,3.1,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_cbc00f07,empty,False,2,collection error,3.7,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_cc163083,empty,False,2,collection error,3.2,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_cc73f4cf,empty,False,2,collection error,3.9,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_cca2d155,empty,False,2,collection error,3.7,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_ceb84ac1,empty,False,2,collection error,3.0,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_cecf7a16,empty,False,1,tests fail,4.0,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_cf773377,empty,False,2,collection error,3.8,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_cfa7c008,empty,False,1,tests fail,4.1,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr11,empty,False,2,collection error,3.9,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr12,empty,False,1,tests fail,5.5,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr17,empty,False,1,tests fail,3.3,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr2,empty,False,1,tests fail,3.9,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr21,empty,False,1,tests fail,7.4,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr22,empty,False,1,tests fail,13.7,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr23,empty,False,2,collection error,3.9,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr24,empty,False,1,tests fail,5.2,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr25,empty,False,2,collection error,5.1,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr26,empty,False,1,tests fail,6.0,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr27,empty,False,2,collection error,4.0,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr28,empty,False,1,tests fail,5.9,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr29,empty,False,1,tests fail,5.9,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr30,empty,False,1,tests fail,6.2,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr31,empty,False,1,tests fail,6.0,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr32,empty,False,1,tests fail,5.8,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr33,empty,False,1,tests fail,6.0,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr34,empty,False,1,tests fail,6.1,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr35,empty,False,1,tests fail,6.1,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr36,empty,False,1,tests fail,6.1,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr37,empty,False,1,tests fail,6.3,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr38,empty,False,1,tests fail,6.3,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr39,empty,False,1,tests fail,5.1,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr4,empty,False,1,tests fail,4.2,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr40,empty,False,1,tests fail,5.3,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr41,empty,False,1,tests fail,5.4,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr43,empty,False,2,collection error,4.4,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr44,empty,False,1,tests fail,5.8,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr45,empty,False,1,tests fail,7.4,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr47,empty,False,1,tests fail,4.5,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr49,empty,False,2,collection error,4.2,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr5,empty,False,2,collection error,5.0,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr50,empty,False,2,collection error,4.4,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr53,empty,False,1,tests fail,4.2,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr54,empty,False,1,tests fail,6.6,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr55,empty,False,1,tests fail,3.7,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr56,empty,False,1,tests fail,4.4,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr57,empty,False,2,collection error,3.5,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr6,empty,False,2,collection error,5.1,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr61,empty,False,1,tests fail,5.9,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr62,empty,False,2,collection error,4.2,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr63,empty,False,1,tests fail,3.6,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr66,empty,False,1,tests fail,6.7,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr8,empty,False,2,collection error,3.9,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_120,gemma-4-e4b-it,False,2,collection error,3.6,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_122,gemma-4-e4b-it,False,2,collection error,5.0,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_143,gemma-4-e4b-it,True,0,,3.6,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_170,gemma-4-e4b-it,False,1,tests fail,4.5,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_174,gemma-4-e4b-it,True,0,,4.4,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_189,gemma-4-e4b-it,False,2,collection error,3.7,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_206,gemma-4-e4b-it,False,1,tests fail,4.0,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_228,gemma-4-e4b-it,False,1,tests fail,4.9,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_236,gemma-4-e4b-it,False,1,tests fail,6.6,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_276,gemma-4-e4b-it,False,1,tests fail,5.1,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_90,gemma-4-e4b-it,False,2,collection error,4.3,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_c59170ee,gemma-4-e4b-it,False,2,collection error,3.9,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_c7300f3f,gemma-4-e4b-it,False,1,tests fail,28.3,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_c791d60f,gemma-4-e4b-it,False,2,collection error,4.2,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_cecf7a16,gemma-4-e4b-it,False,1,tests fail,4.2,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_cfa7c008,gemma-4-e4b-it,False,1,tests fail,4.0,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr21,gemma-4-e4b-it,False,1,tests fail,8.0,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr23,gemma-4-e4b-it,False,2,collection error,4.1,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr29,gemma-4-e4b-it,False,1,tests fail,6.0,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr34,gemma-4-e4b-it,False,1,tests fail,6.4,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr38,gemma-4-e4b-it,False,1,tests fail,6.2,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr39,gemma-4-e4b-it,False,1,tests fail,5.3,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr40,gemma-4-e4b-it,False,1,tests fail,5.2,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr49,gemma-4-e4b-it,False,2,collection error,4.2,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr56,gemma-4-e4b-it,False,1,tests fail,4.6,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_100,reference,False,1,"tests read data/external/maccrobat/course/, which the published snapshots withhold",6.3,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_102,reference,True,0,,4.7,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_104,reference,True,0,,4.7,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_109,reference,True,0,,5.2,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_111,reference,True,0,,3.9,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_114,reference,True,0,,7.8,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_116,reference,True,0,,3.7,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_117,reference,True,0,,14.0,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_119,reference,True,0,,4.5,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_120,reference,True,0,,5.1,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_122,reference,False,1,"a test starts kaggle/prepare_kernel.py, which imports a module beside it; the evaluator's PYTHONSAFEPATH=1 stops that",5.5,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_141,reference,False,1,"a test starts kaggle/prepare_kernel.py, which imports a module beside it; the evaluator's PYTHONSAFEPATH=1 stops that",10.5,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_143,reference,True,0,,3.7,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_144,reference,True,0,,3.8,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_152,reference,True,0,,5.9,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_155,reference,True,0,,4.8,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_166,reference,True,0,,5.3,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_170,reference,True,0,,4.6,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_172,reference,False,1,"a test starts kaggle/prepare_kernel.py, which imports a module beside it; the evaluator's PYTHONSAFEPATH=1 stops that",5.7,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_174,reference,True,0,,4.4,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_178,reference,True,0,,3.8,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_180,reference,True,0,,5.6,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_185,reference,False,1,"a test starts kaggle/prepare_kernel.py, which imports a module beside it; the evaluator's PYTHONSAFEPATH=1 stops that",4.6,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_187,reference,True,0,,5.9,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_189,reference,True,0,,3.9,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_191,reference,True,0,,5.3,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_192,reference,True,0,,3.9,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_206,reference,True,0,,3.8,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_214,reference,True,0,,4.5,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_217,reference,False,1,"a test starts kaggle/prepare_kernel.py, which imports a module beside it; the evaluator's PYTHONSAFEPATH=1 stops that",25.8,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_226,reference,True,0,,5.5,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_228,reference,True,0,,4.6,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_230,reference,True,0,,6.7,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_234_pr243,reference,True,0,,9.8,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_235,reference,True,0,,11.5,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_236,reference,True,0,,7.0,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_244,reference,True,0,,6.1,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_249,reference,True,0,,7.6,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_255,reference,True,0,,7.6,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_276,reference,True,0,,4.9,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_345,reference,True,0,,5.2,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_68,reference,True,0,,3.6,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_71,reference,True,0,,6.7,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_82,reference,False,1,"a test starts kaggle/prepare_kernel.py, which imports a module beside it; the evaluator's PYTHONSAFEPATH=1 stops that",6.9,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_85,reference,False,1,"tests read data/external/maccrobat/course/, which the published snapshots withhold",10.1,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_90,reference,True,0,,7.0,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_94,reference,True,0,,7.0,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_c2e4466e,reference,False,0,a required test is skipped here: test_perio_chart_view_on_postgres_matches_labels,3.8,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_c59170ee,reference,True,0,,6.0,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_c5e54000,reference,True,0,,5.2,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_c7300f3f,reference,True,0,,32.5,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_c791d60f,reference,True,0,,4.1,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_c7bde3d0,reference,True,0,,27.5,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_c7c49998,reference,True,0,,8.9,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_c866538c,reference,True,0,,7.6,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_c95eedd3,reference,True,0,,5.4,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_ca9964a0,reference,True,0,,3.9,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_cac5acf9,reference,True,0,,5.5,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_cb6ac730,reference,False,0,a required test is skipped here: test_three_designs_match_python,9.0,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_cb988381,reference,True,0,,3.8,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_cbb8290c,reference,True,0,,3.3,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_cbc00f07,reference,True,0,,3.6,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_cc163083,reference,True,0,,4.5,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_cc73f4cf,reference,True,0,,4.0,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_cca2d155,reference,True,0,,14.5,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_ceb84ac1,reference,True,0,,4.0,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_cecf7a16,reference,True,0,,4.1,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_cf773377,reference,True,0,,4.5,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_cfa7c008,reference,True,0,,3.9,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr11,reference,True,0,,4.0,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr12,reference,True,0,,5.6,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr17,reference,True,0,,3.5,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr2,reference,True,0,,4.0,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr21,reference,True,0,,7.4,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr22,reference,True,0,,6.0,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr23,reference,True,0,,4.9,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr24,reference,True,0,,5.4,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr25,reference,True,0,,6.1,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr26,reference,True,0,,6.1,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr27,reference,True,0,,13.5,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr28,reference,True,0,,6.1,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr29,reference,True,0,,6.0,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr30,reference,True,0,,5.8,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr31,reference,True,0,,6.0,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr32,reference,True,0,,6.0,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr33,reference,True,0,,6.2,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr34,reference,True,0,,6.1,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr35,reference,True,0,,6.2,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr36,reference,True,0,,6.2,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr37,reference,True,0,,6.2,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr38,reference,False,1,"tests read data/external/maccrobat/course/, which the published snapshots withhold",5.1,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr39,reference,False,1,"tests read data/external/maccrobat/course/, which the published snapshots withhold",5.2,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr4,reference,True,0,,4.2,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr40,reference,False,1,"tests read data/external/maccrobat/course/, which the published snapshots withhold",5.0,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr41,reference,False,1,"tests read data/external/maccrobat/course/, which the published snapshots withhold",4.9,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr43,reference,False,1,"tests read data/external/maccrobat/course/, which the published snapshots withhold",7.7,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr44,reference,False,1,"tests read data/external/maccrobat/course/, which the published snapshots withhold",5.6,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr45,reference,False,1,"tests read data/external/maccrobat/course/, which the published snapshots withhold",6.9,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr47,reference,True,0,,4.2,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr49,reference,False,1,"tests read data/external/maccrobat/course/, which the published snapshots withhold",5.7,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr5,reference,True,0,,5.2,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr50,reference,False,1,"tests read data/external/maccrobat/course/, which the published snapshots withhold",14.0,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr53,reference,True,0,,4.1,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr54,reference,True,0,,8.0,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr55,reference,True,0,,3.5,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr56,reference,True,0,,4.7,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr57,reference,True,0,,3.6,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr6,reference,True,0,,5.0,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr61,reference,False,1,"tests read data/external/maccrobat/course/, which the published snapshots withhold",5.8,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr62,reference,True,0,,6.9,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr63,reference,True,0,,3.7,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr66,reference,True,0,,6.7,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z
+htlnlp_pr8,reference,True,0,,4.5,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)",published + root conftest.py,2026-11-10T03:00:00Z

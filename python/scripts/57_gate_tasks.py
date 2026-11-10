@@ -44,17 +44,27 @@ OUT = TASKS_DIR / "task_gates.csv"            # committed
 GATED = TASKS_DIR / "tasks_gated.jsonl"       # git-ignored: the set that gets published (T007a)
 EXCLUDED = TASKS_DIR / "tasks_excluded.csv"   # committed
 MANIFEST = TASKS_DIR / "task_manifest.csv"    # committed, for each task's tier
+VERIFIED = TASKS_DIR / "official_verifier" / "swegemma_verification.csv"   # committed: the competition's evaluator
 
 
 def apply_gates(tasks: list[dict], gates: list[dict]) -> None:
     """Write the passing tasks to tasks_gated.jsonl and list the failures in tasks_excluded.csv (T007a, #502)."""
     tiers = pd.read_csv(MANIFEST, usecols=["instance_id", "tier_code"]).set_index("instance_id")["tier_code"].to_dict()
     kept = tgate.passing_tasks(tasks, gates)
+    unverified = []
+    if VERIFIED.exists():   # spec 028 US6: only tasks the competition's evaluator vouches for; publishing
+        # refuses without the table, so a missing one cannot let unverified tasks out
+        verification = pd.read_csv(VERIFIED, keep_default_na=False).to_dict("records")
+        unverified = tgate.evaluator_exclusions(kept, verification, tiers)
+        kept = tgate.evaluator_verified(kept, verification)
     GATED.write_text("".join(json.dumps(t) + "\n" for t in kept))   # overwritten whole: re-runnable
     existing = pd.read_csv(EXCLUDED, keep_default_na=False).to_dict("records") if EXCLUDED.exists() else []
     dropped = tgate.gate_exclusions(gates, tiers, task_ids={t["instance_id"] for t in tasks})
-    merged = tgate.merge_exclusions(existing, dropped)
+    merged = tgate.merge_exclusions(existing, dropped + unverified)
     pd.DataFrame(merged, columns=["instance_id", "tier_code", "reason_text"]).to_csv(EXCLUDED, index=False)
+    if unverified:
+        print(f"{len(unverified)} task(s) the competition's evaluator does not vouch for are left out "
+              f"({VERIFIED.relative_to(REPO_ROOT)})")
     print(f"{len(kept)} of {len(tasks)} tasks -> {GATED.relative_to(REPO_ROOT)}; {len(dropped)} gate failure(s)"
           f" listed in {EXCLUDED.relative_to(REPO_ROOT)}" + (": " + ", ".join(d["instance_id"] for d in dropped)
                                                              if dropped else ""))

@@ -246,3 +246,53 @@ def test_a_rebuild_carries_the_gate_rows_of_tasks_it_still_builds():   # PR #505
 def test_the_task_set_folder_comes_from_paths():
     from health_transformation_lab_nlp import paths
     assert paths.TASKS_DIR == paths.REPO_ROOT / "data" / "tasks"
+
+
+# --- spec 028 US6 (#641): only tasks the competition's evaluator vouches for are published ----------------------
+
+def _v(iid, source, resolved, reason=""):
+    return {"instance_id": iid, "patch_source_code": source, "is_resolved": resolved, "reason_text": reason}
+
+
+VERIFICATION = [_v("htlnlp_1", "reference", True), _v("htlnlp_1", "empty", False, "tests fail"),
+                _v("htlnlp_2", "reference", False, "tests read withheld files"), _v("htlnlp_2", "empty", False),
+                _v("htlnlp_3", "reference", True), _v("htlnlp_3", "empty", True),       # passes with no fix
+                _v("htlnlp_1", "gemma-4-e4b-it", False, "tests fail")]                  # an agent's row: ignored
+FOUR = [{"instance_id": f"htlnlp_{i}"} for i in (1, 2, 3, 4)]
+
+
+def test_only_tasks_the_competitions_evaluator_vouches_for_are_kept():
+    assert [t["instance_id"] for t in tgate.evaluator_verified(FOUR, VERIFICATION)] == ["htlnlp_1"]
+
+
+def test_each_task_the_evaluator_does_not_vouch_for_is_an_exclusion_with_its_reason():
+    rows = tgate.evaluator_exclusions(FOUR, VERIFICATION, {"htlnlp_2": "B", "htlnlp_3": "A", "htlnlp_4": "C"})
+    assert rows == [
+        {"instance_id": "htlnlp_2", "tier_code": "B",
+         "reason_text": tgate.EVALUATOR_EXCLUSION_PREFIX + "it does not resolve the reference patch: tests read withheld files"},
+        {"instance_id": "htlnlp_3", "tier_code": "A",
+         "reason_text": tgate.EVALUATOR_EXCLUSION_PREFIX + "it resolves an empty patch"},
+        {"instance_id": "htlnlp_4", "tier_code": "C",
+         "reason_text": tgate.EVALUATOR_EXCLUSION_PREFIX + "it has not been run on this task"}]
+
+
+def test_the_verification_table_read_from_csv_is_understood():   # pandas gives "True"/"False" with keep_default_na
+    as_text = [{**r, "is_resolved": str(r["is_resolved"])} for r in VERIFICATION]
+    assert tgate.evaluator_verified(FOUR, as_text) == tgate.evaluator_verified(FOUR, VERIFICATION)
+
+
+def test_merging_replaces_old_evaluator_rows_too_and_a_gate_failure_keeps_its_own_reason():
+    existing = [{"instance_id": "htlnlp_7", "tier_code": "A", "reason_text": tgate.EVALUATOR_EXCLUSION_PREFIX + "old"},
+                {"instance_id": "htlnlp_91", "tier_code": "A", "reason_text": "patch names the organisation (#435)"}]
+    gate = tgate.gate_exclusions(GATES, TIERS)                                   # htlnlp_2 fails our gate
+    unverified = tgate.evaluator_exclusions(FOUR, VERIFICATION, TIERS)          # htlnlp_2, 3 and 4
+    merged = tgate.merge_exclusions(existing, gate + unverified)
+    assert [r["instance_id"] for r in merged] == ["htlnlp_2", "htlnlp_3", "htlnlp_4", "htlnlp_91"]
+    assert merged[0]["reason_text"].startswith(tgate.GATE_EXCLUSION_PREFIX)
+
+
+def test_a_rebuild_carries_the_evaluator_rows_of_tasks_it_still_builds():
+    existing = [{"instance_id": "htlnlp_2", "tier_code": "B", "reason_text": tgate.EVALUATOR_EXCLUSION_PREFIX + "x"},
+                {"instance_id": "htlnlp_8", "tier_code": "B", "reason_text": tgate.EVALUATOR_EXCLUSION_PREFIX + "y"}]
+    assert [r["instance_id"] for r in tgate.carried_gate_rows(existing, {"htlnlp_2"})] == ["htlnlp_2"]
+
