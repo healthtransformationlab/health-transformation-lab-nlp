@@ -2,6 +2,7 @@ instance_id,tier_code,tight_run_ts,is_tight_resolved,tight_patch_bytes,tight_too
 htlnlp_111,A,2026-11-10T02:55:55.362363+00:00,False,1195,5,2026-11-10T18:24:55Z,False,1156,4,0,859,0,209.0,tests fail with the agent's patch,NVIDIA L4
 htlnlp_120,A,2026-11-06T20:10:33.789200+00:00,False,0,0,2026-11-10T17:29:12Z,False,0,0,0,596,0,67.1,empty patch,NVIDIA L4
 htlnlp_152,A,2026-11-10T03:11:20.067995+00:00,False,0,1,2026-11-10T17:32:37Z,False,0,0,0,428,0,78.7,empty patch,NVIDIA L4
+htlnlp_155,A,2026-11-06T01:45:38.839847+00:00,False,4499,10,2026-11-10T19:33:01Z,False,5682,9,0,973,0,396.8,tests fail with the agent's patch,NVIDIA L4
 htlnlp_187,A,2026-11-10T04:10:10.504526+00:00,False,1126,15,2026-11-10T18:59:03Z,True,1672,9,0,517,0,266.7,,NVIDIA L4
 htlnlp_189,A,2026-11-06T19:42:24.370208+00:00,False,2241,5,2026-11-10T17:40:23Z,False,10888,7,0,1652,0,455.0,tests fail with the agent's patch,NVIDIA L4
 htlnlp_226,A,2026-11-10T02:46:56.990050+00:00,True,817,3,2026-11-10T17:45:59Z,False,0,1,0,391,0,167.6,empty patch,NVIDIA L4
@@ -15,7 +16,9 @@ htlnlp_pr31,B,2026-11-10T05:01:18.227198+00:00,False,3665,7,2026-11-10T18:17:42Z
 htlnlp_pr32,B,2026-11-10T05:50:21.551460+00:00,False,3577,8,2026-11-10T18:21:01Z,False,2086,3,0,842,0,177.2,tests fail with the agent's patch,NVIDIA L4
 htlnlp_pr35,B,2026-11-10T03:41:46.176680+00:00,False,3915,5,2026-11-10T17:42:58Z,False,2374,5,0,370,0,145.6,tests fail with the agent's patch,NVIDIA L4
 htlnlp_pr36,B,2026-11-10T02:29:27.922356+00:00,False,2342,3,2026-11-10T18:05:05Z,False,5628,7,0,1043,0,337.6,tests fail with the agent's patch,NVIDIA L4
+htlnlp_pr37,B,2026-11-10T05:30:53.997311+00:00,False,2324,7,2026-11-10T19:25:42Z,False,1643,5,0,805,0,221.5,tests fail with the agent's patch,NVIDIA L4
 htlnlp_pr53,B,2026-11-10T03:49:14.206918+00:00,False,1994,7,2026-11-10T18:12:36Z,False,4053,5,1,1422,0,431.3,tests fail with the agent's patch,NVIDIA L4
 htlnlp_pr55,B,2026-11-10T05:41:54.480198+00:00,False,2725,8,2026-11-10T18:54:05Z,False,1390,4,1,839,0,251.7,tests fail with the agent's patch,NVIDIA L4
 htlnlp_pr57,B,2026-11-10T05:18:55.737468+00:00,False,6350,5,2026-11-10T18:39:55Z,False,9120,9,0,1428,0,632.9,tests fail with the agent's patch,NVIDIA L4
 htlnlp_pr63,B,2026-11-10T03:14:45.713100+00:00,True,887,2,2026-11-10T17:31:10Z,True,887,5,0,289,0,112.9,,NVIDIA L4
+htlnlp_pr66,B,2026-11-10T06:45:47.533995+00:00,False,2142,7,2026-11-10T19:21:27Z,False,2060,7,0,1356,0,394.7,tests fail with the agent's patch,NVIDIA L4

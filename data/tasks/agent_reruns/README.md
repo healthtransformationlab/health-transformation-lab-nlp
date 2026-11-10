@@ -54,18 +54,18 @@ run's session time, and `62_colab_agent.py score` verified each patch here in th
 tools not counted), calls to the three graph tools counted from the transcript, the largest output of any turn, turns
 the model could not take because the prompt was past the context limit, the task's seconds on the GPU, and the GPU.
 
-The run was read while still going: 20 of the 48 scored tasks had finished.
+The run was read while still going: 23 of the 48 scored tasks had finished.
 
-| 20 tasks, each run twice | Tight limits | Larger budget |
+| 23 tasks, each run twice | Tight limits | Larger budget |
 |---|---|---|
 | Resolved | 2 | 2 |
-| Wrote a patch | 16 | 17 |
+| Wrote a patch | 19 | 20 |
 
-With the larger budget: One of the 20 runs had a turn above 2,048 output tokens (the longest, 3,335), and one reached the context limit. 5 of 118 tool calls were to a graph tool, in 4 runs.
-The 20 tasks took 1.8 hours on the one GPU.
+With the larger budget: One of the 23 runs had a turn above 2,048 output tokens (the longest, 3,335), and one reached the context limit. 5 of 139 tool calls were to a graph tool, in 4 runs.
+The 23 tasks took 2.1 hours on the one GPU.
 
 Two differences favour neither side cleanly and are stated in the paper: the context is smaller than the baseline's,
-and the notebook has network access, which Kaggle's kernels did not. No `run_command` in the 20 transcripts names
+and the notebook has network access, which Kaggle's kernels did not. No `run_command` in the 23 transcripts names
 a network tool or address, and a command sees only an allow-listed environment (`agent_harness._env`), not the
 notebook's Kaggle token. One sampled run per task at temperature 0.2. Measured with this repository's harness, not
 the competition's evaluator.
