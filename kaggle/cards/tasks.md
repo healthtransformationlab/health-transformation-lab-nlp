@@ -54,7 +54,8 @@ the competition's evaluator (above).
 ## Licence and citation
 
 CC BY 4.0 for the task rows, graphs, embeddings and this card. Inside the snapshots, the repository's own files
-are under its MIT licence, and third-party files keep their own licences, named in the files beside them:
+are under the MIT licence it carried at those commits (the repository has been Apache 2.0 since November 2026),
+and third-party files keep their own licences, named in the files beside them:
 
 - `data/external/maccrobat/` (in most snapshots): MACCROBAT, 200 published, de-identified clinical case reports
   from PubMed Central. **Not synthetic.** CC BY 4.0, Caufield, J. Harry (2019), *MACCROBAT*, figshare,
