@@ -300,5 +300,6 @@ resources:
               max_usd: ${var.judge_max_usd}
               lookback_days: ${var.doctor_lookback_days}
               span_table: ${var.doctor_span_table}
+              billing_schema: ${var.billing_schema}
               decisions: ""     # set per run: run_id=action_code,... the owner's approvals until an approval UI
               decided_by: ""    # who decided, required with decisions

@@ -58,6 +58,9 @@ variables:
   doctor_lookback_days:
     description: Days of job runs the pipeline doctor diagnoses on each run (1-30; it reads 60 days for the trailing ok runs)
     default: "7"
+  billing_schema:
+    description: Schema (catalog.schema) holding the owner's views over system.billing that the doctor reads run costs from (databricks/setup/billing_views.sql, #654)
+    default: health_transformation_lab.ops_billing
   doctor_span_table:
     description: Unity Catalog table (catalog.schema.table) holding the span export, one row per run in fact_pipeline_run's columns; none = job run timeline only
     default: none
