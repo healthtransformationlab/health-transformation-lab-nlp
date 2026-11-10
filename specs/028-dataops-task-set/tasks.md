@@ -32,4 +32,5 @@
 - [x] T015 `tasks_excluded.csv`: the 20 tasks, each with the evaluator's reason (23 rows with the earlier three)
 - [x] T016 Published as dataset version 4 (workflow run 42750573206 on `167daa2`, Nov 10, 2026, with the owner's go-ahead): 93 tasks. The evaluator on the published files as they are, with no file added, resolves the reference patch on **93 of 93** and an empty patch on **0 of 93** (`data/tasks/official_verifier/published_verification.csv`, #644). `snapshot_index.csv` is refreshed: every head and tree changed with the added file, and the 93 published snapshots match it
 - [x] T017 Correct the remaining statements that the evaluator "isn't distributed" (spec 035, docstrings in `agent_harness.py`, `task_gate.py`, `55_build_tasks.py`, `57_gate_tasks.py`, `tests/test_task_gate.py`) (#636)
+- [x] T018 How much of each fix the code graph reaches (#659): `scripts/63_graph_coverage.py` on the published set writes `data/tasks/graph_coverage.csv`, one row per task. The reference patch changes a module the graph has nodes for in 62 of the 93 tasks and none in 31; 155 of the 1,173 changed files are graphed modules (Nov 10, 2026, dataset version 4)
 
