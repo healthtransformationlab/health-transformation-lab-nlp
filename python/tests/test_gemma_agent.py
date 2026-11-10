@@ -394,7 +394,7 @@ def test_the_workflow_keeps_the_transcripts_and_ends_inside_the_job():   # #621
 @pytest.fixture(scope="module")
 def colab():
     import importlib.util
-    spec = importlib.util.spec_from_file_location("colab_agent", REPO_ROOT / "python" / "scripts" / "61_colab_agent.py")
+    spec = importlib.util.spec_from_file_location("colab_agent", REPO_ROOT / "python" / "scripts" / "62_colab_agent.py")
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod

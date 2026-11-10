@@ -1,9 +1,9 @@
 """The Gemma agent at fuller settings on a Colab GPU (spec 035 US2, #656): the same one-task bundles as Kaggle, a
 notebook that runs them one at a time, and the patches scored here in the sandbox.
 
-    python scripts/61_colab_agent.py bundles --ids <id,...> --agent-dir ~/gemma-developer-agent --published <dir>
+    python scripts/62_colab_agent.py bundles --ids <id,...> --agent-dir ~/gemma-developer-agent --published <dir>
     # then open kaggle/colab_agent.ipynb in Colab (A100), Run all; it versions jcblearning/htlnlp-colab-results
-    python scripts/61_colab_agent.py score --published <dir>
+    python scripts/62_colab_agent.py score --published <dir>
 
 `--published` is the downloaded task set (jcblearning/health-transformation-lab-coding-agent-tasks): its tasks.jsonl,
 snapshots, graphs and embeddings, the files the paper's 93 tasks were verified on. Each bundle is a private dataset
