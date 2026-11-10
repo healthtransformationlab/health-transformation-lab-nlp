@@ -425,3 +425,36 @@ def test_the_notebook_runs_one_task_at_a_time_and_resumes():
 def test_the_bundle_check_reads_a_snapshot_another_user_owns():
     src = (REPO_ROOT / "kaggle" / "agent_bundle.py").read_text()
     assert '"safe.directory=*"' in src
+
+
+def test_graph_tool_calls_are_counted_from_the_transcript(colab):
+    history = [{"role": "user", "content": "x"},
+               {"role": "assistant", "tool_calls": [{"function": {"name": "read_file", "arguments": "{}"}}]},
+               {"role": "assistant", "tool_calls": [{"function": {"name": "search_similar_code", "arguments": "{}"}},
+                                                    {"function": {"name": "get_code_neighbors", "arguments": "{}"}}]},
+               {"role": "assistant", "tool_calls": [{"function": {"name": "submit_patch", "arguments": "{}"}}]}]
+    assert colab.graph_tool_calls(history) == 2 and colab.graph_tool_calls([]) == 0
+
+
+def test_the_paired_row_sets_the_tight_run_beside_the_larger_one(colab):   # #656: agent_reruns/<model>_larger_budget.csv
+    row = {"instance_id": "htlnlp_9", "is_resolved": True, "agent_patch_bytes": 120, "tool_call_count": 5,
+           "reason_text": None, "run_ts": "2026-11-10T19:00:00+00:00"}
+    result = {"turns": [{"output_tokens": 300}, {"output_tokens": 1652}, {"output_tokens": 0, "over_context": True}],
+              "task_seconds": 240.5, "gpus": ["NVIDIA L4"],
+              "history": [{"role": "assistant", "tool_calls": [{"function": {"name": "get_code_subgraph"}}]}]}
+    tight = {"is_resolved": False, "agent_patch_bytes": 0, "tool_call_count": 3, "run_ts": "2026-11-06T02:00:00+00:00"}
+    p = colab.paired_row(row, result, tight, "B")
+    assert list(p) == colab.PAIRED_COLUMNS
+    assert (p["is_tight_resolved"], p["is_larger_resolved"], p["tier_code"]) == (False, True, "B")
+    assert (p["tight_patch_bytes"], p["larger_patch_bytes"]) == (0, 120)
+    assert (p["larger_graph_tool_call_count"], p["larger_max_output_token_count"]) == (1, 1652)
+    assert p["larger_over_context_turn_count"] == 1          # a turn the prompt was too long for (an L4's context)
+    assert p["larger_task_seconds"] == 240.5 and p["larger_gpu_name"] == "NVIDIA L4"
+    assert p["larger_run_ts"] == "2026-11-10T19:00:00+00:00"                     # no finish time: when it was scored
+    assert colab.paired_row(row, {**result, "finished_ts": "2026-11-10T18:01:02Z"}, tight, "B")["larger_run_ts"] \
+        == "2026-11-10T18:01:02Z"                                               # when the task ran
+
+
+def test_the_larger_budget_table_is_not_a_run_table_of_the_gold_layer(colab):
+    # agent_runs/ feeds fact_agent_task_run and the Kaggle allowance check; a Colab run is neither
+    assert colab.PAIRED.parent.name == "agent_reruns" and colab.PAIRED.name == "gemma-4-e4b-it_larger_budget.csv"
