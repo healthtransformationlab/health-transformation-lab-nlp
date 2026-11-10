@@ -185,3 +185,26 @@ htlnlp_pr62,reference,True,0,,7.1,"swegemma 0.2.11 (harness.verification.verify_
 htlnlp_pr63,reference,True,0,,3.9,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)","dataset version 4, as published",2026-11-10T04:25:00Z
 htlnlp_pr66,reference,True,0,,6.8,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)","dataset version 4, as published",2026-11-10T04:25:00Z
 htlnlp_pr8,reference,True,0,,4.5,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)","dataset version 4, as published",2026-11-10T04:25:00Z
+htlnlp_111,gemma-4-e4b-it,False,2,collection error,7.4,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)","dataset version 4, as published",2026-11-10T08:40:00Z
+htlnlp_144,gemma-4-e4b-it,False,1,tests fail,7.2,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)","dataset version 4, as published",2026-11-10T08:40:00Z
+htlnlp_152,gemma-4-e4b-it,False,2,collection error,7.3,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)","dataset version 4, as published",2026-11-10T08:40:00Z
+htlnlp_187,gemma-4-e4b-it,False,1,tests fail,7.3,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)","dataset version 4, as published",2026-11-10T08:40:00Z
+htlnlp_192,gemma-4-e4b-it,False,1,tests fail,7.1,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)","dataset version 4, as published",2026-11-10T08:40:00Z
+htlnlp_226,gemma-4-e4b-it,True,0,,25.3,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)","dataset version 4, as published",2026-11-10T08:40:00Z
+htlnlp_230,gemma-4-e4b-it,False,1,tests fail,19.6,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)","dataset version 4, as published",2026-11-10T08:40:00Z
+htlnlp_249,gemma-4-e4b-it,False,1,tests fail,15.7,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)","dataset version 4, as published",2026-11-10T08:40:00Z
+htlnlp_255,gemma-4-e4b-it,False,1,tests fail,9.2,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)","dataset version 4, as published",2026-11-10T08:40:00Z
+htlnlp_71,gemma-4-e4b-it,False,1,tests fail,8.3,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)","dataset version 4, as published",2026-11-10T08:40:00Z
+htlnlp_94,gemma-4-e4b-it,False,1,tests fail,7.9,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)","dataset version 4, as published",2026-11-10T08:40:00Z
+htlnlp_pr17,gemma-4-e4b-it,False,1,tests fail,5.3,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)","dataset version 4, as published",2026-11-10T08:40:00Z
+htlnlp_pr30,gemma-4-e4b-it,False,1,tests fail,8.0,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)","dataset version 4, as published",2026-11-10T08:40:00Z
+htlnlp_pr31,gemma-4-e4b-it,False,1,tests fail,7.6,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)","dataset version 4, as published",2026-11-10T08:40:00Z
+htlnlp_pr32,gemma-4-e4b-it,False,1,tests fail,8.5,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)","dataset version 4, as published",2026-11-10T08:40:00Z
+htlnlp_pr35,gemma-4-e4b-it,False,1,tests fail,7.5,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)","dataset version 4, as published",2026-11-10T08:40:00Z
+htlnlp_pr36,gemma-4-e4b-it,False,1,tests fail,7.3,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)","dataset version 4, as published",2026-11-10T08:40:00Z
+htlnlp_pr37,gemma-4-e4b-it,False,1,tests fail,7.8,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)","dataset version 4, as published",2026-11-10T08:40:00Z
+htlnlp_pr53,gemma-4-e4b-it,False,1,tests fail,6.4,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)","dataset version 4, as published",2026-11-10T08:40:00Z
+htlnlp_pr55,gemma-4-e4b-it,False,1,tests fail,5.7,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)","dataset version 4, as published",2026-11-10T08:40:00Z
+htlnlp_pr57,gemma-4-e4b-it,False,1,tests fail,5.4,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)","dataset version 4, as published",2026-11-10T08:40:00Z
+htlnlp_pr63,gemma-4-e4b-it,True,0,,4.3,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)","dataset version 4, as published",2026-11-10T08:40:00Z
+htlnlp_pr66,gemma-4-e4b-it,False,1,tests fail,24.7,"swegemma 0.2.11 (harness.verification.verify_task, subprocess sandbox)","dataset version 4, as published",2026-11-10T08:40:00Z

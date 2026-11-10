@@ -41,6 +41,10 @@ task set (Kaggle)" workflow and downloaded with the Kaggle command line.
 |---|---|---|
 | The reference patch | 93 | 93 |
 | An empty patch | 93 | 0 |
+| Gemma 4 E4B's patches from the rerun of November 10 (23 runs) | 23 | 2 |
+
+On those 23 agent patches the evaluator gives the same verdict as `htlnlp-harness-v1` every time, as it did on the 25
+above: 48 agent patches compared in all, none where the two disagree.
 
 So every published task does what the set claims: the evaluator resolves its reference patch and does not resolve an
 empty one. The published `tasks.jsonl` holds exactly the 93 tasks the table above vouches for. Each published
