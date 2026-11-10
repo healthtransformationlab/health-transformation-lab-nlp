@@ -35,6 +35,10 @@
   US1 therefore needs a one-time grant by an account admin: USE SCHEMA and SELECT on `system.billing` to each job
   identity. Until then, the doctor warns that the tables can't be read and leaves costs empty (FR-002, FR-003). The
   grant is the owner's to make; nothing in this repo makes it.
+  - **Nov 10, 2026 (#654):** the grant needs MANAGE on `system.billing`, which the owner doesn't have in dev
+    (`PERMISSION_DENIED`). The owner can read the tables, so `databricks/setup/billing_views.sql` makes views over
+    them in `health_transformation_lab.ops_billing` and grants the job's identity those; the doctor reads the schema
+    named by the bundle variable `billing_schema`.
 - `doctor_job.billing_costs(usage, prices)`: one row per job run, its DBUs summed over SKUs and priced at the list
   price in effect at usage time. Joined onto the timeline runs by `job_run_id`, so `cost_usd` is filled before
   `merge_spans`; a span value still wins.
