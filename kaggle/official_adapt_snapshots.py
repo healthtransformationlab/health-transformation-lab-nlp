@@ -1,6 +1,9 @@
 """Copy each published snapshot and add one file at its root: conftest.py (the adapter). Nothing else changes."""
-import io, sys, tarfile
+import io
+import sys
+import tarfile
 from pathlib import Path
+
 src, dst, conf = Path(sys.argv[1]), Path(sys.argv[2]), Path(sys.argv[3]).read_bytes()
 dst.mkdir(parents=True, exist_ok=True); n = 0; had = []
 for tgz in sorted(src.glob("*.tgz")):

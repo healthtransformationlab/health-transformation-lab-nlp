@@ -5,7 +5,11 @@ The Evaluator is built exactly as the swegemma command line builds it (subproces
 and limits are the official ones. Only the source of the patch differs: the command line can run the agent or use an
 empty patch (--skip-agent-patch); this calls the same verify_task with a given patch.
 """
-import argparse, asyncio, json, os, sys, time
+import argparse
+import asyncio
+import json
+import os
+import time
 from pathlib import Path
 
 os.environ.setdefault("MLFLOW_DISABLE_AGENT_HINT", "1")
@@ -53,7 +57,7 @@ async def one(task, sem):
             row = {"instance_id": task.instance_id, "patch_kind": a.patch, "resolved": bool(r.resolved),
                    "test_exit_code": r.test_exit_code, "error": r.error, "seconds": round(time.perf_counter() - t0, 1),
                    "output_tail": out[-int(os.environ.get("TAIL", "1500")):]}
-        except Exception as e:  # a setup failure is a row too
+        except Exception as e:  # noqa: BLE001 - a setup failure of any kind is a row too
             row = {"instance_id": task.instance_id, "patch_kind": a.patch, "resolved": False, "test_exit_code": None,
                    "error": f"{type(e).__name__}: {e}"[:400], "seconds": round(time.perf_counter() - t0, 1), "output_tail": ""}
         return row
