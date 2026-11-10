@@ -56,7 +56,7 @@ def test_the_run_columns_are_the_run_tables(screen):
 
 
 def test_the_readme_says_who_made_it_and_gives_the_tables_counts(screen, readme):
-    assert "Made by an AI reviewer, not by a person." in readme
+    assert "Rated by an AI reviewer; checked by the owner from plain-language summaries, not from the code." in readme
     n, passed = len(screen), int(screen["is_pass"].sum())
     assert f"| Screened | {n} |" in readme and f"| Pass (both ratings 0 or 1) | {passed} |" in readme
     assert f"| Statement rated 2 or 3 | {int((screen['statement_rating_num'] >= 2).sum())} |" in readme
@@ -68,3 +68,15 @@ def test_the_readme_says_who_made_it_and_gives_the_tables_counts(screen, readme)
     ok = att["is_pass"]
     assert (f"Of the {int(ok.sum())} that pass the screen the model resolved {int((ok & resolved).sum())}; "
             f"of the {int((~ok).sum())} that fail it, {int((~ok & resolved).sum())}.") in readme
+
+
+def test_the_owners_check_is_its_own_columns_and_the_readme_counts_it(screen, readme):
+    # the owner answered one question per task from a plain-language summary; it never overwrites the AI's rating
+    assert screen["owner_fair_code"].isin(["fair", "unfair", "cannot_tell"]).all()
+    decided = screen["owner_fair_code"] != "cannot_tell"
+    agrees = (screen.loc[decided, "owner_fair_code"] == "fair") == screen.loc[decided, "is_pass"]
+    assert (screen.loc[decided, "is_owner_agree"].astype(str) == agrees.astype(str)).all()
+    counts = screen["owner_fair_code"].value_counts()
+    assert (f"Fair {counts.get('fair', 0)}, unfair {counts.get('unfair', 0)}, cannot tell "
+            f"{counts.get('cannot_tell', 0)}") in readme
+    assert "not an independent rating" in readme

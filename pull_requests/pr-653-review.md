@@ -12,8 +12,9 @@ verdict: approve
 
 ## Summary
 Adds one table, its README and a test. An AI reviewer rated 30 of the 93 published tasks on SWE-bench Verified's two
-questions, in two passes; 5 pass, and in 25 the tests need something the statement and hints never give. The table
-and README say plainly that no person verified the ratings. Nothing is published outside the repository and no job
+questions, in two passes; 5 pass, and in 25 the tests need something the statement and hints never give. The owner
+then checked all 30 findings from plain-language summaries and agreed with each; the table and README say plainly
+that this is a check of the AI's findings, not a person's own reading of the tests. Nothing is published outside the repository and no job
 runs. Nothing blocking.
 
 ## Scope of Change
@@ -43,9 +44,11 @@ runs. Nothing blocking.
 None.
 
 ### 🟡 Should fix (Important, non-blocking)
-1. **No person verified the ratings.** It is stated in the table, the README and the pull request. A plain-language
-   sheet was given to the owner the same day; if answers come back they are added as their own column, not merged
-   into the AI's.
+1. **The owner's check is of summaries, not of the code.** The owner answered one question per task (is the test
+   fair) from two plain-language sentences, with the AI's verdict already selected: fair 5, unfair 25, cannot tell 0,
+   the AI's verdict on all 30. The answers are their own columns (`owner_fair_code`, `owner_note_text`) and never
+   overwrite the AI's ratings. The note on `htlnlp_228` opens with a sentence that belongs to `htlnlp_214`; it is
+   kept as written.
 2. **The second pass is not independent.** It read the first pass's ratings before giving its own. 30 of 30
    agreeing therefore says the restatement is consistent, not that two reviewers reached the result separately.
 3. **Long test patches were cut at 12,000 characters** (`is_test_patch_cut`). A cut can hide a requirement; it cannot
@@ -70,7 +73,7 @@ None.
 | Python and R parity, seeds, paths, prices, configuration, secrets register, writes, alerts | n/a | |
 
 ## Test Coverage
-- `test_task_screen.py` (5 tests): the 30 are published tasks in the stated strata; ratings on the scale and
+- `test_task_screen.py` (6 tests): the owner's columns and the README's count of them; the 30 are published tasks in the stated strata; ratings on the scale and
   `is_pass` derived from them; the second pass recorded; the run columns equal to the run table; the README's counts
   equal to the table's.
 - Run locally with `test_wording.py`, `test_no_org_references.py`, `test_bench_order.py`,

@@ -1,7 +1,8 @@
 # A screen of 30 published tasks: does each statement say what its tests check?
 
-**Made by an AI reviewer, not by a person.** The repository's owner did not verify these ratings one by one. Read
-every number here as an AI reviewer's judgment (spec 028, issue #652).
+**Rated by an AI reviewer; checked by the owner from plain-language summaries, not from the code.** Read every
+rating here as an AI reviewer's judgment that a person has looked over, not as a person's own reading of the tests
+(spec 028, issue #652).
 
 The competition's evaluator shows that a task's reference patch passes and an empty patch fails
 (`../official_verifier/`). It does not show that the statement tells an agent what the tests will check. SWE-bench
@@ -28,6 +29,19 @@ read the same files and the first ratings, restated each finding in plain words 
 `told_code`) and said whether it agreed (`is_second_agree`). Test patches were read up to 12,000 characters
 (`is_test_patch_cut` marks the longer ones).
 
+## The owner's check
+
+On November 10, 2026 the owner went through all 30 on a sheet. For each task it showed two plain-language sentences
+(`asked_text`: what the agent was asked; `test_needs_text`: what the tests insist on), whether the agent was told
+(`told_code`), and the AI reviewer's verdict already selected. The owner answered one question, is the test fair,
+with fair, unfair or cannot tell, and wrote a note (`owner_fair_code`, `owner_note_text` as written,
+`is_owner_agree`).
+
+Fair 5, unfair 25, cannot tell 0: the AI reviewer's verdict on all 30.
+
+The owner did not read the test code, and saw the AI's answer before choosing. It is a check of the AI's
+findings, not an independent rating.
+
 ## What it found
 
 | | Tasks |
@@ -48,7 +62,8 @@ attempted. Of the 3 that pass the screen the model resolved 1; of the 13 that fa
 
 ## What it cannot show
 
-- An AI reviewer made both passes. The second saw the first's ratings, so their agreement is not independent.
+- An AI reviewer made both passes. The second saw the first's ratings, and the owner saw the AI's verdict, so
+  none of the three agreements is independent.
 - 30 tasks: the pass rate for the 93 has a wide interval.
 - A task that fails the screen can still be resolved by a solution that happens to use the expected names, and one
   that passes it can still be hard.
