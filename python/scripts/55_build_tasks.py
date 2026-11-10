@@ -20,9 +20,9 @@ A candidate whose fix lives only in files the grader strips, or that has no code
 that range, is listed in tasks_excluded.csv instead.
 
 NOT DONE HERE (T007): the two gates (fail-to-pass, pass) run in scripts/57_gate_tasks.py, our own check that
-follows the competition harness's documented verification (its evaluator, swegemma, isn't distributed: #449,
-#453); results in data/tasks/task_gates.csv. Rows here stay ungated candidates: 57 writes the published set
-(tasks_gated.jsonl) without the ones that fail. This script keeps 57's rows in tasks_excluded.csv for the tasks it
+follows the competition harness's documented verification (#453; the evaluator itself, swegemma, was found
+later, #636, and decides what is published: spec 028 US6); results in data/tasks/task_gates.csv. Rows here stay
+ungated candidates: 57 writes the published set (tasks_gated.jsonl) without the ones that fail. This script keeps 57's rows in tasks_excluded.csv for the tasks it
 still builds and removes tasks_gated.jsonl, so run 57 again before publishing (T007a, #502).
 
 Needs the full history (`git fetch --unshallow origin`) and the GitHub REST API for issue and PR text (public

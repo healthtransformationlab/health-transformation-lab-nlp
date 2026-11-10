@@ -1,6 +1,6 @@
 """Spec 028 US3 (#453): our own fail-to-pass gate, following the competition harness's documented verification
-(swegemma isn't distributed, #449). Each test builds a tiny git repo: a package with a bug, a test that catches
-it, and a patch that fixes it."""
+(written before the evaluator, swegemma, was found: #449, #636). Each test builds a tiny git repo: a package with a
+bug, a test that catches it, and a patch that fixes it."""
 
 import subprocess
 import sys
