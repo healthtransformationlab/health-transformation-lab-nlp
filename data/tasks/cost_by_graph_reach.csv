@@ -1,0 +1,6 @@
+reach_code,task_count,attempted_count,resolved_count,agent_hours,agent_share_pct
+outside_graph,31,19,2,3.89,43.1
+no_existing_node,11,7,0,1.43,15.9
+named_or_called,22,12,3,1.82,20.2
+embedding_top10,20,9,0,1.81,20.0
+unreached,9,1,0,0.07,0.7
