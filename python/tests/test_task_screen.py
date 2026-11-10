@@ -80,3 +80,43 @@ def test_the_owners_check_is_its_own_columns_and_the_readme_counts_it(screen, re
     assert (f"Fair {counts.get('fair', 0)}, unfair {counts.get('unfair', 0)}, cannot tell "
             f"{counts.get('cannot_tell', 0)}") in readme
     assert "not an independent rating" in readme
+
+
+# --- an automated screen of all 93 tasks, beside the 30 the owner checked (#664) ---
+
+@pytest.fixture(scope="module")
+def screen_all():
+    return pd.read_csv(SCREEN / "agent_screen_all.csv")
+
+
+def test_every_published_task_has_a_rating_from_the_automated_screen(screen_all):
+    published = set(pd.read_csv(TASKS_DIR / "official_verifier" / "published_verification.csv")["instance_id"])
+    manifest = pd.read_csv(TASKS_DIR / "task_manifest.csv").set_index("instance_id")["tier_code"]
+    assert len(screen_all) == 93 and screen_all["instance_id"].is_unique
+    assert set(screen_all["instance_id"]) == published
+    assert (screen_all["tier_code"] == screen_all["instance_id"].map(manifest)).all()
+    for col in ("statement_rating_num", "test_rating_num"):
+        assert screen_all[col].isin([0, 1, 2, 3]).all(), col
+    expected = (screen_all["statement_rating_num"] <= 1) & (screen_all["test_rating_num"] <= 1)
+    assert (screen_all["is_pass"] == expected).all()
+    assert screen_all["statement_reason_text"].str.len().gt(0).all() and screen_all["test_reason_text"].str.len().gt(0).all()
+    assert screen_all["screener_name"].nunique() == 1
+
+
+def test_the_automated_screen_is_compared_with_the_30_the_owner_checked(screen_all, screen):
+    checked = screen.set_index("instance_id")["is_pass"]
+    assert set(screen_all.loc[screen_all["is_owner_checked"], "instance_id"]) == set(checked.index)
+    both = screen_all[screen_all["is_owner_checked"]].set_index("instance_id")
+    assert (both["checked_is_pass"].astype(bool) == checked.loc[both.index].astype(bool)).all()
+    assert (both["is_same_as_checked"].astype(bool) == (both["is_pass"] == both["checked_is_pass"].astype(bool))).all()
+    rest = screen_all[~screen_all["is_owner_checked"]]
+    assert rest["checked_is_pass"].isna().all() and rest["is_same_as_checked"].isna().all()
+
+
+def test_the_readme_reports_the_automated_screen_as_the_table_has_it(screen_all, readme):
+    n_pass = int(screen_all["is_pass"].sum())
+    same = int(screen_all.loc[screen_all["is_owner_checked"], "is_same_as_checked"].astype(bool).sum())
+    assert "An automated screen of all 93" in readme
+    assert f"Pass (both ratings 0 or 1) | {n_pass} |" in readme
+    assert f"Same verdict as the 30 the owner checked | {same} of 30 |" in readme
+    assert "not checked by a person" in readme

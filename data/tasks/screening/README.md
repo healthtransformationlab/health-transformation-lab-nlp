@@ -68,3 +68,49 @@ attempted. Of the 3 that pass the screen the model resolved 1; of the 13 that fa
 - A task that fails the screen can still be resolved by a solution that happens to use the expected names, and one
   that passes it can still be hard.
 - The ratings are of the statement and hints as published; they say nothing about the reference patch's quality.
+
+# An automated screen of all 93 (November 10, 2026)
+
+**Rated by an AI reviewer in one pass; not checked by a person outside the 30 above.** `agent_screen_all.csv` has one
+row per published task (spec 028, issue #664).
+
+The first screen leaves 63 tasks unrated. This one rates every task on the same two questions and the same scale,
+so the screen can be used as a label, and the 30 the owner checked say how far it can be trusted.
+
+## How it was made
+
+Eight AI raters each took a random share of the 93 tasks. Each read a task's statement, hints, test patch and
+reference patch (patches up to 12,000 characters; `is_test_patch_cut` and `is_reference_patch_cut` mark the longer
+ones) and gave both ratings with one sentence of reason and what the tests need that the statement and hints never
+give (`test_needs_text`). The raters were told not to look for any other rating of these tasks and were given none:
+this pass did not see the first screen's ratings or the owner's answers. Nothing was changed afterwards.
+
+Two raters were slow to write their results, so stand-in raters were started on their tasks; all the first eight
+finished, and the table keeps their ratings. That left 25 tasks rated twice by different raters, each without
+seeing the other: the same verdict on all 25.
+
+## What it found
+
+| | Tasks |
+|---|---|
+| Rated | 93 |
+| Pass (both ratings 0 or 1) | 17 |
+| Statement rated 2 or 3 | 20 |
+| Tests rated 2 or 3 | 76 |
+| Same verdict as the 30 the owner checked | 30 of 30 |
+
+On the 30 the owner checked: of the 25 judged unfair there, this pass fails 25; of the 5 judged fair, it passes
+5. On the 63 nobody had rated, it passes 12.
+
+By statement source, passing: issues 11 of 39, pull requests 6 of 34, commit messages
+0 of 20.
+
+Against the Gemma 4 E4B run (`../agent_runs/gemma-4-e4b-it_kaggle.csv`, each task's latest run): 48 of the 93 were
+attempted. Of the 13 that pass this screen the model resolved 4; of the 35 that fail it, 1.
+
+## What it cannot show
+
+- One AI pass per task, with no second pass and no person, except on the 30 where the two screens can be compared.
+- Eight raters shared the tasks, so a rater's leaning is spread over about a dozen tasks, not averaged out.
+- The same limits as the first screen: a failing task can still be resolved by a solution that happens to use the
+  expected names, and a passing one can still be hard.
