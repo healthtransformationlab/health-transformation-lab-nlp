@@ -370,6 +370,7 @@ def test_the_views_script_makes_both_views_and_grants_the_job_identity():
         assert f"from system.billing.{v}" in sql
     assert "grant use schema on schema health_transformation_lab.ops_billing" in sql
     assert "grant select on schema health_transformation_lab.ops_billing" in sql
+    assert ":service_principal" in sql and "<service principal" not in sql   # a parameter, not a placeholder
 
 
 def test_the_job_passes_the_billing_schema():

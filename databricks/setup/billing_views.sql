@@ -6,9 +6,10 @@
 --
 -- Only the columns the doctor reads (doctor_job.BILLING_USAGE_SQL, BILLING_PRICES_SQL).
 --
--- Run once per workspace, in the SQL editor, as the workspace owner (who can read system.billing). Replace the
--- service principal's application id: GitHub, this repository, Settings -> Environments -> <target> -> variable
--- SERVICE_PRINCIPAL (or DATABRICKS_CLIENT_ID). Re-running is safe: every statement replaces or repeats.
+-- Run once per workspace, in the SQL editor, as the workspace owner (who can read system.billing), with "Run all".
+-- Parameter service_principal: the job's service principal's application id, from GitHub, this repository,
+-- Settings -> Environments -> <target> -> variable SERVICE_PRINCIPAL (or DATABRICKS_CLIENT_ID). Enter it without
+-- quotes or backticks. Re-running is safe: every statement replaces or repeats.
 -- The doctor reads these through the bundle variable billing_schema (default health_transformation_lab.ops_billing).
 
 create schema if not exists health_transformation_lab.ops_billing
@@ -26,8 +27,13 @@ as
 select sku_name, usage_unit, pricing, currency_code, price_start_time, price_end_time
 from system.billing.list_prices;
 
-grant use schema on schema health_transformation_lab.ops_billing to `<service principal application id>`;
-grant select on schema health_transformation_lab.ops_billing to `<service principal application id>`;
+-- The grants take the principal from the :service_principal parameter (the SQL editor shows a box for it); a grant
+-- can't take a parameter directly, so each is built as text and run with execute immediate.
+declare or replace variable billing_grant string;
+set var billing_grant = 'grant use schema on schema health_transformation_lab.ops_billing to `' || :service_principal || '`';
+execute immediate billing_grant;
+set var billing_grant = 'grant select on schema health_transformation_lab.ops_billing to `' || :service_principal || '`';
+execute immediate billing_grant;
 
 -- Check: the service principal is listed with USE SCHEMA and SELECT.
 show grants on schema health_transformation_lab.ops_billing;
