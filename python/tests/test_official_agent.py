@@ -224,6 +224,8 @@ def test_a_trace_is_counted_by_tool_kind_and_outside_paths(run):
                                        {"function_name": "code_analyzer", "arguments": {"request": "y"}}]},
                        {"tool_calls": [{"function_name": "load_skill", "arguments": {"name": "pipeline-doctor"}},
                                        {"function_name": "run_command", "arguments": {"command": "ls /kaggle/input"}}]},
+                       {"tool_calls": [{"function_name": "write_file",          # text the model wrote is not a path
+                                        "arguments": {"filepath": "a.py", "content": "P = '../../data'  # /etc/x"}}]},
                        {"message": "no tools here"}]}
     c = run.trace_counts(trace)
     assert c == {"prompt_token_count": 900, "output_token_count": 70, "graph_tool_call_count": 1,

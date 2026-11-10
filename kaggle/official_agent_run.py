@@ -103,6 +103,7 @@ def kernel_source(source: str, key: bytes) -> str:
 
 GRAPH_TOOLS = {"get_code_neighbors", "search_similar_code", "get_code_subgraph"}
 SKILL_TOOLS = {"list_skills", "load_skill", "load_skill_resource", "run_skill_script"}
+WRITTEN_TEXT = {"content", "old_string", "new_string"}   # what the model writes into a file is not a path it reaches
 OUTSIDE = re.compile(r"/kaggle/|/tmp/htl|\.\./\.\.|/root/|/etc/|/proc/")   # a tool argument reaching past the workspace
 
 
@@ -117,7 +118,8 @@ def trace_counts(trace: dict) -> dict:
             "graph_tool_call_count": sum(n in GRAPH_TOOLS for n in names),
             "sub_agent_call_count": sum(bool(n) and n not in core for n in names),
             "skill_call_count": sum(n in SKILL_TOOLS for n in names),
-            "outside_workspace_call_count": sum(bool(OUTSIDE.search(json.dumps(c.get("arguments") or {}))) for c in calls)}
+            "outside_workspace_call_count": sum(bool(OUTSIDE.search(json.dumps(
+                {k: v for k, v in (c.get("arguments") or {}).items() if k not in WRITTEN_TEXT}))) for c in calls)}
 
 
 COMPETITION_DEFAULTS = {"timeout_seconds": 300, "verification_timeout_seconds": 300, "max_tool_calls": 100,
