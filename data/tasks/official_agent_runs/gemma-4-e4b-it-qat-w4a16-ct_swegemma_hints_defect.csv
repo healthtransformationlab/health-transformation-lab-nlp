@@ -1,0 +1,4 @@
+instance_id,tier_code,llm_call_count,tool_call_count,agent_seconds,agent_patch_bytes,error_text,run_ts,kaggle_kernel_url
+htlnlp_c95eedd3,C,0,0,1.4,0,Sandbox execution error: 'Context variable not found: `hints`.',2026-11-10T16:20:48Z,https://www.kaggle.com/code/jcblearning/htlnlp-offrun-htlnlp-c95eedd3
+htlnlp_cbc00f07,C,0,0,1.3,0,Sandbox execution error: 'Context variable not found: `hints`.',2026-11-10T16:30:12Z,https://www.kaggle.com/code/jcblearning/htlnlp-offrun-htlnlp-cbc00f07
+htlnlp_cc73f4cf,C,0,0,1.2,0,Sandbox execution error: 'Context variable not found: `hints`.',2026-11-10T16:30:29Z,https://www.kaggle.com/code/jcblearning/htlnlp-offrun-htlnlp-cc73f4cf

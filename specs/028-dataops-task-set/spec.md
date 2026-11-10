@@ -69,6 +69,23 @@ The set is published as a Kaggle dataset (spec 025's publish workflow) and score
 first `--skip-agent-patch` (the gates), then with the agent in
 [gemma-developer-agent](https://github.com/healthtransformationlab/gemma-developer-agent).
 
+**The agent under the evaluator (T011b, #636).** A sample of the published tasks is run end to end by the
+competition's evaluator: its agent loop (`swegemma`'s `Evaluator.evaluate_task`, subprocess sandbox), its model server
+(vLLM from the competition's wheelhouse dataset) and its verification, following the competition's starter notebook
+step for step. Three things are ours:
+- **The sample** is drawn with a seed and stratified by fidelity tier in proportion to the published set, never
+  ordered by cost or size (`official_agent_run.sample`). The seed and the ids are in the run's settings file.
+- **One task per kernel, without its answer.** On Kaggle anything the agent runs can read every attached file, so a
+  kernel carries one task in the evaluator's own layout with no `patch` and no `test_patch`
+  (`kaggle/official_agent_bundle.py`). The evaluator's verification therefore has no tests on that machine; the patch
+  comes back and the same evaluator's `verify_task` scores it against the published snapshot and the task's tests.
+- **The budgets** are the submission's own `eval_config.yaml` and `configs/sampling.yaml`, as the competition would
+  read them. The table records them, the GPUs the kernel actually got, and each difference from the competition's
+  defaults. A run that cannot be made to work is recorded as that, with what failed.
+
+Rows go to `data/tasks/official_agent_runs/` (not `agent_runs/`, whose table is defined as this repository's
+harness). It is a GPU run on limited compute, so it waits for the owner.
+
 ### US6 - Every published task is verified with the competition's own evaluator (P1) #641
 The competition's evaluator, `swegemma`, ships as a wheel in the Kaggle dataset
 `metric/gemma-4-developer-agent-wheelhouse`, which the starter notebook attaches (found November 10, 2026, #636;

@@ -218,6 +218,15 @@ def test_the_instruction_fills_the_documented_variables():
         "Issue: P\nHints: H"
 
 
+def test_the_optional_hints_variable_is_filled_like_the_required_one():
+    """The competition's framework reads {hints?} as optional: empty when a task has no hints (gemma-developer-agent
+    issue 33). Ours must fill it the same way, never pass the braces to the model."""
+    with_hints = {"problem_statement": "P", "hints_text": " H "}
+    assert ah.fill_instruction("Issue: {problem_description}\nHints: {hints?}", with_hints) == "Issue: P\nHints: H"
+    assert ah.fill_instruction("Hints: {hints?}|{hints}", {"problem_statement": "P", "hints_text": ""}) == "Hints: |"
+    assert ah.fill_instruction("{problem_description?}", {"problem_statement": "P"}) == "P"
+
+
 # --- the loop, patch extraction and verification (sections 5.3, 8) ------------------------------------------------
 
 def test_the_oracle_resolves_and_null_does_not(repo, task, tmp_path):
