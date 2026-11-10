@@ -83,7 +83,8 @@ Eight AI raters each took a random share of the 93 tasks. Each read a task's sta
 reference patch (patches up to 12,000 characters; `is_test_patch_cut` and `is_reference_patch_cut` mark the longer
 ones) and gave both ratings with one sentence of reason and what the tests need that the statement and hints never
 give (`test_needs_text`). The raters were told not to look for any other rating of these tasks and were given none:
-this pass did not see the first screen's ratings or the owner's answers. Nothing was changed afterwards.
+this pass did not see the first screen's ratings or the owner's answers. The table holds each rater's ratings as the
+rater left them when it finished; nothing was changed afterwards.
 
 Two raters were slow to write their results, so stand-in raters were started on their tasks; all the first eight
 finished, and the table keeps their ratings. That left 26 tasks rated twice by different raters, each without
@@ -95,7 +96,7 @@ seeing the other: the same verdict on all 26.
 |---|---|
 | Rated | 93 |
 | Pass (both ratings 0 or 1) | 17 |
-| Statement rated 2 or 3 | 20 |
+| Statement rated 2 or 3 | 19 |
 | Tests rated 2 or 3 | 76 |
 | Same verdict as the 30 the owner checked | 30 of 30 |
 

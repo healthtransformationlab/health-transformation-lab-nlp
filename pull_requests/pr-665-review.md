@@ -17,6 +17,10 @@ Reviewed against `.claude/review-rubric.md` and AGENTS.md.
 | No secrets, no real data; merging starts no run and publishes nothing | ok |
 
 ## Notes
+- The table was first built while the last rater was still checking its own output. That rater then lowered one
+  statement rating from 2 to 1 (`htlnlp_c7bde3d0`, which still fails on its tests) and tidied the wording of five
+  reasons. The table was rebuilt from the finished files: no verdict changed, and the count of statements rated 2
+  or 3 went from 20 to 19.
 - The two screens agree on all 30, but they are not independent of each other in kind: both are AI reviewers
   reading the same files against the same two questions. What the agreement shows is that the rating is stable
   across separate passes, not that a person reading the tests would give it.
