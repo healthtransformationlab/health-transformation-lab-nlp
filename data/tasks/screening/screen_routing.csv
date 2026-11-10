@@ -1,0 +1,4 @@
+route_code,attempted_count,resolved_count,agent_hours,agent_share_pct,agent_hours_per_resolved
+pass,13,4,1.53,17.0,0.38
+fail,35,1,7.48,83.0,7.48
+all,48,5,9.01,100.0,1.8

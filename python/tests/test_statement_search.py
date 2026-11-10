@@ -57,3 +57,11 @@ def test_the_counts_are_split_by_whether_names_or_call_edges_already_found_the_f
             {"edited_node_best_rank_num": None, "is_named_or_called": False}]   # no edited node: not counted
     assert search.top_counts(rows) == {"all": {"tasks": 3, "top1": 1, "top5": 2, "top10": 2},
                                        "missed": {"tasks": 2, "top1": 0, "top5": 1, "top10": 1}}
+
+
+def test_the_chance_of_a_random_ranking_finding_an_edited_node(search):
+    assert search.chance_top(10, 1, 1) == pytest.approx(0.1)
+    assert search.chance_top(10, 2, 1) == pytest.approx(0.2)
+    assert search.chance_top(4, 1, 10) == pytest.approx(1.0)        # fewer nodes than k: it is always found
+    assert search.chance_top(10, 2, 5) == pytest.approx(1 - (8 * 7 * 6 * 5 * 4) / (10 * 9 * 8 * 7 * 6))
+    assert search.chance_top(10, 0, 5) == 0.0

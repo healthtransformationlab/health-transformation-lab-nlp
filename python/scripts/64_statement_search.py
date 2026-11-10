@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 import sys
 from pathlib import Path
@@ -63,6 +64,15 @@ def top_counts(rows: list[dict]) -> dict[str, dict[str, int]]:
     return {"all": count(ranked), "missed": count([r for r in ranked if not r["is_named_or_called"]])}
 
 
+def chance_top(node_count: int, edited_count: int, k: int) -> float:
+    """The chance that a random ranking of a graph's nodes puts at least one edited node in the first k: what the
+    counts above are to be read against."""
+    if edited_count <= 0 or node_count <= 0:
+        return 0.0
+    k = min(k, node_count)
+    return 1 - math.comb(node_count - edited_count, k) / math.comb(node_count, k)
+
+
 def load_query_encoder():
     """EmbeddingGemma at the revision the node vectors were made with, as a texts -> (n, 768) function using the
     model's query prompt. A missing token fails here, before any work."""
@@ -106,6 +116,11 @@ def main() -> int:
     print(f"of the {n['missed']['tasks']} where neither a name nor a call edge leads to the fix: first in "
           f"{n['missed']['top1']}, first five in {n['missed']['top5']}, first ten in {n['missed']['top10']} "
           f"-> {OUT.relative_to(REPO_ROOT)}")
+    for label, sel in (("all", ranked), ("missed", ranked[~ranked["is_named_or_called"].astype(bool)])):
+        expected = {k: sum(chance_top(int(n), int(e), k) for n, e in zip(sel["graph_node_count"], sel["edited_node_count"]))
+                    for k in (1, 5, 10)}
+        print(f"expected by chance ({label}, {len(sel)} tasks): first {expected[1]:.1f}, first five {expected[5]:.1f}, "
+              f"first ten {expected[10]:.1f}")
     print("A count from the published files, not an agent run.")
     return 0
 
