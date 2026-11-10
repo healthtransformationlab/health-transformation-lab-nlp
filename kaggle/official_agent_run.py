@@ -74,13 +74,17 @@ def kernel_slug(instance_id: str) -> str:
     return "htlnlp-offrun-" + re.sub(r"[^a-z0-9]+", "-", instance_id.lower()).strip("-")
 
 
-def kernel_metadata(username: str, instance_id: str, machine_shape: str | None, docker_image: str | None) -> dict:
-    """Private, GPU, internet off; this task's bundle, the competition's wheelhouse and the model, nothing else."""
+def kernel_metadata(username: str, instance_id: str, machine_shape: str | None, docker_image: str | None,
+                    competition: str | None = None) -> dict:
+    """Private, GPU, internet off; this task's bundle, the competition's wheelhouse and the model, nothing else.
+    `competition` attaches the competition as the starter notebook does (its accelerator may depend on it); its
+    files are the competition's own tasks, not ours."""
     kslug = kernel_slug(instance_id)
     meta = {"id": f"{username}/{kslug}", "title": kslug.replace("-", " "), "code_file": "official_agent_kernel.py",
             "language": "python", "kernel_type": "script", "is_private": True, "enable_gpu": True, "enable_tpu": False,
             "enable_internet": False, "dataset_sources": [f"{username}/{bundle.slug(instance_id)}", WHEELHOUSE],
-            "competition_sources": [], "kernel_sources": [], "model_sources": [MODEL_SOURCE]}
+            "competition_sources": [competition] if competition else [], "kernel_sources": [],
+            "model_sources": [MODEL_SOURCE]}
     if machine_shape:
         meta["machine_shape"] = machine_shape
     if docker_image:
@@ -214,7 +218,7 @@ def run_batch(a, api, user: str, ids: list[str], tasks: dict, manifest: dict, ov
         k.mkdir(parents=True)
         (k / "official_agent_kernel.py").write_text(kernel_source((HERE / "official_agent_kernel.py").read_text(), key))
         (k / "kernel-metadata.json").write_text(json.dumps(
-            kernel_metadata(user, "batch", a.machine_shape, a.docker_image), indent=1))
+            kernel_metadata(user, "batch", a.machine_shape, a.docker_image, a.competition), indent=1))
         api.kernels_push(str(k), timeout=str(a.kernel_minutes * 60))
         shutil.rmtree(k)   # the keyed copy does not stay on this machine either
         print(f"the evaluator on a Kaggle GPU, {kref}", flush=True)
@@ -272,6 +276,7 @@ def main() -> int:
     ap.add_argument("--machine-shape", default=STARTER_MACHINE_SHAPE,
                     help="the accelerator to ask for; the kernel records the GPUs it actually got")
     ap.add_argument("--docker-image", help="pin the kernel's image (the starter notebook pins one)")
+    ap.add_argument("--competition", help="attach this competition to the kernel, as the starter notebook does")
     ap.add_argument("--max-time-minutes", type=float, help="override the submission's per-task time budget")
     ap.add_argument("--kernel-minutes", type=int, default=45, help="Kaggle stops a kernel after this long")
     ap.add_argument("--work", type=Path, default=Path(os.environ.get("TMPDIR", "/tmp")) / "htl_official_agent")
@@ -326,7 +331,7 @@ def main() -> int:
                 k.mkdir(parents=True)
                 shutil.copyfile(HERE / "official_agent_kernel.py", k / "official_agent_kernel.py")
                 (k / "kernel-metadata.json").write_text(json.dumps(
-                    kernel_metadata(user, iid, a.machine_shape, a.docker_image), indent=1))
+                    kernel_metadata(user, iid, a.machine_shape, a.docker_image, a.competition), indent=1))
                 api.kernels_push(str(k), timeout=str(a.kernel_minutes * 60))
                 print(f"{iid}: the evaluator on a Kaggle GPU, {kref}", flush=True)
             running[iid] = time.monotonic()

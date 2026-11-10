@@ -116,7 +116,10 @@ def start_vllm(agent_dir: Path, declared_model: str):
     ranks = [r for info in adapter_map.values() if (r := getattr(info, "rank", None)) is not None and r > 0]
     gpu_count = torch.cuda.device_count() if torch.cuda.is_available() else 1
     tp_size = 4 if gpu_count >= 4 else (2 if gpu_count >= 2 else 1)
-    dtype = "bfloat16" if (torch.cuda.is_available() and torch.cuda.is_bf16_supported()) else "auto"
+    # The starter notebook asks torch whether bfloat16 is supported; on a T4 torch says yes and vLLM then refuses it
+    # (compute capability below 8.0). So ask for the capability itself, and use float16 where bfloat16 is not native.
+    capability = min(torch.cuda.get_device_capability(i) for i in range(gpu_count)) if torch.cuda.is_available() else (0, 0)
+    dtype = "bfloat16" if capability >= (8, 0) else "float16"
     cfg = VllmConfig(
         model=str(model_path), port=8000, host="127.0.0.1", tool_call_parser="gemma4", reasoning_parser="gemma4",
         max_model_len=32768, dtype=dtype, gpu_memory_utilization=0.90, enable_auto_tool_choice=True,
@@ -128,10 +131,30 @@ def start_vllm(agent_dir: Path, declared_model: str):
     models = server.create_model_registry(aliases=[declared_model], model_prefix="openai/",
                                           api_key=os.environ.get("LOCAL_API_KEY", "EMPTY"))
     info = {"server_name": "vLLM", "model_path": str(model_path), "dtype": dtype, "tensor_parallel_size": tp_size,
+            "compute_capability": ".".join(map(str, capability)), "self_test": self_test(server),
             "max_model_len": 32768, "gpu_memory_utilization": 0.90, "tool_call_parser": "gemma4",
             "reasoning_parser": "gemma4",
             "gpus": [torch.cuda.get_device_name(i) for i in range(torch.cuda.device_count())]}
     return server, models, adapters, info
+
+
+def self_test(server) -> dict:
+    """One short completion straight to the server before any task: a server that cannot answer stops the kernel
+    here, not after it has spent the GPU allowance on tasks that all fail the same way."""
+    import urllib.request
+    base = str(getattr(server, "base_url", "http://127.0.0.1:8000/v1")).rstrip("/")
+    with urllib.request.urlopen(f"{base}/models", timeout=60) as r:
+        model_id = json.loads(r.read())["data"][0]["id"]
+    body = json.dumps({"model": model_id, "max_tokens": 16, "temperature": 0,
+                       "messages": [{"role": "user", "content": "Reply with the single word: ready"}]}).encode()
+    req = urllib.request.Request(f"{base}/chat/completions", data=body,
+                                 headers={"Content-Type": "application/json", "Authorization": "Bearer EMPTY"})
+    t0 = time.monotonic()
+    with urllib.request.urlopen(req, timeout=300) as r:
+        out = json.loads(r.read())
+    msg = out["choices"][0]["message"]
+    return {"seconds": round(time.monotonic() - t0, 1), "completion_tokens": (out.get("usage") or {}).get("completion_tokens"),
+            "reply_text": str(msg.get("content") or msg.get("reasoning_content") or "")[:80]}
 
 
 def versions() -> dict:
@@ -219,6 +242,8 @@ def run_batch(root: Path, meta: dict, key: bytes, agent_dir: Path, models, adapt
     per_task = float(meta.get("task_minutes_reserved", 6.5)) * 60
     runs: dict = {}
     for iid in meta["instance_ids"]:
+        if iid in runs:
+            continue
         if time.monotonic() + per_task > deadline:
             runs[iid] = {"instance_id": iid, "is_skipped": True, "skip_reason_text": "the kernel's time budget ran out"}
             continue
@@ -238,6 +263,11 @@ def run_batch(root: Path, meta: dict, key: bytes, agent_dir: Path, models, adapt
             shutil.rmtree(work, ignore_errors=True)   # the next task must not find this one's snapshot
         one["elapsed_minutes_at_end"] = round((time.monotonic() - T_START) / 60, 2)
         runs[iid] = one
+        dead = [r for r in runs.values() if "error" in r or (r.get("agent_error") and not r.get("tool_call_count"))]
+        if len(runs) == 2 and len(dead) == 2:   # both of the first two failed outright: stop, keep the allowance
+            for rest in meta["instance_ids"]:
+                runs.setdefault(rest, {"instance_id": rest, "is_skipped": True,
+                                       "skip_reason_text": "stopped: the first two tasks failed outright"})
         (OUT / "tasks" / iid).mkdir(parents=True, exist_ok=True)
         (OUT / "tasks" / iid / "result.json").write_text(json.dumps(one, indent=1, default=str))
         print(json.dumps({k: v for k, v in one.items() if k not in ("patch", "trace")}, default=str), flush=True)
