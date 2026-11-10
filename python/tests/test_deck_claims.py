@@ -78,6 +78,27 @@ def test_registered_slides_exist():
             assert (deck, sid) in real, f"docs/claims.yaml names {deck}/{sid}, which has no slide"
 
 
+def test_the_pitch_cites_noharm_by_version_and_for_severe_errors():
+    """#645: the harm slide gave 76.6%, a figure from the preprint's first two versions, as the share of "harmful
+    errors" that were omissions. In those versions it is the share of severely harmful errors (of all harmful errors
+    it is 50.2%), and the current version says "more than 80% of severe errors". "3 in 4" is not a figure the test
+    above sees, so it was never in the register. The claim names the version read, and the slide says severe."""
+    claim = next(c for c in REGISTER["pitch"]["harm"] if c["value"] == "80%")
+    assert "arXiv 2512.01241v4" in claim["source"] and "more than 80% of severe errors" in claim["source"]
+    assert isinstance(claim["checked"], datetime.date)
+    assert "not all harmful errors" in claim["covers"]
+    section, notes = next((s, n) for d, sid, s, n in deck_slides() if (d, sid) == ("pitch", "harm"))
+    text = " ".join(build_decks.visible_text(section))
+    assert "more than 80% of AI's severe errors" in text
+    for gone in ("3 in 4", "harmful AI errors"):
+        assert gone not in text, gone
+    # the notes give the earlier figure only with what it counts, and the benchmark as the paper describes it
+    for gone in ("of the harmful errors were omissions", "1,100 real medical cases"):
+        assert gone not in notes, gone
+    assert "76.6 percent of the severely harmful errors" in notes
+    assert "more than 80 percent of the severe errors" in notes
+
+
 def tier_cost(t: dict) -> float:
     """US dollars for a million visits: tokens per call x list price x calls per visit."""
     per_call = (t["in_tokens"] * t["usd_per_1m_in"] + t["out_tokens"] * t["usd_per_1m_out"]) / 1e6

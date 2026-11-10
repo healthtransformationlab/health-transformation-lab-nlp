@@ -33,7 +33,8 @@ The pitch asks for a fair test, and this repo is where one gets built on synthet
 ## Sources cited in the deck
 
 - GlobalDentBench: Zhao, Liang, Cai et al., [arXiv 2605.24636](https://arxiv.org/abs/2605.24636), 2026
-- First, Do NOHARM (ARISE network), 2026 preprint
+- First, do NOHARM (ARISE network): Wu, Nateghi Haredasht, Maharaj et al.,
+  [arXiv 2512.01241](https://arxiv.org/abs/2512.01241), version 4 (July 13, 2026), a preprint
 - Hager et al., *Evaluation and mitigation of the limitations of large language models in clinical decision-making*,
   Nat Med 2024, [doi:10.1038/s41591-024-03097-1](https://doi.org/10.1038/s41591-024-03097-1)
 - Bean et al., *Reliability of LLMs as medical assistants for the general public*, Nat Med 2026,

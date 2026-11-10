@@ -258,6 +258,14 @@ pitch:
       source: "GlobalDentBench, arXiv 2605.24636v2 (Zhao et al., 2026): 12 frontier LLMs; 22.34% on case-based questions, extracted from peer-reviewed clinical case reports"
       checked: 2026-10-28
       covers: the 12 models' average on questions built from published patient case reports
+  harm:
+    # #645: the slide said "about 3 in 4 harmful AI errors" (76.6%). That figure is in v1 and v2 only (December 2025,
+    # 31 LLMs, 100 cases), and there it is the share of severely harmful errors; of all harmful errors it was 50.2%
+    - value: "80%"
+      kind: cited
+      source: "First, do NOHARM, arXiv 2512.01241v4 (Wu, Nateghi Haredasht, Maharaj et al., July 13, 2026; a preprint): 'Across 20 notable LLMs and 4 widely used retrieval-augmented generation (RAG) clinical AI tools, direct application of recommendations carried potential for severe harm in up to 24.6% of cases, with errors of omission accounting for more than 80% of severe errors'; a 1,100-task benchmark (100 clinical cases with 1,000 physician-perturbed variants), 10 specialties. Abstract only: the text gives no exact share"
+      checked: 2026-11-10
+      covers: errors with potential for severe harm in the consultation advice of 20 LLMs and 4 clinical AI tools, 10 medical specialties; the share that were omissions (shown as 'more than 80%'). Severe errors only, not all harmful errors
   example:
     - value: "22%"
       kind: cited
