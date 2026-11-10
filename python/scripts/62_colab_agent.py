@@ -8,8 +8,10 @@ notebook that runs them one at a time, and the patches scored here in the sandbo
 `--published` is the downloaded task set (jcblearning/health-transformation-lab-coding-agent-tasks): its tasks.jsonl,
 snapshots, graphs and embeddings, the files the paper's 93 tasks were verified on. Each bundle is a private dataset
 `htlnlp-colab-<id>` holding that task alone (kaggle/agent_bundle.py: no reference patch, no tests, one commit), so the
-notebook never has two tasks' files at once. Rows go to data/tasks/agent_runs/<model>_colab.csv, merged by
-instance_id. Measured with this repository's harness, NOT the competition's evaluator.
+notebook never has two tasks' files at once. Rows go to data/tasks/agent_reruns/<model>_larger_budget.csv: each
+task's run under the tight limits (its row in agent_runs/<model>_kaggle.csv) beside its run here, with the calls to
+the graph tools counted from the transcript. Not to agent_runs/: that folder feeds fact_agent_task_run and the Kaggle
+allowance check, and a Colab run is neither. Measured with this repository's harness, NOT the competition's evaluator.
 """
 
 from __future__ import annotations
@@ -39,6 +41,38 @@ MODEL = "gemma-4-e4b-it"
 # 48 tasks fit in Colab Pro+'s 24 hours. The notebook sets max_context from the card's memory.
 BUDGET = ah.Budget(tool_calls=100, time_minutes=20.0, turns=500, command_timeout=300)
 MODEL_CFG = {"variant": MODEL, "max_new_tokens": 16384, "thinking": True, "reuse_cache": True}
+
+
+PAIRED = TASKS_DIR / "agent_reruns" / f"{MODEL}_larger_budget.csv"
+PAIRED_COLUMNS = ["instance_id", "tier_code", "tight_run_ts", "is_tight_resolved", "tight_patch_bytes",
+                  "tight_tool_call_count", "larger_run_ts", "is_larger_resolved", "larger_patch_bytes",
+                  "larger_tool_call_count", "larger_graph_tool_call_count", "larger_max_output_token_count",
+                  "larger_over_context_turn_count", "larger_task_seconds", "larger_reason_text", "larger_gpu_name"]
+
+
+def graph_tool_calls(history: list[dict]) -> int:
+    """Calls to the three graph tools in a run's transcript."""
+    return sum(((c.get("function") or c).get("name") in ah.GRAPH_TOOLS)
+               for m in history or [] for c in m.get("tool_calls") or [])
+
+
+def paired_row(row: dict, result: dict, tight: dict, tier_code: str) -> dict:
+    """One task: its run under the tight limits beside its run with the larger budget."""
+    outs = [t.get("output_tokens", 0) for t in result.get("turns") or []]
+    return {"instance_id": row["instance_id"], "tier_code": tier_code,
+            "tight_run_ts": tight.get("run_ts"), "is_tight_resolved": bool(tight.get("is_resolved")),
+            "tight_patch_bytes": int(tight.get("agent_patch_bytes") or 0),
+            "tight_tool_call_count": int(tight.get("tool_call_count") or 0),
+            "larger_run_ts": result.get("finished_ts") or row.get("run_ts"),   # when it ran, not when it was scored
+            "is_larger_resolved": bool(row.get("is_resolved")),
+            "larger_patch_bytes": int(row.get("agent_patch_bytes") or 0),
+            "larger_tool_call_count": int(row.get("tool_call_count") or 0),
+            "larger_graph_tool_call_count": graph_tool_calls(result.get("history") or []),
+            "larger_max_output_token_count": max(outs, default=0),
+            # turns the model could not take: the prompt was past the context that fits on the card
+            "larger_over_context_turn_count": sum(bool(t.get("over_context")) for t in result.get("turns") or []),
+            "larger_task_seconds": result.get("task_seconds"), "larger_reason_text": row.get("reason_text"),
+            "larger_gpu_name": ", ".join(result.get("gpus") or [])}
 
 
 def colab_slug(instance_id: str) -> str:
@@ -80,6 +114,8 @@ def bundles(a) -> int:
 def score(a) -> int:
     from kaggle.api.kaggle_api_extended import KaggleApi
     tasks = _tasks(a.published)
+    tight = pd.read_csv(TASKS_DIR / "agent_runs" / f"{MODEL}_kaggle.csv").set_index("instance_id")
+    tiers = pd.read_csv(TASKS_DIR / "task_manifest.csv", usecols=["instance_id", "tier_code"]).set_index("instance_id")
     api = KaggleApi()
     api.authenticate()
     got = Path(tempfile.mkdtemp())
@@ -94,14 +130,14 @@ def score(a) -> int:
         shutil.rmtree(work, ignore_errors=True)
         row = runner.row_for(tasks[iid], result, a.published / "snapshots" / f"{iid}.tgz", work,
                              f"https://www.kaggle.com/datasets/{RESULTS}", settings)
-        row.update(hardware_name=", ".join(result.get("gpus") or []), session_seconds=result.get("task_seconds"))
-        rows.append(row)
+        rows.append(paired_row(row, result, tight.loc[iid].to_dict(), tiers["tier_code"].get(iid)))
         print(f"{iid}: {'resolved' if row['is_resolved'] else row.get('reason_text')}", flush=True)
-    path = TASKS_DIR / "agent_runs" / f"{MODEL}_colab.csv"
-    table = runner.merge_rows(path, rows)
-    table.to_csv(path, index=False)
-    print(f"\n{int(table['is_resolved'].sum())} of {len(table)} resolved -> {path.relative_to(REPO_ROOT)}\n"
-          f"{ah.HARNESS_NOTE}")
+    table = pd.DataFrame(rows, columns=PAIRED_COLUMNS).sort_values("instance_id")
+    PAIRED.parent.mkdir(parents=True, exist_ok=True)
+    table.to_csv(PAIRED, index=False)   # overwritten whole: re-runnable
+    print(f"\n{len(table)} tasks: larger budget resolved {int(table['is_larger_resolved'].sum())}, tight limits "
+          f"{int(table['is_tight_resolved'].sum())}; graph-tool calls {int(table['larger_graph_tool_call_count'].sum())} of "
+          f"{int(table['larger_tool_call_count'].sum())} -> {PAIRED.relative_to(REPO_ROOT)}\n{ah.HARNESS_NOTE}")
     return 0
 
 
