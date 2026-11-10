@@ -8,7 +8,7 @@ The layout is the Gemma 4 Developer Agent competition's, checked against all 129
 (the harness finds them by `task.repo`; ours are built per instance id, so they are renamed here, one per base).
 Only the gated set goes: `tasks_gated.jsonl` becomes `tasks.jsonl`, never the ungated candidates. No wheels:
 they are third-party packages under their own licences (the card says how to download them). check() refuses a
-task that didn't pass the gate, a task missing a file, any row or graph naming the organisation CLAUDE.md forbids, and any row or snapshot carrying a withheld file
+task the competition's evaluator has not verified (US6), a task that didn't pass the gate, a task missing a file, any row or graph naming the organisation CLAUDE.md forbids, and any row or snapshot carrying a withheld file
 (task_graph.WITHHELD_PATHS: no stated licence).
 """
 
@@ -28,6 +28,7 @@ sys.path.insert(0, str(HERE))
 import dataset_docs as docs  # kaggle/dataset_docs.py: file and column descriptions, cover, sources (spec 034)
 import publish  # kaggle/publish.py: the same upload, create-public-then-version
 
+from health_transformation_lab_nlp import task_gate as tgate
 from health_transformation_lab_nlp import task_graph as tg
 from health_transformation_lab_nlp import task_mine as tm
 from health_transformation_lab_nlp.paths import TASKS_DIR
@@ -36,6 +37,7 @@ SLUG = "health-transformation-lab-coding-agent-tasks"
 TITLE = "Coding-Agent Tasks from a Data Pipeline Repo"
 SUBTITLE = "Real issues, patches and tests in the Gemma 4 Developer Agent dataset layout"
 KEYWORDS = ["programming", "software", "python"]
+VERIFICATION = "swegemma_verification.csv"   # the competition's evaluator on every task (spec 028 US6, #641)
 
 
 def code_index_name(repo: str, base_commit: str) -> str:
@@ -54,7 +56,7 @@ def files_of(task_dir: Path) -> dict:
     """{path in the dataset: source file}, in a stable order. A base shared by tasks keeps the first task's graph."""
     rows = _rows(task_dir)
     out = {"tasks.jsonl": task_dir / "tasks_gated.jsonl", "tasks_excluded.csv": task_dir / "tasks_excluded.csv",
-           "task_gates.csv": task_dir / "task_gates.csv"}
+           "task_gates.csv": task_dir / "task_gates.csv", VERIFICATION: task_dir / "official_verifier" / VERIFICATION}
     for r in rows:
         out[f"snapshots/{r['instance_id']}.tgz"] = task_dir / "snapshots" / f"{r['instance_id']}.tgz"
     for r in rows:
@@ -72,6 +74,14 @@ def check(task_dir: Path) -> None:
     failed = [r["instance_id"] for r in rows if r["instance_id"] not in valid]
     if failed:
         raise SystemExit(f"{len(failed)} task(s) in the set didn't pass both gates: {', '.join(failed[:5])}")
+    table = task_dir / "official_verifier" / VERIFICATION
+    if not table.exists():   # spec 028 US6: nothing goes out that the competition's evaluator has not verified
+        raise SystemExit(f"no {VERIFICATION} at {table}: verify the set with the competition's evaluator first")
+    verification = pd.read_csv(table, keep_default_na=False).to_dict("records")
+    unverified = [r["instance_id"] for r in rows if r not in tgate.evaluator_verified(rows, verification)]
+    if unverified:
+        raise SystemExit(f"{len(unverified)} task(s) in the set are not verified by the competition's evaluator "
+                         f"({VERIFICATION}): {', '.join(unverified[:5])}")
     missing = [dest for dest, src in files_of(task_dir).items() if not src.exists()]
     if missing:
         raise SystemExit(f"{len(missing)} file(s) missing, e.g. {missing[0]}: build them with 55_build_tasks.py "
@@ -137,6 +147,8 @@ def _stand_in(dest: str) -> Path:
     same fields). Snapshots, graphs and embeddings have no columns, so their path is only a name."""
     if dest == "tasks.jsonl":
         return TASKS_DIR / "tasks_sample.jsonl"
+    if dest == VERIFICATION:
+        return TASKS_DIR / "official_verifier" / VERIFICATION
     if "/" not in dest and dest.endswith(".csv"):
         return TASKS_DIR / dest
     return Path(dest)

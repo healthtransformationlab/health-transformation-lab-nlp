@@ -220,6 +220,8 @@ def gate_task(task: dict, repo: Path, timeout: int = DEFAULT_TIMEOUT, python: st
 # --- T007a (#502): gate failures stay out of the published set ---------------------------------------------
 
 GATE_EXCLUSION_PREFIX = "fails our gate (T007a): "   # marks the tasks_excluded.csv rows this module owns
+# marks the rows for tasks the competition's own evaluator (swegemma) does not vouch for (spec 028 US6, #641)
+EVALUATOR_EXCLUSION_PREFIX = "not verified by the competition's evaluator (US6): "
 
 
 @traced
@@ -239,17 +241,67 @@ def gate_exclusions(gates: list[dict], tiers: dict[str, str], task_ids: set[str]
             and (task_ids is None or g["instance_id"] in task_ids)]
 
 
+def _true(value) -> bool:
+    return value is True or str(value) == "True"
+
+
+def _evaluator_verdicts(verification: list[dict]) -> dict[str, dict[str, dict]]:
+    """{instance_id: {"reference": row, "empty": row}} from the verification table; other patch sources are not
+    about whether the task is sound."""
+    out: dict[str, dict[str, dict]] = {}
+    for row in verification:
+        if row["patch_source_code"] in ("reference", "empty"):
+            out.setdefault(row["instance_id"], {})[row["patch_source_code"]] = row
+    return out
+
+
+def _evaluator_reason(verdict: dict[str, dict] | None) -> str:
+    """'' when the evaluator vouches for the task: it resolves the reference patch and not an empty one."""
+    if not verdict or "reference" not in verdict or "empty" not in verdict:
+        return "it has not been run on this task"
+    if not _true(verdict["reference"]["is_resolved"]):
+        why = str(verdict["reference"].get("reason_text") or "").strip()
+        return "it does not resolve the reference patch" + (f": {why}" if why else "")
+    if _true(verdict["empty"]["is_resolved"]):
+        return "it resolves an empty patch"
+    return ""
+
+
+@traced
+def evaluator_verified(tasks: list[dict], verification: list[dict]) -> list[dict]:
+    """The tasks the competition's evaluator vouches for, in their order (spec 028 US6): `verification` is
+    data/tasks/official_verifier/swegemma_verification.csv, one row per task and patch source."""
+    verdicts = _evaluator_verdicts(verification)
+    return [t for t in tasks if not _evaluator_reason(verdicts.get(t["instance_id"]))]
+
+
+@traced
+def evaluator_exclusions(tasks: list[dict], verification: list[dict], tiers: dict[str, str]) -> list[dict]:
+    """One tasks_excluded.csv row per task the competition's evaluator does not vouch for, with why: it does not
+    resolve the reference patch, it resolves an empty one, or it has not been run on the task."""
+    verdicts = _evaluator_verdicts(verification)
+    reasons = {t["instance_id"]: _evaluator_reason(verdicts.get(t["instance_id"])) for t in tasks}
+    return [{"instance_id": i, "tier_code": tiers.get(i, ""), "reason_text": EVALUATOR_EXCLUSION_PREFIX + why}
+            for i, why in reasons.items() if why]
+
+
 def _is_gate_row(row: dict) -> bool:
-    return str(row["reason_text"]).startswith(GATE_EXCLUSION_PREFIX)
+    """A tasks_excluded.csv row this module owns: our gate's or the competition's evaluator's."""
+    return str(row["reason_text"]).startswith((GATE_EXCLUSION_PREFIX, EVALUATOR_EXCLUSION_PREFIX))
 
 
 @traced
 def merge_exclusions(existing: list[dict], gate_rows: list[dict]) -> list[dict]:
-    """Replace the gate's earlier rows with this run's and keep every other exclusion: one row per task (the
-    builder's reason wins over the gate's), sorted by instance id."""
+    """Replace the gate's and the evaluator's earlier rows with this run's and keep every other exclusion: one row
+    per task (the builder's reason wins, then the first of `gate_rows`), sorted by instance id."""
     kept = [r for r in existing if not _is_gate_row(r)]
     taken = {r["instance_id"] for r in kept}
-    return sorted(kept + [g for g in gate_rows if g["instance_id"] not in taken], key=lambda r: r["instance_id"])
+    new = []
+    for g in gate_rows:
+        if g["instance_id"] not in taken:
+            taken.add(g["instance_id"])
+            new.append(g)
+    return sorted(kept + new, key=lambda r: r["instance_id"])
 
 
 @traced

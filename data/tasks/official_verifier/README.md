@@ -13,8 +13,7 @@ evaluator's wheel comes from the Kaggle dataset `metric/gemma-4-developer-agent-
 **As published, the task set cannot be scored by the evaluator at all.** It puts the repository root on the import
 path, and this repository's package is in `python/`, so every target test fails at import whatever the patch
 (checked on three tasks with the evaluator's own command line and `--skip-agent-patch`). These rows were made on
-copies of the published snapshots with one file added at the root, `conftest.py`
-(`kaggle/official_adapter_conftest.py`), which puts `python/` on the path.
+copies of the version 3 snapshots with one file added at the root, a `conftest.py` that puts `python/` on the path.
 
 **The 20 tasks the reference patch does not resolve:**
 
@@ -29,7 +28,9 @@ copies of the published snapshots with one file added at the root, `conftest.py`
 differences are the first two groups above, always "ours yes, theirs no"), on all 113 empty patches, and on all 25
 of Gemma's saved patches.
 
+Since spec 028 US6 (#641) each snapshot carries that `conftest.py` itself (`task_graph.EVALUATOR_CONFTEST`), and the
+published set holds only the tasks this table vouches for: the reference patch resolved, the empty patch not.
+
 To repeat: install the evaluator's wheels and this repository's test dependencies (not the package itself) in one
-environment; `python kaggle/official_adapt_snapshots.py <snapshots> <out> kaggle/official_adapter_conftest.py`; then
-`python kaggle/official_verify.py --tasks tasks.jsonl --snapshots-dir <out> --submission-dir <agent folder>
---results-dir <dir> --patch oracle|null|file --out <file>`.
+environment, then `python kaggle/official_verify.py --tasks tasks.jsonl --snapshots-dir snapshots --submission-dir
+<agent folder> --results-dir <dir> --patch oracle|null|file --out <file>` on the published files.
