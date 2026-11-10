@@ -1,8 +1,10 @@
 """Our own fail-to-pass gate for the task set (spec 028, US3, #453).
 
-The competition's evaluator (`swegemma eval --skip-agent-patch`) isn't distributed: no wheel among the
-competition's files, and its docker/ and sandbox/ don't install it (#449). This follows the harness's documented
-verification instead (HARNESS_README, as the competition's data page describes it):
+Written before the competition's evaluator, `swegemma`, was found: there is no wheel among the competition's own
+files, and its docker/ and sandbox/ don't install it (#449), but it ships in the Kaggle dataset
+metric/gemma-4-developer-agent-wheelhouse (#636). This follows the harness's documented verification
+(HARNESS_README, as the competition's data page describes it); the evaluator's own verdicts decide what is
+published (`evaluator_verified` below, spec 028 US6):
 
     fail-to-pass  `test_patch` on `base_commit`, without the fix: the target tests must fail (non-zero exit)
     pass          `patch`, with protected files stripped, plus `test_patch`: the target tests exit 0 and the JUnit

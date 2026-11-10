@@ -5,12 +5,14 @@
     python scripts/57_gate_tasks.py --limit 5          # the first 5 rows
     python scripts/57_gate_tasks.py --instance-ids htlnlp_143,htlnlp_200
 
-The competition's evaluator (`swegemma eval --skip-agent-patch`) isn't distributed (#449), so
-`task_gate.gate_task` follows the harness's documented verification: the target tests fail with `test_patch`
-alone at `base_commit`, and pass with `patch` (protected files stripped) plus `test_patch`.
+`task_gate.gate_task` follows the competition harness's documented verification: the target tests fail with
+`test_patch` alone at `base_commit`, and pass with `patch` (protected files stripped) plus `test_patch`. It was
+written before the competition's evaluator, `swegemma`, was found (#449 looked only among the competition's own
+files; it ships in the Kaggle dataset metric/gemma-4-developer-agent-wheelhouse, #636).
 
 Runs with THIS environment's Python and packages, not the competition's sandbox image: a dependency that differs
-can change a verdict. Official swegemma scoring happens only on Kaggle (US5, #356).
+can change a verdict. The evaluator's own verification is run by `kaggle/official_verify.py`; its committed table
+(data/tasks/official_verifier/swegemma_verification.csv) decides which gated tasks are published (US6, #641).
 
 Writes data/tasks/task_gates.csv (committed, overwritten whole, one row per gated task) and prints counts.
 A full run (no --sample, --limit or --instance-ids) also drops the failures from the set (T007a, #502):

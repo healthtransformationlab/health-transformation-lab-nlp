@@ -49,9 +49,9 @@ written only if, in the competition's sandbox image, the tests fail on `base_com
 (fail-to-pass) and the suite passes with `patch` and `test_patch` (pass-to-pass). Tasks whose fix lives in
 files the grader strips (`conftest.py`, `pytest.ini`, `pyproject.toml`, test files) are excluded and listed.
 
-The gates run with our own check (`task_gate.py`, `scripts/57_gate_tasks.py`, #453), not `swegemma eval`: the
-competition's evaluator isn't distributed (no wheel among its files, and its docker/ and sandbox/ don't install
-it; found by #449's run). The check follows the harness's documented verification: `test_patch` alone at
+The gates run with our own check (`task_gate.py`, `scripts/57_gate_tasks.py`, #453), not `swegemma eval`: when
+this was written the competition's evaluator had not been found (no wheel among the competition's files, and its
+docker/ and sandbox/ don't install it: #449's run; it ships in a separate Kaggle dataset, US6 below). The check follows the harness's documented verification: `test_patch` alone at
 `base_commit` makes the target tests (the test files `test_patch` touches) fail; `patch` with protected files
 stripped (test files; `conftest.py`, `pytest.ini`, `pyproject.toml`, `tox.ini`, `setup.cfg`, `.pytest.ini`,
 `sitecustomize.py`, `usercustomize.py`, `*.pth`) plus `test_patch` makes them exit 0 with passed > 0 and no

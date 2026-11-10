@@ -6,6 +6,12 @@
 
 **Status**: draft; US1 implemented first
 
+> **Correction, November 10, 2026 (#636).** The evaluator is available: `swegemma` ships as a wheel in the Kaggle
+> dataset `metric/gemma-4-developer-agent-wheelhouse`, which the competition's starter notebook attaches, with the
+> vLLM server that notebook uses. The text below is what was known when this spec was written. Since then the
+> evaluator's own verification has been run on the task set (spec 028 US6, `data/tasks/official_verifier/`), and
+> it gives the same verdict as this harness on every agent patch compared.
+
 **Input**: Spec 028's task set is public on Kaggle, but its scoring step (T011b) is blocked. The competition's
 evaluator, `swegemma`, is not on PyPI, is not among the competition's files (#449), and Kaggle runs it only on
 submissions against the competition's own tasks. Its guide (`HARNESS_README.md`, read from the competition's files,
@@ -45,7 +51,8 @@ Our gate (`task_gate.py`, #453) already does the verification. This spec builds 
 - `calib:null` submits nothing and must resolve none.
 
 ### US2 - The Gemma agent through the local harness on a Kaggle GPU (P2) #544
-Gemma 4 with transformers on a Kaggle GPU (2x T4). Kaggle has no vLLM, and the QAT compressed-tensors model runs
+Gemma 4 with transformers on a Kaggle GPU (2x T4). Kaggle's image has no vLLM (the competition's wheelhouse
+dataset carries one, found later: see the correction above), and the QAT compressed-tensors model runs
 out of memory on a T4, so this run uses `gemma-4-e4b-it` in fp16. `gemma_agent.py` reads and writes Gemma 4's own
 tool-call format, as its chat template has it. This uses limited compute, so it waits for the owner (AGENTS.md
 rule 6).
