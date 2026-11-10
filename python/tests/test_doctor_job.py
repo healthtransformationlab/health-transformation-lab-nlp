@@ -341,17 +341,51 @@ class _Spark:
 
 
 def test_billing_that_cant_be_read_warns_once_and_leaves_costs_empty(capsys):
-    assert doctor_job.read_billing(_Spark(fail="PERMISSION_DENIED: system.billing"), days=60) is None
+    assert doctor_job.read_billing(_Spark(fail="PERMISSION_DENIED: x"), days=60) is None
     out = capsys.readouterr().out
-    assert out.count("warning:") == 1 and "system.billing" in out and "account admin" in out
+    assert out.count("warning:") == 1 and doctor_job.BILLING_SCHEMA in out
+    assert "databricks/setup/billing_views.sql" in out                 # names the fix (#654)
+
+
+def test_billing_is_read_from_the_schema_set():   # #654: the owner's views; grants on system.billing need MANAGE
+    spark = _Spark()
+    doctor_job.read_billing(spark, days=60, schema="cat.ops_billing")
+    u, p = spark.queries
+    assert "from cat.ops_billing.usage" in u and "from cat.ops_billing.list_prices" in p
+    assert doctor_job.BILLING_SCHEMA == "health_transformation_lab.ops_billing"
+
+
+def test_billing_schema_is_a_checked_setting():
+    base = {k: v for k, v in GOOD.items() if k != "billing_schema"}
+    assert doctor_job.check_settings({**base, "billing_schema": "c.ops_billing"})["billing_schema"] == "c.ops_billing"
+    assert doctor_job.check_settings(base)["billing_schema"] == doctor_job.BILLING_SCHEMA
+    with pytest.raises(ValueError, match="^billing_schema"):
+        doctor_job.check_settings({**base, "billing_schema": "c.ops; drop table x"})
+
+
+def test_the_views_script_makes_both_views_and_grants_the_job_identity():
+    sql = (ROOT / "databricks" / "setup" / "billing_views.sql").read_text().lower()
+    for v in ("usage", "list_prices"):
+        assert f"create or replace view health_transformation_lab.ops_billing.{v}" in sql
+        assert f"from system.billing.{v}" in sql
+    assert "grant use schema on schema health_transformation_lab.ops_billing" in sql
+    assert "grant select on schema health_transformation_lab.ops_billing" in sql
+    assert ":service_principal" in sql and "<service principal" not in sql   # a parameter, not a placeholder
+
+
+def test_the_job_passes_the_billing_schema():
+    jobs = (ROOT / "databricks" / "resources" / "jobs.yml").read_text()
+    nb = (ROOT / "databricks" / "notebooks" / "13_pipeline_doctor.py").read_text()
+    assert "billing_schema: ${var.billing_schema}" in jobs and 'widgets.text("billing_schema"' in nb
+    assert 'schema=settings["billing_schema"]' in nb
 
 
 def test_billing_reads_only_job_usage_in_the_lookback_and_usd_prices():
     spark = _Spark()
     usage, prices = doctor_job.read_billing(spark, days=60)
     u, p = spark.queries
-    assert "system.billing.usage" in u and "usage_metadata.job_run_id is not null" in u and "interval 60 days" in u
-    assert "system.billing.list_prices" in p and "currency_code = 'USD'" in p
+    assert "ops_billing.usage" in u and "usage_metadata.job_run_id is not null" in u and "interval 60 days" in u
+    assert "ops_billing.list_prices" in p and "currency_code = 'USD'" in p
     assert list(usage.columns) == ["job_run_id", "sku_name", "usage_unit", "usage_quantity", "usage_start_time"]
 
 

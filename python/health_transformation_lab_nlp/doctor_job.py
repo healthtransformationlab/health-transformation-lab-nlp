@@ -114,6 +114,10 @@ def check_settings(widgets: dict) -> dict:
     if span != "none" and not _TABLE.fullmatch(span):
         raise ValueError(f"span_table: {span!r} must be catalog.schema.table, or none")
     out["span_table"] = None if span == "none" else span
+    billing = get("billing_schema") or BILLING_SCHEMA
+    if not all(_NAME.fullmatch(part) for part in billing.split(".")) or billing.count(".") != 1:
+        raise ValueError(f"billing_schema: {billing!r} must be catalog.schema (databricks/setup/billing_views.sql)")
+    out["billing_schema"] = billing
     run_id = get("run_id")
     if not _TOKEN.fullmatch(run_id):
         raise ValueError(f"run_id: {run_id!r}; the job sets it ({{{{job.run_id}}}}), pass one when running by hand")
@@ -183,29 +187,31 @@ def timeline_runs(timeline: pd.DataFrame, config: pd.DataFrame, names: dict[str,
 
 # --- what each run cost, from the billing system tables (spec 036 US1, #568) --------------------------------------
 
+BILLING_SCHEMA = "health_transformation_lab.ops_billing"   # databricks/setup/billing_views.sql (#654)
 BILLING_USAGE_SQL = """
 select usage_metadata.job_run_id as job_run_id, sku_name, usage_unit, usage_quantity, usage_start_time
-from system.billing.usage
+from {schema}.usage
 where usage_metadata.job_run_id is not null
   and usage_date >= current_date() - interval {days} days
 """
 BILLING_PRICES_SQL = """
 select sku_name, usage_unit, cast(pricing.default as double) as price_usd, price_start_time, price_end_time
-from system.billing.list_prices
+from {schema}.list_prices
 where currency_code = 'USD'
 """
 
 
 @traced
-def read_billing(spark, days: int = HISTORY_DAYS):
-    """(usage, prices) from the billing system tables, or None with one warning when this identity can't read them:
-    system.billing is account admins' unless one grants it (spec 036 T006). Costs then stay empty, never zero."""
+def read_billing(spark, days: int = HISTORY_DAYS, schema: str = BILLING_SCHEMA):
+    """(usage, prices) from the billing views in `schema`, or None with one warning when this identity can't read
+    them. The views are the owner's, over system.billing, granted to the job's identity: a grant on system.billing
+    itself needs MANAGE on it, which a workspace owner may not have (#654). Costs then stay empty, never zero."""
     try:
-        usage = spark.sql(BILLING_USAGE_SQL.format(days=int(days))).toPandas()
-        prices = spark.sql(BILLING_PRICES_SQL).toPandas()
+        usage = spark.sql(BILLING_USAGE_SQL.format(days=int(days), schema=schema)).toPandas()
+        prices = spark.sql(BILLING_PRICES_SQL.format(schema=schema)).toPandas()
     except Exception as e:  # noqa: BLE001 - optional data: warn and carry on (AGENTS.md, configuration)
-        print(f"warning: can't read system.billing ({type(e).__name__}): run costs stay empty. An account admin "
-              "grants USE SCHEMA and SELECT on system.billing to this job's identity (spec 036 plan, US1)")
+        print(f"warning: can't read the billing views in {schema} ({type(e).__name__}): run costs stay empty. The "
+              "workspace owner runs databricks/setup/billing_views.sql once (spec 036 plan, US1)")
         return None
     return usage, prices
 
