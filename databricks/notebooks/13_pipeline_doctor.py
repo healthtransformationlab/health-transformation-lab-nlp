@@ -44,10 +44,11 @@ dbutils.widgets.text("judge_endpoint", "none")  # noqa: F821
 dbutils.widgets.text("max_usd", "5")  # noqa: F821
 dbutils.widgets.text("lookback_days", "7")  # noqa: F821
 dbutils.widgets.text("span_table", "none")  # noqa: F821
+dbutils.widgets.text("billing_schema", "health_transformation_lab.ops_billing")  # noqa: F821  billing_views.sql
 dbutils.widgets.text("decisions", "")  # noqa: F821  run_id=action_code,...
 dbutils.widgets.text("decided_by", "")  # noqa: F821
 names = ("git_commit", "run_id", "catalog", "schema", "judge_endpoint", "max_usd", "lookback_days", "span_table",
-         "decisions", "decided_by")
+         "billing_schema", "decisions", "decided_by")
 settings = doctor_job.check_settings({n: dbutils.widgets.get(n) for n in names})  # noqa: F821
 catalog, schema = settings["catalog"], settings["schema"]
 
@@ -84,9 +85,10 @@ timeline = doctor_job.api_runs([r.as_dict() for r in jobs_api.list_runs(complete
 
 config, runbook, lineage = doctor.load_config(), doctor.load_runbook(), doctor.load_lineage()
 runs = doctor_job.timeline_runs(timeline, config, doctor_job.job_names())
-# Spec 036 US1 (#568): each run's cost from the billing system tables, when this identity can read them (else one
-# warning and empty costs, never zero); a span export's cost, merged next, wins.
-billing = doctor_job.read_billing(spark, doctor_job.HISTORY_DAYS)  # noqa: F821
+# Spec 036 US1 (#568): each run's cost from billing, through the owner's views over system.billing
+# (databricks/setup/billing_views.sql, #654), when this identity can read them (else one warning and empty costs,
+# never zero); a span export's cost, merged next, wins.
+billing = doctor_job.read_billing(spark, doctor_job.HISTORY_DAYS, schema=settings["billing_schema"])  # noqa: F821
 if billing is not None:
     costs, missing = doctor_job.billing_costs(*billing)
     runs = doctor_job.merge_billing(runs, costs)
