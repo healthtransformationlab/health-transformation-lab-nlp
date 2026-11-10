@@ -9,20 +9,31 @@
 # Writes /kaggle/working/result.json: the agent's patch, the evaluator's counts, the settings and versions used, and
 # the evaluator's own log and trace for the task.
 #
+# A batch (official_batch.json in the bundle) runs several tasks in this one kernel, when the GPU allowance cannot pay
+# for a kernel's start-up per task. Each task's files are sealed in the dataset; this kernel opens one, runs it,
+# deletes it, then opens the next, so the agent never has two tasks' snapshots within reach. The key is put in this
+# file by the runner (SEAL_KEY), read at start, and the file is then removed from the machine.
+#
 # HTL_ENDPOINT (a dry run without a GPU): an OpenAI-compatible endpoint to use instead of installing the wheelhouse
 # and starting vLLM. HTL_BUNDLE and HTL_OUT point at the bundle and the output folder.
 import asyncio
 import glob
+import hashlib
 import importlib
+import io
 import json
 import logging
 import os
 import shutil
 import subprocess
 import sys
+import tarfile
 import time
 import traceback
 from pathlib import Path
+
+SEAL_KEY = ""   # set by the runner for a batch (kaggle/official_agent_run.py); never committed
+T_START = time.monotonic()
 
 for _k, _v in {"TRANSFORMERS_NO_TF": "1", "TRANSFORMERS_NO_FLAX": "1", "TRANSFORMERS_OFFLINE": "1",
                "VLLM_NO_USAGE_STATS": "1", "VLLM_WORKER_MULTIPROC_METHOD": "spawn", "VLLM_ENGINE_READY_TIMEOUT_S": "1200",
@@ -56,7 +67,15 @@ def quiet_logging() -> None:
 def find_bundle() -> Path:
     if os.environ.get("HTL_BUNDLE"):
         return Path(os.environ["HTL_BUNDLE"])
-    return Path(glob.glob("/kaggle/input/**/official_task.json", recursive=True)[0]).parent
+    found = (glob.glob("/kaggle/input/**/official_batch.json", recursive=True)
+             or glob.glob("/kaggle/input/**/official_task.json", recursive=True))
+    return Path(found[0]).parent
+
+
+def unseal(data: bytes, key: bytes, name: str) -> bytes:
+    """What kaggle/official_agent_bundle.py's `seal` sealed: XOR with a SHAKE-256 keystream of the key and name."""
+    stream = hashlib.shake_256(key + name.encode()).digest(len(data))
+    return (int.from_bytes(data, "big") ^ int.from_bytes(stream, "big")).to_bytes(len(data), "big")
 
 
 def install_wheelhouse() -> Path:
@@ -126,7 +145,7 @@ def versions() -> dict:
     return out
 
 
-def run_task(bundle: Path, agent_dir: Path, models, adapters, overrides: dict) -> dict:
+def run_task(bundle: Path, agent_dir: Path, models, adapters, overrides: dict, out_dir: Path) -> dict:
     """The starter notebook's cell 10 for one task, with the agent's patch kept as soon as the agent phase ends."""
     import litellm
     import yaml
@@ -150,7 +169,8 @@ def run_task(bundle: Path, agent_dir: Path, models, adapters, overrides: dict) -
                "max_time_minutes": float(section.get("max_time_minutes", 60.0)),
                "max_turns": int(turns_raw) if turns_raw is not None else None}
     limits, gen = build_submission_limits()
-    results_dir = OUT / "results"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    results_dir = out_dir / "results"
     config = EvalConfig(
         tasks_path=bundle / "tasks.jsonl", snapshots_dir=bundle / "snapshots", results_dir=results_dir,
         submission_dir=agent_dir, models=models, sandbox="subprocess", limits=limits, generation_constraints=gen,
@@ -169,7 +189,7 @@ def run_task(bundle: Path, agent_dir: Path, models, adapters, overrides: dict) -
             t0 = time.monotonic()
             patch, error, trace = await super()._run_agent_sandbox(*args, **kwargs)
             kept.update(patch=patch or "", agent_error=error, agent_phase_seconds=round(time.monotonic() - t0, 1))
-            (OUT / "agent_patch.diff").write_text(patch or "")
+            (out_dir / "agent_patch.diff").write_text(patch or "")
             return patch, error, trace
 
     evaluator = KeepingEvaluator(config)
@@ -191,17 +211,63 @@ def run_task(bundle: Path, agent_dir: Path, models, adapters, overrides: dict) -
     return out
 
 
+def run_batch(root: Path, meta: dict, key: bytes, agent_dir: Path, models, adapters) -> dict:
+    """Each task of the batch in turn: open its sealed files, run it, delete them. Stops before a task that could
+    not finish inside the kernel's own time budget, so the GPU allowance is never overrun mid-task."""
+    overrides = meta.get("budget_overrides") or {}
+    deadline = T_START + float(meta.get("deadline_minutes", 45)) * 60
+    per_task = float(meta.get("task_minutes_reserved", 6.5)) * 60
+    runs: dict = {}
+    for iid in meta["instance_ids"]:
+        if time.monotonic() + per_task > deadline:
+            runs[iid] = {"instance_id": iid, "is_skipped": True, "skip_reason_text": "the kernel's time budget ran out"}
+            continue
+        work = Path("/tmp/htl_task")
+        shutil.rmtree(work, ignore_errors=True)
+        work.mkdir(parents=True)
+        try:
+            plain = unseal((root / "sealed" / f"{iid}.bin").read_bytes(), key, iid)
+            with tarfile.open(fileobj=io.BytesIO(plain)) as tar:
+                tar.extractall(work, filter="data")
+            del plain
+            one = run_task(work, agent_dir, models, adapters, overrides, OUT / "tasks" / iid)
+        except BaseException as e:  # noqa: BLE001 - one task's failure is its row; the next task still runs
+            one = {"instance_id": iid, "error": f"{type(e).__name__}: {str(e)[:1500]}",
+                   "trace": traceback.format_exc()[-4000:]}
+        finally:
+            shutil.rmtree(work, ignore_errors=True)   # the next task must not find this one's snapshot
+        one["elapsed_minutes_at_end"] = round((time.monotonic() - T_START) / 60, 2)
+        runs[iid] = one
+        (OUT / "tasks" / iid).mkdir(parents=True, exist_ok=True)
+        (OUT / "tasks" / iid / "result.json").write_text(json.dumps(one, indent=1, default=str))
+        print(json.dumps({k: v for k, v in one.items() if k not in ("patch", "trace")}, default=str), flush=True)
+    return runs
+
+
 def main() -> None:
     server = None
     try:
         bundle = find_bundle()
-        meta = json.loads((bundle / "official_task.json").read_text())
-        result.update(instance_id=meta["instance_id"], harness_name=HARNESS_NAME, is_dry_run=bool(ENDPOINT))
+        is_batch = (bundle / "official_batch.json").exists()
+        meta = json.loads((bundle / ("official_batch.json" if is_batch else "official_task.json")).read_text())
+        result.update(harness_name=HARNESS_NAME, is_dry_run=bool(ENDPOINT), is_batch=is_batch)
+        key = bytes.fromhex(SEAL_KEY) if is_batch else b""
+        if is_batch and not ENDPOINT:
+            try:
+                os.remove(__file__)   # the key was only here; now it is only in this process
+                result["is_source_removed"] = True
+            except OSError:
+                result["is_source_removed"] = False
+        if not is_batch:
+            result["instance_id"] = meta["instance_id"]
         agent_dir = OUT / "submission"   # a writable copy, as the starter notebook makes
         if agent_dir.exists():
             shutil.rmtree(agent_dir)
         shutil.copytree(bundle / "submission", agent_dir)
         if not ENDPOINT:
+            smi = subprocess.run(["nvidia-smi", "--query-gpu=name,memory.total", "--format=csv,noheader"],
+                                 capture_output=True, text=True, check=False)
+            result["gpus_seen"] = [line.strip() for line in smi.stdout.splitlines() if line.strip()]
             t = time.monotonic()
             result["wheelhouse"] = str(install_wheelhouse())
             result["install_seconds"] = round(time.monotonic() - t, 1)
@@ -222,9 +288,14 @@ def main() -> None:
             server, models, adapters, server_info = start_vllm(agent_dir, model_name)
             result["load_seconds"] = round(time.monotonic() - t, 1)
         result.update(model_name=model_name, server=server_info, versions=versions())
-        result.update(run_task(bundle, agent_dir, models, adapters, meta.get("budget_overrides") or {}))
+        if is_batch:
+            result["runs"] = run_batch(bundle, meta, key, agent_dir, models, adapters)
+        else:
+            result.update(run_task(bundle, agent_dir, models, adapters, meta.get("budget_overrides") or {}, OUT))
     except BaseException as e:  # noqa: BLE001 - the failure goes in result.json, where the runner reads it
         result.update(error=f"{type(e).__name__}: {str(e)[:1500]}", trace=traceback.format_exc()[-6000:])
+        OUT.mkdir(parents=True, exist_ok=True)
+        (OUT / "error_full.txt").write_text(f"{type(e).__name__}: {e}\n\n{traceback.format_exc()}")   # a server's whole output
     finally:
         if server is not None:
             try:
@@ -234,8 +305,10 @@ def main() -> None:
     shutil.rmtree(OUT / "submission", ignore_errors=True)
     result["finished_ts"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     OUT.mkdir(parents=True, exist_ok=True)
-    (OUT / "result.json").write_text(json.dumps(result, indent=1, default=str))
-    print(json.dumps({k: v for k, v in result.items() if k not in ("patch", "trace")}, indent=1, default=str))
+    slim = {k: v for k, v in result.items() if k != "runs"}
+    slim["runs"] = {i: {k: v for k, v in r.items() if k != "trace"} for i, r in (result.get("runs") or {}).items()}
+    (OUT / "result.json").write_text(json.dumps(slim if result.get("is_batch") else result, indent=1, default=str))
+    print(json.dumps({k: v for k, v in result.items() if k not in ("patch", "trace", "runs")}, indent=1, default=str))
     if "error" in result:
         print(result["trace"])
 

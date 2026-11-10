@@ -88,6 +88,13 @@ def kernel_metadata(username: str, instance_id: str, machine_shape: str | None, 
     return meta
 
 
+def kernel_source(source: str, key: bytes) -> str:
+    """The kernel file a batch is pushed with: the committed one, with this run's key in place of the empty one."""
+    if source.count('SEAL_KEY = ""') != 1:
+        raise SystemExit("the kernel no longer has exactly one empty SEAL_KEY to fill")
+    return source.replace('SEAL_KEY = ""', f'SEAL_KEY = "{key.hex()}"')
+
+
 def row_for(result: dict, verdict: dict | None, tier: str, kernel_url: str, session_seconds: float | None) -> dict:
     """One table row: what the evaluator's agent phase did on Kaggle, and its verification's verdict on the patch."""
     budgets, server = result.get("budgets") or {}, result.get("server") or {}
@@ -173,6 +180,83 @@ def _verify(tasks_file: Path, snapshots: Path, agent_dir: Path, patches: dict[st
     return {r["instance_id"]: r for r in map(json.loads, filter(str.strip, out.read_text().splitlines()))}
 
 
+def write_table(pd, rows: list[dict], model: str | None) -> Path:
+    """Merge the rows into the committed table by instance_id (re-runnable)."""
+    table = pd.DataFrame(rows, columns=COLUMNS)
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
+    path = OUT_DIR / f"{model or 'gemma-4-e4b-it-qat-w4a16-ct'}_swegemma.csv"
+    old = pd.read_csv(path) if path.exists() else pd.DataFrame(columns=COLUMNS)
+    keep = old[~old["instance_id"].isin(table["instance_id"])]
+    (pd.concat([keep, table], ignore_index=True) if len(keep) else table).sort_values("instance_id").to_csv(path, index=False)
+    return path
+
+
+def run_batch(a, api, user: str, ids: list[str], tasks: dict, manifest: dict, overrides: dict, pd) -> int:
+    """One kernel for every task, in a seeded order, each task sealed until its turn; then verify and tabulate."""
+    order = list(ids)
+    random.Random(a.seed).shuffle(order)
+    kref, work = f"{user}/{kernel_slug('batch')}", a.work / "batch"
+    if not a.collect:
+        shutil.rmtree(work, ignore_errors=True)
+        key = os.urandom(32)   # this run's; in the pushed kernel only, never in the dataset or the repository
+
+        def files_of(task: dict):
+            stem = bundle.code_index_name(task["repo"], task["base_commit"])
+            return (a.dataset / "snapshots" / f"{task['instance_id']}.tgz", a.dataset / "graphs" / f"{stem}.json",
+                    a.dataset / "embeddings" / f"{stem}.npz")
+
+        b = bundle.build_batch([tasks[i] for i in ids], files_of, a.agent_dir, work / "bundle", user, key, order,
+                               {"budget_overrides": overrides, "deadline_minutes": a.deadline_minutes, "seed": a.seed})
+        print(f"batch of {len(order)}: uploading the sealed bundle to {user}/{bundle.slug('batch')} (private); "
+              f"order {', '.join(order)}", flush=True)
+        _upload_bundle(api, b, f"{user}/{bundle.slug('batch')}")
+        k = work / "kernel"
+        k.mkdir(parents=True)
+        (k / "official_agent_kernel.py").write_text(kernel_source((HERE / "official_agent_kernel.py").read_text(), key))
+        (k / "kernel-metadata.json").write_text(json.dumps(
+            kernel_metadata(user, "batch", a.machine_shape, a.docker_image), indent=1))
+        api.kernels_push(str(k), timeout=str(a.kernel_minutes * 60))
+        shutil.rmtree(k)   # the keyed copy does not stay on this machine either
+        print(f"the evaluator on a Kaggle GPU, {kref}", flush=True)
+    t0, status = time.monotonic(), ""
+    while True:
+        time.sleep(POLL_SECONDS)
+        try:
+            status = str(api.kernels_status(kref).status).lower()
+        except Exception:  # noqa: BLE001, S112 - a blip; the next poll tells
+            continue
+        if any(s in status for s in ("complete", "error", "cancel")):
+            break
+    session = time.monotonic() - t0
+    out = work / "output"
+    out.mkdir(parents=True, exist_ok=True)
+    api.kernels_output(kref, str(out), force=True)
+    res = json.loads((out / "result.json").read_text()) if (out / "result.json").exists() else {
+        "error": f"kernel ended {status} and wrote no result.json"}
+    print(f"kernel {status} after {session / 60:.1f} min; GPUs {(res.get('server') or {}).get('gpus') or res.get('gpus_seen')}"
+          + (f"; ERROR {res['error'][:400]}" if "error" in res else ""), flush=True)
+    runs = res.get("runs") or {}
+    shared = {k: res.get(k) for k in ("model_name", "server", "versions", "harness_name", "load_seconds")}
+    done = {i: {**shared, **r} for i, r in runs.items() if not r.get("is_skipped")}
+    skipped = [i for i in order if i not in done]
+    verdicts = _verify(a.dataset / "tasks.jsonl", a.dataset / "snapshots", a.agent_dir,
+                       {i: (r.get("patch") or "") for i, r in done.items()}, work / "_verify")
+    rows = [row_for({"instance_id": i, **done[i]}, verdicts.get(i), manifest.get(i, ""),
+                    f"https://www.kaggle.com/code/{kref}", None) for i in order if i in done]
+    table = pd.DataFrame(rows, columns=COLUMNS)
+    if len(table):
+        print(table[["instance_id", "tier_code", "is_resolved", "reason_text", "agent_patch_bytes", "tool_call_count",
+                     "agent_seconds", "gpu_count", "gpu_name"]].to_string(index=False))
+    print(f"\n{int(table.is_resolved.sum()) if len(table) else 0} of {len(table)} resolved, by the competition's "
+          f"evaluator end to end; {len(skipped)} of the {len(order)} drawn were not run: {', '.join(skipped) or 'none'}")
+    (work / "run_summary.json").write_text(json.dumps(
+        {"seed": a.seed, "order": order, "run": list(done), "not_run": skipped, "session_seconds": round(session, 1),
+         "kernel": {k: v for k, v in res.items() if k != "runs"}}, indent=1, default=str))
+    if not a.no_table and rows:
+        print(f"-> {write_table(pd, rows, shared.get('model_name')).relative_to(REPO_ROOT)}")
+    return 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--dataset", type=Path, required=True,
@@ -192,6 +276,11 @@ def main() -> int:
     ap.add_argument("--kernel-minutes", type=int, default=45, help="Kaggle stops a kernel after this long")
     ap.add_argument("--work", type=Path, default=Path(os.environ.get("TMPDIR", "/tmp")) / "htl_official_agent")
     ap.add_argument("--no-table", action="store_true", help="a pilot: print the rows, write no table")
+    ap.add_argument("--batch", action="store_true",
+                    help="every task in ONE kernel, each sealed until its turn: for when the GPU allowance cannot pay "
+                         "for a kernel's start-up per task. The order is a seeded shuffle of the tasks")
+    ap.add_argument("--deadline-minutes", type=float, default=45.0,
+                    help="with --batch: the kernel stops starting tasks when one more could run past this")
     a = ap.parse_args()
 
     import pandas as pd
@@ -216,6 +305,9 @@ def main() -> int:
     api = KaggleApi()
     api.authenticate()
     api.dataset_list(user=user, page=1)   # one cheap authenticated call before the uploads
+
+    if a.batch:
+        return run_batch(a, api, user, ids, tasks, manifest, overrides, pd)
 
     waiting, running, results, sessions = list(ids), {}, {}, {}
     while waiting or running:
@@ -274,14 +366,8 @@ def main() -> int:
     print(f"\n{int(table.is_resolved.sum())} of {len(table)} resolved, by the competition's evaluator end to end")
     if a.no_table:
         return 0
-    model = next((r.get("model_name") for r in results.values() if r.get("model_name")), "gemma-4-e4b-it-qat-w4a16-ct")
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
-    path = OUT_DIR / f"{model}_swegemma.csv"
-    old = pd.read_csv(path) if path.exists() else pd.DataFrame(columns=COLUMNS)
-    keep = old[~old["instance_id"].isin(table["instance_id"])]
-    merged = (pd.concat([keep, table], ignore_index=True) if len(keep) else table).sort_values("instance_id")
-    merged.to_csv(path, index=False)   # merged by instance_id: re-runnable
-    print(f"-> {path.relative_to(REPO_ROOT)}")
+    model = next((r.get("model_name") for r in results.values() if r.get("model_name")), None)
+    print(f"-> {write_table(pd, rows, model).relative_to(REPO_ROOT)}")
     return 0
 
 

@@ -141,3 +141,55 @@ def test_a_run_row_records_the_harness_the_settings_and_the_evaluators_verdict(r
     failed = run.row_for({"instance_id": "htlnlp_7", "error": "RuntimeError: no GPU"}, None, tier="A", kernel_url="k",
                          session_seconds=60.0)
     assert failed["is_resolved"] is False and failed["reason_text"] == "kernel failed" and "no GPU" in failed["error_text"]
+
+
+# --- a batch: several tasks in one kernel, each sealed until its turn (the GPU allowance decides, #636) -----------
+
+def test_a_batch_seals_each_task_and_names_the_order(ob, tmp_path):
+    key = bytes(range(32))
+    tasks = [dict(TASK, instance_id=f"htlnlp_{n}") for n in (7, 8)]
+    snap = _snapshot(tmp_path)
+    out = ob.build_batch(tasks, lambda t: (snap, None, None), _submission(tmp_path), tmp_path / "b", "someone", key,
+                         order=["htlnlp_8", "htlnlp_7"], settings={"deadline_minutes": 50})
+    names = {p.relative_to(out).as_posix() for p in out.rglob("*") if p.is_file()}
+    assert names == {"official_batch.json", "sealed/htlnlp_7.bin", "sealed/htlnlp_8.bin", "submission/agent.yaml",
+                     "submission/eval_config.yaml", "submission/prompts/system.md", "dataset-metadata.json"}
+    meta = json.loads((out / "official_batch.json").read_text())
+    assert meta["instance_ids"] == ["htlnlp_8", "htlnlp_7"] and meta["deadline_minutes"] == 50
+    for p in out.rglob("*"):                       # nothing readable holds an answer, a statement or the key
+        if p.is_file():
+            blob = p.read_bytes()
+            assert b"SECRET_" not in blob and key.hex().encode() not in blob and key not in blob, p
+    sealed = (out / "sealed" / "htlnlp_7.bin").read_bytes()
+    assert b"The loader drops" not in sealed and b"ustar" not in sealed      # not a readable tar, not the statement
+    assert sealed != (out / "sealed" / "htlnlp_8.bin").read_bytes()           # each task has its own keystream
+    assert json.loads((out / "dataset-metadata.json").read_text())["id"] == "someone/htlnlp-official-batch"
+
+
+def test_the_kernel_opens_what_the_bundle_sealed(ob, tmp_path):
+    import ast
+    import io
+    src = (REPO_ROOT / "kaggle" / "official_agent_kernel.py").read_text()
+    fn = next(n for n in ast.parse(src).body if isinstance(n, ast.FunctionDef) and n.name == "unseal")
+    ns: dict = {}
+    exec("import hashlib\n" + ast.get_source_segment(src, fn), ns)   # noqa: S102 - our own kernel's function
+    key = bytes(range(32))
+    snap = _snapshot(tmp_path)
+    out = ob.build_batch([TASK], lambda t: (snap, None, None), _submission(tmp_path), tmp_path / "b", "someone", key,
+                         order=["htlnlp_7"])
+    plain = ns["unseal"]((out / "sealed" / "htlnlp_7.bin").read_bytes(), key, "htlnlp_7")
+    with tarfile.open(fileobj=io.BytesIO(plain)) as t:
+        members = sorted(m.name for m in t.getmembers() if m.isfile())
+        row = json.loads(t.extractfile("tasks.jsonl").read())
+    assert members == ["official_task.json", "snapshots/htlnlp_7.tgz", "tasks.jsonl"]
+    assert row["problem_statement"] == TASK["problem_statement"] and not row.get("patch") and not row.get("test_patch")
+    assert ns["unseal"]((out / "sealed" / "htlnlp_7.bin").read_bytes(), bytes(32), "htlnlp_7")[:5] != plain[:5]
+    assert 'SEAL_KEY = ""' in src                                              # the key is never committed
+
+
+def test_a_batch_kernel_carries_its_key_and_the_committed_one_does_not(run):
+    src = (REPO_ROOT / "kaggle" / "official_agent_kernel.py").read_text()
+    keyed = run.kernel_source(src, bytes(range(32)))
+    assert f'SEAL_KEY = "{bytes(range(32)).hex()}"' in keyed and 'SEAL_KEY = ""' not in keyed
+    meta = run.kernel_metadata("someone", "batch", None, None)
+    assert meta["id"] == "someone/htlnlp-offrun-batch" and meta["dataset_sources"][0] == "someone/htlnlp-official-batch"
