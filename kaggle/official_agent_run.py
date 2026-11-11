@@ -28,6 +28,7 @@ Needs KAGGLE_API_TOKEN, and an interpreter that has the evaluator's wheels and t
 from __future__ import annotations
 
 import argparse
+import hashlib
 import importlib.util
 import json
 import os
@@ -95,6 +96,44 @@ def batch_trace_counts(output: Path, instance_id: str) -> dict | None:
     """A batch task's trace as downloaded (tasks/<id>/results/traces/trace_<id>.json), counted as one task's is."""
     trace = Path(output) / "tasks" / instance_id / "results" / "traces" / f"trace_{instance_id}.json"
     return trace_counts(json.loads(trace.read_text())) if trace.exists() else None
+
+
+_LABEL = re.compile(r"[a-z0-9]+(-[a-z0-9]+)*")
+
+
+def batch_name(source: str, label: str | None) -> str:
+    """What a batch's dataset, kernel, work folder and table are named after: `label` when given, so two arms of one
+    experiment run side by side (028 AI7, #674), else the source's own name."""
+    if label is None:
+        return "devset" if source == "competition" else "batch"
+    if not _LABEL.fullmatch(label) or len(label) > 24:
+        raise SystemExit(f"--label {label!r}: lowercase letters, digits and single hyphens, at most 24 characters")
+    return label
+
+
+def read_context(path: Path) -> dict[str, str]:
+    """instance_id -> the text to add to that task's hints, from JSON lines (scripts/69_failure_report.py)."""
+    rows = map(json.loads, filter(str.strip, Path(path).read_text().splitlines()))
+    return {r["instance_id"]: r["context_text"] for r in rows}
+
+
+def with_context(tasks: dict, contexts: dict[str, str], ids: list[str]) -> dict:
+    """The drawn tasks with their context after their hints; the tasks as published are left alone. Every drawn task
+    must have one: an arm where some tasks lack it is not that arm."""
+    missing = [i for i in ids if not (contexts.get(i) or "").strip()]
+    if missing:
+        raise SystemExit(f"no context for {', '.join(missing)}: every task of this arm needs one")
+    out = dict(tasks)
+    for i in ids:
+        hints = (tasks[i].get("hints_text") or "").strip()
+        out[i] = {**tasks[i], "hints_text": (hints + "\n\n" if hints else "") + contexts[i]}
+    return out
+
+
+def context_note(path: Path, contexts: dict[str, str], ids: list[str]) -> dict:
+    """What the settings say about an arm's context: the file's hash and its size, never its text."""
+    return {"file_name": Path(path).name, "file_sha256": hashlib.sha256(Path(path).read_bytes()).hexdigest(),
+            "task_count": len(ids), "max_context_chars": max(len(contexts[i]) for i in ids), "added_to": "hints_text"}
 
 
 def batch_meta(a, overrides: dict) -> dict:
@@ -348,7 +387,7 @@ def run_batch(a, api, user: str, ids: list[str], tasks: dict, manifest: dict, ov
     order = list(ids)
     random.Random(a.seed).shuffle(order)
     development = a.source == "competition"
-    name = "devset" if development else "batch"
+    name = batch_name(a.source, getattr(a, "label", None))
     kref, work = f"{user}/{kernel_slug(name)}", a.work / name
     if not a.collect:
         shutil.rmtree(work, ignore_errors=True)
@@ -363,7 +402,8 @@ def run_batch(a, api, user: str, ids: list[str], tasks: dict, manifest: dict, ov
         if development:
             b = bundle.build_competition_batch(order, a.agent_dir, work / "bundle", user, meta)
         else:
-            b = bundle.build_batch([tasks[i] for i in ids], files_of, a.agent_dir, work / "bundle", user, key, order, meta)
+            b = bundle.build_batch([tasks[i] for i in ids], files_of, a.agent_dir, work / "bundle", user, key, order,
+                                   meta, name=name)
         print(f"batch of {len(order)}: uploading the {'order' if development else 'sealed bundle'} to "
               f"{user}/{bundle.slug(name)} (private); order {', '.join(order)}", flush=True)
         _upload_bundle(api, b, f"{user}/{bundle.slug(name)}")
@@ -419,7 +459,8 @@ def run_batch(a, api, user: str, ids: list[str], tasks: dict, manifest: dict, ov
          "gpu": gpu, "is_traced": bool(res.get("is_traced")),
          "kernel": {k: v for k, v in res.items() if k != "runs"}}, indent=1, default=str))
     if not a.no_table and rows:
-        path = write_table(pd, rows, shared.get("model_name"), "devset" if development else None)
+        path = write_table(pd, rows, shared.get("model_name"),
+                           name if development or getattr(a, "label", None) else None)
         print(f"-> {path.relative_to(REPO_ROOT)}")
         good = next((r for r in done.values() if r.get("budgets")), None)
         if good and a.sample:
@@ -428,6 +469,8 @@ def run_batch(a, api, user: str, ids: list[str], tasks: dict, manifest: dict, ov
             settings = settings_for(good, a.seed, list(ids), len(manifest), a.machine_shape, a.docker_image,
                                     a.competition, commit, a.source, tasks_per_kernel=len(order))
             settings["notes"] += a.note or []
+            if getattr(a, "context_note", None):
+                settings["context"] = a.context_note
             path.with_name(path.stem + "_settings.json").write_text(json.dumps(settings, indent=1) + "\n")
     return 0
 
@@ -464,6 +507,11 @@ def main() -> int:
     ap.add_argument("--telemetry", action="store_true",
                     help="with --batch: the kernel samples the GPUs and keeps the agent framework's spans, filtered to "
                          "numbers and short labels (spec 014 US6, 036 US2); off by default, as the competition runs it")
+    ap.add_argument("--label", help="with --batch: name this batch (its dataset, kernel, work folder and table), so two "
+                                    "arms of one experiment run side by side")
+    ap.add_argument("--context", type=Path,
+                    help="with --batch: JSON lines of instance_id and context_text (scripts/69_failure_report.py); each "
+                         "drawn task's text is added after its hints, and every drawn task must have one")
     ap.add_argument("--deadline-minutes", type=float, default=45.0,
                     help="with --batch: the kernel stops starting tasks when one more could run past this")
     a = ap.parse_args()
@@ -480,6 +528,14 @@ def main() -> int:
     missing = [i for i in ids if i not in tasks or (not development and not (a.dataset / "snapshots" / f"{i}.tgz").exists())]
     if missing:
         sys.exit(f"not in the tasks.jsonl given, or no snapshot: {', '.join(missing)}")
+    if (a.label or a.context) and (not a.batch or development):
+        sys.exit("--label and --context are for a batch of the published tasks: they need --batch, not --source competition")
+    batch_name(a.source, a.label)   # a bad label fails here, before anything is uploaded
+    a.context_note = None
+    if a.context:
+        contexts = read_context(a.context)
+        tasks = with_context(tasks, contexts, ids)
+        a.context_note = context_note(a.context, contexts, ids)
     by_tier = {t: sum(manifest.get(i) == t for i in ids) for t in sorted(set(manifest.values()))}
     print(f"{len(ids)} tasks" + (f", drawn with seed {a.seed}, stratified by {'repository' if development else 'tier'}"
                                  if a.sample else "")

@@ -451,3 +451,48 @@ def test_the_controls_kernel_verifies_from_the_competitions_own_folder():
     src = (REPO_ROOT / "kaggle" / "official_controls_kernel.py").read_text()
     assert 'str(comp / "tasks.jsonl")' in src and 'str(comp / "snapshots")' in src   # wheels/ and sandbox/ beside them
     assert '"--patch", kind' in src and "install_wheelhouse()" in src
+
+
+# --- the same tasks with and without a failing test's report (028 AI7, #674) ----------------------------------------
+
+def test_a_named_batch_has_its_own_dataset_kernel_and_table(ob, run, tmp_path, monkeypatch):
+    """Two arms of one experiment run side by side: a batch's name reaches its dataset, its kernel and its table, so
+    neither arm overwrites the other."""
+    import pandas as pd
+    snap = _snapshot(tmp_path)
+    out = ob.build_batch([TASK], lambda t: (snap, None, None), _submission(tmp_path), tmp_path / "b",
+                         "someone", bytes(range(32)), order=["htlnlp_7"], name="report")
+    assert json.loads((out / "dataset-metadata.json").read_text())["id"] == "someone/htlnlp-official-report"
+    meta = run.kernel_metadata("someone", "report", None, None)
+    assert meta["id"] == "someone/htlnlp-offrun-report" and "someone/htlnlp-official-report" in meta["dataset_sources"]
+    assert run.batch_name("published", None) == "batch" and run.batch_name("competition", None) == "devset"
+    assert run.batch_name("published", "report") == "report"
+    with pytest.raises(SystemExit):
+        run.batch_name("published", "Not A Slug")
+    monkeypatch.setattr(run, "OUT_DIR", tmp_path)
+    row = {c: None for c in run.COLUMNS} | {"instance_id": "htlnlp_7", "is_resolved": False}
+    assert run.write_table(pd, [row], "m", label="report").name == "m_swegemma_report.csv"
+
+
+def test_a_context_is_appended_to_a_tasks_hints_and_every_task_must_have_one(run):
+    tasks = {"a": {"instance_id": "a", "hints_text": "see #6"}, "b": {"instance_id": "b", "hints_text": ""}}
+    out = run.with_context(tasks, {"a": "Failing test report:\n- ERROR x", "b": "Failing test report:\n- FAILED y"},
+                           ["a", "b"])
+    assert out["a"]["hints_text"] == "see #6\n\nFailing test report:\n- ERROR x"
+    assert out["b"]["hints_text"] == "Failing test report:\n- FAILED y"
+    assert tasks["a"]["hints_text"] == "see #6"                 # the tasks as published are not changed
+    with pytest.raises(SystemExit, match="b"):                  # an arm where one task lacks its context is not that arm
+        run.with_context(tasks, {"a": "x"}, ["a", "b"])
+
+
+def test_the_settings_record_which_context_an_arm_had_by_hash_and_size_never_its_text(run, tmp_path):
+    import hashlib
+    f = tmp_path / "ctx.jsonl"
+    f.write_text(json.dumps({"instance_id": "a", "context_text": "Failing test report:\n- ERROR x"}) + "\n"
+                 + json.dumps({"instance_id": "z", "context_text": "not drawn"}) + "\n")
+    ctx = run.read_context(f)
+    assert ctx["a"] == "Failing test report:\n- ERROR x" and set(ctx) == {"a", "z"}
+    note = run.context_note(f, ctx, ["a"])
+    assert note == {"file_name": "ctx.jsonl", "file_sha256": hashlib.sha256(f.read_bytes()).hexdigest(),
+                    "task_count": 1, "max_context_chars": len(ctx["a"]), "added_to": "hints_text"}
+    assert "ERROR x" not in json.dumps(note)

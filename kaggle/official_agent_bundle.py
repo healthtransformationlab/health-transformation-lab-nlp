@@ -105,10 +105,11 @@ def seal(data: bytes, key: bytes, name: str) -> bytes:
 
 
 def build_batch(tasks: list[dict], files_of, submission_dir: Path, out: Path, username: str, key: bytes,
-                order: list[str], settings: dict | None = None) -> Path:
+                order: list[str], settings: dict | None = None, name: str = "batch") -> Path:
     """One dataset for several tasks: `sealed/<instance_id>.bin` is a task's bundle (`build`, without the
     submission) as a tar, sealed with `key`; `official_batch.json` names the order to run them in and the run's
-    settings. `files_of(task)` gives its (snapshot, graph, embedding). The key is not written anywhere here."""
+    settings. `files_of(task)` gives its (snapshot, graph, embedding). The key is not written anywhere here.
+    `name` is the dataset's: two arms of one experiment each have their own (028 AI7, #674)."""
     out = Path(out)
     if out.exists():
         shutil.rmtree(out)
@@ -131,7 +132,7 @@ def build_batch(tasks: list[dict], files_of, submission_dir: Path, out: Path, us
                         / "submission", out / "submission")
     (out / "official_batch.json").write_text(json.dumps({"instance_ids": order, **(settings or {})}, indent=1) + "\n")
     (out / "dataset-metadata.json").write_text(json.dumps({
-        "title": "htlnlp official input batch", "id": f"{username}/{slug('batch')}",
+        "title": f"htlnlp official input {name}"[:50], "id": f"{username}/{slug(name)}",
         "licenses": [{"name": "CC-BY-4.0"}]}, indent=1) + "\n")
     return out
 
