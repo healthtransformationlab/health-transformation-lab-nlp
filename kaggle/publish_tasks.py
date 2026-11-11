@@ -35,7 +35,7 @@ from health_transformation_lab_nlp.paths import TASKS_DIR
 
 SLUG = "health-transformation-lab-coding-agent-tasks"
 TITLE = "Coding-Agent Tasks from a Data Pipeline Repo"
-SUBTITLE = "Real issues, patches and tests in the Gemma 4 Developer Agent dataset layout"
+SUBTITLE = "Real issues, patches and tests for coding agents"   # names no competition (#684); the card says the layout
 KEYWORDS = ["programming", "software", "python"]
 VERIFICATION = "swegemma_verification.csv"   # the competition's evaluator on every task (spec 028 US6, #641)
 
