@@ -298,3 +298,13 @@ def test_the_card_says_how_the_set_was_verified(task_dir, tmp_path):
     card = pt.build(task_dir, tmp_path / "out", "someone", "abc1234")["description"].lower()
     for words in ("swegemma", "conftest.py", "empty patch"):
         assert words in card, words
+
+
+def test_the_listing_names_no_competition_in_its_title_subtitle_or_tags():
+    """028 CHORE4 (#684): the owner asked that a search for a competition's name does not find the listing by its
+    title, subtitle or tags. The card still says which layout the files follow and which evaluator verified them."""
+    listing = " ".join([pt.TITLE, pt.SUBTITLE, *pt.KEYWORDS]).lower()
+    for word in ("gemma", "hackathon", "competition", "developer agent"):
+        assert word not in listing, word
+    assert 20 <= len(pt.SUBTITLE) <= 80          # Kaggle's bounds for a subtitle
+    assert len(pt.KEYWORDS) >= 3                 # AGENTS.md, "Publishing datasets": at least three tags
