@@ -235,3 +235,219 @@ def test_a_trace_is_counted_by_tool_kind_and_outside_paths(run):
     assert run.trace_counts({})["outside_workspace_call_count"] == 0
     row = run.row_for({"instance_id": "htlnlp_7", "patch": "", "trace_counts": c}, None, tier="B", kernel_url="k")
     assert row["graph_tool_call_count"] == 1 and row["prompt_token_count"] == 900 and row["reason_text"] == "empty patch"
+
+
+# --- the competition's own development set (028 AI4, #668) ---------------------------------------------------------
+
+DEV_ROW = {"instance_id": "fastapi_15661", "repo": "fastapi/fastapi", "base_commit": "abc123",
+           "problem_statement": "Query params drop a default", "hints_text": "", "created_at": "2025-01-01",
+           "patch": "diff --git a/fastapi/params.py b/fastapi/params.py\n+SECRET_FIX\n",
+           "test_patch": "diff --git a/tests/test_q.py b/tests/test_q.py\n+def test_q(): pass\n",
+           "FAIL_TO_PASS": "[\"tests/test_q.py::test_q\"]", "PASS_TO_PASS": "[]"}
+
+
+def _kernel_functions(*names):
+    """The kernel's own functions, run here without Kaggle (as test_the_kernel_opens_what_the_bundle_sealed does)."""
+    import ast
+    src = (REPO_ROOT / "kaggle" / "official_agent_kernel.py").read_text()
+    ns: dict = {}
+    exec("import glob, json, os, shutil\nfrom pathlib import Path\n", ns)   # noqa: S102 - our own kernel's code
+    for node in ast.parse(src).body:
+        if isinstance(node, ast.FunctionDef) and node.name in names:
+            exec(ast.get_source_segment(src, node), ns)                     # noqa: S102
+    return ns
+
+
+def test_a_development_set_draw_is_stratified_by_repository(run):
+    tasks = {**{f"fastapi_{n}": {"repo": "fastapi/fastapi"} for n in range(6)},
+             **{f"rich_{n}": {"repo": "Textualize/rich"} for n in range(4)}}
+    strata = run.strata(tasks, {}, "competition")
+    assert set(strata.values()) == {"fastapi/fastapi", "Textualize/rich"}
+    drawn = run.sample(strata, 5, 7)
+    assert sum(i.startswith("fastapi_") for i in drawn) == 3 and sum(i.startswith("rich_") for i in drawn) == 2
+    assert run.sample(strata, 5, 7) == drawn                                   # seeded
+    assert run.strata({"htlnlp_7": {}}, {"htlnlp_7": "A", "htlnlp_8": "B"}, "published") == {"htlnlp_7": "A"}
+
+
+def test_a_development_set_bundle_holds_the_submission_and_the_order_and_no_task(ob, tmp_path):
+    out = ob.build_competition_batch(["rich_2", "fastapi_9"], _submission(tmp_path), tmp_path / "b", "someone",
+                                     {"deadline_minutes": 240, "seed": 1})
+    names = {p.relative_to(out).as_posix() for p in out.rglob("*") if p.is_file()}
+    assert names == {"official_batch.json", "submission/agent.yaml", "submission/eval_config.yaml",
+                     "submission/prompts/system.md", "dataset-metadata.json"}
+    meta = json.loads((out / "official_batch.json").read_text())
+    assert meta["instance_ids"] == ["rich_2", "fastapi_9"] and meta["source"] == "competition"
+    assert meta["deadline_minutes"] == 240
+    assert json.loads((out / "dataset-metadata.json").read_text())["id"] == "someone/htlnlp-official-devset"
+
+
+def test_the_kernel_stages_a_development_task_from_the_mounted_competition(tmp_path):
+    ns = _kernel_functions("find_competition", "stage_competition_task")
+    comp = tmp_path / "input" / "gemma-4-developer-agent"
+    for d in ("snapshots", "graphs", "embeddings", "wheels", "sandbox"):
+        (comp / d).mkdir(parents=True)
+    (comp / "HARNESS_README.md").write_text("the harness")
+    (comp / "tasks.jsonl").write_text(json.dumps(DEV_ROW) + "\n"
+                                      + json.dumps(dict(DEV_ROW, instance_id="rich_1", repo="Textualize/rich")) + "\n")
+    (comp / "snapshots" / "fastapi_15661.tgz").write_bytes(b"snap")
+    (comp / "graphs" / "fastapi_abc123.json").write_text("{}")
+    (comp / "embeddings" / "fastapi_abc123.npz").write_bytes(b"vectors")
+    assert ns["find_competition"](tmp_path / "input") == comp
+    work = tmp_path / "work"
+    ns["stage_competition_task"](comp, "fastapi_15661", work)
+    (row,) = [json.loads(line) for line in (work / "tasks.jsonl").read_text().splitlines()]
+    assert row["instance_id"] == "fastapi_15661" and "patch" not in row      # never the reference fix
+    assert row["test_patch"] == DEV_ROW["test_patch"] and row["FAIL_TO_PASS"] == DEV_ROW["FAIL_TO_PASS"]
+    snap = work / "snapshots" / "fastapi_15661.tgz"
+    assert snap.is_symlink() and snap.read_bytes() == b"snap"                  # linked, not copied
+    assert (work / "graphs" / "fastapi_abc123.json").exists() and (work / "embeddings" / "fastapi_abc123.npz").exists()
+    # the evaluator finds the tests' dependencies beside tasks.jsonl (swegemma's resolve_wheels_dir): the pilot of
+    # November 11 had none there, and its verification stopped before any test ran (exit code 2)
+    assert (work / "wheels").is_symlink() and (work / "wheels").resolve() == (comp / "wheels").resolve()
+    assert (work / "sandbox").is_symlink() and (work / "sandbox").resolve() == (comp / "sandbox").resolve()
+    with pytest.raises(SystemExit):
+        ns["stage_competition_task"](comp, "httpx_1", work)
+
+
+def test_the_kernel_never_runs_beside_a_reference_patch_and_takes_tests_only_for_the_competitions_tasks():
+    ns = _kernel_functions("check_task_fields")
+    ns["check_task_fields"](has_patch=False, has_tests=True, with_tests=True)      # a development task
+    ns["check_task_fields"](has_patch=False, has_tests=False, with_tests=False)     # one of ours
+    with pytest.raises(SystemExit):
+        ns["check_task_fields"](has_patch=True, has_tests=True, with_tests=True)
+    with pytest.raises(SystemExit):
+        ns["check_task_fields"](has_patch=False, has_tests=True, with_tests=False)
+
+
+def test_a_development_row_takes_the_evaluators_own_verdict(run):
+    assert run.verdict_from_kernel({"verification": {"is_resolved": True, "test_exit_code": 0}}) == {
+        "resolved": True, "test_exit_code": 0}
+    assert run.verdict_from_kernel({"patch": ""}) is None
+
+
+def test_a_batch_counts_each_tasks_trace(run, tmp_path):
+    trace = tmp_path / "tasks" / "fastapi_15661" / "results" / "traces" / "trace_fastapi_15661.json"
+    trace.parent.mkdir(parents=True)
+    trace.write_text(json.dumps({"final_metrics": {"total_prompt_tokens": 50, "total_completion_tokens": 5},
+                                 "steps": [{"tool_calls": [{"function_name": "run_command",
+                                                            "arguments": {"command": "cat /kaggle/input/x"}}]}]}))
+    counts = run.batch_trace_counts(tmp_path, "fastapi_15661")
+    assert counts["prompt_token_count"] == 50 and counts["outside_workspace_call_count"] == 1
+    assert run.batch_trace_counts(tmp_path, "rich_1") is None
+
+
+def test_the_development_set_has_its_own_table(run, tmp_path, monkeypatch):
+    import pandas as pd
+    monkeypatch.setattr(run, "OUT_DIR", tmp_path)
+    row = {c: None for c in run.COLUMNS} | {"instance_id": "fastapi_15661", "is_resolved": False}
+    path = run.write_table(pd, [row], "gemma-4-e4b-it-qat-w4a16-ct", label="devset")
+    assert path.name == "gemma-4-e4b-it-qat-w4a16-ct_swegemma_devset.csv"
+    assert run.write_table(pd, [row], "gemma-4-e4b-it-qat-w4a16-ct").name == "gemma-4-e4b-it-qat-w4a16-ct_swegemma.csv"
+
+
+# --- the official kernel's telemetry, behind a switch (spec 014 US6, 036 US2; #668) ---------------------------------
+
+class _FakeSpan:
+    """What the tracing SDK hands an exporter: to_json() as the SDK writes it."""
+
+    def __init__(self, attributes):
+        self.attributes = attributes
+
+    def to_json(self, indent=None):
+        return json.dumps({"name": "call_llm", "context": {"trace_id": "0x1", "span_id": "0x2", "trace_state": "[]"},
+                           "kind": "SpanKind.INTERNAL", "parent_id": "0x3", "start_time": "t0", "end_time": "t1",
+                           "status": {"status_code": "ERROR", "description": "the request said: def secret()"},
+                           "attributes": self.attributes, "events": [{"name": "reply", "attributes": {"text": "x"}}],
+                           "links": [], "resource": {"attributes": {"service.name": "svc", "host.arch": "x" * 90},
+                                                     "schema_url": ""}})
+
+
+def test_a_kernel_span_keeps_counts_and_short_labels_and_never_the_request_or_reply():
+    ns = _kernel_functions("_keep_attribute", "span_line")
+    ns.update(MAX_SPAN_TEXT=64, SPAN_TEXT_KEYS=("_name", "_code", "_id", ".name", ".model", ".type", ".system",
+                                                ".operation"))
+    request = json.dumps({"contents": "def secret(): return 42  # the task's code"})
+    line = json.loads(ns["span_line"](_FakeSpan({
+        "gen_ai.usage.input_tokens": 1200, "gen_ai.usage.output_tokens": 80, "gen_ai.request.model": "gemma-4-e4b",
+        "gen_ai.tool.name": "read_file", "instance_id": "fastapi_15661", "gcp.vertex.agent.llm_request": request,
+        "gcp.vertex.agent.llm_response": "the patch is ...", "gen_ai.operation.name": "chat"})))
+    a = line["attributes"]
+    assert a["gen_ai.usage.input_tokens"] == 1200 and a["gen_ai.request.model"] == "gemma-4-e4b"
+    assert a["gen_ai.tool.name"] == "read_file" and a["instance_id"] == "fastapi_15661"
+    assert "gcp.vertex.agent.llm_request" not in a and "gcp.vertex.agent.llm_response" not in a
+    assert line["events"] == [] and line["status"] == {"status_code": "ERROR"}
+    assert "host.arch" not in line["resource"]["attributes"] and "secret" not in json.dumps(line)
+
+
+def test_the_kernel_traces_and_samples_the_gpus_only_when_asked():
+    src = (REPO_ROOT / "kaggle" / "official_agent_kernel.py").read_text()
+    assert 'meta.get("telemetry")' in src and "start_tracing(OUT / \"telemetry.jsonl\")" in src
+    assert "start_gpu_sampler(OUT / \"gpu_samples.csv\")" in src
+    assert '"OTEL_SDK_DISABLED": "true"' in src                 # the default stays as the competition runs it
+
+
+def test_a_tasks_gpu_use_is_summed_from_the_samples_between_its_start_and_end(run, tmp_path):
+    from datetime import datetime, timezone
+    csv = tmp_path / "gpu_samples.csv"
+    lines = ["timestamp,gpu_index,utilization_pct,memory_used_mb,power_w"]
+    for s in range(0, 30, 5):                                  # two GPUs, every 5 seconds from 12:00:00
+        for g in (0, 1):
+            lines.append(f"2026/11/11 12:00:{s:02d}.000, {g}, {50 + 10 * g}, {1000 + s}, {60.0 + g}")
+    csv.write_text("\n".join(lines) + "\n")
+    t0 = datetime(2026, 11, 11, 12, 0, 5, tzinfo=timezone.utc).timestamp()
+    stats = run.gpu_stats(csv, t0, t0 + 10)                    # 12:00:05 to 12:00:15: three samples a GPU
+    assert stats["gpu_sample_count"] == 6 and stats["avg_gpu_utilization_pct"] == 55.0
+    assert stats["max_gpu_memory_used_mb"] == 1015.0
+    assert abs(stats["gpu_energy_wh"] - (60.0 + 61.0) * 10 / 3600) < 1e-9   # each GPU's mean power over 10 s
+    assert run.gpu_stats(tmp_path / "none.csv", t0, t0 + 10) is None
+
+
+def test_the_runner_asks_the_kernel_for_telemetry_only_with_the_switch(run):
+    class A:
+        deadline_minutes, seed, telemetry = 45.0, 7, False
+    assert "telemetry" not in run.batch_meta(A, {})
+    A.telemetry = True
+    assert run.batch_meta(A, {"max_time_minutes": 5.0}) == {"budget_overrides": {"max_time_minutes": 5.0},
+                                                            "deadline_minutes": 45.0, "seed": 7, "telemetry": True}
+
+
+# --- the controls on the development set: the reference patch and an empty one (028 AI4, #668) ---------------------
+
+@pytest.fixture(scope="module")
+def controls():
+    return _load("official_controls_run")
+
+
+def test_the_controls_kernel_runs_on_a_cpu_offline_beside_the_competition_and_the_evaluator(controls):
+    meta = controls.kernel_metadata("someone", "gemma-4-developer-agent", "gcr.io/kaggle-private-byod/python@sha256:x")
+    assert meta["id"] == "someone/htlnlp-offrun-devset-controls" and meta["is_private"] is True
+    assert meta["enable_gpu"] is False and meta["enable_internet"] is False and meta["model_sources"] == []
+    assert meta["competition_sources"] == ["gemma-4-developer-agent"]
+    assert meta["dataset_sources"] == ["someone/htlnlp-official-devset-controls", controls.WHEELHOUSE]
+    assert meta["docker_image"].endswith("sha256:x")
+
+
+def test_the_controls_bundle_holds_the_submission_the_verifier_and_the_ids(controls, tmp_path):
+    out = controls.build_bundle(["rich_2", "fastapi_9"], _submission(tmp_path), tmp_path / "b", "someone")
+    names = {p.relative_to(out).as_posix() for p in out.rglob("*") if p.is_file()}
+    assert names == {"controls.json", "official_verify.py", "submission/agent.yaml", "submission/eval_config.yaml",
+                     "submission/prompts/system.md", "dataset-metadata.json"}
+    meta = json.loads((out / "controls.json").read_text())
+    assert meta["instance_ids"] == ["rich_2", "fastapi_9"] and meta["kinds"] == ["oracle", "null"]
+    assert (out / "official_verify.py").read_text() == (REPO_ROOT / "kaggle" / "official_verify.py").read_text()
+
+
+def test_a_control_row_keeps_the_verdict_and_never_the_test_output(controls):
+    row = controls.row_for({"instance_id": "rich_2", "patch_kind": "oracle", "resolved": True, "test_exit_code": 0,
+                            "error": None, "seconds": 41.2, "output_tail": "def test(): the repo's test output"},
+                           "2026-11-11T14:00:00Z")
+    assert row == {"instance_id": "rich_2", "patch_source_code": "reference", "is_resolved": True,
+                   "test_exit_code": 0, "error_text": None, "verify_seconds": 41.2, "run_ts": "2026-11-11T14:00:00Z"}
+    assert controls.row_for({"instance_id": "x", "patch_kind": "null", "resolved": False, "test_exit_code": 1,
+                             "error": "E" * 900, "seconds": 3}, "t")["error_text"] == "E" * 200
+
+
+def test_the_controls_kernel_verifies_from_the_competitions_own_folder():
+    src = (REPO_ROOT / "kaggle" / "official_controls_kernel.py").read_text()
+    assert 'str(comp / "tasks.jsonl")' in src and 'str(comp / "snapshots")' in src   # wheels/ and sandbox/ beside them
+    assert '"--patch", kind' in src and "install_wheelhouse()" in src
