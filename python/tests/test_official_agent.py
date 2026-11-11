@@ -165,6 +165,11 @@ def test_the_settings_say_how_the_sample_was_drawn_and_what_differs_from_the_com
     assert diffs["max_tool_calls"]["used"] == 40 and diffs["max_tool_calls"]["competition_default"] == 100
     assert diffs["timeout_seconds"]["used"] == 120 and "max_output_tokens" not in diffs     # the same as the default
     assert any("no reference patch" in n for n in s["notes"])
+    assert any(n.startswith("Each task ran alone in a private, offline kernel") for n in s["notes"])
+    batch = run.settings_for(result, seed=7, drawn=["a", "b"], pool_count=93, machine_shape="NvidiaL4", docker_image="img",
+                             competition="gemma-4-developer-agent", agent_commit="abc123", tasks_per_kernel=2)
+    assert not any("Each task ran alone in a private, offline kernel" in n for n in batch["notes"])
+    assert any(n.startswith("All 2 tasks were given to one private, offline kernel, each sealed until its turn") for n in batch["notes"])
 
 
 # --- a batch: several tasks in one kernel, each sealed until its turn (the GPU allowance decides, #636) -----------
@@ -451,3 +456,181 @@ def test_the_controls_kernel_verifies_from_the_competitions_own_folder():
     src = (REPO_ROOT / "kaggle" / "official_controls_kernel.py").read_text()
     assert 'str(comp / "tasks.jsonl")' in src and 'str(comp / "snapshots")' in src   # wheels/ and sandbox/ beside them
     assert '"--patch", kind' in src and "install_wheelhouse()" in src
+
+
+# --- the same tasks with and without a failing test's report (028 AI7, #674) ----------------------------------------
+
+def test_a_named_batch_has_its_own_dataset_kernel_and_table(ob, run, tmp_path, monkeypatch):
+    """Two arms of one experiment run side by side: a batch's name reaches its dataset, its kernel and its table, so
+    neither arm overwrites the other."""
+    import pandas as pd
+    snap = _snapshot(tmp_path)
+    out = ob.build_batch([TASK], lambda t: (snap, None, None), _submission(tmp_path), tmp_path / "b",
+                         "someone", bytes(range(32)), order=["htlnlp_7"], name="report")
+    assert json.loads((out / "dataset-metadata.json").read_text())["id"] == "someone/htlnlp-official-report"
+    meta = run.kernel_metadata("someone", "report", None, None)
+    assert meta["id"] == "someone/htlnlp-offrun-report" and "someone/htlnlp-official-report" in meta["dataset_sources"]
+    assert run.batch_name("published", None) == "batch" and run.batch_name("competition", None) == "devset"
+    assert run.batch_name("published", "report") == "report"
+    with pytest.raises(SystemExit):
+        run.batch_name("published", "Not A Slug")
+    monkeypatch.setattr(run, "OUT_DIR", tmp_path)
+    row = {c: None for c in run.COLUMNS} | {"instance_id": "htlnlp_7", "is_resolved": False}
+    assert run.write_table(pd, [row], "m", label="report").name == "m_swegemma_report.csv"
+
+
+def test_a_context_is_appended_to_a_tasks_hints_and_every_task_must_have_one(run):
+    tasks = {"a": {"instance_id": "a", "hints_text": "see #6"}, "b": {"instance_id": "b", "hints_text": ""}}
+    out = run.with_context(tasks, {"a": "Failing test report:\n- ERROR x", "b": "Failing test report:\n- FAILED y"},
+                           ["a", "b"])
+    assert out["a"]["hints_text"] == "see #6\n\nFailing test report:\n- ERROR x"
+    assert out["b"]["hints_text"] == "Failing test report:\n- FAILED y"
+    assert tasks["a"]["hints_text"] == "see #6"                 # the tasks as published are not changed
+    with pytest.raises(SystemExit, match="b"):                  # an arm where one task lacks its context is not that arm
+        run.with_context(tasks, {"a": "x"}, ["a", "b"])
+
+
+def test_the_settings_record_which_context_an_arm_had_by_hash_and_size_never_its_text(run, tmp_path):
+    import hashlib
+    f = tmp_path / "ctx.jsonl"
+    f.write_text(json.dumps({"instance_id": "a", "context_text": "Failing test report:\n- ERROR x"}) + "\n"
+                 + json.dumps({"instance_id": "z", "context_text": "not drawn"}) + "\n")
+    ctx = run.read_context(f)
+    assert ctx["a"] == "Failing test report:\n- ERROR x" and set(ctx) == {"a", "z"}
+    note = run.context_note(f, ctx, ["a"])
+    assert note == {"file_name": "ctx.jsonl", "file_sha256": hashlib.sha256(f.read_bytes()).hexdigest(),
+                    "task_count": 1, "max_context_chars": len(ctx["a"]), "added_to": "hints_text"}
+    assert "ERROR x" not in json.dumps(note)
+
+
+def test_a_run_of_given_ids_says_so_in_its_settings(run):
+    """An arm of the experiment runs ids fixed by its pre-registration: the settings must not say this run drew them."""
+    s = {"sample": {"seed": 7, "drawn_count": 2, "pool_count": 93, "instance_ids": ["a", "b"],
+                    "method_text": "drawn with the seed from the published tasks"}, "notes": []}
+    out = run.given_sample(s, "the 20 of November 10 and 10 more by seed 20261111")
+    assert out["sample"]["method_text"] == ("the ids were given to this run, not drawn by it: the 20 of November 10 "
+                                            "and 10 more by seed 20261111")
+    assert out["sample"]["seed"] is None and out["sample"]["order_seed"] == 7
+    assert s["sample"]["seed"] == 7                                   # the input is left alone
+
+
+def test_every_row_of_a_batch_carries_the_kernels_finish_time_as_its_batch_key(run):
+    """AGENTS.md, "Failures, retries and reruns": every written row carries its batch key. A batch kernel writes its
+    start and end once, beside its runs; each task's row takes the end, and never the whole kernel's time as its own."""
+    res = {"model_name": "m", "started_ts": "2026-11-11T14:42:48Z", "finished_ts": "2026-11-11T17:07:13Z",
+           "runs": {"a": {"instance_id": "a", "patch": "x", "agent_phase_seconds": 9.0},
+                    "b": {"instance_id": "b", "is_skipped": True}}}
+    done = run.batch_results(res)
+    assert list(done) == ["a"]                                        # a task the kernel did not reach has no row
+    row = run.row_for({"instance_id": "a", **done["a"]}, {"resolved": True, "test_exit_code": 0}, "A", "url")
+    assert row["run_ts"] == "2026-11-11T17:07:13Z"
+    assert row["script_seconds"] is None and row["model_name"] == "m"
+
+
+# --- a model server that stops answering mid-batch (028 AI7, #674: the statement arm's kernel of November 11) --------
+
+def test_a_task_whose_agent_got_no_answer_from_the_model_is_not_run(run):
+    """The pre-registration's rule: a task the kernel did not reach, or whose agent phase did not start, is "not run".
+    With the model server gone a task makes no model call at all and ends at its time limit: no attempt was made, so
+    it has no row and is counted with the tasks the kernel skipped."""
+    res = {"model_name": "m", "finished_ts": "2026-11-11T19:30:00Z", "runs": {
+        "ran": {"instance_id": "ran", "patch": "", "llm_call_count": 12, "tool_call_count": 12,
+                "agent_error": "Agent exceeded session timeout (5.0 min)"},
+        "no_tools": {"instance_id": "no_tools", "patch": "", "llm_call_count": 3, "tool_call_count": 0},
+        "dead": {"instance_id": "dead", "patch": "", "llm_call_count": 0, "tool_call_count": 0,
+                 "agent_error": "Agent exceeded session timeout (5.0 min)"},
+        "refused": {"instance_id": "refused", "patch": "", "llm_call_count": 0, "tool_call_count": 0,
+                    "agent_phase_seconds": 104.7,
+                    "agent_error": "Sandbox execution error: litellm.InternalServerError: Connection error."},
+        "prompt": {"instance_id": "prompt", "patch": "", "llm_call_count": 0, "tool_call_count": 0,
+                   "agent_error": "Context variable not found: `hints`."},
+        "skipped": {"instance_id": "skipped", "is_skipped": True}}}
+    res["runs"]["dead"]["agent_phase_seconds"] = 300.8
+    # a timeout after real model calls is a run; so is a task whose own prompt failed before any call (the hints
+    # defect of November 10): an arm whose added text broke the prompt must not lose those tasks from its count
+    assert list(run.batch_results(res)) == ["ran", "no_tools", "prompt"]
+    assert run.not_run_reasons(res) == {"dead": "no answer from the model server (no model call)",
+                                       "refused": "no answer from the model server (no model call)",
+                                       "skipped": "not reached by the kernel"}
+    assert run.not_run_rows(res, ["skipped", "refused", "ran", "dead"]) == [     # in the run's order, each with how it ended
+        {"instance_id": "skipped", "reason_text": "not reached by the kernel", "error_kind_code": None, "agent_seconds": None},
+        {"instance_id": "refused", "reason_text": "no answer from the model server (no model call)",
+         "error_kind_code": "server_error", "agent_seconds": 104.7},
+        {"instance_id": "dead", "reason_text": "no answer from the model server (no model call)",
+         "error_kind_code": "time_limit", "agent_seconds": 300.8}]
+
+
+def test_the_kernel_stops_a_batch_when_the_model_server_stops_answering():
+    """Two tasks in a row with no model call and an error: the server is gone, and every further task would only
+    spend the GPU allowance (the kernel of November 11 spent three and a half hours that way)."""
+    gone = _kernel_functions("server_gone")["server_gone"]
+    ok = {"llm_call_count": 9, "tool_call_count": 7}
+    dead = {"llm_call_count": 0, "tool_call_count": 0, "agent_error": "Agent exceeded session timeout (5.0 min)"}
+    assert gone([ok, ok, dead]) is False                              # one could be the task's own trouble
+    assert gone([ok, dead, dead]) is True
+    assert gone([dead, ok, dead]) is False                            # not in a row
+    assert gone([dead, {"error": "RuntimeError: sandbox"}]) is False  # a failure of another kind is its own row
+    assert gone([]) is False
+    refused = {"llm_call_count": 0, "agent_error": "Sandbox execution error: litellm.InternalServerError: Connection error."}
+    assert gone([ok, dead, refused]) is True
+    prompt = {"llm_call_count": 0, "tool_call_count": 0, "agent_error": "Context variable not found: `hints`."}
+    assert gone([ok, prompt, prompt]) is False                        # the server is alive: the submission's own fault
+
+
+def test_a_rerun_keeps_each_tasks_place_in_the_seeded_order_of_the_whole_set(run):
+    """The pre-registration reruns tasks a kernel did not run "with the same settings and order": among themselves
+    they keep the order the seeded shuffle of the whole set gave them."""
+    everything = [f"t{n}" for n in range(12)]
+    full = run.seeded_order(everything, 20261110)
+    assert sorted(full) == sorted(everything) and full != everything
+    some = ["t3", "t7", "t9", "t0"]
+    assert run.seeded_order(some, 20261110, of_set=everything) == [i for i in full if i in some]
+    assert run.seeded_order(everything, 20261110, of_set=everything) == full
+    with pytest.raises(SystemExit, match="not in the first run: zz"):
+        run.seeded_order(["t3", "zz"], 20261110, of_set=everything)
+    assert run.order_record(everything) == {"of_ids_count": 12, "of_ids_sha256": run.order_record(everything)["of_ids_sha256"]}
+    assert len(run.order_record(everything)["of_ids_sha256"]) == 64 and run.order_record(some) != run.order_record(everything)
+
+
+def test_a_batch_kernel_that_kaggle_refuses_stops_the_run_with_kaggles_own_words(run, tmp_path):
+    """The rerun of November 11 was pushed with the weekly GPU allowance spent. Kaggle refused the kernel, and the
+    runner went on to wait for a kernel that did not exist. A refusal ends the run and says why."""
+    class Refusing:
+        def kernels_push(self, folder, timeout=None):
+            return type("Response", (), {"error": "Maximum weekly GPU quota of 30.00 hours reached."})()
+
+    class Raising:
+        def kernels_push(self, folder, timeout=None):
+            raise RuntimeError("403 Client Error")
+
+    class Accepting:
+        def kernels_push(self, folder, timeout=None):
+            return type("Response", (), {"error": ""})()
+
+    with pytest.raises(SystemExit, match="someone/htlnlp-offrun-x: Kaggle refused the kernel: Maximum weekly GPU quota"):
+        run.push_kernel(Refusing(), tmp_path, 60, "someone/htlnlp-offrun-x")
+    with pytest.raises(SystemExit, match="403 Client Error"):
+        run.push_kernel(Raising(), tmp_path, 60, "someone/htlnlp-offrun-x")
+    assert run.push_kernel(Accepting(), tmp_path, 60, "someone/htlnlp-offrun-x") is None
+
+
+def test_a_context_needs_a_label_so_its_rows_never_join_another_runs_table(run):
+    """Without a label a batch writes to the table of the run of November 10. A run with added context is a different
+    condition: it must name its own table."""
+    with pytest.raises(SystemExit, match="--context needs --label"):
+        run.check_arm_options(label=None, context="contexts.jsonl", batch=True, development=False)
+    with pytest.raises(SystemExit, match="need --batch"):
+        run.check_arm_options(label="report", context="contexts.jsonl", batch=False, development=False)
+    with pytest.raises(SystemExit, match="need --batch"):
+        run.check_arm_options(label="report", context=None, batch=True, development=True)
+    run.check_arm_options(label="report", context="contexts.jsonl", batch=True, development=False)
+    run.check_arm_options(label="statement", context=None, batch=True, development=False)
+    run.check_arm_options(label=None, context=None, batch=False, development=False)
+
+
+def test_a_collection_can_reuse_output_already_downloaded(run, tmp_path):
+    """Collecting again (new settings, a corrected note) need not download the kernel's output a second time."""
+    assert run.reusable_output(tmp_path, True) is False              # nothing there yet
+    (tmp_path / "result.json").write_text("{}")
+    assert run.reusable_output(tmp_path, True) is True
+    assert run.reusable_output(tmp_path, False) is False             # only when asked

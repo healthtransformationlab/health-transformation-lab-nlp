@@ -1,0 +1,773 @@
+instance_id,section_name,span_count,self_seconds,input_token_count,output_token_count
+htlnlp_102,agent code_analyzer,3,0.045,0,0
+htlnlp_102,agent data_pipeline_fixer,5,0.139,0,0
+htlnlp_102,agent loop,8,0.01,0,0
+htlnlp_102,context compaction,2,17.62,0,0
+htlnlp_102,harness,1,0.752,0,0
+htlnlp_102,model call,22,135.728,389392,23524
+htlnlp_102,tool code_analyzer,3,0.002,0,0
+htlnlp_102,tool read_file,7,0.007,0,0
+htlnlp_102,tool run_command,3,52.071,0,0
+htlnlp_102,tool search_similar_code,2,0.104,0,0
+htlnlp_102,tool submit_patch,1,0.019,0,0
+htlnlp_102,tool write_file,1,0.006,0,0
+htlnlp_104,agent data_pipeline_fixer,1,0.026,0,0
+htlnlp_104,agent loop,1,0.001,0,0
+htlnlp_104,harness,1,0.741,0,0
+htlnlp_104,model call,3,13.038,81118,1782
+htlnlp_104,tool run_command,1,54.224,0,0
+htlnlp_104,tool submit_patch,1,0.019,0,0
+htlnlp_109,agent data_pipeline_fixer,1,0.064,0,0
+htlnlp_109,agent loop,1,0.001,0,0
+htlnlp_109,context compaction,2,23.672,0,0
+htlnlp_109,harness,1,0.687,0,0
+htlnlp_109,model call,7,51.766,173700,7986
+htlnlp_109,tool edit_file,2,0.008,0,0
+htlnlp_109,tool read_file,2,0.003,0,0
+htlnlp_109,tool run_command,1,0.09,0,0
+htlnlp_109,tool submit_patch,1,0.019,0,0
+htlnlp_111,agent data_pipeline_fixer,1,0.06,0,0
+htlnlp_111,agent loop,1,0.001,0,0
+htlnlp_111,context compaction,1,12.11,0,0
+htlnlp_111,harness,1,0.673,0,0
+htlnlp_111,model call,7,25.899,166692,3932
+htlnlp_111,tool edit_file,2,0.005,0,0
+htlnlp_111,tool read_file,2,0.003,0,0
+htlnlp_111,tool run_command,1,1.828,0,0
+htlnlp_111,tool submit_patch,1,0.018,0,0
+htlnlp_114,agent data_pipeline_fixer,1,0.02,0,0
+htlnlp_114,agent loop,1,0.005,0,0
+htlnlp_114,harness,1,0.726,0,0
+htlnlp_114,model call,2,10.148,27388,1300
+htlnlp_114,tool read_file,1,0.002,0,0
+htlnlp_116,agent data_pipeline_fixer,1,0.077,0,0
+htlnlp_116,agent loop,1,0.005,0,0
+htlnlp_116,context compaction,1,13.145,0,0
+htlnlp_116,harness,1,0.703,0,0
+htlnlp_116,model call,8,39.582,171110,6232
+htlnlp_116,tool edit_file,3,0.007,0,0
+htlnlp_116,tool read_file,3,0.004,0,0
+htlnlp_116,tool run_command,1,40.795,0,0
+htlnlp_117,agent data_pipeline_fixer,2,0.026,0,0
+htlnlp_117,agent loop,2,0.001,0,0
+htlnlp_117,harness,1,0.683,0,0
+htlnlp_117,model call,3,16.716,81512,2446
+htlnlp_117,tool submit_patch,1,0.018,0,0
+htlnlp_119,agent data_pipeline_fixer,1,0.087,0,0
+htlnlp_119,agent loop,1,0.006,0,0
+htlnlp_119,context compaction,1,14.055,0,0
+htlnlp_119,harness,1,0.7,0,0
+htlnlp_119,model call,9,84.434,210412,13990
+htlnlp_119,tool read_file,2,0.002,0,0
+htlnlp_119,tool run_command,1,0.005,0,0
+htlnlp_119,tool write_file,5,0.031,0,0
+htlnlp_120,agent data_pipeline_fixer,1,0.105,0,0
+htlnlp_120,agent loop,1,0.001,0,0
+htlnlp_120,context compaction,1,15.268,0,0
+htlnlp_120,harness,1,0.674,0,0
+htlnlp_120,model call,12,40.15,300124,6366
+htlnlp_120,tool edit_file,1,0.003,0,0
+htlnlp_120,tool read_file,4,0.005,0,0
+htlnlp_120,tool run_command,5,0.026,0,0
+htlnlp_120,tool submit_patch,1,0.019,0,0
+htlnlp_143,agent data_pipeline_fixer,2,0.061,0,0
+htlnlp_143,agent loop,2,0.002,0,0
+htlnlp_143,context compaction,1,9.801,0,0
+htlnlp_143,harness,1,0.75,0,0
+htlnlp_143,model call,7,39.669,150844,6452
+htlnlp_143,tool edit_file,1,0.002,0,0
+htlnlp_143,tool read_file,1,0.001,0,0
+htlnlp_143,tool run_command,2,55.325,0,0
+htlnlp_143,tool submit_patch,1,0.019,0,0
+htlnlp_144,agent data_pipeline_fixer,1,0.137,0,0
+htlnlp_144,agent loop,1,0.001,0,0
+htlnlp_144,context compaction,2,23.397,0,0
+htlnlp_144,harness,1,0.743,0,0
+htlnlp_144,model call,15,70.194,350818,11288
+htlnlp_144,tool edit_file,5,0.009,0,0
+htlnlp_144,tool read_file,6,0.009,0,0
+htlnlp_144,tool run_command,2,0.045,0,0
+htlnlp_144,tool submit_patch,1,0.02,0,0
+htlnlp_152,agent data_pipeline_fixer,1,0.024,0,0
+htlnlp_152,agent loop,1,0.001,0,0
+htlnlp_152,harness,1,0.737,0,0
+htlnlp_152,model call,3,10.225,60206,1484
+htlnlp_152,tool get_status,1,0.0,0,0
+htlnlp_152,tool submit_patch,1,0.02,0,0
+htlnlp_155,agent data_pipeline_fixer,2,0.095,0,0
+htlnlp_155,agent loop,2,0.003,0,0
+htlnlp_155,harness,1,0.743,0,0
+htlnlp_155,model call,11,49.464,228896,8358
+htlnlp_155,tool read_file,4,0.005,0,0
+htlnlp_155,tool submit_patch,1,0.019,0,0
+htlnlp_155,tool write_file,4,0.025,0,0
+htlnlp_166,agent data_pipeline_fixer,1,0.029,0,0
+htlnlp_166,agent loop,1,0.005,0,0
+htlnlp_166,harness,1,0.765,0,0
+htlnlp_166,model call,3,8.493,51244,1004
+htlnlp_166,tool read_file,2,0.003,0,0
+htlnlp_170,agent data_pipeline_fixer,1,0.039,0,0
+htlnlp_170,agent loop,1,0.005,0,0
+htlnlp_170,harness,1,0.776,0,0
+htlnlp_170,model call,4,18.662,71526,2864
+htlnlp_170,tool edit_file,1,0.003,0,0
+htlnlp_170,tool read_file,1,0.001,0,0
+htlnlp_170,tool run_command,1,55.831,0,0
+htlnlp_174,agent data_pipeline_fixer,1,0.071,0,0
+htlnlp_174,agent loop,1,0.001,0,0
+htlnlp_174,context compaction,1,12.127,0,0
+htlnlp_174,harness,1,0.741,0,0
+htlnlp_174,model call,8,61.089,194452,9984
+htlnlp_174,tool edit_file,3,0.008,0,0
+htlnlp_174,tool read_file,3,0.004,0,0
+htlnlp_174,tool submit_patch,1,0.02,0,0
+htlnlp_178,agent data_pipeline_fixer,1,0.036,0,0
+htlnlp_178,agent loop,1,0.001,0,0
+htlnlp_178,harness,1,0.742,0,0
+htlnlp_178,model call,3,12.924,77358,1826
+htlnlp_178,tool get_status,1,0.0,0,0
+htlnlp_178,tool submit_patch,1,0.02,0,0
+htlnlp_180,agent data_pipeline_fixer,1,0.104,0,0
+htlnlp_180,agent loop,1,0.001,0,0
+htlnlp_180,context compaction,1,8.949,0,0
+htlnlp_180,harness,1,0.752,0,0
+htlnlp_180,model call,12,45.653,283298,7314
+htlnlp_180,tool edit_file,2,0.004,0,0
+htlnlp_180,tool read_file,5,0.006,0,0
+htlnlp_180,tool run_command,3,0.015,0,0
+htlnlp_180,tool submit_patch,1,0.019,0,0
+htlnlp_187,agent data_pipeline_fixer,1,0.152,0,0
+htlnlp_187,agent loop,1,0.001,0,0
+htlnlp_187,context compaction,1,11.938,0,0
+htlnlp_187,harness,1,0.766,0,0
+htlnlp_187,model call,17,62.044,366724,10380
+htlnlp_187,tool edit_file,10,0.021,0,0
+htlnlp_187,tool read_file,4,0.007,0,0
+htlnlp_187,tool run_command,1,56.084,0,0
+htlnlp_187,tool submit_patch,1,0.02,0,0
+htlnlp_189,agent data_pipeline_fixer,1,0.025,0,0
+htlnlp_189,agent loop,1,0.001,0,0
+htlnlp_189,harness,1,0.741,0,0
+htlnlp_189,model call,3,18.166,73880,2788
+htlnlp_189,tool read_file,1,0.001,0,0
+htlnlp_189,tool submit_patch,1,0.02,0,0
+htlnlp_191,agent data_pipeline_fixer,1,0.034,0,0
+htlnlp_191,agent loop,1,0.001,0,0
+htlnlp_191,context compaction,1,10.304,0,0
+htlnlp_191,harness,1,0.755,0,0
+htlnlp_191,model call,4,21.05,107914,3222
+htlnlp_191,tool edit_file,1,0.002,0,0
+htlnlp_191,tool read_file,1,0.001,0,0
+htlnlp_191,tool submit_patch,1,0.019,0,0
+htlnlp_192,agent data_pipeline_fixer,1,0.092,0,0
+htlnlp_192,agent loop,1,0.001,0,0
+htlnlp_192,context compaction,3,27.055,0,0
+htlnlp_192,harness,1,0.744,0,0
+htlnlp_192,model call,10,43.986,245830,6280
+htlnlp_192,tool edit_file,3,0.008,0,0
+htlnlp_192,tool read_file,5,0.009,0,0
+htlnlp_192,tool submit_patch,1,0.02,0,0
+htlnlp_206,agent data_pipeline_fixer,1,0.029,0,0
+htlnlp_206,agent loop,1,0.006,0,0
+htlnlp_206,harness,1,0.763,0,0
+htlnlp_206,model call,3,29.321,52338,4600
+htlnlp_206,tool read_file,2,0.003,0,0
+htlnlp_214,agent data_pipeline_fixer,1,0.081,0,0
+htlnlp_214,agent loop,1,0.001,0,0
+htlnlp_214,context compaction,1,15.708,0,0
+htlnlp_214,harness,1,0.745,0,0
+htlnlp_214,model call,9,37.949,211264,5990
+htlnlp_214,tool edit_file,1,0.002,0,0
+htlnlp_214,tool read_file,6,0.008,0,0
+htlnlp_214,tool submit_patch,1,0.02,0,0
+htlnlp_226,agent data_pipeline_fixer,1,0.053,0,0
+htlnlp_226,agent loop,1,0.001,0,0
+htlnlp_226,context compaction,2,20.767,0,0
+htlnlp_226,harness,1,0.782,0,0
+htlnlp_226,model call,6,33.023,149784,4750
+htlnlp_226,tool edit_file,1,0.002,0,0
+htlnlp_226,tool read_file,2,0.003,0,0
+htlnlp_226,tool run_command,1,84.706,0,0
+htlnlp_226,tool submit_patch,1,0.021,0,0
+htlnlp_228,agent data_pipeline_fixer,1,0.052,0,0
+htlnlp_228,agent loop,1,0.001,0,0
+htlnlp_228,context compaction,1,13.341,0,0
+htlnlp_228,harness,1,0.747,0,0
+htlnlp_228,model call,6,35.077,157984,5394
+htlnlp_228,tool edit_file,1,0.002,0,0
+htlnlp_228,tool read_file,3,0.003,0,0
+htlnlp_228,tool submit_patch,1,0.02,0,0
+htlnlp_230,agent data_pipeline_fixer,1,0.071,0,0
+htlnlp_230,agent loop,1,0.001,0,0
+htlnlp_230,context compaction,1,13.473,0,0
+htlnlp_230,harness,1,0.752,0,0
+htlnlp_230,model call,8,38.416,193830,6072
+htlnlp_230,tool edit_file,2,0.005,0,0
+htlnlp_230,tool read_file,3,0.004,0,0
+htlnlp_230,tool run_command,1,0.004,0,0
+htlnlp_230,tool submit_patch,1,0.02,0,0
+htlnlp_234_pr243,agent data_pipeline_fixer,1,0.025,0,0
+htlnlp_234_pr243,agent loop,1,0.001,0,0
+htlnlp_234_pr243,harness,1,0.758,0,0
+htlnlp_234_pr243,model call,3,12.264,76970,1714
+htlnlp_234_pr243,tool get_status,1,0.0,0,0
+htlnlp_234_pr243,tool submit_patch,1,0.019,0,0
+htlnlp_235,agent data_pipeline_fixer,1,0.025,0,0
+htlnlp_235,agent loop,1,0.001,0,0
+htlnlp_235,harness,1,0.752,0,0
+htlnlp_235,model call,3,9.784,77094,1270
+htlnlp_235,tool get_status,1,0.0,0,0
+htlnlp_235,tool submit_patch,1,0.019,0,0
+htlnlp_236,agent data_pipeline_fixer,1,0.024,0,0
+htlnlp_236,agent loop,1,0.001,0,0
+htlnlp_236,harness,1,0.755,0,0
+htlnlp_236,model call,3,8.534,69964,1100
+htlnlp_236,tool get_status,1,0.0,0,0
+htlnlp_236,tool submit_patch,1,0.019,0,0
+htlnlp_244,agent data_pipeline_fixer,1,0.064,0,0
+htlnlp_244,agent loop,1,0.001,0,0
+htlnlp_244,context compaction,1,10.715,0,0
+htlnlp_244,harness,1,0.754,0,0
+htlnlp_244,model call,7,51.457,157170,8580
+htlnlp_244,tool edit_file,4,0.009,0,0
+htlnlp_244,tool read_file,1,0.001,0,0
+htlnlp_244,tool submit_patch,1,0.02,0,0
+htlnlp_249,agent data_pipeline_fixer,1,0.104,0,0
+htlnlp_249,agent loop,1,0.001,0,0
+htlnlp_249,context compaction,1,12.164,0,0
+htlnlp_249,harness,1,0.759,0,0
+htlnlp_249,model call,12,53.675,272444,8802
+htlnlp_249,tool edit_file,3,0.006,0,0
+htlnlp_249,tool read_file,4,0.005,0,0
+htlnlp_249,tool run_command,3,0.016,0,0
+htlnlp_249,tool submit_patch,1,0.02,0,0
+htlnlp_255,agent data_pipeline_fixer,1,0.029,0,0
+htlnlp_255,agent loop,1,0.006,0,0
+htlnlp_255,harness,1,0.786,0,0
+htlnlp_255,model call,3,39.701,48394,6490
+htlnlp_255,tool edit_file,1,0.006,0,0
+htlnlp_255,tool read_file,1,0.002,0,0
+htlnlp_276,agent data_pipeline_fixer,1,0.105,0,0
+htlnlp_276,agent loop,1,0.006,0,0
+htlnlp_276,context compaction,3,25.463,0,0
+htlnlp_276,harness,1,0.788,0,0
+htlnlp_276,model call,11,103.242,261478,16616
+htlnlp_276,tool edit_file,4,0.016,0,0
+htlnlp_276,tool read_file,6,0.008,0,0
+htlnlp_345,agent data_pipeline_fixer,1,0.105,0,0
+htlnlp_345,agent loop,1,0.001,0,0
+htlnlp_345,context compaction,1,9.965,0,0
+htlnlp_345,harness,1,0.759,0,0
+htlnlp_345,model call,12,32.792,279992,5252
+htlnlp_345,tool read_file,2,0.002,0,0
+htlnlp_345,tool run_command,6,0.03,0,0
+htlnlp_345,tool submit_patch,1,0.02,0,0
+htlnlp_345,tool write_file,2,0.012,0,0
+htlnlp_68,agent data_pipeline_fixer,1,0.284,0,0
+htlnlp_68,agent loop,1,0.001,0,0
+htlnlp_68,harness,1,0.76,0,0
+htlnlp_68,model call,7,25.277,173280,3902
+htlnlp_68,tool read_file,3,0.005,0,0
+htlnlp_68,tool run_command,2,0.01,0,0
+htlnlp_68,tool submit_patch,1,0.021,0,0
+htlnlp_71,agent data_pipeline_fixer,6,0.154,0,0
+htlnlp_71,agent loop,6,0.015,0,0
+htlnlp_71,context compaction,1,11.07,0,0
+htlnlp_71,harness,1,0.711,0,0
+htlnlp_71,model call,17,143.707,365146,24674
+htlnlp_71,tool edit_file,1,0.002,0,0
+htlnlp_71,tool read_file,7,0.008,0,0
+htlnlp_71,tool run_command,3,0.015,0,0
+htlnlp_90,agent data_pipeline_fixer,1,0.029,0,0
+htlnlp_90,agent loop,1,0.006,0,0
+htlnlp_90,harness,1,0.698,0,0
+htlnlp_90,model call,3,15.297,56066,2188
+htlnlp_90,tool read_file,1,0.001,0,0
+htlnlp_90,tool run_command,1,40.224,0,0
+htlnlp_94,agent data_pipeline_fixer,1,0.057,0,0
+htlnlp_94,agent loop,1,0.005,0,0
+htlnlp_94,context compaction,1,9.582,0,0
+htlnlp_94,harness,1,0.693,0,0
+htlnlp_94,model call,6,79.628,124032,13150
+htlnlp_94,tool edit_file,1,0.003,0,0
+htlnlp_94,tool read_file,4,0.005,0,0
+htlnlp_c59170ee,agent code_analyzer,1,0.038,0,0
+htlnlp_c59170ee,agent data_pipeline_fixer,2,0.232,0,0
+htlnlp_c59170ee,agent loop,3,0.002,0,0
+htlnlp_c59170ee,context compaction,3,32.931,0,0
+htlnlp_c59170ee,harness,1,0.554,0,0
+htlnlp_c59170ee,model call,32,148.476,608130,25536
+htlnlp_c59170ee,tool code_analyzer,1,0.001,0,0
+htlnlp_c59170ee,tool edit_file,2,0.007,0,0
+htlnlp_c59170ee,tool get_code_neighbors,3,0.001,0,0
+htlnlp_c59170ee,tool get_status,1,0.0,0,0
+htlnlp_c59170ee,tool read_file,13,0.017,0,0
+htlnlp_c59170ee,tool run_command,3,0.014,0,0
+htlnlp_c59170ee,tool search_similar_code,4,0.041,0,0
+htlnlp_c59170ee,tool submit_patch,1,0.016,0,0
+htlnlp_c59170ee,tool write_file,2,0.011,0,0
+htlnlp_c5e54000,agent code_analyzer,1,0.026,0,0
+htlnlp_c5e54000,agent data_pipeline_fixer,2,0.188,0,0
+htlnlp_c5e54000,agent loop,3,0.002,0,0
+htlnlp_c5e54000,context compaction,3,33.133,0,0
+htlnlp_c5e54000,harness,1,0.53,0,0
+htlnlp_c5e54000,model call,25,149.369,473614,25818
+htlnlp_c5e54000,tool code_analyzer,1,0.001,0,0
+htlnlp_c5e54000,tool edit_file,4,0.016,0,0
+htlnlp_c5e54000,tool get_code_neighbors,3,0.023,0,0
+htlnlp_c5e54000,tool read_file,10,0.013,0,0
+htlnlp_c5e54000,tool run_command,1,0.005,0,0
+htlnlp_c5e54000,tool submit_patch,1,0.016,0,0
+htlnlp_c5e54000,tool write_file,3,0.017,0,0
+htlnlp_c7300f3f,agent data_pipeline_fixer,1,0.045,0,0
+htlnlp_c7300f3f,agent loop,1,0.005,0,0
+htlnlp_c7300f3f,harness,1,0.624,0,0
+htlnlp_c7300f3f,model call,5,43.333,84580,7206
+htlnlp_c7300f3f,tool edit_file,1,0.002,0,0
+htlnlp_c7300f3f,tool read_file,3,0.004,0,0
+htlnlp_c791d60f,agent data_pipeline_fixer,1,0.037,0,0
+htlnlp_c791d60f,agent loop,1,0.005,0,0
+htlnlp_c791d60f,harness,1,0.629,0,0
+htlnlp_c791d60f,model call,4,15.206,63768,2284
+htlnlp_c791d60f,tool read_file,3,0.005,0,0
+htlnlp_c7bde3d0,agent code_analyzer,1,0.053,0,0
+htlnlp_c7bde3d0,agent data_pipeline_fixer,2,0.071,0,0
+htlnlp_c7bde3d0,agent loop,3,0.007,0,0
+htlnlp_c7bde3d0,harness,1,0.584,0,0
+htlnlp_c7bde3d0,model call,16,56.75,198046,10224
+htlnlp_c7bde3d0,tool code_analyzer,1,0.001,0,0
+htlnlp_c7bde3d0,tool get_code_neighbors,2,0.001,0,0
+htlnlp_c7bde3d0,tool read_file,7,0.008,0,0
+htlnlp_c7bde3d0,tool search_similar_code,4,0.047,0,0
+htlnlp_c7c49998,agent code_analyzer,1,0.022,0,0
+htlnlp_c7c49998,agent data_pipeline_fixer,2,0.215,0,0
+htlnlp_c7c49998,agent loop,3,0.002,0,0
+htlnlp_c7c49998,context compaction,3,42.486,0,0
+htlnlp_c7c49998,harness,1,0.606,0,0
+htlnlp_c7c49998,model call,27,140.595,524406,24060
+htlnlp_c7c49998,tool code_analyzer,1,0.001,0,0
+htlnlp_c7c49998,tool edit_file,8,0.02,0,0
+htlnlp_c7c49998,tool read_file,13,0.022,0,0
+htlnlp_c7c49998,tool search_similar_code,2,0.233,0,0
+htlnlp_c7c49998,tool submit_patch,1,0.015,0,0
+htlnlp_c866538c,agent code_analyzer,1,0.038,0,0
+htlnlp_c866538c,agent data_pipeline_fixer,2,0.041,0,0
+htlnlp_c866538c,agent loop,3,0.002,0,0
+htlnlp_c866538c,harness,1,0.602,0,0
+htlnlp_c866538c,model call,11,59.238,124384,11052
+htlnlp_c866538c,tool code_analyzer,1,0.001,0,0
+htlnlp_c866538c,tool edit_file,1,0.002,0,0
+htlnlp_c866538c,tool get_code_neighbors,4,0.053,0,0
+htlnlp_c866538c,tool read_file,2,0.002,0,0
+htlnlp_c866538c,tool submit_patch,1,0.016,0,0
+htlnlp_c95eedd3,agent code_analyzer,1,0.019,0,0
+htlnlp_c95eedd3,agent data_pipeline_fixer,2,0.247,0,0
+htlnlp_c95eedd3,agent loop,3,0.002,0,0
+htlnlp_c95eedd3,context compaction,4,37.781,0,0
+htlnlp_c95eedd3,harness,1,0.567,0,0
+htlnlp_c95eedd3,model call,30,254.194,594214,42198
+htlnlp_c95eedd3,tool code_analyzer,1,0.001,0,0
+htlnlp_c95eedd3,tool edit_file,10,0.027,0,0
+htlnlp_c95eedd3,tool get_code_neighbors,2,0.025,0,0
+htlnlp_c95eedd3,tool read_file,12,0.017,0,0
+htlnlp_c95eedd3,tool run_command,2,7.688,0,0
+htlnlp_c95eedd3,tool write_file,1,0.006,0,0
+htlnlp_ca9964a0,agent code_analyzer,1,0.006,0,0
+htlnlp_ca9964a0,agent data_pipeline_fixer,2,0.096,0,0
+htlnlp_ca9964a0,agent loop,3,0.002,0,0
+htlnlp_ca9964a0,context compaction,1,4.595,0,0
+htlnlp_ca9964a0,harness,1,0.616,0,0
+htlnlp_ca9964a0,model call,12,74.207,232712,12844
+htlnlp_ca9964a0,tool code_analyzer,1,0.001,0,0
+htlnlp_ca9964a0,tool edit_file,4,0.013,0,0
+htlnlp_ca9964a0,tool read_file,4,0.006,0,0
+htlnlp_ca9964a0,tool submit_patch,1,0.016,0,0
+htlnlp_cac5acf9,agent code_analyzer,1,0.031,0,0
+htlnlp_cac5acf9,agent data_pipeline_fixer,3,0.153,0,0
+htlnlp_cac5acf9,agent loop,4,0.004,0,0
+htlnlp_cac5acf9,context compaction,2,31.781,0,0
+htlnlp_cac5acf9,harness,1,0.535,0,0
+htlnlp_cac5acf9,model call,22,113.157,370930,19524
+htlnlp_cac5acf9,tool code_analyzer,1,0.001,0,0
+htlnlp_cac5acf9,tool edit_file,4,0.009,0,0
+htlnlp_cac5acf9,tool read_file,6,0.008,0,0
+htlnlp_cac5acf9,tool run_command,4,9.272,0,0
+htlnlp_cac5acf9,tool search_similar_code,3,0.03,0,0
+htlnlp_cac5acf9,tool submit_patch,1,0.015,0,0
+htlnlp_cb988381,agent code_analyzer,2,0.053,0,0
+htlnlp_cb988381,agent data_pipeline_fixer,3,0.14,0,0
+htlnlp_cb988381,agent loop,5,0.006,0,0
+htlnlp_cb988381,context compaction,2,23.269,0,0
+htlnlp_cb988381,harness,1,0.504,0,0
+htlnlp_cb988381,model call,24,158.599,391884,27594
+htlnlp_cb988381,tool code_analyzer,2,0.002,0,0
+htlnlp_cb988381,tool edit_file,4,0.008,0,0
+htlnlp_cb988381,tool get_code_neighbors,1,0.0,0,0
+htlnlp_cb988381,tool read_file,9,0.012,0,0
+htlnlp_cb988381,tool search_similar_code,3,0.009,0,0
+htlnlp_cb988381,tool submit_patch,1,0.014,0,0
+htlnlp_cb988381,tool write_file,1,0.006,0,0
+htlnlp_cbb8290c,agent code_analyzer,2,0.052,0,0
+htlnlp_cbb8290c,agent data_pipeline_fixer,6,0.262,0,0
+htlnlp_cbb8290c,agent loop,8,0.021,0,0
+htlnlp_cbb8290c,context compaction,2,20.044,0,0
+htlnlp_cbb8290c,harness,1,0.569,0,0
+htlnlp_cbb8290c,model call,37,144.722,593194,26014
+htlnlp_cbb8290c,tool (merged),1,0.0,0,0
+htlnlp_cbb8290c,tool code_analyzer,2,0.002,0,0
+htlnlp_cbb8290c,tool edit_file,1,0.003,0,0
+htlnlp_cbb8290c,tool get_code_neighbors,5,0.003,0,0
+htlnlp_cbb8290c,tool get_status,1,0.0,0,0
+htlnlp_cbb8290c,tool list_skills,1,0.0,0,0
+htlnlp_cbb8290c,tool load_skill,1,0.0,0,0
+htlnlp_cbb8290c,tool read_file,15,0.021,0,0
+htlnlp_cbb8290c,tool run_command,4,1.138,0,0
+htlnlp_cbb8290c,tool run_skill_script,1,0.106,0,0
+htlnlp_cbb8290c,tool search_similar_code,2,0.036,0,0
+htlnlp_cbb8290c,tool submit_patch,1,0.015,0,0
+htlnlp_cbc00f07,agent code_analyzer,1,0.007,0,0
+htlnlp_cbc00f07,agent data_pipeline_fixer,5,0.294,0,0
+htlnlp_cbc00f07,agent loop,6,0.019,0,0
+htlnlp_cbc00f07,context compaction,3,42.264,0,0
+htlnlp_cbc00f07,harness,1,0.54,0,0
+htlnlp_cbc00f07,model call,34,142.267,644650,24048
+htlnlp_cbc00f07,tool code_analyzer,1,0.001,0,0
+htlnlp_cbc00f07,tool edit_file,2,0.009,0,0
+htlnlp_cbc00f07,tool get_status,1,0.0,0,0
+htlnlp_cbc00f07,tool read_file,14,0.018,0,0
+htlnlp_cbc00f07,tool run_command,6,0.028,0,0
+htlnlp_cbc00f07,tool search_similar_code,4,0.024,0,0
+htlnlp_cbc00f07,tool submit_patch,1,0.014,0,0
+htlnlp_cc163083,agent data_pipeline_fixer,1,0.092,0,0
+htlnlp_cc163083,agent loop,1,0.001,0,0
+htlnlp_cc163083,harness,1,0.492,0,0
+htlnlp_cc163083,model call,11,32.035,123824,5966
+htlnlp_cc163083,tool get_status,1,0.0,0,0
+htlnlp_cc163083,tool read_file,3,0.004,0,0
+htlnlp_cc163083,tool run_command,4,0.02,0,0
+htlnlp_cc163083,tool submit_patch,1,0.012,0,0
+htlnlp_cc163083,tool write_file,1,0.006,0,0
+htlnlp_cc73f4cf,agent code_analyzer,1,0.026,0,0
+htlnlp_cc73f4cf,agent data_pipeline_fixer,2,0.041,0,0
+htlnlp_cc73f4cf,agent loop,3,0.002,0,0
+htlnlp_cc73f4cf,harness,1,0.604,0,0
+htlnlp_cc73f4cf,model call,9,52.481,134114,9332
+htlnlp_cc73f4cf,tool code_analyzer,1,0.001,0,0
+htlnlp_cc73f4cf,tool edit_file,1,0.003,0,0
+htlnlp_cc73f4cf,tool get_code_neighbors,2,0.043,0,0
+htlnlp_cc73f4cf,tool read_file,2,0.003,0,0
+htlnlp_cc73f4cf,tool submit_patch,1,0.016,0,0
+htlnlp_cca2d155,agent data_pipeline_fixer,2,0.113,0,0
+htlnlp_cca2d155,agent loop,2,0.003,0,0
+htlnlp_cca2d155,context compaction,1,12.338,0,0
+htlnlp_cca2d155,harness,1,0.546,0,0
+htlnlp_cca2d155,model call,13,53.425,271074,8522
+htlnlp_cca2d155,tool edit_file,2,0.007,0,0
+htlnlp_cca2d155,tool read_file,6,0.009,0,0
+htlnlp_cca2d155,tool run_command,2,6.242,0,0
+htlnlp_cca2d155,tool submit_patch,1,0.015,0,0
+htlnlp_ceb84ac1,agent data_pipeline_fixer,1,0.199,0,0
+htlnlp_ceb84ac1,agent loop,1,0.001,0,0
+htlnlp_ceb84ac1,context compaction,3,37.777,0,0
+htlnlp_ceb84ac1,harness,1,0.538,0,0
+htlnlp_ceb84ac1,model call,22,156.192,471606,26314
+htlnlp_ceb84ac1,tool edit_file,4,0.014,0,0
+htlnlp_ceb84ac1,tool get_code_neighbors,1,0.0,0,0
+htlnlp_ceb84ac1,tool read_file,11,0.014,0,0
+htlnlp_ceb84ac1,tool run_command,1,3.034,0,0
+htlnlp_ceb84ac1,tool search_similar_code,3,0.033,0,0
+htlnlp_ceb84ac1,tool submit_patch,1,0.015,0,0
+htlnlp_cecf7a16,agent code_analyzer,1,0.032,0,0
+htlnlp_cecf7a16,agent data_pipeline_fixer,2,0.057,0,0
+htlnlp_cecf7a16,agent loop,3,0.007,0,0
+htlnlp_cecf7a16,context compaction,1,4.875,0,0
+htlnlp_cecf7a16,harness,1,0.635,0,0
+htlnlp_cecf7a16,model call,11,59.842,187908,9574
+htlnlp_cecf7a16,tool code_analyzer,1,0.001,0,0
+htlnlp_cecf7a16,tool get_code_neighbors,1,0.054,0,0
+htlnlp_cecf7a16,tool read_file,7,0.011,0,0
+htlnlp_cf773377,agent data_pipeline_fixer,2,0.103,0,0
+htlnlp_cf773377,agent loop,2,0.007,0,0
+htlnlp_cf773377,context compaction,2,15.453,0,0
+htlnlp_cf773377,harness,1,0.557,0,0
+htlnlp_cf773377,model call,11,154.488,222708,25808
+htlnlp_cf773377,tool edit_file,3,0.017,0,0
+htlnlp_cf773377,tool read_file,6,0.009,0,0
+htlnlp_cfa7c008,agent code_analyzer,1,0.007,0,0
+htlnlp_cfa7c008,agent data_pipeline_fixer,2,0.126,0,0
+htlnlp_cfa7c008,agent loop,3,0.008,0,0
+htlnlp_cfa7c008,context compaction,2,22.066,0,0
+htlnlp_cfa7c008,harness,1,0.632,0,0
+htlnlp_cfa7c008,model call,15,75.175,295938,11984
+htlnlp_cfa7c008,tool code_analyzer,1,0.001,0,0
+htlnlp_cfa7c008,tool get_code_neighbors,1,0.001,0,0
+htlnlp_cfa7c008,tool read_file,10,0.014,0,0
+htlnlp_cfa7c008,tool search_similar_code,1,0.468,0,0
+htlnlp_pr11,agent code_analyzer,1,0.013,0,0
+htlnlp_pr11,agent data_pipeline_fixer,2,0.073,0,0
+htlnlp_pr11,agent loop,3,0.007,0,0
+htlnlp_pr11,harness,1,0.637,0,0
+htlnlp_pr11,model call,10,53.836,175976,9516
+htlnlp_pr11,tool code_analyzer,1,0.001,0,0
+htlnlp_pr11,tool get_code_neighbors,1,0.06,0,0
+htlnlp_pr11,tool read_file,6,0.008,0,0
+htlnlp_pr12,agent data_pipeline_fixer,2,0.072,0,0
+htlnlp_pr12,agent loop,2,0.002,0,0
+htlnlp_pr12,context compaction,1,28.056,0,0
+htlnlp_pr12,harness,1,0.617,0,0
+htlnlp_pr12,model call,8,65.908,163342,11062
+htlnlp_pr12,tool edit_file,2,0.008,0,0
+htlnlp_pr12,tool read_file,2,0.003,0,0
+htlnlp_pr12,tool run_command,1,1.122,0,0
+htlnlp_pr12,tool submit_patch,1,0.017,0,0
+htlnlp_pr17,agent data_pipeline_fixer,1,0.097,0,0
+htlnlp_pr17,agent loop,1,0.001,0,0
+htlnlp_pr17,context compaction,1,19.65,0,0
+htlnlp_pr17,harness,1,0.666,0,0
+htlnlp_pr17,model call,11,59.879,276404,9836
+htlnlp_pr17,tool edit_file,4,0.011,0,0
+htlnlp_pr17,tool read_file,4,0.005,0,0
+htlnlp_pr17,tool run_command,1,0.005,0,0
+htlnlp_pr17,tool submit_patch,1,0.018,0,0
+htlnlp_pr2,agent data_pipeline_fixer,1,0.034,0,0
+htlnlp_pr2,agent loop,1,0.001,0,0
+htlnlp_pr2,harness,1,0.615,0,0
+htlnlp_pr2,model call,4,16.218,72588,2664
+htlnlp_pr2,tool run_command,2,4.106,0,0
+htlnlp_pr2,tool submit_patch,1,0.016,0,0
+htlnlp_pr21,agent data_pipeline_fixer,1,0.043,0,0
+htlnlp_pr21,agent loop,1,0.001,0,0
+htlnlp_pr21,context compaction,1,13.914,0,0
+htlnlp_pr21,harness,1,0.641,0,0
+htlnlp_pr21,model call,5,30.897,126174,4744
+htlnlp_pr21,tool read_file,3,0.004,0,0
+htlnlp_pr21,tool submit_patch,1,0.016,0,0
+htlnlp_pr22,agent data_pipeline_fixer,1,0.199,0,0
+htlnlp_pr22,agent loop,1,0.001,0,0
+htlnlp_pr22,context compaction,1,14.239,0,0
+htlnlp_pr22,harness,1,0.644,0,0
+htlnlp_pr22,model call,22,69.601,490824,11648
+htlnlp_pr22,tool edit_file,9,0.02,0,0
+htlnlp_pr22,tool get_status,1,0.0,0,0
+htlnlp_pr22,tool read_file,10,0.013,0,0
+htlnlp_pr22,tool submit_patch,1,0.018,0,0
+htlnlp_pr23,agent data_pipeline_fixer,1,0.115,0,0
+htlnlp_pr23,agent loop,1,0.001,0,0
+htlnlp_pr23,context compaction,2,17.46,0,0
+htlnlp_pr23,harness,1,0.642,0,0
+htlnlp_pr23,model call,13,87.997,293232,14416
+htlnlp_pr23,tool read_file,6,0.007,0,0
+htlnlp_pr23,tool run_command,3,1.136,0,0
+htlnlp_pr23,tool submit_patch,1,0.017,0,0
+htlnlp_pr23,tool write_file,2,0.012,0,0
+htlnlp_pr24,agent data_pipeline_fixer,1,0.042,0,0
+htlnlp_pr24,agent loop,1,0.001,0,0
+htlnlp_pr24,harness,1,0.678,0,0
+htlnlp_pr24,model call,5,34.679,112558,5812
+htlnlp_pr24,tool edit_file,1,0.002,0,0
+htlnlp_pr24,tool read_file,1,0.002,0,0
+htlnlp_pr24,tool run_command,1,1.303,0,0
+htlnlp_pr24,tool submit_patch,1,0.017,0,0
+htlnlp_pr25,agent data_pipeline_fixer,1,0.111,0,0
+htlnlp_pr25,agent loop,1,0.006,0,0
+htlnlp_pr25,context compaction,1,14.54,0,0
+htlnlp_pr25,harness,1,0.668,0,0
+htlnlp_pr25,model call,12,113.658,254878,19110
+htlnlp_pr25,tool edit_file,4,0.027,0,0
+htlnlp_pr25,tool read_file,6,0.013,0,0
+htlnlp_pr25,tool run_command,1,0.005,0,0
+htlnlp_pr26,agent data_pipeline_fixer,1,0.045,0,0
+htlnlp_pr26,agent loop,1,0.005,0,0
+htlnlp_pr26,harness,1,0.669,0,0
+htlnlp_pr26,model call,5,18.478,74980,2966
+htlnlp_pr26,tool edit_file,1,0.002,0,0
+htlnlp_pr26,tool read_file,3,0.004,0,0
+htlnlp_pr27,agent data_pipeline_fixer,1,0.016,0,0
+htlnlp_pr27,agent loop,1,0.001,0,0
+htlnlp_pr27,harness,1,0.64,0,0
+htlnlp_pr27,model call,2,11.55,40844,1728
+htlnlp_pr27,tool submit_patch,1,0.016,0,0
+htlnlp_pr28,agent data_pipeline_fixer,1,0.037,0,0
+htlnlp_pr28,agent loop,1,0.005,0,0
+htlnlp_pr28,harness,1,0.673,0,0
+htlnlp_pr28,model call,4,18.694,61734,2922
+htlnlp_pr28,tool read_file,3,0.008,0,0
+htlnlp_pr29,agent data_pipeline_fixer,1,0.069,0,0
+htlnlp_pr29,agent loop,1,0.001,0,0
+htlnlp_pr29,context compaction,3,30.346,0,0
+htlnlp_pr29,harness,1,0.648,0,0
+htlnlp_pr29,model call,8,48.045,202568,7158
+htlnlp_pr29,tool edit_file,4,0.009,0,0
+htlnlp_pr29,tool read_file,2,0.003,0,0
+htlnlp_pr29,tool submit_patch,1,0.017,0,0
+htlnlp_pr30,agent data_pipeline_fixer,1,0.078,0,0
+htlnlp_pr30,agent loop,1,0.001,0,0
+htlnlp_pr30,context compaction,1,7.192,0,0
+htlnlp_pr30,harness,1,0.645,0,0
+htlnlp_pr30,model call,9,34.265,190354,5568
+htlnlp_pr30,tool edit_file,6,0.017,0,0
+htlnlp_pr30,tool read_file,1,0.002,0,0
+htlnlp_pr30,tool submit_patch,1,0.017,0,0
+htlnlp_pr31,agent data_pipeline_fixer,1,0.095,0,0
+htlnlp_pr31,agent loop,1,0.001,0,0
+htlnlp_pr31,context compaction,2,12.745,0,0
+htlnlp_pr31,harness,1,0.649,0,0
+htlnlp_pr31,model call,11,33.734,234664,4948
+htlnlp_pr31,tool edit_file,3,0.007,0,0
+htlnlp_pr31,tool read_file,5,0.008,0,0
+htlnlp_pr31,tool run_command,1,1.125,0,0
+htlnlp_pr31,tool submit_patch,1,0.019,0,0
+htlnlp_pr32,agent data_pipeline_fixer,1,0.108,0,0
+htlnlp_pr32,agent loop,1,0.001,0,0
+htlnlp_pr32,context compaction,2,20.132,0,0
+htlnlp_pr32,harness,1,0.651,0,0
+htlnlp_pr32,model call,12,50.681,265414,8024
+htlnlp_pr32,tool edit_file,5,0.015,0,0
+htlnlp_pr32,tool read_file,4,0.01,0,0
+htlnlp_pr32,tool run_command,1,1.132,0,0
+htlnlp_pr32,tool submit_patch,1,0.017,0,0
+htlnlp_pr33,agent data_pipeline_fixer,1,0.05,0,0
+htlnlp_pr33,agent loop,1,0.0,0,0
+htlnlp_pr33,harness,1,0.649,0,0
+htlnlp_pr33,model call,6,29.296,133304,4864
+htlnlp_pr33,tool edit_file,1,0.003,0,0
+htlnlp_pr33,tool read_file,1,0.002,0,0
+htlnlp_pr33,tool run_command,2,1.234,0,0
+htlnlp_pr33,tool submit_patch,1,0.017,0,0
+htlnlp_pr34,agent data_pipeline_fixer,1,0.119,0,0
+htlnlp_pr34,agent loop,1,0.005,0,0
+htlnlp_pr34,context compaction,2,15.438,0,0
+htlnlp_pr34,harness,1,0.666,0,0
+htlnlp_pr34,model call,13,88.117,277558,14466
+htlnlp_pr34,tool edit_file,4,0.018,0,0
+htlnlp_pr34,tool get_code_neighbors,1,0.069,0,0
+htlnlp_pr34,tool read_file,7,0.011,0,0
+htlnlp_pr35,agent data_pipeline_fixer,1,0.094,0,0
+htlnlp_pr35,agent loop,1,0.001,0,0
+htlnlp_pr35,context compaction,1,7.455,0,0
+htlnlp_pr35,harness,1,0.649,0,0
+htlnlp_pr35,model call,11,39.553,238284,6290
+htlnlp_pr35,tool edit_file,4,0.01,0,0
+htlnlp_pr35,tool read_file,4,0.006,0,0
+htlnlp_pr35,tool run_command,1,1.125,0,0
+htlnlp_pr35,tool submit_patch,1,0.018,0,0
+htlnlp_pr36,agent data_pipeline_fixer,1,0.051,0,0
+htlnlp_pr36,agent loop,1,0.0,0,0
+htlnlp_pr36,harness,1,0.645,0,0
+htlnlp_pr36,model call,6,30.021,139652,4952
+htlnlp_pr36,tool edit_file,2,0.005,0,0
+htlnlp_pr36,tool read_file,1,0.002,0,0
+htlnlp_pr36,tool run_command,1,1.126,0,0
+htlnlp_pr36,tool submit_patch,1,0.017,0,0
+htlnlp_pr37,agent data_pipeline_fixer,1,0.05,0,0
+htlnlp_pr37,agent loop,1,0.001,0,0
+htlnlp_pr37,harness,1,0.644,0,0
+htlnlp_pr37,model call,6,24.733,136326,4010
+htlnlp_pr37,tool edit_file,2,0.005,0,0
+htlnlp_pr37,tool read_file,1,0.002,0,0
+htlnlp_pr37,tool run_command,1,1.129,0,0
+htlnlp_pr37,tool submit_patch,1,0.017,0,0
+htlnlp_pr4,agent data_pipeline_fixer,1,0.06,0,0
+htlnlp_pr4,agent loop,1,0.001,0,0
+htlnlp_pr4,context compaction,2,25.132,0,0
+htlnlp_pr4,harness,1,0.611,0,0
+htlnlp_pr4,model call,7,30.945,165140,4354
+htlnlp_pr4,tool get_status,1,0.0,0,0
+htlnlp_pr4,tool read_file,3,0.005,0,0
+htlnlp_pr4,tool run_command,1,0.005,0,0
+htlnlp_pr4,tool submit_patch,1,0.016,0,0
+htlnlp_pr47,agent code_analyzer,1,0.025,0,0
+htlnlp_pr47,agent data_pipeline_fixer,2,0.135,0,0
+htlnlp_pr47,agent loop,3,0.002,0,0
+htlnlp_pr47,context compaction,2,24.437,0,0
+htlnlp_pr47,harness,1,0.669,0,0
+htlnlp_pr47,model call,19,135.5,327590,23858
+htlnlp_pr47,tool (merged),1,0.0,0,0
+htlnlp_pr47,tool code_analyzer,1,0.001,0,0
+htlnlp_pr47,tool edit_file,5,0.015,0,0
+htlnlp_pr47,tool get_code_neighbors,3,0.076,0,0
+htlnlp_pr47,tool get_code_subgraph,1,0.001,0,0
+htlnlp_pr47,tool read_file,5,0.008,0,0
+htlnlp_pr47,tool search_similar_code,2,0.007,0,0
+htlnlp_pr47,tool submit_patch,1,0.017,0,0
+htlnlp_pr5,agent data_pipeline_fixer,1,0.047,0,0
+htlnlp_pr5,agent loop,1,0.005,0,0
+htlnlp_pr5,harness,1,0.627,0,0
+htlnlp_pr5,model call,5,15.812,94462,2314
+htlnlp_pr5,tool read_file,2,0.003,0,0
+htlnlp_pr5,tool run_command,2,21.49,0,0
+htlnlp_pr53,agent data_pipeline_fixer,1,0.086,0,0
+htlnlp_pr53,agent loop,1,0.001,0,0
+htlnlp_pr53,context compaction,1,15.719,0,0
+htlnlp_pr53,harness,1,0.67,0,0
+htlnlp_pr53,model call,10,85.308,205262,14872
+htlnlp_pr53,tool edit_file,5,0.011,0,0
+htlnlp_pr53,tool read_file,3,0.004,0,0
+htlnlp_pr53,tool submit_patch,1,0.018,0,0
+htlnlp_pr54,agent code_analyzer,1,0.006,0,0
+htlnlp_pr54,agent data_pipeline_fixer,2,0.063,0,0
+htlnlp_pr54,agent loop,3,0.007,0,0
+htlnlp_pr54,harness,1,0.688,0,0
+htlnlp_pr54,model call,8,33.286,129634,5584
+htlnlp_pr54,tool code_analyzer,1,0.001,0,0
+htlnlp_pr54,tool read_file,4,0.006,0,0
+htlnlp_pr54,tool run_command,1,0.005,0,0
+htlnlp_pr55,agent data_pipeline_fixer,1,0.062,0,0
+htlnlp_pr55,agent loop,1,0.001,0,0
+htlnlp_pr55,context compaction,1,4.529,0,0
+htlnlp_pr55,harness,1,0.677,0,0
+htlnlp_pr55,model call,7,62.596,170776,10406
+htlnlp_pr55,tool edit_file,1,0.002,0,0
+htlnlp_pr55,tool read_file,2,0.003,0,0
+htlnlp_pr55,tool run_command,2,31.888,0,0
+htlnlp_pr55,tool submit_patch,1,0.017,0,0
+htlnlp_pr56,agent data_pipeline_fixer,1,0.041,0,0
+htlnlp_pr56,agent loop,1,0.001,0,0
+htlnlp_pr56,context compaction,1,10.104,0,0
+htlnlp_pr56,harness,1,0.662,0,0
+htlnlp_pr56,model call,5,30.537,106448,4808
+htlnlp_pr56,tool edit_file,1,0.002,0,0
+htlnlp_pr56,tool read_file,2,0.003,0,0
+htlnlp_pr56,tool submit_patch,1,0.018,0,0
+htlnlp_pr57,agent data_pipeline_fixer,1,0.032,0,0
+htlnlp_pr57,agent loop,1,0.001,0,0
+htlnlp_pr57,harness,1,0.669,0,0
+htlnlp_pr57,model call,4,25.689,67450,4482
+htlnlp_pr57,tool read_file,1,0.001,0,0
+htlnlp_pr57,tool submit_patch,1,0.017,0,0
+htlnlp_pr57,tool write_file,1,0.006,0,0
+htlnlp_pr6,agent data_pipeline_fixer,1,0.069,0,0
+htlnlp_pr6,agent loop,1,0.001,0,0
+htlnlp_pr6,context compaction,1,12.412,0,0
+htlnlp_pr6,harness,1,0.609,0,0
+htlnlp_pr6,model call,8,52.847,176618,8694
+htlnlp_pr6,tool edit_file,3,0.007,0,0
+htlnlp_pr6,tool read_file,3,0.004,0,0
+htlnlp_pr6,tool submit_patch,1,0.016,0,0
+htlnlp_pr62,agent data_pipeline_fixer,1,0.016,0,0
+htlnlp_pr62,agent loop,1,0.001,0,0
+htlnlp_pr62,harness,1,0.667,0,0
+htlnlp_pr62,model call,2,6.465,42142,786
+htlnlp_pr62,tool submit_patch,1,0.017,0,0
+htlnlp_pr63,agent data_pipeline_fixer,1,0.024,0,0
+htlnlp_pr63,agent loop,1,0.001,0,0
+htlnlp_pr63,harness,1,0.665,0,0
+htlnlp_pr63,model call,3,8.989,44054,1448
+htlnlp_pr63,tool get_status,1,0.0,0,0
+htlnlp_pr63,tool submit_patch,1,0.017,0,0
+htlnlp_pr66,agent data_pipeline_fixer,1,0.079,0,0
+htlnlp_pr66,agent loop,1,0.001,0,0
+htlnlp_pr66,context compaction,1,10.909,0,0
+htlnlp_pr66,harness,1,0.668,0,0
+htlnlp_pr66,model call,9,67.414,207984,11192
+htlnlp_pr66,tool edit_file,1,0.003,0,0
+htlnlp_pr66,tool read_file,3,0.004,0,0
+htlnlp_pr66,tool run_command,3,1.134,0,0
+htlnlp_pr66,tool submit_patch,1,0.018,0,0
+htlnlp_pr8,agent data_pipeline_fixer,1,0.099,0,0
+htlnlp_pr8,agent loop,1,0.005,0,0
+htlnlp_pr8,harness,1,0.634,0,0
+htlnlp_pr8,model call,11,59.591,215918,10210
+htlnlp_pr8,tool read_file,4,0.004,0,0
+htlnlp_pr8,tool run_command,2,0.214,0,0
+htlnlp_pr8,tool write_file,4,0.023,0,0

@@ -110,9 +110,21 @@ def summary(rows: list[dict], reached_by_statement: set[str]) -> dict:
             "error_module_changed_by_fix_count": sum(bool(r.get("is_error_module_changed_by_fix")) for r in rows)}
 
 
-def run_task(task: dict, snapshot: Path, package: str, timeout: int) -> dict:
+def package_of(root: Path) -> str | None:
+    """The package a snapshot holds under python/, whatever it was called at that commit (it was renamed partway
+    through the repository's history): the first folder there with an __init__.py that is not tests or scripts."""
+    base = Path(root) / "python"
+    if not base.is_dir():
+        return None
+    names = sorted(p.name for p in base.iterdir()
+                   if (p / "__init__.py").exists() and p.name not in ("tests", "scripts"))
+    return names[0] if names else None
+
+
+def run_task(task: dict, snapshot: Path, package: str | None, timeout: int, messages: bool = False) -> dict:
     """Unpack the snapshot, add the test patch, run its test files under the plugin; the trace, or the exit status
-    when no trace was written."""
+    when no trace was written. `package` None finds it in the snapshot; `messages` also keeps the first line of each
+    failure's error (028 AI7, #674)."""
     with tempfile.TemporaryDirectory() as d:
         root = Path(d) / "repo"
         root.mkdir()
@@ -124,13 +136,19 @@ def run_task(task: dict, snapshot: Path, package: str, timeout: int) -> dict:
             return {"called": [], "failure_frames": [], "exit_status": None}
         files = sorted({f.removeprefix("python/") for f in _TEST_FILE.findall(task.get("test_patch") or "")
                         if (root / f).exists()})
+        if not files:   # never the whole suite: a task without a Python test file of its own has no trace here
+            return {"called": [], "failure_frames": [], "exit_status": None}
+        package = package or package_of(root) or ""
         out = Path(d) / "trace.json"
         env = {k: v for k, v in os.environ.items() if not k.startswith(("PYTEST_", "DENTAL_TELEMETRY"))}
         env.update(PYTHONPATH=f"{root / 'python'}{os.pathsep}{HERE}", TRACE_PACKAGE=package, TRACE_OUT=str(out),
-                   DENTAL_TELEMETRY="off")
+                   DENTAL_TELEMETRY="off", **({"TRACE_MESSAGES": "1", "TRACE_ROOT": str(root)} if messages else {}))
         try:
+            # a report (messages) goes on past a file that cannot be imported, to list every failing test
+            more = ["--continue-on-collection-errors"] if messages else []
             r = subprocess.run([sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider", "-p", "_trace_plugin",
-                                *files], cwd=root / "python", env=env, capture_output=True, text=True, timeout=timeout)
+                                *more, *files], cwd=root / "python", env=env, capture_output=True, text=True,
+                               timeout=timeout)
             status = r.returncode
         except subprocess.TimeoutExpired:
             status = None

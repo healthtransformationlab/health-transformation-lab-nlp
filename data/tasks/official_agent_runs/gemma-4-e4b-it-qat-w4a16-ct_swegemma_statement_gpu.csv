@@ -1,0 +1,22 @@
+instance_id,task_seconds,gpu_count,gpu_hours,avg_gpu_utilization_pct,max_gpu_memory_used_mb,gpu_energy_wh,estimated_cost_usd,price_basis_text
+htlnlp_109,6.6,4,0.0073,100.0,20559.0,0.47524124330944484,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
+htlnlp_119,161.9,4,0.1799,88.2,20559.0,10.67920977793342,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
+htlnlp_155,55.9,4,0.0621,97.09,20559.0,3.878249598355305,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
+htlnlp_178,11.6,4,0.0129,64.67,20559.0,0.7781234319210053,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
+htlnlp_192,178.8,4,0.1987,93.97,20559.0,12.185827957707424,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
+htlnlp_255,59.3,4,0.0659,89.54,20559.0,4.113008364435496,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
+htlnlp_68,27.8,4,0.0309,80.83,20559.0,1.7615660532315571,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
+htlnlp_90,53.1,4,0.059,93.11,20559.0,3.5607547867550995,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
+htlnlp_c791d60f,202.6,4,0.2251,97.2,20559.0,13.791002129839558,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
+htlnlp_c7c49998,179.4,4,0.1993,96.17,20559.0,12.2821209810557,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
+htlnlp_c95eedd3,148.6,4,0.1651,93.75,20559.0,10.115395357432895,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
+htlnlp_cb988381,254.1,4,0.2823,95.26,20559.0,17.169311368043257,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
+htlnlp_cbb8290c,300.7,4,0.3341,16.2,20559.0,12.893555417260329,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
+htlnlp_cc73f4cf,57.0,4,0.0633,97.18,20559.0,3.8960320900552206,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
+htlnlp_ceb84ac1,39.2,4,0.0436,97.0,20559.0,2.7064802548677203,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
+htlnlp_cfa7c008,128.3,4,0.1426,78.07,20559.0,7.954187336452853,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
+htlnlp_pr23,88.1,4,0.0979,88.43,20559.0,5.924802748129765,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
+htlnlp_pr24,104.3,4,0.1159,97.23,20559.0,7.205888789319298,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
+htlnlp_pr57,89.7,4,0.0997,97.0,20559.0,6.188679420544042,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
+htlnlp_pr62,8.2,4,0.0091,97.0,20559.0,0.6313763309833076,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
+htlnlp_pr8,45.6,4,0.0507,54.22,20559.0,2.3673158453411527,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free

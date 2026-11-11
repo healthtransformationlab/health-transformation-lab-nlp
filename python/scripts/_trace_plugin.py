@@ -1,6 +1,9 @@
 """A pytest plugin for 68_trace_reach.py (028 AI6, #670): while each test runs, the package's functions that are called,
 and the package's frames on each failure's traceback, by the code graph's names (`module.Class.method`). Written to
-TRACE_OUT as JSON when the session ends; the package is TRACE_PACKAGE. Names only: no arguments, values or output."""
+TRACE_OUT as JSON when the session ends; the package is TRACE_PACKAGE. Names only: no arguments, values or output.
+With TRACE_MESSAGES=1 it also keeps, for each test that fails or cannot run, its id and the first line of its error
+(028 AI7, #674: the failing test's report an agent can be given), with this machine's paths taken out: a path
+under TRACE_ROOT (the repository's root; the folder above the working one when unset) is given from that root."""
 import json
 import os
 import re
@@ -13,9 +16,19 @@ OUT = os.environ.get("TRACE_OUT", "trace.json")
 _called: set[str] = set()
 _failures: list[list[str]] = []
 _collection_errors: list[dict] = []
+MESSAGES = os.environ.get("TRACE_MESSAGES") == "1"
+_messages: list[dict] = []
+_PATH = re.compile(r"\s*\((?:/|[A-Za-z]:\\)[^)]*\)")
+ROOT = (os.environ.get("TRACE_ROOT") or os.path.dirname(os.getcwd())).rstrip(os.sep) + os.sep
 _ERRORS = ((re.compile(r"ImportError: cannot import name '([^']+)' from '([^']+)'"), "ImportError", (1, 2)),
            (re.compile(r"AttributeError: module '([^']+)' has no attribute '([^']+)'"), "AttributeError", (2, 1)),
            (re.compile(r"ModuleNotFoundError: No module named '([^']+)'"), "ModuleNotFoundError", (None, 1)))
+
+
+def first_line(text: str, limit: int = 300) -> str:
+    """The first line of an error that says something, without a path of this machine."""
+    line = next((ln.strip() for ln in str(text).splitlines() if ln.strip()), "")
+    return _PATH.sub("", line).replace(ROOT, "")[:limit]
 
 
 def _in_package(module: str) -> bool:
@@ -50,6 +63,9 @@ def pytest_runtest_call(item):
 def pytest_runtest_makereport(item, call):
     outcome = yield
     report = outcome.get_result()
+    if MESSAGES and report.failed and report.when in ("setup", "call") and call.excinfo is not None:
+        _messages.append({"kind_code": "FAILED" if report.when == "call" else "ERROR", "test_id": report.nodeid,
+                          "message_text": first_line(call.excinfo.exconly(tryshort=True))})
     if report.when == "call" and report.failed and call.excinfo is not None:
         frames, tb = [], call.excinfo.tb
         while tb is not None:
@@ -65,6 +81,10 @@ def pytest_collectreport(report):
     the missing name and its module, read from the report (names only)."""
     if report.failed:
         text = str(report.longrepr)
+        if MESSAGES:
+            errors = [ln[1:] for ln in text.splitlines() if ln.startswith("E ")]
+            _messages.append({"kind_code": "ERROR", "test_id": report.nodeid,
+                              "message_text": first_line(errors[-1] if errors else text)})
         for pattern, kind, (name_at, module_at) in _ERRORS:
             if m := pattern.search(text):
                 _collection_errors.append({"error_type": kind, "missing_name": m.group(name_at) if name_at else None,
@@ -77,4 +97,4 @@ def pytest_collectreport(report):
 def pytest_sessionfinish(session, exitstatus):
     with open(OUT, "w", encoding="utf-8") as f:
         json.dump({"called": sorted(_called), "failure_frames": _failures, "collection_errors": _collection_errors,
-                   "exit_status": int(exitstatus)}, f)
+                   "exit_status": int(exitstatus), **({"failure_messages": _messages} if MESSAGES else {})}, f)
