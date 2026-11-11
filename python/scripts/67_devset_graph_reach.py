@@ -14,7 +14,10 @@ own graphs, so the claim no longer rests on one repository. Three things differ:
   statement names to its nearest nodes under the provided embeddings.
 
     python scripts/67_devset_graph_reach.py --tasks <competition tasks.jsonl> --graphs <dir> --embeddings <dir> \\
-        --cache <dir>
+        --cache <dir> [--checkpoint <dir>]
+
+Embedding 129 graphs takes a few hours on a CPU: with --checkpoint a stopped run keeps its finished rows and node
+vectors in that scratch folder and resumes from them.
 
 Writes data/tasks/devset/devset_graph_reach.csv: ids, counts and ranks, no text from the competition.
 """
