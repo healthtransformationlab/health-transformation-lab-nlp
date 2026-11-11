@@ -68,3 +68,13 @@ def test_the_summary_counts_each_arm_the_discordant_pairs_what_was_left_out_and_
                                               "no": {"pair_count": 6, "statement_resolved_count": 1, "report_resolved_count": 5}}
     assert s["splits"]["is_screen_pass"]["yes"] == {"pair_count": 1, "statement_resolved_count": 1, "report_resolved_count": 1}
     assert s["splits"]["is_screen_pass"]["no"]["pair_count"] == 6        # a pair with no flag is in neither part
+
+
+def test_two_added_arms_are_set_side_by_side_over_the_tasks_both_ran(cp):
+    """The addendum's `graph` against `report`: described as a paired table, never tested."""
+    report = _arm([("a", True, 40), ("b", True, 20), ("c", False, 0)])                  # d was not reached
+    graph = _arm([("a", True, 40), ("b", False, 20), ("c", False, 0), ("d", True, 9)])
+    out = cp.arm_cross(["a", "b", "c", "d"], report, graph, "report", "graph")
+    assert out == {"pair_count": 3, "left_out_count": 1, "both_count": 1, "report_only_count": 1,
+                   "graph_only_count": 0, "neither_count": 1}
+    assert "mcnemar_exact_p" not in out

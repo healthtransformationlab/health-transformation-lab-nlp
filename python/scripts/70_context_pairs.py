@@ -5,7 +5,8 @@ Reads the baseline arm's table (`..._swegemma_statement.csv`) and one other arm'
 data/tasks/official_agent_runs/context_pairs_<arm>.csv: one row per task with both arms' verdicts and costs. Prints
 the analysis the pre-registration names (specs/028-dataops-task-set/preregistration-*.md): each arm's resolved
 count with its Wilson interval, the paired table, the exact McNemar test, two-sided, and the splits it only
-describes.
+describes. With --arm graph it also prints `graph` against `report` as a paired table, which the addendum describes
+and does not test.
 
     python scripts/70_context_pairs.py --arm report
     python scripts/70_context_pairs.py --arm graph
@@ -100,6 +101,17 @@ def summary(rows: list[dict], arm: str, flags: list[str]) -> dict:
                            "no": counts([r for r in pairs if r.get(f) is False])} for f in flags}}
 
 
+def arm_cross(ids: list[str], a_table: pd.DataFrame, b_table: pd.DataFrame, a: str, b: str) -> dict:
+    """Two added arms side by side over the tasks both ran: a paired table the addendum only describes, so no test."""
+    ra, rb = a_table.set_index("instance_id").is_resolved, b_table.set_index("instance_id").is_resolved
+    ran = [i for i in ids if i in ra.index and i in rb.index]
+    both = sum(bool(ra[i]) and bool(rb[i]) for i in ran)
+    a_only = sum(bool(ra[i]) and not rb[i] for i in ran)
+    b_only = sum(bool(rb[i]) and not ra[i] for i in ran)
+    return {"pair_count": len(ran), "left_out_count": len(ids) - len(ran), "both_count": both,
+            f"{a}_only_count": a_only, f"{b}_only_count": b_only, "neither_count": len(ran) - both - a_only - b_only}
+
+
 def task_flags(arm: str) -> pd.DataFrame:
     """Each task's flags for the splits: the screen's verdict, whether its fix edits code the graph holds, whether it
     was in the run of November 10, and what the arm's own shape table says of its context."""
@@ -135,7 +147,11 @@ def main() -> int:
     pairs = frame[frame.is_pair_run]
     means = {f"{name}_{m}": round(float(pairs[f"{name}_{m}"].mean()), 1) for m in MEASURES for name in ("statement", a.arm)
              if len(pairs) and pairs[f"{name}_{m}"].notna().any()}
-    print(json.dumps({**s, "means": means}, indent=1))
+    extra = {}
+    report_table = RUNS / f"{MODEL}_swegemma_report.csv"
+    if a.arm == "graph" and report_table.exists():   # the addendum: `graph` against `report`, described only
+        extra["graph_against_report"] = arm_cross(ids, pd.read_csv(report_table), other, "report", "graph")
+    print(json.dumps({**s, "means": means, **extra}, indent=1))
     print(f"-> {out}")
     return 0
 
