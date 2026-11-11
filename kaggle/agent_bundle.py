@@ -8,8 +8,10 @@ later than every task. So each task runs alone, in its own kernel, beside a priv
     snapshot.tgz    the files at base_commit, as one commit (refused if its .git holds more)
     graph.json, embedding.npz   the task's code graph and embeddings, when there are
     agent.json      the submission's instruction, declared tools, budget and model settings
-    htl_agent/      agent_harness.py, gemma_agent.py, task_gate.py and a telemetry stub: no task changes them
-                    (touched_shipped), and they need nothing else from the package
+    htl_agent/      agent_harness.py, gemma_agent.py, task_gate.py: no task changes them (touched_shipped), and
+                    they need nothing else from the package; and kaggle/bundle_telemetry.py as telemetry.py, a
+                    standard-library tracer that writes spans to a file (spec 014 US6), since tasks change the
+                    package's own telemetry module
 
     build(task, snapshot, graph, embedding, out, instruction, tools, budget)  the folder, with dataset-metadata.json
     touched_shipped(task)   the shipped files a task's patch or tests change; must be none
@@ -31,12 +33,7 @@ HERE = Path(__file__).resolve().parent
 PKG = HERE.parent / "python" / "health_transformation_lab_nlp"
 SHIPPED = ("agent_harness.py", "gemma_agent.py", "task_gate.py")
 TASK_FIELDS = {"instance_id", "repo", "base_commit", "problem_statement", "hints_text"}
-TELEMETRY_STUB = '''"""Stand-in for health_transformation_lab_nlp.telemetry on Kaggle: no spans, nothing exported."""
-
-
-def traced(fn):
-    return fn
-'''
+TELEMETRY = HERE / "bundle_telemetry.py"     # htl_agent/telemetry.py on Kaggle: the package's module, tasks change
 
 
 def slug(instance_id: str) -> str:
@@ -73,7 +70,7 @@ def build(task: dict, snapshot: Path, graph: Path | None, embedding: Path | None
     for f in SHIPPED:
         shutil.copyfile(PKG / f, out / "htl_agent" / f)
     (out / "htl_agent" / "__init__.py").write_text('"""The harness, as shipped beside one task (kaggle/agent_bundle.py)."""\n')
-    (out / "htl_agent" / "telemetry.py").write_text(TELEMETRY_STUB)
+    shutil.copyfile(TELEMETRY, out / "htl_agent" / "telemetry.py")
     (out / "task.json").write_text(json.dumps({k: task.get(k) for k in sorted(TASK_FIELDS)}, indent=1) + "\n")
     shutil.copyfile(snapshot, out / "snapshot.tgz")
     for src, name in ((graph, "graph.json"), (embedding, "embedding.npz")):
