@@ -10,6 +10,8 @@ One switch, `DENTAL_TELEMETRY`, picks where traces, metrics and logs go:
     otlp     any OpenTelemetry backend over OTLP (self-hosted Grafana Tempo/Loki, Jaeger, SigNoz);
              OTEL_EXPORTER_OTLP_ENDPOINT as usual
     memory   in-process, for tests
+    file     one JSON line a span (and a metrics batch), to DENTAL_TELEMETRY_FILE: runs with no network, such as
+             the coding agent on a Kaggle kernel (spec 014 US6); a later step sends the file on
 
 Cost guards for the Azure free allowance (5 GB/month per billing account): the workspace daily cap
 in infra/azure/main.tf (Terraform), `DENTAL_TELEMETRY_SAMPLING` (default 1.0: a batch run is a few hundred
@@ -22,6 +24,7 @@ and error types only.
     with telemetry.pipeline_step("build_sites", data_label="synthetic", rows=len(v)):
         ...
     telemetry.record_value("data_quality.pass_rate", 0.97, check="cal_range")
+    telemetry.annotate(output_token_count=64)           # numbers and short labels on the current function's span
 """
 
 from __future__ import annotations
@@ -50,7 +53,9 @@ MAX_SPANS_PER_CALLER = int(os.environ.get("DENTAL_TELEMETRY_MAX_CALLS", "3"))
 LEVELS = ("step", "call", "detail")         # DENTAL_TELEMETRY_LEVEL: how far down the call tree to trace
 LEVELS_FILE = Path(__file__).with_name("telemetry_levels.yaml")
 LOGGER = "health_transformation_lab_nlp"
-EXPORTERS = ("off", "console", "azure", "otlp", "memory")
+EXPORTERS = ("off", "console", "azure", "otlp", "memory", "file")
+LABEL_SUFFIXES = ("_name", "_code", "_id")   # annotate() keeps text only as a short label (AGENTS.md data names)
+MAX_LABEL_CHARS = 64
 log = logging.getLogger(LOGGER)
 
 
@@ -62,6 +67,7 @@ class TelemetryConfig:
     environment: str = "dev"
     data_product_id: str = field(default_factory=lambda: os.environ.get("DENTAL_DATA_PRODUCT_ID", DATA_PRODUCT))
     level: str = field(default_factory=lambda: os.environ.get("DENTAL_TELEMETRY_LEVEL", "call").strip().lower())
+    file_path: str = ""                     # DENTAL_TELEMETRY=file: one JSON line a span, for runs with no network
 
     def __post_init__(self):
         if self.exporter not in EXPORTERS:
@@ -87,7 +93,8 @@ def config_from_env() -> TelemetryConfig:
     return TelemetryConfig(exporter=os.environ.get("DENTAL_TELEMETRY", "off").strip().lower() or "off",
                            connection_string=_clean(os.environ.get("APPLICATIONINSIGHTS_CONNECTION_STRING", "")),
                            sampling_ratio=float(os.environ.get("DENTAL_TELEMETRY_SAMPLING", "1.0")),
-                           environment=os.environ.get("DENTAL_ENVIRONMENT", "dev"))
+                           environment=os.environ.get("DENTAL_ENVIRONMENT", "dev"),
+                           file_path=os.environ.get("DENTAL_TELEMETRY_FILE", "").strip())
 
 
 class _State:
@@ -100,6 +107,11 @@ class _State:
     level = LEVELS.index("call")
     profile = None                          # dict while telemetry.profile() is running
     script = None
+    providers: ClassVar[list] = []          # the SDK providers setup() made, shut down (flushed) by the next setup
+    file = None                             # the file exporter's open file
+
+
+_annotatable: ContextVar = ContextVar("dental_annotatable_span", default=None)   # the span annotate() writes on
 
 
 def _header(c: TelemetryConfig) -> dict:
@@ -133,17 +145,42 @@ def _sdk_providers(c: TelemetryConfig, span_exporter, metric_exporter):
     from opentelemetry.sdk.trace.export import BatchSpanProcessor, SimpleSpanProcessor
     from opentelemetry.sdk.trace.sampling import ParentBased, TraceIdRatioBased
 
-    tp = TracerProvider(resource=_resource(c), sampler=ParentBased(TraceIdRatioBased(c.sampling_ratio)))
+    tp = TracerProvider(resource=_resource(c), sampler=ParentBased(TraceIdRatioBased(c.sampling_ratio)),
+                        shutdown_on_exit=False)
     tp.add_span_processor(_header_processor())
-    simple = c.exporter in ("memory", "console")
+    simple = c.exporter in ("memory", "console", "file")      # a file is written as each span ends: a crash loses none
     tp.add_span_processor((SimpleSpanProcessor if simple else BatchSpanProcessor)(span_exporter))
     readers = [PeriodicExportingMetricReader(metric_exporter)] if metric_exporter is not None else []
-    return tp.get_tracer(SERVICE), MeterProvider(resource=_resource(c), metric_readers=readers).get_meter(SERVICE)
+    mp = MeterProvider(resource=_resource(c), metric_readers=readers, shutdown_on_exit=False)
+    _State.providers = [tp, mp]
+    return tp.get_tracer(SERVICE), mp.get_meter(SERVICE)
+
+
+def _json_line(item) -> str:
+    return item.to_json(indent=None) + "\n"
+
+
+def _shutdown_providers() -> None:
+    """Flush and stop the providers setup() made, then close the file exporter's file (at the next setup, and at
+    exit, after the run span has ended)."""
+    for provider in _State.providers:
+        try:
+            provider.shutdown()
+        except Exception:  # noqa: BLE001 - stopping telemetry never fails the run
+            pass
+    _State.providers = []
+    if _State.file is not None:
+        _State.file.close()
+        _State.file = None
+
+
+atexit.register(_shutdown_providers)
 
 
 def setup(config: TelemetryConfig | None = None):
     """Configure telemetry. Returns the in-memory span exporter for exporter='memory', else None."""
     c = config or config_from_env()
+    _shutdown_providers()
     _State.instruments, _State.calls = {}, {}
     _State.header = _header(c)
     _State.level = LEVELS.index(c.level)
@@ -156,6 +193,9 @@ def setup(config: TelemetryConfig | None = None):
         log.warning("APPLICATIONINSIGHTS_CONNECTION_STRING is not a valid Application Insights connection "
                     "string (expected InstrumentationKey=...;IngestionEndpoint=...): telemetry off")
         c = TelemetryConfig(exporter="off")
+    if c.exporter == "file" and not c.file_path:
+        log.warning("DENTAL_TELEMETRY=file but DENTAL_TELEMETRY_FILE is not set: telemetry off")
+        c = TelemetryConfig(exporter="off")
     if c.exporter == "off":
         _State.tracer, _State.meter = trace.NoOpTracer(), metrics.NoOpMeter(SERVICE)
     elif c.exporter == "memory":
@@ -166,6 +206,14 @@ def setup(config: TelemetryConfig | None = None):
         from opentelemetry.sdk.metrics.export import ConsoleMetricExporter
         from opentelemetry.sdk.trace.export import ConsoleSpanExporter
         _State.tracer, _State.meter = _sdk_providers(c, ConsoleSpanExporter(), ConsoleMetricExporter())
+    elif c.exporter == "file":
+        from opentelemetry.sdk.metrics.export import ConsoleMetricExporter
+        from opentelemetry.sdk.trace.export import ConsoleSpanExporter
+        path = Path(c.file_path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        _State.file = path.open("w", encoding="utf-8")         # one file a run: a rerun replaces it, never appends
+        _State.tracer, _State.meter = _sdk_providers(c, ConsoleSpanExporter(out=_State.file, formatter=_json_line),
+                                                     ConsoleMetricExporter(out=_State.file, formatter=_json_line))
     elif c.exporter == "otlp":
         from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExporter
         from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
@@ -197,6 +245,26 @@ def record_value(name: str, value: float, **attrs) -> None:
     _instrument("histogram", name).record(value, attributes=attrs)
 
 
+def _keep(key: str, value) -> bool:
+    """Numbers and booleans; text only as a short label, a key ending _name, _code or _id."""
+    if isinstance(value, (bool, int, float)):
+        return True
+    return isinstance(value, str) and key.endswith(LABEL_SUFFIXES) and len(value) <= MAX_LABEL_CHARS
+
+
+def annotate(**attrs) -> None:
+    """Measured values on the span of the function this is called from: tokens, seconds, counts, a tool's name
+    (spec 014 US6). Text is kept only as a short label (a key ending _name, _code or _id, at most 64 characters), so a
+    prompt, a reply, a command or a patch can't reach a span. When that function made no span (telemetry off, its
+    level, or past DENTAL_TELEMETRY_MAX_CALLS), nothing is written: never onto the caller's span."""
+    if _State.exporter == "off":
+        return
+    span = _annotatable.get()
+    if span is None or not span.is_recording():
+        return
+    span.set_attributes({k: v for k, v in attrs.items() if _keep(k, v)})
+
+
 def _record_failure(span, name: str, e: BaseException) -> None:
     span.set_attribute("error.type", type(e).__name__)
     span.record_exception(e)
@@ -212,12 +280,14 @@ def pipeline_step(name: str, **attrs):
     start = time.perf_counter()
     with _State.tracer.start_as_current_span(name, attributes=base, record_exception=False,
                                              set_status_on_exception=False) as span:
+        token = _annotatable.set(span)
         try:
             yield span
         except Exception as e:
             _record_failure(span, name, e)
             raise
         finally:
+            _annotatable.reset(token)
             _instrument("histogram", "pipeline.step.duration", "s").record(
                 time.perf_counter() - start, {"pipeline.step": name})
 
@@ -230,6 +300,7 @@ def start_script(name: str, **attrs) -> None:
                                                       **{("data.label" if k == "data_label" else k): v
                                                          for k, v in attrs.items()}})
     token = context.attach(trace.set_span_in_context(span))
+    marked = _annotatable.set(span)
     prev = sys.excepthook
 
     def hook(etype, value, tb):
@@ -238,7 +309,7 @@ def start_script(name: str, **attrs) -> None:
             end_script()
         prev(etype, value, tb)
 
-    _State.script = (span, token, prev, time.perf_counter(), name)
+    _State.script = (span, token, prev, time.perf_counter(), name, marked)
     sys.excepthook = hook
     atexit.register(end_script)
 
@@ -247,8 +318,12 @@ def end_script() -> None:
     """End the run span (idempotent) and put the previous excepthook back."""
     if _State.script is None:
         return
-    span, token, prev, start, name = _State.script
+    span, token, prev, start, name, marked = _State.script
     _State.script = None
+    try:
+        _annotatable.reset(marked)
+    except ValueError:         # ended from another context (an excepthook, atexit): nothing to put back there
+        _annotatable.set(None)
     sys.excepthook = prev
     _instrument("histogram", "pipeline.step.duration", "s").record(time.perf_counter() - start,
                                                                    {"pipeline.step": name})
@@ -286,7 +361,11 @@ def trace_call(name: str, level: str = "call", **attrs):
     and is only counted (`function.calls`), so hot loops can't flood the ingestion allowance."""
     logger = _HeaderLogger(log, {"function": name})
     if _State.exporter == "off" or LEVELS.index(level) > _State.level:
-        yield logger
+        token = _annotatable.set(None)
+        try:
+            yield logger
+        finally:
+            _annotatable.reset(token)
         return
     parent = trace.get_current_span().get_span_context().span_id
     key = (parent, name)
@@ -295,20 +374,26 @@ def trace_call(name: str, level: str = "call", **attrs):
     n = _State.calls[key] = _State.calls.get(key, 0) + 1
     if n > MAX_SPANS_PER_CALLER:
         _instrument("counter", "function.calls").add(1, {"code.function": name})
+        token = _annotatable.set(None)
         try:
             yield logger
         except Exception as e:
             _instrument("counter", "pipeline.step.failures").add(1, {"pipeline.step": name,
                                                                       "error.type": type(e).__name__})
             raise
+        finally:
+            _annotatable.reset(token)
         return
     with _State.tracer.start_as_current_span(name, attributes=attrs, record_exception=False,
                                              set_status_on_exception=False) as span:
+        token = _annotatable.set(span)
         try:
             yield logger
         except Exception as e:
             _record_failure(span, name, e)
             raise
+        finally:
+            _annotatable.reset(token)
 
 
 def traced(fn):
@@ -326,8 +411,14 @@ def traced(fn):
     def wrapper(*args, **kwargs):
         if _State.profile is not None:
             return _profiled(name, fn, args, kwargs)
-        if _State.exporter == "off" or rank > _State.level:
+        if _State.exporter == "off":
             return fn(*args, **kwargs)
+        if rank > _State.level:
+            token = _annotatable.set(None)
+            try:
+                return fn(*args, **kwargs)
+            finally:
+                _annotatable.reset(token)
         with trace_call(name, level, **attrs):
             return fn(*args, **kwargs)
 
