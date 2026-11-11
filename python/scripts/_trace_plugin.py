@@ -2,7 +2,8 @@
 and the package's frames on each failure's traceback, by the code graph's names (`module.Class.method`). Written to
 TRACE_OUT as JSON when the session ends; the package is TRACE_PACKAGE. Names only: no arguments, values or output.
 With TRACE_MESSAGES=1 it also keeps, for each test that fails or cannot run, its id and the first line of its error
-(028 AI7, #674: the failing test's report an agent can be given), with this machine's paths taken out."""
+(028 AI7, #674: the failing test's report an agent can be given), with this machine's paths taken out: a path
+under TRACE_ROOT (the repository's root; the folder above the working one when unset) is given from that root."""
 import json
 import os
 import re
@@ -18,6 +19,7 @@ _collection_errors: list[dict] = []
 MESSAGES = os.environ.get("TRACE_MESSAGES") == "1"
 _messages: list[dict] = []
 _PATH = re.compile(r"\s*\((?:/|[A-Za-z]:\\)[^)]*\)")
+ROOT = (os.environ.get("TRACE_ROOT") or os.path.dirname(os.getcwd())).rstrip(os.sep) + os.sep
 _ERRORS = ((re.compile(r"ImportError: cannot import name '([^']+)' from '([^']+)'"), "ImportError", (1, 2)),
            (re.compile(r"AttributeError: module '([^']+)' has no attribute '([^']+)'"), "AttributeError", (2, 1)),
            (re.compile(r"ModuleNotFoundError: No module named '([^']+)'"), "ModuleNotFoundError", (None, 1)))
@@ -26,7 +28,7 @@ _ERRORS = ((re.compile(r"ImportError: cannot import name '([^']+)' from '([^']+)
 def first_line(text: str, limit: int = 300) -> str:
     """The first line of an error that says something, without a path of this machine."""
     line = next((ln.strip() for ln in str(text).splitlines() if ln.strip()), "")
-    return _PATH.sub("", line).replace(os.getcwd() + os.sep, "")[:limit]
+    return _PATH.sub("", line).replace(ROOT, "")[:limit]
 
 
 def _in_package(module: str) -> bool:

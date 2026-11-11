@@ -3,7 +3,8 @@
 This repository is test-first, so each task's failing test exists before its fix. Script 68 counted where that
 test's report points; this builds the report itself, to give to an agent beside the task's statement:
 
-- the tests that fail or cannot run, each with the first line of its error (pytest's own summary line);
+- the tests that fail or cannot run, with the first line of each distinct error (pytest's own summary line), and
+  how many tests fail that way;
 - the package's public functions those tests called before failing: what the repository's OpenTelemetry spans
   record, since every public function is `@traced` (spec 014).
 
@@ -51,16 +52,21 @@ tr = _load("68_trace_reach")
 
 def failure_context(trace: dict, max_failures: int = 10, max_functions: int = 15,
                     max_message_chars: int = 240) -> str:
-    """The report as text: one line per failing test, then the public functions called. Short on purpose: a small
-    model's context is its budget. Empty when no test failed."""
+    """The report as text: one line per distinct error, with its first test and how many more fail the same way,
+    then the public functions called. Short on purpose: a small model's context is its budget. Empty when no test
+    failed."""
     messages = trace.get("failure_messages") or []
     if not messages:
         return ""
+    groups: dict[tuple[str, str], list[str]] = {}
+    for m in messages:
+        groups.setdefault((m["kind_code"], m["message_text"]), []).append(m["test_id"])
     lines = [HEADER]
-    lines += [f"- {m['kind_code']} python/{m['test_id']} - {m['message_text'][:max_message_chars]}"
-              for m in messages[:max_failures]]
-    if len(messages) > max_failures:
-        lines.append(f"(and {len(messages) - max_failures} more failing tests)")
+    for (kind, message), tests in list(groups.items())[:max_failures]:
+        more = f" (and {len(tests) - 1} more tests with this error)" if len(tests) > 1 else ""
+        lines.append(f"- {kind} python/{tests[0]}{more} - {message[:max_message_chars]}")
+    if len(groups) > max_failures:
+        lines.append(f"(and {len(groups) - max_failures} more distinct errors)")
     called = sorted(tr.public(set(trace.get("called") or [])))
     if called:
         more = f" (and {len(called) - max_functions} more)" if len(called) > max_functions else ""

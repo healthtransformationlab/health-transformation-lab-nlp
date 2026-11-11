@@ -142,7 +142,7 @@ def run_task(task: dict, snapshot: Path, package: str | None, timeout: int, mess
         out = Path(d) / "trace.json"
         env = {k: v for k, v in os.environ.items() if not k.startswith(("PYTEST_", "DENTAL_TELEMETRY"))}
         env.update(PYTHONPATH=f"{root / 'python'}{os.pathsep}{HERE}", TRACE_PACKAGE=package, TRACE_OUT=str(out),
-                   DENTAL_TELEMETRY="off", **({"TRACE_MESSAGES": "1"} if messages else {}))
+                   DENTAL_TELEMETRY="off", **({"TRACE_MESSAGES": "1", "TRACE_ROOT": str(root)} if messages else {}))
         try:
             # a report (messages) goes on past a file that cannot be imported, to list every failing test
             more = ["--continue-on-collection-errors"] if messages else []

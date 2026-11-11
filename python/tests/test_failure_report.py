@@ -74,11 +74,11 @@ def test_the_report_lists_the_failures_and_the_public_functions_called(fr):
 def test_a_long_report_is_cut_to_a_few_failures_and_functions_and_says_how_many_it_left_out(fr):
     many = {"called": [f"pkg.mod.f{n:02d}" for n in range(30)],
             "failure_messages": [{"kind_code": "FAILED", "test_id": f"tests/test_x.py::test_{n}",
-                                  "message_text": "AssertionError: " + "x" * 400} for n in range(20)]}
+                                  "message_text": f"AssertionError: {n:02d} " + "x" * 400} for n in range(20)]}
     text = fr.failure_context(many, max_failures=3, max_functions=4, max_message_chars=60)
     lines = text.splitlines()
     assert len([line for line in lines if line.startswith("- FAILED")]) == 3
-    assert "(and 17 more failing tests)" in lines
+    assert "(and 17 more distinct errors)" in lines
     assert all(len(line) <= 60 + len("- FAILED python/tests/test_x.py::test_19 - ") for line in lines[1:4])
     assert lines[-1].endswith("pkg.mod.f00, pkg.mod.f01, pkg.mod.f02, pkg.mod.f03 (and 26 more)")
 
@@ -110,3 +110,33 @@ def test_the_package_is_found_in_a_snapshot_whatever_it_was_called_then(fr, tmp_
         (root / "python" / "tests").mkdir()
         (root / "python" / "tests" / "__init__.py").write_text("")
         assert fr.tr.package_of(root) == name
+
+
+def test_tests_that_fail_the_same_way_share_one_line(fr):
+    """A parametrized test that fails eight times with one error is one line, so ten lines hold ten different errors."""
+    same = {"called": [], "failure_messages": [
+        {"kind_code": "FAILED", "test_id": f"tests/test_p.py::test_skip[changed{n}]",
+         "message_text": "AttributeError: module 'parity_needed' has no attribute 'code_changed'"} for n in range(8)]
+        + [{"kind_code": "FAILED", "test_id": "tests/test_p.py::test_other", "message_text": "AssertionError: bundle"}]}
+    assert fr.failure_context(same).splitlines()[1:] == [
+        "- FAILED python/tests/test_p.py::test_skip[changed0] (and 7 more tests with this error) - AttributeError: "
+        "module 'parity_needed' has no attribute 'code_changed'",
+        "- FAILED python/tests/test_p.py::test_other - AssertionError: bundle"]
+    row = fr.shape_row("t", same, fr.failure_context(same))
+    assert row["failing_test_count"] == 9                      # the count is of tests, not of lines
+
+
+def test_a_path_under_the_snapshot_is_given_from_its_root(tmp_path):
+    """An error that names a missing file shows it from the repository's root, not from this machine's temp folder."""
+    root = tmp_path / "repo"
+    (root / "python" / "tests").mkdir(parents=True)
+    (root / "python" / "tests" / "test_file.py").write_text(
+        "from pathlib import Path\n\ndef test_reads():\n"
+        "    (Path(__file__).resolve().parents[2] / 'ops' / 'register.yaml').read_text()\n")
+    out = tmp_path / "trace.json"
+    subprocess.run([sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider", "-p", "_trace_plugin",
+                    "tests/test_file.py"], cwd=root / "python", capture_output=True, text=True, check=False,
+                   env={"PATH": "/usr/bin:/bin", "PYTHONPATH": f"{root / 'python'}:{SCRIPTS}", "TRACE_PACKAGE": "pkg",
+                        "TRACE_OUT": str(out), "HOME": str(tmp_path), "TRACE_MESSAGES": "1", "TRACE_ROOT": str(root)})
+    message = json.loads(out.read_text())["failure_messages"][0]["message_text"]
+    assert message == "FileNotFoundError: [Errno 2] No such file or directory: 'ops/register.yaml'"
