@@ -322,7 +322,10 @@ def main() -> int:
               f"rank {rows[-1]['edited_node_best_rank_num']}, provided {rows[-1]['provided_edited_node_best_rank_num']}",
               flush=True)
     a.out.parent.mkdir(parents=True, exist_ok=True)
-    pd.DataFrame(rows, columns=COLUMNS).sort_values("instance_id").to_csv(a.out, index=False)
+    table = pd.DataFrame(rows, columns=COLUMNS).sort_values("instance_id")
+    for column in ("statement_to_fix_edge_count", "edited_node_best_rank_num", "provided_edited_node_best_rank_num"):
+        table[column] = table[column].astype("Int64")   # whole numbers; blank where there is none
+    table.to_csv(a.out, index=False)
     s = summary(rows)
     print(json.dumps(s, indent=1))
     print(f"no graph for {len(missing)}: {', '.join(missing) or 'none'}")
