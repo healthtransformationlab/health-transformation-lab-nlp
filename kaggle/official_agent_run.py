@@ -273,6 +273,16 @@ def settings_for(result: dict, seed: int | None, drawn: list[str], pool_count: i
     }
 
 
+def given_sample(settings: dict, method_text: str | None) -> dict:
+    """The settings of a run whose ids were given (--ids), not drawn by it: say so, and keep the seed as the order's
+    (a batch runs its tasks in a seeded shuffle)."""
+    sample = dict(settings["sample"])
+    sample["order_seed"], sample["seed"] = sample.get("seed"), None
+    sample["method_text"] = ("the ids were given to this run, not drawn by it"
+                             + (f": {method_text}" if method_text else ""))
+    return {**settings, "sample": sample}
+
+
 def _script_seconds(result: dict) -> float | None:
     """The kernel script's own start to end: installing the wheelhouse, loading the model, the agent."""
     try:
@@ -463,11 +473,13 @@ def run_batch(a, api, user: str, ids: list[str], tasks: dict, manifest: dict, ov
                            name if development or getattr(a, "label", None) else None)
         print(f"-> {path.relative_to(REPO_ROOT)}")
         good = next((r for r in done.values() if r.get("budgets")), None)
-        if good and a.sample:
+        if good and (a.sample or getattr(a, "label", None)):
             commit = subprocess.run(["git", "-C", str(a.agent_dir), "rev-parse", "HEAD"], capture_output=True,
                                     text=True, check=False).stdout.strip() or None
             settings = settings_for(good, a.seed, list(ids), len(manifest), a.machine_shape, a.docker_image,
                                     a.competition, commit, a.source, tasks_per_kernel=len(order))
+            if not a.sample:
+                settings = given_sample(settings, getattr(a, "sample_method", None))
             settings["notes"] += a.note or []
             if getattr(a, "context_note", None):
                 settings["context"] = a.context_note
@@ -507,6 +519,7 @@ def main() -> int:
     ap.add_argument("--telemetry", action="store_true",
                     help="with --batch: the kernel samples the GPUs and keeps the agent framework's spans, filtered to "
                          "numbers and short labels (spec 014 US6, 036 US2); off by default, as the competition runs it")
+    ap.add_argument("--sample-method", help="with --ids and --label: how the ids were chosen, for the settings file")
     ap.add_argument("--label", help="with --batch: name this batch (its dataset, kernel, work folder and table), so two "
                                     "arms of one experiment run side by side")
     ap.add_argument("--context", type=Path,

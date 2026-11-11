@@ -496,3 +496,14 @@ def test_the_settings_record_which_context_an_arm_had_by_hash_and_size_never_its
     assert note == {"file_name": "ctx.jsonl", "file_sha256": hashlib.sha256(f.read_bytes()).hexdigest(),
                     "task_count": 1, "max_context_chars": len(ctx["a"]), "added_to": "hints_text"}
     assert "ERROR x" not in json.dumps(note)
+
+
+def test_a_run_of_given_ids_says_so_in_its_settings(run):
+    """An arm of the experiment runs ids fixed by its pre-registration: the settings must not say this run drew them."""
+    s = {"sample": {"seed": 7, "drawn_count": 2, "pool_count": 93, "instance_ids": ["a", "b"],
+                    "method_text": "drawn with the seed from the published tasks"}, "notes": []}
+    out = run.given_sample(s, "the 20 of November 10 and 10 more by seed 20261111")
+    assert out["sample"]["method_text"] == ("the ids were given to this run, not drawn by it: the 20 of November 10 "
+                                            "and 10 more by seed 20261111")
+    assert out["sample"]["seed"] is None and out["sample"]["order_seed"] == 7
+    assert s["sample"]["seed"] == 7                                   # the input is left alone
