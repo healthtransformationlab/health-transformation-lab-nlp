@@ -23,7 +23,6 @@ import importlib.util
 import json
 import os
 import re
-import shutil
 import statistics
 import subprocess
 import sys
@@ -85,14 +84,25 @@ def import_columns(trace: dict, patch: str) -> dict:
 
 
 def summary(rows: list[dict], reached_by_statement: set[str]) -> dict:
-    """How many tasks the trace and the traceback reach, how many of those the statement did not (by name, call edge
-    or embedding search, the paper's 42), how large the traces are, and how many runs never ran a test."""
+    """How many tasks the trace and the traceback reach, how large the traces are, how many runs never ran a test,
+    and what the failure report adds to the statement (by name, call edge or embedding search, the paper's 42), split
+    by where the gain comes from: the trace (the functions the tests call, or a traceback) and the import errors (a
+    test that cannot be imported, whose error names a name the fix adds or a module it changes). A task with several
+    test files can be in both, so the two parts need not sum to the whole (028 BUG4, #672)."""
     traced = [r for r in rows if r["is_edited_in_trace"]]
+    statement = set(reached_by_statement) & {r["instance_id"] for r in rows}
+    by_trace = {r["instance_id"] for r in rows if r["is_edited_in_trace"] or r["is_edited_on_traceback"]}
+    by_import = {r["instance_id"] for r in rows
+                 if r.get("is_missing_name_added_by_fix") or r.get("is_error_module_changed_by_fix")}
+    report = by_trace | by_import
     return {"task_count": len(rows), "trace_count": len(traced),
             "traceback_count": sum(bool(r["is_edited_on_traceback"]) for r in rows),
             "traceback_within_one_edge_count": sum(r["traceback_to_fix_edge_count"] is not None
                                                    and r["traceback_to_fix_edge_count"] <= 1 for r in rows),
-            "trace_not_statement_count": sum(r["instance_id"] not in reached_by_statement for r in traced),
+            "trace_not_statement_count": len(by_trace - statement),
+            "import_error_not_statement_count": len(by_import - statement),
+            "report_count": len(report), "report_not_statement_count": len(report - statement),
+            "statement_count": len(statement), "statement_or_report_count": len(statement | report),
             "median_traced_node_count": statistics.median([r["traced_node_count"] for r in rows]) if rows else None,
             "collection_error_count": sum(r["test_exit_code"] is None or r["test_exit_code"] >= 2 for r in rows),
             "import_error_count": sum(bool(r.get("is_import_error")) for r in rows),

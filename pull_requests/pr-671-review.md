@@ -19,3 +19,16 @@ Reviewed against `.claude/review-rubric.md` and AGENTS.md.
   location in 6 tasks the statement misses, and the import errors give the exact missing name in 9. The second is
   the screen's finding (tests need names the statement never gives) seen from the failure report. A GPU run with and
   without that context should start with those tasks.
+
+## Correction (November 11, 2026, #672)
+
+The note above credits the trace with all 6 tasks. It adds 1. Recomputed from `data/tasks/trace_reach.csv` against
+the 42 tasks the statement reaches:
+
+- the functions the failing tests call include an edited one in 23 tasks, 1 of them outside the 42 (`htlnlp_pr21`);
+- 15 tests cannot be imported, 13 of those errors name a module the fix changes, and 5 of those are outside the 42.
+
+So 48 of 51 is the statement plus the test's failure report, not the statement plus the trace. A second session
+found this (gemma-developer-agent issue 61) and this one confirmed it. `68_trace_reach.py` now prints the split
+(`trace_not_statement_count` 1, `import_error_not_statement_count` 5, `report_not_statement_count` 6,
+`statement_or_report_count` 48). The table itself was right and has not changed.
