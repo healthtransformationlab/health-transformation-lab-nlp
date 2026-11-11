@@ -148,6 +148,18 @@ def _run_kernel(api, folder: Path | None, ref: str, out: Path, max_seconds: int)
     return json.loads(res.read_text())
 
 
+def keep_telemetry(kernel_output: Path, folder: Path, instance_id: str) -> Path | None:
+    """The kernel's spans (spec 014 US6, #666), kept as <folder>/<instance_id>.jsonl: one file a task, a rerun
+    replaces it. None when the kernel wrote none (it failed before tracing started, or telemetry was off)."""
+    src = Path(kernel_output) / "telemetry.jsonl"
+    if not src.exists():
+        return None
+    folder.mkdir(parents=True, exist_ok=True)
+    dst = folder / f"{instance_id}.jsonl"
+    shutil.copyfile(src, dst)
+    return dst
+
+
 def _script_seconds(result: dict) -> float | None:
     try:
         start, end = (pd.Timestamp(result[k]) for k in ("started_ts", "finished_ts"))
@@ -290,7 +302,9 @@ def main() -> int:
             (k / "kernel-metadata.json").write_text(json.dumps(kernel_metadata(user, slug, MODELS[a.model]), indent=1))
         print(f"[{n}/{len(ids)}] {iid}: the agent on a Kaggle GPU, {kref}", flush=True)
         t0 = time.monotonic()   # push to output: queue and boot included, so it errs high (the API gives no split)
+        shutil.rmtree(work / "output", ignore_errors=True)     # a kernel that writes no spans must not keep old ones
         result = _run_kernel(api, k, kref, work / "output", int((a.time_minutes + 25) * 60))   # + load and setup
+        keep_telemetry(work / "output", OUT_DIR / "telemetry" / a.model, iid)
         session = time.monotonic() - t0
         used += session / 3600
         shutil.rmtree(work / "score", ignore_errors=True)

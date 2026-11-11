@@ -23,7 +23,7 @@ import json
 import re
 import time
 
-from .telemetry import traced
+from .telemetry import annotate, traced
 
 STR = '<|"|>'
 CALL_OPEN, CALL_CLOSE = "<|tool_call>", "<tool_call|>"
@@ -200,6 +200,14 @@ def extend_ids(prev: list[int], new: list[dict], render_response, encode) -> lis
     return None
 
 
+def _record_turn(turn: dict, model_name: str) -> None:
+    """One model turn's tokens and seconds on the step's span (spec 014 US6): counts only, never the text."""
+    annotate(model_name=model_name, prompt_token_count=int(turn.get("prompt_tokens", 0)),
+             prefill_token_count=int(turn.get("prefill_tokens", 0)),
+             output_token_count=int(turn.get("output_tokens", 0)), turn_seconds=float(turn.get("seconds", 0.0)),
+             is_over_context=bool(turn.get("over_context", False)))
+
+
 class GemmaModel:
     """Gemma 4 with transformers, on whatever GPUs there are (device_map auto). Keeps what each turn cost."""
 
@@ -255,6 +263,7 @@ class GemmaModel:
         if n_in > self.max_context:   # past what fits beside the KV cache: end the turn, the harness nudges
             self.turns.append({"prompt_tokens": n_in, "prefill_tokens": 0, "output_tokens": 0, "seconds": 0.0,
                                "over_context": True})
+            _record_turn(self.turns[-1], self.name)
             self.cache = None
             return {"content": "", "tool_calls": [], "finish_reason": "length"}
         cached = self.cache.get_seq_length() if self.cache is not None else 0
@@ -270,4 +279,5 @@ class GemmaModel:
         hit = len(new) >= self.gen["max_new_tokens"] and not any(text.rstrip().endswith(s) for s in STOP_STRINGS)
         self.turns.append({"prompt_tokens": n_in, "prefill_tokens": n_in - cached, "output_tokens": int(len(new)),
                            "seconds": round(time.monotonic() - t, 2)})
+        _record_turn(self.turns[-1], self.name)
         return parse_reply(text, hit_limit=hit)
