@@ -209,6 +209,47 @@ AppDependencies
 | extend hours_since = datetime_diff("hour", now(), last_success)
 ```
 
+## Agent runs, offline (US6)
+
+The coding agent's runs are traced too (spec 014 US6, #666). A Kaggle kernel has no internet, so its spans go to a file,
+one JSON line a span, children first:
+
+- **On Kaggle.** The local-harness kernel (`kaggle/agent_kernel.py`) sets `DENTAL_TELEMETRY=file` and
+  `DENTAL_TELEMETRY_FILE=/kaggle/working/telemetry.jsonl`, beside `result.json`. The runner
+  (`python/scripts/60_kaggle_agent.py`) keeps each task's file as
+  `data/tasks/agent_runs/telemetry/<model>/<instance_id>.jsonl`; a rerun replaces it.
+- **The bundle's tracer.** The bundle can't ship this module, because tasks change it and the agent could read a fix
+  beside its task. So it ships `kaggle/bundle_telemetry.py` as `htl_agent/telemetry.py`: the same calls, the standard
+  library only, and the layout the SDK's `file` exporter writes, so one reader handles both. It keeps every call (a
+  file costs nothing to ingest); the package caps repeats at `DENTAL_TELEMETRY_MAX_CALLS` for the Azure allowance.
+- **Elsewhere** (a laptop, Colab, CI): `DENTAL_TELEMETRY=file` does the same through the SDK, and
+  `DENTAL_TELEMETRY=azure` sends the spans straight to Application Insights.
+- **The competition's own evaluator** (`kaggle/official_agent_kernel.py`) keeps tracing off, as the competition runs
+  it; its timing and tokens are in its own run table.
+
+What a span holds, each with its start and end time:
+
+| Span | Attributes |
+|---|---|
+| `agent_kernel` (the run) | `instance_id`, `model_name`, `load_seconds`, `is_patch_submitted`, `turn_count`, `error_type_code` |
+| `gemma_agent.GemmaModel.step` (a model turn) | `model_name`, `prompt_token_count`, `prefill_token_count`, `output_token_count`, `turn_seconds`, `is_over_context` |
+| `agent_harness.call_tool` (a tool call) | `tool_name`, `tool_error_code` |
+
+Never the prompt, the reply, a command or a patch: `telemetry.annotate()` keeps numbers and booleans, and text only
+as a short label (a key ending `_name`, `_code` or `_id`, at most 64 characters). An error is recorded by its type.
+
+```python
+import json
+spans = [json.loads(line) for line in open("telemetry.jsonl") if line.strip()]
+turns = [s["attributes"] for s in spans if s["name"].endswith("GemmaModel.step")]
+print(sum(t.get("output_token_count", 0) for t in turns), "output tokens in", len(turns), "turns")
+```
+
+Next: a script that sums the files into a cost-and-performance table (tokens, seconds and tool calls a task and a
+fix), and a step that sends them to Application Insights. The connection string is only in the Databricks secret
+scope, so that step runs as a Databricks job, or the owner adds it as a GitHub environment secret and to
+`ops/secrets_register.yaml`.
+
 ## Not yet
 
 The pipeline doctor: classify each failure (GPU unavailable, out of memory, schema drift, data

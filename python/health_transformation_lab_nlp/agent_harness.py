@@ -56,7 +56,7 @@ from pathlib import Path
 import numpy as np
 
 from . import task_gate as tgate
-from .telemetry import traced
+from .telemetry import annotate, traced
 
 HARNESS_NAME = "htlnlp-harness-v1"
 HARNESS_NOTE = ("Measured with this repository's re-implementation of the competition's documented harness "
@@ -517,10 +517,13 @@ _TOOLS = {"run_command": _run_command, "read_file": _read_file, "edit_file": _ed
 def call_tool(session: Session, name: str, arguments: dict | None) -> str:
     """One tool call, budget-gated as documented; always a JSON string, never an exception."""
     fn = _TOOLS.get(name)
+    annotate(tool_name=name if fn is not None else "unknown")     # a known name only: never what the model typed
     if fn is None:
+        annotate(tool_error_code="UnknownTool")
         return json.dumps(_err("UnknownTool", f"no tool named {name!r}"))
     if name not in FREE_TOOLS:
         if session.remaining_calls() <= 0:
+            annotate(tool_error_code="BudgetExceeded")
             return json.dumps(_err("BudgetExceeded", "no tool calls left: call submit_patch"))
         session.tool_calls_used += 1
     bad = object()
@@ -546,6 +549,8 @@ def call_tool(session: Session, name: str, arguments: dict | None) -> str:
     if session.budget.tool_calls >= 20 and session.remaining_calls() <= 10:
         out["budget_warning"] = (f"Only {session.remaining_calls()} tool call(s) remaining ({session.tool_calls_used}/"
                                  f"{session.budget.tool_calls} used). Finalize your edits and call submit_patch soon.")
+    if isinstance(out, dict) and out.get("status") == "error":
+        annotate(tool_error_code=str(out.get("error_type", "Error")))
     return json.dumps(out)
 
 

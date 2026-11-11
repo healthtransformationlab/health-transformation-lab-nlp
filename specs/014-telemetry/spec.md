@@ -42,6 +42,16 @@ Insights. CI checks formatting and validates it (`terraform fmt -check`, `terraf
 `docs/telemetry.md`: KQL for failures by step and error type, step duration trends, data-quality
 pass-rate trends, and the last successful run per pipeline.
 
+### US6 - The coding agent's runs are traced too, offline (P2) #666
+Each model turn (prompt, cached and output tokens, seconds) and each tool call (its name, and its error type if any)
+is a span, with the run's own span around them. A Kaggle kernel has no internet, so `DENTAL_TELEMETRY=file` writes
+one JSON line a span to `DENTAL_TELEMETRY_FILE`; `file` without a path warns and runs with telemetry off. The Kaggle
+bundle ships a dependency-free tracer with the same calls and the same layout, since tasks change this module.
+`annotate()` puts numbers and short `_name`/`_code`/`_id` labels on the span of the function it is called from,
+never on its caller's, and never text: no prompt, reply, command or patch reaches a span. The competition's own
+evaluator keeps tracing off, so its runs stay comparable. Sending the files to Application Insights is the next step
+(the connection string is only in the Databricks secret scope).
+
 ## Out of scope (next spec)
 The "pipeline doctor": classifying failures, choosing a recovery, escalation and notification, and
 its evaluation on this repo's real incidents.
@@ -69,3 +79,17 @@ calls per parent call and time per call) and kept in `telemetry_levels.yaml`; ha
 `manual: true` survive reruns. Below the chosen level `@traced` is a direct call. Site build: 1 / 6 /
 20,691 spans at step / call / detail. `37_cal_reliability.py` now writes its gzip without a timestamp,
 so reruns don't change the committed file.
+
+## Revision 2026-11-11: agent runs (US6, #666)
+
+The owner asked for cost and performance tracking for the coding agent, whose Kaggle runs had a stub that recorded
+nothing. Done in #666:
+
+- [x] T601 `file` exporter and `DENTAL_TELEMETRY_FILE` (`telemetry.py`); `file` without a path warns, then off
+- [x] T602 `annotate()`: numbers and short labels on the current function's span; nothing when it made no span
+- [x] T603 each model turn and each tool call annotated (`gemma_agent.py`, `agent_harness.py`)
+- [x] T604 `kaggle/bundle_telemetry.py`, shipped as the bundle's `telemetry.py`; the same layout as the SDK's
+- [x] T605 the local-harness kernel writes `/kaggle/working/telemetry.jsonl`; the runner keeps one file a task
+- [x] T606 `docs/telemetry.md`, "Agent runs, offline"
+- [ ] T607 a script that sums the files into a cost-and-performance table a task and a fix
+- [ ] T608 send the files to Application Insights (a Databricks job, or a GitHub secret: the owner's choice)
