@@ -165,6 +165,9 @@ def stage_competition_task(comp: Path, instance_id: str, work: Path) -> None:
         for name in names:
             if (comp / folder / name).exists():
                 os.symlink(comp / folder / name, work / folder / name)
+    for shared in ("wheels", "sandbox"):   # the tests' dependencies and their setup script: the evaluator looks for
+        if (comp / shared).exists():       # them beside tasks.jsonl (swegemma's resolve_wheels_dir), or no test runs
+            os.symlink(comp / shared, work / shared)
     if not (work / "snapshots" / f"{instance_id}.tgz").exists():
         raise SystemExit(f"{instance_id} has no snapshot in the competition's files")
 

@@ -284,7 +284,7 @@ def test_a_development_set_bundle_holds_the_submission_and_the_order_and_no_task
 def test_the_kernel_stages_a_development_task_from_the_mounted_competition(tmp_path):
     ns = _kernel_functions("find_competition", "stage_competition_task")
     comp = tmp_path / "input" / "gemma-4-developer-agent"
-    for d in ("snapshots", "graphs", "embeddings"):
+    for d in ("snapshots", "graphs", "embeddings", "wheels", "sandbox"):
         (comp / d).mkdir(parents=True)
     (comp / "HARNESS_README.md").write_text("the harness")
     (comp / "tasks.jsonl").write_text(json.dumps(DEV_ROW) + "\n"
@@ -301,6 +301,10 @@ def test_the_kernel_stages_a_development_task_from_the_mounted_competition(tmp_p
     snap = work / "snapshots" / "fastapi_15661.tgz"
     assert snap.is_symlink() and snap.read_bytes() == b"snap"                  # linked, not copied
     assert (work / "graphs" / "fastapi_abc123.json").exists() and (work / "embeddings" / "fastapi_abc123.npz").exists()
+    # the evaluator finds the tests' dependencies beside tasks.jsonl (swegemma's resolve_wheels_dir): the pilot of
+    # November 11 had none there, and its verification stopped before any test ran (exit code 2)
+    assert (work / "wheels").is_symlink() and (work / "wheels").resolve() == (comp / "wheels").resolve()
+    assert (work / "sandbox").is_symlink() and (work / "sandbox").resolve() == (comp / "sandbox").resolve()
     with pytest.raises(SystemExit):
         ns["stage_competition_task"](comp, "httpx_1", work)
 
