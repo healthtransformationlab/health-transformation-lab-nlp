@@ -1,0 +1,16 @@
+section_name,task_count,span_count,self_seconds,time_share_pct,input_token_count,output_token_count
+model call,21,263,1822.1,82.79,5265310,261390
+context compaction,12,24,304.4,13.83,0,0
+tool run_command,11,33,56.6,2.57,0,0
+harness,21,21,13.7,0.62,0,0
+agent data_pipeline_fixer,21,26,2.8,0.13,0,0
+tool get_code_neighbors,3,7,0.3,0.01,0,0
+tool submit_patch,17,17,0.3,0.01,0,0
+tool search_similar_code,6,10,0.2,0.01,0,0
+tool read_file,19,110,0.2,0.01,0,0
+agent code_analyzer,4,5,0.1,0.01,0,0
+tool write_file,6,18,0.1,0.0,0,0
+tool edit_file,10,35,0.1,0.0,0,0
+agent loop,21,31,0.0,0.0,0,0
+tool code_analyzer,4,5,0.0,0.0,0,0
+tool get_status,2,2,0.0,0.0,0,0
