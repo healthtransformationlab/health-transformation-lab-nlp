@@ -48,6 +48,12 @@ NETWORK_COMMAND = re.compile(r"(^|[\s;&|(])(curl|wget|ssh|scp|nc|telnet)\s|pip3?
                              r"git\s+(clone|fetch|pull|push|ls-remote|remote\s+add)|(apt|apt-get|conda|npm|uv)\s+"
                              r"(install|add|update)|urllib\.request|requests\.(get|post)|httpx\.", re.I)
 UPLOAD_EVERY_SECONDS = 900
+# This branch's own files, which a notebook that has made its runs keeps reading (`follow`).
+BRANCH_FILES = ("https://raw.githubusercontent.com/healthtransformationlab/health-transformation-lab-nlp/"
+                "refs/heads/feat/687-028-colab-paired-run/kaggle/")
+FOLLOW_MINUTES = 150     # how long a notebook waits for the run list to name another run, after each run
+POLL_SECONDS = 60
+DONE: dict[str, int] = {}   # label -> the kernel's exit code, for each run this notebook session has made
 
 
 def dataset_dir(ref: str, root: Path = KAGGLE) -> Path:
@@ -107,6 +113,52 @@ def network_command_count(commands: list[str]) -> int:
     """How many of the agent's commands reach for the network: a download tool, an installer, or git over a remote.
     A URL that is only read or searched for in a file does not count."""
     return sum(bool(NETWORK_COMMAND.search(c)) for c in commands)
+
+
+def branch_file(name: str) -> str:
+    """This branch's copy of a file in kaggle/. The query keeps a cached copy from being served after a change."""
+    import urllib.request
+    with urllib.request.urlopen(f"{BRANCH_FILES}{name}?t={int(time.time())}", timeout=60) as r:  # noqa: S310 - the repo
+        return r.read().decode()
+
+
+def fresh_helper(get=branch_file):
+    """This file as the branch has it now, so a fix pushed there applies to the next run without a second tap."""
+    import types
+    mod = types.ModuleType("colab_official")
+    exec(compile(get("colab_official.py"), "colab_official.py", "exec"), mod.__dict__)  # noqa: S102 - the repo's own file
+    return mod
+
+
+def follow(done: dict, minutes: float = FOLLOW_MINUTES, get=branch_file, make=None, sleep=time.sleep,
+           clock=time.monotonic) -> str:
+    """After the runs a notebook was started for: keep reading the branch's run list, and make each run it names that
+    this session has not made, until it has made them all and the list says stop, or it names nothing new for
+    `minutes`. The owner starts the notebook once; a full arm, whose plan is registered only after the test run has
+    been read, then starts without a second tap. `done` gains each run's exit code. Returns why the following ended."""
+    deadline = clock() + minutes * 60
+    while clock() < deadline:
+        try:
+            plan = json.loads(get("colab_official_run.json"))
+        except Exception as e:  # noqa: BLE001 - a read that fails is tried again
+            say(f"could not read the run list, trying again: {type(e).__name__}: {str(e)[:200]}")
+            sleep(POLL_SECONDS)
+            continue
+        r = next((r for r in plan.get("runs", []) if r.get("label") not in done), None)
+        if r is None:
+            if plan.get("stop"):   # every run it names has been made, and no more are coming
+                return "the run list says stop"
+            sleep(POLL_SECONDS)
+            continue
+        say(f"the run list names a run this session has not made: {r.get('label')}")
+        try:
+            code = (make or fresh_helper(get).run_one)(r["label"], r["bundle"], r.get("kernel_dataset"), r.get("kernel_url"))
+        except (Exception, SystemExit) as e:  # noqa: BLE001 - a run that cannot start is not tried for ever
+            say(f"{r.get('label')} could not start: {type(e).__name__}: {str(e)[:300]}")
+            code = 1
+        done[r.get("label")] = code
+        deadline = clock() + minutes * 60
+    return f"nothing new was listed for {minutes:g} minutes"
 
 
 # ---- below: only run on the Colab machine ----------------------------------------------------------------------------
@@ -185,8 +237,31 @@ def fetch(api, kagglehub, bundle: str, kernel_dataset: str | None, kernel_url: s
     return kernel
 
 
+def release() -> None:
+    """Give the GPU back. A notebook left on a finished run still spends the account's compute units."""
+    try:
+        from google.colab import runtime
+        say("releasing the GPU: everything this session made is on Kaggle")
+        runtime.unassign()
+    except Exception as e:  # noqa: BLE001 - not on Colab, or it would not let go: the page's own timeout does it
+        say(f"the GPU was not released ({type(e).__name__}); disconnect the runtime by hand")
+
+
 def main(label: str, bundle: str, kernel_dataset: str | None = None, kernel_url: str | None = None,
-         user: str | None = None) -> int:
+         user: str | None = None, follow_minutes: float = FOLLOW_MINUTES) -> int:
+    """What the notebook calls for each run its first reading of the run list named: make the run unless this session
+    already has, then follow the branch's run list (`follow`) and give the GPU back. Returns the run's exit code."""
+    if label not in DONE:
+        DONE[label] = run_one(label, bundle, kernel_dataset, kernel_url, user)
+        if follow_minutes:
+            say("following the branch's run list, so a run added there starts without a second tap")
+            say("the following ended: " + follow(DONE, follow_minutes))
+            release()
+    return DONE[label]
+
+
+def run_one(label: str, bundle: str, kernel_dataset: str | None = None, kernel_url: str | None = None,
+            user: str | None = None) -> int:
     """One run, start to finish. Returns the kernel's exit code (or 1 when it never started)."""
     LOG.parent.mkdir(parents=True, exist_ok=True)
     user = user or os.environ["KAGGLE_USERNAME"]

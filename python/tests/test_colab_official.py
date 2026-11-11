@@ -97,6 +97,89 @@ def test_a_command_that_reaches_for_the_network_is_counted(co):
     assert co.network_command_count(["grep -rn 'https://' docs", "cat requirements.txt"]) == 0   # a URL read, not fetched
 
 
+def _lists(*plans):
+    """A stand-in for reading the branch: each read of the run list gives the next of `plans`, the last one for ever."""
+    reads = {"n": 0}
+
+    def get(name):
+        assert name == "colab_official_run.json"
+        reads["n"] += 1
+        return json.dumps(plans[min(reads["n"], len(plans)) - 1])
+    return get
+
+
+def test_a_notebook_started_once_makes_the_runs_the_branch_lists_later(co, monkeypatch):
+    """The owner taps Run all once, on a phone. The full arms may only start after the test run has been read and the
+    plan registered, so the notebook keeps reading the branch's run list and makes what is added to it."""
+    monkeypatch.setattr(co, "say", lambda message: None)
+    smoke = {"label": "smoke-143", "bundle": "someone/htlnlp-official-htlnlp-143", "kernel_url": "https://example.org/k.py"}
+    arm = {"label": "colab-statement", "bundle": "someone/htlnlp-official-colab-statement",
+           "kernel_dataset": "someone/htlnlp-colab-kernel-colab-statement"}
+    made, done = [], {"smoke-143": 0}
+    why = co.follow(done, minutes=10, get=_lists({"runs": [smoke]}, {"runs": [smoke]}, {"runs": [smoke, arm]},
+                                                 {"runs": [smoke, arm]}, {"runs": [smoke, arm], "stop": True}),
+                    make=lambda *a: made.append(a) or 3, sleep=lambda s: None, clock=lambda: 0.0)
+    assert made == [("colab-statement", "someone/htlnlp-official-colab-statement",
+                     "someone/htlnlp-colab-kernel-colab-statement", None)]     # once, and the test run not again
+    assert done == {"smoke-143": 0, "colab-statement": 3}
+    assert "stop" in why
+
+
+def test_stop_means_no_more_waiting_not_that_a_listed_run_is_dropped(co, monkeypatch):
+    """A list that says stop still has every run it names made; a run is withdrawn by taking it off the list."""
+    monkeypatch.setattr(co, "say", lambda message: None)
+    made, done = [], {}
+    why = co.follow(done, minutes=10, get=_lists({"runs": [{"label": "a-run", "bundle": "x/a"}, {"label": "b-run", "bundle": "x/b"}],
+                                                  "stop": True}),
+                    make=lambda label, *rest: made.append(label) or 0, sleep=lambda s: None, clock=lambda: 0.0)
+    assert made == ["a-run", "b-run"] and "stop" in why
+
+
+def test_following_ends_when_nothing_new_is_listed_in_time(co, monkeypatch):
+    """A GPU that waits spends the account's compute units: the wait has an end."""
+    monkeypatch.setattr(co, "say", lambda message: None)
+    now = {"t": 0.0}
+    made = []
+    why = co.follow({"smoke-143": 0}, minutes=5, get=_lists({"runs": [{"label": "smoke-143", "bundle": "a/b"}]}),
+                    make=lambda *a: made.append(a) or 0, sleep=lambda s: now.__setitem__("t", now["t"] + s),
+                    clock=lambda: now["t"])
+    assert made == [] and "nothing new" in why and 300 <= now["t"] <= 300 + co.POLL_SECONDS
+
+
+def test_a_run_list_that_cannot_be_read_or_a_run_that_cannot_start_does_not_end_the_following(co, monkeypatch):
+    monkeypatch.setattr(co, "say", lambda message: None)
+    calls = {"n": 0}
+
+    def get(name):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise OSError("the network blinked")
+        return json.dumps({"runs": [{"label": "Bad Label", "bundle": "a/b"}, {"label": "ok-run", "bundle": "a/c"}],
+                           "stop": calls["n"] > 3})
+
+    def make(label, *rest):
+        if label == "Bad Label":
+            raise SystemExit("a run's label is lowercase")
+        return 0
+    done = {}
+    co.follow(done, minutes=10, get=get, make=make, sleep=lambda s: None, clock=lambda: 0.0)
+    assert done == {"Bad Label": 1, "ok-run": 0}
+
+
+def test_a_run_is_made_once_in_a_session_and_then_the_branch_is_followed(co, monkeypatch):
+    """The notebook's own loop calls `main` for each run its first reading listed; a run the following has already
+    made is not made again."""
+    made, followed, released = [], [], []
+    monkeypatch.setattr(co, "say", lambda message: None)
+    monkeypatch.setattr(co, "DONE", {})
+    monkeypatch.setattr(co, "run_one", lambda label, *a: made.append(label) or 0)
+    monkeypatch.setattr(co, "follow", lambda done, minutes: followed.append(dict(done)) or done.update({"b": 2}) or "stop")
+    monkeypatch.setattr(co, "release", lambda: released.append(1))
+    assert co.main("a", "x/y", kernel_url="https://example.org/k.py") == 0
+    assert co.main("b", "x/z", kernel_url="https://example.org/k.py") == 2      # made while following: not again
+    assert made == ["a"] and followed == [{"a": 0}] and released == [1]
+
+
 def test_the_notebook_reads_its_token_from_colab_secrets_and_holds_none():
     nb = json.loads(NOTEBOOK.read_text())
     src = "\n".join("".join(c["source"]) for c in nb["cells"])
@@ -105,3 +188,71 @@ def test_the_notebook_reads_its_token_from_colab_secrets_and_holds_none():
     assert all(not c.get("outputs") for c in nb["cells"] if c["cell_type"] == "code")
     assert "colab_official.py" in src and "healthtransformationlab/health-transformation-lab-nlp" in src
     assert nb["metadata"]["accelerator"] == "GPU"
+
+
+# --- the runner's side: preparing a Colab run and collecting what it sent back ------------------------------------
+
+@pytest.fixture(scope="module")
+def run():
+    spec = importlib.util.spec_from_file_location("official_agent_run", REPO_ROOT / "kaggle" / "official_agent_run.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+RESULT = {"model_name": "gemma-4-e4b-it-qat-w4a16-ct", "harness_name": "swegemma (Evaluator.evaluate_task, subprocess sandbox)",
+          "versions": {"swegemma": "0.2.11", "vllm": "0.19.1"},
+          "server": {"gpus": ["NVIDIA A100-SXM4-40GB"], "tensor_parallel_size": 1, "dtype": "bfloat16"},
+          "budgets": {"timeout_seconds": 120, "verification_timeout_seconds": 300, "max_tool_calls": 40,
+                      "max_time_minutes": 5.0, "max_turns": 60},
+          "generation_defaults": {"max_output_tokens": 16384, "thinking_config": {"thinking_budget": 4096}}}
+
+
+def test_a_colab_run_is_named_so_its_three_private_datasets_cannot_be_taken_for_anything_else(run):
+    """The sealed bundle, the keyed kernel file and the results each have their own private dataset, all under the
+    prefixes the paper's rules check keeps out of the Writeup."""
+    entry = run.colab_run_entry("someone", "colab-graph")
+    assert entry == {"label": "colab-graph", "bundle": "someone/htlnlp-official-colab-graph",
+                     "kernel_dataset": "someone/htlnlp-colab-kernel-colab-graph"}
+    assert run.colab_results_ref("someone", "colab-graph") == "someone/htlnlp-colab-official-colab-graph"
+    meta = run.colab_kernel_metadata("someone", "colab-graph")
+    assert meta["id"] == "someone/htlnlp-colab-kernel-colab-graph" and 6 <= len(meta["title"]) <= 50
+
+
+def test_the_settings_of_a_colab_run_say_what_differs_from_a_kaggle_kernel(run):
+    s = run.settings_for(RESULT, seed=7, drawn=["a", "b"], pool_count=93, machine_shape=None, docker_image=None,
+                         competition=None, agent_commit="abc123", tasks_per_kernel=2, colab=True)
+    assert s["kernel"]["machine_shape_asked"] == "Colab, one GPU" and s["kernel"]["docker_image"] is None
+    assert s["kernel"]["internet"] != False and "no credential" in s["kernel"]["internet"]   # noqa: E712
+    assert any(n.startswith("All 2 tasks were given to one process on a Colab machine, each sealed until its turn")
+               for n in s["notes"])
+    assert not any("private, offline kernel" in n for n in s["notes"])
+    assert any("from PyPI at the versions the Kaggle kernels recorded" in n for n in s["notes"])
+    kaggle = run.settings_for(RESULT, seed=7, drawn=["a", "b"], pool_count=93, machine_shape="NvidiaL4",
+                              docker_image="img", competition="c", agent_commit="abc123", tasks_per_kernel=2)
+    assert kaggle["kernel"]["internet"] is False            # a Kaggle kernel's record is unchanged
+
+
+def test_what_a_colab_run_sent_back_is_read_as_a_kernels_output(run, tmp_path):
+    """The results dataset holds the kernel's folder under `working/` and the notebook's log beside it."""
+    got = tmp_path / "downloaded"
+    for rel in ("working/result.json", "working/tasks/htlnlp_1/result.json", "working/telemetry.jsonl", "colab.log"):
+        p = got / rel
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text("{}")
+    out = tmp_path / "output"
+    run.colab_output(got, out)
+    assert sorted(str(p.relative_to(out)) for p in out.rglob("*") if p.is_file()) == [
+        "colab.log", "result.json", "tasks/htlnlp_1/result.json", "telemetry.jsonl"]
+    with pytest.raises(SystemExit, match="no result.json"):
+        run.colab_output(tmp_path / "empty", tmp_path / "output2")
+
+
+def test_the_agents_commands_are_read_from_its_trace_for_any_reach_at_the_network(run):
+    trace = {"steps": [{"tool_calls": [{"function_name": "run_command", "arguments": {"command": "pytest -q"}},
+                                       {"function_name": "read_file", "arguments": {"path": "a.py"}}]},
+                       {"tool_calls": [{"function_name": "run_command", "arguments": {"command": "pip install requests"}},
+                                       {"function_name": "run_command", "arguments": {"cmd": "git status"}}]}]}
+    assert run.trace_commands(trace) == ["pytest -q", "pip install requests", "git status"]
+    assert run.network_audit({"a": trace, "b": {"steps": []}}) == {
+        "command_count": 3, "network_command_count": 1, "instance_ids": ["a"]}
