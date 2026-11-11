@@ -3,6 +3,7 @@ run, the package's functions that are called and the package's frames on each fa
 names; the script counts how often an edited node is among them. A row holds ids, counts and booleans, no text."""
 import importlib.util
 import json
+import site
 import subprocess
 import sys
 
@@ -11,6 +12,14 @@ import pytest
 from health_transformation_lab_nlp.paths import REPO_ROOT
 
 SCRIPTS = REPO_ROOT / "python" / "scripts"
+
+
+def plugin_env(home, out, *roots, **more) -> dict:
+    """The small environment a plugin subprocess runs in: nothing of the caller's but the import path it names, with
+    HOME in a temp folder. PYTHONUSERBASE keeps this interpreter's own user site in reach: where packages were
+    installed with pip's user scheme (the deploy job), pytest itself is there (028 BUG6, #679)."""
+    return {"PATH": "/usr/bin:/bin", "PYTHONPATH": ":".join([*map(str, roots), str(SCRIPTS)]), "TRACE_PACKAGE": "pkg",
+            "TRACE_OUT": str(out), "HOME": str(home), "PYTHONUSERBASE": site.getuserbase(), **more}
 
 
 @pytest.fixture(scope="module")
@@ -37,8 +46,7 @@ def test_the_plugin_records_called_functions_and_the_failures_frames_by_graph_na
     out = tmp_path / "trace.json"
     r = subprocess.run([sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider", "-p", "_trace_plugin",
                         "test_mod.py"], cwd=tmp_path, capture_output=True, text=True,
-                       env={"PATH": "/usr/bin:/bin", "PYTHONPATH": f"{tmp_path}:{SCRIPTS}", "TRACE_PACKAGE": "pkg",
-                            "TRACE_OUT": str(out), "HOME": str(tmp_path)})
+                       env=plugin_env(tmp_path, out, tmp_path))
     assert r.returncode == 1, r.stdout + r.stderr                 # test_box fails, test_total passes
     trace = json.loads(out.read_text())
     assert set(trace["called"]) == {"pkg.mod.helper", "pkg.mod.total", "pkg.mod.total.inner", "pkg.mod.Box.check",
@@ -95,8 +103,7 @@ def test_the_plugin_records_a_test_that_cannot_import_the_name_it_needs(tmp_path
     out = tmp_path / "trace.json"
     r = subprocess.run([sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider", "-p", "_trace_plugin",
                         "test_new.py"], cwd=tmp_path, capture_output=True, text=True,
-                       env={"PATH": "/usr/bin:/bin", "PYTHONPATH": f"{tmp_path}:{SCRIPTS}", "TRACE_PACKAGE": "pkg",
-                            "TRACE_OUT": str(out), "HOME": str(tmp_path)})
+                       env=plugin_env(tmp_path, out, tmp_path))
     assert r.returncode == 2, r.stdout + r.stderr
     trace = json.loads(out.read_text())
     assert trace["collection_errors"] == [{"error_type": "ImportError", "missing_name": "new_thing", "module": "pkg.mod"}]
@@ -133,3 +140,13 @@ def test_the_summary_says_what_the_trace_and_the_import_errors_each_add_to_the_s
     assert s["report_not_statement_count"] == 2                # b, c
     assert s["statement_count"] == 2                           # a, d: only tasks among the rows count
     assert s["statement_or_report_count"] == 4                 # a, b, c, d
+
+
+def test_a_plugin_subprocess_keeps_this_interpreters_own_packages(tmp_path):
+    """028 BUG6 (#679): the deploy job installs with pip's user scheme, so pytest is in the user site under HOME. The
+    plugin's tests move HOME to a temp folder; their subprocess must still be told where the user base is."""
+    env = plugin_env(tmp_path, tmp_path / "trace.json", tmp_path)
+    assert env["HOME"] == str(tmp_path) and env["TRACE_OUT"] == str(tmp_path / "trace.json")
+    seen = subprocess.run([sys.executable, "-c", "import site; print(site.getuserbase())"], env=env,
+                          capture_output=True, text=True, check=True).stdout.strip()
+    assert seen == site.getuserbase()
