@@ -392,6 +392,17 @@ def write_table(pd, rows: list[dict], model: str | None, label: str | None = Non
     return path
 
 
+BATCH_SHARED = ("model_name", "server", "versions", "harness_name", "load_seconds", "finished_ts")
+
+
+def batch_results(res: dict) -> dict[str, dict]:
+    """Each task a batch kernel ran, with what the kernel wrote once for all of them: the model, the server, and its
+    finish time, which is each row's batch key (run_ts). The kernel's start is left out, so no row takes the whole
+    kernel's time as its own script_seconds. A task the kernel did not reach is not in it."""
+    shared = {k: res.get(k) for k in BATCH_SHARED}
+    return {i: {**shared, **r} for i, r in (res.get("runs") or {}).items() if not r.get("is_skipped")}
+
+
 def run_batch(a, api, user: str, ids: list[str], tasks: dict, manifest: dict, overrides: dict, pd) -> int:
     """One kernel for every task, in a seeded order, each task sealed until its turn; then verify and tabulate."""
     order = list(ids)
@@ -442,9 +453,8 @@ def run_batch(a, api, user: str, ids: list[str], tasks: dict, manifest: dict, ov
         "error": f"kernel ended {status} and wrote no result.json"}
     print(f"kernel {status} after {session / 60:.1f} min; GPUs {(res.get('server') or {}).get('gpus') or res.get('gpus_seen')}"
           + (f"; ERROR {res['error'][:400]}" if "error" in res else ""), flush=True)
-    runs = res.get("runs") or {}
-    shared = {k: res.get(k) for k in ("model_name", "server", "versions", "harness_name", "load_seconds")}
-    done = {i: {**shared, **r} for i, r in runs.items() if not r.get("is_skipped")}
+    shared = {k: res.get(k) for k in BATCH_SHARED}
+    done = batch_results(res)
     gpu = {}
     for i in done:
         done[i]["trace_counts"] = batch_trace_counts(out, i)

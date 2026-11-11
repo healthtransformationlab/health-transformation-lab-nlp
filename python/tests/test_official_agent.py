@@ -507,3 +507,16 @@ def test_a_run_of_given_ids_says_so_in_its_settings(run):
                                             "and 10 more by seed 20261111")
     assert out["sample"]["seed"] is None and out["sample"]["order_seed"] == 7
     assert s["sample"]["seed"] == 7                                   # the input is left alone
+
+
+def test_every_row_of_a_batch_carries_the_kernels_finish_time_as_its_batch_key(run):
+    """AGENTS.md, "Failures, retries and reruns": every written row carries its batch key. A batch kernel writes its
+    start and end once, beside its runs; each task's row takes the end, and never the whole kernel's time as its own."""
+    res = {"model_name": "m", "started_ts": "2026-11-11T14:42:48Z", "finished_ts": "2026-11-11T17:07:13Z",
+           "runs": {"a": {"instance_id": "a", "patch": "x", "agent_phase_seconds": 9.0},
+                    "b": {"instance_id": "b", "is_skipped": True}}}
+    done = run.batch_results(res)
+    assert list(done) == ["a"]                                        # a task the kernel did not reach has no row
+    row = run.row_for({"instance_id": "a", **done["a"]}, {"resolved": True, "test_exit_code": 0}, "A", "url")
+    assert row["run_ts"] == "2026-11-11T17:07:13Z"
+    assert row["script_seconds"] is None and row["model_name"] == "m"
