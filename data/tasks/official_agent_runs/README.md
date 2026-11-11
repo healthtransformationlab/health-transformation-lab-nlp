@@ -151,8 +151,9 @@ calls took 9,657,738 input tokens and 549,676 output tokens in 572 calls.
 - `..._task_sections.csv`: the same for each task (427 rows).
 - `..._gpu.csv`: each task's seconds, GPU-hours, mean utilization, peak memory and energy. Over the 40 tasks:
   5.74 GPU-hours on the four L4s (the tasks' own time; loading the model is not in it), 301 Wh,
-  mean utilization 76%, 7.5 Wh a task. `estimated_cost_usd` is empty: `ops/cost_settings.yaml`
-  declares a price for a T4 hour and none for an L4, and no number is given a price it does not have.
+  mean utilization 76%, 7.5 Wh a task. `estimated_cost_usd` is an estimate at the L4 price declared in
+  `ops/cost_settings.yaml` since November 11, 2026 (0.83 USD a GPU-hour): 4.76 USD over the 40 tasks, 0.12 a
+  task. Kaggle's GPUs were free; the estimate is what the same GPU time would cost to rent.
 
 ## What it is not
 
@@ -324,11 +325,17 @@ table). The tables cover the tasks each arm ran, so `statement` covers its 21: a
 | Energy, Wh | 141 | 449 | 511 |
 | Energy a task, Wh | 6.7 | 4.8 | 5.5 |
 | Mean utilization | 86% | 86% | 79% |
+| Estimated cost at 0.83 USD an L4 GPU-hour | 2.03 | 6.37 | 7.50 |
+| Estimated cost a task, USD | 0.10 | 0.07 | 0.08 |
 
-For each resolved task: `graph` 1.92 GPU-hours and 112 Wh; `report` 1.81 GPU-hours and 102 Wh.
-`estimated_cost_usd` is empty: `ops/cost_settings.yaml` declares a price for a T4 hour and none for an L4, and
-no number is given a price it does not have. Kaggle's GPUs were free, and these three kernels and the
-development-set run before them used the account's whole weekly allowance.
+For each resolved task: `graph` 1.92 GPU-hours, 112 Wh and an estimated 1.59 USD; `report` 1.81 GPU-hours, 102 Wh
+and an estimated 1.50 USD. `estimated_cost_usd` is the task's GPU-hours at the price `ops/cost_settings.yaml`
+declares for an L4: the median on-demand price across providers for the week of October 26, 2026 at
+getdeploying.com, the same week and figure as the T4's 0.69. Until November 11, 2026 the file declared no L4
+price and the column was empty; the tables were rebuilt from the same kernels' saved output, and no other
+column changed. Nothing was paid: Kaggle's GPUs were free, and these three kernels and the development-set run
+before them used the account's whole weekly allowance. The estimate covers the tasks' own time, not the model's
+loading or the hours the `statement` kernel ran with a dead server.
 
 ## The verifier on the collecting machine
 

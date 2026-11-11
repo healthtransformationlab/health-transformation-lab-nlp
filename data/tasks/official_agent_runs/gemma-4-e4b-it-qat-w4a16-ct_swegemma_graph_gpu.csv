@@ -1,94 +1,94 @@
 instance_id,task_seconds,gpu_count,gpu_hours,avg_gpu_utilization_pct,max_gpu_memory_used_mb,gpu_energy_wh,estimated_cost_usd,price_basis_text
-htlnlp_102,206.5,4,0.2294,73.19,20750.0,12.392813768308047,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_104,68.0,4,0.0756,13.86,20750.0,2.8542573812698557,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_109,76.3,4,0.0848,90.94,20559.0,5.110895792754492,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_111,40.6,4,0.0451,97.38,20559.0,2.789061010917028,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_114,10.9,4,0.0121,69.5,20559.0,0.7590688818792503,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_116,94.3,4,0.1048,56.16,20559.0,5.157744125404065,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_117,17.4,4,0.0193,97.75,20559.0,1.158583780132234,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_119,99.3,4,0.1103,95.55,20559.0,6.587571065728465,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_120,56.3,4,0.0626,97.02,20559.0,3.7968483191499804,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_143,105.6,4,0.1173,44.09,20750.0,5.432417067156447,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_144,94.6,4,0.1051,97.2,20559.0,6.392148349301648,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_152,11.0,4,0.0122,97.0,20559.0,0.7701886288960775,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_155,50.4,4,0.056,97.0,20559.0,3.413230952588717,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_166,9.3,4,0.0103,97.0,20559.0,0.6559225410666731,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_170,75.3,4,0.0837,25.87,20750.0,3.355125758428574,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_174,74.1,4,0.0823,97.4,20559.0,5.025065880724722,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_178,13.7,4,0.0152,98.0,20559.0,0.9467761637325641,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_180,55.5,4,0.0617,94.14,20559.0,3.7330972401046996,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_187,131.0,4,0.1456,53.66,20750.0,7.098857971660678,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_189,19.0,4,0.0211,97.0,20559.0,1.3179017755786577,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_191,32.2,4,0.0358,97.43,20559.0,2.169081656113409,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_192,71.9,4,0.0799,97.43,20559.0,4.8947421269357205,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_206,30.1,4,0.0334,97.5,20559.0,2.058582435474131,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_214,54.5,4,0.0606,97.0,20559.0,3.707375512701093,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_226,139.4,4,0.1549,38.32,20750.0,6.749380301976061,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_228,49.2,4,0.0547,97.3,20559.0,3.387755974809329,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_230,52.7,4,0.0586,97.16,20559.0,3.5851642627547484,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_234_pr243,13.1,4,0.0146,97.0,20559.0,0.9222242303576734,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_235,10.6,4,0.0118,64.67,20559.0,0.6707148228751287,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_236,9.3,4,0.0103,90.0,20559.0,0.64912360723416,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_244,63.0,4,0.07,97.46,20559.0,4.225051673141606,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_249,66.8,4,0.0742,97.0,20559.0,4.545007390569469,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_255,40.5,4,0.045,91.94,20559.0,2.7861323383394216,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_276,129.6,4,0.144,95.92,20559.0,8.742096690598665,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_345,43.7,4,0.0486,94.94,20559.0,2.924606909279277,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_68,26.4,4,0.0293,97.5,20559.0,1.7241523206178346,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_71,155.7,4,0.173,97.1,20559.0,10.517371234027118,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_90,56.3,4,0.0626,26.73,20559.0,2.5191674070346233,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_94,90.0,4,0.1,97.0,20559.0,6.150391706043004,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_c59170ee,182.3,4,0.2026,97.08,20559.0,12.31842058577922,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_c5e54000,183.3,4,0.2037,95.74,20559.0,12.34578723890417,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_c7300f3f,44.0,4,0.0489,97.19,20559.0,3.0072749895654343,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_c791d60f,15.9,4,0.0177,72.75,20559.0,1.0231035300119056,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_c7bde3d0,57.5,4,0.0639,97.0,20559.0,3.93319837036193,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_c7c49998,184.2,4,0.2047,93.24,20559.0,12.484952983359818,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_c866538c,60.0,4,0.0667,97.0,20559.0,4.088216369273708,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_c95eedd3,300.6,4,0.334,91.91,20559.0,19.900268924158848,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_ca9964a0,79.6,4,0.0884,89.06,20559.0,5.325930337525076,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_cac5acf9,155.0,4,0.1722,88.63,20559.0,10.130063150884004,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_cb988381,182.6,4,0.2029,94.7,20559.0,12.377559576832137,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_cbb8290c,167.0,4,0.1856,93.62,20559.0,11.263137173601363,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_cbc00f07,185.5,4,0.2061,95.04,20559.0,12.45216594143329,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_cc163083,32.7,4,0.0363,97.0,20559.0,2.229141000324488,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_cc73f4cf,53.2,4,0.0591,87.93,20559.0,3.4799396623300787,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_cca2d155,72.7,4,0.0808,90.72,20559.0,4.746989773082733,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_ceb84ac1,197.8,4,0.2198,97.08,20559.0,13.3242334155783,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_cecf7a16,65.5,4,0.0728,97.23,20559.0,4.3869003602727865,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_cf773377,170.6,4,0.1896,92.13,20559.0,11.530813449101599,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_cfa7c008,98.5,4,0.1094,97.12,20559.0,6.689361968099276,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_pr11,54.6,4,0.0607,97.0,20559.0,3.728220260389104,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_pr12,95.8,4,0.1064,97.16,20559.0,6.38618308642416,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_pr17,80.3,4,0.0892,89.96,20559.0,5.427329206555497,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_pr2,21.0,4,0.0233,72.75,20559.0,1.3012915597372585,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_pr21,45.5,4,0.0506,97.33,20559.0,3.037139491383529,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_pr22,84.7,4,0.0941,96.19,20559.0,5.69717660382799,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_pr23,107.4,4,0.1193,97.01,20559.0,7.270215237256459,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_pr24,36.7,4,0.0408,78.79,20559.0,2.3412524319640227,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_pr25,129.0,4,0.1433,95.99,20559.0,8.764480065988753,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_pr26,19.2,4,0.0213,95.25,20559.0,1.3044058256455593,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_pr27,12.2,4,0.0136,64.67,20559.0,0.7378923381708287,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_pr28,19.4,4,0.0216,97.0,20559.0,1.3645110277056693,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_pr29,79.1,4,0.0879,97.0,20559.0,5.447538914909255,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_pr30,42.2,4,0.0469,81.61,20559.0,2.814446382759235,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_pr31,48.4,4,0.0538,77.03,20559.0,3.112805113157961,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_pr32,72.7,4,0.0808,97.2,20559.0,4.856951029160817,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_pr33,31.3,4,0.0348,80.83,20559.0,2.0006465446143236,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_pr34,104.4,4,0.116,96.7,20559.0,7.0342482818739756,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_pr35,48.9,4,0.0543,86.89,20559.0,3.2374343752899284,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_pr36,31.9,4,0.0354,92.29,20559.0,2.085262343523048,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_pr37,26.6,4,0.0296,77.6,20559.0,1.7158540763037733,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_pr4,56.8,4,0.0631,97.27,20559.0,3.8662841580472818,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_pr47,160.9,4,0.1788,94.29,20559.0,10.841963932190861,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_pr5,38.0,4,0.0422,39.59,20559.0,1.8930528651148082,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_pr53,101.8,4,0.1131,94.2,20559.0,6.778489178789986,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_pr54,34.1,4,0.0379,83.32,20559.0,2.2235433077991953,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_pr55,99.8,4,0.1109,63.35,20559.0,5.625989388231073,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_pr56,41.4,4,0.046,97.38,20559.0,2.7865096831358964,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_pr57,26.4,4,0.0293,97.0,20559.0,1.827487144740158,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_pr6,66.0,4,0.0733,90.07,20559.0,4.38033890371649,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_pr62,7.2,4,0.008,48.88,20559.0,0.4740021153304312,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_pr63,9.7,4,0.0108,48.5,20559.0,0.5659784983830319,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_pr66,80.2,4,0.0891,95.73,20559.0,5.41067071966711,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
-htlnlp_pr8,60.6,4,0.0673,97.38,20559.0,4.021870914967634,,no price declared for NVIDIA L4 in ops/cost_settings.yaml; Kaggle's GPUs are free
+htlnlp_102,206.5,4,0.2294,73.19,20750.0,12.392813768308047,0.1904,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_104,68.0,4,0.0756,13.86,20750.0,2.8542573812698557,0.0627,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_109,76.3,4,0.0848,90.94,20559.0,5.110895792754492,0.0704,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_111,40.6,4,0.0451,97.38,20559.0,2.789061010917028,0.0374,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_114,10.9,4,0.0121,69.5,20559.0,0.7590688818792503,0.01,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_116,94.3,4,0.1048,56.16,20559.0,5.157744125404065,0.087,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_117,17.4,4,0.0193,97.75,20559.0,1.158583780132234,0.016,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_119,99.3,4,0.1103,95.55,20559.0,6.587571065728465,0.0915,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_120,56.3,4,0.0626,97.02,20559.0,3.7968483191499804,0.052,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_143,105.6,4,0.1173,44.09,20750.0,5.432417067156447,0.0974,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_144,94.6,4,0.1051,97.2,20559.0,6.392148349301648,0.0872,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_152,11.0,4,0.0122,97.0,20559.0,0.7701886288960775,0.0101,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_155,50.4,4,0.056,97.0,20559.0,3.413230952588717,0.0465,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_166,9.3,4,0.0103,97.0,20559.0,0.6559225410666731,0.0085,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_170,75.3,4,0.0837,25.87,20750.0,3.355125758428574,0.0695,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_174,74.1,4,0.0823,97.4,20559.0,5.025065880724722,0.0683,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_178,13.7,4,0.0152,98.0,20559.0,0.9467761637325641,0.0126,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_180,55.5,4,0.0617,94.14,20559.0,3.7330972401046996,0.0512,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_187,131.0,4,0.1456,53.66,20750.0,7.098857971660678,0.1208,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_189,19.0,4,0.0211,97.0,20559.0,1.3179017755786577,0.0175,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_191,32.2,4,0.0358,97.43,20559.0,2.169081656113409,0.0297,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_192,71.9,4,0.0799,97.43,20559.0,4.8947421269357205,0.0663,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_206,30.1,4,0.0334,97.5,20559.0,2.058582435474131,0.0277,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_214,54.5,4,0.0606,97.0,20559.0,3.707375512701093,0.0503,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_226,139.4,4,0.1549,38.32,20750.0,6.749380301976061,0.1286,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_228,49.2,4,0.0547,97.3,20559.0,3.387755974809329,0.0454,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_230,52.7,4,0.0586,97.16,20559.0,3.5851642627547484,0.0486,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_234_pr243,13.1,4,0.0146,97.0,20559.0,0.9222242303576734,0.0121,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_235,10.6,4,0.0118,64.67,20559.0,0.6707148228751287,0.0098,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_236,9.3,4,0.0103,90.0,20559.0,0.64912360723416,0.0085,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_244,63.0,4,0.07,97.46,20559.0,4.225051673141606,0.0581,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_249,66.8,4,0.0742,97.0,20559.0,4.545007390569469,0.0616,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_255,40.5,4,0.045,91.94,20559.0,2.7861323383394216,0.0373,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_276,129.6,4,0.144,95.92,20559.0,8.742096690598665,0.1195,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_345,43.7,4,0.0486,94.94,20559.0,2.924606909279277,0.0403,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_68,26.4,4,0.0293,97.5,20559.0,1.7241523206178346,0.0243,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_71,155.7,4,0.173,97.1,20559.0,10.517371234027118,0.1436,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_90,56.3,4,0.0626,26.73,20559.0,2.5191674070346233,0.052,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_94,90.0,4,0.1,97.0,20559.0,6.150391706043004,0.083,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_c59170ee,182.3,4,0.2026,97.08,20559.0,12.31842058577922,0.1682,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_c5e54000,183.3,4,0.2037,95.74,20559.0,12.34578723890417,0.1691,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_c7300f3f,44.0,4,0.0489,97.19,20559.0,3.0072749895654343,0.0406,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_c791d60f,15.9,4,0.0177,72.75,20559.0,1.0231035300119056,0.0147,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_c7bde3d0,57.5,4,0.0639,97.0,20559.0,3.93319837036193,0.053,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_c7c49998,184.2,4,0.2047,93.24,20559.0,12.484952983359818,0.1699,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_c866538c,60.0,4,0.0667,97.0,20559.0,4.088216369273708,0.0554,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_c95eedd3,300.6,4,0.334,91.91,20559.0,19.900268924158848,0.2772,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_ca9964a0,79.6,4,0.0884,89.06,20559.0,5.325930337525076,0.0734,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_cac5acf9,155.0,4,0.1722,88.63,20559.0,10.130063150884004,0.1429,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_cb988381,182.6,4,0.2029,94.7,20559.0,12.377559576832137,0.1684,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_cbb8290c,167.0,4,0.1856,93.62,20559.0,11.263137173601363,0.154,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_cbc00f07,185.5,4,0.2061,95.04,20559.0,12.45216594143329,0.1711,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_cc163083,32.7,4,0.0363,97.0,20559.0,2.229141000324488,0.0301,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_cc73f4cf,53.2,4,0.0591,87.93,20559.0,3.4799396623300787,0.0491,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_cca2d155,72.7,4,0.0808,90.72,20559.0,4.746989773082733,0.0671,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_ceb84ac1,197.8,4,0.2198,97.08,20559.0,13.3242334155783,0.1824,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_cecf7a16,65.5,4,0.0728,97.23,20559.0,4.3869003602727865,0.0604,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_cf773377,170.6,4,0.1896,92.13,20559.0,11.530813449101599,0.1574,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_cfa7c008,98.5,4,0.1094,97.12,20559.0,6.689361968099276,0.0908,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_pr11,54.6,4,0.0607,97.0,20559.0,3.728220260389104,0.0504,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_pr12,95.8,4,0.1064,97.16,20559.0,6.38618308642416,0.0883,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_pr17,80.3,4,0.0892,89.96,20559.0,5.427329206555497,0.074,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_pr2,21.0,4,0.0233,72.75,20559.0,1.3012915597372585,0.0193,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_pr21,45.5,4,0.0506,97.33,20559.0,3.037139491383529,0.042,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_pr22,84.7,4,0.0941,96.19,20559.0,5.69717660382799,0.0781,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_pr23,107.4,4,0.1193,97.01,20559.0,7.270215237256459,0.099,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_pr24,36.7,4,0.0408,78.79,20559.0,2.3412524319640227,0.0339,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_pr25,129.0,4,0.1433,95.99,20559.0,8.764480065988753,0.1189,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_pr26,19.2,4,0.0213,95.25,20559.0,1.3044058256455593,0.0177,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_pr27,12.2,4,0.0136,64.67,20559.0,0.7378923381708287,0.0113,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_pr28,19.4,4,0.0216,97.0,20559.0,1.3645110277056693,0.0179,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_pr29,79.1,4,0.0879,97.0,20559.0,5.447538914909255,0.073,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_pr30,42.2,4,0.0469,81.61,20559.0,2.814446382759235,0.0389,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_pr31,48.4,4,0.0538,77.03,20559.0,3.112805113157961,0.0447,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_pr32,72.7,4,0.0808,97.2,20559.0,4.856951029160817,0.0671,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_pr33,31.3,4,0.0348,80.83,20559.0,2.0006465446143236,0.0289,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_pr34,104.4,4,0.116,96.7,20559.0,7.0342482818739756,0.0963,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_pr35,48.9,4,0.0543,86.89,20559.0,3.2374343752899284,0.0451,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_pr36,31.9,4,0.0354,92.29,20559.0,2.085262343523048,0.0294,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_pr37,26.6,4,0.0296,77.6,20559.0,1.7158540763037733,0.0246,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_pr4,56.8,4,0.0631,97.27,20559.0,3.8662841580472818,0.0524,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_pr47,160.9,4,0.1788,94.29,20559.0,10.841963932190861,0.1484,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_pr5,38.0,4,0.0422,39.59,20559.0,1.8930528651148082,0.035,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_pr53,101.8,4,0.1131,94.2,20559.0,6.778489178789986,0.0939,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_pr54,34.1,4,0.0379,83.32,20559.0,2.2235433077991953,0.0315,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_pr55,99.8,4,0.1109,63.35,20559.0,5.625989388231073,0.092,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_pr56,41.4,4,0.046,97.38,20559.0,2.7865096831358964,0.0382,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_pr57,26.4,4,0.0293,97.0,20559.0,1.827487144740158,0.0243,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_pr6,66.0,4,0.0733,90.07,20559.0,4.38033890371649,0.0608,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_pr62,7.2,4,0.008,48.88,20559.0,0.4740021153304312,0.0066,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_pr63,9.7,4,0.0108,48.5,20559.0,0.5659784983830319,0.009,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_pr66,80.2,4,0.0891,95.73,20559.0,5.41067071966711,0.074,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"
+htlnlp_pr8,60.6,4,0.0673,97.38,20559.0,4.021870914967634,0.0559,"estimate: 0.83 USD per NVIDIA L4 GPU-hour (https://getdeploying.com/gpus/nvidia-l4, read 2026-11-11); Kaggle's GPUs are free"

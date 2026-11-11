@@ -242,6 +242,8 @@ with the expected PASS, FAIL and REPORT rows in `dq_check`'s shape, and each fai
 - **GPU price:** the estimate uses a declared price per T4 GPU-hour, with its source and date. A cross-provider
   median ($0.69 per GPU-hour on Oct 26, 2026, getdeploying.com) is the starting value. It is an estimate of what the
   same work would cost on a cloud, not anything paid: Kaggle's GPUs are free to us.
+  The runs under the competition's evaluator use L4s, priced the same way since November 11, 2026 ($0.83 per
+  GPU-hour, the same source and week).
 - **Out of scope:**
   - reusing the KV cache across turns to speed the Gemma agent, a performance fix tracked under #544;
   - LLM endpoint costs, already tracked per answer;

@@ -83,3 +83,18 @@ def test_each_task_carries_its_gpu_hours_energy_and_an_estimated_cost(rt):
                      "gpu_hours": pytest.approx(0.1147, abs=1e-4), "avg_gpu_utilization_pct": 92.37,
                      "max_gpu_memory_used_mb": 20559.0, "gpu_energy_wh": 7.05,
                      "estimated_cost_usd": pytest.approx(0.0573, abs=1e-4), "price_basis_text": "a declared price"}]
+
+
+def test_every_gpu_the_kernels_ran_on_has_a_declared_price(rt):
+    """036 US2 (#569): the runs under the competition's evaluator used four L4s, and their GPU time is priced the
+    way the T4 baseline's is: from a declared price with its source and the date it was read. Until November 11,
+    2026 only the T4 had one, so `estimated_cost_usd` was empty for every L4 run."""
+    for name in ("Tesla T4", "NVIDIA L4"):
+        price, basis = rt.declared_price(name)
+        assert price is not None and price > 0, f"no price declared for {name}"
+        assert "getdeploying.com" in basis and "read 2026-" in basis and "Kaggle's GPUs are free" in basis
+
+
+def test_a_gpu_with_no_declared_price_gets_no_estimate_and_says_why(rt):
+    price, basis = rt.declared_price("NVIDIA A100")
+    assert price is None and "no price declared for NVIDIA A100" in basis
