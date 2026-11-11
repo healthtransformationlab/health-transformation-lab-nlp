@@ -82,7 +82,80 @@ attached, from the competition's own folder, and the same pinned image as the ag
 
 So 23 of the 40 can be verified in a Kaggle kernel: the reference patch passes and an empty one fails. The agent's
 result on the development set is counted over those 23, as ours is over the 93 that pass both controls. Of the 16
-whose reference patch fails, 12 (fastapi) stop before any test runs (exit code 2, an error collecting the tests: the
-kernel lacks something those tests import) and 4 (requests) fail their tests with the reference patch, as tests that
-need a network would offline. The table keeps ids, verdicts, exit codes and seconds only, never the competition's
-test output.
+whose reference patch fails, 12 (fastapi) stop before any test runs (exit code 2, an error collecting the tests), 3
+(requests) pass 135 or 136 tests and error in 185 to 187, and 1 (requests) fails one assertion. The table keeps ids,
+verdicts, exit codes and seconds only, never the competition's test output.
+
+The cause is in the kernel's own log. For every task the evaluator's sandbox reported that it could not add pip to
+its environment (`ensurepip unavailable ... creating venv without pip`), and the competition's `sandbox/setup.py`
+installs a task's dependencies with pip. Seven of the fastapi tasks' outputs name the test library they lack
+(`inline_snapshot` in six, `dirty_equals` in one); for the other nine tasks the cause is inferred, not read.
+
+A participant reported the same on the competition's Paper Track forum on October 27, 2026 (topic 753370): 27
+fastapi tasks that no patch can resolve in the provided sandbox, for want of those two libraries. Ten of the 12
+here are on that list. The host replied that scoring uses private repositories and does not include these tasks.
+
+# The competition's own development set: the agent's run (November 11, 2026)
+
+The same agent, settings and evaluator as the run above, on a seeded 40 of the competition's 129 development tasks
+(028 AI4, #668): `kaggle/official_agent_run.py --source competition --sample 40 --seed 20261110 --batch --telemetry`,
+with the owner's go-ahead. The draw is stratified by repository (fastapi 21, rich 15, requests 4; httpx's one task
+gets no place). One private kernel on four L4 GPUs attached the competition and read each task from its mounted
+files, with no reference patch beside the agent; the evaluator verified each patch there with the task's tests, as
+the competition's own run does. `gemma-4-e4b-it-qat-w4a16-ct_swegemma_devset.csv` has one row per task. The tasks are the competition's:
+the tables hold ids, counts and verdicts, never a statement, a patch or test output.
+
+| | Tasks |
+|---|---|
+| Run | 40 of 40, in one kernel of 94 minutes (71 of them the agent's own; model load 353 s) |
+| Can be verified in a Kaggle kernel (the controls above) | 23: rich 15, fastapi 8 |
+| **Resolved, of those 23** | **3** (`fastapi_14301`, `rich_3454`, `rich_3535`); 95% Wilson interval 4.5 to 32.1% |
+| Tests fail with the agent's patch | 10 |
+| Empty patch | 5 |
+| Errors before any test ran | 3 |
+| The tests ran out of time (exit code 124) | 2 |
+
+The other 17 rows are kept and not counted: the 16 whose reference patch fails in the kernel, and `fastapi_14851`,
+which the kernel's verification passes with an empty patch (its row says resolved; it is not).
+
+Against this project's own tasks under the same evaluator (0 of 20 above, 3 of 23 here), Fisher's exact test,
+two-sided, gives p = 0.24: two samples this small cannot tell the sets apart by resolved tasks.
+
+What the agent did, over all 40: 439 tool calls, 83 of them to a graph tool
+(19%, against 9 of 189 on this project's tasks), 28 to the analyzer sub-agent, none to a
+skill, and none naming a path outside the workspace (`outside_workspace_call_count` is 0 in every row). 8 runs
+ended when a prompt passed the model's 32,768-token window less its 16,384 output tokens, and 2 at the 5-minute
+limit (`error_text`). A task
+took 106 agent seconds on average (the longest 306), 120,722 prompt tokens and 6,871 output tokens.
+
+## Where the time went, and the GPUs (spec 014 US6, 036 US2)
+
+The kernel kept the agent framework's OpenTelemetry spans (names, counts and seconds; no prompt or reply) and
+sampled its GPUs every five seconds. `python/scripts/71_run_telemetry.py` rolls them up as self time, a span's
+time less its children's, so each second of a task is counted once:
+
+| Code section | Share of the tasks' time | Spans | Seconds |
+|---|---|---|---|
+| model call | 62.9% | 572 | 3,249 |
+| harness | 19.9% | 40 | 1,026 |
+| tool run_command | 10.1% | 55 | 521 |
+| context compaction | 6.6% | 39 | 340 |
+| tool search_similar_code | 0.3% | 42 | 17 |
+| tool get_code_neighbors | 0.1% | 37 | 6 |
+| agent data_pipeline_fixer | 0.1% | 72 | 5 |
+
+The rest (agent code_analyzer, tool submit_patch, tool edit_file, tool read_file, agent loop, tool write_file, tool get_code_subgraph, tool code_analyzer, tool get_status) is under 0.05% each.
+"harness" is the evaluator's own work around the agent: setting up the sandbox and verifying the patch. The model
+calls took 9,657,738 input tokens and 549,676 output tokens in 572 calls.
+
+- `..._task_sections.csv`: the same for each task (427 rows).
+- `..._gpu.csv`: each task's seconds, GPU-hours, mean utilization, peak memory and energy. Over the 40 tasks:
+  5.74 GPU-hours on the four L4s (the tasks' own time; loading the model is not in it), 301 Wh,
+  mean utilization 76%, 7.5 Wh a task. `estimated_cost_usd` is empty: `ops/cost_settings.yaml`
+  declares a price for a T4 hour and none for an L4, and no number is given a price it does not have.
+
+## What it is not
+
+One sampled run per task at temperature 0.2. Twenty-three tasks: the interval reaches 32%. The 23 are the tasks a
+Kaggle kernel can verify, 15 of them from rich, so they are not a sample of the 129. Not a leaderboard score: the
+leaderboard's tasks are private.
