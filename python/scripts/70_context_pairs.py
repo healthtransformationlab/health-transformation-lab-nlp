@@ -1,14 +1,17 @@
-"""The same tasks with and without a failing test's report, side by side (028 AI7, #674).
+"""The same tasks with and without added context, side by side (028 AI7, #674).
 
-Reads the two arms' tables (`..._swegemma_statement.csv` and `..._swegemma_report.csv`, written by
-kaggle/official_agent_run.py --label), and writes data/tasks/official_agent_runs/context_pairs.csv: one row per task
-with both arms' verdicts and costs. Prints the analysis the pre-registration names
-(specs/028-dataops-task-set/preregistration-failing-test-report.md): each arm's resolved count with its Wilson
-interval, the paired table, and the exact McNemar test, two-sided.
+Reads the baseline arm's table (`..._swegemma_statement.csv`) and one other arm's (`..._swegemma_report.csv` or
+`..._swegemma_graph.csv`, written by kaggle/official_agent_run.py --label), and writes
+data/tasks/official_agent_runs/context_pairs_<arm>.csv: one row per task with both arms' verdicts and costs. Prints
+the analysis the pre-registration names (specs/028-dataops-task-set/preregistration-*.md): each arm's resolved
+count with its Wilson interval, the paired table, the exact McNemar test, two-sided, and the splits it only
+describes.
 
-    python scripts/70_context_pairs.py --ids <the pre-registered ids, comma-separated> --first <the first 20>
+    python scripts/70_context_pairs.py --arm report
+    python scripts/70_context_pairs.py --arm graph
 
-The report comes from each task's hidden test: the context a test-first workflow has, not a benchmark condition.
+The report arm's context comes from each task's hidden test: what a test-first workflow has, not a benchmark
+condition. The graph arm's comes from the statement and the graph alone.
 """
 
 from __future__ import annotations
@@ -25,12 +28,14 @@ from health_transformation_lab_nlp.prevalence import wilson_ci
 
 RUNS = TASKS_DIR / "official_agent_runs"
 MODEL = "gemma-4-e4b-it-qat-w4a16-ct"
-OUT = RUNS / "context_pairs.csv"
 MEASURES = ["agent_patch_bytes", "tool_call_count", "graph_tool_call_count", "prompt_token_count",
             "output_token_count", "agent_seconds"]
-COLUMNS = (["instance_id", "tier_code", "is_first_sample", "is_import_error", "is_screen_pass", "context_chars",
-            "is_pair_run", "is_statement_resolved", "is_report_resolved"]
-           + [f"{arm}_{m}" for m in MEASURES for arm in ("statement", "report")])
+FLAGS = {"report": ["is_import_error"], "graph": ["is_edited_node_listed", "is_node_named"]}
+COMMON_FLAGS = ["is_screen_pass", "is_edit_task", "is_first_sample"]
+SHAPES = {"report": "failure_report_shape.csv", "graph": "graph_context_shape.csv"}
+FIRST = ("htlnlp_152,htlnlp_189,htlnlp_191,htlnlp_214,htlnlp_244,htlnlp_276,htlnlp_68,htlnlp_71,htlnlp_90,"
+         "htlnlp_c95eedd3,htlnlp_cbc00f07,htlnlp_cc73f4cf,htlnlp_cf773377,htlnlp_pr21,htlnlp_pr28,htlnlp_pr31,"
+         "htlnlp_pr34,htlnlp_pr37,htlnlp_pr47,htlnlp_pr54").split(",")   # the run of November 10
 
 
 def mcnemar_exact(b: int, c: int) -> float:
@@ -46,79 +51,92 @@ def _value(v):
     return None if pd.isna(v) else (v.item() if hasattr(v, "item") else v)
 
 
-def pair_rows(ids: list[str], statement: pd.DataFrame, report: pd.DataFrame, shape: pd.DataFrame,
-              screen: pd.DataFrame, first: set[str]) -> list[dict]:
-    """One row per pre-registered task: both arms' verdicts and measures, and what the splits need. A task missing
-    from an arm's table was not run in it: the row stays, with `is_pair_run` false."""
-    arms = {"statement": statement.set_index("instance_id"), "report": report.set_index("instance_id")}
-    shape, screen = shape.set_index("instance_id"), screen.set_index("instance_id")
+def pair_rows(ids: list[str], statement: pd.DataFrame, other: pd.DataFrame, flags: pd.DataFrame, arm: str) -> list[dict]:
+    """One row per pre-registered task: both arms' verdicts and measures, and the task's flags for the splits. A task
+    missing from an arm's table was not run in it: the row stays, with `is_pair_run` false."""
+    arms = {"statement": statement.set_index("instance_id"), arm: other.set_index("instance_id")}
+    flags = flags.set_index("instance_id")
     rows = []
     for iid in ids:
-        ran = {arm: iid in t.index for arm, t in arms.items()}
-        any_arm = next((t for arm, t in arms.items() if ran[arm]), None)
-        row = {"instance_id": iid, "tier_code": any_arm.loc[iid, "tier_code"] if any_arm is not None else None,
-               "is_first_sample": iid in first,
-               "is_import_error": bool(shape.loc[iid, "is_import_error"]) if iid in shape.index else None,
-               "is_screen_pass": bool(screen.loc[iid, "is_pass"]) if iid in screen.index else None,
-               "context_chars": _value(shape.loc[iid, "context_chars"]) if iid in shape.index else None,
-               "is_pair_run": all(ran.values())}
-        for arm, t in arms.items():
-            row[f"is_{arm}_resolved"] = bool(t.loc[iid, "is_resolved"]) if ran[arm] else None
+        ran = {name: iid in t.index for name, t in arms.items()}
+        any_arm = next((t for name, t in arms.items() if ran[name]), None)
+        row = {"instance_id": iid, "tier_code": any_arm.loc[iid, "tier_code"] if any_arm is not None else None}
+        row.update({c: _value(flags.loc[iid, c]) if iid in flags.index else None for c in flags.columns})
+        row["is_pair_run"] = all(ran.values())
+        for name, t in arms.items():
+            row[f"is_{name}_resolved"] = bool(t.loc[iid, "is_resolved"]) if ran[name] else None
         for m in MEASURES:
-            for arm, t in arms.items():
-                row[f"{arm}_{m}"] = _value(t.loc[iid, m]) if ran[arm] and m in t.columns else None
+            for name, t in arms.items():
+                row[f"{name}_{m}"] = _value(t.loc[iid, m]) if ran[name] and m in t.columns else None
         rows.append(row)
     return rows
 
 
-def _of(rows: list[dict]) -> str:
-    return f"{sum(bool(r['is_report_resolved']) for r in rows)} of {len(rows)}"
-
-
-def summary(rows: list[dict]) -> dict:
-    """The pre-registered analysis over the pairs both arms ran, and the splits it only describes."""
+def summary(rows: list[dict], arm: str, flags: list[str]) -> dict:
+    """The pre-registered analysis over the pairs both arms ran, and each split it only describes: for a flag, the
+    pairs where it is true and where it is false (a pair with no value for it is in neither)."""
     pairs = [r for r in rows if r["is_pair_run"]]
     n = len(pairs)
-    s_only = sum(bool(r["is_statement_resolved"]) and not r["is_report_resolved"] for r in pairs)
-    r_only = sum(bool(r["is_report_resolved"]) and not r["is_statement_resolved"] for r in pairs)
-    both = sum(bool(r["is_statement_resolved"]) and bool(r["is_report_resolved"]) for r in pairs)
-    p = mcnemar_exact(s_only, r_only)
+    key = f"is_{arm}_resolved"
+
+    def counts(sel: list[dict]) -> dict:
+        return {"pair_count": len(sel), "statement_resolved_count": sum(bool(r["is_statement_resolved"]) for r in sel),
+                f"{arm}_resolved_count": sum(bool(r[key]) for r in sel)}
+
+    s_only = sum(bool(r["is_statement_resolved"]) and not r[key] for r in pairs)
+    o_only = sum(bool(r[key]) and not r["is_statement_resolved"] for r in pairs)
+    both = sum(bool(r["is_statement_resolved"]) and bool(r[key]) for r in pairs)
+    p = mcnemar_exact(s_only, o_only)
 
     def pct(k: int) -> list[float]:
         return [round(100 * v, 1) for v in wilson_ci(k, n)] if n else [None, None]
 
-    return {"pair_count": n, "left_out_count": len(rows) - n,
-            "statement_resolved_count": both + s_only, "report_resolved_count": both + r_only,
-            "statement_wilson_pct": pct(both + s_only), "report_wilson_pct": pct(both + r_only),
-            "both_count": both, "statement_only_count": s_only, "report_only_count": r_only,
-            "neither_count": n - both - s_only - r_only, "mcnemar_exact_p": p, "is_difference_claimed": p < 0.05,
-            "report_resolved_with_import_error": _of([r for r in pairs if r["is_import_error"]]),
-            "report_resolved_without_import_error": _of([r for r in pairs if not r["is_import_error"]]),
-            "report_resolved_screen_pass": _of([r for r in pairs if r["is_screen_pass"]]),
-            "report_resolved_screen_fail": _of([r for r in pairs if not r["is_screen_pass"]]),
-            "report_resolved_first_sample": _of([r for r in pairs if r["is_first_sample"]]),
-            "report_resolved_added_sample": _of([r for r in pairs if not r["is_first_sample"]])}
+    return {"arm_name": arm, "pair_count": n, "left_out_count": len(rows) - n,
+            "statement_resolved_count": both + s_only, f"{arm}_resolved_count": both + o_only,
+            "statement_wilson_pct": pct(both + s_only), f"{arm}_wilson_pct": pct(both + o_only),
+            "both_count": both, "statement_only_count": s_only, f"{arm}_only_count": o_only,
+            "neither_count": n - both - s_only - o_only, "mcnemar_exact_p": p, "is_difference_claimed": p < 0.05,
+            "splits": {f: {"yes": counts([r for r in pairs if r.get(f) is True]),
+                           "no": counts([r for r in pairs if r.get(f) is False])} for f in flags}}
+
+
+def task_flags(arm: str) -> pd.DataFrame:
+    """Each task's flags for the splits: the screen's verdict, whether its fix edits code the graph holds, whether it
+    was in the run of November 10, and what the arm's own shape table says of its context."""
+    screen = pd.read_csv(TASKS_DIR / "screening" / "agent_screen_all.csv", usecols=["instance_id", "is_pass"])
+    cover = pd.read_csv(TASKS_DIR / "graph_coverage.csv", usecols=["instance_id", "edited_node_count"])
+    shape = pd.read_csv(TASKS_DIR / SHAPES[arm])
+    out = screen.rename(columns={"is_pass": "is_screen_pass"}).merge(cover, on="instance_id", how="outer")
+    out["is_edit_task"] = out.edited_node_count > 0
+    out["is_first_sample"] = out.instance_id.isin(FIRST)
+    if arm == "graph":
+        shape["is_node_named"] = shape.named_node_count > 0
+    keep = ["instance_id", "context_chars"] + [f for f in FLAGS[arm] if f in shape.columns]
+    out = out.merge(shape[keep], on="instance_id", how="left").drop(columns=["edited_node_count"])
+    for f in FLAGS[arm] + COMMON_FLAGS:   # true, false, or no value: never a number or a string
+        out[f] = out[f].map(lambda v: None if pd.isna(v) else bool(v)).astype(object)
+    return out
 
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--ids", required=True, help="the pre-registered ids, comma-separated")
-    ap.add_argument("--first", required=True, help="the ids of the first sample (the run of November 10)")
-    ap.add_argument("--out", type=Path, default=OUT)
+    ap.add_argument("--arm", required=True, choices=sorted(SHAPES), help="the arm to set beside the statement arm")
+    ap.add_argument("--ids", help="the pre-registered ids, comma-separated (default: every task in the statement arm's table)")
     a = ap.parse_args()
-    ids = [i.strip() for i in a.ids.split(",") if i.strip()]
-    first = {i.strip() for i in a.first.split(",") if i.strip()}
     statement = pd.read_csv(RUNS / f"{MODEL}_swegemma_statement.csv")
-    report = pd.read_csv(RUNS / f"{MODEL}_swegemma_report.csv")
-    rows = pair_rows(ids, statement, report, pd.read_csv(TASKS_DIR / "failure_report_shape.csv"),
-                     pd.read_csv(TASKS_DIR / "screening" / "agent_screen_all.csv"), first)
-    pd.DataFrame(rows, columns=COLUMNS).to_csv(a.out, index=False)
-    s = summary(rows)
-    pairs = pd.DataFrame([r for r in rows if r["is_pair_run"]], columns=COLUMNS)
-    means = {f"{arm}_{m}": round(float(pairs[f"{arm}_{m}"].mean()), 1) for m in MEASURES for arm in ("statement", "report")
-             if len(pairs) and pairs[f"{arm}_{m}"].notna().any()}
+    other = pd.read_csv(RUNS / f"{MODEL}_swegemma_{a.arm}.csv")
+    flags = task_flags(a.arm)
+    ids = [i.strip() for i in a.ids.split(",") if i.strip()] if a.ids else sorted(flags.instance_id)
+    rows = pair_rows(ids, statement, other, flags, a.arm)
+    out = RUNS / f"context_pairs_{a.arm}.csv"
+    frame = pd.DataFrame(rows)
+    frame.to_csv(out, index=False)
+    s = summary(rows, a.arm, FLAGS[a.arm] + COMMON_FLAGS)
+    pairs = frame[frame.is_pair_run]
+    means = {f"{name}_{m}": round(float(pairs[f"{name}_{m}"].mean()), 1) for m in MEASURES for name in ("statement", a.arm)
+             if len(pairs) and pairs[f"{name}_{m}"].notna().any()}
     print(json.dumps({**s, "means": means}, indent=1))
-    print(f"-> {a.out}")
+    print(f"-> {out}")
     return 0
 
 

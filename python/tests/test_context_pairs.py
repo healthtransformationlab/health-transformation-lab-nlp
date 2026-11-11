@@ -35,31 +35,36 @@ def _arm(rows):
 def test_each_task_is_one_row_with_both_arms_and_a_task_missing_from_an_arm_is_kept_as_not_run(cp):
     statement = _arm([("a", False, 10), ("b", False, 0), ("c", True, 30)])
     report = _arm([("a", True, 40), ("b", False, 20)])                       # c was not reached in this arm
-    shape = pd.DataFrame({"instance_id": ["a", "b", "c"], "is_import_error": [True, False, False],
-                          "context_chars": [300, 900, 500]})
-    screen = pd.DataFrame({"instance_id": ["a", "b", "c"], "is_pass": [False, True, False]})
-    rows = cp.pair_rows(["a", "b", "c"], statement, report, shape, screen, first={"a", "b"})
+    flags = pd.DataFrame({"instance_id": ["a", "b", "c"], "is_import_error": [True, False, False],
+                          "is_screen_pass": [False, True, False], "context_chars": [300, 900, 500]})
+    rows = cp.pair_rows(["a", "b", "c"], statement, report, flags, arm="report")
     assert [r["instance_id"] for r in rows] == ["a", "b", "c"]
     a, _, c = rows
     assert (a["is_statement_resolved"], a["is_report_resolved"], a["is_pair_run"]) == (False, True, True)
-    assert (a["is_import_error"], a["is_screen_pass"], a["is_first_sample"], a["context_chars"]) == (True, False, True, 300)
-    assert c["is_pair_run"] is False and c["is_report_resolved"] is None and c["is_first_sample"] is False
+    assert (a["is_import_error"], a["is_screen_pass"], a["context_chars"]) == (True, False, 300)
+    assert (a["statement_agent_patch_bytes"], a["report_agent_patch_bytes"]) == (10, 40)
+    assert c["is_pair_run"] is False and c["is_report_resolved"] is None
     assert all(not isinstance(v, str) or k in ("instance_id", "tier_code") for r in rows for k, v in r.items())
+    graph = cp.pair_rows(["a"], statement, report, flags, arm="graph")[0]    # the arm names its own columns
+    assert graph["is_graph_resolved"] is True and "is_report_resolved" not in graph
 
 
-def test_the_summary_counts_each_arm_the_discordant_pairs_and_what_was_left_out(cp):
+def test_the_summary_counts_each_arm_the_discordant_pairs_what_was_left_out_and_each_split(cp):
     rows = ([dict(instance_id=f"h{n}", is_pair_run=True, is_statement_resolved=False, is_report_resolved=True,
-                  is_import_error=n < 2, is_screen_pass=False, is_first_sample=True) for n in range(6)]
+                  is_import_error=n < 2, is_screen_pass=False) for n in range(6)]
             + [dict(instance_id="s", is_pair_run=True, is_statement_resolved=True, is_report_resolved=True,
-                    is_import_error=False, is_screen_pass=True, is_first_sample=False),
+                    is_import_error=False, is_screen_pass=True),
                dict(instance_id="n", is_pair_run=True, is_statement_resolved=False, is_report_resolved=False,
-                    is_import_error=False, is_screen_pass=False, is_first_sample=False),
+                    is_import_error=False, is_screen_pass=None),
                dict(instance_id="x", is_pair_run=False, is_statement_resolved=True, is_report_resolved=None,
-                    is_import_error=False, is_screen_pass=False, is_first_sample=False)])
-    s = cp.summary(rows)
+                    is_import_error=False, is_screen_pass=False)])
+    s = cp.summary(rows, arm="report", flags=["is_import_error", "is_screen_pass"])
     assert (s["pair_count"], s["left_out_count"]) == (8, 1)
     assert (s["statement_resolved_count"], s["report_resolved_count"]) == (1, 7)
     assert (s["both_count"], s["statement_only_count"], s["report_only_count"], s["neither_count"]) == (1, 0, 6, 1)
     assert s["mcnemar_exact_p"] == pytest.approx(0.03125) and s["is_difference_claimed"] is True
     assert s["report_wilson_pct"] == [pytest.approx(52.9, abs=0.1), pytest.approx(97.8, abs=0.1)]
-    assert s["report_resolved_with_import_error"] == "2 of 2" and s["report_resolved_without_import_error"] == "5 of 6"
+    assert s["splits"]["is_import_error"] == {"yes": {"pair_count": 2, "statement_resolved_count": 0, "report_resolved_count": 2},
+                                              "no": {"pair_count": 6, "statement_resolved_count": 1, "report_resolved_count": 5}}
+    assert s["splits"]["is_screen_pass"]["yes"] == {"pair_count": 1, "statement_resolved_count": 1, "report_resolved_count": 1}
+    assert s["splits"]["is_screen_pass"]["no"]["pair_count"] == 6        # a pair with no flag is in neither part
