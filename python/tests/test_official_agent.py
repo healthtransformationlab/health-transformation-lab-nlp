@@ -339,3 +339,69 @@ def test_the_development_set_has_its_own_table(run, tmp_path, monkeypatch):
     path = run.write_table(pd, [row], "gemma-4-e4b-it-qat-w4a16-ct", label="devset")
     assert path.name == "gemma-4-e4b-it-qat-w4a16-ct_swegemma_devset.csv"
     assert run.write_table(pd, [row], "gemma-4-e4b-it-qat-w4a16-ct").name == "gemma-4-e4b-it-qat-w4a16-ct_swegemma.csv"
+
+
+# --- the official kernel's telemetry, behind a switch (spec 014 US6, 036 US2; #668) ---------------------------------
+
+class _FakeSpan:
+    """What the tracing SDK hands an exporter: to_json() as the SDK writes it."""
+
+    def __init__(self, attributes):
+        self.attributes = attributes
+
+    def to_json(self, indent=None):
+        return json.dumps({"name": "call_llm", "context": {"trace_id": "0x1", "span_id": "0x2", "trace_state": "[]"},
+                           "kind": "SpanKind.INTERNAL", "parent_id": "0x3", "start_time": "t0", "end_time": "t1",
+                           "status": {"status_code": "ERROR", "description": "the request said: def secret()"},
+                           "attributes": self.attributes, "events": [{"name": "reply", "attributes": {"text": "x"}}],
+                           "links": [], "resource": {"attributes": {"service.name": "svc", "host.arch": "x" * 90},
+                                                     "schema_url": ""}})
+
+
+def test_a_kernel_span_keeps_counts_and_short_labels_and_never_the_request_or_reply():
+    ns = _kernel_functions("_keep_attribute", "span_line")
+    ns.update(MAX_SPAN_TEXT=64, SPAN_TEXT_KEYS=("_name", "_code", "_id", ".name", ".model", ".type", ".system",
+                                                ".operation"))
+    request = json.dumps({"contents": "def secret(): return 42  # the task's code"})
+    line = json.loads(ns["span_line"](_FakeSpan({
+        "gen_ai.usage.input_tokens": 1200, "gen_ai.usage.output_tokens": 80, "gen_ai.request.model": "gemma-4-e4b",
+        "gen_ai.tool.name": "read_file", "instance_id": "fastapi_15661", "gcp.vertex.agent.llm_request": request,
+        "gcp.vertex.agent.llm_response": "the patch is ...", "gen_ai.operation.name": "chat"})))
+    a = line["attributes"]
+    assert a["gen_ai.usage.input_tokens"] == 1200 and a["gen_ai.request.model"] == "gemma-4-e4b"
+    assert a["gen_ai.tool.name"] == "read_file" and a["instance_id"] == "fastapi_15661"
+    assert "gcp.vertex.agent.llm_request" not in a and "gcp.vertex.agent.llm_response" not in a
+    assert line["events"] == [] and line["status"] == {"status_code": "ERROR"}
+    assert "host.arch" not in line["resource"]["attributes"] and "secret" not in json.dumps(line)
+
+
+def test_the_kernel_traces_and_samples_the_gpus_only_when_asked():
+    src = (REPO_ROOT / "kaggle" / "official_agent_kernel.py").read_text()
+    assert 'meta.get("telemetry")' in src and "start_tracing(OUT / \"telemetry.jsonl\")" in src
+    assert "start_gpu_sampler(OUT / \"gpu_samples.csv\")" in src
+    assert '"OTEL_SDK_DISABLED": "true"' in src                 # the default stays as the competition runs it
+
+
+def test_a_tasks_gpu_use_is_summed_from_the_samples_between_its_start_and_end(run, tmp_path):
+    from datetime import datetime, timezone
+    csv = tmp_path / "gpu_samples.csv"
+    lines = ["timestamp,gpu_index,utilization_pct,memory_used_mb,power_w"]
+    for s in range(0, 30, 5):                                  # two GPUs, every 5 seconds from 12:00:00
+        for g in (0, 1):
+            lines.append(f"2026/11/11 12:00:{s:02d}.000, {g}, {50 + 10 * g}, {1000 + s}, {60.0 + g}")
+    csv.write_text("\n".join(lines) + "\n")
+    t0 = datetime(2026, 11, 11, 12, 0, 5, tzinfo=timezone.utc).timestamp()
+    stats = run.gpu_stats(csv, t0, t0 + 10)                    # 12:00:05 to 12:00:15: three samples a GPU
+    assert stats["gpu_sample_count"] == 6 and stats["avg_gpu_utilization_pct"] == 55.0
+    assert stats["max_gpu_memory_used_mb"] == 1015.0
+    assert abs(stats["gpu_energy_wh"] - (60.0 + 61.0) * 10 / 3600) < 1e-9   # each GPU's mean power over 10 s
+    assert run.gpu_stats(tmp_path / "none.csv", t0, t0 + 10) is None
+
+
+def test_the_runner_asks_the_kernel_for_telemetry_only_with_the_switch(run):
+    class A:
+        deadline_minutes, seed, telemetry = 45.0, 7, False
+    assert "telemetry" not in run.batch_meta(A, {})
+    A.telemetry = True
+    assert run.batch_meta(A, {"max_time_minutes": 5.0}) == {"budget_overrides": {"max_time_minutes": 5.0},
+                                                            "deadline_minutes": 45.0, "seed": 7, "telemetry": True}

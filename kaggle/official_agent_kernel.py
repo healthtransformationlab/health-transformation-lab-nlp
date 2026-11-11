@@ -17,6 +17,7 @@
 # HTL_ENDPOINT (a dry run without a GPU): an OpenAI-compatible endpoint to use instead of installing the wheelhouse
 # and starting vLLM. HTL_BUNDLE and HTL_OUT point at the bundle and the output folder.
 import asyncio
+import contextlib
 import glob
 import hashlib
 import importlib
@@ -51,6 +52,8 @@ ALLOWED_MODELS = {"gemma-4-31b-it-qat-w4a16-ct", "gemma-4-12b-it-qat-w4a16-ct", 
 VLLM_EXTRA_ARGS = {"gemma-4-12b-it-qat-w4a16-ct": ("--hf-overrides",
                                                     '{"architectures": ["Gemma4ForCausalLM"], "model_type": "gemma4"}')}
 HARNESS_NAME = "swegemma (Evaluator.evaluate_task, subprocess sandbox)"
+SPAN_TEXT_KEYS = ("_name", "_code", "_id", ".name", ".model", ".type", ".system", ".operation")
+MAX_SPAN_TEXT = 64   # with telemetry on, a span keeps text only as a short label: requests, replies, code stay here
 result: dict = {"started_ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
 
 
@@ -70,6 +73,68 @@ def find_bundle() -> Path:
     found = (glob.glob("/kaggle/input/**/official_batch.json", recursive=True)
              or glob.glob("/kaggle/input/**/official_task.json", recursive=True))
     return Path(found[0]).parent
+
+
+def _keep_attribute(key: str, value) -> bool:
+    """Numbers and booleans, and text only as a short label (a key ending as SPAN_TEXT_KEYS do, at most
+    MAX_SPAN_TEXT characters)."""
+    if isinstance(value, (bool, int, float)):
+        return True
+    if isinstance(value, list):
+        return all(isinstance(v, (bool, int, float)) for v in value)
+    return isinstance(value, str) and len(value) <= MAX_SPAN_TEXT and key.endswith(SPAN_TEXT_KEYS)
+
+
+def span_line(span) -> str:
+    """One span as a JSON line in the repository's span layout (spec 014 US6), keeping what _keep_attribute keeps:
+    the agent framework's spans also carry whole requests and replies (prompts, code), which never leave the kernel.
+    No events, and a status without its message."""
+    d = json.loads(span.to_json(indent=None))
+    d["attributes"] = {k: v for k, v in (d.get("attributes") or {}).items() if _keep_attribute(k, v)}
+    d["events"], d["links"] = [], []
+    d["status"] = {"status_code": (d.get("status") or {}).get("status_code", "UNSET")}
+    res = (d.get("resource") or {}).get("attributes") or {}
+    d["resource"] = {"attributes": {k: v for k, v in res.items() if _keep_attribute(k, v)}, "schema_url": ""}
+    return json.dumps(d) + "\n"
+
+
+def start_tracing(path: Path):
+    """With telemetry on (the runner's --telemetry): the agent framework's own spans, each model call and tool call,
+    filtered (span_line) into a file beside result.json. Off by default, as the competition runs it."""
+    os.environ["OTEL_SDK_DISABLED"] = "false"
+    os.environ.pop("OTEL_PYTHON_DISABLED", None)
+    from opentelemetry import trace
+    from opentelemetry.sdk.resources import Resource
+    from opentelemetry.sdk.trace import TracerProvider
+    from opentelemetry.sdk.trace.export import ConsoleSpanExporter, SimpleSpanProcessor
+
+    out = open(path, "w", encoding="utf-8")   # one file a run: a rerun replaces it
+    provider = TracerProvider(resource=Resource.create({"service.name": "health_transformation_lab",
+                                                        "service.namespace": "health-transformation-lab-nlp",
+                                                        "deployment.environment": "dev"}))
+    provider.add_span_processor(SimpleSpanProcessor(ConsoleSpanExporter(out=out, formatter=span_line)))
+    trace.set_tracer_provider(provider)
+    return provider, out
+
+
+def start_gpu_sampler(path: Path, interval_ms: int = 5000):
+    """nvidia-smi's own loop: each GPU's utilization, memory and power every interval_ms, to a CSV (036 US2, #569)."""
+    out = open(path, "w", encoding="utf-8")
+    out.write("timestamp,gpu_index,utilization_pct,memory_used_mb,power_w\n")
+    out.flush()
+    return subprocess.Popen(["nvidia-smi", "--query-gpu=timestamp,index,utilization.gpu,memory.used,power.draw",
+                             "--format=csv,noheader,nounits", "-lms", str(interval_ms)], stdout=out,
+                            stderr=subprocess.DEVNULL), out
+
+
+def _task_span(instance_id: str):
+    """A span around one task, so the agent framework's spans nest under it; a no-op when tracing is off."""
+    try:
+        from opentelemetry import trace
+        return trace.get_tracer("official_agent_kernel").start_as_current_span(
+            "official_agent_kernel.task", attributes={"instance_id": instance_id})
+    except Exception:  # noqa: BLE001 - tracing never stops a task
+        return contextlib.nullcontext()
 
 
 def find_competition(root: Path = Path("/kaggle/input")) -> Path:
@@ -297,6 +362,7 @@ def run_batch(root: Path, meta: dict, key: bytes, agent_dir: Path, models, adapt
         work = Path("/tmp/htl_task")
         shutil.rmtree(work, ignore_errors=True)
         work.mkdir(parents=True)
+        started_unix = time.time()
         try:
             if from_competition:
                 stage_competition_task(comp, iid, work)
@@ -305,14 +371,16 @@ def run_batch(root: Path, meta: dict, key: bytes, agent_dir: Path, models, adapt
                 with tarfile.open(fileobj=io.BytesIO(plain)) as tar:
                     tar.extractall(work, filter="data")
                 del plain
-            one = run_task(work, agent_dir, models, adapters, overrides, OUT / "tasks" / iid,
-                           with_tests=from_competition)
+            with _task_span(iid):
+                one = run_task(work, agent_dir, models, adapters, overrides, OUT / "tasks" / iid,
+                               with_tests=from_competition)
         except BaseException as e:  # noqa: BLE001 - one task's failure is its row; the next task still runs
             one = {"instance_id": iid, "error": f"{type(e).__name__}: {str(e)[:1500]}",
                    "trace": traceback.format_exc()[-4000:]}
         finally:
             shutil.rmtree(work, ignore_errors=True)   # the next task must not find this one's snapshot
         one["elapsed_minutes_at_end"] = round((time.monotonic() - T_START) / 60, 2)
+        one["started_unix"], one["ended_unix"] = round(started_unix, 3), round(time.time(), 3)
         runs[iid] = one
         dead = [r for r in runs.values() if "error" in r or (r.get("agent_error") and not r.get("tool_call_count"))]
         if len(runs) == 2 and len(dead) == 2:   # both of the first two failed outright: stop, keep the allowance
@@ -326,7 +394,7 @@ def run_batch(root: Path, meta: dict, key: bytes, agent_dir: Path, models, adapt
 
 
 def main() -> None:
-    server = None
+    server, sampler, tracer = None, None, None
     try:
         bundle = find_bundle()
         is_batch = (bundle / "official_batch.json").exists()
@@ -352,6 +420,16 @@ def main() -> None:
             t = time.monotonic()
             result["wheelhouse"] = str(install_wheelhouse())
             result["install_seconds"] = round(time.monotonic() - t, 1)
+        if meta.get("telemetry") and not ENDPOINT:   # before the agent framework is imported
+            try:
+                sampler = start_gpu_sampler(OUT / "gpu_samples.csv")
+            except Exception as e:  # noqa: BLE001 - telemetry never stops the run
+                result["gpu_sampler_error"] = f"{type(e).__name__}: {str(e)[:300]}"
+            try:
+                tracer = start_tracing(OUT / "telemetry.jsonl")
+                result["is_traced"] = True
+            except Exception as e:  # noqa: BLE001
+                result["tracing_error"] = f"{type(e).__name__}: {str(e)[:300]}"
         quiet_logging()
         from adk_submission.discovery import discover_declared_models
         declared = discover_declared_models(agent_dir)
@@ -383,6 +461,13 @@ def main() -> None:
                 server.stop()
             except Exception:  # noqa: BLE001, S110 - the kernel is ending anyway
                 pass
+        for stop in ((lambda: (sampler[0].terminate(), sampler[1].close())) if sampler else None,
+                     (lambda: (tracer[0].shutdown(), tracer[1].close())) if tracer else None):
+            if stop is not None:
+                try:
+                    stop()
+                except Exception:  # noqa: BLE001, S110 - the kernel is ending anyway
+                    pass
     shutil.rmtree(OUT / "submission", ignore_errors=True)
     result["finished_ts"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     OUT.mkdir(parents=True, exist_ok=True)

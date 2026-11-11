@@ -97,6 +97,43 @@ def batch_trace_counts(output: Path, instance_id: str) -> dict | None:
     return trace_counts(json.loads(trace.read_text())) if trace.exists() else None
 
 
+def batch_meta(a, overrides: dict) -> dict:
+    """What a batch kernel is told besides its order: budgets, its deadline, the seed, and telemetry when asked."""
+    meta = {"budget_overrides": overrides, "deadline_minutes": a.deadline_minutes, "seed": a.seed}
+    if getattr(a, "telemetry", False):
+        meta["telemetry"] = True
+    return meta
+
+
+def gpu_stats(samples: Path, start_unix: float, end_unix: float) -> dict | None:
+    """One task's GPU use from the kernel's nvidia-smi samples between its start and end (036 US2, #569): mean
+    utilization, peak memory, and energy (each GPU's mean power over the task's time, summed over the GPUs)."""
+    import csv
+    from datetime import datetime, timezone
+    if not Path(samples).exists() or start_unix is None or end_unix is None:
+        return None
+    rows = []
+    with open(samples, encoding="utf-8") as f:
+        for r in csv.reader(f):
+            if not r or r[0].startswith("timestamp"):
+                continue
+            try:
+                ts = datetime.strptime(r[0].strip(), "%Y/%m/%d %H:%M:%S.%f").replace(tzinfo=timezone.utc).timestamp()
+                rows.append((ts, int(r[1]), float(r[2]), float(r[3]), float(r[4])))
+            except (ValueError, IndexError):   # "[N/A]" power on some GPUs, a cut-off last line
+                continue
+    inside = [r for r in rows if start_unix <= r[0] <= end_unix]
+    if not inside:
+        return None
+    power: dict[int, list[float]] = {}
+    for _, gpu, _, _, watts in inside:
+        power.setdefault(gpu, []).append(watts)
+    hours = (end_unix - start_unix) / 3600
+    return {"gpu_sample_count": len(inside), "avg_gpu_utilization_pct": round(sum(r[2] for r in inside) / len(inside), 2),
+            "max_gpu_memory_used_mb": max(r[3] for r in inside),
+            "gpu_energy_wh": sum(sum(w) / len(w) for w in power.values()) * hours}
+
+
 def kernel_slug(instance_id: str) -> str:
     """Not the bundle's slug: Kaggle refuses a kernel with the same slug as one of the owner's datasets."""
     return "htlnlp-offrun-" + re.sub(r"[^a-z0-9]+", "-", instance_id.lower()).strip("-")
@@ -322,7 +359,7 @@ def run_batch(a, api, user: str, ids: list[str], tasks: dict, manifest: dict, ov
             return (a.dataset / "snapshots" / f"{task['instance_id']}.tgz", a.dataset / "graphs" / f"{stem}.json",
                     a.dataset / "embeddings" / f"{stem}.npz")
 
-        meta = {"budget_overrides": overrides, "deadline_minutes": a.deadline_minutes, "seed": a.seed}
+        meta = batch_meta(a, overrides)
         if development:
             b = bundle.build_competition_batch(order, a.agent_dir, work / "bundle", user, meta)
         else:
@@ -358,8 +395,11 @@ def run_batch(a, api, user: str, ids: list[str], tasks: dict, manifest: dict, ov
     runs = res.get("runs") or {}
     shared = {k: res.get(k) for k in ("model_name", "server", "versions", "harness_name", "load_seconds")}
     done = {i: {**shared, **r} for i, r in runs.items() if not r.get("is_skipped")}
+    gpu = {}
     for i in done:
         done[i]["trace_counts"] = batch_trace_counts(out, i)
+        if (g := gpu_stats(out / "gpu_samples.csv", done[i].get("started_unix"), done[i].get("ended_unix"))):
+            gpu[i] = g
     skipped = [i for i in order if i not in done]
     if development:   # the evaluator verified each patch in the kernel, with the task's tests
         verdicts = {i: v for i, r in done.items() if (v := verdict_from_kernel(r)) is not None}
@@ -376,6 +416,7 @@ def run_batch(a, api, user: str, ids: list[str], tasks: dict, manifest: dict, ov
           f"evaluator end to end; {len(skipped)} of the {len(order)} drawn were not run: {', '.join(skipped) or 'none'}")
     (work / "run_summary.json").write_text(json.dumps(
         {"seed": a.seed, "order": order, "run": list(done), "not_run": skipped, "session_seconds": round(session, 1),
+         "gpu": gpu, "is_traced": bool(res.get("is_traced")),
          "kernel": {k: v for k, v in res.items() if k != "runs"}}, indent=1, default=str))
     if not a.no_table and rows:
         path = write_table(pd, rows, shared.get("model_name"), "devset" if development else None)
@@ -420,6 +461,9 @@ def main() -> int:
     ap.add_argument("--source", choices=("published", "competition"), default="published",
                     help="competition: the competition's own development tasks, read in the kernel from the attached "
                          "competition (needs --batch and --competition); --dataset holds its tasks.jsonl only")
+    ap.add_argument("--telemetry", action="store_true",
+                    help="with --batch: the kernel samples the GPUs and keeps the agent framework's spans, filtered to "
+                         "numbers and short labels (spec 014 US6, 036 US2); off by default, as the competition runs it")
     ap.add_argument("--deadline-minutes", type=float, default=45.0,
                     help="with --batch: the kernel stops starting tasks when one more could run past this")
     a = ap.parse_args()
