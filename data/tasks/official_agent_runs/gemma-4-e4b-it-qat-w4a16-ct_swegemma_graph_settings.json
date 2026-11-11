@@ -1,0 +1,211 @@
+{
+ "harness_name": "swegemma 0.2.11 (Evaluator.evaluate_task, subprocess sandbox)",
+ "model_name": "gemma-4-e4b-it-qat-w4a16-ct",
+ "versions": {
+  "swegemma": "0.2.11",
+  "adk-submission": "0.2.13",
+  "adk-eval-core": "0.1.0",
+  "google-adk": "1.36.1",
+  "vllm": "0.19.1",
+  "transformers": "5.13.1",
+  "torch": "2.10.0+cu128",
+  "litellm": "1.82.4"
+ },
+ "server": {
+  "server_name": "vLLM",
+  "model_path": "/kaggle/input/models/google/gemma-4/other/gemma-4-e4b-it-qat-w4a16-ct/2",
+  "dtype": "bfloat16",
+  "tensor_parallel_size": 4,
+  "compute_capability": "8.9",
+  "self_test": {
+   "seconds": 3.7,
+   "completion_tokens": 2,
+   "reply_text": "ready"
+  },
+  "max_model_len": 32768,
+  "gpu_memory_utilization": 0.9,
+  "tool_call_parser": "gemma4",
+  "reasoning_parser": "gemma4",
+  "gpus": [
+   "NVIDIA L4",
+   "NVIDIA L4",
+   "NVIDIA L4",
+   "NVIDIA L4"
+  ]
+ },
+ "budgets": {
+  "timeout_seconds": 120,
+  "verification_timeout_seconds": 300,
+  "max_tool_calls": 40,
+  "max_time_minutes": 5.0,
+  "max_turns": 60
+ },
+ "generation_defaults": {
+  "max_output_tokens": 16384,
+  "thinking_config": {
+   "thinking_budget": 4096
+  }
+ },
+ "context_cache": {
+  "min_tokens": 2048,
+  "ttl_seconds": 1800,
+  "cache_intervals": 10
+ },
+ "events_compaction": {
+  "compaction_interval": 15,
+  "overlap_size": 2,
+  "token_threshold": 14336,
+  "event_retention_size": 5
+ },
+ "kernel": {
+  "machine_shape_asked": "NvidiaL4",
+  "docker_image": "gcr.io/kaggle-private-byod/python@sha256:37c64f7dd9c54116ecd1bcc88817c5469b88387388fade02bfa8bf3fc647d461",
+  "competition_attached": "gemma-4-developer-agent",
+  "internet": false,
+  "tasks_per_kernel": 93
+ },
+ "agent_commit_sha": "b95b235739268e311cddcb254a7cb58d07a7b89c",
+ "sample": {
+  "seed": null,
+  "drawn_count": 93,
+  "pool_count": 93,
+  "instance_ids": [
+   "htlnlp_102",
+   "htlnlp_104",
+   "htlnlp_109",
+   "htlnlp_111",
+   "htlnlp_114",
+   "htlnlp_116",
+   "htlnlp_117",
+   "htlnlp_119",
+   "htlnlp_120",
+   "htlnlp_143",
+   "htlnlp_144",
+   "htlnlp_152",
+   "htlnlp_155",
+   "htlnlp_166",
+   "htlnlp_170",
+   "htlnlp_174",
+   "htlnlp_178",
+   "htlnlp_180",
+   "htlnlp_187",
+   "htlnlp_189",
+   "htlnlp_191",
+   "htlnlp_192",
+   "htlnlp_206",
+   "htlnlp_214",
+   "htlnlp_226",
+   "htlnlp_228",
+   "htlnlp_230",
+   "htlnlp_234_pr243",
+   "htlnlp_235",
+   "htlnlp_236",
+   "htlnlp_244",
+   "htlnlp_249",
+   "htlnlp_255",
+   "htlnlp_276",
+   "htlnlp_345",
+   "htlnlp_68",
+   "htlnlp_71",
+   "htlnlp_90",
+   "htlnlp_94",
+   "htlnlp_c59170ee",
+   "htlnlp_c5e54000",
+   "htlnlp_c7300f3f",
+   "htlnlp_c791d60f",
+   "htlnlp_c7bde3d0",
+   "htlnlp_c7c49998",
+   "htlnlp_c866538c",
+   "htlnlp_c95eedd3",
+   "htlnlp_ca9964a0",
+   "htlnlp_cac5acf9",
+   "htlnlp_cb988381",
+   "htlnlp_cbb8290c",
+   "htlnlp_cbc00f07",
+   "htlnlp_cc163083",
+   "htlnlp_cc73f4cf",
+   "htlnlp_cca2d155",
+   "htlnlp_ceb84ac1",
+   "htlnlp_cecf7a16",
+   "htlnlp_cf773377",
+   "htlnlp_cfa7c008",
+   "htlnlp_pr11",
+   "htlnlp_pr12",
+   "htlnlp_pr17",
+   "htlnlp_pr2",
+   "htlnlp_pr21",
+   "htlnlp_pr22",
+   "htlnlp_pr23",
+   "htlnlp_pr24",
+   "htlnlp_pr25",
+   "htlnlp_pr26",
+   "htlnlp_pr27",
+   "htlnlp_pr28",
+   "htlnlp_pr29",
+   "htlnlp_pr30",
+   "htlnlp_pr31",
+   "htlnlp_pr32",
+   "htlnlp_pr33",
+   "htlnlp_pr34",
+   "htlnlp_pr35",
+   "htlnlp_pr36",
+   "htlnlp_pr37",
+   "htlnlp_pr4",
+   "htlnlp_pr47",
+   "htlnlp_pr5",
+   "htlnlp_pr53",
+   "htlnlp_pr54",
+   "htlnlp_pr55",
+   "htlnlp_pr56",
+   "htlnlp_pr57",
+   "htlnlp_pr6",
+   "htlnlp_pr62",
+   "htlnlp_pr63",
+   "htlnlp_pr66",
+   "htlnlp_pr8"
+  ],
+  "method_text": "the ids were given to this run, not drawn by it: all 93 published tasks, fixed by the pre-registration of November 11, 2026 and its addendum 1 (specs/028-dataops-task-set/preregistration-graph-retrieval-arm.md, SHA-256 7121f14cd2c28baaa63af5bbcc35d668edb1fe8843f0351005673819393a0f29)",
+  "order_seed": 20261110
+ },
+ "differences_from_competition_defaults": [
+  {
+   "setting_name": "timeout_seconds",
+   "used": 120,
+   "competition_default": 300,
+   "source_text": "the submission's eval_config.yaml"
+  },
+  {
+   "setting_name": "max_tool_calls",
+   "used": 40,
+   "competition_default": 100,
+   "source_text": "the submission's eval_config.yaml"
+  },
+  {
+   "setting_name": "max_time_minutes",
+   "used": 5.0,
+   "competition_default": 60.0,
+   "source_text": "the submission's eval_config.yaml"
+  },
+  {
+   "setting_name": "max_turns",
+   "used": 60,
+   "competition_default": null,
+   "source_text": "the submission's eval_config.yaml"
+  }
+ ],
+ "notes": [
+  "The agent loop, the model server and the verification are the competition's: swegemma's Evaluator.evaluate_task (subprocess sandbox), vLLM from the competition's wheelhouse dataset, and swegemma's verify_task, following the competition's starter notebook.",
+  "Each task ran alone in a private, offline kernel beside a bundle with no reference patch and no tests, so the evaluator's verification had nothing to verify there. The patch was verified afterwards with the same evaluator's verify_task against the published snapshot and the task's tests.",
+  "The number format follows the GPU: bfloat16 on compute capability 8.0 or above, float16 below.",
+  "The graph arm of the pre-registered run of November 11, 2026 (issue 674, addendum 1): each task with the graph's retrieval after its hints, built from the statement and the graph alone. The owner asked for a controlled experiment on graph retrieval.",
+  "The kernel was launched at 17:10 UTC, when a GPU session was free, and this table was collected from the finished kernel afterwards (--collect).",
+  "Each patch was verified on the collecting machine by the competition's evaluator, installed there on November 11, 2026 from the competition's wheelhouse (swegemma 0.2.11, adk-submission 0.2.13, adk-eval-core 0.1.0), after its two controls on the published files gave the committed verdicts on that machine: the reference patch resolved 93 of 93 tasks and an empty patch 0 of 93."
+ ],
+ "context": {
+  "file_name": "graph_contexts.jsonl",
+  "file_sha256": "f4d3f1c00a649936d1885016a4dae49b63f10f5508659558056d222fd14d33fc",
+  "task_count": 93,
+  "max_context_chars": 2760,
+  "added_to": "hints_text"
+ }
+}
