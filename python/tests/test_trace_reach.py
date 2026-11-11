@@ -111,3 +111,25 @@ def test_an_import_error_is_read_against_the_fix(tr):
     assert row == {"is_import_error": True, "is_missing_name_added_by_fix": True, "is_error_module_changed_by_fix": True}
     assert tr.import_columns({"exit_status": 1}, patch) == {"is_import_error": False, "is_missing_name_added_by_fix":
                                                             False, "is_error_module_changed_by_fix": False}
+
+
+def test_the_summary_says_what_the_trace_and_the_import_errors_each_add_to_the_statement(tr):
+    """028 BUG4 (#672): the report's gain over the statement was once credited to the trace alone. The summary now
+    splits it: tasks only the trace reaches, tasks only an import error reaches, and the two together."""
+    def row(i, trace=False, traceback=False, name=False, module=False):
+        return dict(instance_id=i, is_edited_in_trace=trace, is_edited_on_traceback=traceback, traced_node_count=1,
+                    traceback_to_fix_edge_count=None, test_exit_code=2 if (name or module) else 1,
+                    is_import_error=name or module, is_missing_name_added_by_fix=name,
+                    is_error_module_changed_by_fix=module)
+    rows = [row("a", trace=True),                 # the statement reaches it too
+            row("b", trace=True),                 # only the trace
+            row("c", module=True),                # only an import error naming a module the fix changes
+            row("d", name=True, module=True),     # an import error, and the statement reaches it too
+            row("e")]                             # neither
+    s = tr.summary(rows, reached_by_statement={"a", "d", "not_in_rows"})
+    assert s["trace_not_statement_count"] == 1                 # b
+    assert s["import_error_not_statement_count"] == 1          # c
+    assert s["report_count"] == 4                              # a, b, c, d
+    assert s["report_not_statement_count"] == 2                # b, c
+    assert s["statement_count"] == 2                           # a, d: only tasks among the rows count
+    assert s["statement_or_report_count"] == 4                 # a, b, c, d
