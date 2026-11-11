@@ -136,5 +136,33 @@ def build_batch(tasks: list[dict], files_of, submission_dir: Path, out: Path, us
     return out
 
 
+def build_competition_batch(order: list[str], submission_dir: Path, out: Path, username: str,
+                            settings: dict | None = None) -> Path:
+    """A batch of the competition's own development tasks (028 AI4, #668): the submission and the order only. The
+    kernel attaches the competition and reads each task from its mounted files, so no task, snapshot or answer is
+    copied, uploaded or sealed here."""
+    submission_dir = Path(submission_dir)
+    if not (submission_dir / "agent.yaml").is_file():
+        raise SystemExit(f"{submission_dir} has no agent.yaml: not a submission folder")
+    if len(set(order)) != len(order) or not order:
+        raise SystemExit("the order must name each task once")
+    out = Path(out)
+    if out.exists():
+        shutil.rmtree(out)
+    (out / "submission").mkdir(parents=True)
+    for name in SUBMISSION_ENTRIES:
+        src = submission_dir / name
+        if src.is_dir():
+            shutil.copytree(src, out / "submission" / name)
+        elif src.is_file():
+            shutil.copyfile(src, out / "submission" / name)
+    (out / "official_batch.json").write_text(json.dumps(
+        {"instance_ids": list(order), **(settings or {}), "source": "competition"}, indent=1) + "\n")
+    (out / "dataset-metadata.json").write_text(json.dumps({
+        "title": "htlnlp official input devset", "id": f"{username}/{slug('devset')}",
+        "licenses": [{"name": "CC-BY-4.0"}]}, indent=1) + "\n")
+    return out
+
+
 if __name__ == "__main__":
     sys.exit("used by kaggle/official_agent_run.py")

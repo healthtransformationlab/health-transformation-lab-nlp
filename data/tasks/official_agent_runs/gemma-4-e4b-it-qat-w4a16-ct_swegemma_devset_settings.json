@@ -1,0 +1,148 @@
+{
+ "harness_name": "swegemma 0.2.11 (Evaluator.evaluate_task, subprocess sandbox)",
+ "model_name": "gemma-4-e4b-it-qat-w4a16-ct",
+ "versions": {
+  "swegemma": "0.2.11",
+  "adk-submission": "0.2.13",
+  "adk-eval-core": "0.1.0",
+  "google-adk": "1.36.1",
+  "vllm": "0.19.1",
+  "transformers": "5.13.1",
+  "torch": "2.10.0+cu128",
+  "litellm": "1.82.4"
+ },
+ "server": {
+  "server_name": "vLLM",
+  "model_path": "/kaggle/input/models/google/gemma-4/other/gemma-4-e4b-it-qat-w4a16-ct/2",
+  "dtype": "bfloat16",
+  "tensor_parallel_size": 4,
+  "compute_capability": "8.9",
+  "self_test": {
+   "seconds": 3.8,
+   "completion_tokens": 2,
+   "reply_text": "ready"
+  },
+  "max_model_len": 32768,
+  "gpu_memory_utilization": 0.9,
+  "tool_call_parser": "gemma4",
+  "reasoning_parser": "gemma4",
+  "gpus": [
+   "NVIDIA L4",
+   "NVIDIA L4",
+   "NVIDIA L4",
+   "NVIDIA L4"
+  ]
+ },
+ "budgets": {
+  "timeout_seconds": 120,
+  "verification_timeout_seconds": 300,
+  "max_tool_calls": 40,
+  "max_time_minutes": 5.0,
+  "max_turns": 60
+ },
+ "generation_defaults": {
+  "max_output_tokens": 16384,
+  "thinking_config": {
+   "thinking_budget": 4096
+  }
+ },
+ "context_cache": {
+  "min_tokens": 2048,
+  "ttl_seconds": 1800,
+  "cache_intervals": 10
+ },
+ "events_compaction": {
+  "compaction_interval": 15,
+  "overlap_size": 2,
+  "token_threshold": 14336,
+  "event_retention_size": 5
+ },
+ "kernel": {
+  "machine_shape_asked": "NvidiaL4",
+  "docker_image": "gcr.io/kaggle-private-byod/python@sha256:37c64f7dd9c54116ecd1bcc88817c5469b88387388fade02bfa8bf3fc647d461",
+  "competition_attached": "gemma-4-developer-agent",
+  "internet": false,
+  "tasks_per_kernel": 40
+ },
+ "agent_commit_sha": "b95b235739268e311cddcb254a7cb58d07a7b89c",
+ "sample": {
+  "seed": 20261110,
+  "drawn_count": 40,
+  "pool_count": 129,
+  "instance_ids": [
+   "fastapi_13537",
+   "fastapi_14099",
+   "fastapi_14186",
+   "fastapi_14246",
+   "fastapi_14262",
+   "fastapi_14266",
+   "fastapi_14301",
+   "fastapi_14303",
+   "fastapi_14349",
+   "fastapi_14463",
+   "fastapi_14485",
+   "fastapi_14492",
+   "fastapi_14791",
+   "fastapi_14851",
+   "fastapi_14873",
+   "fastapi_14953",
+   "fastapi_14962",
+   "fastapi_14986",
+   "fastapi_15023",
+   "fastapi_15280",
+   "fastapi_15661",
+   "requests_6589",
+   "requests_6592",
+   "requests_6629",
+   "requests_7315",
+   "rich_3180",
+   "rich_3454",
+   "rich_3472",
+   "rich_3480",
+   "rich_3518",
+   "rich_3535",
+   "rich_3777",
+   "rich_3905",
+   "rich_3930",
+   "rich_3934",
+   "rich_3935",
+   "rich_3944",
+   "rich_3953",
+   "rich_4006",
+   "rich_4076"
+  ],
+  "method_text": "drawn with the seed from the competition's development set, stratified by repository in proportion to each repository's size (largest remainder); not ordered by cost or size"
+ },
+ "differences_from_competition_defaults": [
+  {
+   "setting_name": "timeout_seconds",
+   "used": 120,
+   "competition_default": 300,
+   "source_text": "the submission's eval_config.yaml"
+  },
+  {
+   "setting_name": "max_tool_calls",
+   "used": 40,
+   "competition_default": 100,
+   "source_text": "the submission's eval_config.yaml"
+  },
+  {
+   "setting_name": "max_time_minutes",
+   "used": 5.0,
+   "competition_default": 60.0,
+   "source_text": "the submission's eval_config.yaml"
+  },
+  {
+   "setting_name": "max_turns",
+   "used": 60,
+   "competition_default": null,
+   "source_text": "the submission's eval_config.yaml"
+  }
+ ],
+ "notes": [
+  "The agent loop, the model server and the verification are the competition's: swegemma's Evaluator.evaluate_task (subprocess sandbox), vLLM from the competition's wheelhouse dataset, and swegemma's verify_task, following the competition's starter notebook.",
+  "The kernel attached the competition and read each development task from its mounted files, with no reference patch staged beside the agent; the evaluator verified each patch there with the task's tests, as the competition's own run does. Tool calls naming a path outside the workspace are counted in outside_workspace_call_count.",
+  "The number format follows the GPU: bfloat16 on compute capability 8.0 or above, float16 below.",
+  "The owner approved this run on November 11, 2026: a seeded random 40 of the competition's 129 development tasks, in one kernel on four L4 GPUs, with telemetry on."
+ ]
+}

@@ -17,6 +17,7 @@
 # HTL_ENDPOINT (a dry run without a GPU): an OpenAI-compatible endpoint to use instead of installing the wheelhouse
 # and starting vLLM. HTL_BUNDLE and HTL_OUT point at the bundle and the output folder.
 import asyncio
+import contextlib
 import glob
 import hashlib
 import importlib
@@ -51,6 +52,8 @@ ALLOWED_MODELS = {"gemma-4-31b-it-qat-w4a16-ct", "gemma-4-12b-it-qat-w4a16-ct", 
 VLLM_EXTRA_ARGS = {"gemma-4-12b-it-qat-w4a16-ct": ("--hf-overrides",
                                                     '{"architectures": ["Gemma4ForCausalLM"], "model_type": "gemma4"}')}
 HARNESS_NAME = "swegemma (Evaluator.evaluate_task, subprocess sandbox)"
+SPAN_TEXT_KEYS = ("_name", "_code", "_id", ".name", ".model", ".type", ".system", ".operation")
+MAX_SPAN_TEXT = 64   # with telemetry on, a span keeps text only as a short label: requests, replies, code stay here
 result: dict = {"started_ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
 
 
@@ -70,6 +73,112 @@ def find_bundle() -> Path:
     found = (glob.glob("/kaggle/input/**/official_batch.json", recursive=True)
              or glob.glob("/kaggle/input/**/official_task.json", recursive=True))
     return Path(found[0]).parent
+
+
+def _keep_attribute(key: str, value) -> bool:
+    """Numbers and booleans, and text only as a short label (a key ending as SPAN_TEXT_KEYS do, at most
+    MAX_SPAN_TEXT characters)."""
+    if isinstance(value, (bool, int, float)):
+        return True
+    if isinstance(value, list):
+        return all(isinstance(v, (bool, int, float)) for v in value)
+    return isinstance(value, str) and len(value) <= MAX_SPAN_TEXT and key.endswith(SPAN_TEXT_KEYS)
+
+
+def span_line(span) -> str:
+    """One span as a JSON line in the repository's span layout (spec 014 US6), keeping what _keep_attribute keeps:
+    the agent framework's spans also carry whole requests and replies (prompts, code), which never leave the kernel.
+    No events, and a status without its message."""
+    d = json.loads(span.to_json(indent=None))
+    d["attributes"] = {k: v for k, v in (d.get("attributes") or {}).items() if _keep_attribute(k, v)}
+    d["events"], d["links"] = [], []
+    d["status"] = {"status_code": (d.get("status") or {}).get("status_code", "UNSET")}
+    res = (d.get("resource") or {}).get("attributes") or {}
+    d["resource"] = {"attributes": {k: v for k, v in res.items() if _keep_attribute(k, v)}, "schema_url": ""}
+    return json.dumps(d) + "\n"
+
+
+def start_tracing(path: Path):
+    """With telemetry on (the runner's --telemetry): the agent framework's own spans, each model call and tool call,
+    filtered (span_line) into a file beside result.json. Off by default, as the competition runs it."""
+    os.environ["OTEL_SDK_DISABLED"] = "false"
+    os.environ.pop("OTEL_PYTHON_DISABLED", None)
+    from opentelemetry import trace
+    from opentelemetry.sdk.resources import Resource
+    from opentelemetry.sdk.trace import TracerProvider
+    from opentelemetry.sdk.trace.export import ConsoleSpanExporter, SimpleSpanProcessor
+
+    out = open(path, "w", encoding="utf-8")   # one file a run: a rerun replaces it
+    provider = TracerProvider(resource=Resource.create({"service.name": "health_transformation_lab",
+                                                        "service.namespace": "health-transformation-lab-nlp",
+                                                        "deployment.environment": "dev"}))
+    provider.add_span_processor(SimpleSpanProcessor(ConsoleSpanExporter(out=out, formatter=span_line)))
+    trace.set_tracer_provider(provider)
+    return provider, out
+
+
+def start_gpu_sampler(path: Path, interval_ms: int = 5000):
+    """nvidia-smi's own loop: each GPU's utilization, memory and power every interval_ms, to a CSV (036 US2, #569)."""
+    out = open(path, "w", encoding="utf-8")
+    out.write("timestamp,gpu_index,utilization_pct,memory_used_mb,power_w\n")
+    out.flush()
+    return subprocess.Popen(["nvidia-smi", "--query-gpu=timestamp,index,utilization.gpu,memory.used,power.draw",
+                             "--format=csv,noheader,nounits", "-lms", str(interval_ms)], stdout=out,
+                            stderr=subprocess.DEVNULL), out
+
+
+def _task_span(instance_id: str):
+    """A span around one task, so the agent framework's spans nest under it; a no-op when tracing is off."""
+    try:
+        from opentelemetry import trace
+        return trace.get_tracer("official_agent_kernel").start_as_current_span(
+            "official_agent_kernel.task", attributes={"instance_id": instance_id})
+    except Exception:  # noqa: BLE001 - tracing never stops a task
+        return contextlib.nullcontext()
+
+
+def find_competition(root: Path = Path("/kaggle/input")) -> Path:
+    """The attached competition's folder: the one holding HARNESS_README.md, tasks.jsonl and snapshots/ (028 AI4)."""
+    for readme in sorted(glob.glob(str(Path(root) / "**" / "HARNESS_README.md"), recursive=True)):
+        folder = Path(readme).parent
+        if (folder / "tasks.jsonl").is_file() and (folder / "snapshots").is_dir():
+            return folder
+    raise SystemExit(f"no competition attached under {root}: a development-set batch needs it")
+
+
+def stage_competition_task(comp: Path, instance_id: str, work: Path) -> None:
+    """One development task, as the evaluator reads it: its row without the reference patch (its tests stay, for the
+    evaluator's verification, as in the competition's own run), its snapshot, graph and embeddings linked from the
+    mounted competition, never copied."""
+    row = next((r for r in map(json.loads, filter(str.strip, (comp / "tasks.jsonl").read_text().splitlines()))
+                if r.get("instance_id") == instance_id), None)
+    if row is None:
+        raise SystemExit(f"{instance_id} is not in the competition's tasks.jsonl")
+    row.pop("patch", None)
+    work.mkdir(parents=True, exist_ok=True)
+    (work / "tasks.jsonl").write_text(json.dumps(row) + "\n")
+    stem = f"{row['repo'].split('/')[-1]}_{row['base_commit']}"
+    for folder, names in (("snapshots", [f"{instance_id}.tgz"]),
+                          ("graphs", [f"{stem}.json", f"{instance_id}.json"]),
+                          ("embeddings", [f"{stem}.npz", f"{instance_id}.npz"])):
+        (work / folder).mkdir(exist_ok=True)
+        for name in names:
+            if (comp / folder / name).exists():
+                os.symlink(comp / folder / name, work / folder / name)
+    for shared in ("wheels", "sandbox"):   # the tests' dependencies and their setup script: the evaluator looks for
+        if (comp / shared).exists():       # them beside tasks.jsonl (swegemma's resolve_wheels_dir), or no test runs
+            os.symlink(comp / shared, work / shared)
+    if not (work / "snapshots" / f"{instance_id}.tgz").exists():
+        raise SystemExit(f"{instance_id} has no snapshot in the competition's files")
+
+
+def check_task_fields(has_patch: bool, has_tests: bool, with_tests: bool) -> None:
+    """Never run the agent beside a reference patch; tests only for a development task, whose evaluator verifies the
+    patch with them after the agent phase, as the competition's own run does."""
+    if has_patch:
+        raise SystemExit("the task carries a reference patch: refusing to run the agent beside it")
+    if has_tests and not with_tests:
+        raise SystemExit("the bundle carries the task's tests: refusing to run the agent beside them")
 
 
 def unseal(data: bytes, key: bytes, name: str) -> bytes:
@@ -168,8 +277,10 @@ def versions() -> dict:
     return out
 
 
-def run_task(bundle: Path, agent_dir: Path, models, adapters, overrides: dict, out_dir: Path) -> dict:
-    """The starter notebook's cell 10 for one task, with the agent's patch kept as soon as the agent phase ends."""
+def run_task(bundle: Path, agent_dir: Path, models, adapters, overrides: dict, out_dir: Path,
+             with_tests: bool = False) -> dict:
+    """The starter notebook's cell 10 for one task, with the agent's patch kept as soon as the agent phase ends.
+    `with_tests`: a development task, whose tests the evaluator's verification uses; its verdict is kept."""
     import litellm
     import yaml
     from google.adk.agents.context_cache_config import ContextCacheConfig
@@ -180,8 +291,7 @@ def run_task(bundle: Path, agent_dir: Path, models, adapters, overrides: dict, o
 
     litellm.drop_params = True
     task = load_tasks(bundle / "tasks.jsonl")[0]
-    if task.patch or task.test_patch:
-        raise SystemExit("the bundle carries a reference patch or tests: refusing to run the agent beside them")
+    check_task_fields(bool(task.patch), bool(task.test_patch), with_tests)
     cfg_file = next((c for n in ("eval_config.yaml", "eval_config.yml") if (c := agent_dir / n).is_file()), None)
     raw = (yaml.safe_load(cfg_file.read_text(encoding="utf-8")) or {}) if cfg_file else {}
     section = {**raw.get("evaluation", raw), **{k: v for k, v in overrides.items() if v is not None}}
@@ -226,8 +336,11 @@ def run_task(bundle: Path, agent_dir: Path, models, adapters, overrides: dict, o
            "context_cache": {"min_tokens": 2048, "ttl_seconds": 1800, "cache_intervals": 10},
            "events_compaction": {"compaction_interval": 15, "overlap_size": 2, "token_threshold": 14336,
                                  "event_retention_size": 5},
-           # the evaluator's own verification ran without the task's tests (the bundle has none): not a verdict
-           "kaggle_verification_without_tests": {"is_resolved": bool(res.resolved), "test_exit_code": res.test_exit_code}}
+           }
+    if with_tests:   # a development task: the evaluator verified the patch with the task's tests, as the competition does
+        out["verification"] = {"is_resolved": bool(res.resolved), "test_exit_code": res.test_exit_code}
+    else:            # ours: the evaluator's verification ran without the task's tests (the bundle has none): not a verdict
+        out["kaggle_verification_without_tests"] = {"is_resolved": bool(res.resolved), "test_exit_code": res.test_exit_code}
     for key in ("total_input_tokens", "total_output_tokens", "total_tokens", "total_cost_usd", "trace_path"):
         if getattr(res, key, None) is not None:
             out[key] = getattr(res, key)
@@ -238,6 +351,8 @@ def run_batch(root: Path, meta: dict, key: bytes, agent_dir: Path, models, adapt
     """Each task of the batch in turn: open its sealed files, run it, delete them. Stops before a task that could
     not finish inside the kernel's own time budget, so the GPU allowance is never overrun mid-task."""
     overrides = meta.get("budget_overrides") or {}
+    from_competition = meta.get("source") == "competition"
+    comp = find_competition() if from_competition else None
     deadline = T_START + float(meta.get("deadline_minutes", 45)) * 60
     per_task = float(meta.get("task_minutes_reserved", 6.5)) * 60
     runs: dict = {}
@@ -250,18 +365,25 @@ def run_batch(root: Path, meta: dict, key: bytes, agent_dir: Path, models, adapt
         work = Path("/tmp/htl_task")
         shutil.rmtree(work, ignore_errors=True)
         work.mkdir(parents=True)
+        started_unix = time.time()
         try:
-            plain = unseal((root / "sealed" / f"{iid}.bin").read_bytes(), key, iid)
-            with tarfile.open(fileobj=io.BytesIO(plain)) as tar:
-                tar.extractall(work, filter="data")
-            del plain
-            one = run_task(work, agent_dir, models, adapters, overrides, OUT / "tasks" / iid)
+            if from_competition:
+                stage_competition_task(comp, iid, work)
+            else:
+                plain = unseal((root / "sealed" / f"{iid}.bin").read_bytes(), key, iid)
+                with tarfile.open(fileobj=io.BytesIO(plain)) as tar:
+                    tar.extractall(work, filter="data")
+                del plain
+            with _task_span(iid):
+                one = run_task(work, agent_dir, models, adapters, overrides, OUT / "tasks" / iid,
+                               with_tests=from_competition)
         except BaseException as e:  # noqa: BLE001 - one task's failure is its row; the next task still runs
             one = {"instance_id": iid, "error": f"{type(e).__name__}: {str(e)[:1500]}",
                    "trace": traceback.format_exc()[-4000:]}
         finally:
             shutil.rmtree(work, ignore_errors=True)   # the next task must not find this one's snapshot
         one["elapsed_minutes_at_end"] = round((time.monotonic() - T_START) / 60, 2)
+        one["started_unix"], one["ended_unix"] = round(started_unix, 3), round(time.time(), 3)
         runs[iid] = one
         dead = [r for r in runs.values() if "error" in r or (r.get("agent_error") and not r.get("tool_call_count"))]
         if len(runs) == 2 and len(dead) == 2:   # both of the first two failed outright: stop, keep the allowance
@@ -275,7 +397,7 @@ def run_batch(root: Path, meta: dict, key: bytes, agent_dir: Path, models, adapt
 
 
 def main() -> None:
-    server = None
+    server, sampler, tracer = None, None, None
     try:
         bundle = find_bundle()
         is_batch = (bundle / "official_batch.json").exists()
@@ -301,6 +423,16 @@ def main() -> None:
             t = time.monotonic()
             result["wheelhouse"] = str(install_wheelhouse())
             result["install_seconds"] = round(time.monotonic() - t, 1)
+        if meta.get("telemetry") and not ENDPOINT:   # before the agent framework is imported
+            try:
+                sampler = start_gpu_sampler(OUT / "gpu_samples.csv")
+            except Exception as e:  # noqa: BLE001 - telemetry never stops the run
+                result["gpu_sampler_error"] = f"{type(e).__name__}: {str(e)[:300]}"
+            try:
+                tracer = start_tracing(OUT / "telemetry.jsonl")
+                result["is_traced"] = True
+            except Exception as e:  # noqa: BLE001
+                result["tracing_error"] = f"{type(e).__name__}: {str(e)[:300]}"
         quiet_logging()
         from adk_submission.discovery import discover_declared_models
         declared = discover_declared_models(agent_dir)
@@ -332,6 +464,13 @@ def main() -> None:
                 server.stop()
             except Exception:  # noqa: BLE001, S110 - the kernel is ending anyway
                 pass
+        for stop in ((lambda: (sampler[0].terminate(), sampler[1].close())) if sampler else None,
+                     (lambda: (tracer[0].shutdown(), tracer[1].close())) if tracer else None):
+            if stop is not None:
+                try:
+                    stop()
+                except Exception:  # noqa: BLE001, S110 - the kernel is ending anyway
+                    pass
     shutil.rmtree(OUT / "submission", ignore_errors=True)
     result["finished_ts"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     OUT.mkdir(parents=True, exist_ok=True)
