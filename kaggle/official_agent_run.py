@@ -429,6 +429,17 @@ def seeded_order(ids: list[str], seed: int, of_set: list[str] | None = None) -> 
     return [i for i in order if i in set(ids)] if of_set is not None else order
 
 
+def push_kernel(api, folder: Path, timeout_seconds: int, ref: str) -> None:
+    """Push a batch's kernel, and end the run in Kaggle's own words if Kaggle refuses it (no GPU allowance left, two
+    GPU sessions already running): there is then no kernel to wait for."""
+    try:
+        refused = getattr(api.kernels_push(str(folder), timeout=str(timeout_seconds)), "error", None)
+    except Exception as e:  # noqa: BLE001 - whatever the client raises is the refusal's text
+        refused = f"{type(e).__name__}: {e}"
+    if refused:
+        raise SystemExit(f"{ref}: Kaggle refused the kernel: {str(refused)[:400]}")
+
+
 def run_batch(a, api, user: str, ids: list[str], tasks: dict, manifest: dict, overrides: dict, pd) -> int:
     """One kernel for every task, in a seeded order, each task sealed until its turn; then verify and tabulate."""
     first_run = getattr(a, "order_of_ids", None)
@@ -459,8 +470,10 @@ def run_batch(a, api, user: str, ids: list[str], tasks: dict, manifest: dict, ov
         (k / "official_agent_kernel.py").write_text(kernel_source((HERE / "official_agent_kernel.py").read_text(), key))
         (k / "kernel-metadata.json").write_text(json.dumps(
             kernel_metadata(user, name, a.machine_shape, a.docker_image, a.competition), indent=1))
-        api.kernels_push(str(k), timeout=str(a.kernel_minutes * 60))
-        shutil.rmtree(k)   # the keyed copy does not stay on this machine either
+        try:
+            push_kernel(api, k, a.kernel_minutes * 60, kref)
+        finally:
+            shutil.rmtree(k)   # the keyed copy does not stay on this machine either, whatever Kaggle answered
         print(f"the evaluator on a Kaggle GPU, {kref}", flush=True)
     t0, status = time.monotonic(), ""
     while True:

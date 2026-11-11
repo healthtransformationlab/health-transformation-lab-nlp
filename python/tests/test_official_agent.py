@@ -565,3 +565,25 @@ def test_a_rerun_keeps_each_tasks_place_in_the_seeded_order_of_the_whole_set(run
     some = ["t3", "t7", "t9", "t0"]
     assert run.seeded_order(some, 20261110, of_set=everything) == [i for i in full if i in some]
     assert run.seeded_order(everything, 20261110, of_set=everything) == full
+
+
+def test_a_batch_kernel_that_kaggle_refuses_stops_the_run_with_kaggles_own_words(run, tmp_path):
+    """The rerun of November 11 was pushed with the weekly GPU allowance spent. Kaggle refused the kernel, and the
+    runner went on to wait for a kernel that did not exist. A refusal ends the run and says why."""
+    class Refusing:
+        def kernels_push(self, folder, timeout=None):
+            return type("Response", (), {"error": "Maximum weekly GPU quota of 30.00 hours reached."})()
+
+    class Raising:
+        def kernels_push(self, folder, timeout=None):
+            raise RuntimeError("403 Client Error")
+
+    class Accepting:
+        def kernels_push(self, folder, timeout=None):
+            return type("Response", (), {"error": ""})()
+
+    with pytest.raises(SystemExit, match="someone/htlnlp-offrun-x: Kaggle refused the kernel: Maximum weekly GPU quota"):
+        run.push_kernel(Refusing(), tmp_path, 60, "someone/htlnlp-offrun-x")
+    with pytest.raises(SystemExit, match="403 Client Error"):
+        run.push_kernel(Raising(), tmp_path, 60, "someone/htlnlp-offrun-x")
+    assert run.push_kernel(Accepting(), tmp_path, 60, "someone/htlnlp-offrun-x") is None
