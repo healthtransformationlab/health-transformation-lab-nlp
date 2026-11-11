@@ -347,6 +347,13 @@ def run_task(bundle: Path, agent_dir: Path, models, adapters, overrides: dict, o
     return out
 
 
+def server_gone(done: list) -> bool:
+    """True when the last two tasks made no model call and ended in an agent error: the model server has stopped
+    answering, and every further task would only spend the GPU allowance."""
+    last = done[-2:]
+    return len(last) == 2 and all(r.get("llm_call_count") == 0 and bool(r.get("agent_error")) for r in last)
+
+
 def run_batch(root: Path, meta: dict, key: bytes, agent_dir: Path, models, adapters) -> dict:
     """Each task of the batch in turn: open its sealed files, run it, delete them. Stops before a task that could
     not finish inside the kernel's own time budget, so the GPU allowance is never overrun mid-task."""
@@ -390,6 +397,10 @@ def run_batch(root: Path, meta: dict, key: bytes, agent_dir: Path, models, adapt
             for rest in meta["instance_ids"]:
                 runs.setdefault(rest, {"instance_id": rest, "is_skipped": True,
                                        "skip_reason_text": "stopped: the first two tasks failed outright"})
+        if server_gone([r for r in runs.values() if not r.get("is_skipped")]):
+            for rest in meta["instance_ids"]:
+                runs.setdefault(rest, {"instance_id": rest, "is_skipped": True,
+                                       "skip_reason_text": "stopped: two tasks in a row had no answer from the model server"})
         (OUT / "tasks" / iid).mkdir(parents=True, exist_ok=True)
         (OUT / "tasks" / iid / "result.json").write_text(json.dumps(one, indent=1, default=str))
         print(json.dumps({k: v for k, v in one.items() if k not in ("patch", "trace")}, default=str), flush=True)

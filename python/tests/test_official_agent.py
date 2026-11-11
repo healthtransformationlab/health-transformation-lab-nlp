@@ -520,3 +520,48 @@ def test_every_row_of_a_batch_carries_the_kernels_finish_time_as_its_batch_key(r
     row = run.row_for({"instance_id": "a", **done["a"]}, {"resolved": True, "test_exit_code": 0}, "A", "url")
     assert row["run_ts"] == "2026-11-11T17:07:13Z"
     assert row["script_seconds"] is None and row["model_name"] == "m"
+
+
+# --- a model server that stops answering mid-batch (028 AI7, #674: the statement arm's kernel of November 11) --------
+
+def test_a_task_whose_agent_got_no_answer_from_the_model_is_not_run(run):
+    """The pre-registration's rule: a task the kernel did not reach, or whose agent phase did not start, is "not run".
+    With the model server gone a task makes no model call at all and ends at its time limit: no attempt was made, so
+    it has no row and is counted with the tasks the kernel skipped."""
+    res = {"model_name": "m", "finished_ts": "2026-11-11T19:30:00Z", "runs": {
+        "ran": {"instance_id": "ran", "patch": "", "llm_call_count": 12, "tool_call_count": 12,
+                "agent_error": "Agent exceeded session timeout (5.0 min)"},
+        "no_tools": {"instance_id": "no_tools", "patch": "", "llm_call_count": 3, "tool_call_count": 0},
+        "dead": {"instance_id": "dead", "patch": "", "llm_call_count": 0, "tool_call_count": 0,
+                 "agent_error": "Agent exceeded session timeout (5.0 min)"},
+        "refused": {"instance_id": "refused", "patch": "", "llm_call_count": 0, "tool_call_count": 0,
+                    "agent_error": "Sandbox execution error: litellm.InternalServerError: Connection error."},
+        "skipped": {"instance_id": "skipped", "is_skipped": True}}}
+    assert list(run.batch_results(res)) == ["ran", "no_tools"]      # a timeout after real model calls is a run
+    assert run.not_run_reasons(res) == {"dead": "no answer from the model server (no model call)",
+                                       "refused": "no answer from the model server (no model call)",
+                                       "skipped": "not reached by the kernel"}
+
+
+def test_the_kernel_stops_a_batch_when_the_model_server_stops_answering():
+    """Two tasks in a row with no model call and an error: the server is gone, and every further task would only
+    spend the GPU allowance (the kernel of November 11 spent three and a half hours that way)."""
+    gone = _kernel_functions("server_gone")["server_gone"]
+    ok = {"llm_call_count": 9, "tool_call_count": 7}
+    dead = {"llm_call_count": 0, "tool_call_count": 0, "agent_error": "Agent exceeded session timeout (5.0 min)"}
+    assert gone([ok, ok, dead]) is False                              # one could be the task's own trouble
+    assert gone([ok, dead, dead]) is True
+    assert gone([dead, ok, dead]) is False                            # not in a row
+    assert gone([dead, {"error": "RuntimeError: sandbox"}]) is False  # a failure of another kind is its own row
+    assert gone([]) is False
+
+
+def test_a_rerun_keeps_each_tasks_place_in_the_seeded_order_of_the_whole_set(run):
+    """The pre-registration reruns tasks a kernel did not run "with the same settings and order": among themselves
+    they keep the order the seeded shuffle of the whole set gave them."""
+    everything = [f"t{n}" for n in range(12)]
+    full = run.seeded_order(everything, 20261110)
+    assert sorted(full) == sorted(everything) and full != everything
+    some = ["t3", "t7", "t9", "t0"]
+    assert run.seeded_order(some, 20261110, of_set=everything) == [i for i in full if i in some]
+    assert run.seeded_order(everything, 20261110, of_set=everything) == full

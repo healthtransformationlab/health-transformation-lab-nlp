@@ -38,6 +38,7 @@ import shutil
 import subprocess
 import sys
 import time
+from collections import Counter
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -393,20 +394,45 @@ def write_table(pd, rows: list[dict], model: str | None, label: str | None = Non
 
 
 BATCH_SHARED = ("model_name", "server", "versions", "harness_name", "load_seconds", "finished_ts")
+NOT_REACHED = "not reached by the kernel"
+NO_ANSWER = "no answer from the model server (no model call)"
+
+
+def not_run_reasons(res: dict) -> dict[str, str]:
+    """The tasks of a batch that were not run, each with why. The rule is the pre-registration's (spec 028,
+    preregistration-failing-test-report.md, "Exclusions and reruns"): a task the kernel did not reach, or whose
+    agent phase did not start. A task that made no model call at all had no answer from the model server: it ended
+    at its time limit or on a connection error without an attempt. A failure of another kind keeps its row."""
+    out = {}
+    for iid, r in (res.get("runs") or {}).items():
+        if r.get("is_skipped"):
+            out[iid] = NOT_REACHED
+        elif r.get("llm_call_count") == 0 and "error" not in r:
+            out[iid] = NO_ANSWER
+    return out
 
 
 def batch_results(res: dict) -> dict[str, dict]:
     """Each task a batch kernel ran, with what the kernel wrote once for all of them: the model, the server, and its
     finish time, which is each row's batch key (run_ts). The kernel's start is left out, so no row takes the whole
-    kernel's time as its own script_seconds. A task the kernel did not reach is not in it."""
+    kernel's time as its own script_seconds. A task that was not run (not_run_reasons) is not in it."""
     shared = {k: res.get(k) for k in BATCH_SHARED}
-    return {i: {**shared, **r} for i, r in (res.get("runs") or {}).items() if not r.get("is_skipped")}
+    out = not_run_reasons(res)
+    return {i: {**shared, **r} for i, r in (res.get("runs") or {}).items() if i not in out}
+
+
+def seeded_order(ids: list[str], seed: int, of_set: list[str] | None = None) -> list[str]:
+    """The order a batch runs its tasks in: a seeded shuffle of the ids as given. For a rerun of some tasks, `of_set`
+    is the first run's ids as they were given then: each task keeps its place in that run's order."""
+    order = list(of_set if of_set is not None else ids)
+    random.Random(seed).shuffle(order)
+    return [i for i in order if i in set(ids)] if of_set is not None else order
 
 
 def run_batch(a, api, user: str, ids: list[str], tasks: dict, manifest: dict, overrides: dict, pd) -> int:
     """One kernel for every task, in a seeded order, each task sealed until its turn; then verify and tabulate."""
-    order = list(ids)
-    random.Random(a.seed).shuffle(order)
+    first_run = getattr(a, "order_of_ids", None)
+    order = seeded_order(ids, a.seed, [i.strip() for i in first_run.split(",") if i.strip()] if first_run else None)
     development = a.source == "competition"
     name = batch_name(a.source, getattr(a, "label", None))
     kref, work = f"{user}/{kernel_slug(name)}", a.work / name
@@ -461,6 +487,8 @@ def run_batch(a, api, user: str, ids: list[str], tasks: dict, manifest: dict, ov
         if (g := gpu_stats(out / "gpu_samples.csv", done[i].get("started_unix"), done[i].get("ended_unix"))):
             gpu[i] = g
     skipped = [i for i in order if i not in done]
+    why = not_run_reasons(res)
+    reasons = dict(Counter(why.get(i, NOT_REACHED) for i in skipped))
     if development:   # the evaluator verified each patch in the kernel, with the task's tests
         verdicts = {i: v for i, r in done.items() if (v := verdict_from_kernel(r)) is not None}
     else:
@@ -473,9 +501,11 @@ def run_batch(a, api, user: str, ids: list[str], tasks: dict, manifest: dict, ov
         print(table[["instance_id", "tier_code", "is_resolved", "reason_text", "agent_patch_bytes", "tool_call_count",
                      "agent_seconds", "gpu_count", "gpu_name"]].to_string(index=False))
     print(f"\n{int(table.is_resolved.sum()) if len(table) else 0} of {len(table)} resolved, by the competition's "
-          f"evaluator end to end; {len(skipped)} of the {len(order)} drawn were not run: {', '.join(skipped) or 'none'}")
+          f"evaluator end to end; {len(skipped)} of the {len(order)} drawn were not run: {', '.join(skipped) or 'none'}"
+          + (f" ({'; '.join(f'{k}: {v}' for k, v in reasons.items())})" if skipped else ""))
     (work / "run_summary.json").write_text(json.dumps(
-        {"seed": a.seed, "order": order, "run": list(done), "not_run": skipped, "session_seconds": round(session, 1),
+        {"seed": a.seed, "order": order, "run": list(done), "not_run": skipped, "not_run_reasons": reasons,
+         "session_seconds": round(session, 1),
          "gpu": gpu, "is_traced": bool(res.get("is_traced")),
          "kernel": {k: v for k, v in res.items() if k != "runs"}}, indent=1, default=str))
     if not a.no_table and rows:
@@ -493,6 +523,8 @@ def run_batch(a, api, user: str, ids: list[str], tasks: dict, manifest: dict, ov
             settings["notes"] += a.note or []
             if getattr(a, "context_note", None):
                 settings["context"] = a.context_note
+            if skipped:   # the plan's "not run": kept beside the table, since those tasks have no row in it
+                settings["not_run"] = {"task_count": len(skipped), "reason_counts": reasons, "instance_ids": skipped}
             path.with_name(path.stem + "_settings.json").write_text(json.dumps(settings, indent=1) + "\n")
     return 0
 
@@ -517,6 +549,8 @@ def main() -> int:
     ap.add_argument("--kernel-minutes", type=int, default=45, help="Kaggle stops a kernel after this long")
     ap.add_argument("--work", type=Path, default=Path(os.environ.get("TMPDIR", "/tmp")) / "htl_official_agent")
     ap.add_argument("--no-table", action="store_true", help="a pilot: print the rows, write no table")
+    ap.add_argument("--order-of-ids", help="with --batch, for a rerun of tasks a first kernel did not run: that run's "
+                                           "ids as given then, comma-separated; each task keeps its place in its order")
     ap.add_argument("--note", action="append", help="a sentence to add to the settings file's notes (repeatable)")
     ap.add_argument("--outside-sample", action="store_true",
                     help="these tasks are not part of the drawn sample (a pilot): their rows say so")
