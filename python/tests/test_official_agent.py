@@ -409,3 +409,45 @@ def test_the_runner_asks_the_kernel_for_telemetry_only_with_the_switch(run):
     A.telemetry = True
     assert run.batch_meta(A, {"max_time_minutes": 5.0}) == {"budget_overrides": {"max_time_minutes": 5.0},
                                                             "deadline_minutes": 45.0, "seed": 7, "telemetry": True}
+
+
+# --- the controls on the development set: the reference patch and an empty one (028 AI4, #668) ---------------------
+
+@pytest.fixture(scope="module")
+def controls():
+    return _load("official_controls_run")
+
+
+def test_the_controls_kernel_runs_on_a_cpu_offline_beside_the_competition_and_the_evaluator(controls):
+    meta = controls.kernel_metadata("someone", "gemma-4-developer-agent", "gcr.io/kaggle-private-byod/python@sha256:x")
+    assert meta["id"] == "someone/htlnlp-offrun-devset-controls" and meta["is_private"] is True
+    assert meta["enable_gpu"] is False and meta["enable_internet"] is False and meta["model_sources"] == []
+    assert meta["competition_sources"] == ["gemma-4-developer-agent"]
+    assert meta["dataset_sources"] == ["someone/htlnlp-official-devset-controls", controls.WHEELHOUSE]
+    assert meta["docker_image"].endswith("sha256:x")
+
+
+def test_the_controls_bundle_holds_the_submission_the_verifier_and_the_ids(controls, tmp_path):
+    out = controls.build_bundle(["rich_2", "fastapi_9"], _submission(tmp_path), tmp_path / "b", "someone")
+    names = {p.relative_to(out).as_posix() for p in out.rglob("*") if p.is_file()}
+    assert names == {"controls.json", "official_verify.py", "submission/agent.yaml", "submission/eval_config.yaml",
+                     "submission/prompts/system.md", "dataset-metadata.json"}
+    meta = json.loads((out / "controls.json").read_text())
+    assert meta["instance_ids"] == ["rich_2", "fastapi_9"] and meta["kinds"] == ["oracle", "null"]
+    assert (out / "official_verify.py").read_text() == (REPO_ROOT / "kaggle" / "official_verify.py").read_text()
+
+
+def test_a_control_row_keeps_the_verdict_and_never_the_test_output(controls):
+    row = controls.row_for({"instance_id": "rich_2", "patch_kind": "oracle", "resolved": True, "test_exit_code": 0,
+                            "error": None, "seconds": 41.2, "output_tail": "def test(): the repo's test output"},
+                           "2026-11-11T14:00:00Z")
+    assert row == {"instance_id": "rich_2", "patch_source_code": "reference", "is_resolved": True,
+                   "test_exit_code": 0, "error_text": None, "verify_seconds": 41.2, "run_ts": "2026-11-11T14:00:00Z"}
+    assert controls.row_for({"instance_id": "x", "patch_kind": "null", "resolved": False, "test_exit_code": 1,
+                             "error": "E" * 900, "seconds": 3}, "t")["error_text"] == "E" * 200
+
+
+def test_the_controls_kernel_verifies_from_the_competitions_own_folder():
+    src = (REPO_ROOT / "kaggle" / "official_controls_kernel.py").read_text()
+    assert 'str(comp / "tasks.jsonl")' in src and 'str(comp / "snapshots")' in src   # wheels/ and sandbox/ beside them
+    assert '"--patch", kind' in src and "install_wheelhouse()" in src
