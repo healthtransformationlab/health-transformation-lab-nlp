@@ -42,11 +42,14 @@ def test_each_task_is_one_row_with_both_arms_and_a_task_missing_from_an_arm_is_k
     a, _, c = rows
     assert (a["is_statement_resolved"], a["is_report_resolved"], a["is_pair_run"]) == (False, True, True)
     assert (a["is_import_error"], a["is_screen_pass"], a["context_chars"]) == (True, False, 300)
-    assert (a["statement_agent_patch_bytes"], a["report_agent_patch_bytes"]) == (10, 40)
+    assert (a["statement_arm_agent_patch_bytes"], a["report_arm_agent_patch_bytes"]) == (10, 40)
     assert c["is_pair_run"] is False and c["is_report_resolved"] is None
     assert all(not isinstance(v, str) or k in ("instance_id", "tier_code") for r in rows for k, v in r.items())
     graph = cp.pair_rows(["a"], statement, report, flags, arm="graph")[0]    # the arm names its own columns
     assert graph["is_graph_resolved"] is True and "is_report_resolved" not in graph
+    # the graph arm's tool calls, and its calls to a graph tool, are two columns that cannot be mistaken for each other
+    assert (graph["graph_arm_tool_call_count"], graph["graph_arm_graph_tool_call_count"]) == (5, 1)
+    assert "graph_tool_call_count" not in graph
 
 
 def test_the_summary_counts_each_arm_the_discordant_pairs_what_was_left_out_and_each_split(cp):

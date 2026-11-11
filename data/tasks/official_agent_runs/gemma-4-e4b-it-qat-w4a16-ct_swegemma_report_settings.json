@@ -195,10 +195,10 @@
  ],
  "notes": [
   "The agent loop, the model server and the verification are the competition's: swegemma's Evaluator.evaluate_task (subprocess sandbox), vLLM from the competition's wheelhouse dataset, and swegemma's verify_task, following the competition's starter notebook.",
-  "Each task ran alone in a private, offline kernel beside a bundle with no reference patch and no tests, so the evaluator's verification had nothing to verify there. The patch was verified afterwards with the same evaluator's verify_task against the published snapshot and the task's tests.",
+  "All 93 tasks were given to one private, offline kernel, each sealed until its turn, beside a bundle with no reference patch and no tests, so the evaluator's verification had nothing to verify there. The patch was verified afterwards with the same evaluator's verify_task against the published snapshot and the task's tests.",
   "The number format follows the GPU: bfloat16 on compute capability 8.0 or above, float16 below.",
   "The report arm of the pre-registered run of November 11, 2026 (issue 674): each task with its failing test's report after its hints. The report comes from the task's hidden test: a test-first workflow's context, not a benchmark condition. The owner asked for this run.",
-  "The kernel was launched at 14:44 UTC. The session's machine restarted at 17:03 UTC and the first collector was lost with it; this table was collected from the finished kernel afterwards (--collect). Nothing about the kernel's run changed.",
+  "The kernel started at 14:42 UTC and ended at 17:07 UTC. The session's machine restarted at 17:03 UTC and the first collector was lost with it; this table was collected from the finished kernel afterwards (--collect). Nothing about the kernel's run changed.",
   "Each patch was verified on the collecting machine by the competition's evaluator, installed there on November 11, 2026 from the competition's wheelhouse (swegemma 0.2.11, adk-submission 0.2.13, adk-eval-core 0.1.0), after its two controls on the published files gave the committed verdicts on that machine: the reference patch resolved 93 of 93 tasks and an empty patch 0 of 93."
  ],
  "context": {

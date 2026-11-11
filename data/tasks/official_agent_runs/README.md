@@ -174,8 +174,8 @@ the run, and for a controlled experiment on graph retrieval.
 **In short.** The two arms with added context ran all 93 tasks and resolved 4 (`graph`) and 5 (`report`). The
 `statement` arm, the baseline, lost its model server after 21 tasks, and the rerun the plan provides for could
 not run, so the experiment cannot say whether either context helps: the paired tests have 21 pairs and nothing
-resolved in them. What the runs do show is which tasks get resolved: 7 of the 8 tasks either arm resolved are in
-the core split of 17.
+resolved in them. Described only, as the plan names the core split: 7 of the 8 tasks either arm resolved are
+among its 17 tasks.
 
 | Arm | The task's text | Table |
 |---|---|---|
@@ -191,9 +191,11 @@ by the competition's own `verify_task` on the published snapshot with the task's
 (`kaggle/official_verify.py`). The two contexts are built by `python/scripts/69_failure_report.py` and
 `python/scripts/72_graph_context.py`; their text is not committed, their shapes are
 (`data/tasks/failure_report_shape.csv`, `data/tasks/graph_context_shape.csv`), and each arm's `_settings.json`
-gives its context file's SHA-256, which is the one its plan pinned. The kernel's own trace of every task in the
-`graph` and `report` arms holds the first line of that arm's context, and no trace holds the other arm's
-(checked on the kernels' output, which is not committed).
+gives its context file's SHA-256, which is the one its plan pinned. The report's list of functions is every
+public function the task's test files called, passing tests included, in order of name and cut to the first 15
+(the list is longer in 14 reports). The kernel's own trace of every task in the `graph` and `report` arms holds
+the first line of that arm's context, and no trace holds the other arm's (checked on the kernels' output, which
+is not committed).
 
 ## Result
 
@@ -213,15 +215,24 @@ at its 5-minute limit, and later on a connection error: the model server in that
 and the kernel went on to its own deadline. By the plan's rule ("a task a kernel did not reach, or whose agent
 phase did not start, is not run"), the 60 tasks with no model call and the 12 the kernel did not reach are not
 run. They have no row; `gemma-4-e4b-it-qat-w4a16-ct_swegemma_statement_settings.json` lists all 72 with the
-reason for each (`not_run`). This was recorded on issue 674 at 19:01 UTC, from the kernel's live log, before the
-kernel ended and before any of its patches was verified.
+reason for each, how it ended and after how long (`not_run`): 33 at the 5-minute limit, 27 on a server error,
+over 234 minutes of the kernel's time. This was recorded on issue 674 at 19:01 UTC, from the kernel's live log,
+before the kernel ended and before any of its patches was verified.
+
+"No model call, ended at the time limit or on a server error" is this project's reading of "agent phase did not
+start", and it was written into the runner at 19:00 UTC, after the `report` arm had been collected (17:35 UTC)
+and before the other two were. It cannot change what is claimed. Under the other reading, with all 72 counted as
+tasks the baseline failed, `graph` would have 4 discordant pairs, all one way (p = 0.125) and `report` would
+have 5 discordant pairs, all one way (p = 0.0625): still no difference at p < 0.05.
 
 The plan provides one more kernel for such tasks, once, with the same settings and order. It was pushed at 19:30
 UTC, and again at 19:33 to read the answer the first push's code had not kept. Kaggle refused it: "Maximum
-weekly GPU quota of 30.00 hours reached." The account's weekly GPU allowance was spent (33.69 of 30 hours by
-Kaggle's own count), and it resets on November 14, 2026. A four-L4 session is charged at twice its wall-clock
-time, and the first kernel ran about three and a half hours with a dead server. So the pairs below are the tasks
-both arms ran, and the rest are left out and counted, as the plan says. The rerun is still owed: issue 681.
+weekly GPU quota of 30.00 hours reached." The account's weekly GPU allowance was spent, and it resets on
+November 14, 2026. By the account's own quota readings (`kaggle quota`: 15.66 hours used at 14:46 UTC, 31.84 at
+18:51 with two four-L4 sessions running almost throughout, 33.69 when both had ended) a four-L4 session counted
+about two hours for each hour it ran, and the first kernel ran almost four hours with a dead server. So the
+pairs below are the tasks both arms ran, and the rest are left out and counted, as the plan says. The rerun is
+still owed: issue 681.
 
 Three changes to the runner came out of it, each with a test. `kaggle/official_agent_run.py` applies the plan's
 rule itself: a task with no model call has no row and is listed as not run. The kernel stops a batch when two
@@ -256,19 +267,21 @@ The plan names these as descriptions. None is a test, and none is evidence that 
   settings and resolved 0; today's arm took 21 and resolved 0. 4 tasks are in both, so that is 41 runs over 37
   tasks with nothing resolved. Those 37 hold 4 of the core split's 17 tasks. On the same 37 tasks `graph`
   resolved 1 (`htlnlp_pr31`) and `report` 0. The two days are not one run, so this is not a paired test.
-- **The same tasks, resolved without either context.** Of the 8 tasks the two arms resolved, 5 had already been
-  resolved from the statement alone by an earlier run under another harness or budget (`htlnlp_116`,
-  `htlnlp_143`, `htlnlp_174`, `htlnlp_187`, `htlnlp_226`: `data/tasks/agent_runs/gemma-4-e4b-it_kaggle.csv`,
-  `data/tasks/agent_reruns/gemma-4-e4b-it_larger_budget.csv` and the pilot row of
-  `gemma-4-e4b-it-qat-w4a16-ct_swegemma.csv`). So a task resolved in an arm is not a task its context was needed
-  for. Over every run of this model on these tasks, 9 different tasks have been resolved, 8 of them in the core
-  split.
+- **The same tasks, resolved without either context.** Of the 8 tasks the two arms resolved, 6 had already been
+  resolved from the statement alone by an earlier run under another harness, budget or checkpoint (`htlnlp_116`,
+  `htlnlp_143`, `htlnlp_144`, `htlnlp_174`, `htlnlp_187`, `htlnlp_226`:
+  `data/tasks/agent_runs/gemma-4-e4b-it_kaggle.csv`, `data/tasks/agent_reruns/gemma-4-e4b-it_graph_tools.csv`,
+  `gemma-4-e4b-it_larger_budget.csv` and the pilot row of `gemma-4-e4b-it-qat-w4a16-ct_swegemma.csv`; the first
+  three ran `gemma-4-e4b-it` on the local harness). So a task resolved in an arm is not shown to be one its
+  context was needed for. Over every run of this model on these tasks, 9 different tasks have been resolved, 8
+  of them in the core split.
 - **On the 21 tasks all three arms ran**, a task took on average `statement` 9.9 tool calls, 125k prompt tokens
   and 105 agent seconds; `graph` 9.5 tool calls, 119k prompt tokens and 89 agent seconds; `report` 5.8 tool
-  calls, 81k prompt tokens and 75 agent seconds. With the report the agent stopped sooner; it did not resolve
-  more.
+  calls, 81k prompt tokens and 75 agent seconds. No arm resolved any of the 21, and one draw of 21 tasks does
+  not say why the runs differ.
 
-What the agent did in each arm, over the tasks it ran:
+What the agent did in each arm, over the tasks it ran. `statement` is over its 21 tasks and the other two over
+93, so the columns are not like for like; the line above sets the three arms on the same tasks.
 
 | | `statement` | `graph` | `report` |
 |---|---|---|---|
@@ -293,7 +306,7 @@ What the agent did in each arm, over the tasks it ran:
 Each kernel kept the agent framework's OpenTelemetry spans (names, counts and seconds; no prompt or reply) and
 sampled its GPUs every five seconds. `python/scripts/71_run_telemetry.py` rolls them up as self time, so each
 second of a task is counted once (`..._sections.csv`, `..._task_sections.csv`, `..._gpu.csv` beside each arm's
-table). The tables cover the tasks each arm ran, so `statement` covers its 21.
+table). The tables cover the tasks each arm ran, so `statement` covers its 21: again not like for like.
 
 | Share of the tasks' time | `statement` | `graph` | `report` |
 |---|---|---|---|
@@ -321,11 +334,12 @@ development-set run before them used the account's whole weekly allowance.
 
 The patches were verified on the machine that collected the kernels, where the competition's evaluator was
 installed that day from its wheelhouse (`swegemma` 0.2.11, `adk-submission` 0.2.13, `adk-eval-core` 0.1.0).
-Before any patch was scored, its two controls ran there on the published files (`context_run_controls.csv`, from
-`kaggle/official_verify.py --patch oracle` and `--patch null`): the reference patch resolved 93 of 93 and an
-empty patch 0 of 93. That is the verdict of `data/tasks/official_verifier/published_verification.csv` in all 186
-of 186 rows; the exit code is the same in 184 (the other 2, both empty patches, end in a failed test here and in
-a collection error there). The `report` arm's patches were verified twice, in two collections of the same
+Before any patch was scored, its two controls ran there on the published files (`context_run_controls.csv`: each
+row is a line of `kaggle/official_verify.py --patch oracle` or `--patch null`, shaped by
+`official_controls_run.row_for`; no single command writes the file): the reference patch resolved 93 of 93 and
+an empty patch 0 of 93. That is the verdict of `data/tasks/official_verifier/published_verification.csv` in all
+186 of 186 rows; the exit code is the same in 184 (the other 2, both empty patches, end in a failed test here
+and in a collection error there). The `report` arm's patches were verified twice, in two collections of the same
 kernel, with the same verdict on all 93.
 
 The session's machine restarted at 17:03 UTC while the first two kernels were running. Kaggle's kernels were not

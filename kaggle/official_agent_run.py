@@ -266,7 +266,9 @@ def settings_for(result: dict, seed: int | None, drawn: list[str], pool_count: i
              "reference patch staged beside the agent; the evaluator verified each patch there with the task's tests, "
              "as the competition's own run does. Tool calls naming a path outside the workspace are counted in "
              "outside_workspace_call_count.") if development else
-            ("Each task ran alone in a private, offline kernel beside a bundle with no reference patch and no tests, "
+            ((f"All {tasks_per_kernel} tasks were given to one private, offline kernel, each sealed until its turn, beside a "
+              "bundle" if tasks_per_kernel > 1 else "Each task ran alone in a private, offline kernel beside a bundle")
+             + " with no reference patch and no tests, "
              "so the evaluator's verification had nothing to verify there. The patch was verified afterwards with "
              "the same evaluator's verify_task against the published snapshot and the task's tests."),
             "The number format follows the GPU: bfloat16 on compute capability 8.0 or above, float16 below.",
@@ -396,20 +398,47 @@ def write_table(pd, rows: list[dict], model: str | None, label: str | None = Non
 BATCH_SHARED = ("model_name", "server", "versions", "harness_name", "load_seconds", "finished_ts")
 NOT_REACHED = "not reached by the kernel"
 NO_ANSWER = "no answer from the model server (no model call)"
+NO_ANSWER_KINDS = {"time_limit": ("session timeout",),
+                   "server_error": ("InternalServerError", "Connection error", "APIConnectionError", "ServiceUnavailable")}
+
+
+def error_kind(text: str | None) -> str | None:
+    """How an agent phase that made no model call ended, when the model server was the cause: at the task's time
+    limit, or on a server or connection error. None for any other error, such as a fault in the submission's own
+    prompt, which is the agent's and keeps its row."""
+    return next((kind for kind, marks in NO_ANSWER_KINDS.items() if any(m in (text or "") for m in marks)), None)
 
 
 def not_run_reasons(res: dict) -> dict[str, str]:
     """The tasks of a batch that were not run, each with why. The rule is the pre-registration's (spec 028,
     preregistration-failing-test-report.md, "Exclusions and reruns"): a task the kernel did not reach, or whose
-    agent phase did not start. A task that made no model call at all had no answer from the model server: it ended
-    at its time limit or on a connection error without an attempt. A failure of another kind keeps its row."""
+    agent phase did not start. A task that made no model call at all and ended at its time limit or on a server
+    error had no answer from the model server: no attempt was made. Any other failure keeps its row, so an arm
+    whose own text breaks the prompt does not lose those tasks from its count."""
     out = {}
     for iid, r in (res.get("runs") or {}).items():
         if r.get("is_skipped"):
             out[iid] = NOT_REACHED
-        elif r.get("llm_call_count") == 0 and "error" not in r:
+        elif r.get("llm_call_count") == 0 and "error" not in r and error_kind(r.get("agent_error")):
             out[iid] = NO_ANSWER
     return out
+
+
+def not_run_rows(res: dict, order: list[str]) -> list[dict]:
+    """One record per task not run, in the run's order, for the settings file beside the table: the reason, and for
+    a task with no answer from the model server how it ended and after how long. The exclusion can then be checked
+    from committed files."""
+    why, runs = not_run_reasons(res), res.get("runs") or {}
+    rows = []
+    for iid in order:
+        if iid in runs and iid not in why:
+            continue
+        no_answer = why.get(iid) == NO_ANSWER
+        r = runs.get(iid) or {}
+        rows.append({"instance_id": iid, "reason_text": why.get(iid, NOT_REACHED),
+                     "error_kind_code": error_kind(r.get("agent_error")) if no_answer else None,
+                     "agent_seconds": r.get("agent_phase_seconds") if no_answer else None})
+    return rows
 
 
 def batch_results(res: dict) -> dict[str, dict]:
@@ -425,8 +454,30 @@ def seeded_order(ids: list[str], seed: int, of_set: list[str] | None = None) -> 
     """The order a batch runs its tasks in: a seeded shuffle of the ids as given. For a rerun of some tasks, `of_set`
     is the first run's ids as they were given then: each task keeps its place in that run's order."""
     order = list(of_set if of_set is not None else ids)
+    if of_set is not None and (missing := [i for i in ids if i not in set(of_set)]):
+        raise SystemExit(f"--order-of-ids: not in the first run: {', '.join(missing)}")
     random.Random(seed).shuffle(order)
     return [i for i in order if i in set(ids)] if of_set is not None else order
+
+
+def order_record(first_run_ids: list[str]) -> dict:
+    """What the settings keep of a rerun's order: how many ids the first run was given, and their hash in the
+    sequence given, so the order can be rebuilt and checked."""
+    return {"of_ids_count": len(first_run_ids), "of_ids_sha256": hashlib.sha256(",".join(first_run_ids).encode()).hexdigest()}
+
+
+def check_arm_options(label: str | None, context, batch: bool, development: bool) -> None:
+    """--label and --context are for a batch of the published tasks, and a context needs a label: without one a
+    batch writes to the table of the run of November 10, and a run with added context is another condition."""
+    if (label or context) and (not batch or development):
+        sys.exit("--label and --context are for a batch of the published tasks: they need --batch, not --source competition")
+    if context and not label:
+        sys.exit("--context needs --label: a run with added context is its own condition and writes its own table")
+
+
+def reusable_output(out: Path, reuse: bool) -> bool:
+    """True when a collection was asked to reuse a kernel's output that is already in `out`."""
+    return bool(reuse) and (Path(out) / "result.json").exists()
 
 
 def push_kernel(api, folder: Path, timeout_seconds: int, ref: str) -> None:
@@ -443,7 +494,8 @@ def push_kernel(api, folder: Path, timeout_seconds: int, ref: str) -> None:
 def run_batch(a, api, user: str, ids: list[str], tasks: dict, manifest: dict, overrides: dict, pd) -> int:
     """One kernel for every task, in a seeded order, each task sealed until its turn; then verify and tabulate."""
     first_run = getattr(a, "order_of_ids", None)
-    order = seeded_order(ids, a.seed, [i.strip() for i in first_run.split(",") if i.strip()] if first_run else None)
+    first_ids = [i.strip() for i in first_run.split(",") if i.strip()] if first_run else None
+    order = seeded_order(ids, a.seed, first_ids)
     development = a.source == "competition"
     name = batch_name(a.source, getattr(a, "label", None))
     kref, work = f"{user}/{kernel_slug(name)}", a.work / name
@@ -476,18 +528,21 @@ def run_batch(a, api, user: str, ids: list[str], tasks: dict, manifest: dict, ov
             shutil.rmtree(k)   # the keyed copy does not stay on this machine either, whatever Kaggle answered
         print(f"the evaluator on a Kaggle GPU, {kref}", flush=True)
     t0, status = time.monotonic(), ""
-    while True:
-        time.sleep(POLL_SECONDS)
-        try:
-            status = str(api.kernels_status(kref).status).lower()
-        except Exception:  # noqa: BLE001, S112 - a blip; the next poll tells
-            continue
-        if any(s in status for s in ("complete", "error", "cancel")):
-            break
-    session = time.monotonic() - t0
     out = work / "output"
-    out.mkdir(parents=True, exist_ok=True)
-    api.kernels_output(kref, str(out), force=True)
+    if a.collect and reusable_output(out, getattr(a, "reuse_output", False)):
+        status = "complete (its output was already downloaded)"
+    else:
+        while True:
+            time.sleep(POLL_SECONDS)
+            try:
+                status = str(api.kernels_status(kref).status).lower()
+            except Exception:  # noqa: BLE001, S112 - a blip; the next poll tells
+                continue
+            if any(s in status for s in ("complete", "error", "cancel")):
+                break
+        out.mkdir(parents=True, exist_ok=True)
+        api.kernels_output(kref, str(out), force=True)
+    session = time.monotonic() - t0
     res = json.loads((out / "result.json").read_text()) if (out / "result.json").exists() else {
         "error": f"kernel ended {status} and wrote no result.json"}
     print(f"kernel {status} after {session / 60:.1f} min; GPUs {(res.get('server') or {}).get('gpus') or res.get('gpus_seen')}"
@@ -536,8 +591,11 @@ def run_batch(a, api, user: str, ids: list[str], tasks: dict, manifest: dict, ov
             settings["notes"] += a.note or []
             if getattr(a, "context_note", None):
                 settings["context"] = a.context_note
+            if first_ids:
+                settings["sample"]["order_of"] = order_record(first_ids)
             if skipped:   # the plan's "not run": kept beside the table, since those tasks have no row in it
-                settings["not_run"] = {"task_count": len(skipped), "reason_counts": reasons, "instance_ids": skipped}
+                settings["not_run"] = {"task_count": len(skipped), "reason_counts": reasons, "instance_ids": skipped,
+                                       "tasks": not_run_rows(res, order)}
             path.with_name(path.stem + "_settings.json").write_text(json.dumps(settings, indent=1) + "\n")
     return 0
 
@@ -562,6 +620,8 @@ def main() -> int:
     ap.add_argument("--kernel-minutes", type=int, default=45, help="Kaggle stops a kernel after this long")
     ap.add_argument("--work", type=Path, default=Path(os.environ.get("TMPDIR", "/tmp")) / "htl_official_agent")
     ap.add_argument("--no-table", action="store_true", help="a pilot: print the rows, write no table")
+    ap.add_argument("--reuse-output", action="store_true",
+                    help="with --batch --collect: use the kernel's output already in the work folder, without downloading it again")
     ap.add_argument("--order-of-ids", help="with --batch, for a rerun of tasks a first kernel did not run: that run's "
                                            "ids as given then, comma-separated; each task keeps its place in its order")
     ap.add_argument("--note", action="append", help="a sentence to add to the settings file's notes (repeatable)")
@@ -598,8 +658,7 @@ def main() -> int:
     missing = [i for i in ids if i not in tasks or (not development and not (a.dataset / "snapshots" / f"{i}.tgz").exists())]
     if missing:
         sys.exit(f"not in the tasks.jsonl given, or no snapshot: {', '.join(missing)}")
-    if (a.label or a.context) and (not a.batch or development):
-        sys.exit("--label and --context are for a batch of the published tasks: they need --batch, not --source competition")
+    check_arm_options(a.label, a.context, a.batch, development)
     batch_name(a.source, a.label)   # a bad label fails here, before anything is uploaded
     a.context_note = None
     if a.context:

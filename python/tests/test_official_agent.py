@@ -165,6 +165,11 @@ def test_the_settings_say_how_the_sample_was_drawn_and_what_differs_from_the_com
     assert diffs["max_tool_calls"]["used"] == 40 and diffs["max_tool_calls"]["competition_default"] == 100
     assert diffs["timeout_seconds"]["used"] == 120 and "max_output_tokens" not in diffs     # the same as the default
     assert any("no reference patch" in n for n in s["notes"])
+    assert any(n.startswith("Each task ran alone in a private, offline kernel") for n in s["notes"])
+    batch = run.settings_for(result, seed=7, drawn=["a", "b"], pool_count=93, machine_shape="NvidiaL4", docker_image="img",
+                             competition="gemma-4-developer-agent", agent_commit="abc123", tasks_per_kernel=2)
+    assert not any("Each task ran alone in a private, offline kernel" in n for n in batch["notes"])
+    assert any(n.startswith("All 2 tasks were given to one private, offline kernel, each sealed until its turn") for n in batch["notes"])
 
 
 # --- a batch: several tasks in one kernel, each sealed until its turn (the GPU allowance decides, #636) -----------
@@ -535,12 +540,24 @@ def test_a_task_whose_agent_got_no_answer_from_the_model_is_not_run(run):
         "dead": {"instance_id": "dead", "patch": "", "llm_call_count": 0, "tool_call_count": 0,
                  "agent_error": "Agent exceeded session timeout (5.0 min)"},
         "refused": {"instance_id": "refused", "patch": "", "llm_call_count": 0, "tool_call_count": 0,
+                    "agent_phase_seconds": 104.7,
                     "agent_error": "Sandbox execution error: litellm.InternalServerError: Connection error."},
+        "prompt": {"instance_id": "prompt", "patch": "", "llm_call_count": 0, "tool_call_count": 0,
+                   "agent_error": "Context variable not found: `hints`."},
         "skipped": {"instance_id": "skipped", "is_skipped": True}}}
-    assert list(run.batch_results(res)) == ["ran", "no_tools"]      # a timeout after real model calls is a run
+    res["runs"]["dead"]["agent_phase_seconds"] = 300.8
+    # a timeout after real model calls is a run; so is a task whose own prompt failed before any call (the hints
+    # defect of November 10): an arm whose added text broke the prompt must not lose those tasks from its count
+    assert list(run.batch_results(res)) == ["ran", "no_tools", "prompt"]
     assert run.not_run_reasons(res) == {"dead": "no answer from the model server (no model call)",
                                        "refused": "no answer from the model server (no model call)",
                                        "skipped": "not reached by the kernel"}
+    assert run.not_run_rows(res, ["skipped", "refused", "ran", "dead"]) == [     # in the run's order, each with how it ended
+        {"instance_id": "skipped", "reason_text": "not reached by the kernel", "error_kind_code": None, "agent_seconds": None},
+        {"instance_id": "refused", "reason_text": "no answer from the model server (no model call)",
+         "error_kind_code": "server_error", "agent_seconds": 104.7},
+        {"instance_id": "dead", "reason_text": "no answer from the model server (no model call)",
+         "error_kind_code": "time_limit", "agent_seconds": 300.8}]
 
 
 def test_the_kernel_stops_a_batch_when_the_model_server_stops_answering():
@@ -554,6 +571,10 @@ def test_the_kernel_stops_a_batch_when_the_model_server_stops_answering():
     assert gone([dead, ok, dead]) is False                            # not in a row
     assert gone([dead, {"error": "RuntimeError: sandbox"}]) is False  # a failure of another kind is its own row
     assert gone([]) is False
+    refused = {"llm_call_count": 0, "agent_error": "Sandbox execution error: litellm.InternalServerError: Connection error."}
+    assert gone([ok, dead, refused]) is True
+    prompt = {"llm_call_count": 0, "tool_call_count": 0, "agent_error": "Context variable not found: `hints`."}
+    assert gone([ok, prompt, prompt]) is False                        # the server is alive: the submission's own fault
 
 
 def test_a_rerun_keeps_each_tasks_place_in_the_seeded_order_of_the_whole_set(run):
@@ -565,6 +586,10 @@ def test_a_rerun_keeps_each_tasks_place_in_the_seeded_order_of_the_whole_set(run
     some = ["t3", "t7", "t9", "t0"]
     assert run.seeded_order(some, 20261110, of_set=everything) == [i for i in full if i in some]
     assert run.seeded_order(everything, 20261110, of_set=everything) == full
+    with pytest.raises(SystemExit, match="not in the first run: zz"):
+        run.seeded_order(["t3", "zz"], 20261110, of_set=everything)
+    assert run.order_record(everything) == {"of_ids_count": 12, "of_ids_sha256": run.order_record(everything)["of_ids_sha256"]}
+    assert len(run.order_record(everything)["of_ids_sha256"]) == 64 and run.order_record(some) != run.order_record(everything)
 
 
 def test_a_batch_kernel_that_kaggle_refuses_stops_the_run_with_kaggles_own_words(run, tmp_path):
@@ -587,3 +612,25 @@ def test_a_batch_kernel_that_kaggle_refuses_stops_the_run_with_kaggles_own_words
     with pytest.raises(SystemExit, match="403 Client Error"):
         run.push_kernel(Raising(), tmp_path, 60, "someone/htlnlp-offrun-x")
     assert run.push_kernel(Accepting(), tmp_path, 60, "someone/htlnlp-offrun-x") is None
+
+
+def test_a_context_needs_a_label_so_its_rows_never_join_another_runs_table(run):
+    """Without a label a batch writes to the table of the run of November 10. A run with added context is a different
+    condition: it must name its own table."""
+    with pytest.raises(SystemExit, match="--context needs --label"):
+        run.check_arm_options(label=None, context="contexts.jsonl", batch=True, development=False)
+    with pytest.raises(SystemExit, match="need --batch"):
+        run.check_arm_options(label="report", context="contexts.jsonl", batch=False, development=False)
+    with pytest.raises(SystemExit, match="need --batch"):
+        run.check_arm_options(label="report", context=None, batch=True, development=True)
+    run.check_arm_options(label="report", context="contexts.jsonl", batch=True, development=False)
+    run.check_arm_options(label="statement", context=None, batch=True, development=False)
+    run.check_arm_options(label=None, context=None, batch=False, development=False)
+
+
+def test_a_collection_can_reuse_output_already_downloaded(run, tmp_path):
+    """Collecting again (new settings, a corrected note) need not download the kernel's output a second time."""
+    assert run.reusable_output(tmp_path, True) is False              # nothing there yet
+    (tmp_path / "result.json").write_text("{}")
+    assert run.reusable_output(tmp_path, True) is True
+    assert run.reusable_output(tmp_path, False) is False             # only when asked

@@ -54,7 +54,8 @@ def _value(v):
 
 def pair_rows(ids: list[str], statement: pd.DataFrame, other: pd.DataFrame, flags: pd.DataFrame, arm: str) -> list[dict]:
     """One row per pre-registered task: both arms' verdicts and measures, and the task's flags for the splits. A task
-    missing from an arm's table was not run in it: the row stays, with `is_pair_run` false."""
+    missing from an arm's table was not run in it: the row stays, with `is_pair_run` false. A measure's column is
+    `<arm>_arm_<measure>`, so the graph arm's tool calls are not mistaken for calls to a graph tool."""
     arms = {"statement": statement.set_index("instance_id"), arm: other.set_index("instance_id")}
     flags = flags.set_index("instance_id")
     rows = []
@@ -68,7 +69,7 @@ def pair_rows(ids: list[str], statement: pd.DataFrame, other: pd.DataFrame, flag
             row[f"is_{name}_resolved"] = bool(t.loc[iid, "is_resolved"]) if ran[name] else None
         for m in MEASURES:
             for name, t in arms.items():
-                row[f"{name}_{m}"] = _value(t.loc[iid, m]) if ran[name] and m in t.columns else None
+                row[f"{name}_arm_{m}"] = _value(t.loc[iid, m]) if ran[name] and m in t.columns else None
         rows.append(row)
     return rows
 
@@ -133,7 +134,7 @@ def task_flags(arm: str) -> pd.DataFrame:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--arm", required=True, choices=sorted(SHAPES), help="the arm to set beside the statement arm")
-    ap.add_argument("--ids", help="the pre-registered ids, comma-separated (default: every task in the statement arm's table)")
+    ap.add_argument("--ids", help="the pre-registered ids, comma-separated (default: every published task)")
     a = ap.parse_args()
     statement = pd.read_csv(RUNS / f"{MODEL}_swegemma_statement.csv")
     other = pd.read_csv(RUNS / f"{MODEL}_swegemma_{a.arm}.csv")
@@ -145,8 +146,8 @@ def main() -> int:
     frame.to_csv(out, index=False)
     s = summary(rows, a.arm, FLAGS[a.arm] + COMMON_FLAGS)
     pairs = frame[frame.is_pair_run]
-    means = {f"{name}_{m}": round(float(pairs[f"{name}_{m}"].mean()), 1) for m in MEASURES for name in ("statement", a.arm)
-             if len(pairs) and pairs[f"{name}_{m}"].notna().any()}
+    means = {f"{name}_arm_{m}": round(float(pairs[f"{name}_arm_{m}"].mean()), 1) for m in MEASURES
+             for name in ("statement", a.arm) if len(pairs) and pairs[f"{name}_arm_{m}"].notna().any()}
     extra = {}
     report_table = RUNS / f"{MODEL}_swegemma_report.csv"
     if a.arm == "graph" and report_table.exists():   # the addendum: `graph` against `report`, described only

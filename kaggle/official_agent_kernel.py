@@ -348,10 +348,13 @@ def run_task(bundle: Path, agent_dir: Path, models, adapters, overrides: dict, o
 
 
 def server_gone(done: list) -> bool:
-    """True when the last two tasks made no model call and ended in an agent error: the model server has stopped
-    answering, and every further task would only spend the GPU allowance."""
+    """True when the last two tasks made no model call and ended at their time limit or on a server error: the
+    model server has stopped answering, and every further task would only spend the GPU allowance. Two tasks that
+    fail before any call for another reason (the submission's own prompt) are the agent's, and the batch goes on."""
+    marks = ("session timeout", "InternalServerError", "Connection error", "APIConnectionError", "ServiceUnavailable")
     last = done[-2:]
-    return len(last) == 2 and all(r.get("llm_call_count") == 0 and bool(r.get("agent_error")) for r in last)
+    return len(last) == 2 and all(r.get("llm_call_count") == 0 and any(m in (r.get("agent_error") or "") for m in marks)
+                                  for r in last)
 
 
 def run_batch(root: Path, meta: dict, key: bytes, agent_dir: Path, models, adapters) -> dict:

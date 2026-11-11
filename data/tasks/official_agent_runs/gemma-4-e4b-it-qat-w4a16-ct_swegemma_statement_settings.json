@@ -195,10 +195,10 @@
  ],
  "notes": [
   "The agent loop, the model server and the verification are the competition's: swegemma's Evaluator.evaluate_task (subprocess sandbox), vLLM from the competition's wheelhouse dataset, and swegemma's verify_task, following the competition's starter notebook.",
-  "Each task ran alone in a private, offline kernel beside a bundle with no reference patch and no tests, so the evaluator's verification had nothing to verify there. The patch was verified afterwards with the same evaluator's verify_task against the published snapshot and the task's tests.",
+  "All 93 tasks were given to one private, offline kernel, each sealed until its turn, beside a bundle with no reference patch and no tests, so the evaluator's verification had nothing to verify there. The patch was verified afterwards with the same evaluator's verify_task against the published snapshot and the task's tests.",
   "The number format follows the GPU: bfloat16 on compute capability 8.0 or above, float16 below.",
   "The statement arm of the pre-registered run of November 11, 2026 (issue 674): each task as published. The owner asked for this run.",
-  "The kernel was launched at 14:44 UTC. The session's machine restarted at 17:03 UTC and the first collector was lost with it; this table was collected from the finished kernel afterwards (--collect). Nothing about the kernel's run changed.",
+  "The kernel started at 14:43 UTC and ended at 19:22 UTC. The session's machine restarted at 17:03 UTC and the first collector was lost with it; this table was collected from the finished kernel afterwards (--collect). Nothing about the kernel's run changed.",
   "Each patch was verified on the collecting machine by the competition's evaluator, installed there on November 11, 2026 from the competition's wheelhouse (swegemma 0.2.11, adk-submission 0.2.13, adk-eval-core 0.1.0), after its two controls on the published files gave the committed verdicts on that machine: the reference patch resolved 93 of 93 tasks and an empty patch 0 of 93."
  ],
  "not_run": {
@@ -280,6 +280,440 @@
    "htlnlp_206",
    "htlnlp_pr5",
    "htlnlp_94"
+  ],
+  "tasks": [
+   {
+    "instance_id": "htlnlp_170",
+    "reason_text": "no answer from the model server (no model call)",
+    "error_kind_code": "time_limit",
+    "agent_seconds": 300.8
+   },
+   {
+    "instance_id": "htlnlp_228",
+    "reason_text": "no answer from the model server (no model call)",
+    "error_kind_code": "time_limit",
+    "agent_seconds": 300.9
+   },
+   {
+    "instance_id": "htlnlp_144",
+    "reason_text": "no answer from the model server (no model call)",
+    "error_kind_code": "time_limit",
+    "agent_seconds": 300.7
+   },
+   {
+    "instance_id": "htlnlp_pr22",
+    "reason_text": "no answer from the model server (no model call)",
+    "error_kind_code": "time_limit",
+    "agent_seconds": 300.7
+   },
+   {
+    "instance_id": "htlnlp_102",
+    "reason_text": "no answer from the model server (no model call)",
+    "error_kind_code": "time_limit",
+    "agent_seconds": 300.8
+   },
+   {
+    "instance_id": "htlnlp_pr53",
+    "reason_text": "no answer from the model server (no model call)",
+    "error_kind_code": "time_limit",
+    "agent_seconds": 300.8
+   },
+   {
+    "instance_id": "htlnlp_71",
+    "reason_text": "no answer from the model server (no model call)",
+    "error_kind_code": "time_limit",
+    "agent_seconds": 300.8
+   },
+   {
+    "instance_id": "htlnlp_187",
+    "reason_text": "no answer from the model server (no model call)",
+    "error_kind_code": "time_limit",
+    "agent_seconds": 300.9
+   },
+   {
+    "instance_id": "htlnlp_pr55",
+    "reason_text": "no answer from the model server (no model call)",
+    "error_kind_code": "time_limit",
+    "agent_seconds": 300.8
+   },
+   {
+    "instance_id": "htlnlp_117",
+    "reason_text": "no answer from the model server (no model call)",
+    "error_kind_code": "time_limit",
+    "agent_seconds": 300.8
+   },
+   {
+    "instance_id": "htlnlp_pr2",
+    "reason_text": "no answer from the model server (no model call)",
+    "error_kind_code": "time_limit",
+    "agent_seconds": 300.7
+   },
+   {
+    "instance_id": "htlnlp_cc163083",
+    "reason_text": "no answer from the model server (no model call)",
+    "error_kind_code": "time_limit",
+    "agent_seconds": 300.6
+   },
+   {
+    "instance_id": "htlnlp_pr17",
+    "reason_text": "no answer from the model server (no model call)",
+    "error_kind_code": "time_limit",
+    "agent_seconds": 300.7
+   },
+   {
+    "instance_id": "htlnlp_249",
+    "reason_text": "no answer from the model server (no model call)",
+    "error_kind_code": "time_limit",
+    "agent_seconds": 300.8
+   },
+   {
+    "instance_id": "htlnlp_pr56",
+    "reason_text": "no answer from the model server (no model call)",
+    "error_kind_code": "time_limit",
+    "agent_seconds": 300.7
+   },
+   {
+    "instance_id": "htlnlp_143",
+    "reason_text": "no answer from the model server (no model call)",
+    "error_kind_code": "time_limit",
+    "agent_seconds": 300.8
+   },
+   {
+    "instance_id": "htlnlp_pr28",
+    "reason_text": "no answer from the model server (no model call)",
+    "error_kind_code": "time_limit",
+    "agent_seconds": 300.8
+   },
+   {
+    "instance_id": "htlnlp_pr33",
+    "reason_text": "no answer from the model server (no model call)",
+    "error_kind_code": "time_limit",
+    "agent_seconds": 300.8
+   },
+   {
+    "instance_id": "htlnlp_c7bde3d0",
+    "reason_text": "no answer from the model server (no model call)",
+    "error_kind_code": "time_limit",
+    "agent_seconds": 300.7
+   },
+   {
+    "instance_id": "htlnlp_104",
+    "reason_text": "no answer from the model server (no model call)",
+    "error_kind_code": "time_limit",
+    "agent_seconds": 300.8
+   },
+   {
+    "instance_id": "htlnlp_pr36",
+    "reason_text": "no answer from the model server (no model call)",
+    "error_kind_code": "time_limit",
+    "agent_seconds": 300.8
+   },
+   {
+    "instance_id": "htlnlp_c59170ee",
+    "reason_text": "no answer from the model server (no model call)",
+    "error_kind_code": "time_limit",
+    "agent_seconds": 300.6
+   },
+   {
+    "instance_id": "htlnlp_cca2d155",
+    "reason_text": "no answer from the model server (no model call)",
+    "error_kind_code": "time_limit",
+    "agent_seconds": 300.5
+   },
+   {
+    "instance_id": "htlnlp_234_pr243",
+    "reason_text": "no answer from the model server (no model call)",
+    "error_kind_code": "time_limit",
+    "agent_seconds": 300.8
+   },
+   {
+    "instance_id": "htlnlp_pr47",
+    "reason_text": "no answer from the model server (no model call)",
+    "error_kind_code": "time_limit",
+    "agent_seconds": 300.7
+   },
+   {
+    "instance_id": "htlnlp_345",
+    "reason_text": "no answer from the model server (no model call)",
+    "error_kind_code": "time_limit",
+    "agent_seconds": 300.8
+   },
+   {
+    "instance_id": "htlnlp_166",
+    "reason_text": "no answer from the model server (no model call)",
+    "error_kind_code": "time_limit",
+    "agent_seconds": 300.8
+   },
+   {
+    "instance_id": "htlnlp_pr31",
+    "reason_text": "no answer from the model server (no model call)",
+    "error_kind_code": "time_limit",
+    "agent_seconds": 300.7
+   },
+   {
+    "instance_id": "htlnlp_cecf7a16",
+    "reason_text": "no answer from the model server (no model call)",
+    "error_kind_code": "time_limit",
+    "agent_seconds": 300.7
+   },
+   {
+    "instance_id": "htlnlp_pr6",
+    "reason_text": "no answer from the model server (no model call)",
+    "error_kind_code": "time_limit",
+    "agent_seconds": 300.8
+   },
+   {
+    "instance_id": "htlnlp_174",
+    "reason_text": "no answer from the model server (no model call)",
+    "error_kind_code": "time_limit",
+    "agent_seconds": 300.9
+   },
+   {
+    "instance_id": "htlnlp_pr4",
+    "reason_text": "no answer from the model server (no model call)",
+    "error_kind_code": "time_limit",
+    "agent_seconds": 300.7
+   },
+   {
+    "instance_id": "htlnlp_226",
+    "reason_text": "no answer from the model server (no model call)",
+    "error_kind_code": "time_limit",
+    "agent_seconds": 1620.8
+   },
+   {
+    "instance_id": "htlnlp_cac5acf9",
+    "reason_text": "no answer from the model server (no model call)",
+    "error_kind_code": "server_error",
+    "agent_seconds": 104.7
+   },
+   {
+    "instance_id": "htlnlp_pr32",
+    "reason_text": "no answer from the model server (no model call)",
+    "error_kind_code": "server_error",
+    "agent_seconds": 104.9
+   },
+   {
+    "instance_id": "htlnlp_152",
+    "reason_text": "no answer from the model server (no model call)",
+    "error_kind_code": "server_error",
+    "agent_seconds": 111.4
+   },
+   {
+    "instance_id": "htlnlp_116",
+    "reason_text": "no answer from the model server (no model call)",
+    "error_kind_code": "server_error",
+    "agent_seconds": 101.8
+   },
+   {
+    "instance_id": "htlnlp_111",
+    "reason_text": "no answer from the model server (no model call)",
+    "error_kind_code": "server_error",
+    "agent_seconds": 100.6
+   },
+   {
+    "instance_id": "htlnlp_244",
+    "reason_text": "no answer from the model server (no model call)",
+    "error_kind_code": "server_error",
+    "agent_seconds": 97.3
+   },
+   {
+    "instance_id": "htlnlp_pr11",
+    "reason_text": "no answer from the model server (no model call)",
+    "error_kind_code": "server_error",
+    "agent_seconds": 106.7
+   },
+   {
+    "instance_id": "htlnlp_pr25",
+    "reason_text": "no answer from the model server (no model call)",
+    "error_kind_code": "server_error",
+    "agent_seconds": 108.6
+   },
+   {
+    "instance_id": "htlnlp_114",
+    "reason_text": "no answer from the model server (no model call)",
+    "error_kind_code": "server_error",
+    "agent_seconds": 101.1
+   },
+   {
+    "instance_id": "htlnlp_120",
+    "reason_text": "no answer from the model server (no model call)",
+    "error_kind_code": "server_error",
+    "agent_seconds": 108.6
+   },
+   {
+    "instance_id": "htlnlp_276",
+    "reason_text": "no answer from the model server (no model call)",
+    "error_kind_code": "server_error",
+    "agent_seconds": 102.8
+   },
+   {
+    "instance_id": "htlnlp_pr34",
+    "reason_text": "no answer from the model server (no model call)",
+    "error_kind_code": "server_error",
+    "agent_seconds": 104.9
+   },
+   {
+    "instance_id": "htlnlp_191",
+    "reason_text": "no answer from the model server (no model call)",
+    "error_kind_code": "server_error",
+    "agent_seconds": 106.6
+   },
+   {
+    "instance_id": "htlnlp_189",
+    "reason_text": "no answer from the model server (no model call)",
+    "error_kind_code": "server_error",
+    "agent_seconds": 110.6
+   },
+   {
+    "instance_id": "htlnlp_230",
+    "reason_text": "no answer from the model server (no model call)",
+    "error_kind_code": "server_error",
+    "agent_seconds": 104.1
+   },
+   {
+    "instance_id": "htlnlp_pr21",
+    "reason_text": "no answer from the model server (no model call)",
+    "error_kind_code": "server_error",
+    "agent_seconds": 94.9
+   },
+   {
+    "instance_id": "htlnlp_pr63",
+    "reason_text": "no answer from the model server (no model call)",
+    "error_kind_code": "server_error",
+    "agent_seconds": 107.0
+   },
+   {
+    "instance_id": "htlnlp_235",
+    "reason_text": "no answer from the model server (no model call)",
+    "error_kind_code": "server_error",
+    "agent_seconds": 109.7
+   },
+   {
+    "instance_id": "htlnlp_pr35",
+    "reason_text": "no answer from the model server (no model call)",
+    "error_kind_code": "server_error",
+    "agent_seconds": 97.1
+   },
+   {
+    "instance_id": "htlnlp_cf773377",
+    "reason_text": "no answer from the model server (no model call)",
+    "error_kind_code": "server_error",
+    "agent_seconds": 106.0
+   },
+   {
+    "instance_id": "htlnlp_c866538c",
+    "reason_text": "no answer from the model server (no model call)",
+    "error_kind_code": "server_error",
+    "agent_seconds": 100.2
+   },
+   {
+    "instance_id": "htlnlp_180",
+    "reason_text": "no answer from the model server (no model call)",
+    "error_kind_code": "server_error",
+    "agent_seconds": 101.9
+   },
+   {
+    "instance_id": "htlnlp_pr37",
+    "reason_text": "no answer from the model server (no model call)",
+    "error_kind_code": "server_error",
+    "agent_seconds": 103.7
+   },
+   {
+    "instance_id": "htlnlp_cbc00f07",
+    "reason_text": "no answer from the model server (no model call)",
+    "error_kind_code": "server_error",
+    "agent_seconds": 102.0
+   },
+   {
+    "instance_id": "htlnlp_pr27",
+    "reason_text": "no answer from the model server (no model call)",
+    "error_kind_code": "server_error",
+    "agent_seconds": 92.6
+   },
+   {
+    "instance_id": "htlnlp_pr26",
+    "reason_text": "no answer from the model server (no model call)",
+    "error_kind_code": "server_error",
+    "agent_seconds": 99.0
+   },
+   {
+    "instance_id": "htlnlp_pr66",
+    "reason_text": "no answer from the model server (no model call)",
+    "error_kind_code": "server_error",
+    "agent_seconds": 108.6
+   },
+   {
+    "instance_id": "htlnlp_236",
+    "reason_text": "not reached by the kernel",
+    "error_kind_code": null,
+    "agent_seconds": null
+   },
+   {
+    "instance_id": "htlnlp_c7300f3f",
+    "reason_text": "not reached by the kernel",
+    "error_kind_code": null,
+    "agent_seconds": null
+   },
+   {
+    "instance_id": "htlnlp_pr29",
+    "reason_text": "not reached by the kernel",
+    "error_kind_code": null,
+    "agent_seconds": null
+   },
+   {
+    "instance_id": "htlnlp_214",
+    "reason_text": "not reached by the kernel",
+    "error_kind_code": null,
+    "agent_seconds": null
+   },
+   {
+    "instance_id": "htlnlp_c5e54000",
+    "reason_text": "not reached by the kernel",
+    "error_kind_code": null,
+    "agent_seconds": null
+   },
+   {
+    "instance_id": "htlnlp_ca9964a0",
+    "reason_text": "not reached by the kernel",
+    "error_kind_code": null,
+    "agent_seconds": null
+   },
+   {
+    "instance_id": "htlnlp_pr54",
+    "reason_text": "not reached by the kernel",
+    "error_kind_code": null,
+    "agent_seconds": null
+   },
+   {
+    "instance_id": "htlnlp_pr12",
+    "reason_text": "not reached by the kernel",
+    "error_kind_code": null,
+    "agent_seconds": null
+   },
+   {
+    "instance_id": "htlnlp_pr30",
+    "reason_text": "not reached by the kernel",
+    "error_kind_code": null,
+    "agent_seconds": null
+   },
+   {
+    "instance_id": "htlnlp_206",
+    "reason_text": "not reached by the kernel",
+    "error_kind_code": null,
+    "agent_seconds": null
+   },
+   {
+    "instance_id": "htlnlp_pr5",
+    "reason_text": "not reached by the kernel",
+    "error_kind_code": null,
+    "agent_seconds": null
+   },
+   {
+    "instance_id": "htlnlp_94",
+    "reason_text": "not reached by the kernel",
+    "error_kind_code": null,
+    "agent_seconds": null
+   }
   ]
  }
 }
