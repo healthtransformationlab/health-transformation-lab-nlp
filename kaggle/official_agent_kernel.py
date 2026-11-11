@@ -72,6 +72,47 @@ def find_bundle() -> Path:
     return Path(found[0]).parent
 
 
+def find_competition(root: Path = Path("/kaggle/input")) -> Path:
+    """The attached competition's folder: the one holding HARNESS_README.md, tasks.jsonl and snapshots/ (028 AI4)."""
+    for readme in sorted(glob.glob(str(Path(root) / "**" / "HARNESS_README.md"), recursive=True)):
+        folder = Path(readme).parent
+        if (folder / "tasks.jsonl").is_file() and (folder / "snapshots").is_dir():
+            return folder
+    raise SystemExit(f"no competition attached under {root}: a development-set batch needs it")
+
+
+def stage_competition_task(comp: Path, instance_id: str, work: Path) -> None:
+    """One development task, as the evaluator reads it: its row without the reference patch (its tests stay, for the
+    evaluator's verification, as in the competition's own run), its snapshot, graph and embeddings linked from the
+    mounted competition, never copied."""
+    row = next((r for r in map(json.loads, filter(str.strip, (comp / "tasks.jsonl").read_text().splitlines()))
+                if r.get("instance_id") == instance_id), None)
+    if row is None:
+        raise SystemExit(f"{instance_id} is not in the competition's tasks.jsonl")
+    row.pop("patch", None)
+    work.mkdir(parents=True, exist_ok=True)
+    (work / "tasks.jsonl").write_text(json.dumps(row) + "\n")
+    stem = f"{row['repo'].split('/')[-1]}_{row['base_commit']}"
+    for folder, names in (("snapshots", [f"{instance_id}.tgz"]),
+                          ("graphs", [f"{stem}.json", f"{instance_id}.json"]),
+                          ("embeddings", [f"{stem}.npz", f"{instance_id}.npz"])):
+        (work / folder).mkdir(exist_ok=True)
+        for name in names:
+            if (comp / folder / name).exists():
+                os.symlink(comp / folder / name, work / folder / name)
+    if not (work / "snapshots" / f"{instance_id}.tgz").exists():
+        raise SystemExit(f"{instance_id} has no snapshot in the competition's files")
+
+
+def check_task_fields(has_patch: bool, has_tests: bool, with_tests: bool) -> None:
+    """Never run the agent beside a reference patch; tests only for a development task, whose evaluator verifies the
+    patch with them after the agent phase, as the competition's own run does."""
+    if has_patch:
+        raise SystemExit("the task carries a reference patch: refusing to run the agent beside it")
+    if has_tests and not with_tests:
+        raise SystemExit("the bundle carries the task's tests: refusing to run the agent beside them")
+
+
 def unseal(data: bytes, key: bytes, name: str) -> bytes:
     """What kaggle/official_agent_bundle.py's `seal` sealed: XOR with a SHAKE-256 keystream of the key and name."""
     stream = hashlib.shake_256(key + name.encode()).digest(len(data))
@@ -168,8 +209,10 @@ def versions() -> dict:
     return out
 
 
-def run_task(bundle: Path, agent_dir: Path, models, adapters, overrides: dict, out_dir: Path) -> dict:
-    """The starter notebook's cell 10 for one task, with the agent's patch kept as soon as the agent phase ends."""
+def run_task(bundle: Path, agent_dir: Path, models, adapters, overrides: dict, out_dir: Path,
+             with_tests: bool = False) -> dict:
+    """The starter notebook's cell 10 for one task, with the agent's patch kept as soon as the agent phase ends.
+    `with_tests`: a development task, whose tests the evaluator's verification uses; its verdict is kept."""
     import litellm
     import yaml
     from google.adk.agents.context_cache_config import ContextCacheConfig
@@ -180,8 +223,7 @@ def run_task(bundle: Path, agent_dir: Path, models, adapters, overrides: dict, o
 
     litellm.drop_params = True
     task = load_tasks(bundle / "tasks.jsonl")[0]
-    if task.patch or task.test_patch:
-        raise SystemExit("the bundle carries a reference patch or tests: refusing to run the agent beside them")
+    check_task_fields(bool(task.patch), bool(task.test_patch), with_tests)
     cfg_file = next((c for n in ("eval_config.yaml", "eval_config.yml") if (c := agent_dir / n).is_file()), None)
     raw = (yaml.safe_load(cfg_file.read_text(encoding="utf-8")) or {}) if cfg_file else {}
     section = {**raw.get("evaluation", raw), **{k: v for k, v in overrides.items() if v is not None}}
@@ -226,8 +268,11 @@ def run_task(bundle: Path, agent_dir: Path, models, adapters, overrides: dict, o
            "context_cache": {"min_tokens": 2048, "ttl_seconds": 1800, "cache_intervals": 10},
            "events_compaction": {"compaction_interval": 15, "overlap_size": 2, "token_threshold": 14336,
                                  "event_retention_size": 5},
-           # the evaluator's own verification ran without the task's tests (the bundle has none): not a verdict
-           "kaggle_verification_without_tests": {"is_resolved": bool(res.resolved), "test_exit_code": res.test_exit_code}}
+           }
+    if with_tests:   # a development task: the evaluator verified the patch with the task's tests, as the competition does
+        out["verification"] = {"is_resolved": bool(res.resolved), "test_exit_code": res.test_exit_code}
+    else:            # ours: the evaluator's verification ran without the task's tests (the bundle has none): not a verdict
+        out["kaggle_verification_without_tests"] = {"is_resolved": bool(res.resolved), "test_exit_code": res.test_exit_code}
     for key in ("total_input_tokens", "total_output_tokens", "total_tokens", "total_cost_usd", "trace_path"):
         if getattr(res, key, None) is not None:
             out[key] = getattr(res, key)
@@ -238,6 +283,8 @@ def run_batch(root: Path, meta: dict, key: bytes, agent_dir: Path, models, adapt
     """Each task of the batch in turn: open its sealed files, run it, delete them. Stops before a task that could
     not finish inside the kernel's own time budget, so the GPU allowance is never overrun mid-task."""
     overrides = meta.get("budget_overrides") or {}
+    from_competition = meta.get("source") == "competition"
+    comp = find_competition() if from_competition else None
     deadline = T_START + float(meta.get("deadline_minutes", 45)) * 60
     per_task = float(meta.get("task_minutes_reserved", 6.5)) * 60
     runs: dict = {}
@@ -251,11 +298,15 @@ def run_batch(root: Path, meta: dict, key: bytes, agent_dir: Path, models, adapt
         shutil.rmtree(work, ignore_errors=True)
         work.mkdir(parents=True)
         try:
-            plain = unseal((root / "sealed" / f"{iid}.bin").read_bytes(), key, iid)
-            with tarfile.open(fileobj=io.BytesIO(plain)) as tar:
-                tar.extractall(work, filter="data")
-            del plain
-            one = run_task(work, agent_dir, models, adapters, overrides, OUT / "tasks" / iid)
+            if from_competition:
+                stage_competition_task(comp, iid, work)
+            else:
+                plain = unseal((root / "sealed" / f"{iid}.bin").read_bytes(), key, iid)
+                with tarfile.open(fileobj=io.BytesIO(plain)) as tar:
+                    tar.extractall(work, filter="data")
+                del plain
+            one = run_task(work, agent_dir, models, adapters, overrides, OUT / "tasks" / iid,
+                           with_tests=from_competition)
         except BaseException as e:  # noqa: BLE001 - one task's failure is its row; the next task still runs
             one = {"instance_id": iid, "error": f"{type(e).__name__}: {str(e)[:1500]}",
                    "trace": traceback.format_exc()[-4000:]}

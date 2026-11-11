@@ -16,6 +16,12 @@ The sample is drawn with a seed and stratified by fidelity tier (`sample`), neve
 Kaggle GPU: the weekly allowance is shared, so a run waits for the owner (AGENTS.md, Branches and issues 6).
 
 Rows go to data/tasks/official_agent_runs/<model>_swegemma.csv (COLUMNS), the settings to its _settings.json.
+
+The competition's own development set (028 AI4, #668): `--source competition --batch --competition <slug>` with
+`--dataset` a folder holding the competition's tasks.jsonl alone. The draw is stratified by repository; the bundle
+holds the submission and the order only; the kernel reads each task from the attached competition's files, and the
+evaluator verifies the patch there with the task's tests, as the competition's own run does. Rows go to
+<model>_swegemma_devset.csv. Nothing of the competition's data is committed: ids, verdicts and counts only.
 Needs KAGGLE_API_TOKEN, and an interpreter that has the evaluator's wheels and this repository's test dependencies.
 """
 
@@ -69,6 +75,26 @@ def sample(tiers: dict[str, str], n: int, seed: int) -> list[str]:
     for t in sorted(groups):
         drawn += rng.sample(sorted(groups[t]), take[t])
     return sorted(drawn)
+
+
+def strata(tasks: dict, manifest: dict, source: str) -> dict[str, str]:
+    """What a draw is stratified by: our tasks by fidelity tier (the manifest), the competition's development tasks
+    by repository (028 AI4, #668)."""
+    if source == "competition":
+        return {iid: t.get("repo", "") for iid, t in tasks.items()}
+    return {iid: tier for iid, tier in manifest.items() if iid in tasks}
+
+
+def verdict_from_kernel(result: dict) -> dict | None:
+    """A development task's verdict: the evaluator's own verification in the kernel, with the task's tests."""
+    v = result.get("verification")
+    return {"resolved": bool(v.get("is_resolved")), "test_exit_code": v.get("test_exit_code")} if v else None
+
+
+def batch_trace_counts(output: Path, instance_id: str) -> dict | None:
+    """A batch task's trace as downloaded (tasks/<id>/results/traces/trace_<id>.json), counted as one task's is."""
+    trace = Path(output) / "tasks" / instance_id / "results" / "traces" / f"trace_{instance_id}.json"
+    return trace_counts(json.loads(trace.read_text())) if trace.exists() else None
 
 
 def kernel_slug(instance_id: str) -> str:
@@ -128,24 +154,29 @@ COMPETITION_DEFAULTS = {"timeout_seconds": 300, "verification_timeout_seconds": 
 
 
 def settings_for(result: dict, seed: int | None, drawn: list[str], pool_count: int, machine_shape: str | None,
-                 docker_image: str | None, competition: str | None, agent_commit: str | None) -> dict:
+                 docker_image: str | None, competition: str | None, agent_commit: str | None,
+                 source: str = "published", tasks_per_kernel: int = 1) -> dict:
     """What a run used, how its sample was drawn, and each budget that differs from the competition's defaults."""
     budgets, gen = result.get("budgets") or {}, result.get("generation_defaults") or {}
     used = {**budgets, "max_output_tokens": gen.get("max_output_tokens"),
             "thinking_budget": (gen.get("thinking_config") or {}).get("thinking_budget")}
     version = (result.get("versions") or {}).get("swegemma")
     harness = result.get("harness_name") or "swegemma"
+    development = source == "competition"
     return {
         "harness_name": harness.replace("swegemma", f"swegemma {version}", 1) if version else harness,
         "model_name": result.get("model_name"), "versions": result.get("versions"), "server": result.get("server"),
         "budgets": budgets, "generation_defaults": gen, "context_cache": result.get("context_cache"),
         "events_compaction": result.get("events_compaction"),
         "kernel": {"machine_shape_asked": machine_shape, "docker_image": docker_image, "competition_attached": competition,
-                   "internet": False, "tasks_per_kernel": 1},
+                   "internet": False, "tasks_per_kernel": tasks_per_kernel},
         "agent_commit_sha": agent_commit,
         "sample": {"seed": seed, "drawn_count": len(drawn), "pool_count": pool_count, "instance_ids": drawn,
-                   "method_text": "drawn with the seed from the published tasks, stratified by fidelity tier in "
-                                  "proportion to each tier's size (largest remainder); not ordered by cost or size"},
+                   "method_text": ("drawn with the seed from the competition's development set, stratified by "
+                                   "repository in proportion to each repository's size (largest remainder); not "
+                                   "ordered by cost or size") if development else (
+                                  "drawn with the seed from the published tasks, stratified by fidelity tier in "
+                                  "proportion to each tier's size (largest remainder); not ordered by cost or size")},
         "differences_from_competition_defaults": [
             {"setting_name": k, "used": used.get(k), "competition_default": v,
              "source_text": "the submission's eval_config.yaml"}
@@ -154,6 +185,10 @@ def settings_for(result: dict, seed: int | None, drawn: list[str], pool_count: i
             ("The agent loop, the model server and the verification are the competition's: swegemma's "
              "Evaluator.evaluate_task (subprocess sandbox), vLLM from the competition's wheelhouse dataset, and "
              "swegemma's verify_task, following the competition's starter notebook."),
+            ("The kernel attached the competition and read each development task from its mounted files, with no "
+             "reference patch staged beside the agent; the evaluator verified each patch there with the task's tests, "
+             "as the competition's own run does. Tool calls naming a path outside the workspace are counted in "
+             "outside_workspace_call_count.") if development else
             ("Each task ran alone in a private, offline kernel beside a bundle with no reference patch and no tests, "
              "so the evaluator's verification had nothing to verify there. The patch was verified afterwards with "
              "the same evaluator's verify_task against the published snapshot and the task's tests."),
@@ -259,11 +294,12 @@ def _verify(tasks_file: Path, snapshots: Path, agent_dir: Path, patches: dict[st
     return {r["instance_id"]: r for r in map(json.loads, filter(str.strip, out.read_text().splitlines()))}
 
 
-def write_table(pd, rows: list[dict], model: str | None) -> Path:
-    """Merge the rows into the committed table by instance_id (re-runnable)."""
+def write_table(pd, rows: list[dict], model: str | None, label: str | None = None) -> Path:
+    """Merge the rows into the committed table by instance_id (re-runnable); `label` names a separate table, such
+    as the development set's."""
     table = pd.DataFrame(rows, columns=COLUMNS)
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    path = OUT_DIR / f"{model or 'gemma-4-e4b-it-qat-w4a16-ct'}_swegemma.csv"
+    path = OUT_DIR / f"{model or 'gemma-4-e4b-it-qat-w4a16-ct'}_swegemma{'_' + label if label else ''}.csv"
     old = pd.read_csv(path) if path.exists() else pd.DataFrame(columns=COLUMNS)
     keep = old[~old["instance_id"].isin(table["instance_id"])]
     (pd.concat([keep, table], ignore_index=True) if len(keep) else table).sort_values("instance_id").to_csv(path, index=False)
@@ -274,7 +310,9 @@ def run_batch(a, api, user: str, ids: list[str], tasks: dict, manifest: dict, ov
     """One kernel for every task, in a seeded order, each task sealed until its turn; then verify and tabulate."""
     order = list(ids)
     random.Random(a.seed).shuffle(order)
-    kref, work = f"{user}/{kernel_slug('batch')}", a.work / "batch"
+    development = a.source == "competition"
+    name = "devset" if development else "batch"
+    kref, work = f"{user}/{kernel_slug(name)}", a.work / name
     if not a.collect:
         shutil.rmtree(work, ignore_errors=True)
         key = os.urandom(32)   # this run's; in the pushed kernel only, never in the dataset or the repository
@@ -284,16 +322,19 @@ def run_batch(a, api, user: str, ids: list[str], tasks: dict, manifest: dict, ov
             return (a.dataset / "snapshots" / f"{task['instance_id']}.tgz", a.dataset / "graphs" / f"{stem}.json",
                     a.dataset / "embeddings" / f"{stem}.npz")
 
-        b = bundle.build_batch([tasks[i] for i in ids], files_of, a.agent_dir, work / "bundle", user, key, order,
-                               {"budget_overrides": overrides, "deadline_minutes": a.deadline_minutes, "seed": a.seed})
-        print(f"batch of {len(order)}: uploading the sealed bundle to {user}/{bundle.slug('batch')} (private); "
-              f"order {', '.join(order)}", flush=True)
-        _upload_bundle(api, b, f"{user}/{bundle.slug('batch')}")
+        meta = {"budget_overrides": overrides, "deadline_minutes": a.deadline_minutes, "seed": a.seed}
+        if development:
+            b = bundle.build_competition_batch(order, a.agent_dir, work / "bundle", user, meta)
+        else:
+            b = bundle.build_batch([tasks[i] for i in ids], files_of, a.agent_dir, work / "bundle", user, key, order, meta)
+        print(f"batch of {len(order)}: uploading the {'order' if development else 'sealed bundle'} to "
+              f"{user}/{bundle.slug(name)} (private); order {', '.join(order)}", flush=True)
+        _upload_bundle(api, b, f"{user}/{bundle.slug(name)}")
         k = work / "kernel"
         k.mkdir(parents=True)
         (k / "official_agent_kernel.py").write_text(kernel_source((HERE / "official_agent_kernel.py").read_text(), key))
         (k / "kernel-metadata.json").write_text(json.dumps(
-            kernel_metadata(user, "batch", a.machine_shape, a.docker_image, a.competition), indent=1))
+            kernel_metadata(user, name, a.machine_shape, a.docker_image, a.competition), indent=1))
         api.kernels_push(str(k), timeout=str(a.kernel_minutes * 60))
         shutil.rmtree(k)   # the keyed copy does not stay on this machine either
         print(f"the evaluator on a Kaggle GPU, {kref}", flush=True)
@@ -317,11 +358,16 @@ def run_batch(a, api, user: str, ids: list[str], tasks: dict, manifest: dict, ov
     runs = res.get("runs") or {}
     shared = {k: res.get(k) for k in ("model_name", "server", "versions", "harness_name", "load_seconds")}
     done = {i: {**shared, **r} for i, r in runs.items() if not r.get("is_skipped")}
+    for i in done:
+        done[i]["trace_counts"] = batch_trace_counts(out, i)
     skipped = [i for i in order if i not in done]
-    verdicts = _verify(a.dataset / "tasks.jsonl", a.dataset / "snapshots", a.agent_dir,
-                       {i: (r.get("patch") or "") for i, r in done.items()}, work / "_verify")
-    rows = [row_for({"instance_id": i, **done[i]}, verdicts.get(i), manifest.get(i, ""),
-                    f"https://www.kaggle.com/code/{kref}") for i in order if i in done]
+    if development:   # the evaluator verified each patch in the kernel, with the task's tests
+        verdicts = {i: v for i, r in done.items() if (v := verdict_from_kernel(r)) is not None}
+    else:
+        verdicts = _verify(a.dataset / "tasks.jsonl", a.dataset / "snapshots", a.agent_dir,
+                           {i: (r.get("patch") or "") for i, r in done.items()}, work / "_verify")
+    rows = [row_for({"instance_id": i, **done[i]}, verdicts.get(i), "" if development else manifest.get(i, ""),
+                    f"https://www.kaggle.com/code/{kref}", in_sample=not a.outside_sample) for i in order if i in done]
     table = pd.DataFrame(rows, columns=COLUMNS)
     if len(table):
         print(table[["instance_id", "tier_code", "is_resolved", "reason_text", "agent_patch_bytes", "tool_call_count",
@@ -332,7 +378,16 @@ def run_batch(a, api, user: str, ids: list[str], tasks: dict, manifest: dict, ov
         {"seed": a.seed, "order": order, "run": list(done), "not_run": skipped, "session_seconds": round(session, 1),
          "kernel": {k: v for k, v in res.items() if k != "runs"}}, indent=1, default=str))
     if not a.no_table and rows:
-        print(f"-> {write_table(pd, rows, shared.get('model_name')).relative_to(REPO_ROOT)}")
+        path = write_table(pd, rows, shared.get("model_name"), "devset" if development else None)
+        print(f"-> {path.relative_to(REPO_ROOT)}")
+        good = next((r for r in done.values() if r.get("budgets")), None)
+        if good and a.sample:
+            commit = subprocess.run(["git", "-C", str(a.agent_dir), "rev-parse", "HEAD"], capture_output=True,
+                                    text=True, check=False).stdout.strip() or None
+            settings = settings_for(good, a.seed, list(ids), len(manifest), a.machine_shape, a.docker_image,
+                                    a.competition, commit, a.source, tasks_per_kernel=len(order))
+            settings["notes"] += a.note or []
+            path.with_name(path.stem + "_settings.json").write_text(json.dumps(settings, indent=1) + "\n")
     return 0
 
 
@@ -362,6 +417,9 @@ def main() -> int:
     ap.add_argument("--batch", action="store_true",
                     help="every task in ONE kernel, each sealed until its turn: for when the GPU allowance cannot pay "
                          "for a kernel's start-up per task. The order is a seeded shuffle of the tasks")
+    ap.add_argument("--source", choices=("published", "competition"), default="published",
+                    help="competition: the competition's own development tasks, read in the kernel from the attached "
+                         "competition (needs --batch and --competition); --dataset holds its tasks.jsonl only")
     ap.add_argument("--deadline-minutes", type=float, default=45.0,
                     help="with --batch: the kernel stops starting tasks when one more could run past this")
     a = ap.parse_args()
@@ -370,13 +428,17 @@ def main() -> int:
     tasks = {t["instance_id"]: t for t in map(json.loads,
                                               filter(str.strip, (a.dataset / "tasks.jsonl").read_text().splitlines()))}
     tiers_all = pd.read_csv(REPO_ROOT / "data" / "tasks" / "task_manifest.csv", usecols=["instance_id", "tier_code"])
-    manifest = {r.instance_id: r.tier_code for r in tiers_all.itertuples() if r.instance_id in tasks}
+    development = a.source == "competition"
+    if development and not (a.batch and a.competition):
+        sys.exit("--source competition reads each task from the attached competition: it needs --batch and --competition")
+    manifest = strata(tasks, {r.instance_id: r.tier_code for r in tiers_all.itertuples()}, a.source)
     ids = sample(manifest, a.sample, a.seed) if a.sample else [i.strip() for i in a.ids.split(",") if i.strip()]
-    missing = [i for i in ids if i not in tasks or not (a.dataset / "snapshots" / f"{i}.tgz").exists()]
+    missing = [i for i in ids if i not in tasks or (not development and not (a.dataset / "snapshots" / f"{i}.tgz").exists())]
     if missing:
-        sys.exit(f"not in the published tasks.jsonl or no snapshot: {', '.join(missing)}")
-    by_tier = {t: sum(manifest[i] == t for i in ids) for t in sorted(set(manifest.values()))}
-    print(f"{len(ids)} tasks" + (f", drawn with seed {a.seed}, stratified by tier" if a.sample else "")
+        sys.exit(f"not in the tasks.jsonl given, or no snapshot: {', '.join(missing)}")
+    by_tier = {t: sum(manifest.get(i) == t for i in ids) for t in sorted(set(manifest.values()))}
+    print(f"{len(ids)} tasks" + (f", drawn with seed {a.seed}, stratified by {'repository' if development else 'tier'}"
+                                 if a.sample else "")
           + f" ({', '.join(f'{t} {n}' for t, n in by_tier.items())}): {', '.join(ids)}")
     if a.plan_only:
         return 0

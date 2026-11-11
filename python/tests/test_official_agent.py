@@ -235,3 +235,107 @@ def test_a_trace_is_counted_by_tool_kind_and_outside_paths(run):
     assert run.trace_counts({})["outside_workspace_call_count"] == 0
     row = run.row_for({"instance_id": "htlnlp_7", "patch": "", "trace_counts": c}, None, tier="B", kernel_url="k")
     assert row["graph_tool_call_count"] == 1 and row["prompt_token_count"] == 900 and row["reason_text"] == "empty patch"
+
+
+# --- the competition's own development set (028 AI4, #668) ---------------------------------------------------------
+
+DEV_ROW = {"instance_id": "fastapi_15661", "repo": "fastapi/fastapi", "base_commit": "abc123",
+           "problem_statement": "Query params drop a default", "hints_text": "", "created_at": "2025-01-01",
+           "patch": "diff --git a/fastapi/params.py b/fastapi/params.py\n+SECRET_FIX\n",
+           "test_patch": "diff --git a/tests/test_q.py b/tests/test_q.py\n+def test_q(): pass\n",
+           "FAIL_TO_PASS": "[\"tests/test_q.py::test_q\"]", "PASS_TO_PASS": "[]"}
+
+
+def _kernel_functions(*names):
+    """The kernel's own functions, run here without Kaggle (as test_the_kernel_opens_what_the_bundle_sealed does)."""
+    import ast
+    src = (REPO_ROOT / "kaggle" / "official_agent_kernel.py").read_text()
+    ns: dict = {}
+    exec("import glob, json, os, shutil\nfrom pathlib import Path\n", ns)   # noqa: S102 - our own kernel's code
+    for node in ast.parse(src).body:
+        if isinstance(node, ast.FunctionDef) and node.name in names:
+            exec(ast.get_source_segment(src, node), ns)                     # noqa: S102
+    return ns
+
+
+def test_a_development_set_draw_is_stratified_by_repository(run):
+    tasks = {**{f"fastapi_{n}": {"repo": "fastapi/fastapi"} for n in range(6)},
+             **{f"rich_{n}": {"repo": "Textualize/rich"} for n in range(4)}}
+    strata = run.strata(tasks, {}, "competition")
+    assert set(strata.values()) == {"fastapi/fastapi", "Textualize/rich"}
+    drawn = run.sample(strata, 5, 7)
+    assert sum(i.startswith("fastapi_") for i in drawn) == 3 and sum(i.startswith("rich_") for i in drawn) == 2
+    assert run.sample(strata, 5, 7) == drawn                                   # seeded
+    assert run.strata({"htlnlp_7": {}}, {"htlnlp_7": "A", "htlnlp_8": "B"}, "published") == {"htlnlp_7": "A"}
+
+
+def test_a_development_set_bundle_holds_the_submission_and_the_order_and_no_task(ob, tmp_path):
+    out = ob.build_competition_batch(["rich_2", "fastapi_9"], _submission(tmp_path), tmp_path / "b", "someone",
+                                     {"deadline_minutes": 240, "seed": 1})
+    names = {p.relative_to(out).as_posix() for p in out.rglob("*") if p.is_file()}
+    assert names == {"official_batch.json", "submission/agent.yaml", "submission/eval_config.yaml",
+                     "submission/prompts/system.md", "dataset-metadata.json"}
+    meta = json.loads((out / "official_batch.json").read_text())
+    assert meta["instance_ids"] == ["rich_2", "fastapi_9"] and meta["source"] == "competition"
+    assert meta["deadline_minutes"] == 240
+    assert json.loads((out / "dataset-metadata.json").read_text())["id"] == "someone/htlnlp-official-devset"
+
+
+def test_the_kernel_stages_a_development_task_from_the_mounted_competition(tmp_path):
+    ns = _kernel_functions("find_competition", "stage_competition_task")
+    comp = tmp_path / "input" / "gemma-4-developer-agent"
+    for d in ("snapshots", "graphs", "embeddings"):
+        (comp / d).mkdir(parents=True)
+    (comp / "HARNESS_README.md").write_text("the harness")
+    (comp / "tasks.jsonl").write_text(json.dumps(DEV_ROW) + "\n"
+                                      + json.dumps(dict(DEV_ROW, instance_id="rich_1", repo="Textualize/rich")) + "\n")
+    (comp / "snapshots" / "fastapi_15661.tgz").write_bytes(b"snap")
+    (comp / "graphs" / "fastapi_abc123.json").write_text("{}")
+    (comp / "embeddings" / "fastapi_abc123.npz").write_bytes(b"vectors")
+    assert ns["find_competition"](tmp_path / "input") == comp
+    work = tmp_path / "work"
+    ns["stage_competition_task"](comp, "fastapi_15661", work)
+    (row,) = [json.loads(line) for line in (work / "tasks.jsonl").read_text().splitlines()]
+    assert row["instance_id"] == "fastapi_15661" and "patch" not in row      # never the reference fix
+    assert row["test_patch"] == DEV_ROW["test_patch"] and row["FAIL_TO_PASS"] == DEV_ROW["FAIL_TO_PASS"]
+    snap = work / "snapshots" / "fastapi_15661.tgz"
+    assert snap.is_symlink() and snap.read_bytes() == b"snap"                  # linked, not copied
+    assert (work / "graphs" / "fastapi_abc123.json").exists() and (work / "embeddings" / "fastapi_abc123.npz").exists()
+    with pytest.raises(SystemExit):
+        ns["stage_competition_task"](comp, "httpx_1", work)
+
+
+def test_the_kernel_never_runs_beside_a_reference_patch_and_takes_tests_only_for_the_competitions_tasks():
+    ns = _kernel_functions("check_task_fields")
+    ns["check_task_fields"](has_patch=False, has_tests=True, with_tests=True)      # a development task
+    ns["check_task_fields"](has_patch=False, has_tests=False, with_tests=False)     # one of ours
+    with pytest.raises(SystemExit):
+        ns["check_task_fields"](has_patch=True, has_tests=True, with_tests=True)
+    with pytest.raises(SystemExit):
+        ns["check_task_fields"](has_patch=False, has_tests=True, with_tests=False)
+
+
+def test_a_development_row_takes_the_evaluators_own_verdict(run):
+    assert run.verdict_from_kernel({"verification": {"is_resolved": True, "test_exit_code": 0}}) == {
+        "resolved": True, "test_exit_code": 0}
+    assert run.verdict_from_kernel({"patch": ""}) is None
+
+
+def test_a_batch_counts_each_tasks_trace(run, tmp_path):
+    trace = tmp_path / "tasks" / "fastapi_15661" / "results" / "traces" / "trace_fastapi_15661.json"
+    trace.parent.mkdir(parents=True)
+    trace.write_text(json.dumps({"final_metrics": {"total_prompt_tokens": 50, "total_completion_tokens": 5},
+                                 "steps": [{"tool_calls": [{"function_name": "run_command",
+                                                            "arguments": {"command": "cat /kaggle/input/x"}}]}]}))
+    counts = run.batch_trace_counts(tmp_path, "fastapi_15661")
+    assert counts["prompt_token_count"] == 50 and counts["outside_workspace_call_count"] == 1
+    assert run.batch_trace_counts(tmp_path, "rich_1") is None
+
+
+def test_the_development_set_has_its_own_table(run, tmp_path, monkeypatch):
+    import pandas as pd
+    monkeypatch.setattr(run, "OUT_DIR", tmp_path)
+    row = {c: None for c in run.COLUMNS} | {"instance_id": "fastapi_15661", "is_resolved": False}
+    path = run.write_table(pd, [row], "gemma-4-e4b-it-qat-w4a16-ct", label="devset")
+    assert path.name == "gemma-4-e4b-it-qat-w4a16-ct_swegemma_devset.csv"
+    assert run.write_table(pd, [row], "gemma-4-e4b-it-qat-w4a16-ct").name == "gemma-4-e4b-it-qat-w4a16-ct_swegemma.csv"
