@@ -4,6 +4,7 @@ those tests called (what the repository's OpenTelemetry spans record). The plugi
 the report is short, and the committed table holds counts, never the text."""
 import importlib.util
 import json
+import site
 import subprocess
 import sys
 
@@ -12,6 +13,14 @@ import pytest
 from health_transformation_lab_nlp.paths import REPO_ROOT
 
 SCRIPTS = REPO_ROOT / "python" / "scripts"
+
+
+def plugin_env(home, out, *roots, **more) -> dict:
+    """The small environment a plugin subprocess runs in, as in tests/test_trace_reach.py: nothing of the caller's but
+    the import path it names, HOME in a temp folder, and this interpreter's own user site still in reach (028 BUG6,
+    #679: the deploy job's pytest is installed there)."""
+    return {"PATH": "/usr/bin:/bin", "PYTHONPATH": ":".join([*map(str, roots), str(SCRIPTS)]), "TRACE_PACKAGE": "pkg",
+            "TRACE_OUT": str(out), "HOME": str(home), "PYTHONUSERBASE": site.getuserbase(), **more}
 
 
 @pytest.fixture(scope="module")
@@ -32,10 +41,7 @@ def _run(tmp_path, messages):
     (tests / "test_new.py").write_text("from pkg.mod import new_thing\n\ndef test_it():\n    assert new_thing()\n")
     (tests / "test_old.py").write_text("from pkg.mod import old\n\ndef test_old():\n    assert old(1) == 3, 'old(1) must be 3'\n")
     out = tmp_path / "trace.json"
-    env = {"PATH": "/usr/bin:/bin", "PYTHONPATH": f"{tmp_path / 'python'}:{SCRIPTS}", "TRACE_PACKAGE": "pkg",
-           "TRACE_OUT": str(out), "HOME": str(tmp_path)}
-    if messages:
-        env["TRACE_MESSAGES"] = "1"
+    env = plugin_env(tmp_path, out, tmp_path / "python", **({"TRACE_MESSAGES": "1"} if messages else {}))
     subprocess.run([sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider", "-p", "_trace_plugin",
                     "--continue-on-collection-errors", "tests/test_new.py", "tests/test_old.py"],
                    cwd=tmp_path / "python", capture_output=True, text=True, env=env, check=False)
@@ -103,7 +109,7 @@ def test_the_report_text_is_never_written_inside_the_repository(fr, tmp_path):
 
 
 def test_the_package_is_found_in_a_snapshot_whatever_it_was_called_then(fr, tmp_path):
-    for name in ("dental_omop_nlp", "health_transformation_lab_nlp"):
+    for name in ("an_earlier_name", "health_transformation_lab_nlp"):
         root = tmp_path / name
         (root / "python" / name).mkdir(parents=True)
         (root / "python" / name / "__init__.py").write_text("")
@@ -136,7 +142,6 @@ def test_a_path_under_the_snapshot_is_given_from_its_root(tmp_path):
     out = tmp_path / "trace.json"
     subprocess.run([sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider", "-p", "_trace_plugin",
                     "tests/test_file.py"], cwd=root / "python", capture_output=True, text=True, check=False,
-                   env={"PATH": "/usr/bin:/bin", "PYTHONPATH": f"{root / 'python'}:{SCRIPTS}", "TRACE_PACKAGE": "pkg",
-                        "TRACE_OUT": str(out), "HOME": str(tmp_path), "TRACE_MESSAGES": "1", "TRACE_ROOT": str(root)})
+                   env=plugin_env(tmp_path, out, root / "python", TRACE_MESSAGES="1", TRACE_ROOT=str(root)))
     message = json.loads(out.read_text())["failure_messages"][0]["message_text"]
     assert message == "FileNotFoundError: [Errno 2] No such file or directory: 'ops/register.yaml'"
