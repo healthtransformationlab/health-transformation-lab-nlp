@@ -142,3 +142,25 @@ statement never gives. By repository: requests 4 of 4 pass, fastapi 10 of 21, ri
 
 Whether a person would agree: none of these 40 was checked by one. Forty tasks drawn from three libraries say little
 about each library alone.
+
+# The core split (November 11, 2026)
+
+`core_split.csv` names the 17 published tasks that pass the screen of all 93: both ratings are 0 or 1, so the
+statement says what its tests check. A review of the paper asked for evidence of benchmark quality, and the screen
+is the evidence this set has. So the 17 are the set's core split, the part to quote a result on, and the other 76
+stay as a collection of real statements that leave out what their tests need (028 AI7, #674).
+
+| | Tasks |
+|---|---|
+| In the core split | 17 (statement from an issue 11, from a pull request 6, from a commit message 0) |
+| Checked by a person, in summary | 5 |
+| With an AI rating only | 12 |
+| Run by the first baseline (local harness, T4s) | 13, of which 4 resolved |
+
+It is the screen's verdict and nothing more: a task is in the file exactly when `is_pass` is true in
+`agent_screen_all.csv` (a test checks it). It is not a human-validated subset in the sense of SWE-bench Verified.
+Twelve of its 17 verdicts were made by an AI reviewer alone.
+
+The split was fixed by the screen of November 10, before the runs of issue 674, whose pre-registration names it as
+a split every arm is reported on.
+
