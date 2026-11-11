@@ -11,6 +11,9 @@
 - [ ] T005 The full Gemma run under a cap the owner sets (spec 035 T005; owner's go-ahead)
 - [x] T005a `.github/workflows/kaggle-agent.yml` drives the run from GitHub Actions (a cloud session's container
   can be replaced mid-run), commits rows back to the branch it ran from, and retries Kaggle uploads (#615)
+- [x] T005b A declared price for an L4 GPU-hour (`ops/cost_settings.yaml`, the same source, week and figure as the
+  T4's), so the runs under the competition's evaluator carry `estimated_cost_usd`; failing test first; the four
+  `_gpu.csv` tables rebuilt from the kernels' saved output with no other column changed
 
 ## US1 - Every Databricks job run carries its DBUs and cost #568
 - [x] T006 Check: can the job's identity read the billing system tables in dev? No: account admins only (plan.md);

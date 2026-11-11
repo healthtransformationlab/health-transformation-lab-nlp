@@ -16,3 +16,11 @@ t4_usd_per_gpu_hour:
   value: 0.69
   source: https://getdeploying.com/gpus/nvidia-t4
   read_date: "2026-11-04"
+
+# One L4 GPU-hour on a cloud: the median on-demand price across providers for the week of Oct 26, 2026, the same
+# week, figure and source as the T4's (the source's weekly series: 0.8319 across 14 providers that week, and 0.8363
+# across 18 in the week of Nov 9). The runs under the competition's evaluator used four L4s.
+l4_usd_per_gpu_hour:
+  value: 0.83
+  source: https://getdeploying.com/gpus/nvidia-l4
+  read_date: "2026-11-11"
