@@ -10,6 +10,13 @@ and does not test.
 
     python scripts/70_context_pairs.py --arm report
     python scripts/70_context_pairs.py --arm graph
+    python scripts/70_context_pairs.py --arm graph --machine colab
+
+`--machine colab` is addendum 2 (#687): both arms again, on one Colab GPU. It reads that pair's own tables
+(`..._swegemma_colab-statement.csv`, `..._swegemma_colab-graph.csv`), writes `context_pairs_colab_graph.csv`, repeats
+the test without any pair in which either side ran a command that reaches for the network, and sets each Colab arm
+beside the Kaggle arm of the same text, which the addendum describes and does not test. No count is pooled across
+machines.
 
 The report arm's context comes from each task's hidden test: what a test-first workflow has, not a benchmark
 condition. The graph arm's comes from the statement and the graph alone.
@@ -113,6 +120,30 @@ def arm_cross(ids: list[str], a_table: pd.DataFrame, b_table: pd.DataFrame, a: s
             f"{a}_only_count": a_only, f"{b}_only_count": b_only, "neither_count": len(ran) - both - a_only - b_only}
 
 
+def table_names(machine: str, arm: str) -> tuple[str, str, str]:
+    """The baseline table's label, the arm's, and the pairs file: for the Kaggle arms (the first plan and addendum 1),
+    or for the Colab pair (addendum 2, #687), whose tables are its own."""
+    if machine == "colab":
+        if arm != "graph":
+            raise SystemExit("on Colab only the graph arm was registered beside the statement arm (addendum 2)")
+        return "colab-statement", "colab-graph", "context_pairs_colab_graph.csv"
+    return "statement", arm, f"context_pairs_{arm}.csv"
+
+
+def network_ids(settings: Path) -> list[str]:
+    """The tasks of a Colab arm in which the agent ran a command that reaches for the network, from the audit in the
+    arm's settings file. None for an arm with no audit (a Kaggle kernel has no network) or no settings file yet."""
+    if not Path(settings).exists():
+        return []
+    return list((json.loads(Path(settings).read_text()).get("network_audit") or {}).get("instance_ids") or [])
+
+
+def without_network(rows: list[dict], reached: dict[str, list[str]]) -> list[dict]:
+    """The pairs in which neither side reached for the network: the addendum's sensitivity analysis."""
+    out = {i for ids in reached.values() for i in ids}
+    return [r for r in rows if r["instance_id"] not in out]
+
+
 def task_flags(arm: str) -> pd.DataFrame:
     """Each task's flags for the splits: the screen's verdict, whether its fix edits code the graph holds, whether it
     was in the run of November 10, and what the arm's own shape table says of its context."""
@@ -135,13 +166,16 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--arm", required=True, choices=sorted(SHAPES), help="the arm to set beside the statement arm")
     ap.add_argument("--ids", help="the pre-registered ids, comma-separated (default: every published task)")
+    ap.add_argument("--machine", choices=("kaggle", "colab"), default="kaggle",
+                    help="colab: the pair run again on one Colab GPU (addendum 2, #687), from its own tables")
     a = ap.parse_args()
-    statement = pd.read_csv(RUNS / f"{MODEL}_swegemma_statement.csv")
-    other = pd.read_csv(RUNS / f"{MODEL}_swegemma_{a.arm}.csv")
+    base, label, out_name = table_names(a.machine, a.arm)
+    statement = pd.read_csv(RUNS / f"{MODEL}_swegemma_{base}.csv")
+    other = pd.read_csv(RUNS / f"{MODEL}_swegemma_{label}.csv")
     flags = task_flags(a.arm)
     ids = [i.strip() for i in a.ids.split(",") if i.strip()] if a.ids else sorted(flags.instance_id)
     rows = pair_rows(ids, statement, other, flags, a.arm)
-    out = RUNS / f"context_pairs_{a.arm}.csv"
+    out = RUNS / out_name
     frame = pd.DataFrame(rows)
     frame.to_csv(out, index=False)
     s = summary(rows, a.arm, FLAGS[a.arm] + COMMON_FLAGS)
@@ -150,8 +184,17 @@ def main() -> int:
              for name in ("statement", a.arm) if len(pairs) and pairs[f"{name}_arm_{m}"].notna().any()}
     extra = {}
     report_table = RUNS / f"{MODEL}_swegemma_report.csv"
-    if a.arm == "graph" and report_table.exists():   # the addendum: `graph` against `report`, described only
+    if a.machine == "kaggle" and a.arm == "graph" and report_table.exists():   # addendum 1: described only
         extra["graph_against_report"] = arm_cross(ids, pd.read_csv(report_table), other, "report", "graph")
+    if a.machine == "colab":
+        reached = {name: network_ids(RUNS / f"{MODEL}_swegemma_{lab}_settings.json")
+                   for name, lab in (("statement", base), (a.arm, label))}
+        extra["network"] = {"instance_ids": reached,
+                            "without_those_pairs": summary(without_network(rows, reached), a.arm, [])}
+        for name, table in (("statement", statement), (a.arm, other)):   # each arm beside Kaggle's: described only
+            kaggle = RUNS / f"{MODEL}_swegemma_{name}.csv"
+            if kaggle.exists():
+                extra[f"{name}_on_kaggle_and_on_colab"] = arm_cross(ids, pd.read_csv(kaggle), table, "kaggle", "colab")
     print(json.dumps({**s, "means": means, **extra}, indent=1))
     print(f"-> {out}")
     return 0
