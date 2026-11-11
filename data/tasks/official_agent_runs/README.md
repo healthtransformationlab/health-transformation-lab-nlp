@@ -66,3 +66,23 @@ Kaggle account's weekly 30-hour GPU allowance (Kaggle's own quota reading, befor
 One sampled run per task at temperature 0.2. Twenty tasks: the interval reaches 16%. The evaluator's two phases ran
 on different machines, as described above. This is not a leaderboard score: the leaderboard's tasks are the
 competition's own.
+
+# The competition's own development set: the controls (November 11, 2026)
+
+Before an agent's verdict on a development task in a Kaggle kernel can be read, the same verification must resolve
+the task with its reference patch and fail it with an empty one, as our own tasks were checked (spec 028, #668).
+`devset_controls.csv` holds both for the seeded 40 the agent runs on: `kaggle/official_controls_run.py` ran
+`kaggle/official_verify.py`, the evaluator's `verify_task` unmodified, in a private CPU kernel with the competition
+attached, from the competition's own folder, and the same pinned image as the agent's run. No model, no GPU.
+
+| Patch | Resolved |
+|---|---|
+| The reference patch | 24 of 40 |
+| An empty patch | 1 of 40 (`fastapi_14851`) |
+
+So 23 of the 40 can be verified in a Kaggle kernel: the reference patch passes and an empty one fails. The agent's
+result on the development set is counted over those 23, as ours is over the 93 that pass both controls. Of the 16
+whose reference patch fails, 12 (fastapi) stop before any test runs (exit code 2, an error collecting the tests: the
+kernel lacks something those tests import) and 4 (requests) fail their tests with the reference patch, as tests that
+need a network would offline. The table keeps ids, verdicts, exit codes and seconds only, never the competition's
+test output.

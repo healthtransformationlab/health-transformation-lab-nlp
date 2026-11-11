@@ -115,3 +115,30 @@ attempted. Of the 13 that pass this screen the model resolved 4; of the 35 that 
 - Eight raters shared the tasks, so a rater's leaning is spread over about a dozen tasks, not averaged out.
 - The same limits as the first screen: a failing task can still be resolved by a solution that happens to use the
   expected names, and a passing one can still be hard.
+
+# The same screen on 40 of the competition's development tasks (November 11, 2026)
+
+**Rated by AI reviewers only; no person checked these.** Read every rating as an AI reviewer's judgment (spec 028,
+issue #668).
+
+`devset_screen.csv` rates the seeded 40 of the competition's 129 development tasks that the agent ran on
+(`../official_agent_runs/`; fastapi 21, rich 15, requests 4), on the same two questions, with the same protocol, scale
+and pass rule as the 93 above. Four raters each took 10 tasks in a seeded shuffle, saw only those tasks' statements,
+hints, test patches and reference patches, and saw no other ratings. Only the ratings and the verdict are committed:
+the reasons quote the competition's tests, which are not ours to redistribute.
+
+## What it found
+
+| | Our 93 | The competition's 40 |
+|---|---|---|
+| Pass (both ratings 0 or 1) | 17 (18%) | 20 (50%) |
+| Tests need something the statement never gives (test rated 2 or 3) | 76 (82%) | 14 (35%) |
+| Statement vague or impossible to read (rated 2 or 3) | 19 (20%) | 11 (28%) |
+
+The competition's statements are no clearer than ours, but its tests far less often insist on a name, path or text the
+statement never gives. By repository: requests 4 of 4 pass, fastapi 10 of 21, rich 6 of 15.
+
+## What it cannot show
+
+Whether a person would agree: none of these 40 was checked by one. Forty tasks drawn from three libraries say little
+about each library alone.
