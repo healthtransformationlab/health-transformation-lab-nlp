@@ -10,6 +10,11 @@
    "label": "smoke-143c",
    "bundle": "jcblearning/htlnlp-official-htlnlp-143",
    "kernel_url": "https://raw.githubusercontent.com/healthtransformationlab/health-transformation-lab-nlp/9d2ddd4121955c2c2ee9a0b3cb562c199086d4c5/kaggle/official_agent_kernel.py"
+  },
+  {
+   "label": "smoke-batch",
+   "bundle": "jcblearning/htlnlp-official-smoke-batch",
+   "kernel_dataset": "jcblearning/htlnlp-colab-kernel-smoke-batch"
   }
  ]
 }
