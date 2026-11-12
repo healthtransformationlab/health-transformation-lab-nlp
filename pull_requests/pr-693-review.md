@@ -43,7 +43,7 @@ scripts refuse to write metadata that holds one.
 | Python and R parity, seeds, paths, prices, deck figures, secrets register, alerts, table writes: not touched | n/a |
 | Configuration: no setting changes. Environments: none on merge; the metadata of two public Kaggle datasets after it, by a metadata-only run (no new version) | ok |
 
-| The corrected descriptions of the task set were sent from this branch's head (`2e8f6c0`) on November 12, 2026 at 19:40 UTC, before the merge, at the owner's request the same afternoon: the text sent is the text this pull request merges, and the commit named in the card is the one the live files were published from (`167daa2`, workflow run 42750573206). Read back: 5,419 characters where there were 3,357, ending with the "Published from commit" line and holding the licence section; version 4, 265 files and the last-updated time unchanged | ok |
+| The corrected descriptions of the task set were sent from this branch's head (`2e8f6c0`) on November 12, 2026 at about 19:29 UTC, before the merge, at the owner's request the same afternoon: the text sent is the text this pull request merges, and the commit named in the card is the one the live files were published from (`167daa2`, workflow run 42750573206). Read back: 5,419 characters where there were 3,357, ending with the "Published from commit" line and holding the licence section; version 4, 265 files and the last-updated time unchanged | ok |
 
 Nothing blocking.
 
