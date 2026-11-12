@@ -88,6 +88,11 @@ def test_the_colab_pair_reads_its_own_tables_and_writes_its_own_file(cp):
     assert cp.table_names("kaggle", "graph") == ("statement", "graph", "context_pairs_graph.csv")
     assert cp.table_names("kaggle", "report") == ("statement", "report", "context_pairs_report.csv")
     assert cp.table_names("colab", "graph") == ("colab-statement", "colab-graph", "context_pairs_colab_graph.csv")
+    # a second notebook session made the same pair at the same time on another GPU (#687): its tables are its own too
+    assert cp.table_names("colab-l4", "graph") == ("colab-statement-l4", "colab-graph-l4",
+                                                    "context_pairs_colab_l4_graph.csv")
+    with pytest.raises(SystemExit):
+        cp.table_names("colab-l4", "report")
     with pytest.raises(SystemExit, match="only the graph arm"):
         cp.table_names("colab", "report")
 

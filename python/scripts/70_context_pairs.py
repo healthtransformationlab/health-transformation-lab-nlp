@@ -18,6 +18,11 @@ the test without any pair in which either side ran a command that reaches for th
 beside the Kaggle arm of the same text, which the addendum describes and does not test. No count is pooled across
 machines.
 
+`--machine colab-l4` is the same pair as a second notebook session made it at the same time, on an L4 (#687, the
+comment of 03:25 UTC on November 12): unplanned, and described beside the registered pair. It reads
+`..._swegemma_colab-statement-l4.csv` and `..._swegemma_colab-graph-l4.csv`, writes
+`context_pairs_colab_l4_graph.csv`, and also sets each of its arms beside the registered pair's, task by task.
+
 The report arm's context comes from each task's hidden test: what a test-first workflow has, not a benchmark
 condition. The graph arm's comes from the statement and the graph alone.
 """
@@ -41,6 +46,9 @@ MEASURES = ["agent_patch_bytes", "tool_call_count", "graph_tool_call_count", "pr
 FLAGS = {"report": ["is_import_error"], "graph": ["is_edited_node_listed", "is_node_named"]}
 COMMON_FLAGS = ["is_screen_pass", "is_edit_task", "is_first_sample"]
 SHAPES = {"report": "failure_report_shape.csv", "graph": "graph_context_shape.csv"}
+# The Colab pair (addendum 2, #687) and what its tables' names end with. Two notebook sessions made it at the same
+# time: the registered pair on an A100, and a second, unplanned one on an L4, kept apart.
+COLAB = {"colab": "", "colab-l4": "-l4"}
 FIRST = ("htlnlp_152,htlnlp_189,htlnlp_191,htlnlp_214,htlnlp_244,htlnlp_276,htlnlp_68,htlnlp_71,htlnlp_90,"
          "htlnlp_c95eedd3,htlnlp_cbc00f07,htlnlp_cc73f4cf,htlnlp_cf773377,htlnlp_pr21,htlnlp_pr28,htlnlp_pr31,"
          "htlnlp_pr34,htlnlp_pr37,htlnlp_pr47,htlnlp_pr54").split(",")   # the run of November 10
@@ -123,10 +131,11 @@ def arm_cross(ids: list[str], a_table: pd.DataFrame, b_table: pd.DataFrame, a: s
 def table_names(machine: str, arm: str) -> tuple[str, str, str]:
     """The baseline table's label, the arm's, and the pairs file: for the Kaggle arms (the first plan and addendum 1),
     or for the Colab pair (addendum 2, #687), whose tables are its own."""
-    if machine == "colab":
+    if machine in COLAB:
         if arm != "graph":
             raise SystemExit("on Colab only the graph arm was registered beside the statement arm (addendum 2)")
-        return "colab-statement", "colab-graph", "context_pairs_colab_graph.csv"
+        end = COLAB[machine]   # "" for the registered pair, "-l4" for the second session's
+        return f"colab-statement{end}", f"colab-graph{end}", f"context_pairs_colab{end.replace('-', '_')}_graph.csv"
     return "statement", arm, f"context_pairs_{arm}.csv"
 
 
@@ -166,8 +175,9 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--arm", required=True, choices=sorted(SHAPES), help="the arm to set beside the statement arm")
     ap.add_argument("--ids", help="the pre-registered ids, comma-separated (default: every published task)")
-    ap.add_argument("--machine", choices=("kaggle", "colab"), default="kaggle",
-                    help="colab: the pair run again on one Colab GPU (addendum 2, #687), from its own tables")
+    ap.add_argument("--machine", choices=("kaggle", *COLAB), default="kaggle",
+                    help="colab: the pair run again on one Colab GPU (addendum 2, #687), from its own tables; "
+                         "colab-l4: the same pair as a second session made it on an L4, described beside it")
     a = ap.parse_args()
     base, label, out_name = table_names(a.machine, a.arm)
     statement = pd.read_csv(RUNS / f"{MODEL}_swegemma_{base}.csv")
@@ -186,7 +196,7 @@ def main() -> int:
     report_table = RUNS / f"{MODEL}_swegemma_report.csv"
     if a.machine == "kaggle" and a.arm == "graph" and report_table.exists():   # addendum 1: described only
         extra["graph_against_report"] = arm_cross(ids, pd.read_csv(report_table), other, "report", "graph")
-    if a.machine == "colab":
+    if a.machine in COLAB:
         reached = {name: network_ids(RUNS / f"{MODEL}_swegemma_{lab}_settings.json")
                    for name, lab in (("statement", base), (a.arm, label))}
         extra["network"] = {"instance_ids": reached,
@@ -195,6 +205,9 @@ def main() -> int:
             kaggle = RUNS / f"{MODEL}_swegemma_{name}.csv"
             if kaggle.exists():
                 extra[f"{name}_on_kaggle_and_on_colab"] = arm_cross(ids, pd.read_csv(kaggle), table, "kaggle", "colab")
+            first = RUNS / f"{MODEL}_swegemma_colab-{name}.csv"   # the registered pair's arm of the same text
+            if a.machine != "colab" and first.exists():           # the two machines, task by task: described only
+                extra[f"{name}_on_the_a100_and_on_the_l4"] = arm_cross(ids, pd.read_csv(first), table, "a100", "l4")
     print(json.dumps({**s, "means": means, **extra}, indent=1))
     print(f"-> {out}")
     return 0
