@@ -30,7 +30,9 @@ def test_inputs_sit_where_kaggle_mounts_them(co, tmp_path):
 
 def test_the_kernel_gets_no_credential_and_no_way_out(co):
     """On Kaggle the kernels ran with internet off and no token in reach. A Colab machine has both, so the kernel's
-    process, and every command the agent runs under it, starts without them."""
+    process starts without them. That is all this shows. The evaluator starts each of the agent's commands from a
+    short list of environment names of its own: no credential is on it, and neither are the proxies set here, so a
+    command can reach the network (found by the review of #690). The commands are read for that afterwards."""
     env = co.kernel_env({"PATH": "/usr/bin", "HOME": "/root", "LD_LIBRARY_PATH": "/usr/lib64-nvidia",
                          "KAGGLE_API_TOKEN": "x", "KAGGLE_KEY": "x", "KAGGLE_USERNAME": "someone", "HF_TOKEN": "x",
                          "OPENAI_API_KEY": "x", "MY_SECRET": "x", "DB_PASSWORD": "x", "TBE_CREDS_ADDR": "172.28.0.1:8008",
@@ -262,6 +264,7 @@ def test_the_settings_of_a_colab_run_say_what_differs_from_a_kaggle_kernel(run):
                          competition=None, agent_commit="abc123", tasks_per_kernel=2, colab=True)
     assert s["kernel"]["machine_shape_asked"] == "Colab, one GPU" and s["kernel"]["docker_image"] is None
     assert s["kernel"]["internet"] != False and "no credential" in s["kernel"]["internet"]
+    assert "could reach the network" in s["kernel"]["internet"]   # the proxies do not reach the agent's commands
     assert any(n.startswith("All 2 tasks were given to one process on a Colab machine, each sealed until its turn")
                for n in s["notes"])
     assert not any("private, offline kernel" in n for n in s["notes"])
@@ -666,3 +669,16 @@ def test_once_merged_the_notebook_and_the_helper_read_main(co):
     assert 'BRANCH = "main"' in code
     assert co.BRANCH_FILES.endswith("/refs/heads/main/kaggle/")
     assert json.loads((REPO_ROOT / "kaggle" / "colab_official_run.json").read_text()).get("stop") is True
+
+
+def test_the_committed_colab_settings_say_the_agents_commands_could_reach_the_network():
+    """The five Colab runs' settings files said the proxies kept the run from the network. They were set on the
+    kernel's process and did not reach the agent's commands (the review of #690), so each file says so, and keeps the
+    audit that read every command."""
+    runs = TASKS_DIR / "official_agent_runs"
+    for label in ("colab-statement", "colab-graph", "colab-report", "colab-statement-l4", "colab-graph-l4"):
+        s = json.loads((runs / f"gemma-4-e4b-it-qat-w4a16-ct_swegemma_{label}_settings.json").read_text())
+        assert "could reach the network" in s["kernel"]["internet"], label
+        assert "no credential" in s["kernel"]["internet"], label
+        assert s["network_audit"]["traced_task_count"] == 93, label
+        assert any(n.startswith("Corrected on November 12, 2026") for n in s["notes"]), label

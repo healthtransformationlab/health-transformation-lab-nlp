@@ -58,7 +58,7 @@
   "machine_shape_asked": "Colab, one GPU",
   "docker_image": null,
   "competition_attached": null,
-  "internet": "at the machine's edge: the kernel's process had no credential and every proxy pointed at a port nothing listens on (kaggle/colab_official.py)",
+  "internet": "open at the machine's edge. The kernel's process had no credential and every proxy pointed at a port nothing listens on, but the evaluator starts each of the agent's commands from a short list of environment names of its own, which holds neither: no credential reached a command, and a command could reach the network. Every command is read for that afterwards (network_audit; kaggle/colab_official.py)",
   "tasks_per_kernel": 93
  },
  "agent_commit_sha": "b95b235739268e311cddcb254a7cb58d07a7b89c",
@@ -199,7 +199,8 @@
   "Two notebook sessions were open and both made the first arm at the same time, each on its own machine, from the same sealed bundle, order and kernel file (issue 687, the comment of 03:25 UTC on November 12, written before any patch was verified). This table is the notebook session that began at 01:17:24 UTC on one NVIDIA A100-SXM4-40GB: the registered pair. The other session's tables are named colab-statement-l4 and colab-graph-l4, and no count is added across the two machines.",
   "Read from version 36 of the arm's private results dataset, after checking that its log opens with that session's start.",
   "Each patch was verified on the collecting machine by the competition's evaluator, installed there on November 11, 2026 from the competition's wheelhouse (swegemma 0.2.11, adk-submission 0.2.13, adk-eval-core 0.1.0), after its two controls on the published files gave the committed verdicts on that machine: the reference patch resolved 93 of 93 tasks and an empty patch 0 of 93.",
-  "Its kernel started at 02:04:33 UTC on November 12, 2026, its first task at 02:09:33, and it ended at 04:07:33 UTC with exit 0."
+  "Its kernel started at 02:04:33 UTC on November 12, 2026, its first task at 02:09:33, and it ended at 04:07:33 UTC with exit 0.",
+  "Corrected on November 12, 2026, after the review of pull request 690: `kernel.internet` said the proxies kept the run from the network. They were set on the kernel's process and did not reach the agent's commands, which the evaluator starts from its own short list of environment names. The verdicts, the counts and the network audit of this run are unchanged."
  ],
  "network_audit": {
   "command_count": 161,

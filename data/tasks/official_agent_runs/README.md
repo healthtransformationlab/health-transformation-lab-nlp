@@ -421,10 +421,15 @@ Not as on Kaggle:
   kernels recorded, and the wheelhouse is installed over them by the kernel, as on Kaggle.
 - **The Docker SDK** is installed from PyPI: the evaluator imports it even for its subprocess sandbox. No
   container is started.
-- **A network.** A Colab machine has one. The kernel's process starts with no credential and with every proxy
-  pointed at a port nothing listens on, and every command the agent ran is read afterwards for a reach at the
-  network (`network_command_count` in `kaggle/colab_official.py`: a download tool, an installer, git over a
-  remote). The counts are with the paired tests below.
+- **An open network.** A Colab machine has one. The kernel's process starts with no credential and with every proxy
+  pointed at a port nothing listens on, as addendum 2 says. That did not reach the agent's commands: the evaluator
+  starts each command from a short list of environment names of its own (`_SAFE_ENV_KEYS` in `adk_eval_core`),
+  which holds neither a credential nor a proxy. So no credential was in a command's reach, and a command could
+  reach the network. The review of this work's pull request found it on November 12, after all five runs; until
+  then this file, the runs' settings files and issue 687 said the proxies held. What covers the commands is the
+  reading the addendum registers, of every command afterwards (`network_command_count` in
+  `kaggle/colab_official.py`: a download tool, an installer, git over a remote), and a wider reading made after the
+  review (below).
 - **Three changes to the kernel file**, listed on issue 687 before the first arm started, as addendum 2 allows for
   what a test run shows is needed (`kaggle/official_agent_kernel.py` at `db7e928`, SHA-256
   `6f2500defeeb91ffa96cd048675b2b3aab418405cf2b483bbf05a74007dcc649`; the addendum had pinned `26209de7…`). It
@@ -515,10 +520,11 @@ network (a download tool, an installer, git over a remote). The commands read: `
 104, `colab-report` 154, `colab-statement-l4` 150, `colab-graph-l4` 118. No command of `colab-statement` or
 `colab-graph` does, so addendum 2's sensitivity test is its primary test. One command of `colab-report` does: an
 installer, an editable install of the repository itself (`pip install -e .`), in `htlnlp_cc163083`, a task no run
-resolved. pip had no index and every proxy pointed at a port nothing listens on. Without that pair, addendum 3's
-test has 92 pairs: both resolved 3, the baseline alone 1, the report alone 1, p = 1.0. On the L4, which no test
-rests on: `colab-statement-l4` 2 in `htlnlp_pr2`; without such pairs its own table has 92 pairs, both resolved 4,
-the baseline alone 1, graph retrieval alone 4, p = 0.375.
+resolved. It ran, and pip fetched the package's build tools, which is how the open network shows. Without that
+pair, addendum 3's test has 92 pairs: both resolved 3, the baseline alone 1, the report alone 1, p = 1.0. On the
+L4, which no test rests on: `colab-statement-l4` 2 in `htlnlp_pr2` (two tries at the same editable install: one
+refused as written, one stopped at the command's time limit); without such pairs its own table has 92 pairs, both
+resolved 4, the baseline alone 1, graph retrieval alone 4, p = 0.375.
 
 ## Described, not tested
 
@@ -617,6 +623,46 @@ estimate, not what was paid: Colab is the owner's paid subscription, charged in 
 GPU-hour, and what these runs used of it was not read. The estimate covers the tasks' own time, not the model's
 loading, the fetching of a bundle, or the hours a machine waited.
 
+## Found by the review of the pull request, after the runs
+
+An independent review of pull request 690 read the helper against the evaluator's code and the runs' output. Two
+things were not as this file and the addenda had said. Neither changes a verdict or a count, and both are said here
+so that the runs are read for what they were.
+
+1. **The agent's commands could reach the network** (above). The proxies and pip's missing index were set on the
+   kernel's process, and the evaluator does not pass them on. The five runs' settings files said "every proxy
+   pointed at a port nothing listens on" as if that covered the agent; their `kernel.internet` now says a command
+   could reach the network, with a note of the correction, and a test holds it
+   (`test_the_committed_colab_settings_say_the_agents_commands_could_reach_the_network`).
+2. **Each earlier run's output stayed on the machine.** Addendum 2 says nothing of the first arm's is kept for the
+   second but the downloaded wheels and model. The helper set a finished run's output folder aside beside the next
+   run's (`/content/htl_kaggle/working_before_<label>_<time>`) and did not remove it. So during a later arm, the
+   earlier arm's patches for the same tasks were on the same disk: the agent's own earlier patches, never a
+   reference fix or a test.
+
+**What was read to see whether either mattered.** Every tool call of the five runs, 4,383 in all (reads, edits,
+writes, commands, graph tools), 687 of them commands, for a URL, a download tool, an installer, git over a remote,
+a network library, or a path under `/content`, `/kaggle`, `/root`, `/home`, `/etc`, `/proc` or `/var`:
+
+- 3 commands reach for the network, the same 3 the registered audit counts, all editable installs of the repository
+  itself: 1 in `colab-report` (`htlnlp_cc163083`); 2 in `colab-statement-l4` (`htlnlp_pr2`). No run resolved either
+  task. No command downloads, clones or fetches anything.
+- 83 other calls hold such a word, all of them edits or writes of the repository's own files: a URL in a notebook
+  cell or a document, an install line in a workflow or a guide, an import of a network library in code the agent
+  wrote or edited. A file that is written is not a command that is run, and none of these tasks is among the
+  resolved ones (next line).
+- In the 27 task-runs that ended resolved, no tool call of any kind holds such a word.
+- No tool call names a path under any of those folders. The only absolute path any command names is `/workspace`,
+  the sandbox's own, and no command steps up out of its workspace or changes to `/` or the home folder. The tables'
+  `outside_workspace_call_count` does not cover `/content`, so this reading is what shows that no run looked at an
+  earlier run's output.
+
+The review's other findings are about how the helper fails, not about these runs, none of which was interrupted or
+resumed: a refused last upload reported as sent, a stop from the notebook's button leaving the kernel going, a
+status call that fails being read as "nothing to resume", a bundle folder that is not empty counting as complete,
+the audit being a list of words over commands alone, and the runner not checking its Colab options together. They
+are issue 691, to be closed before the helper is used again. The run list says stop.
+
 ## Checks
 
 - **Each run was read from its own session's last upload**, by version and by the session start its log opens
@@ -652,6 +698,7 @@ difference, at a size where only a large one could show. One sampled run per tas
 the two runs of the baseline show how much one more draw moves the count. The L4 pair is a second run of the
 design that nobody planned, on a slower GPU, and is not added to the registered pair. The `colab-report` arm is
 not a benchmark condition: its context comes from the hidden test. Not the Kaggle arms' environment: one GPU,
-another Python, nine packages at other versions, so no count here completes or corrects a Kaggle arm, and the
+another Python, nine packages at other versions, and a network the agent's commands could reach where Kaggle's
+kernels had none, so no count here completes or corrects a Kaggle arm, and the
 Kaggle baseline is still owed (issue 681). Every run had 5 minutes and 40 tool calls a task, not the leaderboard's
 limits, on this project's own tasks: not a leaderboard score.

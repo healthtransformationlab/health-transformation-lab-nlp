@@ -176,6 +176,15 @@ def merge_parts(out: Path) -> None:
             p.unlink()
 
 
+# What a Colab run's settings say of the network. The proxies set on the kernel's process do not reach the agent's
+# commands: the evaluator's sandbox starts each from its own short list of environment names (the review of #690).
+COLAB_INTERNET = ("open at the machine's edge. The kernel's process had no credential and every proxy pointed at a port "
+                  "nothing listens on, but the evaluator starts each of the agent's commands from a short list of "
+                  "environment names of its own, which holds neither: no credential reached a command, and a command "
+                  "could reach the network. Every command is read for that afterwards (network_audit; "
+                  "kaggle/colab_official.py)")
+
+
 def trace_commands(trace: dict) -> list[str]:
     """Every command the agent ran, from the evaluator's own trace of a task."""
     out = []
@@ -346,8 +355,7 @@ def settings_for(result: dict, seed: int | None, drawn: list[str], pool_count: i
         "events_compaction": result.get("events_compaction"),
         "kernel": {"machine_shape_asked": "Colab, one GPU" if colab else machine_shape,
                    "docker_image": None if colab else docker_image, "competition_attached": competition,
-                   "internet": ("at the machine's edge: the kernel's process had no credential and every proxy "
-                                "pointed at a port nothing listens on (kaggle/colab_official.py)") if colab else False,
+                   "internet": COLAB_INTERNET if colab else False,
                    "tasks_per_kernel": tasks_per_kernel},
         "agent_commit_sha": agent_commit,
         "sample": {"seed": seed, "drawn_count": len(drawn), "pool_count": pool_count, "instance_ids": drawn,

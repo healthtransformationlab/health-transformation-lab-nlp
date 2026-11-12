@@ -10,11 +10,14 @@ network at the machine's edge.
 
 Two things a Kaggle kernel gave for free are done here by hand:
 
-- **No credential in reach.** The kernel's process, and every command the agent runs under it, starts from an
-  environment with no token, no account name and no address of Colab's own credential services.
-- **No way out.** Every proxy variable points at a port nothing listens on, pip has no index, and the Hugging Face
-  hub is offline. That is softer than Kaggle's "internet off", so the agent's commands are read afterwards
-  (`network_command_count`) and the count is reported.
+- **No credential in reach.** The kernel's process starts from an environment with no token, no account name and no
+  address of Colab's own credential services. The evaluator then starts each of the agent's commands from a short
+  list of environment names of its own, and no credential is on it.
+- **The network is read, not blocked.** For the kernel's process every proxy variable points at a port nothing
+  listens on, pip has no index, and the Hugging Face hub is offline. None of that reaches the agent's commands: the
+  evaluator's list of names holds no proxy, so a command can reach the network (the review of #690 found this after
+  the runs of #687). What covers the commands is that each is read afterwards (`network_command_count`) and the
+  count is reported, with the tasks it was in.
 
 Everything is logged to one file, and the log and whatever the kernel wrote go to a private Kaggle dataset when the
 run ends, however it ends, and every few minutes while it runs: the run can be read without the notebook's screen.
