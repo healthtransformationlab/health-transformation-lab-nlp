@@ -655,3 +655,14 @@ def test_a_colab_run_can_be_read_from_one_version_of_its_dataset_and_only_from_t
     run.check_colab_session(log, None)                                      # none named: nothing is checked
     with pytest.raises(SystemExit, match="00:37:11"):
         run.check_colab_session(log, "00:37:11")
+
+
+def test_once_merged_the_notebook_and_the_helper_read_main(co):
+    """The runs of #687 were made from their feature branch, which goes when it is merged. On `main` the notebook and
+    the helper read `main`, and the run list says stop, so a notebook opened there makes nothing and gives its GPU
+    back. A later run is listed on a branch of its own, with both pointed at that branch while it is made (this test
+    fails there until the branch's last commit points them back and sets stop: it is not mergeable before)."""
+    code = "".join("".join(c["source"]) for c in json.loads(NOTEBOOK.read_text())["cells"] if c["cell_type"] == "code")
+    assert 'BRANCH = "main"' in code
+    assert co.BRANCH_FILES.endswith("/refs/heads/main/kaggle/")
+    assert json.loads((REPO_ROOT / "kaggle" / "colab_official_run.json").read_text()).get("stop") is True
