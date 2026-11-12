@@ -91,10 +91,10 @@ def test_the_colab_pair_reads_its_own_tables_and_writes_its_own_file(cp):
     # a second notebook session made the same pair at the same time on another GPU (#687): its tables are its own too
     assert cp.table_names("colab-l4", "graph") == ("colab-statement-l4", "colab-graph-l4",
                                                     "context_pairs_colab_l4_graph.csv")
-    with pytest.raises(SystemExit):
-        cp.table_names("colab-l4", "report")
-    with pytest.raises(SystemExit, match="only the graph arm"):
-        cp.table_names("colab", "report")
+    with pytest.raises(SystemExit, match="did not make the report arm"):
+        cp.table_names("colab-l4", "report")                       # the second session made the pair only
+    # addendum 3: the failing test's report as a third arm on the same machine, beside the same baseline
+    assert cp.table_names("colab", "report") == ("colab-statement", "colab-report", "context_pairs_colab_report.csv")
 
 
 def test_the_sensitivity_analysis_leaves_out_a_pair_in_which_either_side_reached_for_the_network(cp, tmp_path):

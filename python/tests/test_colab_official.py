@@ -628,6 +628,19 @@ def test_the_run_list_gives_each_session_its_own_second_arm():
     assert "gpu" not in by_label["colab-statement-try2"]          # both sessions were already making it
 
 
+def test_the_report_arm_is_listed_for_the_session_that_made_the_registered_pair_and_after_it():
+    """Addendum 3 (#687): the failing test's report as a third arm on the same machine as the pair. It is listed last,
+    for the A100 alone, with a bundle and results of its own: the L4 session passes it by."""
+    plan = json.loads((REPO_ROOT / "kaggle" / "colab_official_run.json").read_text())
+    labels = [r["label"] for r in plan["runs"]]
+    report = plan["runs"][labels.index("colab-report")]
+    assert labels.index("colab-report") > labels.index("colab-graph-try2") and labels[-1] == "colab-report"
+    assert report["gpu"] == "A100"
+    assert report["bundle"].endswith("/htlnlp-official-colab-report")
+    assert report["kernel_dataset"].endswith("/htlnlp-colab-kernel-colab-report")
+    assert len({r["bundle"] for r in plan["runs"]}) == 3            # one sealed bundle per text given with the task
+
+
 def test_a_colab_run_can_be_read_from_one_version_of_its_dataset_and_only_from_the_session_meant(run):
     """Two sessions uploaded to one dataset in turn, so "the latest version" is whichever sent last. An arm is read
     from a version by number, and only if that version's log opens with the session it is meant to be."""
