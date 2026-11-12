@@ -42,9 +42,10 @@ the competition's evaluator (above).
   task whose patch names it is left out. `data/external/maccrobat/course/` (a course's preprocessed files, received
   with no stated redistribution licence) is withheld from every snapshot, and the one task that added those files
   is left out; `withheld_paths` in the repository's `data/tasks/snapshot_index.csv` lists them.
-- **Graphs and embeddings** are named `<repo name>_<base_commit>`, as the competition's are. The graphs come from
-  an AST walk of the package (NetworkX node-link JSON, `calls` edges). The embeddings give one 256-float vector per
-  graph node, made with EmbeddingGemma (`google/embeddinggemma-300m`, cut from 768 dimensions and renormalised).
+- **Graphs and embeddings** are named as the competition's are: the repository's name, an underscore and the base
+  commit. The graphs come from an AST walk of the package (NetworkX node-link JSON, `calls` edges). The embeddings
+  give one 256-float vector per graph node, made with EmbeddingGemma (`google/embeddinggemma-300m`, cut from 768
+  dimensions and renormalised).
   The competition doesn't name its embedding model, so similarity with its vectors is unverified.
 - **Wheels are not included.** They are third-party packages under their own licences, and the competition's
   sandbox ships its own. `python scripts/55_build_tasks.py --wheels` downloads them for Python 3.13.

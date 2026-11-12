@@ -3,6 +3,7 @@
 # file or column has no entry. Describe what the data holds, as the code makes it: never more than it shows.
 #
 # datasets.<slug>.files: a description per file; keys are paths in the dataset, `*` matches within a name.
+# No description may hold a "<": Kaggle reads it as the start of a tag and keeps nothing after it (#692).
 #   A file entry may name `other_columns`: the description for columns named after a method or a status.
 #   file_columns: {path pattern: {column: description}} for a column whose shared name means something else in
 #   that file (an LLM's `grade` is its answer, not the truth); these win over the shared description.
@@ -124,10 +125,11 @@ datasets:
         python/ on the import path, so the competition's evaluator can import the package.
       "graphs/*.json": >-
         A code graph of the package at a base commit: NetworkX node-link JSON, one node per module, class and
-        function with its source text, and calls edges. Named <repo name>_<base_commit>, as the competition's.
+        function with its source text, and calls edges. Named as the competition's are: the repository's name, an
+        underscore and the base commit.
       "embeddings/*.npz": >-
         One 256-dimension float32 vector per graph node, keyed by node id (EmbeddingGemma, cut from 768 dimensions
-        and renormalised). Named <repo name>_<base_commit>, as the competition's.
+        and renormalised). Named as the competition's are: the repository's name, an underscore and the base commit.
     file_columns:
       swegemma_verification.csv:
         reason_text: Why the evaluator did not resolve the task with that patch; empty when it did.
@@ -287,7 +289,9 @@ columns:
   current_note_set_sha256: Hash of the current review notes; a file whose hash differs is pending.
 
   # task set (tasks.jsonl, the competition's fields)
-  instance_id: The task's id (htlnlp_<pr or commit>).
+  instance_id: >-
+    The task's id, htlnlp_ and then one of three things: an issue's number, pr and a pull request's number, or
+    the first eight characters of a commit.
   repo: The repository the task comes from (owner/name).
   base_commit: The commit the task starts from; the snapshot holds the repository at this commit.
   patch: The fix as a unified diff, test files excluded.

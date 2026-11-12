@@ -82,6 +82,45 @@ def test_each_dataset_has_a_cover_sources_and_an_update_frequency(slug):
         assert im.size == (1120, 560)                     # 2:1, as Kaggle crops covers
 
 
+# --- Kaggle keeps nothing after a "<" (#692) -------------------------------------------------------------------
+
+def test_a_text_kaggle_would_cut_is_reported():
+    meta = {"title": "T", "subtitle": "S", "description": "Files are named `<repo>_<commit>`. More.",
+            "userSpecifiedSources": "from the repository",
+            "resources": [{"path": "a.csv", "description": "Named <repo>, as theirs.",
+                           "schema": {"fields": [{"name": "id", "description": "The id (x_<number>)."},
+                                                 {"name": "ok", "description": "Plain words."}]}},
+                          {"path": "b.csv", "description": "Plain words."}]}
+    where = docs.cut_by_kaggle(meta)
+    assert [w.split(":")[0] for w in where] == ["description", "a.csv", "a.csv"]
+    assert "column id" in where[2]
+    assert docs.cut_by_kaggle({**meta, "description": "Plain.", "resources": meta["resources"][1:]}) == []
+
+
+@pytest.mark.parametrize("name", sorted(pub.DATASETS))
+def test_no_dataset_sends_text_kaggle_would_cut(name):
+    """The card, the sources and every file and column description, as publish.py builds them."""
+    d = pub.DATASETS[name]
+    meta = {"title": d["title"], "subtitle": d["subtitle"], "description": pub.card(name, "abc1234"),
+            **docs.dataset(d["slug"]), "resources": docs.resources(d["slug"], pub.files_of(name))}
+    assert docs.cut_by_kaggle(meta) == []
+
+
+def test_the_task_set_sends_no_text_kaggle_would_cut(tmp_path):
+    tasks = _load("publish_tasks", REPO_ROOT / "kaggle" / "publish_tasks.py")
+    files = _task_files(tmp_path)
+    card = tasks._card({dest: 1 for dest in files}, 1, "abc1234")
+    assert docs.cut_by_kaggle(tasks._meta("someone", card, files)) == []
+
+
+def test_writing_the_metadata_refuses_text_kaggle_would_cut(tmp_path):
+    meta = {"title": "T", "id": "someone/perio-bench-notes", "description": "ends `ai_predictions_<model>.csv`",
+            "licenses": [{"name": "CC-BY-4.0"}], "resources": []}
+    with pytest.raises(SystemExit, match="Kaggle would cut"):
+        pub.write_metadata(tmp_path / "out", meta, "perio-bench-notes")
+    assert not (tmp_path / "out").exists() and not pub.meta_dir(tmp_path / "out").exists()   # nothing written
+
+
 # --- publish.py sends them -------------------------------------------------------------------------------------
 
 def test_the_build_carries_resources_sources_frequency_and_a_cover_beside_it(tmp_path):

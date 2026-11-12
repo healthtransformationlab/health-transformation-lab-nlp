@@ -106,7 +106,11 @@ def for_metadata_update(meta: dict) -> dict:
 
 
 def write_metadata(out: Path, meta: dict, slug: str) -> None:
-    """dataset-metadata.json in the build, and the same with the cover in meta_dir(out), for the metadata update."""
+    """dataset-metadata.json in the build, and the same with the cover in meta_dir(out), for the metadata update.
+    Refuses text Kaggle would cut at a "<" before anything is written (#692)."""
+    cut = docs.cut_by_kaggle(meta)
+    if cut:
+        raise SystemExit(f"{len(cut)} text(s) Kaggle would cut at a '<': {cut[0]}")
     (out / "dataset-metadata.json").write_text(json.dumps(meta, indent=1) + "\n")
     side = meta_dir(out)
     if side.exists():
