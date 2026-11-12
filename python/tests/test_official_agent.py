@@ -614,6 +614,28 @@ def test_a_batch_kernel_that_kaggle_refuses_stops_the_run_with_kaggles_own_words
     assert run.push_kernel(Accepting(), tmp_path, 60, "someone/htlnlp-offrun-x") is None
 
 
+def test_a_kernel_refused_for_the_gpu_quota_says_where_more_hours_come_from(run, tmp_path):
+    """After that refusal the rerun went to Colab, and nobody had checked that a Colab subscription linked to the
+    Kaggle account adds GPU hours on Kaggle itself (#698). The refusal now names that check; another refusal, which
+    more hours would not cure, does not."""
+    class OutOfHours:
+        def kernels_push(self, folder, timeout=None):
+            return type("Response", (), {"error": "Maximum weekly GPU quota of 30.00 hours reached."})()
+
+    class TwoSessions:
+        def kernels_push(self, folder, timeout=None):
+            return type("Response", (), {"error": "You have reached the maximum of 2 concurrent GPU sessions."})()
+
+    with pytest.raises(SystemExit) as out_of_hours:
+        run.push_kernel(OutOfHours(), tmp_path, 60, "someone/htlnlp-offrun-x")
+    said = str(out_of_hours.value)
+    assert said.startswith("someone/htlnlp-offrun-x: Kaggle refused the kernel: Maximum weekly GPU quota")
+    assert "Colab Pro or Pro+" in said and "kaggle/README.md" in said and "GPU hours" in said
+    with pytest.raises(SystemExit) as two_sessions:
+        run.push_kernel(TwoSessions(), tmp_path, 60, "someone/htlnlp-offrun-x")
+    assert "Colab" not in str(two_sessions.value)
+
+
 def test_a_context_needs_a_label_so_its_rows_never_join_another_runs_table(run):
     """Without a label a batch writes to the table of the run of November 10. A run with added context is a different
     condition: it must name its own table."""

@@ -597,15 +597,23 @@ def reusable_output(out: Path, reuse: bool) -> bool:
     return bool(reuse) and (Path(out) / "result.json").exists()
 
 
+# Said after Kaggle's own words when a kernel is refused for the weekly GPU quota: the check to make before a smaller
+# run, a wait or another platform (AGENTS.md, "Failures, retries and reruns"; #698).
+QUOTA_NEXT_STEP = (" Before another path: is a Colab Pro or Pro+ subscription linked to the Kaggle account (15 or 30 "
+                   "more GPU hours a week)? See kaggle/README.md, 'GPU hours'.")
+
+
 def push_kernel(api, folder: Path, timeout_seconds: int, ref: str) -> None:
     """Push a batch's kernel, and end the run in Kaggle's own words if Kaggle refuses it (no GPU allowance left, two
-    GPU sessions already running): there is then no kernel to wait for."""
+    GPU sessions already running): there is then no kernel to wait for. A refusal for the GPU quota also names the
+    check that comes before another path."""
     try:
         refused = getattr(api.kernels_push(str(folder), timeout=str(timeout_seconds)), "error", None)
     except Exception as e:  # noqa: BLE001 - whatever the client raises is the refusal's text
         refused = f"{type(e).__name__}: {e}"
     if refused:
-        raise SystemExit(f"{ref}: Kaggle refused the kernel: {str(refused)[:400]}")
+        more = QUOTA_NEXT_STEP if "gpu quota" in str(refused).lower() else ""
+        raise SystemExit(f"{ref}: Kaggle refused the kernel: {str(refused)[:400]}{more}")
 
 
 def run_batch(a, api, user: str, ids: list[str], tasks: dict, manifest: dict, overrides: dict, pd) -> int:

@@ -78,12 +78,34 @@ item there is public on its own. For your own list, on kaggle.com: your profile 
 collection** "Health Transformation Lab: Perio Bench", then add the three notebooks, the two datasets and the model
 `perio-bench-note-classifier` (each page's ⋮ menu → *Add to collection*). It's optional (issue #270).
 
+## GPU hours
+
+Kaggle's free GPU allowance is about 30 hours a week; the exact number, and how much of it is used, is on
+kaggle.com under **Settings**. A kernel pushed with none left is refused: "Maximum weekly GPU quota of 30.00 hours
+reached." Before a run is made smaller, put off or moved to another platform, check whether Kaggle itself gives
+more (AGENTS.md, "Failures, retries and reruns"):
+
+- **A linked Colab subscription adds hours.** A Colab Pro or Pro+ subscription linked to the Kaggle account adds
+  15 or 30 GPU hours a week on Kaggle, on top of the free allowance
+  ([Kaggle's announcement](https://www.kaggle.com/product-announcements/575468), read November 12, 2026).
+- **To link one:** open any notebook in Kaggle's editor, **File → Link to Colab**, and sign in with the Google
+  account that holds the subscription. The added hours show under Settings, sometimes after a delay.
+- **It can change.** Kaggle describes it as an experimental feature, for one Kaggle account per subscription
+  ([Kaggle's notebook docs](https://www.kaggle.com/docs/notebooks)). Read the number under Settings before
+  planning a run on it.
+- **Only the account's owner can link it.** An agent asks the owner, and the issue says what was checked.
+
+Why this is written down: on November 11, 2026 the weekly allowance ran out before a planned rerun. The run moved
+to Colab, with another Python, other package versions and a notebook opened by hand, and nobody had checked for
+the link first (#698).
+
 ## When something fails
 
 | Symptom | Cause and fix |
 |---|---|
 | "Kaggle rejected the credentials" | Regenerate the token; check `KAGGLE_USERNAME` is the name in kaggle.com/<username>, not your email |
 | Run stops at "phone verification" or has no GPU | Verify your phone on Kaggle; GPU quota is about 30 hours a week |
+| "Maximum weekly GPU quota ... reached" | The week's GPU hours are spent. Before another path, see [GPU hours](#gpu-hours): a linked Colab Pro or Pro+ subscription adds 15 or 30 a week |
 | Status `error` | Read the log the workflow printed; the full log is in the run's artifact |
 | Still running after the wait | Run again with `collect_only` |
 | The results PR has no CI | PRs opened by the workflow token don't start CI: push any commit to the branch |

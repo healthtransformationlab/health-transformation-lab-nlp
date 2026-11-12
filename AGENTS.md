@@ -201,6 +201,10 @@ A SEV2 that fires every week for the same cause gets its cause fixed or its leve
   (no GPU free, a network blip); a timeout applies to each retry. A bad setting or bad data fails at once.
 - A failure says how it ended (exit code, signal, memory) and is logged where it survives the process
   (`runlog`), never into a file opened for append on a volume.
+- **A quota or allowance that stops a run is raised before it is worked around.** Look first for the platform's
+  own way to get more, and ask the owner to use it: on Kaggle, a linked Colab Pro or Pro+ subscription adds 15 or
+  30 GPU hours a week ([`kaggle/README.md`](kaggle/README.md), "GPU hours"). A smaller run, a wait or a second
+  platform comes after that, and the issue or PR says what was checked.
 
 ## Ingestion and schema drift
 
