@@ -384,6 +384,26 @@ def server_gone(done: list) -> bool:
                                   for r in last)
 
 
+def earlier_runs(out: Path, instance_ids: list) -> dict:
+    """What an earlier start of this batch finished, read from each task's own result file in the output folder, so
+    a batch that starts again does not run those tasks again (#687: a Colab session can drop, and the helper gives
+    a run its earlier output back). A task that was skipped, or had no answer from the model server, was not run
+    and is not kept. On Kaggle a kernel starts with an empty output folder, so nothing is found."""
+    marks = ("session timeout", "InternalServerError", "Connection error", "APIConnectionError", "ServiceUnavailable")
+    kept = {}
+    for iid in instance_ids:
+        try:
+            one = json.loads((Path(out) / "tasks" / iid / "result.json").read_text())
+        except (OSError, ValueError):   # not run, or its file was cut off mid-write
+            continue
+        if one.get("is_skipped"):
+            continue
+        if one.get("llm_call_count") == 0 and "error" not in one and any(m in (one.get("agent_error") or "") for m in marks):
+            continue
+        kept[iid] = {**one, "is_resumed": True}
+    return kept
+
+
 def run_batch(root: Path, meta: dict, key: bytes, agent_dir: Path, models, adapters) -> dict:
     """Each task of the batch in turn: open its sealed files, run it, delete them. Stops before a task that could
     not finish inside the kernel's own time budget, so the GPU allowance is never overrun mid-task."""
@@ -392,7 +412,10 @@ def run_batch(root: Path, meta: dict, key: bytes, agent_dir: Path, models, adapt
     comp = find_competition() if from_competition else None
     deadline = T_START + float(meta.get("deadline_minutes", 45)) * 60
     per_task = float(meta.get("task_minutes_reserved", 6.5)) * 60
-    runs: dict = {}
+    runs: dict = earlier_runs(OUT, meta["instance_ids"])
+    if runs:
+        result["resumed_task_count"] = len(runs)
+        print(f"an earlier start finished {len(runs)} of the {len(meta['instance_ids'])} tasks: not run again", flush=True)
     for iid in meta["instance_ids"]:
         if iid in runs:
             continue

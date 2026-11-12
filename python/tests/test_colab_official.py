@@ -351,3 +351,121 @@ def test_a_colab_run_keeps_its_inputs_and_output_out_of_kaggles_folders(co):
     assert str(co.KAGGLE).startswith("/content/")
     env = co.kernel_paths(co.KAGGLE)
     assert env == {"HTL_INPUT": str(co.KAGGLE / "input"), "HTL_OUT": str(co.KAGGLE / "working")}
+
+
+# --- a Colab session can drop (the owner runs it from a phone): an arm picks up where it stopped (#687) -----------
+
+def test_a_batch_that_starts_again_keeps_the_tasks_it_finished_and_runs_the_rest(tmp_path):
+    """On Kaggle a kernel starts with an empty output folder and nothing is found. On Colab the helper gives a run
+    its own earlier output back, and the kernel then runs only what was not run. A task that was skipped, or had no
+    answer from the model server, was not run and is run."""
+    earlier = _kernel("earlier_runs")["earlier_runs"]
+    assert earlier(tmp_path, ["a", "b"]) == {}                              # a first start: nothing there
+    for iid, one in {"a": {"instance_id": "a", "patch": "diff", "llm_call_count": 7, "tool_call_count": 9},
+                     "b": {"instance_id": "b", "is_skipped": True, "skip_reason_text": "the kernel's time budget ran out"},
+                     "c": {"instance_id": "c", "llm_call_count": 0, "agent_error": "Connection error."},
+                     "d": {"instance_id": "d", "llm_call_count": 0, "agent_error": "the prompt names an unset variable"},
+                     "e": {"instance_id": "e", "error": "ValueError: a task that broke in the kernel"}}.items():
+        (tmp_path / "tasks" / iid).mkdir(parents=True)
+        (tmp_path / "tasks" / iid / "result.json").write_text(json.dumps(one))
+    (tmp_path / "tasks" / "f").mkdir()                                       # in flight when the session dropped
+    (tmp_path / "tasks" / "g").mkdir()
+    (tmp_path / "tasks" / "g" / "result.json").write_text('{"instance_id": "g", "pat')   # cut off mid-write
+    kept = earlier(tmp_path, ["a", "b", "c", "d", "e", "f", "g", "h"])
+    assert sorted(kept) == ["a", "d", "e"]                                   # run, whatever came of it: kept as it was
+    assert kept["a"]["patch"] == "diff" and kept["a"]["is_resumed"] is True
+    src = (REPO_ROOT / "kaggle" / "official_agent_kernel.py").read_text()
+    assert "runs: dict = earlier_runs(OUT, meta[\"instance_ids\"])" in src
+
+
+def test_a_run_reads_what_its_own_earlier_start_left_on_kaggle(co, tmp_path):
+    assert co.earlier_output(tmp_path) == ("fresh", 0)                       # no such dataset, or nothing in it
+    work = tmp_path / "working"
+    for iid in ("a", "b"):
+        (work / "tasks" / iid).mkdir(parents=True)
+        (work / "tasks" / iid / "result.json").write_text("{}")
+    (work / "tasks" / "c").mkdir()                                           # in flight: no result yet
+    assert co.earlier_output(tmp_path) == ("partial", 2)
+    (work / "result.json").write_text(json.dumps({"error": "ModuleNotFoundError: docker", "finished_ts": "t"}))
+    assert co.earlier_output(tmp_path) == ("partial", 2)                     # its kernel ended on an error: go on
+    (work / "result.json").write_text(json.dumps({"finished_ts": "2026-11-12T03:00:00Z", "runs": {}}))
+    assert co.earlier_output(tmp_path) == ("finished", 2)                    # nothing to do: not run a second time
+
+
+def test_an_earlier_starts_telemetry_is_kept_beside_the_new_starts(co, tmp_path):
+    """The kernel opens its GPU samples and its spans afresh each start; what an earlier start wrote is set aside
+    under its own name, and the runner reads the parts as one."""
+    (tmp_path / "gpu_samples.csv").write_text("timestamp,gpu_index,utilization_pct,memory_used_mb,power_w\n1,0,50,100,60\n")
+    (tmp_path / "telemetry.jsonl").write_text('{"name": "first"}\n')
+    co.set_aside_parts(tmp_path)
+    assert not (tmp_path / "gpu_samples.csv").exists() and not (tmp_path / "telemetry.jsonl").exists()
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["gpu_samples_before_1.csv", "telemetry_before_1.jsonl"]
+    (tmp_path / "gpu_samples.csv").write_text("timestamp,gpu_index,utilization_pct,memory_used_mb,power_w\n2,0,70,100,65\n")
+    co.set_aside_parts(tmp_path)
+    assert (tmp_path / "gpu_samples_before_2.csv").exists() and (tmp_path / "gpu_samples_before_1.csv").exists()
+
+
+def test_the_runner_reads_the_parts_of_a_resumed_runs_telemetry_as_one(run, tmp_path):
+    head = "timestamp,gpu_index,utilization_pct,memory_used_mb,power_w\n"
+    (tmp_path / "gpu_samples_before_1.csv").write_text(head + "1,0,50,100,60\n")
+    (tmp_path / "gpu_samples_before_2.csv").write_text(head + "2,0,55,100,61\n")
+    (tmp_path / "gpu_samples.csv").write_text(head + "3,0,70,100,65\n")
+    (tmp_path / "telemetry_before_1.jsonl").write_text('{"name": "first"}\n')
+    (tmp_path / "telemetry.jsonl").write_text('{"name": "second"}\n')
+    run.merge_parts(tmp_path)
+    assert (tmp_path / "gpu_samples.csv").read_text() == head + "1,0,50,100,60\n2,0,55,100,61\n3,0,70,100,65\n"
+    assert (tmp_path / "telemetry.jsonl").read_text() == '{"name": "first"}\n{"name": "second"}\n'
+    run.merge_parts(tmp_path)                                               # a second collection changes nothing
+    assert (tmp_path / "gpu_samples.csv").read_text().count("timestamp") == 1
+
+
+def _fake_colab(co, monkeypatch, tmp_path, state):
+    """`run_one` with everything outside this file stood in for: no GPU, no pip, no Kaggle."""
+    import subprocess
+    import sys
+    import types
+    calls = {"uploads": [], "fetched": 0}
+    monkeypatch.setattr(co, "LOG", tmp_path / "content" / "htl_colab.log")
+    monkeypatch.setattr(co, "KAGGLE", tmp_path / "content" / "htl_kaggle")
+    monkeypatch.setattr(co, "run", lambda command, **k: subprocess.CompletedProcess(command, 0, "", ""))
+    monkeypatch.setattr(co, "upload", lambda api, user, label, out, note: calls["uploads"].append(note))
+    monkeypatch.setattr(co, "send_until_taken", lambda send, **k: (send(), True)[1])
+
+    def restore(api, user, label, out):
+        if isinstance(state, BaseException):
+            raise state
+        return state
+    monkeypatch.setattr(co, "restore", restore)
+
+    def fetch(*a, **k):
+        calls["fetched"] += 1
+        raise RuntimeError("the test stops here: nothing is downloaded")
+    monkeypatch.setattr(co, "fetch", fetch)
+    api = types.SimpleNamespace(authenticate=lambda: None, dataset_list=lambda **k: [])
+    kaggle_mod = types.ModuleType("kaggle.api.kaggle_api_extended")
+    kaggle_mod.KaggleApi = lambda: api
+    for name, mod in (("kagglehub", types.ModuleType("kagglehub")), ("kaggle", types.ModuleType("kaggle")),
+                      ("kaggle.api", types.ModuleType("kaggle.api")), ("kaggle.api.kaggle_api_extended", kaggle_mod)):
+        monkeypatch.setitem(sys.modules, name, mod)
+    return calls
+
+
+def test_a_run_that_already_finished_is_not_made_again_and_nothing_is_uploaded_over_it(co, monkeypatch, tmp_path):
+    """A new version of a Kaggle dataset replaces its files. A notebook started again must not put an empty output
+    over an arm's finished results."""
+    calls = _fake_colab(co, monkeypatch, tmp_path, ("finished", 93))
+    assert co.run_one("colab-statement", "x/y", kernel_dataset="x/k", user="someone") == 0
+    assert calls == {"uploads": [], "fetched": 0}
+
+
+def test_a_run_whose_earlier_output_cannot_be_read_stops_without_uploading_over_it(co, monkeypatch, tmp_path):
+    calls = _fake_colab(co, monkeypatch, tmp_path, SystemExit("someone/htlnlp-colab-official-colab-graph exists and could not be read"))
+    assert co.run_one("colab-graph", "x/y", kernel_dataset="x/k", user="someone") == 1
+    assert calls == {"uploads": [], "fetched": 0}
+    assert not list((tmp_path / "content").glob("htl_not_sent_*"))          # nothing on the machine is worth keeping it for
+
+
+def test_a_run_that_goes_on_sends_a_first_note_and_its_log_however_it_ends(co, monkeypatch, tmp_path):
+    calls = _fake_colab(co, monkeypatch, tmp_path, ("partial", 40))
+    assert co.run_one("colab-graph", "x/y", kernel_dataset="x/k", user="someone") == 1    # the stand-in fetch stopped it
+    assert calls["fetched"] == 1 and calls["uploads"] == ["started", "finished, kernel exit 1"]

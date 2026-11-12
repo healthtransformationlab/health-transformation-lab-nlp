@@ -53,7 +53,7 @@ SECRET_NAME = re.compile(r"TOKEN|SECRET|PASSWORD|PASSWD|CREDENTIAL|API_KEY|_KEY$
 NETWORK_COMMAND = re.compile(r"(^|[\s;&|(])(curl|wget|ssh|scp|nc|telnet)\s|pip3?\s+(install|download)|"
                              r"git\s+(clone|fetch|pull|push|ls-remote|remote\s+add)|(apt|apt-get|conda|npm|uv)\s+"
                              r"(install|add|update)|urllib\.request|requests\.(get|post)|httpx\.", re.I)
-UPLOAD_EVERY_SECONDS = 900
+UPLOAD_EVERY_SECONDS = 480   # what a dropped session can lose: the tasks finished since the last upload
 # This branch's own files, which a notebook that has made its runs keeps reading (`follow`).
 BRANCH_FILES = ("https://raw.githubusercontent.com/healthtransformationlab/health-transformation-lab-nlp/"
                 "refs/heads/feat/687-028-colab-paired-run/kaggle/")
@@ -172,6 +172,32 @@ def follow(done: dict, minutes: float = FOLLOW_MINUTES, get=branch_file, make=No
     return f"nothing new was listed for {minutes:g} minutes"
 
 
+def earlier_output(downloaded: Path) -> tuple[str, int]:
+    """What a run's own results dataset holds from an earlier start: "finished" when its kernel ended and wrote its
+    result without an error (the run is not made a second time), "partial" with the number of tasks that have a
+    result file (the kernel runs the rest), or "fresh"."""
+    work = Path(downloaded) / "working"
+    done = len(list(work.glob("tasks/*/result.json"))) if work.exists() else 0
+    try:
+        whole = json.loads((work / "result.json").read_text())
+    except (OSError, ValueError):
+        whole = {}
+    if whole.get("finished_ts") and "error" not in whole:
+        return "finished", done
+    return ("partial", done) if done else ("fresh", 0)
+
+
+def set_aside_parts(out: Path) -> None:
+    """The kernel opens its GPU samples and its spans afresh at each start. What an earlier start wrote is kept
+    under its own name (`<name>_before_<n>`), and the runner reads the parts as one."""
+    for name in ("gpu_samples.csv", "telemetry.jsonl"):
+        f = Path(out) / name
+        if f.exists():
+            stem, suffix = name.rsplit(".", 1)
+            n = 1 + len(list(Path(out).glob(f"{stem}_before_*.{suffix}")))
+            f.rename(Path(out) / f"{stem}_before_{n}.{suffix}")
+
+
 def send_until_taken(send, tries: int = 8, wait_seconds: float = 75, sleep=time.sleep) -> bool:
     """A finished run's last upload, tried until Kaggle takes it: Kaggle refuses a new version of a dataset while it
     is still taking the previous one in, and a finished arm is hours of GPU time. True when a try went through."""
@@ -224,6 +250,32 @@ def upload(api, user: str, label: str, out: Path, note: str) -> None:
     except Exception:  # noqa: BLE001 - no such dataset yet
         api.dataset_create_new(str(stage), public=False, quiet=True, dir_mode="zip")
     print(f"uploaded to {results_ref(user, label)}: {note}", flush=True)
+
+
+def restore(api, user: str, label: str, out: Path) -> tuple[str, int]:
+    """Give a run its own earlier output back, from its results dataset, before anything is uploaded over it: a
+    session that dropped then costs the tasks since its last upload, not the run. A dataset that is there and cannot
+    be read stops the run, since the next upload would replace it."""
+    try:
+        api.dataset_status(results_ref(user, label))
+    except Exception:  # noqa: BLE001 - no such dataset: a first start
+        return "fresh", 0
+    got = LOG.parent / "htl_restore"
+    shutil.rmtree(got, ignore_errors=True)
+    got.mkdir(parents=True)
+    for attempt in range(3):
+        try:
+            api.dataset_download_files(results_ref(user, label), path=str(got), unzip=True, quiet=True)
+            break
+        except Exception as e:  # noqa: BLE001
+            if attempt == 2:
+                raise SystemExit(f"{results_ref(user, label)} exists and could not be read: {type(e).__name__}") from e
+            time.sleep(20)
+    state, done = earlier_output(got)
+    if state != "fresh" and state != "finished":
+        shutil.rmtree(out, ignore_errors=True)
+        shutil.copytree(got / "working", out)
+    return state, done
 
 
 def fetch(api, kagglehub, bundle: str, kernel_dataset: str | None, kernel_url: str | None,
@@ -297,6 +349,9 @@ def run_one(label: str, bundle: str, kernel_dataset: str | None = None, kernel_u
     user = user or os.environ["KAGGLE_USERNAME"]
     results_ref(user, label)   # refuse a bad label before any work
     out, code, api = KAGGLE / "working", 1, None
+    # A new version of a Kaggle dataset replaces its files, so nothing is uploaded until this run's own earlier output
+    # has been looked at: never an empty folder over an arm's results.
+    may_upload = False
     say(f"run {label}: bundle {bundle}; kernel from {kernel_dataset or kernel_url}")
     try:
         if out.exists() and any(out.iterdir()):   # an earlier run's output on this machine: set it aside
@@ -312,12 +367,20 @@ def run_one(label: str, bundle: str, kernel_dataset: str | None = None, kernel_u
         api = KaggleApi()
         api.authenticate()
         api.dataset_list(user=user, page=1)   # one cheap call: the token works
+        state, done_count = restore(api, user, label, out)
+        if state == "finished":
+            say(f"{label} already finished in an earlier start ({done_count} tasks with a result): not run again")
+            return 0
+        may_upload = True
+        if state == "partial":
+            say(f"{label}: an earlier start left {done_count} tasks with a result; the kernel runs the rest")
         try:   # a first note, so the run can be seen to have started without the notebook's screen
             upload(api, user, label, out, "started")
         except Exception as e:  # noqa: BLE001 - a note that fails must not stop the run
             say(f"the first note was not sent, carrying on: {type(e).__name__}: {str(e)[:200]}")
         kernel = fetch(api, kagglehub, bundle, kernel_dataset, kernel_url)
         out.mkdir(parents=True, exist_ok=True)
+        set_aside_parts(out)
         say("starting the kernel")
         stop = threading.Event()
 
@@ -356,7 +419,9 @@ def run_one(label: str, bundle: str, kernel_dataset: str | None = None, kernel_u
             upload(api, user, label, out, f"finished, kernel exit {code}")
 
         not_sent = LOG.parent / f"htl_not_sent_{label}"
-        if send_until_taken(send):
+        if not may_upload:
+            print("nothing was uploaded: the run ended before its earlier output had been looked at", flush=True)
+        elif send_until_taken(send):
             not_sent.unlink(missing_ok=True)
         else:
             not_sent.write_text("")   # `main` keeps the GPU while this is here

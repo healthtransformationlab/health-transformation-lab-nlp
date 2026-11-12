@@ -128,6 +128,28 @@ def colab_output(downloaded: Path, out: Path) -> None:
     shutil.copytree(work, out)
     if (Path(downloaded) / "colab.log").exists():
         shutil.copyfile(Path(downloaded) / "colab.log", Path(out) / "colab.log")
+    merge_parts(out)
+
+
+def merge_parts(out: Path) -> None:
+    """A run that started again (a Colab session that dropped) wrote its GPU samples and its spans in parts,
+    `<name>_before_<n>` for each earlier start and `<name>` for the last. Put them back together, oldest first, so
+    each task's samples and spans are found whichever start ran it. Running it twice changes nothing."""
+    for name, has_header in (("gpu_samples.csv", True), ("telemetry.jsonl", False)):
+        stem, suffix = name.rsplit(".", 1)
+        parts = sorted(Path(out).glob(f"{stem}_before_*.{suffix}"), key=lambda p: int(p.stem.rsplit("_", 1)[1]))
+        if not parts:
+            continue
+        last = Path(out) / name
+        texts = [p.read_text() for p in parts] + ([last.read_text()] if last.exists() else [])
+        if has_header:
+            head = texts[0].splitlines(keepends=True)[:1]
+            body = [line for t in texts for line in t.splitlines(keepends=True)[1:]]
+            last.write_text("".join(head + body))
+        else:
+            last.write_text("".join(texts))
+        for p in parts:
+            p.unlink()
 
 
 def trace_commands(trace: dict) -> list[str]:
