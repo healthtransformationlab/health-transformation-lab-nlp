@@ -630,7 +630,11 @@ def run_batch(a, api, user: str, ids: list[str], tasks: dict, manifest: dict, ov
         got = work / "colab_download"
         shutil.rmtree(got, ignore_errors=True)
         got.mkdir(parents=True)
-        api.dataset_download_files(colab_results_ref(user, name), path=str(got), unzip=True, quiet=True)
+        spec = importlib.util.spec_from_file_location("colab_official", HERE / "colab_official.py")
+        co = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(co)
+        co.say = lambda message: print(message, flush=True)   # its log file is the Colab machine's
+        co.download_dataset(api, colab_results_ref(user, name), got)   # file by file where Kaggle refuses the whole
         colab_output(got, out)
         status = f"complete (run on Colab; read from {colab_results_ref(user, name)})"
     else:

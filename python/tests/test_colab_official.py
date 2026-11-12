@@ -469,3 +469,57 @@ def test_a_run_that_goes_on_sends_a_first_note_and_its_log_however_it_ends(co, m
     calls = _fake_colab(co, monkeypatch, tmp_path, ("partial", 40))
     assert co.run_one("colab-graph", "x/y", kernel_dataset="x/k", user="someone") == 1    # the stand-in fetch stopped it
     assert calls["fetched"] == 1 and calls["uploads"] == ["started", "finished, kernel exit 1"]
+
+
+# --- Kaggle's whole-dataset download answers "not found" for the arms' 1.2 GB bundles (#687) -----------------------
+
+class _FakeFiles:
+    """A stand-in for the Kaggle client: files listed a page at a time, and each downloaded on its own."""
+    def __init__(self, names, zipped=()):
+        self.names, self.zipped, self.pages, self.whole = list(names), set(zipped), 0, 0
+
+    def dataset_list_files(self, ref, page_token=None, page_size=20):
+        import types
+        self.pages += 1
+        start = int(page_token or 0)
+        chunk = self.names[start:start + 2]
+        nxt = str(start + 2) if start + 2 < len(self.names) else ""
+        return types.SimpleNamespace(files=[types.SimpleNamespace(name=n) for n in chunk], next_page_token=nxt)
+
+    def dataset_download_file(self, ref, file_name, path=None, quiet=True, **k):
+        import zipfile
+        from pathlib import Path
+        base = Path(file_name).name
+        if file_name in self.zipped:                      # Kaggle hands some files over zipped
+            with zipfile.ZipFile(Path(path) / (base + ".zip"), "w") as z:
+                z.writestr(base, "text of " + file_name)
+        else:
+            (Path(path) / base).write_text("text of " + file_name)
+
+    def dataset_download_files(self, ref, path=None, unzip=True, quiet=True):
+        self.whole += 1
+        raise RuntimeError("404 Client Error: Not Found for url: .../DownloadDataset")
+
+
+def test_a_dataset_whose_whole_download_is_refused_is_fetched_file_by_file(co, monkeypatch, tmp_path):
+    """The first arm stopped twice on Kaggle's "not found" for its bundle's whole download, though the dataset was
+    ready and each of its files could be had. Each file then goes where its name says, zipped or not."""
+    monkeypatch.setattr(co, "say", lambda message: None)
+    api = _FakeFiles(["official_batch.json", "sealed/a.bin", "sealed/b.bin", "submission/agent.yaml",
+                      "submission/prompts/system.md"], zipped=["submission/agent.yaml"])
+    co.download_dataset(api, "someone/htlnlp-official-colab-statement", tmp_path / "bundle")
+    got = sorted(str(p.relative_to(tmp_path / "bundle")) for p in (tmp_path / "bundle").rglob("*") if p.is_file())
+    assert got == ["official_batch.json", "sealed/a.bin", "sealed/b.bin", "submission/agent.yaml",
+                   "submission/prompts/system.md"]
+    assert (tmp_path / "bundle" / "submission" / "agent.yaml").read_text() == "text of submission/agent.yaml"
+    assert api.whole == 1 and api.pages == 3              # the whole download was tried once; every page was read
+
+
+def test_a_run_made_again_under_a_new_name_keeps_its_own_results(co):
+    """A notebook does not make a run twice in one session. A run that stopped before it began is listed again as
+    `<label>-try<n>`: the notebook takes it for a new run, and its results still go where the arm's go."""
+    assert co.base_label("colab-statement-try2") == "colab-statement"
+    assert co.base_label("colab-graph-try12") == "colab-graph"
+    assert co.base_label("colab-statement") == "colab-statement"
+    assert co.base_label("retry-statement") == "retry-statement"
+    assert co.results_ref("someone", co.base_label("colab-graph-try2")) == "someone/htlnlp-colab-official-colab-graph"

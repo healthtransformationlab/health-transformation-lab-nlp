@@ -88,6 +88,53 @@ def kernel_env(env: dict) -> dict:
             "MPLBACKEND": "Agg"}   # a notebook's inline plotting backend means nothing to a command the agent runs
 
 
+def base_label(label: str) -> str:
+    """The run a listed label stands for. A notebook does not make a run twice in one session, so a run that stopped
+    before it began is listed again as `<label>-try<n>`; its results still go where the run's own go."""
+    return re.sub(r"-try\d+$", "", label)
+
+
+def download_dataset(api, ref: str, dest: Path) -> None:
+    """A dataset's files under `dest`, at the paths their names give. The whole download is tried first. Kaggle
+    answers "not found" to it for some datasets that are ready and whose files can each be had (the arms' 1.2 GB
+    bundles, November 12, 2026), so each file is then fetched on its own."""
+    dest = Path(dest)
+    dest.mkdir(parents=True, exist_ok=True)
+    try:
+        api.dataset_download_files(ref, path=str(dest), unzip=True, quiet=True)
+        return
+    except Exception as e:  # noqa: BLE001 - whatever the whole download said, the files are tried one by one
+        say(f"the whole download of {ref} was refused ({type(e).__name__}: {str(e)[:120]}); fetching its files one by one")
+    import zipfile
+    names, token = [], None
+    while True:
+        page = api.dataset_list_files(ref, page_token=token, page_size=200)
+        names += [f.name for f in (page.files or [])]
+        token = getattr(page, "next_page_token", None) or getattr(page, "nextPageToken", None)
+        if not token:
+            break
+    for n, name in enumerate(names, 1):
+        folder = dest / Path(name).parent
+        folder.mkdir(parents=True, exist_ok=True)
+        base = Path(name).name
+        for attempt in range(3):
+            try:
+                api.dataset_download_file(ref, name, path=str(folder), quiet=True)
+                break
+            except Exception:  # noqa: BLE001 - a blip: the same file again
+                if attempt == 2:
+                    raise
+                time.sleep(5)
+        packed = folder / (base + ".zip")
+        if packed.exists() and not (folder / base).exists():   # Kaggle hands some files over zipped
+            with zipfile.ZipFile(packed) as z:
+                z.extractall(folder)
+            packed.unlink()
+        if n % 25 == 0:
+            say(f"  {n} of {len(names)} files of {ref}")
+    say(f"{ref}: {len(names)} files, one by one")
+
+
 def kernel_paths(root: Path = KAGGLE) -> dict:
     """Where the kernel is told its inputs and its output are (it looks under /kaggle unless told)."""
     return {"HTL_INPUT": str(Path(root) / "input"), "HTL_OUT": str(Path(root) / "working")}
@@ -265,7 +312,7 @@ def restore(api, user: str, label: str, out: Path) -> tuple[str, int]:
     got.mkdir(parents=True)
     for attempt in range(3):
         try:
-            api.dataset_download_files(results_ref(user, label), path=str(got), unzip=True, quiet=True)
+            download_dataset(api, results_ref(user, label), got)
             break
         except Exception as e:  # noqa: BLE001
             if attempt == 2:
@@ -288,9 +335,8 @@ def fetch(api, kagglehub, bundle: str, kernel_dataset: str | None, kernel_url: s
     for ref in (WHEELHOUSE, bundle):
         dest = dataset_dir(ref, root)
         if not dest.exists() or not any(dest.iterdir()):
-            dest.mkdir(parents=True, exist_ok=True)
             say(f"downloading {ref} -> {dest}")
-            api.dataset_download_files(ref, path=str(dest), unzip=True, quiet=True)
+            download_dataset(api, ref, dest)
         say(f"{ref}: {sum(1 for _ in dest.rglob('*'))} entries")
     target = model_dir(root)
     if with_model and not (target / "config.json").exists():
@@ -305,7 +351,7 @@ def fetch(api, kagglehub, bundle: str, kernel_dataset: str | None, kernel_url: s
     shutil.rmtree(kernel.parent, ignore_errors=True)
     kernel.parent.mkdir(parents=True)
     if kernel_dataset:   # a batch's kernel carries its seal key: it comes from a private dataset, never from the repo
-        api.dataset_download_files(kernel_dataset, path=str(kernel.parent), unzip=True, quiet=True)
+        download_dataset(api, kernel_dataset, kernel.parent)
     else:
         import urllib.request
         kernel.write_bytes(urllib.request.urlopen(kernel_url, timeout=60).read())  # noqa: S310 - the repo's own file
@@ -347,12 +393,14 @@ def run_one(label: str, bundle: str, kernel_dataset: str | None = None, kernel_u
     """One run, start to finish. Returns the kernel's exit code (or 1 when it never started)."""
     LOG.parent.mkdir(parents=True, exist_ok=True)
     user = user or os.environ["KAGGLE_USERNAME"]
+    listed, label = label, base_label(label)   # `<label>-try<n>` is the same run, listed again
     results_ref(user, label)   # refuse a bad label before any work
     out, code, api = KAGGLE / "working", 1, None
     # A new version of a Kaggle dataset replaces its files, so nothing is uploaded until this run's own earlier output
     # has been looked at: never an empty folder over an arm's results.
     may_upload = False
-    say(f"run {label}: bundle {bundle}; kernel from {kernel_dataset or kernel_url}")
+    say(f"run {label}{'' if listed == label else ' (listed as ' + listed + ')'}: bundle {bundle}; "
+        f"kernel from {kernel_dataset or kernel_url}")
     try:
         if out.exists() and any(out.iterdir()):   # an earlier run's output on this machine: set it aside
             out.rename(out.with_name(f"working_before_{label}_{int(time.time())}"))
