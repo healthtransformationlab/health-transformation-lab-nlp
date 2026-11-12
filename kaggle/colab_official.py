@@ -193,6 +193,37 @@ def fresh_helper(get=branch_file):
     return mod
 
 
+def gpu_name(csv_text: str) -> str:
+    """The machine's GPU, from what `nvidia-smi --query-gpu=name,... --format=csv` printed ("" when it printed none)."""
+    rows = [line for line in (csv_text or "").splitlines() if line.strip()]
+    return rows[1].split(",")[0].strip() if len(rows) > 1 else ""
+
+
+def is_for_this_gpu(wanted: str | None, name: str) -> bool:
+    """Whether a run is made on a machine whose GPU is `name`. An entry of the run list can name the GPU it is for
+    (`"gpu": "A100"`): the list offers a run to every session that reads it, and two sessions on two GPUs once made
+    the same arm (#687). A run that names no GPU is made anywhere, and so is any run where the GPU could not be read:
+    not knowing must not stop an arm."""
+    if not wanted or not name:
+        return True
+    return re.search(rf"(?<![A-Za-z0-9]){re.escape(wanted)}(?![A-Za-z0-9])", name, re.I) is not None
+
+
+def listed_gpu(label: str, get=branch_file, tries: int = 3, sleep=time.sleep) -> str | None:
+    """The GPU the branch's run list says the run `label` is for, or None. The run reads its own entry: a session
+    that began before entries could name a GPU hands a run only its label, bundle and kernel. A list that cannot be
+    read gives None, and the run is made."""
+    for attempt in range(tries):
+        try:
+            runs = json.loads(get("colab_official_run.json")).get("runs", [])
+            return next((r.get("gpu") for r in runs if r.get("label") == label), None) or None
+        except Exception as e:  # noqa: BLE001 - a read that fails is tried again, then the run goes ahead
+            say(f"could not read which GPU {label} is for (try {attempt + 1} of {tries}): {type(e).__name__}")
+            if attempt < tries - 1:
+                sleep(15)
+    return None
+
+
 def follow(done: dict, minutes: float = FOLLOW_MINUTES, get=branch_file, make=None, sleep=time.sleep,
            clock=time.monotonic) -> str:
     """After the runs a notebook was started for: keep reading the branch's run list, and make each run it names that
@@ -407,9 +438,13 @@ def run_one(label: str, bundle: str, kernel_dataset: str | None = None, kernel_u
     say(f"run {label}{'' if listed == label else ' (listed as ' + listed + ')'}: bundle {bundle}; "
         f"kernel from {kernel_dataset or kernel_url}")
     try:
+        shown = run(["nvidia-smi", "--query-gpu=name,memory.total,driver_version", "--format=csv"])
+        wanted, name = listed_gpu(listed), gpu_name(shown.stdout)
+        if not is_for_this_gpu(wanted, name):   # another session's run: nothing of it is read, and nothing is sent
+            say(f"{label} is for a machine with a {wanted}; this one has a {name}: it is not made here")
+            return 0
         if out.exists() and any(out.iterdir()):   # an earlier run's output on this machine: set it aside
             out.rename(out.with_name(f"working_before_{label}_{int(time.time())}"))
-        run(["nvidia-smi", "--query-gpu=name,memory.total,driver_version", "--format=csv"])
         run([sys.executable, "--version"])
         installed = run([sys.executable, "-m", "pip", "install", "-q", *PINS])
         if installed.returncode:
@@ -473,7 +508,8 @@ def run_one(label: str, bundle: str, kernel_dataset: str | None = None, kernel_u
 
         not_sent = LOG.parent / f"htl_not_sent_{label}"
         if not may_upload:
-            print("nothing was uploaded: the run ended before its earlier output had been looked at", flush=True)
+            print("nothing was uploaded: the run was not made here, or ended before its earlier output had been "
+                  "looked at", flush=True)
         elif send_until_taken(send):
             not_sent.unlink(missing_ok=True)
         else:

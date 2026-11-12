@@ -108,6 +108,30 @@ def colab_results_ref(user: str, name: str) -> str:
     return f"{user}/{COLAB_RESULTS_PREFIX}{name}"
 
 
+def colab_results_url(ref: str) -> str:
+    """The page of a Colab run's results: its dataset, or one version of it (`owner/slug/<n>`)."""
+    owner, slug, *version = ref.split("/")
+    return f"https://www.kaggle.com/datasets/{owner}/{slug}" + (f"/versions/{version[0]}" if version else "")
+
+
+def colab_session(log_text: str) -> str | None:
+    """Which notebook session an upload is from: the time its log opens with (HH:MM:SS, UTC)."""
+    for line in log_text.splitlines():
+        if (m := re.match(r"\[(\d\d:\d\d:\d\d)Z\]", line)):
+            return m.group(1)
+    return None
+
+
+def check_colab_session(log_text: str, wanted: str | None) -> None:
+    """Two notebook sessions once made one arm at the same time and sent their output to its dataset in turn (#687),
+    so "the latest version" was whichever sent last. An arm is read from a version by number, and reading stops
+    unless that version's log opens with the session meant."""
+    got = colab_session(log_text)
+    if wanted and got != wanted:
+        raise SystemExit(f"this upload is from the session that began at {got}, not the one meant ({wanted}): "
+                         "nothing is collected from it")
+
+
 def colab_kernel_metadata(user: str, name: str) -> dict:
     return {"id": f"{user}/{COLAB_KERNEL_PREFIX}{name}", "title": f"htlnlp colab kernel {name}"[:50],
             "licenses": [{"name": "CC-BY-4.0"}]}
@@ -585,6 +609,7 @@ def run_batch(a, api, user: str, ids: list[str], tasks: dict, manifest: dict, ov
     colab = bool(getattr(a, "colab", False))
     name = batch_name(a.source, getattr(a, "label", None))
     kref, work = f"{user}/{kernel_slug(name)}", a.work / name
+    results = getattr(a, "colab_results", None) or colab_results_ref(user, name)   # where a Colab run's output is read
     if not a.collect:
         shutil.rmtree(work, ignore_errors=True)
         key = os.urandom(32)   # this run's; in the pushed kernel only, never in the dataset or the repository
@@ -634,9 +659,11 @@ def run_batch(a, api, user: str, ids: list[str], tasks: dict, manifest: dict, ov
         co = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(co)
         co.say = lambda message: print(message, flush=True)   # its log file is the Colab machine's
-        co.download_dataset(api, colab_results_ref(user, name), got)   # file by file where Kaggle refuses the whole
+        co.download_dataset(api, results, got)   # file by file where Kaggle refuses the whole
+        check_colab_session((got / "colab.log").read_text(errors="replace") if (got / "colab.log").exists() else "",
+                            getattr(a, "colab_session", None))
         colab_output(got, out)
-        status = f"complete (run on Colab; read from {colab_results_ref(user, name)})"
+        status = f"complete (run on Colab; read from {results})"
     else:
         while True:
             time.sleep(POLL_SECONDS)
@@ -669,7 +696,7 @@ def run_batch(a, api, user: str, ids: list[str], tasks: dict, manifest: dict, ov
         verdicts = _verify(a.dataset / "tasks.jsonl", a.dataset / "snapshots", a.agent_dir,
                            {i: (r.get("patch") or "") for i, r in done.items()}, work / "_verify")
     rows = [row_for({"instance_id": i, **done[i]}, verdicts.get(i), "" if development else manifest.get(i, ""),
-                    (f"https://www.kaggle.com/datasets/{colab_results_ref(user, name)}" if colab else
+                    (colab_results_url(results) if colab else
                      f"https://www.kaggle.com/code/{kref}"), in_sample=not a.outside_sample) for i in order if i in done]
     table = pd.DataFrame(rows, columns=COLUMNS)
     if len(table):
@@ -741,6 +768,10 @@ def main() -> int:
     ap.add_argument("--colab", action="store_true",
                     help="with --batch and --label: no Kaggle kernel. Upload the sealed bundle and the keyed kernel file "
                          "for kaggle/colab_official_agent.ipynb; with --collect, read what that run sent back (#687)")
+    ap.add_argument("--colab-results", help="with --collect --colab: read the run from this dataset, or from one "
+                                            "version of it (owner/slug/<n>), not the one named for --label")
+    ap.add_argument("--colab-session", help="with --collect --colab: collect only if the upload's log opens with this "
+                                            "notebook session's start (HH:MM:SS, UTC); two sessions once shared a dataset")
     ap.add_argument("--batch", action="store_true",
                     help="every task in ONE kernel, each sealed until its turn: for when the GPU allowance cannot pay "
                          "for a kernel's start-up per task. The order is a seeded shuffle of the tasks")

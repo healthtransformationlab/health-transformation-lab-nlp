@@ -1,5 +1,5 @@
 {
- "note": "What kaggle/colab_official_agent.ipynb runs, in order (028 AI9, #687): the two arms of the registered pair (specs/028-dataops-task-set/preregistration-colab-paired-run.md). A notebook that has made the runs it started with keeps reading this list. A run whose results are already on Kaggle is not made again, and one that stopped part way goes on from where it stopped, so starting the notebook again is always safe. `-try2`: each arm stopped before its kernel started, on Kaggle's \"not found\" for the whole download of its bundle; listed again so a notebook that is still open makes it, with the bundle fetched file by file.",
+ "note": "What kaggle/colab_official_agent.ipynb runs, in order (028 AI9, #687): the two arms of the registered pair (specs/028-dataops-task-set/preregistration-colab-paired-run.md). A notebook that has made the runs it started with keeps reading this list. A run whose results are already on Kaggle is not made again, and one that stopped part way goes on from where it stopped. `-try2`: each arm stopped before its kernel started, on Kaggle's \"not found\" for the whole download of its bundle; listed again so a notebook that is still open makes it, with the bundle fetched file by file. `gpu`: two notebook sessions were open and both made the first arm, one on an A100 and one on an L4 (issue 687, the comment of 03:25 UTC on November 12). An entry that names a GPU is made only on a machine that has it: the A100 session makes the registered second arm, and the L4 session makes the same sealed tasks as `colab-graph-l4`, into a dataset of its own.",
  "runs": [
   {
    "label": "colab-statement-try2",
@@ -9,7 +9,14 @@
   {
    "label": "colab-graph-try2",
    "bundle": "jcblearning/htlnlp-official-colab-graph",
-   "kernel_dataset": "jcblearning/htlnlp-colab-kernel-colab-graph"
+   "kernel_dataset": "jcblearning/htlnlp-colab-kernel-colab-graph",
+   "gpu": "A100"
+  },
+  {
+   "label": "colab-graph-l4",
+   "bundle": "jcblearning/htlnlp-official-colab-graph",
+   "kernel_dataset": "jcblearning/htlnlp-colab-kernel-colab-graph",
+   "gpu": "L4"
   }
  ]
 }

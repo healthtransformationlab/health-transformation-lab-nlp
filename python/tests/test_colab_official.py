@@ -530,3 +530,115 @@ def test_a_run_made_again_under_a_new_name_keeps_its_own_results(co):
     assert co.base_label("colab-statement") == "colab-statement"
     assert co.base_label("retry-statement") == "retry-statement"
     assert co.results_ref("someone", co.base_label("colab-graph-try2")) == "someone/htlnlp-colab-official-colab-graph"
+
+
+# --- two notebook sessions made the first arm at once, on two GPUs (#687) ------------------------------------------
+
+SMI_A100 = "name, memory.total [MiB], driver_version\nNVIDIA A100-SXM4-40GB, 40960 MiB, 580.82.07\n"
+SMI_L4 = "name, memory.total [MiB], driver_version\nNVIDIA L4, 23034 MiB, 580.82.07\n"
+
+
+def test_the_machines_gpu_is_read_from_what_nvidia_smi_printed(co):
+    assert co.gpu_name(SMI_A100) == "NVIDIA A100-SXM4-40GB"
+    assert co.gpu_name(SMI_L4) == "NVIDIA L4"
+    assert co.gpu_name("") == "" and co.gpu_name("name, memory.total [MiB], driver_version\n") == ""
+
+
+def test_a_run_that_names_its_gpu_is_made_only_on_a_machine_that_has_it(co):
+    """The run list offers a run to every session that reads it. Two sessions read it, and both made the first arm.
+    An entry can name the GPU it is for, so each session makes only its own second arm."""
+    assert co.is_for_this_gpu("A100", "NVIDIA A100-SXM4-40GB") and co.is_for_this_gpu("a100", "NVIDIA A100-SXM4-40GB")
+    assert co.is_for_this_gpu("L4", "NVIDIA L4")
+    assert not co.is_for_this_gpu("A100", "NVIDIA L4") and not co.is_for_this_gpu("L4", "NVIDIA A100-SXM4-40GB")
+    assert not co.is_for_this_gpu("L4", "NVIDIA L40S")                       # a whole name, not the start of another
+    assert co.is_for_this_gpu(None, "NVIDIA L4") and co.is_for_this_gpu("", "Tesla T4")   # no GPU named: made anywhere
+    assert co.is_for_this_gpu("A100", "")                # a GPU that could not be read does not stop a run
+
+
+def test_a_run_looks_up_the_gpu_its_entry_names(co, monkeypatch):
+    """A session that began before entries could name a GPU hands a run only its label, bundle and kernel, so the run
+    reads its own entry. A list that cannot be read does not stop a run."""
+    monkeypatch.setattr(co, "say", lambda message: None)
+    plan = {"runs": [{"label": "colab-statement-try2", "bundle": "x/s"},
+                     {"label": "colab-graph-try2", "bundle": "x/g", "gpu": "A100"},
+                     {"label": "colab-graph-l4", "bundle": "x/g", "gpu": "L4"}]}
+    assert co.listed_gpu("colab-graph-try2", get=_lists(plan)) == "A100"
+    assert co.listed_gpu("colab-graph-l4", get=_lists(plan)) == "L4"
+    assert co.listed_gpu("colab-statement-try2", get=_lists(plan)) is None
+    assert co.listed_gpu("not-listed", get=_lists(plan)) is None
+    calls = {"n": 0}
+
+    def blinks(name):
+        calls["n"] += 1
+        if calls["n"] < 3:
+            raise OSError("the network blinked")
+        return json.dumps(plan)
+    assert co.listed_gpu("colab-graph-l4", get=blinks, sleep=lambda s: None) == "L4"       # read again, then found
+
+    def never(name):
+        raise OSError("down")
+    assert co.listed_gpu("colab-graph-l4", get=never, sleep=lambda s: None) is None
+
+
+def _with_gpu(co, monkeypatch, smi: str, wanted):
+    import subprocess
+    monkeypatch.setattr(co, "run", lambda command, **k: subprocess.CompletedProcess(
+        command, 0, smi if command[0] == "nvidia-smi" else "", ""))
+    monkeypatch.setattr(co, "listed_gpu", lambda label: wanted)
+
+
+def test_a_run_for_another_gpu_is_not_made_here_and_touches_nothing(co, monkeypatch, tmp_path):
+    """The L4 session must not take the A100 session's second arm: it would be given that arm's unfinished output and
+    go on from it. Nothing is restored, fetched or uploaded, and the earlier run's output on this machine stays put."""
+    calls = _fake_colab(co, monkeypatch, tmp_path, ("partial", 40))
+    _with_gpu(co, monkeypatch, SMI_L4, "A100")
+    said = []
+    monkeypatch.setattr(co, "say", said.append)
+    earlier = tmp_path / "content" / "htl_kaggle" / "working"
+    earlier.mkdir(parents=True)
+    (earlier / "result.json").write_text("{}")
+    assert co.run_one("colab-graph-try2", "x/y", kernel_dataset="x/k", user="someone") == 0
+    assert calls == {"uploads": [], "fetched": 0}
+    assert (earlier / "result.json").exists()                                # not set aside
+    assert any("A100" in s and "NVIDIA L4" in s and "not made here" in s for s in said)
+
+
+def test_a_run_for_this_gpu_or_for_any_gpu_is_made(co, monkeypatch, tmp_path):
+    calls = _fake_colab(co, monkeypatch, tmp_path, ("fresh", 0))
+    _with_gpu(co, monkeypatch, SMI_L4, "L4")
+    assert co.run_one("colab-graph-l4", "x/y", kernel_dataset="x/k", user="someone") == 1   # the stand-in fetch stopped it
+    assert calls["fetched"] == 1 and calls["uploads"] == ["started", "finished, kernel exit 1"]
+    calls = _fake_colab(co, monkeypatch, tmp_path, ("fresh", 0))
+    _with_gpu(co, monkeypatch, SMI_A100, None)
+    assert co.run_one("colab-statement-try2", "x/y", kernel_dataset="x/k", user="someone") == 1
+    assert calls["fetched"] == 1
+
+
+def test_the_l4_sessions_second_arm_goes_to_a_dataset_of_its_own(co):
+    assert co.results_ref("someone", co.base_label("colab-graph-l4")) == "someone/htlnlp-colab-official-colab-graph-l4"
+    assert co.results_ref("someone", co.base_label("colab-graph-try2")) == "someone/htlnlp-colab-official-colab-graph"
+
+
+def test_the_run_list_gives_each_session_its_own_second_arm():
+    plan = json.loads((REPO_ROOT / "kaggle" / "colab_official_run.json").read_text())
+    by_label = {r["label"]: r for r in plan["runs"]}
+    assert by_label["colab-graph-try2"]["gpu"] == "A100" and by_label["colab-graph-l4"]["gpu"] == "L4"
+    assert by_label["colab-graph-l4"]["bundle"] == by_label["colab-graph-try2"]["bundle"]            # the same sealed tasks
+    assert by_label["colab-graph-l4"]["kernel_dataset"] == by_label["colab-graph-try2"]["kernel_dataset"]
+    assert "gpu" not in by_label["colab-statement-try2"]          # both sessions were already making it
+
+
+def test_a_colab_run_can_be_read_from_one_version_of_its_dataset_and_only_from_the_session_meant(run):
+    """Two sessions uploaded to one dataset in turn, so "the latest version" is whichever sent last. An arm is read
+    from a version by number, and only if that version's log opens with the session it is meant to be."""
+    assert run.colab_results_url("someone/htlnlp-colab-official-colab-statement") == (
+        "https://www.kaggle.com/datasets/someone/htlnlp-colab-official-colab-statement")
+    assert run.colab_results_url("someone/htlnlp-colab-official-colab-statement/31") == (
+        "https://www.kaggle.com/datasets/someone/htlnlp-colab-official-colab-statement/versions/31")
+    log = "[01:17:24Z] run colab-statement: bundle x\n[01:17:24Z] $ nvidia-smi\nNVIDIA A100-SXM4-40GB\n[02:04:33Z] starting the kernel\n"
+    assert run.colab_session(log) == "01:17:24"
+    assert run.colab_session("no stamp here\n") is None
+    run.check_colab_session(log, "01:17:24")                                # the session meant: nothing happens
+    run.check_colab_session(log, None)                                      # none named: nothing is checked
+    with pytest.raises(SystemExit, match="00:37:11"):
+        run.check_colab_session(log, "00:37:11")
