@@ -100,6 +100,113 @@ def batch_trace_counts(output: Path, instance_id: str) -> dict | None:
 
 
 _LABEL = re.compile(r"[a-z0-9]+(-[a-z0-9]+)*")
+COLAB_RESULTS_PREFIX = "htlnlp-colab-official-"   # kaggle/colab_official.py sends a run's log and output there
+COLAB_KERNEL_PREFIX = "htlnlp-colab-kernel-"      # a batch's keyed kernel file, for the Colab notebook to run
+
+
+def colab_results_ref(user: str, name: str) -> str:
+    return f"{user}/{COLAB_RESULTS_PREFIX}{name}"
+
+
+def colab_results_url(ref: str) -> str:
+    """The page of a Colab run's results: its dataset, or one version of it (`owner/slug/<n>`)."""
+    owner, slug, *version = ref.split("/")
+    return f"https://www.kaggle.com/datasets/{owner}/{slug}" + (f"/versions/{version[0]}" if version else "")
+
+
+def colab_session(log_text: str) -> str | None:
+    """Which notebook session an upload is from: the time its log opens with (HH:MM:SS, UTC)."""
+    for line in log_text.splitlines():
+        if (m := re.match(r"\[(\d\d:\d\d:\d\d)Z\]", line)):
+            return m.group(1)
+    return None
+
+
+def check_colab_session(log_text: str, wanted: str | None) -> None:
+    """Two notebook sessions once made one arm at the same time and sent their output to its dataset in turn (#687),
+    so "the latest version" was whichever sent last. An arm is read from a version by number, and reading stops
+    unless that version's log opens with the session meant."""
+    got = colab_session(log_text)
+    if wanted and got != wanted:
+        raise SystemExit(f"this upload is from the session that began at {got}, not the one meant ({wanted}): "
+                         "nothing is collected from it")
+
+
+def colab_kernel_metadata(user: str, name: str) -> dict:
+    return {"id": f"{user}/{COLAB_KERNEL_PREFIX}{name}", "title": f"htlnlp colab kernel {name}"[:50],
+            "licenses": [{"name": "CC-BY-4.0"}]}
+
+
+def colab_run_entry(user: str, name: str) -> dict:
+    """One run of kaggle/colab_official_run.json (028 AI9, #687): the sealed bundle and the keyed kernel file, each in
+    its own private dataset. The key is in the second only, as it is in a pushed Kaggle kernel only."""
+    return {"label": name, "bundle": f"{user}/{bundle.slug(name)}", "kernel_dataset": f"{user}/{COLAB_KERNEL_PREFIX}{name}"}
+
+
+def colab_output(downloaded: Path, out: Path) -> None:
+    """What a Colab run sent back, put where a kernel's output is read from: its `working/` folder and its log."""
+    work = Path(downloaded) / "working"
+    if not (work / "result.json").exists():
+        raise SystemExit(f"no result.json under {work}: the Colab run has not finished, or wrote none")
+    shutil.rmtree(out, ignore_errors=True)
+    shutil.copytree(work, out)
+    if (Path(downloaded) / "colab.log").exists():
+        shutil.copyfile(Path(downloaded) / "colab.log", Path(out) / "colab.log")
+    merge_parts(out)
+
+
+def merge_parts(out: Path) -> None:
+    """A run that started again (a Colab session that dropped) wrote its GPU samples and its spans in parts,
+    `<name>_before_<n>` for each earlier start and `<name>` for the last. Put them back together, oldest first, so
+    each task's samples and spans are found whichever start ran it. Running it twice changes nothing."""
+    for name, has_header in (("gpu_samples.csv", True), ("telemetry.jsonl", False)):
+        stem, suffix = name.rsplit(".", 1)
+        parts = sorted(Path(out).glob(f"{stem}_before_*.{suffix}"), key=lambda p: int(p.stem.rsplit("_", 1)[1]))
+        if not parts:
+            continue
+        last = Path(out) / name
+        texts = [p.read_text() for p in parts] + ([last.read_text()] if last.exists() else [])
+        if has_header:
+            head = texts[0].splitlines(keepends=True)[:1]
+            body = [line for t in texts for line in t.splitlines(keepends=True)[1:]]
+            last.write_text("".join(head + body))
+        else:
+            last.write_text("".join(texts))
+        for p in parts:
+            p.unlink()
+
+
+# What a Colab run's settings say of the network. The proxies set on the kernel's process do not reach the agent's
+# commands: the evaluator's sandbox starts each from its own short list of environment names (the review of #690).
+COLAB_INTERNET = ("open at the machine's edge. The kernel's process had no credential and every proxy pointed at a port "
+                  "nothing listens on, but the evaluator starts each of the agent's commands from a short list of "
+                  "environment names of its own, which holds neither: no credential reached a command, and a command "
+                  "could reach the network. Every command is read for that afterwards (network_audit; "
+                  "kaggle/colab_official.py)")
+
+
+def trace_commands(trace: dict) -> list[str]:
+    """Every command the agent ran, from the evaluator's own trace of a task."""
+    out = []
+    for step in trace.get("steps") or []:
+        for call in step.get("tool_calls") or []:
+            if call.get("function_name") == "run_command":
+                args = call.get("arguments") or {}
+                text = args.get("command") or args.get("cmd") or next((v for v in args.values() if isinstance(v, str)), "")
+                out.append(text)
+    return out
+
+
+def network_audit(traces: dict[str, dict]) -> dict:
+    """A run on a machine with a network (Colab): how many of the agent's commands reach for it, and in which
+    tasks. On Kaggle the kernels have no network, so nothing is counted there."""
+    spec = importlib.util.spec_from_file_location("colab_official", HERE / "colab_official.py")
+    co = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(co)
+    commands = {i: trace_commands(t) for i, t in traces.items()}
+    hits = {i: co.network_command_count(c) for i, c in commands.items()}
+    return {"command_count": sum(len(c) for c in commands.values()), "network_command_count": sum(hits.values()),
+            "instance_ids": sorted(i for i, n in hits.items() if n)}
 
 
 def batch_name(source: str, label: str | None) -> str:
@@ -232,8 +339,9 @@ COMPETITION_DEFAULTS = {"timeout_seconds": 300, "verification_timeout_seconds": 
 
 def settings_for(result: dict, seed: int | None, drawn: list[str], pool_count: int, machine_shape: str | None,
                  docker_image: str | None, competition: str | None, agent_commit: str | None,
-                 source: str = "published", tasks_per_kernel: int = 1) -> dict:
-    """What a run used, how its sample was drawn, and each budget that differs from the competition's defaults."""
+                 source: str = "published", tasks_per_kernel: int = 1, colab: bool = False) -> dict:
+    """What a run used, how its sample was drawn, and each budget that differs from the competition's defaults.
+    `colab`: the run was made on a Colab machine by kaggle/colab_official.py, not in a Kaggle kernel (#687)."""
     budgets, gen = result.get("budgets") or {}, result.get("generation_defaults") or {}
     used = {**budgets, "max_output_tokens": gen.get("max_output_tokens"),
             "thinking_budget": (gen.get("thinking_config") or {}).get("thinking_budget")}
@@ -245,8 +353,10 @@ def settings_for(result: dict, seed: int | None, drawn: list[str], pool_count: i
         "model_name": result.get("model_name"), "versions": result.get("versions"), "server": result.get("server"),
         "budgets": budgets, "generation_defaults": gen, "context_cache": result.get("context_cache"),
         "events_compaction": result.get("events_compaction"),
-        "kernel": {"machine_shape_asked": machine_shape, "docker_image": docker_image, "competition_attached": competition,
-                   "internet": False, "tasks_per_kernel": tasks_per_kernel},
+        "kernel": {"machine_shape_asked": "Colab, one GPU" if colab else machine_shape,
+                   "docker_image": None if colab else docker_image, "competition_attached": competition,
+                   "internet": COLAB_INTERNET if colab else False,
+                   "tasks_per_kernel": tasks_per_kernel},
         "agent_commit_sha": agent_commit,
         "sample": {"seed": seed, "drawn_count": len(drawn), "pool_count": pool_count, "instance_ids": drawn,
                    "method_text": ("drawn with the seed from the competition's development set, stratified by "
@@ -266,12 +376,19 @@ def settings_for(result: dict, seed: int | None, drawn: list[str], pool_count: i
              "reference patch staged beside the agent; the evaluator verified each patch there with the task's tests, "
              "as the competition's own run does. Tool calls naming a path outside the workspace are counted in "
              "outside_workspace_call_count.") if development else
-            ((f"All {tasks_per_kernel} tasks were given to one private, offline kernel, each sealed until its turn, beside a "
+            ((f"All {tasks_per_kernel} tasks were given to one process on a Colab machine, each sealed until its turn, "
+              "beside a bundle" if colab else
+              f"All {tasks_per_kernel} tasks were given to one private, offline kernel, each sealed until its turn, beside a "
               "bundle" if tasks_per_kernel > 1 else "Each task ran alone in a private, offline kernel beside a bundle")
              + " with no reference patch and no tests, "
              "so the evaluator's verification had nothing to verify there. The patch was verified afterwards with "
              "the same evaluator's verify_task against the published snapshot and the task's tests."),
             "The number format follows the GPU: bfloat16 on compute capability 8.0 or above, float16 below.",
+            *((("Run on a Colab machine, not in a Kaggle kernel: the same kernel file, with the competition's wheels, "
+                "the model and the bundle at the paths Kaggle mounts them. The model server and the agent framework "
+                "were installed from PyPI at the versions the Kaggle kernels recorded, and the competition's "
+                "wheelhouse was installed over them by the kernel, as on Kaggle. One GPU and Colab's base image, so "
+                "its counts are not set beside a Kaggle kernel's as if one run."),) if colab else ()),
         ],
     }
 
@@ -497,8 +614,10 @@ def run_batch(a, api, user: str, ids: list[str], tasks: dict, manifest: dict, ov
     first_ids = [i.strip() for i in first_run.split(",") if i.strip()] if first_run else None
     order = seeded_order(ids, a.seed, first_ids)
     development = a.source == "competition"
+    colab = bool(getattr(a, "colab", False))
     name = batch_name(a.source, getattr(a, "label", None))
     kref, work = f"{user}/{kernel_slug(name)}", a.work / name
+    results = getattr(a, "colab_results", None) or colab_results_ref(user, name)   # where a Colab run's output is read
     if not a.collect:
         shutil.rmtree(work, ignore_errors=True)
         key = os.urandom(32)   # this run's; in the pushed kernel only, never in the dataset or the repository
@@ -520,6 +639,15 @@ def run_batch(a, api, user: str, ids: list[str], tasks: dict, manifest: dict, ov
         k = work / "kernel"
         k.mkdir(parents=True)
         (k / "official_agent_kernel.py").write_text(kernel_source((HERE / "official_agent_kernel.py").read_text(), key))
+        if colab:   # no Kaggle kernel: the keyed file goes to its own private dataset, for the Colab notebook to run
+            (k / "dataset-metadata.json").write_text(json.dumps(colab_kernel_metadata(user, name)))
+            try:
+                _upload_bundle(api, k, colab_kernel_metadata(user, name)["id"])
+            finally:
+                shutil.rmtree(k)   # the keyed copy does not stay on this machine
+            print("ready for kaggle/colab_official_agent.ipynb; its entry in kaggle/colab_official_run.json:\n"
+                  + json.dumps(colab_run_entry(user, name)), flush=True)
+            return 0
         (k / "kernel-metadata.json").write_text(json.dumps(
             kernel_metadata(user, name, a.machine_shape, a.docker_image, a.competition), indent=1))
         try:
@@ -531,6 +659,19 @@ def run_batch(a, api, user: str, ids: list[str], tasks: dict, manifest: dict, ov
     out = work / "output"
     if a.collect and reusable_output(out, getattr(a, "reuse_output", False)):
         status = "complete (its output was already downloaded)"
+    elif colab:
+        got = work / "colab_download"
+        shutil.rmtree(got, ignore_errors=True)
+        got.mkdir(parents=True)
+        spec = importlib.util.spec_from_file_location("colab_official", HERE / "colab_official.py")
+        co = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(co)
+        co.say = lambda message: print(message, flush=True)   # its log file is the Colab machine's
+        co.download_dataset(api, results, got)   # file by file where Kaggle refuses the whole
+        check_colab_session((got / "colab.log").read_text(errors="replace") if (got / "colab.log").exists() else "",
+                            getattr(a, "colab_session", None))
+        colab_output(got, out)
+        status = f"complete (run on Colab; read from {results})"
     else:
         while True:
             time.sleep(POLL_SECONDS)
@@ -563,7 +704,8 @@ def run_batch(a, api, user: str, ids: list[str], tasks: dict, manifest: dict, ov
         verdicts = _verify(a.dataset / "tasks.jsonl", a.dataset / "snapshots", a.agent_dir,
                            {i: (r.get("patch") or "") for i, r in done.items()}, work / "_verify")
     rows = [row_for({"instance_id": i, **done[i]}, verdicts.get(i), "" if development else manifest.get(i, ""),
-                    f"https://www.kaggle.com/code/{kref}", in_sample=not a.outside_sample) for i in order if i in done]
+                    (colab_results_url(results) if colab else
+                     f"https://www.kaggle.com/code/{kref}"), in_sample=not a.outside_sample) for i in order if i in done]
     table = pd.DataFrame(rows, columns=COLUMNS)
     if len(table):
         print(table[["instance_id", "tier_code", "is_resolved", "reason_text", "agent_patch_bytes", "tool_call_count",
@@ -585,7 +727,7 @@ def run_batch(a, api, user: str, ids: list[str], tasks: dict, manifest: dict, ov
             commit = subprocess.run(["git", "-C", str(a.agent_dir), "rev-parse", "HEAD"], capture_output=True,
                                     text=True, check=False).stdout.strip() or None
             settings = settings_for(good, a.seed, list(ids), len(manifest), a.machine_shape, a.docker_image,
-                                    a.competition, commit, a.source, tasks_per_kernel=len(order))
+                                    a.competition, commit, a.source, tasks_per_kernel=len(order), colab=colab)
             if not a.sample:
                 settings = given_sample(settings, getattr(a, "sample_method", None))
             settings["notes"] += a.note or []
@@ -593,6 +735,10 @@ def run_batch(a, api, user: str, ids: list[str], tasks: dict, manifest: dict, ov
                 settings["context"] = a.context_note
             if first_ids:
                 settings["sample"]["order_of"] = order_record(first_ids)
+            if colab:   # nothing blocks the network at a Colab machine's edge: every command the agent ran is read
+                traces = {i: json.loads(p.read_text()) for i in done
+                          if (p := out / "tasks" / i / "results" / "traces" / f"trace_{i}.json").exists()}
+                settings["network_audit"] = {**network_audit(traces), "traced_task_count": len(traces)}
             if skipped:   # the plan's "not run": kept beside the table, since those tasks have no row in it
                 settings["not_run"] = {"task_count": len(skipped), "reason_counts": reasons, "instance_ids": skipped,
                                        "tasks": not_run_rows(res, order)}
@@ -627,6 +773,13 @@ def main() -> int:
     ap.add_argument("--note", action="append", help="a sentence to add to the settings file's notes (repeatable)")
     ap.add_argument("--outside-sample", action="store_true",
                     help="these tasks are not part of the drawn sample (a pilot): their rows say so")
+    ap.add_argument("--colab", action="store_true",
+                    help="with --batch and --label: no Kaggle kernel. Upload the sealed bundle and the keyed kernel file "
+                         "for kaggle/colab_official_agent.ipynb; with --collect, read what that run sent back (#687)")
+    ap.add_argument("--colab-results", help="with --collect --colab: read the run from this dataset, or from one "
+                                            "version of it (owner/slug/<n>), not the one named for --label")
+    ap.add_argument("--colab-session", help="with --collect --colab: collect only if the upload's log opens with this "
+                                            "notebook session's start (HH:MM:SS, UTC); two sessions once shared a dataset")
     ap.add_argument("--batch", action="store_true",
                     help="every task in ONE kernel, each sealed until its turn: for when the GPU allowance cannot pay "
                          "for a kernel's start-up per task. The order is a seeded shuffle of the tasks")

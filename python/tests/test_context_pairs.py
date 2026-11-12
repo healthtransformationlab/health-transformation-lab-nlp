@@ -81,3 +81,32 @@ def test_two_added_arms_are_set_side_by_side_over_the_tasks_both_ran(cp):
     assert out == {"pair_count": 3, "left_out_count": 1, "both_count": 1, "report_only_count": 1,
                    "graph_only_count": 0, "neither_count": 1}
     assert "mcnemar_exact_p" not in out
+
+
+def test_the_colab_pair_reads_its_own_tables_and_writes_its_own_file(cp):
+    """Addendum 2 (#687): both arms again on one Colab GPU. Its tables are never pooled with the Kaggle arms'."""
+    assert cp.table_names("kaggle", "graph") == ("statement", "graph", "context_pairs_graph.csv")
+    assert cp.table_names("kaggle", "report") == ("statement", "report", "context_pairs_report.csv")
+    assert cp.table_names("colab", "graph") == ("colab-statement", "colab-graph", "context_pairs_colab_graph.csv")
+    # a second notebook session made the same pair at the same time on another GPU (#687): its tables are its own too
+    assert cp.table_names("colab-l4", "graph") == ("colab-statement-l4", "colab-graph-l4",
+                                                    "context_pairs_colab_l4_graph.csv")
+    with pytest.raises(SystemExit, match="did not make the report arm"):
+        cp.table_names("colab-l4", "report")                       # the second session made the pair only
+    # addendum 3: the failing test's report as a third arm on the same machine, beside the same baseline
+    assert cp.table_names("colab", "report") == ("colab-statement", "colab-report", "context_pairs_colab_report.csv")
+
+
+def test_the_sensitivity_analysis_leaves_out_a_pair_in_which_either_side_reached_for_the_network(cp, tmp_path):
+    """Nothing blocks the network at a Colab machine's edge, so the plan repeats its test without any pair in which
+    either side ran a command that reaches for it."""
+    rows = [{"instance_id": i, "is_pair_run": True, "is_statement_resolved": False, "is_graph_resolved": True} for i in "abc"]
+    kept = cp.without_network(rows, {"statement": ["a"], "graph": ["c", "zz"]})
+    assert [r["instance_id"] for r in kept] == ["b"]
+    assert cp.without_network(rows, {"statement": [], "graph": []}) == rows
+    settings = tmp_path / "arm_settings.json"
+    settings.write_text('{"network_audit": {"command_count": 9, "network_command_count": 2, "instance_ids": ["a", "c"]}}')
+    assert cp.network_ids(settings) == ["a", "c"]
+    assert cp.network_ids(tmp_path / "none.json") == []                      # an arm with no settings file yet
+    (tmp_path / "kaggle_settings.json").write_text('{"kernel": {"internet": false}}')
+    assert cp.network_ids(tmp_path / "kaggle_settings.json") == []           # a Kaggle arm: no audit, nothing to read
