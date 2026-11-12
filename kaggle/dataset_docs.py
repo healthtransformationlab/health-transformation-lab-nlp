@@ -5,6 +5,7 @@
     resources(slug, files) Kaggle's `resources`: each file's path and description, and a schema with each
                            column's description for CSV and JSONL files ({path in dataset: source file})
     missing(slug, files)   what has no description; python/tests/test_kaggle_dataset_docs.py wants it empty
+    cut_by_kaggle(meta)    where the metadata holds a "<", which Kaggle reads as the start of a tag (#692)
 
 Columns are read from a CSV's header or a JSONL file's first row. Kaggle shows these on the dataset's Data tab and
 counts them in its usability score.
@@ -103,3 +104,22 @@ def missing(slug: str, files: dict) -> list[str]:
         gaps += [f"{dest}: column {c} has no description" for c in columns_of(Path(src))
                  if not column_description(slug, dest, c)]
     return gaps
+
+
+def _around(text: str, width: int = 30) -> str:
+    i = text.index("<")
+    return " ".join(text[max(0, i - width):i + width].split())
+
+
+def cut_by_kaggle(meta: dict) -> list[str]:
+    """Where a dataset's metadata holds a "<". Kaggle reads it as the start of an HTML tag and keeps nothing after
+    it: a card written with `<repo name>` ended there on the dataset's page, and a column described with one was
+    left without a description (#692). Each entry names the place; publish.write_metadata wants none."""
+    where = [f"{key}: ...{_around(str(meta[key]))}..." for key in ("title", "subtitle", "description", "userSpecifiedSources")
+             if "<" in str(meta.get(key) or "")]
+    for r in meta.get("resources") or []:
+        if "<" in (r.get("description") or ""):
+            where.append(f"{r['path']}: file description: ...{_around(r['description'])}...")
+        where += [f"{r['path']}: column {f['name']}: ...{_around(f['description'])}..."
+                  for f in (r.get("schema") or {}).get("fields", []) if "<" in (f.get("description") or "")]
+    return where

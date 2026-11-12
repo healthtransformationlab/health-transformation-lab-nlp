@@ -13,9 +13,9 @@ rates from the repo's `costs.yaml` and the judge endpoint's per-token price at t
 
 ## Files
 
-- **Per model:** `ai_predictions_<model>.csv`. One row per review note, with the predicted status and, where
-  the model gives them, class probabilities. `llm_details_<model>.csv` holds the LLM readers' raw answer,
-  quoted evidence, quote-gate result, tokens and latency.
+- **Per model:** `ai_predictions_` and the model's name, `.csv`. One row per review note, with the predicted
+  status and, where the model gives them, class probabilities. `llm_details_` and the model's name, `.csv`,
+  holds the LLM readers' raw answer, quoted evidence, quote-gate result, tokens and latency.
 - **Leaderboard:** `ladder/ladder_vs_truth.csv`. Accuracy with a 95% CI, stage IV recall, unsafe-error rate
   and calibration error per method. The other `ladder/` files hold the merged predictions and the MedGemma vs
   encoder comparison, overall and by difficulty level.
