@@ -305,3 +305,49 @@ def test_the_notebooks_code_is_hidden_so_a_stray_tap_on_a_phone_cannot_change_it
     assert code[0]["metadata"].get("cellView") == "form"
     assert "".join(code[0]["source"]).startswith("#@title ")
     compile("".join(code[0]["source"]), "cell", "exec")   # the title is a comment: the cell is still plain Python
+
+
+# --- what the first test run on Colab showed (#687): /kaggle/input is read-only there, and its Python is 3.13 --------
+
+def _kernel(*names):
+    import ast
+    src = (REPO_ROOT / "kaggle" / "official_agent_kernel.py").read_text()
+    ns: dict = {}
+    exec("import glob, json, os, re, shutil, sys\nfrom pathlib import Path\n", ns)   # noqa: S102 - our own kernel's code
+    for node in ast.parse(src).body:
+        if isinstance(node, ast.FunctionDef) and node.name in names:
+            exec(ast.get_source_segment(src, node), ns)                              # noqa: S102
+    return ns
+
+
+def test_the_kernel_looks_for_its_inputs_where_it_is_told():
+    """Colab mounts its own read-only /kaggle/input, so a Colab run puts the inputs elsewhere and says where. On
+    Kaggle nothing is said and the kernel looks where Kaggle mounts them."""
+    src = (REPO_ROOT / "kaggle" / "official_agent_kernel.py").read_text()
+    assert 'INPUT = Path(os.environ.get("HTL_INPUT", "/kaggle/input"))' in src
+    code = "\n".join(line.split("#")[0] for line in src.splitlines())
+    assert code.count('"/kaggle/input') == 1, "every search starts from INPUT, not from a path written out again"
+
+
+def test_a_wheel_built_for_another_python_is_left_out_and_the_rest_install(tmp_path):
+    """The competition's wheelhouse is built for Kaggle's Python 3.12. Nine of its 41 wheels are compiled for 3.12
+    alone; on Colab's 3.13 pip refuses the whole install if they are named. On 3.12 every wheel still installs."""
+    fits = _kernel("wheel_fits")["wheel_fits"]
+    for name in ("swegemma-0.2.11-py3-none-any.whl", "astor-0.8.1-py2.py3-none-any.whl",
+                 "interegular-0.3.3-py37-none-any.whl", "bitsandbytes-0.46.1-py3-none-manylinux_2_24_x86_64.whl",
+                 "vllm-0.19.1-cp38-abi3-manylinux_2_31_x86_64.whl",
+                 "safetensors-0.8.0-cp310-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl"):
+        assert fits(name, (3, 12)) and fits(name, (3, 13)), name
+    only_312 = "xgrammar-0.2.5.post1-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl"
+    assert fits(only_312, (3, 12)) and not fits(only_312, (3, 13))
+    assert not fits("vllm-0.19.1-cp314-abi3-manylinux_2_31_x86_64.whl", (3, 13))     # abi3 from a later Python
+    src = (REPO_ROOT / "kaggle" / "official_agent_kernel.py").read_text()
+    assert 'result["wheels_left_out"]' in src                                        # and the run says which
+
+
+def test_a_colab_run_keeps_its_inputs_and_output_out_of_kaggles_folders(co):
+    """Colab's own /kaggle/input cannot be written to: the inputs and the output go under /content, laid out the same
+    way, and the kernel is told where both are."""
+    assert str(co.KAGGLE).startswith("/content/")
+    env = co.kernel_paths(co.KAGGLE)
+    assert env == {"HTL_INPUT": str(co.KAGGLE / "input"), "HTL_OUT": str(co.KAGGLE / "working")}

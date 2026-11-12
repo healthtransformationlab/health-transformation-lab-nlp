@@ -1,10 +1,12 @@
 """The competition's evaluator loop on a Colab GPU, laid out as on Kaggle (028 AI9, #687).
 
 kaggle/official_agent_kernel.py finds its bundle, the competition's wheels and the model by searching /kaggle/input,
-and writes to /kaggle/working. A Colab machine is a Linux machine with a GPU and root: this puts the same inputs at
-the same paths, installs the model server and the agent framework at the versions the Kaggle kernels recorded, and
-runs that kernel file unchanged. What differs from a Kaggle kernel is said where the run is reported: one GPU, a
-different base image, and a network at the machine's edge.
+and writes to /kaggle/working. A Colab machine is a Linux machine with a GPU and root, but it has a read-only
+/kaggle/input of its own: this lays the same inputs out the same way under /content, tells the kernel where they are
+(HTL_INPUT, HTL_OUT), installs the model server and the agent framework at the versions the Kaggle kernels recorded,
+and runs the same kernel file. What differs from a Kaggle kernel is said where the run is reported: one GPU, a
+different base image and Python (the kernel leaves out the few wheels compiled for Kaggle's Python alone), and a
+network at the machine's edge.
 
 Two things a Kaggle kernel gave for free are done here by hand:
 
@@ -38,7 +40,8 @@ MODEL = "google/gemma-4/other/gemma-4-e4b-it-qat-w4a16-ct/2"             # as th
 # The versions the Kaggle kernels recorded (their `_settings.json`), from PyPI with their dependencies; the wheels of
 # the wheelhouse are then installed over them by the kernel itself, as on Kaggle.
 PINS = ("vllm==0.19.1", "google-adk==1.36.1", "litellm==1.82.4", "kagglehub", "kaggle==2.2.5", "six", "pytest", "pyyaml")
-KAGGLE = Path("/kaggle")
+# Laid out as Kaggle lays out /kaggle, but under /content: Colab has a read-only /kaggle/input of its own.
+KAGGLE = Path("/content/htl_kaggle")
 LOG = Path("/content/htl_colab.log")
 RESULT_PREFIX = "htlnlp-colab-official-"
 DEAD_PROXY = "http://127.0.0.1:9"                                         # nothing listens there
@@ -80,6 +83,11 @@ def kernel_env(env: dict) -> dict:
                                                        "ALL_PROXY", "all_proxy")},
             "NO_PROXY": local, "no_proxy": local, "PIP_NO_INDEX": "1", "HF_HUB_OFFLINE": "1",
             "MPLBACKEND": "Agg"}   # a notebook's inline plotting backend means nothing to a command the agent runs
+
+
+def kernel_paths(root: Path = KAGGLE) -> dict:
+    """Where the kernel is told its inputs and its output are (it looks under /kaggle unless told)."""
+    return {"HTL_INPUT": str(Path(root) / "input"), "HTL_OUT": str(Path(root) / "working")}
 
 
 def results_ref(user: str, label: str) -> str:
@@ -320,7 +328,8 @@ def run_one(label: str, bundle: str, kernel_dataset: str | None = None, kernel_u
         uploader = threading.Thread(target=keep_uploading, daemon=True)
         uploader.start()
         with LOG.open("a") as log:
-            proc = subprocess.Popen([sys.executable, "-u", str(kernel)], cwd=str(out), env=kernel_env(dict(os.environ)),
+            proc = subprocess.Popen([sys.executable, "-u", str(kernel)], cwd=str(out),
+                                    env={**kernel_env(dict(os.environ)), **kernel_paths(KAGGLE)},
                                     stdout=log, stderr=subprocess.STDOUT)
             started = time.monotonic()
             while proc.poll() is None:

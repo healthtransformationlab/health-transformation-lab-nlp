@@ -25,6 +25,7 @@ import io
 import json
 import logging
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -46,6 +47,9 @@ os.environ.setdefault("OPENAI_API_KEY", "EMPTY")
 os.environ.setdefault("LOCAL_API_KEY", "EMPTY")
 
 OUT = Path(os.environ.get("HTL_OUT", "/kaggle/working"))
+# Where the bundle, the wheelhouse and the model are. Kaggle mounts them here; a Colab run puts them elsewhere and
+# says where, since Colab has a read-only folder of its own at this path (#687).
+INPUT = Path(os.environ.get("HTL_INPUT", "/kaggle/input"))
 ENDPOINT = os.environ.get("HTL_ENDPOINT")   # set: a dry run against a stand-in server, no wheelhouse, no vLLM
 ALLOWED_MODELS = {"gemma-4-31b-it-qat-w4a16-ct", "gemma-4-12b-it-qat-w4a16-ct", "gemma-4-e4b-it-qat-w4a16-ct",
                   "gemma-4-e2b-it-qat-w4a16-ct"}
@@ -70,8 +74,8 @@ def quiet_logging() -> None:
 def find_bundle() -> Path:
     if os.environ.get("HTL_BUNDLE"):
         return Path(os.environ["HTL_BUNDLE"])
-    found = (glob.glob("/kaggle/input/**/official_batch.json", recursive=True)
-             or glob.glob("/kaggle/input/**/official_task.json", recursive=True))
+    found = (glob.glob(str(INPUT / "**" / "official_batch.json"), recursive=True)
+             or glob.glob(str(INPUT / "**" / "official_task.json"), recursive=True))
     return Path(found[0]).parent
 
 
@@ -137,8 +141,9 @@ def _task_span(instance_id: str):
         return contextlib.nullcontext()
 
 
-def find_competition(root: Path = Path("/kaggle/input")) -> Path:
+def find_competition(root: Path | None = None) -> Path:
     """The attached competition's folder: the one holding HARNESS_README.md, tasks.jsonl and snapshots/ (028 AI4)."""
+    root = Path(root) if root else INPUT
     for readme in sorted(glob.glob(str(Path(root) / "**" / "HARNESS_README.md"), recursive=True)):
         folder = Path(readme).parent
         if (folder / "tasks.jsonl").is_file() and (folder / "snapshots").is_dir():
@@ -187,9 +192,27 @@ def unseal(data: bytes, key: bytes, name: str) -> bytes:
     return (int.from_bytes(data, "big") ^ int.from_bytes(stream, "big")).to_bytes(len(data), "big")
 
 
+def wheel_fits(name: str, version: tuple = tuple(sys.version_info[:2])) -> bool:
+    """Whether a wheel's file name says it installs on this Python: a pure-Python or abi3 wheel for this version or
+    an earlier one, or a wheel compiled for exactly this version. The wheelhouse is built for Kaggle's Python 3.12,
+    where every wheel fits. On another Python (Colab's is 3.13) the few compiled for 3.12 alone are left out, since
+    pip refuses the whole install if one is named, and those packages stay as the machine has them."""
+    tags = name[:-len(".whl")].split("-")[-3:]
+    if len(tags) < 3:
+        return True
+    for one in tags[0].split("."):
+        m = re.fullmatch(r"(py|cp)(\d)(\d*)", one)
+        if not m or int(m.group(2)) != version[0]:
+            continue
+        built_for = (int(m.group(2)), int(m.group(3) or 0))
+        if built_for == tuple(version) or ((m.group(1) == "py" or tags[1] == "abi3") and built_for <= tuple(version)):
+            return True
+    return False
+
+
 def install_wheelhouse() -> Path:
     """The starter notebook's cell 2: every wheel of the wheelhouse dataset, no dependencies resolved."""
-    wheelhouse = Path(glob.glob("/kaggle/input/**/swegemma-*.whl", recursive=True)[0]).parent
+    wheelhouse = Path(glob.glob(str(INPUT / "**" / "swegemma-*.whl"), recursive=True)[0]).parent
     for pattern in ("/usr/local/lib/python*/dist-packages/*cutlass*.pth", "/usr/local/lib/python*/site-packages/*cutlass*.pth"):
         for pth in glob.glob(pattern):
             try:
@@ -208,6 +231,10 @@ def install_wheelhouse() -> Path:
             except OSError:
                 shutil.copyfile(w, tmp / name)
     wheels = sorted(str(w) for w in tmp.glob("*.whl"))
+    left_out = sorted(Path(w).name for w in wheels if not wheel_fits(Path(w).name))
+    if left_out:   # never on Kaggle, whose Python the wheelhouse is built for
+        result["wheels_left_out"] = left_out
+        wheels = [w for w in wheels if Path(w).name not in left_out]
     subprocess.run([sys.executable, "-m", "pip", "install", "-q", "--no-deps", "--force-reinstall", *wheels], check=True)
     importlib.invalidate_caches()
     return wheelhouse
@@ -219,7 +246,7 @@ def start_vllm(agent_dir: Path, declared_model: str):
     from adk_submission import VllmConfig, VllmServer, discover_adapters
     from swegemma.config import ALLOWED_ADAPTER_EXTENSIONS
 
-    model_path = Path(glob.glob(f"/kaggle/input/**/{declared_model}/**/config.json", recursive=True)[0]).parent
+    model_path = Path(glob.glob(str(INPUT / "**" / declared_model / "**" / "config.json"), recursive=True)[0]).parent
     adapters = discover_adapters(str(agent_dir), adapter_extensions=ALLOWED_ADAPTER_EXTENSIONS)
     adapter_map = getattr(adapters, "adapters", None) or {}
     ranks = [r for info in adapter_map.values() if (r := getattr(info, "rank", None)) is not None and r > 0]
