@@ -161,6 +161,20 @@ def follow(done: dict, minutes: float = FOLLOW_MINUTES, get=branch_file, make=No
     return f"nothing new was listed for {minutes:g} minutes"
 
 
+def send_until_taken(send, tries: int = 8, wait_seconds: float = 75, sleep=time.sleep) -> bool:
+    """A finished run's last upload, tried until Kaggle takes it: Kaggle refuses a new version of a dataset while it
+    is still taking the previous one in, and a finished arm is hours of GPU time. True when a try went through."""
+    for attempt in range(tries):
+        try:
+            send()
+            return True
+        except Exception as e:  # noqa: BLE001 - whatever Kaggle answered, the next try may pass
+            say(f"the results were not taken (try {attempt + 1} of {tries}): {type(e).__name__}: {str(e)[:200]}")
+            if attempt < tries - 1:
+                sleep(wait_seconds)
+    return False
+
+
 # ---- below: only run on the Colab machine ----------------------------------------------------------------------------
 
 def say(message: str) -> None:
@@ -256,7 +270,12 @@ def main(label: str, bundle: str, kernel_dataset: str | None = None, kernel_url:
         if follow_minutes:
             say("following the branch's run list, so a run added there starts without a second tap")
             say("the following ended: " + follow(DONE, follow_minutes))
-            release()
+            unsent = sorted(p.name.removeprefix("htl_not_sent_") for p in LOG.parent.glob("htl_not_sent_*"))
+            if unsent:   # the only copy of those results is this machine's
+                say(f"the GPU is not released: the results of {', '.join(unsent)} did not reach Kaggle. Leave this "
+                    "page open and tell the session that started the run.")
+            else:
+                release()
     return DONE[label]
 
 
@@ -312,12 +331,18 @@ def run_one(label: str, bundle: str, kernel_dataset: str | None = None, kernel_u
         with LOG.open("a") as f:
             f.write(traceback.format_exc())
     finally:
-        try:
+        def send() -> None:
+            nonlocal api
             if api is None:
                 from kaggle.api.kaggle_api_extended import KaggleApi
                 api = KaggleApi()
                 api.authenticate()
             upload(api, user, label, out, f"finished, kernel exit {code}")
-        except Exception as e:  # noqa: BLE001
-            print(f"THE LOG COULD NOT BE UPLOADED ({type(e).__name__}: {str(e)[:300]}). Copy the text above.", flush=True)
+
+        not_sent = LOG.parent / f"htl_not_sent_{label}"
+        if send_until_taken(send):
+            not_sent.unlink(missing_ok=True)
+        else:
+            not_sent.write_text("")   # `main` keeps the GPU while this is here
+            print("THE LOG COULD NOT BE UPLOADED. Copy the text above.", flush=True)
     return code

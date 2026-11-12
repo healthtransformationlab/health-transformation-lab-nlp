@@ -180,6 +180,44 @@ def test_a_run_is_made_once_in_a_session_and_then_the_branch_is_followed(co, mon
     assert made == ["a"] and followed == [{"a": 0}] and released == [1]
 
 
+def test_a_finished_runs_results_are_sent_until_kaggle_takes_them(co, monkeypatch):
+    """Kaggle refuses a new version of a dataset while it is still taking the last one in. A finished arm is hours of
+    GPU time, so its last upload is tried again, and the GPU is not given back while a run's results are only on it."""
+    monkeypatch.setattr(co, "say", lambda message: None)
+    calls = {"n": 0}
+
+    def busy_twice():
+        calls["n"] += 1
+        if calls["n"] < 3:
+            raise RuntimeError("the dataset is still being processed")
+    assert co.send_until_taken(busy_twice, tries=5, wait_seconds=1, sleep=lambda s: None) is True
+    assert calls["n"] == 3
+
+    def never():
+        calls["n"] += 1
+        raise RuntimeError("refused")
+    calls["n"] = 0
+    assert co.send_until_taken(never, tries=4, wait_seconds=1, sleep=lambda s: None) is False
+    assert calls["n"] == 4
+
+
+def test_the_gpu_is_kept_while_a_runs_results_are_only_on_the_machine(co, monkeypatch, tmp_path):
+    made, released, said = [], [], []
+    monkeypatch.setattr(co, "say", said.append)
+    monkeypatch.setattr(co, "LOG", tmp_path / "htl_colab.log")
+    monkeypatch.setattr(co, "DONE", {})
+    monkeypatch.setattr(co, "run_one", lambda label, *a: made.append(label) or 0)
+    monkeypatch.setattr(co, "follow", lambda done, minutes: "stop")
+    monkeypatch.setattr(co, "release", lambda: released.append(1))
+    (tmp_path / "htl_not_sent_colab-graph").write_text("")           # an arm whose last upload never went through
+    co.main("a", "x/y", kernel_url="https://example.org/k.py")
+    assert released == [] and any("colab-graph" in s and "not" in s for s in said)
+    (tmp_path / "htl_not_sent_colab-graph").unlink()
+    monkeypatch.setattr(co, "DONE", {})
+    co.main("b", "x/z", kernel_url="https://example.org/k.py")
+    assert released == [1]
+
+
 def test_the_notebook_reads_its_token_from_colab_secrets_and_holds_none():
     nb = json.loads(NOTEBOOK.read_text())
     src = "\n".join("".join(c["source"]) for c in nb["cells"])
