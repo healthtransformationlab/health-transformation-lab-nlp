@@ -1,14 +1,14 @@
 ---
 pr: 693
 branch: fix/692-034-kaggle-angle-brackets
-title: "034 BUG1: send Kaggle no text with an angle bracket"
+title: "034 BUG4: send Kaggle no text with an angle bracket"
 author: jcbowyer
 reviewed_at: 2026-11-12
 reviewer: coordinator review of the diff against the rubric (no reviewer subagent: a six-file wording and guard change, reviewed line by line)
 verdict: approve
 ---
 
-# PR Review: 034 BUG1: send Kaggle no text with an angle bracket (#692)
+# PR Review: 034 BUG4: send Kaggle no text with an angle bracket (#692)
 
 Reviewed against `.claude/review-rubric.md` and AGENTS.md. Range: `526ea08..9c7f05a`.
 
@@ -43,6 +43,8 @@ scripts refuse to write metadata that holds one.
 | Python and R parity, seeds, paths, prices, deck figures, secrets register, alerts, table writes: not touched | n/a |
 | Configuration: no setting changes. Environments: none on merge; the metadata of two public Kaggle datasets after it, by a metadata-only run (no new version) | ok |
 
+| The corrected descriptions of the task set were sent from this branch's head (`2e8f6c0`) on November 12, 2026 at 19:40 UTC, before the merge, at the owner's request the same afternoon: the text sent is the text this pull request merges, and the commit named in the card is the one the live files were published from (`167daa2`, workflow run 42750573206). Read back: 5,419 characters where there were 3,357, ending with the "Published from commit" line and holding the licence section; version 4, 265 files and the last-updated time unchanged | ok |
+
 Nothing blocking.
 
 ## Notes
@@ -51,3 +53,7 @@ Nothing blocking.
 - A lone `>` is not refused: the cards use it for Markdown block quotes, and Kaggle shows those as intended.
 - `perio-bench-notes` is also at 9.41 and its card comes back whole, so its one pending action has another cause.
   The owner's page shows which; it gets its own issue once known.
+- `perio-bench-results` is not refreshed here. Five of its 38 live files have a name without the `+` the repository's
+  name has (`ai_predictions_bert-basecw.csv` for `ai_predictions_bert-base+cw.csv`): Kaggle drops the character, so
+  those files' descriptions are never matched. Its card will be sent again with that fixed, under its own issue.
+- The issue was first filed as BUG1; BUG1 to BUG3 of spec 034 already existed, so it is BUG4.
