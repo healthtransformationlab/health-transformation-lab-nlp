@@ -48,8 +48,9 @@ Nothing blocking.
 
 ## Notes
 - Kaggle's pages are drawn in the browser and would not open from the session that wrote this. The hours, the menu
-  route and "experimental" are as a web search quoted those pages on November 12, 2026, and they agree with what
-  the owner saw on kaggle.com the same day. Whoever links a subscription reads the number under Settings.
+  route and "experimental" are as a web search quoted those pages on November 12, 2026. The owner saw on
+  kaggle.com the same day that a Colab subscription can be linked; the hours themselves are not confirmed from
+  the account. Whoever links a subscription reads the number under Settings.
 - The rule is general (any quota or allowance), and its one worked example is Kaggle's. The shared rules vendored
   into the other repositories (`pipeline-doctor/conventions`) are not changed here.
 - The check in the refusal matches Kaggle's wording as it was on November 11 ("Maximum weekly GPU quota"). If
