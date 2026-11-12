@@ -89,10 +89,23 @@ def test_every_gpu_the_kernels_ran_on_has_a_declared_price(rt):
     """036 US2 (#569): the runs under the competition's evaluator used four L4s, and their GPU time is priced the
     way the T4 baseline's is: from a declared price with its source and the date it was read. Until November 11,
     2026 only the T4 had one, so `estimated_cost_usd` was empty for every L4 run."""
-    for name in ("Tesla T4", "NVIDIA L4"):
+    for name in ("Tesla T4", "NVIDIA L4", "NVIDIA A100-SXM4-40GB"):   # the A100: the Colab pair of November 12 (#687)
         price, basis = rt.declared_price(name)
         assert price is not None and price > 0, f"no price declared for {name}"
         assert "getdeploying.com" in basis and "read 2026-" in basis and "Kaggle's GPUs are free" in basis
+
+
+def test_a_colab_runs_estimate_does_not_say_its_gpu_was_free(rt):
+    """The Colab pair (#687) ran on the owner's Colab subscription, which is paid for, in compute units and not by the
+    GPU-hour. Its estimate is still what the same GPU time would rent for, and it says where the run was made."""
+    colab = {"kernel": {"machine_shape_asked": "Colab, one GPU"}}
+    kaggle = {"kernel": {"machine_shape_asked": "NvidiaL4x4"}}
+    assert rt.where_text(kaggle) == "Kaggle's GPUs are free" and rt.where_text({}) == "Kaggle's GPUs are free"
+    assert "Colab" in rt.where_text(colab) and "free" not in rt.where_text(colab)
+    price, basis = rt.declared_price("NVIDIA A100-SXM4-40GB", rt.where_text(colab))
+    assert price == pytest.approx(1.87) and "compute units" in basis and "Kaggle's GPUs are free" not in basis
+    none, why = rt.declared_price("NVIDIA H100", rt.where_text(colab))
+    assert none is None and "no price declared for NVIDIA H100" in why and "Kaggle" not in why
 
 
 def test_a_gpu_with_no_declared_price_gets_no_estimate_and_says_why(rt):

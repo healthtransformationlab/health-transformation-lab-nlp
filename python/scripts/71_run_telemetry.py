@@ -8,7 +8,8 @@ and samples its GPUs. This rolls them up beside the run's table:
 - `<table>_sections.csv`: the same over all tasks, with each section's share of the time;
 - `<table>_gpu.csv`: one row per task with its seconds, GPU-hours, mean utilization, peak memory, energy, and an
   estimated cost when ops/cost_settings.yaml declares a price for that GPU. Kaggle's GPUs are free: the cost is
-  what the same GPU time would cost on a cloud, never anything paid.
+  what the same GPU time would cost on a cloud, never anything paid. A run on Colab (#687) is paid for, in the
+  subscription's compute units and not by the hour: its estimate is the same kind, and its basis says so.
 
     python scripts/71_run_telemetry.py --output <the kernel's output folder> --summary <run_summary.json> \\
         --table data/tasks/official_agent_runs/<table>.csv
@@ -36,7 +37,9 @@ ROLLUP_COLUMNS = ["section_name", "task_count", "span_count", "self_seconds", "t
                   "output_token_count"]
 GPU_COLUMNS = ["instance_id", "task_seconds", "gpu_count", "gpu_hours", "avg_gpu_utilization_pct",
                "max_gpu_memory_used_mb", "gpu_energy_wh", "estimated_cost_usd", "price_basis_text"]
-PRICE_KEYS = {"Tesla T4": "t4_usd_per_gpu_hour", "NVIDIA L4": "l4_usd_per_gpu_hour"}
+PRICE_KEYS = {"Tesla T4": "t4_usd_per_gpu_hour", "NVIDIA L4": "l4_usd_per_gpu_hour",
+              "NVIDIA A100-SXM4-40GB": "a100_usd_per_gpu_hour"}
+FREE = "Kaggle's GPUs are free"
 
 
 def section_of(name: str) -> str:
@@ -128,14 +131,22 @@ def gpu_rows(gpu: dict, task_seconds: dict, gpu_count: int, usd_per_gpu_hour: fl
     return rows
 
 
-def declared_price(gpu_name: str | None) -> tuple[float | None, str]:
+def where_text(settings: dict) -> str:
+    """What the estimate's basis says of the machine: a Kaggle kernel's GPUs are free, and a Colab machine's are the
+    owner's subscription, paid for in compute units (#687). From the run's settings file."""
+    if str((settings.get("kernel") or {}).get("machine_shape_asked") or "").startswith("Colab"):
+        return "run on Colab, which the owner pays for in compute units and not by the GPU-hour"
+    return FREE
+
+
+def declared_price(gpu_name: str | None, where: str = FREE) -> tuple[float | None, str]:
     """The declared price of one hour of this GPU and where it comes from, or none with the reason."""
     settings = yaml.safe_load((REPO_ROOT / "ops" / "cost_settings.yaml").read_text())
     entry = settings.get(PRICE_KEYS.get(gpu_name or "", ""))
     if not entry:
-        return None, f"no price declared for {gpu_name} in ops/cost_settings.yaml; Kaggle's GPUs are free"
+        return None, f"no price declared for {gpu_name} in ops/cost_settings.yaml; {where}"
     return float(entry["value"]), (f"estimate: {entry['value']} USD per {gpu_name} GPU-hour ({entry['source']}, read "
-                                   f"{entry['read_date']}); Kaggle's GPUs are free")
+                                   f"{entry['read_date']}); {where}")
 
 
 def main() -> int:
@@ -157,7 +168,8 @@ def main() -> int:
     gpu = {i: g for i, g in (json.loads(a.summary.read_text()).get("gpu") or {}).items() if i in known}
     name = table.gpu_name.dropna().iloc[0] if table.gpu_name.notna().any() else None
     count = int(table.gpu_count.dropna().iloc[0]) if table.gpu_count.notna().any() else 0
-    price, basis = declared_price(name)
+    settings_file = Path(f"{stem}_settings.json")
+    price, basis = declared_price(name, where_text(json.loads(settings_file.read_text()) if settings_file.exists() else {}))
     rows = gpu_rows(gpu, seconds, count, price, basis)
     pd.DataFrame(rows, columns=GPU_COLUMNS).to_csv(f"{stem}_gpu.csv", index=False)
     print(pd.DataFrame(roll, columns=ROLLUP_COLUMNS).to_string(index=False))

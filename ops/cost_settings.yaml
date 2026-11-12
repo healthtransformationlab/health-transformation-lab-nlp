@@ -24,3 +24,12 @@ l4_usd_per_gpu_hour:
   value: 0.83
   source: https://getdeploying.com/gpus/nvidia-l4
   read_date: "2026-11-11"
+
+# One A100 GPU-hour on a cloud: the same source, week (Oct 26, 2026) and figure as the T4's and the L4's: the median
+# on-demand price across providers, 1.8675 across 38 that week (1.8925 across 38 in the week of Nov 9). The source
+# has one series for the A100, 40 GB and 80 GB together. The Colab pair of November 12 ran on one A100 40 GB
+# (#687); Colab itself is paid in compute units, so this is still an estimate of what the GPU time would rent for.
+a100_usd_per_gpu_hour:
+  value: 1.87
+  source: https://getdeploying.com/gpus/nvidia-a100
+  read_date: "2026-11-12"
