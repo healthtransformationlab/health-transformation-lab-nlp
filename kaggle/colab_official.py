@@ -301,6 +301,10 @@ def run_one(label: str, bundle: str, kernel_dataset: str | None = None, kernel_u
         api = KaggleApi()
         api.authenticate()
         api.dataset_list(user=user, page=1)   # one cheap call: the token works
+        try:   # a first note, so the run can be seen to have started without the notebook's screen
+            upload(api, user, label, out, "started")
+        except Exception as e:  # noqa: BLE001 - a note that fails must not stop the run
+            say(f"the first note was not sent, carrying on: {type(e).__name__}: {str(e)[:200]}")
         kernel = fetch(api, kagglehub, bundle, kernel_dataset, kernel_url)
         out.mkdir(parents=True, exist_ok=True)
         say("starting the kernel")
