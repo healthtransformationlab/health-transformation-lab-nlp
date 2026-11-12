@@ -48,6 +48,25 @@ def test_agents_md_has_the_operations_rules():
         assert sev in agents, sev
 
 
+def test_a_quota_is_raised_before_it_is_worked_around():
+    """On November 11, 2026 Kaggle's weekly GPU hours ran out and a planned rerun moved to Colab. Nobody had checked
+    that a Colab subscription linked to the Kaggle account adds hours on Kaggle itself (#698). The rule, the how-to
+    with its source, and the action beside the budget stay written down."""
+    agents = (REPO_ROOT / "AGENTS.md").read_text()
+    rules = agents[agents.index("## Failures, retries and reruns"):agents.index("## Ingestion and schema drift")]
+    assert "A quota or allowance that stops a run is raised before it is worked around" in rules
+    assert "kaggle/README.md" in rules and "what was checked" in rules
+    readme = (REPO_ROOT / "kaggle" / "README.md").read_text()
+    how_to = readme[readme.index("## GPU hours"):readme.index("## When something fails")]
+    for fact in ("Link to Colab", "15 or 30", "https://www.kaggle.com/product-announcements/575468",
+                 "https://www.kaggle.com/docs/notebooks", "experimental", "Maximum weekly GPU quota"):
+        assert fact in how_to, fact
+    assert "[GPU hours](#gpu-hours)" in readme[readme.index("## When something fails"):]
+    budgets = yaml.safe_load((REPO_ROOT / "ops" / "budgets.yaml").read_text())["budgets"]
+    allowance = next(b for b in budgets if b["budget_name"] == "kaggle_gpu_allowance")
+    assert "kaggle/README.md" in allowance["action_text"]
+
+
 def test_operations_doc_cites_its_databricks_facts():
     doc = (REPO_ROOT / "docs" / "operations.md").read_text()
     for topic in ("Repair", "cleanSource", "schemaEvolutionMode", "rescuedDataColumn", "730 days", "digest"):

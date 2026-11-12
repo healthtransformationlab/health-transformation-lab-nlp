@@ -25,7 +25,7 @@ budgets:
     limit: 20
     unit: allowance hours (of about 30 a week; the rest is left for other GPU jobs)
     owner_name: repo owner
-    action_text: "python/scripts/60_kaggle_agent.py: lower --max-gpu-hours, or wait for next week's allowance"
+    action_text: "python/scripts/60_kaggle_agent.py: lower --max-gpu-hours; check a Colab subscription is linked for more hours (kaggle/README.md, GPU hours); or wait for next week's allowance"
   - budget_name: databricks_list_cost
     category: cost
     measure: pipeline_cost_usd
