@@ -171,7 +171,7 @@ AI10, #688), after an outside review of the paper asked for evidence of benchmar
   `test_reason_text` in `agent_screen_all.csv`), the names of the tests the task adds, and the AI's verdict, pass,
   with the question "Agree?".
 - At about 04:25 UTC, at the owner's request, the 12 were set out again in the session's chat, shorter: each task's
-  title, and each of the two ratings with one sentence of the AI's reason.
+  title, and each of the two ratings with one sentence of the AI's reason, shortened by the session that sent it.
 - At about 04:26 UTC the owner answered, in these words: "All 12 agree".
 
 So the owner agreed with the AI's verdict on all 17: the 5 that were among the first screen's 30, judged fair on
