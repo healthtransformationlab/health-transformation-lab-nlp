@@ -95,6 +95,14 @@ collection** "Health Transformation Lab: Perio Bench", then add the three notebo
 - `record_results.py` copies a full run's prediction files into `data/datasets/` and notes their source in
   `results_manifest.csv`.
 - `show_log.py` prints a Kaggle log without the warnings.
+- `colab_official_agent.ipynb`, `colab_official.py` and `colab_official_run.json` run the competition's evaluator
+  loop (`official_agent_kernel.py`, the file the Kaggle kernels run) on a Colab GPU, for when Kaggle's weekly
+  allowance is spent (spec 028 AI9, #687). The notebook reads the run list, makes each run the list names for its
+  GPU, and sends the log and the output to a private dataset every eight minutes, so a session that drops goes on
+  from its last upload. `official_agent_run.py --colab --collect --colab-results <dataset>/<version>
+  --colab-session <start>` reads one session's upload and verifies its patches. The notebook takes the Kaggle
+  token from Colab Secrets (`ops/secrets_register.yaml`), never from a cell. What was run this way, and how it
+  differs from a Kaggle kernel: `data/tasks/official_agent_runs/README.md`.
 
 More: `docs/medgemma.md` (why Kaggle, how MedGemma is loaded), spec 016 (results into Delta), spec 020
 (publishing).
