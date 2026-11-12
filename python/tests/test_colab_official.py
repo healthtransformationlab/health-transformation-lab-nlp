@@ -475,8 +475,8 @@ def test_a_run_that_goes_on_sends_a_first_note_and_its_log_however_it_ends(co, m
 
 class _FakeFiles:
     """A stand-in for the Kaggle client: files listed a page at a time, and each downloaded on its own."""
-    def __init__(self, names, zipped=()):
-        self.names, self.zipped, self.pages, self.whole = list(names), set(zipped), 0, 0
+    def __init__(self, names, zipped=(), flat=False):
+        self.names, self.zipped, self.pages, self.whole, self.flat = list(names), set(zipped), 0, 0, flat
 
     def dataset_list_files(self, ref, page_token=None, page_size=20):
         import types
@@ -490,11 +490,13 @@ class _FakeFiles:
         import zipfile
         from pathlib import Path
         base = Path(file_name).name
+        where = Path(path) / (base if self.flat else file_name)   # the client writes <path>/<name>, folders and all
+        where.parent.mkdir(parents=True, exist_ok=True)
         if file_name in self.zipped:                      # Kaggle hands some files over zipped
-            with zipfile.ZipFile(Path(path) / (base + ".zip"), "w") as z:
+            with zipfile.ZipFile(where.with_name(base + ".zip"), "w") as z:
                 z.writestr(base, "text of " + file_name)
         else:
-            (Path(path) / base).write_text("text of " + file_name)
+            where.write_text("text of " + file_name)
 
     def dataset_download_files(self, ref, path=None, unzip=True, quiet=True):
         self.whole += 1
@@ -513,6 +515,11 @@ def test_a_dataset_whose_whole_download_is_refused_is_fetched_file_by_file(co, m
                    "submission/prompts/system.md"]
     assert (tmp_path / "bundle" / "submission" / "agent.yaml").read_text() == "text of submission/agent.yaml"
     assert api.whole == 1 and api.pages == 3              # the whole download was tried once; every page was read
+    assert not (tmp_path / "bundle" / "sealed" / "sealed").exists()          # no folder inside its own name
+    flat = _FakeFiles(["official_batch.json", "sealed/a.bin"], flat=True)    # a client that writes bare file names
+    co.download_dataset(flat, "someone/x", tmp_path / "flat")
+    assert sorted(str(p.relative_to(tmp_path / "flat")) for p in (tmp_path / "flat").rglob("*") if p.is_file()) == [
+        "official_batch.json", "sealed/a.bin"]
 
 
 def test_a_run_made_again_under_a_new_name_keeps_its_own_results(co):

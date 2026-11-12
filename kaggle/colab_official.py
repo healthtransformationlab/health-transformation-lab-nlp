@@ -114,22 +114,27 @@ def download_dataset(api, ref: str, dest: Path) -> None:
         if not token:
             break
     for n, name in enumerate(names, 1):
-        folder = dest / Path(name).parent
-        folder.mkdir(parents=True, exist_ok=True)
-        base = Path(name).name
+        want = dest / name
+        want.parent.mkdir(parents=True, exist_ok=True)
         for attempt in range(3):
             try:
-                api.dataset_download_file(ref, name, path=str(folder), quiet=True)
+                api.dataset_download_file(ref, name, path=str(dest), quiet=True)   # the client writes <path>/<name>
                 break
             except Exception:  # noqa: BLE001 - a blip: the same file again
                 if attempt == 2:
                     raise
                 time.sleep(5)
-        packed = folder / (base + ".zip")
-        if packed.exists() and not (folder / base).exists():   # Kaggle hands some files over zipped
-            with zipfile.ZipFile(packed) as z:
-                z.extractall(folder)
-            packed.unlink()
+        flat = dest / Path(name).name   # a client that writes the bare file name instead
+        for got in (want, flat):
+            packed = got.with_name(got.name + ".zip")
+            if packed.exists() and not got.exists():   # Kaggle hands some files over zipped
+                with zipfile.ZipFile(packed) as z:
+                    z.extractall(got.parent)
+                packed.unlink()
+        if not want.exists() and flat.exists():
+            flat.rename(want)
+        if not want.exists():
+            raise SystemExit(f"{ref}: {name} was not written where its name says")
         if n % 25 == 0:
             say(f"  {n} of {len(names)} files of {ref}")
     say(f"{ref}: {len(names)} files, one by one")
