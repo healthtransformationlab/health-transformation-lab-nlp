@@ -2,11 +2,6 @@
  "note": "What kaggle/colab_official_agent.ipynb runs, in order (028 AI9, #687). A test run scores nothing. A notebook that has made the runs it started with keeps reading this list and makes any run added to it.",
  "runs": [
   {
-   "label": "smoke-143",
-   "bundle": "jcblearning/htlnlp-official-htlnlp-143",
-   "kernel_url": "https://raw.githubusercontent.com/healthtransformationlab/health-transformation-lab-nlp/5b9dbf5740cb93b29c1cead782da7ef18cbe0e4b/kaggle/official_agent_kernel.py"
-  },
-  {
    "label": "smoke-143b",
    "bundle": "jcblearning/htlnlp-official-htlnlp-143",
    "kernel_url": "https://raw.githubusercontent.com/healthtransformationlab/health-transformation-lab-nlp/9d2ddd4121955c2c2ee9a0b3cb562c199086d4c5/kaggle/official_agent_kernel.py"
