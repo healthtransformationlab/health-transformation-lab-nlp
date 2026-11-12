@@ -111,7 +111,8 @@ attempted. Of the 13 that pass this screen the model resolved 4; of the 35 that 
 
 ## What it cannot show
 
-- One AI pass per task, with no second pass and no person, except on the 30 where the two screens can be compared.
+- One AI pass per task, with no second pass and no person, except on the 30 where the two screens can be compared
+  and the 12 verdicts the owner checked in summary on November 12 ("The core split", below).
 - Eight raters shared the tasks, so a rater's leaning is spread over about a dozen tasks, not averaged out.
 - The same limits as the first screen: a failing task can still be resolved by a solution that happens to use the
   expected names, and a passing one can still be hard.
@@ -153,13 +154,34 @@ stay as a collection of real statements that leave out what their tests need (02
 | | Tasks |
 |---|---|
 | In the core split | 17 (statement from an issue 11, from a pull request 6, from a commit message 0) |
-| Checked by a person, in summary | 5 |
-| With an AI rating only | 12 |
+| Checked by a person, in summary | 17: 5 on November 10 (among the first screen's 30), 12 on November 12 |
+| With an AI rating only | 0 (12 until November 12) |
 | Run by the first baseline (local harness, T4s) | 13, of which 4 resolved |
 
 It is the screen's verdict and nothing more: a task is in the file exactly when `is_pass` is true in
 `agent_screen_all.csv` (a test checks it). It is not a human-validated subset in the sense of SWE-bench Verified.
-Twelve of its 17 verdicts were made by an AI reviewer alone.
+
+## The owner's check of the other 12 (November 12, 2026)
+
+Until November 12, twelve of the 17 verdicts were an AI reviewer's alone. That day the owner checked them (028
+AI10, #688), after an outside review of the paper asked for evidence of benchmark quality:
+
+- At 00:03 UTC the owner was sent a sheet of the 12. For each task it gave the title, id and tier, the opening of
+  its statement, the AI's statement rating and test rating with the reason for each (`statement_reason_text`,
+  `test_reason_text` in `agent_screen_all.csv`), the names of the tests the task adds, and the AI's verdict, pass,
+  with the question "Agree?".
+- At about 04:25 UTC, at the owner's request, the 12 were set out again in the session's chat, shorter: each task's
+  title, and each of the two ratings with one sentence of the AI's reason.
+- At about 04:26 UTC the owner answered, in these words: "All 12 agree".
+
+So the owner agreed with the AI's verdict on all 17: the 5 that were among the first screen's 30, judged fair on
+November 10, and these 12. `is_owner_checked` is true in every row of `core_split.csv`, and `owner_check_date`
+says which of the two days. In `agent_screen_all.csv`, `is_owner_checked` still marks the first screen's 30 and
+nothing else.
+
+As on November 10, the owner read summaries and not the test code, and saw the AI's verdict before answering. It
+is a check of the AI's reading, not an independent rating, and one person's. Nobody has checked the 51 tasks
+outside the 30 and these 12, all of which the screen fails.
 
 The split was fixed by the screen of November 10, before the runs of issue 674, whose pre-registration names it as
 a split every arm is reported on.
