@@ -100,7 +100,7 @@ def test_the_colab_pair_reads_its_own_tables_and_writes_its_own_file(cp):
 def test_the_sensitivity_analysis_leaves_out_a_pair_in_which_either_side_reached_for_the_network(cp, tmp_path):
     """Nothing blocks the network at a Colab machine's edge, so the plan repeats its test without any pair in which
     either side ran a command that reaches for it."""
-    rows = [dict(instance_id=i, is_pair_run=True, is_statement_resolved=False, is_graph_resolved=True) for i in "abc"]
+    rows = [{"instance_id": i, "is_pair_run": True, "is_statement_resolved": False, "is_graph_resolved": True} for i in "abc"]
     kept = cp.without_network(rows, {"statement": ["a"], "graph": ["c", "zz"]})
     assert [r["instance_id"] for r in kept] == ["b"]
     assert cp.without_network(rows, {"statement": [], "graph": []}) == rows

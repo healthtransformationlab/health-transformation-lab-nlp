@@ -261,7 +261,7 @@ def test_the_settings_of_a_colab_run_say_what_differs_from_a_kaggle_kernel(run):
     s = run.settings_for(RESULT, seed=7, drawn=["a", "b"], pool_count=93, machine_shape=None, docker_image=None,
                          competition=None, agent_commit="abc123", tasks_per_kernel=2, colab=True)
     assert s["kernel"]["machine_shape_asked"] == "Colab, one GPU" and s["kernel"]["docker_image"] is None
-    assert s["kernel"]["internet"] != False and "no credential" in s["kernel"]["internet"]   # noqa: E712
+    assert s["kernel"]["internet"] != False and "no credential" in s["kernel"]["internet"]
     assert any(n.startswith("All 2 tasks were given to one process on a Colab machine, each sealed until its turn")
                for n in s["notes"])
     assert not any("private, offline kernel" in n for n in s["notes"])

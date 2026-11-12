@@ -49,10 +49,10 @@ LOG = Path("/content/htl_colab.log")
 RESULT_PREFIX = "htlnlp-colab-official-"
 DEAD_PROXY = "http://127.0.0.1:9"                                         # nothing listens there
 SECRET_NAME = re.compile(r"TOKEN|SECRET|PASSWORD|PASSWD|CREDENTIAL|API_KEY|_KEY$|^KAGGLE_|^HF_|^TBE_|^GCE_METADATA|"
-                         r"^GOOGLE_APPLICATION|^AWS_|^AZURE_", re.I)
+                         r"^GOOGLE_APPLICATION|^AWS_|^AZURE_", re.IGNORECASE)
 NETWORK_COMMAND = re.compile(r"(^|[\s;&|(])(curl|wget|ssh|scp|nc|telnet)\s|pip3?\s+(install|download)|"
                              r"git\s+(clone|fetch|pull|push|ls-remote|remote\s+add)|(apt|apt-get|conda|npm|uv)\s+"
-                             r"(install|add|update)|urllib\.request|requests\.(get|post)|httpx\.", re.I)
+                             r"(install|add|update)|urllib\.request|requests\.(get|post)|httpx\.", re.IGNORECASE)
 UPLOAD_EVERY_SECONDS = 480   # what a dropped session can lose: the tasks finished since the last upload
 # The branch whose files a notebook that has made its runs keeps reading (`follow`). `main`, where the run list says
 # stop. A new run is made from a branch of its own: point this and the notebook's BRANCH there while it is made, and
@@ -122,7 +122,7 @@ def download_dataset(api, ref: str, dest: Path) -> None:
             try:
                 api.dataset_download_file(ref, name, path=str(dest), quiet=True)   # the client writes <path>/<name>
                 break
-            except Exception:  # noqa: BLE001 - a blip: the same file again
+            except Exception:   # a blip: the same file again
                 if attempt == 2:
                     raise
                 time.sleep(5)
@@ -183,7 +183,7 @@ def network_command_count(commands: list[str]) -> int:
 def branch_file(name: str) -> str:
     """This branch's copy of a file in kaggle/. The query keeps a cached copy from being served after a change."""
     import urllib.request
-    with urllib.request.urlopen(f"{BRANCH_FILES}{name}?t={int(time.time())}", timeout=60) as r:  # noqa: S310 - the repo
+    with urllib.request.urlopen(f"{BRANCH_FILES}{name}?t={int(time.time())}", timeout=60) as r:   # the repository's own file
         return r.read().decode()
 
 
@@ -208,7 +208,7 @@ def is_for_this_gpu(wanted: str | None, name: str) -> bool:
     not knowing must not stop an arm."""
     if not wanted or not name:
         return True
-    return re.search(rf"(?<![A-Za-z0-9]){re.escape(wanted)}(?![A-Za-z0-9])", name, re.I) is not None
+    return re.search(rf"(?<![A-Za-z0-9]){re.escape(wanted)}(?![A-Za-z0-9])", name, re.IGNORECASE) is not None
 
 
 def listed_gpu(label: str, get=branch_file, tries: int = 3, sleep=time.sleep) -> str | None:
@@ -352,7 +352,7 @@ def restore(api, user: str, label: str, out: Path) -> tuple[str, int]:
         try:
             download_dataset(api, results_ref(user, label), got)
             break
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             if attempt == 2:
                 raise SystemExit(f"{results_ref(user, label)} exists and could not be read: {type(e).__name__}") from e
             time.sleep(20)
@@ -392,7 +392,7 @@ def fetch(api, kagglehub, bundle: str, kernel_dataset: str | None, kernel_url: s
         download_dataset(api, kernel_dataset, kernel.parent)
     else:
         import urllib.request
-        kernel.write_bytes(urllib.request.urlopen(kernel_url, timeout=60).read())  # noqa: S310 - the repo's own file
+        kernel.write_bytes(urllib.request.urlopen(kernel_url, timeout=60).read())   # the repository's own file
     if not kernel.exists():
         raise SystemExit(f"no official_agent_kernel.py in {kernel_dataset or kernel_url}")
     return kernel
