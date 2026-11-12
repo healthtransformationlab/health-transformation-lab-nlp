@@ -294,3 +294,14 @@ def test_the_agents_commands_are_read_from_its_trace_for_any_reach_at_the_networ
     assert run.trace_commands(trace) == ["pytest -q", "pip install requests", "git status"]
     assert run.network_audit({"a": trace, "b": {"steps": []}}) == {
         "command_count": 3, "network_command_count": 1, "instance_ids": ["a"]}
+
+
+def test_the_notebooks_code_is_hidden_so_a_stray_tap_on_a_phone_cannot_change_it():
+    """The owner runs this from a phone. A letter typed into the cell by a stray tap stopped the first run with a
+    NameError before anything started, so the cell is a form: Colab shows its title and a play button, not its code."""
+    nb = json.loads(NOTEBOOK.read_text())
+    code = [c for c in nb["cells"] if c["cell_type"] == "code"]
+    assert len(code) == 1
+    assert code[0]["metadata"].get("cellView") == "form"
+    assert "".join(code[0]["source"]).startswith("#@title ")
+    compile("".join(code[0]["source"]), "cell", "exec")   # the title is a comment: the cell is still plain Python
