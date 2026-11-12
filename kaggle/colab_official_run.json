@@ -1,13 +1,13 @@
 {
- "note": "What kaggle/colab_official_agent.ipynb runs, in order (028 AI9, #687): the two arms of the registered pair (specs/028-dataops-task-set/preregistration-colab-paired-run.md). A notebook that has made the runs it started with keeps reading this list. A run whose results are already on Kaggle is not made again, and one that stopped part way goes on from where it stopped, so starting the notebook again is always safe.",
+ "note": "What kaggle/colab_official_agent.ipynb runs, in order (028 AI9, #687): the two arms of the registered pair (specs/028-dataops-task-set/preregistration-colab-paired-run.md). A notebook that has made the runs it started with keeps reading this list. A run whose results are already on Kaggle is not made again, and one that stopped part way goes on from where it stopped, so starting the notebook again is always safe. `-try2`: each arm stopped before its kernel started, on Kaggle's \"not found\" for the whole download of its bundle; listed again so a notebook that is still open makes it, with the bundle fetched file by file.",
  "runs": [
   {
-   "label": "colab-statement",
+   "label": "colab-statement-try2",
    "bundle": "jcblearning/htlnlp-official-colab-statement",
    "kernel_dataset": "jcblearning/htlnlp-colab-kernel-colab-statement"
   },
   {
-   "label": "colab-graph",
+   "label": "colab-graph-try2",
    "bundle": "jcblearning/htlnlp-official-colab-graph",
    "kernel_dataset": "jcblearning/htlnlp-colab-kernel-colab-graph"
   }
