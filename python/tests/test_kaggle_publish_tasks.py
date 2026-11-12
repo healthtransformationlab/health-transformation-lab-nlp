@@ -102,6 +102,8 @@ def test_the_built_folder_holds_exactly_the_set_and_a_cc_by_card(task_dir, tmp_p
     for words in ("not affiliated", "cc by 4.0", "github.com/healthtransformationlab/health-transformation-lab-nlp",
                   "abc1234", "3 tasks", "embeddinggemma", "wheels"):
         assert words in card, words
+    # #696: the set's own material is offered under either licence; Kaggle's licence field stays CC BY 4.0
+    assert "or, at your choice, under the apache license 2.0" in " ".join(card.split())
     assert json.loads((out / "dataset-metadata.json").read_text()) == meta
 
 
