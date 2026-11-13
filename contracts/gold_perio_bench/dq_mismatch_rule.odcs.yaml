@@ -16,7 +16,8 @@ tags:
 - perio_bench
 - dq
 schema:
-- name: dq_mismatch_rule
+- id: dq_mismatch_rule
+  name: dq_mismatch_rule
   physicalName: health_transformation_lab.gold_perio_bench.dq_mismatch_rule
   physicalType: table
   logicalType: object
@@ -25,75 +26,92 @@ schema:
   dataGranularityDescription: One per (record-mismatch rule or any_rule, clinic); clinic_code All = every clinic. Scored against
     the generator's truth over the visits the rule can check
   properties:
-  - name: rule_name
+  - id: rule_name
+    name: rule_name
     logicalType: string
     physicalType: string
     description: a rule, or any_rule
     primaryKey: true
     primaryKeyPosition: 1
-  - name: rule_label_name
+  - id: rule_label_name
+    name: rule_label_name
     logicalType: string
     physicalType: string
     description: the rule in plain words
-  - name: clinic_code
+  - id: clinic_code
+    name: clinic_code
     logicalType: string
     physicalType: string
     description: clinic 1-8, or All
     primaryKey: true
     primaryKeyPosition: 2
-  - name: checkable_count
+  - id: checkable_count
+    name: checkable_count
     logicalType: integer
     physicalType: bigint
     description: visits with a code and the evidence the rule needs
-  - name: not_checkable_count
+  - id: not_checkable_count
+    name: not_checkable_count
     logicalType: integer
     physicalType: bigint
     description: visits with a code but missing that evidence
-  - name: flagged_count
+  - id: flagged_count
+    name: flagged_count
     logicalType: integer
     physicalType: bigint
     description: checkable visits the rule flags
-  - name: code_truth_mismatch_count
+  - id: code_truth_mismatch_count
+    name: code_truth_mismatch_count
     logicalType: integer
     physicalType: bigint
     description: 'checkable visits whose code differs from the truth (stage drops: either visit''s)'
-  - name: true_flag_count
+  - id: true_flag_count
+    name: true_flag_count
     logicalType: integer
     physicalType: bigint
     description: flags where the code differs from the truth
-  - name: precision_ratio
+  - id: precision_ratio
+    name: precision_ratio
     logicalType: number
     physicalType: double
     description: true flags / flags
-  - name: recall_ratio
+  - id: recall_ratio
+    name: recall_ratio
     logicalType: number
     physicalType: double
     description: true flags / code-truth mismatches
-  - name: only_rule_count
+  - id: only_rule_count
+    name: only_rule_count
     logicalType: integer
     physicalType: bigint
     description: flags at visits failing no other rule
-  - name: injected_checkable_count
+  - id: injected_checkable_count
+    name: injected_checkable_count
     logicalType: integer
     physicalType: bigint
     description: checkable visits with an injected charting error
-  - name: injected_caught_count
+  - id: injected_caught_count
+    name: injected_caught_count
     logicalType: integer
     physicalType: bigint
     description: of those, flagged
-  - name: source_files_text
+  - id: source_files_text
+    name: source_files_text
     logicalType: string
     physicalType: string
     description: the committed CSVs the table is built from
-  - name: file_sha256
+  - id: file_sha256
+    name: file_sha256
     logicalType: string
     physicalType: string
     description: 'SHA-256 of those files together: the version'
-  - name: git_commit_sha
+  - id: git_commit_sha
+    name: git_commit_sha
     logicalType: string
     physicalType: string
     description: commit the job was deployed from
-  - name: loaded_ts
+  - id: loaded_ts
+    name: loaded_ts
     logicalType: timestamp
     physicalType: timestamp
     description: when Load results wrote it

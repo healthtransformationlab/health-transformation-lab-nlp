@@ -15,78 +15,95 @@ tags:
 - perio_bench
 - deid
 schema:
-- name: deid_score
+- id: deid_score
+  name: deid_score
   physicalName: health_transformation_lab.gold_perio_bench.deid_score
   physicalType: table
   logicalType: object
   description: One per de-identification engine and test tier
   dataGranularityDescription: One per de-identification engine and test tier
   properties:
-  - name: engine_name
+  - id: engine_name
+    name: engine_name
     logicalType: string
     physicalType: string
     description: de-identification engine
     primaryKey: true
     primaryKeyPosition: 1
-  - name: tier_code
+  - id: tier_code
+    name: tier_code
     logicalType: string
     physicalType: string
     description: easy · hard · unseen · external · jsl48 · all
     primaryKey: true
     primaryKeyPosition: 2
-  - name: note_count
+  - id: note_count
+    name: note_count
     logicalType: integer
     physicalType: bigint
     description: notes in the tier
-  - name: phi_count
+  - id: phi_count
+    name: phi_count
     logicalType: integer
     physicalType: bigint
     description: PHI spans
-  - name: entity_recall_ratio
+  - id: entity_recall_ratio
+    name: entity_recall_ratio
     logicalType: number
     physicalType: double
     description: PHI entities caught
-  - name: char_recall_ratio
+  - id: char_recall_ratio
+    name: char_recall_ratio
     logicalType: number
     physicalType: double
     description: PHI characters caught
-  - name: char_precision_ratio
+  - id: char_precision_ratio
+    name: char_precision_ratio
     logicalType: number
     physicalType: double
     description: removed characters that were PHI
-  - name: decoy_damage_ratio
+  - id: decoy_damage_ratio
+    name: decoy_damage_ratio
     logicalType: number
     physicalType: double
     description: clinical decoys wrongly removed
-  - name: hard_negative_count
+  - id: hard_negative_count
+    name: hard_negative_count
     logicalType: integer
     physicalType: bigint
     description: hard negatives in the tier
-  - name: hard_negative_damage_ratio
+  - id: hard_negative_damage_ratio
+    name: hard_negative_damage_ratio
     logicalType: number
     physicalType: double
     description: hard negatives wrongly removed
-  - name: token_precision_ratio
+  - id: token_precision_ratio
+    name: token_precision_ratio
     logicalType: number
     physicalType: double
     description: token-level precision
-  - name: token_recall_ratio
+  - id: token_recall_ratio
+    name: token_recall_ratio
     logicalType: number
     physicalType: double
     description: token-level recall
-  - name: token_f1_ratio
+  - id: token_f1_ratio
+    name: token_f1_ratio
     logicalType: number
     physicalType: double
     description: token-level F1
-  - name: leaked_phi_per_1k_note_rate
+  - id: leaked_phi_per_1k_note_rate
+    name: leaked_phi_per_1k_note_rate
     logicalType: number
     physicalType: double
     description: PHI left per thousand notes
-  - name: avg_note_char_count
+  - id: avg_note_char_count
+    name: avg_note_char_count
     logicalType: number
     physicalType: double
     description: mean note length
-  - name: group_name
+  - id: group_name
+    name: group_name
     logicalType: string
     physicalType: string
     description: engine family (readme_results.deid_group)

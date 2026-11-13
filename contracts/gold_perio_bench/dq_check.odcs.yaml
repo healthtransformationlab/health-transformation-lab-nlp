@@ -15,64 +15,78 @@ tags:
 - perio_bench
 - dq
 schema:
-- name: dq_check
+- id: dq_check
+  name: dq_check
   physicalName: health_transformation_lab.gold_perio_bench.dq_check
   physicalType: table
   logicalType: object
   description: One per (data-quality check, clinic); clinic_code All = every clinic
   dataGranularityDescription: One per (data-quality check, clinic); clinic_code All = every clinic
   properties:
-  - name: check_name
+  - id: check_name
+    name: check_name
     logicalType: string
     physicalType: string
     description: e.g. plausibility:temporal_stage_drop
-  - name: check_category_code
+  - id: check_category_code
+    name: check_category_code
     logicalType: string
     physicalType: string
     description: conformance · completeness · plausibility · cost · performance (spec 036)
-  - name: checked_count
+  - id: checked_count
+    name: checked_count
     logicalType: integer
     physicalType: bigint
     description: rows the check looked at
-  - name: failed_count
+  - id: failed_count
+    name: failed_count
     logicalType: integer
     physicalType: bigint
     description: rows that failed it
-  - name: pass_ratio
+  - id: pass_ratio
+    name: pass_ratio
     logicalType: number
     physicalType: double
     description: 1 - failed / checked
-  - name: check_status_code
+  - id: check_status_code
+    name: check_status_code
     logicalType: string
     physicalType: string
     description: PASS (none allowed, none found) · REPORT (a rate to read)
-  - name: clinic_code
+  - id: clinic_code
+    name: clinic_code
     logicalType: string
     physicalType: string
     description: 1-8, or All
-  - name: measure_text
+  - id: measure_text
+    name: measure_text
     logicalType: string
     physicalType: string
     description: 'cost and performance checks: the numbers behind the status, the owner and the action (ops/budgets.yaml);
       empty for the record checks'
-  - name: severity_code
+  - id: severity_code
+    name: severity_code
     logicalType: string
     physicalType: string
     description: a failing cost or performance check's severity, which the digests route by (SEV3 daily, SEV4 weekly; spec
       036 T011); empty for a pass, a report and the record checks
-  - name: source_files_text
+  - id: source_files_text
+    name: source_files_text
     logicalType: string
     physicalType: string
     description: the committed CSVs the table is built from
-  - name: file_sha256
+  - id: file_sha256
+    name: file_sha256
     logicalType: string
     physicalType: string
     description: 'SHA-256 of those files together: the version'
-  - name: git_commit_sha
+  - id: git_commit_sha
+    name: git_commit_sha
     logicalType: string
     physicalType: string
     description: commit the job was deployed from
-  - name: loaded_ts
+  - id: loaded_ts
+    name: loaded_ts
     logicalType: timestamp
     physicalType: timestamp
     description: when Load results wrote it

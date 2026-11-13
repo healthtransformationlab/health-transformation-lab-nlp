@@ -15,69 +15,86 @@ tags:
 - perio_bench
 - corpus
 schema:
-- name: fact_corpus_judge_call
+- id: fact_corpus_judge_call
+  name: fact_corpus_judge_call
   physicalName: health_transformation_lab.gold_perio_bench.fact_corpus_judge_call
   physicalType: table
   logicalType: object
   description: One per corpus judge call (ai_query)
   dataGranularityDescription: One per corpus judge call (ai_query)
   properties:
-  - name: method_name
+  - id: method_name
+    name: method_name
     logicalType: string
     physicalType: string
     description: method (rung)
     primaryKey: true
     primaryKeyPosition: 1
-  - name: visit_id
+  - id: visit_id
+    name: visit_id
     logicalType: integer
     physicalType: bigint
     description: chart or note
     primaryKey: true
     primaryKeyPosition: 2
-  - name: predicted_status_code
+  - id: predicted_status_code
+    name: predicted_status_code
     logicalType: string
     physicalType: string
     description: the status judged
-  - name: verdict_code
+  - id: verdict_code
+    name: verdict_code
     logicalType: string
     physicalType: string
     description: correct · incorrect · not_determinable
-  - name: supported_status_code
+  - id: supported_status_code
+    name: supported_status_code
     logicalType: string
     physicalType: string
     description: the status the judge says the note supports
-  - name: quote_text
+  - id: quote_text
+    name: quote_text
     logicalType: string
     physicalType: string
     description: verbatim from the note
-  - name: rationale_text
+  - id: rationale_text
+    name: rationale_text
     logicalType: string
     physicalType: string
     description: the judge's reason
-  - name: is_gate_ok
+  - id: is_gate_ok
+    name: is_gate_ok
     logicalType: boolean
     physicalType: boolean
     description: quote gate and schema check passed
-  - name: error_text
+  - id: error_text
+    name: error_text
     logicalType: string
     physicalType: string
     description: ai_query error
-  - name: prompt_version_code
+  - id: prompt_version_code
+    name: prompt_version_code
     logicalType: string
     physicalType: string
     description: judge-v2
-  - name: judge_model_name
+  - id: judge_model_name
+    name: judge_model_name
     logicalType: string
     physicalType: string
     description: serving endpoint
   relationships:
   - type: foreignKey
     from:
-    - fact_corpus_judge_call.method_name
-    - fact_corpus_judge_call.visit_id
+    - schema/fact_corpus_judge_call/properties/method_name
+    - schema/fact_corpus_judge_call/properties/visit_id
     to:
-    - judge_queue.method_name
-    - judge_queue.visit_id
+    - judge_queue.odcs.yaml#/schema/judge_queue/properties/method_name
+    - judge_queue.odcs.yaml#/schema/judge_queue/properties/visit_id
+    customProperties:
+    - property: cardinality
+      value: '||--o|'
+    - property: label
+      value: method_name, visit_id
   customProperties:
   - property: writer
     value: 'LLM judge (02_llm_judge.sql): create or replace'

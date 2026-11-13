@@ -15,30 +15,35 @@ tags:
 - perio_bench
 - corpus
 schema:
-- name: judge_queue
+- id: judge_queue
+  name: judge_queue
   physicalName: health_transformation_lab.gold_perio_bench.judge_queue
   physicalType: table
   logicalType: object
   description: One per prediction sampled for the corpus judge (stratified by method)
   dataGranularityDescription: One per prediction sampled for the corpus judge (stratified by method)
   properties:
-  - name: method_name
+  - id: method_name
+    name: method_name
     logicalType: string
     physicalType: string
     description: method (rung)
     primaryKey: true
     primaryKeyPosition: 1
-  - name: visit_id
+  - id: visit_id
+    name: visit_id
     logicalType: integer
     physicalType: bigint
     description: chart or note
     primaryKey: true
     primaryKeyPosition: 2
-  - name: note_text
+  - id: note_text
+    name: note_text
     logicalType: string
     physicalType: string
     description: de-identified note, through the leak gate
-  - name: predicted_status_code
+  - id: predicted_status_code
+    name: predicted_status_code
     logicalType: string
     physicalType: string
     description: the method's status, to judge

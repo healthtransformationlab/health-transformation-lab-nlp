@@ -15,64 +15,78 @@ tags:
 - perio_bench
 - study
 schema:
-- name: dim_study_note
+- id: dim_study_note
+  name: dim_study_note
   physicalName: health_transformation_lab.gold_perio_bench.dim_study_note
   physicalType: table
   logicalType: object
   description: One per synthetic study note, with its generator label and split
   dataGranularityDescription: One per synthetic study note, with its generator label and split
   properties:
-  - name: note_id
+  - id: note_id
+    name: note_id
     logicalType: integer
     physicalType: bigint
     description: OMOP note_id (= visit_occurrence_id)
     primaryKey: true
     primaryKeyPosition: 1
-  - name: person_id
+  - id: person_id
+    name: person_id
     logicalType: integer
     physicalType: bigint
     description: OMOP person_id; the split is by person
-  - name: note_text
+  - id: note_text
+    name: note_text
     logicalType: string
     physicalType: string
     description: the synthetic SOAP note
-  - name: truth_status_code
+  - id: truth_status_code
+    name: truth_status_code
     logicalType: string
     physicalType: string
     description: the generator's label, one of six
-  - name: max_probing_depth_mm
+  - id: max_probing_depth_mm
+    name: max_probing_depth_mm
     logicalType: number
     physicalType: double
     description: deepest probing depth on the chart
-  - name: bop_pct
+  - id: bop_pct
+    name: bop_pct
     logicalType: number
     physicalType: double
     description: sites bleeding on probing
-  - name: max_cal_mm
+  - id: max_cal_mm
+    name: max_cal_mm
     logicalType: number
     physicalType: double
     description: greatest clinical attachment loss
-  - name: rbl_pct
+  - id: rbl_pct
+    name: rbl_pct
     logicalType: number
     physicalType: double
     description: radiographic bone loss
-  - name: perio_lost_tooth_count
+  - id: perio_lost_tooth_count
+    name: perio_lost_tooth_count
     logicalType: integer
     physicalType: bigint
     description: teeth lost to periodontitis
-  - name: split_code
+  - id: split_code
+    name: split_code
     logicalType: string
     physicalType: string
     description: train · test
-  - name: run_id
+  - id: run_id
+    name: run_id
     logicalType: string
     physicalType: string
     description: Databricks job run that built it
-  - name: run_ts
+  - id: run_ts
+    name: run_ts
     logicalType: timestamp
     physicalType: timestamp
     description: when that run wrote it
-  - name: git_commit_sha
+  - id: git_commit_sha
+    name: git_commit_sha
     logicalType: string
     physicalType: string
     description: commit the job was deployed from

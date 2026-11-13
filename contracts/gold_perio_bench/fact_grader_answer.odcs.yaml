@@ -15,73 +15,93 @@ tags:
 - perio_bench
 - lab
 schema:
-- name: fact_grader_answer
+- id: fact_grader_answer
+  name: fact_grader_answer
   physicalName: health_transformation_lab.gold_perio_bench.fact_grader_answer
   physicalType: table
   logicalType: object
   description: One per (question, model, with or without the agent, run)
   dataGranularityDescription: One per (question, model, with or without the agent, run)
   properties:
-  - name: question_id
+  - id: question_id
+    name: question_id
     logicalType: string
     physicalType: string
     description: question
-  - name: model_name
+  - id: model_name
+    name: model_name
     logicalType: string
     physicalType: string
     description: 'model answering; sim: names in the sample'
-  - name: is_with_agent
+  - id: is_with_agent
+    name: is_with_agent
     logicalType: boolean
     physicalType: boolean
     description: answered with the open agent
-  - name: covered_key_point_count
+  - id: covered_key_point_count
+    name: covered_key_point_count
     logicalType: integer
     physicalType: bigint
     description: key points the answer covered
-  - name: score_ratio
+  - id: score_ratio
+    name: score_ratio
     logicalType: number
     physicalType: double
     description: covered / key points
-  - name: harm_code
+  - id: harm_code
+    name: harm_code
     logicalType: string
     physicalType: string
     description: S0 safe · S1 reversible harm · S2 irreversible harm
-  - name: cost_usd
+  - id: cost_usd
+    name: cost_usd
     logicalType: number
     physicalType: double
     description: cost of the answer
-  - name: judge_model_name
+  - id: judge_model_name
+    name: judge_model_name
     logicalType: string
     physicalType: string
     description: judge; never a family under test
-  - name: run_id
+  - id: run_id
+    name: run_id
     logicalType: string
     physicalType: string
     description: the grading run
-  - name: is_simulated
+  - id: is_simulated
+    name: is_simulated
     logicalType: boolean
     physicalType: boolean
     description: true for the simulated sample
-  - name: source_files_text
+  - id: source_files_text
+    name: source_files_text
     logicalType: string
     physicalType: string
     description: the committed CSVs the table is built from
-  - name: file_sha256
+  - id: file_sha256
+    name: file_sha256
     logicalType: string
     physicalType: string
     description: 'SHA-256 of those files together: the version'
-  - name: git_commit_sha
+  - id: git_commit_sha
+    name: git_commit_sha
     logicalType: string
     physicalType: string
     description: commit the job was deployed from
-  - name: loaded_ts
+  - id: loaded_ts
+    name: loaded_ts
     logicalType: timestamp
     physicalType: timestamp
     description: when Load results wrote it
   relationships:
   - type: foreignKey
-    from: fact_grader_answer.question_id
-    to: dim_grader_question.question_id
+    from: schema/fact_grader_answer/properties/question_id
+    to: dim_grader_question.odcs.yaml#/schema/dim_grader_question/properties/question_id
+    customProperties:
+    - property: cardinality
+      value: '||--o{'
+    - property: label
+      value: question_id
   customProperties:
   - property: writer
     value: 'Load results: overwrite'

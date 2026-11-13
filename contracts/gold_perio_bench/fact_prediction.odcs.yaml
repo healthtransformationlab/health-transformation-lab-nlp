@@ -17,7 +17,8 @@ tags:
 - perio_bench
 - results
 schema:
-- name: fact_prediction
+- id: fact_prediction
+  name: fact_prediction
   physicalName: health_transformation_lab.gold_perio_bench.fact_prediction
   physicalType: table
   logicalType: object
@@ -26,50 +27,64 @@ schema:
   dataGranularityDescription: One per method and chart, per file version (key file_sha256 + visit_id) or reader run (key source_code
     + run_id + method_name + visit_id)
   properties:
-  - name: method_name
+  - id: method_name
+    name: method_name
     logicalType: string
     physicalType: string
     description: method (rung), e.g. modernbert-base+cw
-  - name: visit_id
+  - id: visit_id
+    name: visit_id
     logicalType: integer
     physicalType: bigint
     description: review chart
     primaryKey: true
     primaryKeyPosition: 1
-  - name: predicted_status_code
+  - id: predicted_status_code
+    name: predicted_status_code
     logicalType: string
     physicalType: string
     description: predicted status, one of six
-  - name: file_sha256
+  - id: file_sha256
+    name: file_sha256
     logicalType: string
     physicalType: string
     description: 'SHA-256 of the source file: its version (in dim_result_file for repo · kaggle rows only)'
     primaryKey: true
     primaryKeyPosition: 2
-  - name: source_code
+  - id: source_code
+    name: source_code
     logicalType: string
     physicalType: string
     description: repo · kaggle · databricks
-  - name: run_id
+  - id: run_id
+    name: run_id
     logicalType: string
     physicalType: string
     description: Databricks job run id (databricks rows)
-  - name: run_ts
+  - id: run_ts
+    name: run_ts
     logicalType: timestamp
     physicalType: timestamp
     description: 'when the reader job ran (databricks rows); fact_llm_call: also the load time of Load results rows'
-  - name: git_commit_sha
+  - id: git_commit_sha
+    name: git_commit_sha
     logicalType: string
     physicalType: string
     description: commit the job was deployed from
-  - name: loaded_ts
+  - id: loaded_ts
+    name: loaded_ts
     logicalType: timestamp
     physicalType: timestamp
     description: when Load results wrote it (Load results rows)
   relationships:
   - type: foreignKey
-    from: fact_prediction.file_sha256
-    to: dim_result_file.file_sha256
+    from: schema/fact_prediction/properties/file_sha256
+    to: dim_result_file.odcs.yaml#/schema/dim_result_file/properties/file_sha256
+    customProperties:
+    - property: cardinality
+      value: '|o--o{'
+    - property: label
+      value: file_sha256 (repo · kaggle rows)
   customProperties:
   - property: writer
     value: 'Load results: delete-then-append by file_sha256 · MedGemma reader: replace (source_code, run_id, method_name)'

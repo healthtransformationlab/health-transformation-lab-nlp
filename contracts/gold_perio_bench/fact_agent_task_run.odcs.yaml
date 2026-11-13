@@ -16,7 +16,8 @@ tags:
 - perio_bench
 - agent
 schema:
-- name: fact_agent_task_run
+- id: fact_agent_task_run
+  name: fact_agent_task_run
   physicalName: health_transformation_lab.gold_perio_bench.fact_agent_task_run
   physicalType: table
   logicalType: object
@@ -25,183 +26,227 @@ schema:
   dataGranularityDescription: 'One per task per run table in data/tasks/agent_runs/: an agent''s attempt at one coding task,
     scored by this repo''s harness (spec 035), not the competition''s evaluator'
   properties:
-  - name: run_file_name
+  - id: run_file_name
+    name: run_file_name
     logicalType: string
     physicalType: string
     description: 'the run table it came from: <model>_<tasks>.csv or <model>_kaggle.csv'
     primaryKey: true
     primaryKeyPosition: 1
-  - name: instance_id
+  - id: instance_id
+    name: instance_id
     logicalType: string
     physicalType: string
     description: the task (spec 028 task set)
     primaryKey: true
     primaryKeyPosition: 2
-  - name: run_ts
+  - id: run_ts
+    name: run_ts
     logicalType: timestamp
     physicalType: timestamp
     description: when the run was scored (Kaggle runs since spec 036 US4; empty before)
-  - name: tier_code
+  - id: tier_code
+    name: tier_code
     logicalType: string
     physicalType: string
     description: 'the task''s fidelity tier: A · B · C'
-  - name: harness_name
+  - id: harness_name
+    name: harness_name
     logicalType: string
     physicalType: string
     description: the harness that ran and scored it
-  - name: model_name
+  - id: model_name
+    name: model_name
     logicalType: string
     physicalType: string
     description: the model; calib:oracle and calib:null bound the harness
-  - name: is_calibration
+  - id: is_calibration
+    name: is_calibration
     logicalType: boolean
     physicalType: boolean
     description: 'a calib: run, never counted in a model''s rates or costs'
-  - name: is_resolved
+  - id: is_resolved
+    name: is_resolved
     logicalType: boolean
     physicalType: boolean
     description: the required tests pass with the agent's patch
-  - name: is_patch_submitted
+  - id: is_patch_submitted
+    name: is_patch_submitted
     logicalType: boolean
     physicalType: boolean
     description: the agent called submit_patch
-  - name: agent_patch_byte_count
+  - id: agent_patch_byte_count
+    name: agent_patch_byte_count
     logicalType: integer
     physicalType: bigint
     description: size of the agent's patch
-  - name: changed_file_count
+  - id: changed_file_count
+    name: changed_file_count
     logicalType: integer
     physicalType: bigint
     description: files the patch changes
-  - name: tool_call_count
+  - id: tool_call_count
+    name: tool_call_count
     logicalType: integer
     physicalType: bigint
     description: tool calls the agent made
-  - name: turn_count
+  - id: turn_count
+    name: turn_count
     logicalType: integer
     physicalType: bigint
     description: model turns
-  - name: nudge_count
+  - id: nudge_count
+    name: nudge_count
     logicalType: integer
     physicalType: bigint
     description: turns without a tool call that got a nudge
-  - name: agent_seconds
+  - id: agent_seconds
+    name: agent_seconds
     logicalType: number
     physicalType: double
     description: the agent's session, model and tools
-  - name: verify_exit_num
+  - id: verify_exit_num
+    name: verify_exit_num
     logicalType: integer
     physicalType: bigint
     description: pytest's exit status in verification
-  - name: verify_passed_count
+  - id: verify_passed_count
+    name: verify_passed_count
     logicalType: integer
     physicalType: bigint
     description: required tests passed
-  - name: verify_failed_count
+  - id: verify_failed_count
+    name: verify_failed_count
     logicalType: integer
     physicalType: bigint
     description: required tests failed
-  - name: verify_error_count
+  - id: verify_error_count
+    name: verify_error_count
     logicalType: integer
     physicalType: bigint
     description: required tests that errored
-  - name: reason_text
+  - id: reason_text
+    name: reason_text
     logicalType: string
     physicalType: string
     description: why it isn't resolved; empty when it is
-  - name: kaggle_kernel_url
+  - id: kaggle_kernel_url
+    name: kaggle_kernel_url
     logicalType: string
     physicalType: string
     description: the private Kaggle kernel that ran it (Kaggle runs)
-  - name: time_budget_seconds
+  - id: time_budget_seconds
+    name: time_budget_seconds
     logicalType: number
     physicalType: double
     description: the agent's time budget
-  - name: max_new_token_count
+  - id: max_new_token_count
+    name: max_new_token_count
     logicalType: integer
     physicalType: bigint
     description: most tokens one turn may generate
-  - name: is_thinking
+  - id: is_thinking
+    name: is_thinking
     logicalType: boolean
     physicalType: boolean
     description: Gemma 4's thinking mode on
-  - name: is_cache_reused
+  - id: is_cache_reused
+    name: is_cache_reused
     logicalType: boolean
     physicalType: boolean
     description: each turn read only its new tokens
-  - name: max_prompt_token_count
+  - id: max_prompt_token_count
+    name: max_prompt_token_count
     logicalType: integer
     physicalType: bigint
     description: the longest prompt, in tokens
-  - name: prompt_token_count
+  - id: prompt_token_count
+    name: prompt_token_count
     logicalType: integer
     physicalType: bigint
     description: prompt tokens over all turns
-  - name: prefill_token_count
+  - id: prefill_token_count
+    name: prefill_token_count
     logicalType: integer
     physicalType: bigint
     description: prompt tokens actually read (the rest came from the cache)
-  - name: output_token_count
+  - id: output_token_count
+    name: output_token_count
     logicalType: integer
     physicalType: bigint
     description: tokens generated over all turns
-  - name: model_seconds
+  - id: model_seconds
+    name: model_seconds
     logicalType: number
     physicalType: double
     description: time spent generating
-  - name: load_seconds
+  - id: load_seconds
+    name: load_seconds
     logicalType: number
     physicalType: double
     description: time loading the model
-  - name: script_seconds
+  - id: script_seconds
+    name: script_seconds
     logicalType: number
     physicalType: double
     description: the kernel script's own run time
-  - name: session_seconds
+  - id: session_seconds
+    name: session_seconds
     logicalType: number
     physicalType: double
     description: 'the Kaggle session, push to output: queue and boot included, so it errs high'
-  - name: gpu_count
+  - id: gpu_count
+    name: gpu_count
     logicalType: integer
     physicalType: bigint
     description: GPUs the session had
-  - name: allowance_hours
+  - id: allowance_hours
+    name: allowance_hours
     logicalType: number
     physicalType: double
     description: hours of the weekly Kaggle GPU allowance it used (session time)
-  - name: kaggle_allowance_ratio
+  - id: kaggle_allowance_ratio
+    name: kaggle_allowance_ratio
     logicalType: number
     physicalType: double
     description: share of the weekly allowance (ops/cost_settings.yaml)
-  - name: gpu_hours
+  - id: gpu_hours
+    name: gpu_hours
     logicalType: number
     physicalType: double
     description: session time by GPU count, as a cloud bills it
-  - name: estimated_cost_usd
+  - id: estimated_cost_usd
+    name: estimated_cost_usd
     logicalType: number
     physicalType: double
     description: 'ESTIMATE: gpu_hours at a cloud''s T4 price; Kaggle''s GPUs are free'
-  - name: price_basis_text
+  - id: price_basis_text
+    name: price_basis_text
     logicalType: string
     physicalType: string
     description: the price, its source and the date it was read
-  - name: error_text
+  - id: error_text
+    name: error_text
     logicalType: string
     physicalType: string
     description: how a failed kernel ended
-  - name: source_files_text
+  - id: source_files_text
+    name: source_files_text
     logicalType: string
     physicalType: string
     description: the committed CSVs the table is built from
-  - name: file_sha256
+  - id: file_sha256
+    name: file_sha256
     logicalType: string
     physicalType: string
     description: 'SHA-256 of those files together: the version'
-  - name: git_commit_sha
+  - id: git_commit_sha
+    name: git_commit_sha
     logicalType: string
     physicalType: string
     description: commit the job was deployed from
-  - name: loaded_ts
+  - id: loaded_ts
+    name: loaded_ts
     logicalType: timestamp
     physicalType: timestamp
     description: when Load results wrote it

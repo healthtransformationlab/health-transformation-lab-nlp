@@ -15,42 +15,51 @@ tags:
 - perio_bench
 - dq
 schema:
-- name: dq_column_missing
+- id: dq_column_missing
+  name: dq_column_missing
   physicalName: health_transformation_lab.gold_perio_bench.dq_column_missing
   physicalType: table
   logicalType: object
   description: One per evidence column
   dataGranularityDescription: One per evidence column
   properties:
-  - name: evidence_column_name
+  - id: evidence_column_name
+    name: evidence_column_name
     logicalType: string
     physicalType: string
     description: column of the structured record
-  - name: row_count
+  - id: row_count
+    name: row_count
     logicalType: integer
     physicalType: bigint
     description: visits
-  - name: missing_count
+  - id: missing_count
+    name: missing_count
     logicalType: integer
     physicalType: bigint
     description: visits where it is empty
-  - name: missing_pct
+  - id: missing_pct
+    name: missing_pct
     logicalType: number
     physicalType: double
     description: missing / visits, 0-100
-  - name: source_files_text
+  - id: source_files_text
+    name: source_files_text
     logicalType: string
     physicalType: string
     description: the committed CSVs the table is built from
-  - name: file_sha256
+  - id: file_sha256
+    name: file_sha256
     logicalType: string
     physicalType: string
     description: 'SHA-256 of those files together: the version'
-  - name: git_commit_sha
+  - id: git_commit_sha
+    name: git_commit_sha
     logicalType: string
     physicalType: string
     description: commit the job was deployed from
-  - name: loaded_ts
+  - id: loaded_ts
+    name: loaded_ts
     logicalType: timestamp
     physicalType: timestamp
     description: when Load results wrote it

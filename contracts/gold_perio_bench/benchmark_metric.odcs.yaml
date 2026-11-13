@@ -15,62 +15,74 @@ tags:
 - perio_bench
 - study
 schema:
-- name: benchmark_metric
+- id: benchmark_metric
+  name: benchmark_metric
   physicalName: health_transformation_lab.gold_perio_bench.benchmark_metric
   physicalType: table
   logicalType: object
   description: One per job run, model fit, metric and class (class empty for overall metrics)
   dataGranularityDescription: One per job run, model fit, metric and class (class empty for overall metrics)
   properties:
-  - name: model_run_id
+  - id: model_run_id
+    name: model_run_id
     logicalType: string
     physicalType: string
     description: one model fit (eval/score.py run_id)
     primaryKey: true
     primaryKeyPosition: 1
-  - name: method_name
+  - id: method_name
+    name: method_name
     logicalType: string
     physicalType: string
     description: method (rung), e.g. tfidf_logreg
-  - name: language_code
+  - id: language_code
+    name: language_code
     logicalType: string
     physicalType: string
     description: python · r
-  - name: metric_code
+  - id: metric_code
+    name: metric_code
     logicalType: string
     physicalType: string
     description: macro_f1 · f1 · sensitivity · specificity · ppv · npv · auroc
     primaryKey: true
     primaryKeyPosition: 2
-  - name: class_status_code
+  - id: class_status_code
+    name: class_status_code
     logicalType: string
     physicalType: string
     description: the status an f1 row is for; empty for the others
     primaryKey: true
     primaryKeyPosition: 3
-  - name: metric_ratio
+  - id: metric_ratio
+    name: metric_ratio
     logicalType: number
     physicalType: double
     description: the metric's value, 0 to 1; null when undefined
-  - name: test_note_count
+  - id: test_note_count
+    name: test_note_count
     logicalType: integer
     physicalType: bigint
     description: notes in the test split
-  - name: scored_ts
+  - id: scored_ts
+    name: scored_ts
     logicalType: timestamp
     physicalType: timestamp
     description: when the fit was scored
-  - name: run_id
+  - id: run_id
+    name: run_id
     logicalType: string
     physicalType: string
     description: 'Databricks job run: the batch key'
     primaryKey: true
     primaryKeyPosition: 4
-  - name: run_ts
+  - id: run_ts
+    name: run_ts
     logicalType: timestamp
     physicalType: timestamp
     description: when that run wrote it
-  - name: git_commit_sha
+  - id: git_commit_sha
+    name: git_commit_sha
     logicalType: string
     physicalType: string
     description: commit the job was deployed from

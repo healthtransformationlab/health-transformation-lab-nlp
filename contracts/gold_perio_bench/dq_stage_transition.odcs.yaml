@@ -15,50 +15,61 @@ tags:
 - perio_bench
 - dq
 schema:
-- name: dq_stage_transition
+- id: dq_stage_transition
+  name: dq_stage_transition
   physicalName: health_transformation_lab.gold_perio_bench.dq_stage_transition
   physicalType: table
   logicalType: object
   description: One per (method, stage at a visit, stage at the next)
   dataGranularityDescription: One per (method, stage at a visit, stage at the next)
   properties:
-  - name: method_name
+  - id: method_name
+    name: method_name
     logicalType: string
     physicalType: string
     description: algorithm_design
-  - name: from_status_code
+  - id: from_status_code
+    name: from_status_code
     logicalType: string
     physicalType: string
     description: stage at the earlier visit
-  - name: to_status_code
+  - id: to_status_code
+    name: to_status_code
     logicalType: string
     physicalType: string
     description: stage at the next
-  - name: visit_pair_count
+  - id: visit_pair_count
+    name: visit_pair_count
     logicalType: integer
     physicalType: bigint
     description: visit pairs
-  - name: row_pct
+  - id: row_pct
+    name: row_pct
     logicalType: number
     physicalType: double
     description: share of the earlier stage's pairs, 0-100
-  - name: direction_code
+  - id: direction_code
+    name: direction_code
     logicalType: string
     physicalType: string
     description: better · same · worse
-  - name: source_files_text
+  - id: source_files_text
+    name: source_files_text
     logicalType: string
     physicalType: string
     description: the committed CSVs the table is built from
-  - name: file_sha256
+  - id: file_sha256
+    name: file_sha256
     logicalType: string
     physicalType: string
     description: 'SHA-256 of those files together: the version'
-  - name: git_commit_sha
+  - id: git_commit_sha
+    name: git_commit_sha
     logicalType: string
     physicalType: string
     description: commit the job was deployed from
-  - name: loaded_ts
+  - id: loaded_ts
+    name: loaded_ts
     logicalType: timestamp
     physicalType: timestamp
     description: when Load results wrote it

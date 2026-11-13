@@ -15,60 +15,73 @@ tags:
 - perio_bench
 - judge
 schema:
-- name: judge_cost
+- id: judge_cost
+  name: judge_cost
   physicalName: health_transformation_lab.gold_perio_bench.judge_cost
   physicalType: table
   logicalType: object
   description: 'One per call type: status · verdict · all'
   dataGranularityDescription: 'One per call type: status · verdict · all'
   properties:
-  - name: call_kind_code
+  - id: call_kind_code
+    name: call_kind_code
     logicalType: string
     physicalType: string
     description: status · verdict · all
     primaryKey: true
     primaryKeyPosition: 1
-  - name: call_count
+  - id: call_count
+    name: call_count
     logicalType: integer
     physicalType: bigint
     description: calls made
-  - name: chart_count
+  - id: chart_count
+    name: chart_count
     logicalType: integer
     physicalType: bigint
     description: charts covered
-  - name: endpoint_error_count
+  - id: endpoint_error_count
+    name: endpoint_error_count
     logicalType: integer
     physicalType: bigint
     description: calls the endpoint failed
-  - name: gate_failure_count
+  - id: gate_failure_count
+    name: gate_failure_count
     logicalType: integer
     physicalType: bigint
     description: answers that failed the quote gate
-  - name: prompt_token_count
+  - id: prompt_token_count
+    name: prompt_token_count
     logicalType: integer
     physicalType: bigint
     description: prompt tokens
-  - name: completion_token_count
+  - id: completion_token_count
+    name: completion_token_count
     logicalType: integer
     physicalType: bigint
     description: completion tokens
-  - name: cost_usd
+  - id: cost_usd
+    name: cost_usd
     logicalType: number
     physicalType: double
     description: US$ at the endpoint's list price
-  - name: cost_per_chart_usd
+  - id: cost_per_chart_usd
+    name: cost_per_chart_usd
     logicalType: number
     physicalType: double
     description: US$ per chart
-  - name: avg_latency_seconds
+  - id: avg_latency_seconds
+    name: avg_latency_seconds
     logicalType: number
     physicalType: double
     description: mean seconds per answered call
-  - name: p50_latency_seconds
+  - id: p50_latency_seconds
+    name: p50_latency_seconds
     logicalType: number
     physicalType: double
     description: median seconds
-  - name: p95_latency_seconds
+  - id: p95_latency_seconds
+    name: p95_latency_seconds
     logicalType: number
     physicalType: double
     description: 95th percentile seconds

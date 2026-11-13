@@ -7,6 +7,7 @@ vendored ODCS JSON Schema. These tests keep the committed files in step with the
 
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 import os
 import shutil
@@ -38,17 +39,40 @@ def committed(root=CONTRACTS_DIR) -> dict:
             for p in sorted(root.glob("*/*.odcs.yaml"))}
 
 
-def foreign_keys(name: str) -> list:
-    """The non-derived relationships whose child is this table and whose parent has a contract."""
-    out = []
-    for r in GM.RELATIONSHIPS:
-        if r.child == name and not r.derived and r.parent not in tc.NOT_TABLES:
-            out.append((tuple(f"{name}.{c}" for c in r.child_cols), tuple(f"{r.parent}.{c}" for c in r.parent_cols)))
-    return sorted(out)
+# The nine foreign keys the contracts carry, written out (child, its columns, parent, its columns): the gold model's
+# solid relationships between gold tables. The ones to review_key (a file) and the derived ones are left out.
+EXPECTED_FOREIGN_KEYS = [
+    ("fact_prediction", ("file_sha256",), "dim_result_file", ("file_sha256",)),
+    ("fact_llm_call", ("file_sha256",), "dim_result_file", ("file_sha256",)),
+    ("fact_chart_answer", ("visit_id", "answer_status_code"), "fact_judge_call", ("visit_id", "answer_status_code")),
+    ("fact_corpus_judge_call", ("method_name", "visit_id"), "judge_queue", ("method_name", "visit_id")),
+    ("fact_grader_answer", ("question_id",), "dim_grader_question", ("question_id",)),
+    ("fact_case_profile_item", ("visit_id",), "fact_visit_evidence", ("visit_id",)),
+    ("fact_record_mismatch", ("visit_id",), "fact_visit_evidence", ("visit_id",)),
+    ("fact_pipeline_signal", ("run_id",), "fact_pipeline_run", ("run_id",)),
+    ("fact_remediation_decision", ("run_id",), "fact_pipeline_run", ("run_id",)),
+]
 
 
 def as_tuple(x) -> tuple:
     return tuple(x) if isinstance(x, list) else (x,)
+
+
+def expected_relationships(name: str) -> list:
+    """Fully qualified references: no file within the same contract, the parent's file (same folder) across them."""
+    return sorted((tuple(f"schema/{child}/properties/{c}" for c in child_cols),
+                   tuple(f"{parent}.odcs.yaml#/schema/{parent}/properties/{c}" for c in parent_cols))
+                  for child, child_cols, parent, parent_cols in EXPECTED_FOREIGN_KEYS if child == name)
+
+
+def resolve(contract_key: str, reference: str) -> dict:
+    """The property a fully qualified reference names, read from the committed contract file it points at."""
+    file, _, path = reference.partition("#/")
+    doc = yaml.safe_load((CONTRACTS_DIR / contract_key).parent.joinpath(file).read_text(encoding="utf-8"))
+    _, schema_id, _, property_id = path.split("/")
+    [obj] = [o for o in doc["schema"] if o["id"] == schema_id]
+    [prop] = [p for p in obj["properties"] if p["id"] == property_id]
+    return prop
 
 
 def test_one_contract_per_gold_table_and_none_extra():
@@ -72,20 +96,42 @@ def test_columns_types_keys_and_foreign_keys_match_the_gold_model(name):
     assert doc["apiVersion"] == dc.ODCS_API_VERSION == "v3.1.0"
     assert doc["kind"] == "DataContract"
     [obj] = doc["schema"]
+    assert obj["id"] == name
     assert obj["physicalName"] == f"health_transformation_lab.{schema_of(name)}.{name}"
     assert obj["dataGranularityDescription"] == TABLES[name].description
     columns = TABLES[name].columns
     props = obj["properties"]
     assert [p["name"] for p in props] == [c.name for c in columns]
     for p, c in zip(props, columns):
+        assert p["id"] == p["name"]
         assert (p["physicalType"], p["logicalType"], p["description"]) == (c.type, LOGICAL[c.type], c.description)
         assert bool(p.get("primaryKey")) == ("PK" in c.key), c.name
     keyed = sorted((p for p in props if p.get("primaryKey")), key=lambda p: p["primaryKeyPosition"])
     assert [p["name"] for p in keyed] == [c.name for c in columns if "PK" in c.key]
     assert [p["primaryKeyPosition"] for p in keyed] == list(range(1, len(keyed) + 1))
-    got = sorted((as_tuple(r["from"]), as_tuple(r["to"])) for r in obj.get("relationships", []))
-    assert got == foreign_keys(name)
-    assert all(r["type"] == "foreignKey" for r in obj.get("relationships", []))
+    relationships = obj.get("relationships", [])
+    assert sorted((as_tuple(r["from"]), as_tuple(r["to"])) for r in relationships) == expected_relationships(name)
+    for r in relationships:
+        assert r["type"] == "foreignKey"
+        assert [cp["property"] for cp in r["customProperties"]] == ["cardinality", "label"]
+        for reference in as_tuple(r["to"]):   # every target is a column in a committed contract
+            assert resolve(f"{schema_of(name)}/{name}.odcs.yaml", reference)["id"] == reference.rsplit("/", 1)[1]
+
+
+def test_nine_foreign_keys_in_all_and_none_to_the_answer_key_file():
+    found = [(name, r) for name, doc in ((k.split("/")[1], d) for k, d in committed().items())
+             for r in doc["schema"][0].get("relationships", [])]
+    assert len(found) == len(EXPECTED_FOREIGN_KEYS) == 9
+    assert not any("review_key" in str(r["to"]) for _, r in found)
+
+
+def test_one_contracts_top_level_fields():
+    doc = committed()["gold_perio_bench/fact_prediction"]
+    assert doc["id"] == "health_transformation_lab.gold_perio_bench.fact_prediction"
+    assert (doc["name"], doc["version"], doc["status"]) == ("fact_prediction", "1.0.0", "active")
+    assert doc["tags"] == ["synthetic", "perio_bench", GM.TABLES["fact_prediction"].area]
+    assert [cp["property"] for cp in doc["schema"][0]["customProperties"]] == ["writer", "area"]
+    assert doc["description"]["limitations"].startswith("Logical keys only: Delta enforces none.")
 
 
 def test_the_tooth_loss_table_is_in_the_open_dental_schema():
@@ -113,6 +159,24 @@ def test_stale_contracts_names_edited_and_extra_files_and_write_fixes_them(tmp_p
     dc.write_contracts(root)
     assert dc.stale_contracts(root) == []
     assert (root / "schema" / "odcs-json-schema-v3.1.0.json").is_file()   # the schema folder is left alone
+
+
+def test_files_outside_the_gold_schema_folders_are_never_touched(tmp_path):
+    root = tmp_path / "contracts"
+    shutil.copytree(CONTRACTS_DIR, root)
+    others = [root / "schema" / "example.odcs.yaml", root / "silver_opendental_perio" / "patient.odcs.yaml"]
+    for path in others:
+        path.parent.mkdir(exist_ok=True)
+        path.write_text("kind: DataContract\n", encoding="utf-8")
+    assert dc.stale_contracts(root) == []
+    dc.write_contracts(root)
+    assert all(path.is_file() for path in others)
+
+
+def test_the_vendored_schemas_sha256_is_the_one_its_readme_states():
+    readme = (CONTRACTS_DIR / "schema" / "README.md").read_text(encoding="utf-8")
+    digest = hashlib.sha256((CONTRACTS_DIR / dc.SCHEMA_FILE).read_bytes()).hexdigest()
+    assert f"SHA-256: {digest}" in readme
 
 
 def test_writing_twice_gives_the_same_bytes(tmp_path):

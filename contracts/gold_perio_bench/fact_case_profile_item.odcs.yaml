@@ -15,7 +15,8 @@ tags:
 - perio_bench
 - dq
 schema:
-- name: fact_case_profile_item
+- id: fact_case_profile_item
+  name: fact_case_profile_item
   physicalName: health_transformation_lab.gold_perio_bench.fact_case_profile_item
   physicalType: table
   logicalType: object
@@ -23,59 +24,75 @@ schema:
   dataGranularityDescription: 'One per (synthetic visit, profile category, item): the visit''s structured evidence, never
     note text'
   properties:
-  - name: visit_id
+  - id: visit_id
+    name: visit_id
     logicalType: integer
     physicalType: bigint
     description: visit
     primaryKey: true
     primaryKeyPosition: 1
-  - name: category_name
+  - id: category_name
+    name: category_name
     logicalType: string
     physicalType: string
     description: Demographics · Presentation · Visit context · Measurements · Tests and imaging · Risk factors · Treatment
       · Other readings · After the visit
-  - name: category_order_num
+  - id: category_order_num
+    name: category_order_num
     logicalType: integer
     physicalType: bigint
     description: 1 = Demographics, shown first
-  - name: item_name
+  - id: item_name
+    name: item_name
     logicalType: string
     physicalType: string
     description: what the row shows, e.g. max attachment loss (CAL)
     primaryKey: true
     primaryKeyPosition: 2
-  - name: item_order_num
+  - id: item_order_num
+    name: item_order_num
     logicalType: integer
     physicalType: bigint
     description: position in the profile
-  - name: item_value_name
+  - id: item_value_name
+    name: item_value_name
     logicalType: string
     physicalType: string
     description: 'the value as shown: a number, a status code, yes/no, or not recorded'
-  - name: item_unit_name
+  - id: item_unit_name
+    name: item_unit_name
     logicalType: string
     physicalType: string
     description: mm, %, years, teeth; empty when none
-  - name: source_files_text
+  - id: source_files_text
+    name: source_files_text
     logicalType: string
     physicalType: string
     description: the committed CSVs the table is built from
-  - name: file_sha256
+  - id: file_sha256
+    name: file_sha256
     logicalType: string
     physicalType: string
     description: 'SHA-256 of those files together: the version'
-  - name: git_commit_sha
+  - id: git_commit_sha
+    name: git_commit_sha
     logicalType: string
     physicalType: string
     description: commit the job was deployed from
-  - name: loaded_ts
+  - id: loaded_ts
+    name: loaded_ts
     logicalType: timestamp
     physicalType: timestamp
     description: when Load results wrote it
   relationships:
   - type: foreignKey
-    from: fact_case_profile_item.visit_id
-    to: fact_visit_evidence.visit_id
+    from: schema/fact_case_profile_item/properties/visit_id
+    to: fact_visit_evidence.odcs.yaml#/schema/fact_visit_evidence/properties/visit_id
+    customProperties:
+    - property: cardinality
+      value: '||--o{'
+    - property: label
+      value: visit_id
   customProperties:
   - property: writer
     value: 'Load results: overwrite'

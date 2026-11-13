@@ -15,54 +15,64 @@ tags:
 - perio_bench
 - ops
 schema:
-- name: fact_digest_message
+- id: fact_digest_message
+  name: fact_digest_message
   physicalName: health_transformation_lab.gold_perio_bench.fact_digest_message
   physicalType: table
   logicalType: object
   description: 'One per (digest date, period, owner): the plain-text digest a Databricks SQL alert emails'
   dataGranularityDescription: 'One per (digest date, period, owner): the plain-text digest a Databricks SQL alert emails'
   properties:
-  - name: digest_key
+  - id: digest_key
+    name: digest_key
     logicalType: string
     physicalType: string
     description: '<digest_date>/<period_code>: the batch a rerun replaces'
     primaryKey: true
     primaryKeyPosition: 1
-  - name: digest_date
+  - id: digest_date
+    name: digest_date
     logicalType: date
     physicalType: date
     description: the day the digest was built (UTC)
     primaryKey: true
     primaryKeyPosition: 2
-  - name: period_code
+  - id: period_code
+    name: period_code
     logicalType: string
     physicalType: string
     description: daily · weekly
     primaryKey: true
     primaryKeyPosition: 3
-  - name: owner_name
+  - id: owner_name
+    name: owner_name
     logicalType: string
     physicalType: string
     description: who it goes to
     primaryKey: true
     primaryKeyPosition: 4
-  - name: item_count
+  - id: item_count
+    name: item_count
     logicalType: integer
     physicalType: bigint
     description: open problems in it
-  - name: message_text
+  - id: message_text
+    name: message_text
     logicalType: string
     physicalType: string
     description: 'the digest as pipeline-doctor renders it: by severity, then subject'
-  - name: digest_run_id
+  - id: digest_run_id
+    name: digest_run_id
     logicalType: string
     physicalType: string
     description: the Pipeline digest run that wrote the row (batch key)
-  - name: loaded_ts
+  - id: loaded_ts
+    name: loaded_ts
     logicalType: timestamp
     physicalType: timestamp
     description: when it wrote it
-  - name: git_commit_sha
+  - id: git_commit_sha
+    name: git_commit_sha
     logicalType: string
     physicalType: string
     description: commit the job was deployed from

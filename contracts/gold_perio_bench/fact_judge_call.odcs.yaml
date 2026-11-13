@@ -15,76 +15,92 @@ tags:
 - perio_bench
 - judge
 schema:
-- name: fact_judge_call
+- id: fact_judge_call
+  name: fact_judge_call
   physicalName: health_transformation_lab.gold_perio_bench.fact_judge_call
   physicalType: table
   logicalType: object
   description: 'One per judge call: a chart''s status, or a verdict on one answer'
   dataGranularityDescription: 'One per judge call: a chart''s status, or a verdict on one answer'
   properties:
-  - name: visit_id
+  - id: visit_id
+    name: visit_id
     logicalType: integer
     physicalType: bigint
     description: review chart
     primaryKey: true
     primaryKeyPosition: 1
-  - name: call_kind_code
+  - id: call_kind_code
+    name: call_kind_code
     logicalType: string
     physicalType: string
     description: status (no answer shown) · verdict
     primaryKey: true
     primaryKeyPosition: 2
-  - name: answer_status_code
+  - id: answer_status_code
+    name: answer_status_code
     logicalType: string
     physicalType: string
     description: answer judged (verdict rows)
     primaryKey: true
     primaryKeyPosition: 3
-  - name: verdict_code
+  - id: verdict_code
+    name: verdict_code
     logicalType: string
     physicalType: string
     description: correct · incorrect · not_determinable
-  - name: judge_status_code
+  - id: judge_status_code
+    name: judge_status_code
     logicalType: string
     physicalType: string
     description: the judge's own status (status rows)
-  - name: quote_text
+  - id: quote_text
+    name: quote_text
     logicalType: string
     physicalType: string
     description: verbatim from the note
-  - name: is_gate_ok
+  - id: is_gate_ok
+    name: is_gate_ok
     logicalType: boolean
     physicalType: boolean
     description: quote gate and schema check passed
-  - name: gate_reason_text
+  - id: gate_reason_text
+    name: gate_reason_text
     logicalType: string
     physicalType: string
     description: why the gate failed
-  - name: endpoint_name
+  - id: endpoint_name
+    name: endpoint_name
     logicalType: string
     physicalType: string
     description: serving endpoint
-  - name: prompt_version_code
+  - id: prompt_version_code
+    name: prompt_version_code
     logicalType: string
     physicalType: string
     description: judge-status-v1 · judge-v2
-  - name: prompt_token_count
+  - id: prompt_token_count
+    name: prompt_token_count
     logicalType: integer
     physicalType: bigint
     description: prompt tokens
-  - name: completion_token_count
+  - id: completion_token_count
+    name: completion_token_count
     logicalType: integer
     physicalType: bigint
     description: completion tokens
-  - name: latency_seconds
+  - id: latency_seconds
+    name: latency_seconds
     logicalType: number
     physicalType: double
     description: seconds for the call
-  - name: is_simulated
+  - id: is_simulated
+    name: is_simulated
     logicalType: boolean
     physicalType: boolean
     description: true for the simulated judge
-  - name: is_api_error
+  - id: is_api_error
+    name: is_api_error
     logicalType: boolean
     physicalType: boolean
     description: endpoint failed after retries; asked again next run

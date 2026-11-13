@@ -14,7 +14,7 @@ with any employer or organization.
 |---|---|
 | `gold_perio_bench/<table>.odcs.yaml` | the 32 tables in `health_transformation_lab.gold_perio_bench` |
 | `gold_opendental_perio/<table>.odcs.yaml` | `fact_tooth_loss_prediction`, from the Open Dental extract (spec 029) |
-| `schema/` | the ODCS v3.1.0 JSON Schema, vendored unchanged, with its source and SHA-256 ([README](schema/README.md)) |
+| `schema/` | the ODCS v3.1.0 JSON Schema from the release tag, vendored unchanged, with its source and SHA-256 ([README](schema/README.md)) |
 
 ## Regenerate and check
 
@@ -32,12 +32,12 @@ change to a gold table and its contract land in the same pull request.
 
 | Gold model | ODCS |
 |---|---|
-| table name | `name`; `id` and `schema[0].physicalName` are the three-part name |
+| table name | `name` and `schema[0].id`; `id` and `schema[0].physicalName` are the three-part name |
 | schema (`gold_perio_bench`, `gold_opendental_perio`) | `domain` (`perio_bench`, `opendental_perio`) and a tag |
 | table description (its grain) | `description.purpose`, `schema[0].description`, `schema[0].dataGranularityDescription` |
-| column name, type, description | `properties[].name`, `physicalType`, `description`; `logicalType` bigint to integer, double to number, string, boolean, date, timestamp |
+| column name, type, description | `properties[].id` and `name`, `physicalType`, `description`; `logicalType` bigint to integer, double to number, string, boolean, date, timestamp |
 | column key `PK` | `primaryKey: true` and `primaryKeyPosition` (1, 2, ... in declaration order) |
-| relationship (solid line in the diagram) | `relationships[]`, `type: foreignKey`, `from` and `to` as `table.column` (lists for composite keys) |
+| relationship (solid line in the diagram) | `relationships[]`, `type: foreignKey`, with ODCS fully qualified references (lists for composite keys): `from` is `schema/<table>/properties/<column>` in the same contract, `to` is `<parent>.odcs.yaml#/schema/<parent>/properties/<column>` in the parent's contract; the diagram's cardinality and label are `customProperties` |
 | writer, area | `customProperties` and `description.limitations`; area is also a tag |
 
 Left out on purpose:
@@ -46,6 +46,9 @@ Left out on purpose:
   reference to it would point at no contract. Nine foreign keys remain, all between gold tables.
 - **Derived relationships** (dashed lines in the diagram): a value worked out from another table is not a key.
 - **Keys are logical only.** Delta enforces no primary or foreign key; the contract says so in `limitations`.
+- **Unity Catalog's text cleanup.** Descriptions are the gold model's text as written. The comments
+  `table_comments.apply` writes to Unity Catalog pass through its cleanup, which writes `·` as a comma, so a few
+  read slightly differently there.
 - **A version bump rule.** Every contract is `version: 1.0.0`; until a rule for bumping it is chosen, git history
   is the record of how a contract changed.
 - **Quality rules, service levels, servers, team and pricing.** Nothing declares them yet, so the contracts don't

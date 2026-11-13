@@ -16,48 +16,58 @@ tags:
 - perio_bench
 - results
 schema:
-- name: dim_result_file
+- id: dim_result_file
+  name: dim_result_file
   physicalName: health_transformation_lab.gold_perio_bench.dim_result_file
   physicalType: table
   logicalType: object
   description: One per committed result file version
   dataGranularityDescription: One per committed result file version
   properties:
-  - name: file_name
+  - id: file_name
+    name: file_name
     logicalType: string
     physicalType: string
     description: e.g. ai_predictions_bert-base.csv
-  - name: file_kind_code
+  - id: file_kind_code
+    name: file_kind_code
     logicalType: string
     physicalType: string
     description: predictions · llm_details
-  - name: method_name
+  - id: method_name
+    name: method_name
     logicalType: string
     physicalType: string
     description: method (rung) from the file name
-  - name: file_sha256
+  - id: file_sha256
+    name: file_sha256
     logicalType: string
     physicalType: string
     description: 'SHA-256 of the file: its version'
     primaryKey: true
     primaryKeyPosition: 1
-  - name: row_count
+  - id: row_count
+    name: row_count
     logicalType: integer
     physicalType: bigint
     description: rows in the file
-  - name: source_code
+  - id: source_code
+    name: source_code
     logicalType: string
     physicalType: string
     description: repo · kaggle (results_manifest.csv)
-  - name: run_url
+  - id: run_url
+    name: run_url
     logicalType: string
     physicalType: string
     description: Kaggle workflow run; empty for repo
-  - name: git_commit_sha
+  - id: git_commit_sha
+    name: git_commit_sha
     logicalType: string
     physicalType: string
     description: commit the bundle was deployed from
-  - name: loaded_ts
+  - id: loaded_ts
+    name: loaded_ts
     logicalType: timestamp
     physicalType: timestamp
     description: when Load results wrote it

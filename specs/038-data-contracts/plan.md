@@ -33,18 +33,22 @@
     `limitations` says logical keys only (Delta enforces none) and who writes it
   - `tags: [synthetic, <bench>, <area>]`
 - One `schema` element:
-  - `name`, `physicalName` (the three-part name), `physicalType: table`, `logicalType: object`, `description` and
+  - `id` and `name` (the table; `id` added 2026-11-13, as on #702), `physicalName` (the three-part name),
+    `physicalType: table`, `logicalType: object`, `description` and
     `dataGranularityDescription` (both the grain)
   - `customProperties` `writer` and `area`
 - `properties`, one per column in declaration order:
-  - `name`, `physicalType` (the gold model's type), `description`
+  - `id` and `name` (the column; `id` added 2026-11-13), `physicalType` (the gold model's type), `description`
   - `logicalType`: bigint to integer, double to number, string, boolean, date, timestamp
   - `primaryKey: true` and `primaryKeyPosition` (1, 2, ... in declaration order) for columns whose key contains PK
 - `relationships`, one per relationship in `gold_model.RELATIONSHIPS` whose child is the table and that isn't
   `derived` (a dashed line is not a key): `type: foreignKey`, with `from` and `to` in `table.column` form, as lists
   when the key has more than one column. Relationships whose parent is `review_key` are left out: the answer key
   is a file in `NOT_TABLES`, so it has no contract to point at. Nine foreign keys remain (added 2026-11-13, as on
-  #702)
+  #702). Changed 2026-11-13, as on #702: `from` and `to` are ODCS fully qualified references, `from`
+  `schema/<table>/properties/<column>` and `to` `<parent>.odcs.yaml#/schema/<parent>/properties/<column>`,
+  because ODCS's references page keeps the shorthand for elements in the same contract; each carries the
+  diagram's `cardinality` and `label` as `customProperties`
 - YAML: a first-line comment saying the file is generated and from what, keys in the order above, `sort_keys` off,
   and a trailing newline, so a rerun is byte-identical
 

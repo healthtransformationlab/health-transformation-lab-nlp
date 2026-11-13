@@ -15,58 +15,71 @@ tags:
 - perio_bench
 - dq
 schema:
-- name: dq_temporal_change
+- id: dq_temporal_change
+  name: dq_temporal_change
   physicalName: health_transformation_lab.gold_perio_bench.dq_temporal_change
   physicalType: table
   logicalType: object
   description: One per method
   dataGranularityDescription: One per method
   properties:
-  - name: method_name
+  - id: method_name
+    name: method_name
     logicalType: string
     physicalType: string
     description: status source
-  - name: later_visit_count
+  - id: later_visit_count
+    name: later_visit_count
     logicalType: integer
     physicalType: bigint
     description: visits after a patient's first
-  - name: perio_resolved_ratio
+  - id: perio_resolved_ratio
+    name: perio_resolved_ratio
     logicalType: number
     physicalType: double
     description: later visits where periodontitis disappeared
-  - name: stage_drop_ratio
+  - id: stage_drop_ratio
+    name: stage_drop_ratio
     logicalType: number
     physicalType: double
     description: later visits where the stage dropped
-  - name: visit_pair_count
+  - id: visit_pair_count
+    name: visit_pair_count
     logicalType: integer
     physicalType: bigint
     description: pairs 1-2 years apart, no treatment between
-  - name: better_ratio
+  - id: better_ratio
+    name: better_ratio
     logicalType: number
     physicalType: double
     description: 'pairs whose stage improved: implausible'
-  - name: same_ratio
+  - id: same_ratio
+    name: same_ratio
     logicalType: number
     physicalType: double
     description: pairs with the same stage
-  - name: worse_ratio
+  - id: worse_ratio
+    name: worse_ratio
     logicalType: number
     physicalType: double
     description: pairs whose stage worsened
-  - name: source_files_text
+  - id: source_files_text
+    name: source_files_text
     logicalType: string
     physicalType: string
     description: the committed CSVs the table is built from
-  - name: file_sha256
+  - id: file_sha256
+    name: file_sha256
     logicalType: string
     physicalType: string
     description: 'SHA-256 of those files together: the version'
-  - name: git_commit_sha
+  - id: git_commit_sha
+    name: git_commit_sha
     logicalType: string
     physicalType: string
     description: commit the job was deployed from
-  - name: loaded_ts
+  - id: loaded_ts
+    name: loaded_ts
     logicalType: timestamp
     physicalType: timestamp
     description: when Load results wrote it
