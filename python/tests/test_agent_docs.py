@@ -42,3 +42,36 @@ def test_chart_review_agent_folder_has_its_own_agent_rules():
     assert "spec" in text.lower() and "agent:chart_review" in text          # needs a spec; how its results are named
     assert (AGENT_DIR / "CLAUDE.md").read_text().strip().splitlines()[-1] == "@AGENTS.md"
     assert "databricks/agents/chart_review/AGENTS.md" in AGENTS.read_text()  # the root file points to it
+
+
+def test_agents_md_says_what_an_issue_holds_and_the_template_and_check_agree():
+    """76 of the 93 tasks mined from this repository had tests that needed something the issue never gave (#700).
+    The four parts of an issue are named once in AGENTS.md; the issue template and the pull-request check use the
+    same names."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("pr_conventions", REPO_ROOT / ".github" / "scripts" / "pr_conventions.py")
+    pc = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(pc)
+    text = AGENTS.read_text()
+    section = text[text.index("## What an issue says"):text.index("## Configuration and secrets")]
+    template = (REPO_ROOT / ".github" / "ISSUE_TEMPLATE" / "work-item.md").read_text()
+    assert pc.ISSUE_PARTS == ("Problem", "Done when", "Contract", "Read first")
+    for part in pc.ISSUE_PARTS:
+        assert f"**{part}:**" in section, part
+        assert f"## {part}" in template, part
+    assert "before the first commit" in section and "dated line" in section
+    assert "data/tasks/screening/README.md" in section            # the reason is a committed count, not a memory
+    assert pc.PARTS_SINCE in section.replace("November 14, 2026", pc.PARTS_SINCE)
+
+
+def test_agents_md_puts_the_spec_and_the_data_contract_before_the_code():
+    """The owner's additions to the issue rule (#700): an epic issue over a spec's user stories, the spec written
+    and naming its story before the story's code, and a data contract (grain, columns, keys) for a table or file."""
+    text = AGENTS.read_text()
+    branches = text[text.index("## Branches and issues"):text.index("## What an issue says")]
+    section = text[text.index("## What an issue says"):text.index("## Configuration and secrets")]
+    assert "`EPIC`" in branches and "sub-issue" in branches
+    assert "**Spec before code.**" in section and "plan.md" in section
+    assert "grain" in section and "SQL and data names" in section
+    template = (REPO_ROOT / ".github" / "ISSUE_TEMPLATE" / "work-item.md").read_text()
+    assert "grain" in template
