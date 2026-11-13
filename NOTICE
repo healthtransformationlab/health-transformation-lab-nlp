@@ -3,5 +3,5 @@ Copyright 2026 John Bowyer
 
 Licensed under the Apache License, Version 2.0 (see LICENSE).
 
-Third-party files keep their own licences, named beside them: data/external/ (MACCROBAT, CC BY 4.0) and
-diagrams/_build/dbx_icons/ (MIT).
+Third-party files keep their own licences, named beside them: data/external/ (MACCROBAT, CC BY 4.0),
+diagrams/_build/dbx_icons/ (MIT) and contracts/schema/ (the Open Data Contract Standard JSON Schema, Apache-2.0, Bitol).
