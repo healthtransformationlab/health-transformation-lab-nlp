@@ -1,5 +1,7 @@
-# Every pull request: the branch is named <type>/<issue>-<slug> and the description links its issue
-# ("Closes #71"). The rule is in AGENTS.md ("Branches and issues"); the check in .github/scripts/pr_conventions.py.
+# Every pull request: the branch is named <type>/<issue>-<slug>, the description links its issue ("Closes #71"),
+# and an issue opened from November 14, 2026 has its four parts (Problem, Done when, Contract, Read first).
+# The rules are in AGENTS.md ("Branches and issues", "What an issue says"); the check in
+# .github/scripts/pr_conventions.py.
 name: Check the branch name and issue link
 on:
   pull_request:
@@ -15,6 +17,7 @@ on:
 
 permissions:
   contents: read
+  issues: read                                 # the check reads the linked issue's text
 
 jobs:
   check:
@@ -27,4 +30,5 @@ jobs:
         env:                                   # passed as data, never pasted into the shell
           BRANCH: ${{ github.head_ref || inputs.branch }}
           BODY: ${{ github.event.pull_request.body || inputs.body }}
+          GITHUB_TOKEN: ${{ github.token }}    # read-only here; never printed
         run: python .github/scripts/pr_conventions.py

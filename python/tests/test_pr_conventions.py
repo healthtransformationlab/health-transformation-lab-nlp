@@ -81,3 +81,63 @@ def test_rule_is_written_down_for_every_agent():
     agents = (REPO_ROOT / "AGENTS.md").read_text()
     assert "## Branches and issues" in agents and "Closes #" in agents
     assert "Branches and issues" in (REPO_ROOT / "CLAUDE.md").read_text()
+
+
+# What an issue says (AGENTS.md, issue #700): the issue a pull request links has four parts, written before the work.
+FULL = """## Problem
+The loader drops rows with no clinic.
+
+## Done when
+- `load_results` keeps a row whose clinic is empty.
+
+## Contract
+- `load_results(path, keep_empty_clinic=True)`
+
+## Read first
+- specs/016-results-loader/spec.md, user story 2
+"""
+
+
+@pytest.mark.parametrize("body, number", [
+    ("Closes #71", 71), ("Fixes #8 and more", 8), ("Refs #12: one part of the story", 12),
+    ("Some text first.\n\nResolves #305", 305), ("Closes DENT-123", None), ("no link here", None), (None, None),
+])
+def test_the_linked_issue_number_is_read_from_the_description(body, number):
+    assert pc.linked_issue_number(body) == number
+
+
+def test_an_issue_with_the_four_parts_passes():
+    assert pc.issue_problems(FULL, "2026-11-20T10:00:00Z") == []
+    bold = FULL.replace("## Problem", "**Problem:**").replace("## Done when", "**Done when:**")
+    assert pc.issue_problems(bold, "2026-11-20T10:00:00Z") == []          # a bold label works as well as a heading
+
+
+@pytest.mark.parametrize("part", ["Problem", "Done when", "Contract", "Read first"])
+def test_a_missing_part_is_named(part):
+    without = "## ".join(block for block in FULL.split("## ") if not block.startswith(part))
+    problems = pc.issue_problems(without, "2026-11-20T10:00:00Z")
+    assert len(problems) == 1 and part in problems[0] and "AGENTS.md" in problems[0]
+
+
+def test_issues_opened_before_the_rule_are_not_held_to_it():
+    assert pc.issue_problems("Describes the problem in one paragraph.", "2026-11-13T23:59:59Z") == []
+    assert pc.issue_problems("Describes the problem in one paragraph.", "2026-11-14T00:00:00Z") != []
+    assert pc.issue_problems(None, "2026-11-20T10:00:00Z") != []            # an empty issue has none of the parts
+
+
+def test_check_reports_the_issue_when_it_is_given():
+    assert pc.check("feat/71-x", "Closes #71", issue=(FULL, "2026-11-20T10:00:00Z")) == []
+    found = pc.check("feat/71-x", "Closes #71", issue=("Just a title.", "2026-11-20T10:00:00Z"))
+    assert found and "Contract" in " ".join(found)
+    assert pc.check("feat/71-x", "Closes #71") == []                         # no issue fetched: only branch and link
+    assert pc.check("dependabot/pip/x", "", issue=("", "2026-11-20T10:00:00Z")) == []   # a tool's branch has no story
+
+
+def test_workflow_lets_the_check_read_the_issue():
+    import yaml
+    wf = yaml.safe_load((REPO_ROOT / ".github" / "workflows" / "pr-conventions.yml").read_text())
+    assert wf["permissions"].get("issues") == "read"
+    env = {}
+    for s in wf["jobs"]["check"]["steps"]:
+        env.update(s.get("env") or {})
+    assert "GITHUB_TOKEN" in env            # passed to the script, which reads the linked issue with it

@@ -20,7 +20,7 @@ file.
 | Stage | Tool | Output |
 |-------|------|--------|
 | What and why | `/speckit-specify` (then `/speckit-clarify` if needed) | `specs/NNN-name/spec.md` |
-| One issue per user story, then its branch | GitHub issue; branch `<type>/<issue>-<slug>` (AGENTS.md, "Branches and issues") | issue `#n`, branch `feat/<n>-NNN-slug` |
+| One issue per user story, then its branch | GitHub issue with its four parts: Problem, Done when, Contract, Read first (AGENTS.md, "What an issue says"); branch `<type>/<issue>-<slug>` (AGENTS.md, "Branches and issues") | issue `#n`, branch `feat/<n>-NNN-slug` |
 | How, at feature level | `/speckit-plan`, `/speckit-tasks` (`/speckit-analyze` to cross-check) | `plan.md`, `tasks.md` in the same folder |
 | Open design questions | Superpowers `brainstorming` | `docs/superpowers/specs/YYYY-MM-DD-topic-design.md` |
 | Session plan | Superpowers `writing-plans`, then `executing-plans` or `subagent-driven-development` | `docs/superpowers/plans/YYYY-MM-DD-topic.md` |

@@ -157,6 +157,30 @@ Every user story is a GitHub issue, and every branch and pull request belongs to
 
 CI checks 2–5 on every PR (`.github/workflows/pr-conventions.yml`, `.github/scripts/pr_conventions.py`).
 
+## What an issue says
+
+Write an issue so that someone who has only the issue and the repository could do the work and pass its tests.
+Every new issue (a user story, a fix, a chore, docs) has four parts, written **before the first commit** of the
+work (`.github/ISSUE_TEMPLATE/work-item.md`):
+
+- **Problem:** what is wrong or missing, in plain words, and who it matters to.
+- **Done when:** what a test will check, one line each, written so that it is true or false.
+- **Contract:** every name a test will use that is not in the repository yet: functions and their arguments,
+  command-line options, tables and columns, files and paths, exact messages and values. "No new names" if none.
+- **Read first:** the spec's user story, the files to change and the docs that govern them, as links or paths.
+
+If the work finds that a name has to change, add a dated line to the issue (`Changed 2026-11-20: ...`). Never
+rewrite what was there: the text as it stood before the first commit is what the task set records (spec 028).
+
+Why: an AI screen found that the tests of 76 of the 93 tasks mined from this repository need a name, path or text
+the issue never gives, against 14 of 40 in the competition's own set
+([`data/tasks/screening/README.md`](data/tasks/screening/README.md)). Over five runs a small local model resolved
+26 of 85 task-runs on the 17 other tasks and 1 of 380 on those 76
+([`data/tasks/official_agent_runs/README.md`](data/tasks/official_agent_runs/README.md)).
+
+CI checks the four parts on the issue a pull request links, for issues opened from November 14, 2026 (the same
+workflow and script as above).
+
 ## Configuration and secrets
 
 Most production failures are configuration: a variable wrong in one environment, or a secret that expired.
