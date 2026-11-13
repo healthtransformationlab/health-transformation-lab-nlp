@@ -15,7 +15,9 @@ What is wrong or missing, in plain words, and who it matters to.
 ## Contract
 
 - Every name a test will use that is not in the repository yet: functions and their arguments, command-line
-  options, tables and columns, files and paths, exact messages and values. Write "No new names" if there are none.
+  options, files and paths, exact messages and values. Write "No new names" if there are none.
+- For data: each table or file with its grain (one row per what), its columns with their typed suffixes, and its
+  keys.
 
 ## Read first
 

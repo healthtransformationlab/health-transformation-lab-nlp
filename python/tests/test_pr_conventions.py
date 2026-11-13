@@ -141,3 +141,50 @@ def test_workflow_lets_the_check_read_the_issue():
     for s in wf["jobs"]["check"]["steps"]:
         env.update(s.get("env") or {})
     assert "GITHUB_TOKEN" in env            # passed to the script, which reads the linked issue with it
+
+
+# Spec before code (AGENTS.md, "What an issue says"; the owner's addition of November 12, 2026): a user story's pull
+# request needs its spec, naming the story's issue, and for code its plan too.
+def _spec(root, number="016", text="### US2 - results in gold (P1) #71\n", plan=True):
+    folder = root / "specs" / f"{number}-results-loader"
+    folder.mkdir(parents=True)
+    (folder / "spec.md").write_text(text)
+    if plan:
+        (folder / "plan.md").write_text("# Plan\n")
+    return root
+
+
+def test_a_user_story_needs_its_spec_before_its_code(tmp_path):
+    story, when = "016 US2: every committed result is in the gold tables", "2026-11-20T10:00:00Z"
+    missing = pc.spec_problems("feat/71-016-results-loader", story, 71, when, tmp_path)
+    assert len(missing) == 1 and "specs/016-" in missing[0] and "spec.md" in missing[0]
+    root = _spec(tmp_path / "a")
+    assert pc.spec_problems("feat/71-016-results-loader", story, 71, when, root) == []
+
+
+def test_the_spec_names_the_story_and_code_needs_the_plan(tmp_path):
+    story, when = "016 US2: every committed result is in the gold tables", "2026-11-20T10:00:00Z"
+    unnamed = _spec(tmp_path / "a", text="### US2 - results in gold (P1)\n")
+    found = pc.spec_problems("feat/71-016-results-loader", story, 71, when, unnamed)
+    assert len(found) == 1 and "#71" in found[0]
+    no_plan = _spec(tmp_path / "b", plan=False)
+    found = pc.spec_problems("feat/71-016-results-loader", story, 71, when, no_plan)
+    assert len(found) == 1 and "plan.md" in found[0]
+    assert pc.spec_problems("spec/71-016-results-loader", story, 71, when, no_plan) == []   # the PR that writes the spec
+    assert pc.spec_problems("feat/171-016-results-loader", "016 US2b: a later part", 171, when,
+                            _spec(tmp_path / "c", text="US2b ... #171\n")) == []
+
+
+def test_only_new_user_stories_are_held_to_spec_before_code(tmp_path):
+    when = "2026-11-20T10:00:00Z"
+    assert pc.spec_problems("fix/72-016-append", "016 BUG1: the log is appended twice", 72, when, tmp_path) == []
+    assert pc.spec_problems("chore/73-bump", "000 CHORE9: bump the CLI", 73, when, tmp_path) == []
+    assert pc.spec_problems("feat/71-016-x", "016 US2: results in gold", 71, "2026-11-13T23:00:00Z", tmp_path) == []
+    assert pc.spec_problems("feat/71-016-x", None, 71, when, tmp_path) == []            # no title read: nothing to hold
+
+
+def test_check_holds_a_story_to_its_spec_when_the_issue_and_checkout_are_given(tmp_path):
+    issue = (FULL, "2026-11-20T10:00:00Z", "016 US2: every committed result is in the gold tables")
+    found = pc.check("feat/71-016-results-loader", "Closes #71", issue=issue, root=tmp_path)
+    assert found and "spec.md" in " ".join(found)
+    assert pc.check("feat/71-016-results-loader", "Closes #71", issue=issue, root=_spec(tmp_path / "a")) == []

@@ -125,6 +125,8 @@ Every user story is a GitHub issue, and every branch and pull request belongs to
    **Every issue title starts with a Jira-style key, `<spec> <kind><n>: `**, so the backlog groups by spec:
    - kind: `US` user story, `AI` action item, `BUG` fix, `CHORE` chore, `DOCS` docs; `n` counts up within
      the spec and kind (`004 AI2: MedGemma accuracy per field`, `004 BUG1: ...`).
+   - A spec written from November 14, 2026 also has one `EPIC` issue (`016 EPIC1: every committed result is in
+     the gold tables`), and each user story's issue is a sub-issue of it, so the backlog reads spec, then stories.
    - spec: the spec the work belongs to, or the one it touches most (MedGemma items are `004`); `000` for
      repo-wide work with no spec (`000 CHORE2: two scripts are numbered 42`).
    - Spec numbers are unique: take the next free `specs/NNN-*` number on `main` *and* on open PRs.
@@ -166,11 +168,18 @@ work (`.github/ISSUE_TEMPLATE/work-item.md`):
 - **Problem:** what is wrong or missing, in plain words, and who it matters to.
 - **Done when:** what a test will check, one line each, written so that it is true or false.
 - **Contract:** every name a test will use that is not in the repository yet: functions and their arguments,
-  command-line options, tables and columns, files and paths, exact messages and values. "No new names" if none.
+  command-line options, files and paths, exact messages and values. For data, the contract is the table or file
+  itself: its grain (one row per what), its columns with their typed suffixes and its keys ("SQL and data names").
+  "No new names" if none.
 - **Read first:** the spec's user story, the files to change and the docs that govern them, as links or paths.
 
 If the work finds that a name has to change, add a dated line to the issue (`Changed 2026-11-20: ...`). Never
 rewrite what was there: the text as it stood before the first commit is what the task set records (spec 028).
+
+**Spec before code.** A user story's code starts only after its spec is written: `specs/NNN-name/spec.md` names
+the story's issue (`### US2 - ... #71`), and `plan.md` sits beside it before a `feat` or `fix` branch is opened.
+The issue's Contract comes from that plan, so a story's names are decided once, in the spec, and copied to its
+issue.
 
 Why: an AI screen found that the tests of 76 of the 93 tasks mined from this repository need a name, path or text
 the issue never gives, against 14 of 40 in the competition's own set
@@ -178,8 +187,8 @@ the issue never gives, against 14 of 40 in the competition's own set
 26 of 85 task-runs on the 17 other tasks and 1 of 380 on those 76
 ([`data/tasks/official_agent_runs/README.md`](data/tasks/official_agent_runs/README.md)).
 
-CI checks the four parts on the issue a pull request links, for issues opened from November 14, 2026 (the same
-workflow and script as above).
+CI checks the four parts on the issue a pull request links, and a user story's spec and plan in the branch, for
+issues opened from November 14, 2026 (the same workflow and script as above).
 
 ## Configuration and secrets
 
