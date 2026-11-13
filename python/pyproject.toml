@@ -44,7 +44,8 @@ tasks = ["networkx>=3.4"]
 # Node embeddings for the task set (spec 028 T010): encode_document needs sentence-transformers 5+
 embeddings = ["sentence-transformers>=5", "torch>=2.2"]
 # duckdb runs the dashboards' SQL in tests (spec 019); pytest-xdist runs the suite in parallel in CI (#510)
-dev = ["pytest>=8", "pytest-xdist>=3.5", "ruff>=0.5", "duckdb>=1.0"]
+# jsonschema: validates the ODCS data contracts (spec 038); only the tests and 73_build_contracts.py use it
+dev = ["pytest>=8", "pytest-xdist>=3.5", "ruff>=0.5", "duckdb>=1.0", "jsonschema>=4.18"]
 # PerioBench as a Kaggle Benchmarks task (health_transformation_lab_nlp.kbench, kaggle/perio_bench_task.py)
 # hishel<2: hishel 2.0.0 dropped BaseFilter, which kaggle-benchmarks 0.6.2 imports (#593)
 kbench = ["kaggle-benchmarks>=0.6", "pydantic>=2", "hishel<2"]

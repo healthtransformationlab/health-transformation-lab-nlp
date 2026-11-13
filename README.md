@@ -77,4 +77,4 @@ python docs/build_decks.py                         # rebuild both decks from doc
 ```
 
 Ground rules: synthetic patient records, never identifiable patient data (PHI); Python and R in parity; anything simulated is labelled simulated
-([AGENTS.md](AGENTS.md)). Open decisions: [action items](docs/action_items.md). Owner John Bowyer · Apache 2.0 licence.
+([AGENTS.md](AGENTS.md)). Open decisions: [action items](docs/action_items.md). Gold-table data contracts (ODCS): [contracts/](contracts/README.md). Owner John Bowyer · Apache 2.0 licence.
