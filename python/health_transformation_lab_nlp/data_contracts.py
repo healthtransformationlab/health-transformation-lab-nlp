@@ -137,9 +137,14 @@ def all_contracts() -> dict[str, dict]:
     return {f"{_schema_of(n)}/{n}": contract(n) for n in _gold_model().TABLES if n not in tc.NOT_TABLES}
 
 
-def _schema_comment(schema: str) -> str:
+@cache
+def _bundle_schemas() -> tuple[dict, ...]:
     uc = yaml.safe_load(UNITY_CATALOG_FILE.read_text(encoding="utf-8"))
-    comments = [s.get("comment") for s in uc["resources"]["schemas"].values() if s.get("name") == schema]
+    return tuple(uc["resources"]["schemas"].values())
+
+
+def _schema_comment(schema: str) -> str:
+    comments = [s.get("comment") for s in _bundle_schemas() if s.get("name") == schema]
     if len(comments) != 1 or not comments[0]:
         raise KeyError(f"{schema} has no single comment in databricks/resources/unity_catalog.yml")
     return comments[0]

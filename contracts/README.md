@@ -75,8 +75,9 @@ tables come from have no contracts yet.
 
 - **Ontos** ([databrickslabs/ontos](https://github.com/databrickslabs/ontos), Databricks Labs, experimental) is a
   Databricks App for data products and data contracts. It validates contracts against ODCS v3.1.0 and bundles the
-  ODPS v1.0.0 schema for products (`src/backend/src/schemas/`), the versions these files use. It is not deployed
-  from this repo.
+  ODPS v1.0.0 schema for products (`src/backend/src/schemas/`), the versions these files use. It looks a product
+  port's `contractId` up among the contracts it already holds, so the contracts go in before the products. It is not
+  deployed from this repo.
 - **DQX** ([databrickslabs/dqx](https://github.com/databrickslabs/dqx), Databricks Labs) can generate data-quality
   checks from an ODCS contract. None are generated or run here yet.
 

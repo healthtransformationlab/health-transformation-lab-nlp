@@ -120,6 +120,16 @@ def test_stale_products_names_edited_missing_and_extra_files_and_write_fixes_the
     assert dc.stale_contracts(root) == []                  # the contracts are left alone
 
 
+def test_writing_products_leaves_everything_but_product_files_alone(tmp_path):
+    root = tmp_path / "contracts"
+    shutil.copytree(CONTRACTS_DIR, root)
+    others = [root / "products" / "README.md", root / "gold_perio_bench" / "fact_prediction.odcs.yaml"]
+    others[0].write_text("# products\n", encoding="utf-8")
+    before = {path: path.read_bytes() for path in others}
+    dc.write_products(root)
+    assert {path: path.read_bytes() for path in others} == before
+
+
 def test_writing_products_twice_gives_the_same_bytes(tmp_path):
     first = {p.name: p.read_bytes() for p in dc.write_products(tmp_path)}
     second = {p.name: p.read_bytes() for p in dc.write_products(tmp_path)}
