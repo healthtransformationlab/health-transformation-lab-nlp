@@ -7,6 +7,7 @@ vendored ODCS JSON Schema. These tests keep the committed files in step with the
 
 from __future__ import annotations
 
+import importlib.util
 import os
 import shutil
 import subprocess
@@ -131,3 +132,30 @@ def test_the_script_check_passes_on_the_committed_tree_and_fails_on_a_stale_copy
                            text=True, env=env, check=False)
     assert stale.returncode == 1
     assert "gold_perio_bench/fact_prediction.odcs.yaml" in stale.stdout + stale.stderr
+
+
+def test_contract_refuses_the_answer_key_file_and_unknown_names():
+    for name in ("review_key", "not_a_table"):
+        with pytest.raises(KeyError):
+            dc.contract(name)
+
+
+def script_main():
+    spec = importlib.util.spec_from_file_location("build_contracts", SCRIPT)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module.main
+
+
+def test_an_invalid_contract_makes_the_script_exit_2_before_anything_is_written(tmp_path, monkeypatch, capsys):
+    monkeypatch.setattr(dc, "validate", lambda doc: ["(top level): 'apiVersion' is a required property"])
+    root = tmp_path / "contracts"
+    assert script_main()(["--root", str(root)]) == 2
+    assert not root.exists()
+    assert "not valid ODCS v3.1.0" in capsys.readouterr().err
+
+
+def test_without_jsonschema_the_script_exits_2_and_says_how_to_install_it(tmp_path, monkeypatch, capsys):
+    monkeypatch.setitem(sys.modules, "jsonschema", None)   # import jsonschema now raises ImportError
+    assert script_main()(["--check", "--root", str(tmp_path)]) == 2
+    assert 'pip install -e ".[dev]"' in capsys.readouterr().err

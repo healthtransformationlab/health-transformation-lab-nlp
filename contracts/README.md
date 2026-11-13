@@ -46,6 +46,8 @@ Left out on purpose:
   reference to it would point at no contract. Nine foreign keys remain, all between gold tables.
 - **Derived relationships** (dashed lines in the diagram): a value worked out from another table is not a key.
 - **Keys are logical only.** Delta enforces no primary or foreign key; the contract says so in `limitations`.
+- **A version bump rule.** Every contract is `version: 1.0.0`; until a rule for bumping it is chosen, git history
+  is the record of how a contract changed.
 - **Quality rules, service levels, servers, team and pricing.** Nothing declares them yet, so the contracts don't
   invent them.
 
