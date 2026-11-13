@@ -1,4 +1,4 @@
-# Implementation plan: Open Data Contracts (spec 038)
+# Implementation plan: Open Data Contracts and Data Products (spec 038)
 
 ## Sources of truth
 
@@ -73,3 +73,46 @@
 - `contracts/README.md`: what the files are, how to regenerate and check them, and how Ontos and DQX would read them
 - `README.md`: one line pointing to `contracts/`
 - `NOTICE`: the vendored ODCS JSON Schema (Apache-2.0, Bitol)
+
+## US2: data products (#704)
+
+### Names (copied to issue #704)
+
+- In `health_transformation_lab_nlp.data_contracts`, every new public function `@traced`:
+  - `ODPS_API_VERSION = "v1.0.0"`
+  - `product(schema: str) -> dict`: one ODPS document for one gold schema, `KeyError` when it has no contracts
+  - `all_products() -> dict[str, dict]`, keyed `products/<bench>`
+  - `write_products(root: Path = CONTRACTS_DIR) -> list[Path]`: writes every product, removes stale
+    `products/*.odps.yaml` files, and returns the files written
+  - `stale_products(root: Path = CONTRACTS_DIR) -> list[str]`: relative paths that are missing, differ or shouldn't be
+    there
+  - `validate_product(doc: dict) -> list[str]`: JSON Schema errors against the vendored ODPS schema, empty when valid
+- The script's `--check` and `--root` cover the product files too; an invalid product exits 2 before anything is written
+- Files: `contracts/products/perio_bench.odps.yaml`, `contracts/products/opendental_perio.odps.yaml`,
+  `contracts/schema/odps-json-schema-v1.0.0.json`
+
+### Mapping, one gold schema to one product
+
+- `apiVersion: v1.0.0`, `kind: DataProduct`, `id: health_transformation_lab.<schema>`, `name: <schema>`,
+  `version: 1.0.0`, `status: active`, `domain: <bench>`, `tags: [synthetic, <bench>]`
+- `description`: `purpose` is the schema's `comment` in `databricks/resources/unity_catalog.yml`; `usage` is the
+  contracts' usage sentence; `limitations` says structure only and logical keys only
+- `outputPorts`, one per contract in the schema, in the gold model's order: `name` (the table), `description` (its
+  grain), `type: table`, `version` and `contractId` (the contract's `version` and `id`)
+- YAML as for the contracts: a first-line comment naming both sources, keys in this order, a trailing newline
+
+### Version
+
+ODPS v1.0.0, because Databricks Labs Ontos bundles `odps-json-schema-v1.0.0.json` and its repository layer is written
+for v1.0.0. v1.1.0 adds optional fields and loosens what an output port requires, and is a later upgrade.
+
+### Tests (written first): `python/tests/test_data_products.py`
+
+- One committed product per gold schema with contracts, and none extra
+- Every committed product validates; one without `status` returns errors
+- Ports: one per table in the gold model's order, each `contractId` a committed contract with the same `version`
+- Purpose equals the bundle's schema comment; usage says synthetic and not for clinical use
+- `product("gold_oral_health_bench")` raises `KeyError`
+- `stale_products` names an edited, a missing and an extra file; `write_products` makes it empty and leaves the
+  contracts alone; writing twice gives the same bytes
+- The script's `--check` names a stale product; an invalid product exits 2 before anything is written
