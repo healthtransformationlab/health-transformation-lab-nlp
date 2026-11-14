@@ -36,6 +36,11 @@ import pandas as pd
 from health_transformation_lab_nlp import delta, doctor, doctor_job, tracking
 
 dbutils.widgets.text("git_commit", "")  # noqa: F821  set by the job: the commit it was deployed from
+dbutils.widgets.text("telemetry", "azure")  # noqa: F821  spec 014: off / console / azure / otlp
+from health_transformation_lab_nlp import telemetry  # noqa: E402
+telemetry.use_databricks_secret(dbutils, dbutils.widgets.get("telemetry"))  # noqa: F821  scripts inherit it
+telemetry.setup()                                   # this notebook runs the package's code itself
+telemetry.start_script("13_pipeline_doctor", data_label="synthetic")
 commit = tracking.use_git_commit(dbutils)  # noqa: F821
 dbutils.widgets.text("run_id", "")  # noqa: F821  {{job.run_id}}: the batch key on every row
 dbutils.widgets.text("catalog", "health_transformation_lab")  # noqa: F821

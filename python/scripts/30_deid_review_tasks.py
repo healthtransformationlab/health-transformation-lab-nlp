@@ -20,6 +20,10 @@ import random
 from health_transformation_lab_nlp import deid, deid_review
 from health_transformation_lab_nlp.paths import RAW_DIR
 from health_transformation_lab_nlp.phi_challenge import build_challenge, load_external
+from health_transformation_lab_nlp import telemetry
+
+telemetry.setup()
+telemetry.start_script("30_deid_review_tasks", data_label="synthetic")
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--engine", default="regex_v2+guard", help="pre-annotates the gold tasks and de-identifies the QA notes")

@@ -23,6 +23,10 @@ from health_transformation_lab_nlp.paths import CORPUS_DIR, COSTS_YAML, DATASETS
 from health_transformation_lab_nlp.registry import load_registry
 from health_transformation_lab_nlp.rungs import make_rung
 from health_transformation_lab_nlp.study import build_corpus_sample
+from health_transformation_lab_nlp import telemetry
+
+telemetry.setup()
+telemetry.start_script("14_benchmark_cost", data_label="synthetic")
 
 SIM_ACCURACY = {"distilbert-base": 0.86, "bioclinical-modernbert-base": 0.90, "llm_challenger": 0.88,
                 "medgemma-1.5-4b-it": 0.87, "medgemma-27b-text-it": 0.90}   # placeholders for dry runs only

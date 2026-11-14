@@ -24,6 +24,7 @@ from __future__ import annotations
 import pandas as pd
 
 from health_transformation_lab_nlp.paths import REPO_ROOT, TASKS_DIR
+from health_transformation_lab_nlp import telemetry
 
 COVERAGE = TASKS_DIR / "graph_coverage.csv"
 SEARCH = TASKS_DIR / "statement_search.csv"
@@ -68,6 +69,8 @@ def cost_table(reach: pd.DataFrame, runs: pd.DataFrame) -> pd.DataFrame:
 
 
 def main() -> int:
+    telemetry.setup()
+    telemetry.start_script("65_cost_by_graph_reach", data_label="public")
     for path in (COVERAGE, SEARCH, RUNS):   # required files: fail naming the missing one
         if not path.exists():
             raise SystemExit(f"{path.relative_to(REPO_ROOT)} is missing")

@@ -27,6 +27,10 @@ from health_transformation_lab_nlp.prevalence import (
     prevalence_by,
     prevalence_by_group,
 )
+from health_transformation_lab_nlp import telemetry
+
+telemetry.setup()
+telemetry.start_script("19_prevalence", data_label="synthetic")
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--all-visits", action="store_true", help="every visit (no age or date filter)")

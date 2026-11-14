@@ -23,6 +23,10 @@ from health_transformation_lab_nlp import judge_scorecard as js
 from health_transformation_lab_nlp import note_set
 from health_transformation_lab_nlp import readme_results as rr
 from health_transformation_lab_nlp.paths import DATASETS_DIR, JUDGE_DIR
+from health_transformation_lab_nlp import telemetry
+
+telemetry.setup()
+telemetry.start_script("36_judge_scorecard", data_label="simulated" if "--simulated" in sys.argv else "synthetic")
 
 ap = argparse.ArgumentParser()
 mode = ap.add_mutually_exclusive_group(required=True)

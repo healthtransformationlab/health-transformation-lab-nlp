@@ -18,6 +18,11 @@ from health_transformation_lab_nlp.reliability import (
     by_level,
     reliability_report,
 )
+import sys
+from health_transformation_lab_nlp import telemetry
+
+telemetry.setup()
+telemetry.start_script("13_reliability", data_label="simulated" if "--simulated" in sys.argv else "synthetic")
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--simulated", action="store_true")

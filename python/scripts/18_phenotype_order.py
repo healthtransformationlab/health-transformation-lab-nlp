@@ -20,6 +20,11 @@ import pandas as pd
 
 from health_transformation_lab_nlp.paths import DATASETS_DIR, REVIEW_DIR
 from health_transformation_lab_nlp.phenotype import PATEL2022_ROW, score_orders, split_halves
+import sys
+from health_transformation_lab_nlp import telemetry
+
+telemetry.setup()
+telemetry.start_script("18_phenotype_order", data_label="simulated" if "--simulated" in sys.argv else "synthetic")
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--simulated", action="store_true")

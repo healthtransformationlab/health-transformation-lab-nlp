@@ -12,6 +12,10 @@ import argparse
 import sys
 
 from health_transformation_lab_nlp import readme_results as rr
+from health_transformation_lab_nlp import telemetry
+
+telemetry.setup()
+telemetry.start_script("35_readme_results", data_label="synthetic")
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--check", action="store_true")

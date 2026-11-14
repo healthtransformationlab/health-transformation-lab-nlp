@@ -11,6 +11,11 @@ import argparse
 import json
 
 import matplotlib
+import sys
+from health_transformation_lab_nlp import telemetry
+
+telemetry.setup()
+telemetry.start_script("16_cost_effectiveness", data_label="simulated" if "--simulated" in sys.argv else "synthetic")
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt

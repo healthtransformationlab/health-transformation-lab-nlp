@@ -39,6 +39,7 @@ import pandas as pd
 
 from health_transformation_lab_nlp import task_graph as tg
 from health_transformation_lab_nlp.paths import TASKS_DIR
+from health_transformation_lab_nlp import telemetry
 
 HERE = Path(__file__).resolve().parent
 OUT = TASKS_DIR / "devset" / "devset_graph_reach.csv"
@@ -271,6 +272,8 @@ def _document_encoder():
 
 
 def main() -> int:
+    telemetry.setup()
+    telemetry.start_script("67_devset_graph_reach", data_label="public")
     ap = argparse.ArgumentParser()
     ap.add_argument("--tasks", type=Path, required=True, help="the competition's tasks.jsonl (never committed)")
     ap.add_argument("--graphs", type=Path, required=True)

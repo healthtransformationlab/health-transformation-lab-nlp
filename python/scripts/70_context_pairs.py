@@ -42,6 +42,7 @@ import pandas as pd
 
 from health_transformation_lab_nlp.paths import TASKS_DIR
 from health_transformation_lab_nlp.prevalence import wilson_ci
+from health_transformation_lab_nlp import telemetry
 
 RUNS = TASKS_DIR / "official_agent_runs"
 MODEL = "gemma-4-e4b-it-qat-w4a16-ct"
@@ -177,6 +178,8 @@ def task_flags(arm: str) -> pd.DataFrame:
 
 
 def main() -> int:
+    telemetry.setup()
+    telemetry.start_script("70_context_pairs", data_label="public")
     ap = argparse.ArgumentParser()
     ap.add_argument("--arm", required=True, choices=sorted(SHAPES), help="the arm to set beside the statement arm")
     ap.add_argument("--ids", help="the pre-registered ids, comma-separated (default: every published task)")

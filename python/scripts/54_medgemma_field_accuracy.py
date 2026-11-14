@@ -25,6 +25,11 @@ from health_transformation_lab_nlp import note_set
 from health_transformation_lab_nlp.paths import DATASETS_DIR
 from health_transformation_lab_nlp.reference_answers import field_accuracy, field_metrics
 from health_transformation_lab_nlp.tracking import track
+import sys
+from health_transformation_lab_nlp import telemetry
+
+telemetry.setup()
+telemetry.start_script("54_medgemma_field_accuracy", data_label="simulated" if "--simulated" in sys.argv else "synthetic")
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--simulated", action="store_true", help="score the simulated MedGemma reader (dry run)")

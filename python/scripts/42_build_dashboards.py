@@ -9,6 +9,10 @@ import sys
 
 from health_transformation_lab_nlp import dashboards
 from health_transformation_lab_nlp.paths import REPO_ROOT
+from health_transformation_lab_nlp import telemetry
+
+telemetry.setup()
+telemetry.start_script("42_build_dashboards", data_label="synthetic")
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--check", action="store_true")

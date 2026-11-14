@@ -33,10 +33,18 @@ with telemetry.pipeline_step("transitions", pairs=len(pairs)):   # optional fine
 telemetry.record_value("data_quality.pass_rate", 0.97, check="cal_range")
 ```
 
-Instrumented so far: `11_ai_predict.py` (every model, including the GPU encoders and MedGemma),
-`20_data_quality.py` (with pass rates), `22_build_sites.py`, `37_cal_reliability.py`,
-`38_nhanes_perio.py`. Databricks jobs `medgemma_reader`, `encoder_gpu` and `nhanes_perio` pass the
-switch (`telemetry_exporter`, default `azure`) and read the connection string from the secret scope.
+Every script in `python/scripts/` calls `telemetry.setup()` and opens a run span named for itself with
+`telemetry.start_script("<script name>", data_label=...)`: `synthetic`, `public` (MACCROBAT, the
+competition's tasks, the agent runs) or `simulated` (a `--simulated` dry run, the simulated grader).
+`_trace_plugin.py` is a pytest plugin, not a script, and is the one file left out.
+`python/tests/test_telemetry_scripts.py` fails CI when a script is missing either call or its data label.
+
+Every Databricks job task that runs a Python notebook passes the switch (`telemetry: ${var.telemetry_exporter}`,
+default `azure`), and its notebook reads it and the connection string from the secret scope
+(`telemetry.use_databricks_secret`), so the scripts it starts inherit them. The notebooks that run the package's
+code in their own process (`10_load_results`, `11_migrate_gold_names`, `12_load_open_dental`, `13_pipeline_doctor`,
+`14_pipeline_digest`) also call `telemetry.setup()` and open a run span. The `llm_judge` job is a SQL notebook,
+which the Python tracer can't reach. The same test checks the jobs.
 
 ## Every call, with a common header
 

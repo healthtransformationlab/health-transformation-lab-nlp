@@ -33,6 +33,10 @@ import pandas as pd
 
 from health_transformation_lab_nlp import deid, deid_eval, maccrobat
 from health_transformation_lab_nlp.paths import DEID_DIR, EXTERNAL_DIR, RAW_DIR
+from health_transformation_lab_nlp import telemetry
+
+telemetry.setup()
+telemetry.start_script("32_maccrobat_deid", data_label="public")
 
 DEFAULT = ["regex", "regex+guard", "regex_v2", "regex_v2+guard", "presidio", "presidio+guard",
            "presidio+regex_v2+guard", "hf_stanford", "hf_stanford+guard", "hf_stanford+regex_v2+guard",

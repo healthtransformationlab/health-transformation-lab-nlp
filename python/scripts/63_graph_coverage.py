@@ -32,6 +32,7 @@ from health_transformation_lab_nlp.task_graph import (  # one definition of a no
     _Defs,
     module_name,
 )
+from health_transformation_lab_nlp import telemetry
 
 OUT = TASKS_DIR / "graph_coverage.csv"
 COLUMNS = ["instance_id", "changed_file_count", "graphed_file_count", "is_fix_in_graph", "edited_node_count",
@@ -197,6 +198,8 @@ def base_sources(snapshot: Path, paths: set[str]) -> dict[str, str]:
 
 
 def main() -> int:
+    telemetry.setup()
+    telemetry.start_script("63_graph_coverage", data_label="public")
     ap = argparse.ArgumentParser()
     ap.add_argument("--published", type=Path, required=True,
                     help="the task set as published (tasks.jsonl, graphs/, snapshots/)")

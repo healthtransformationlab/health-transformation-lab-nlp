@@ -32,6 +32,7 @@ import numpy as np
 import pandas as pd
 
 from health_transformation_lab_nlp.paths import TASKS_DIR
+from health_transformation_lab_nlp import telemetry
 
 HERE = Path(__file__).resolve().parent
 OUT = TASKS_DIR / "graph_context_shape.csv"
@@ -119,6 +120,8 @@ def shape_row(instance_id: str, named: list[str], near: list[str], similar: list
 
 
 def main() -> int:
+    telemetry.setup()
+    telemetry.start_script("72_graph_context", data_label="public")
     ap = argparse.ArgumentParser()
     ap.add_argument("--published", type=Path, required=True, help="the task set as published (tasks.jsonl, graphs/, embeddings/)")
     ap.add_argument("--out-context", type=Path, required=True, help="where the text goes (outside the repository)")

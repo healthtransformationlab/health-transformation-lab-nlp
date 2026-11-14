@@ -30,6 +30,7 @@ import pandas as pd
 from health_transformation_lab_nlp import agent_cost as ac
 from health_transformation_lab_nlp import agent_harness as ah
 from health_transformation_lab_nlp.paths import REPO_ROOT, TASKS_DIR
+from health_transformation_lab_nlp import telemetry
 
 _spec = importlib.util.spec_from_file_location("run_agent", Path(__file__).resolve().parent / "59_run_agent.py")
 run_agent = importlib.util.module_from_spec(_spec)
@@ -200,6 +201,8 @@ def queue(ids: list[str], tasks: dict, past: dict[str, float]) -> dict[str, floa
 
 
 def main() -> int:
+    telemetry.setup()
+    telemetry.start_script("60_kaggle_agent", data_label="public")
     ap = argparse.ArgumentParser()
     ap.add_argument("--tasks", type=Path, default=TASKS_DIR / "tasks_gated.jsonl")
     ap.add_argument("--ids", required=True,

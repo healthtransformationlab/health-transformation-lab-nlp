@@ -29,6 +29,7 @@ import pandas as pd
 import yaml
 
 from health_transformation_lab_nlp.paths import REPO_ROOT
+from health_transformation_lab_nlp import telemetry
 
 TASK_SPAN = "official_agent_kernel.task"
 SECTION_COLUMNS = ["instance_id", "section_name", "span_count", "self_seconds", "input_token_count",
@@ -150,6 +151,8 @@ def declared_price(gpu_name: str | None, where: str = FREE) -> tuple[float | Non
 
 
 def main() -> int:
+    telemetry.setup()
+    telemetry.start_script("71_run_telemetry", data_label="public")
     ap = argparse.ArgumentParser()
     ap.add_argument("--output", type=Path, required=True, help="the kernel's output folder (telemetry.jsonl)")
     ap.add_argument("--summary", type=Path, required=True, help="the run's run_summary.json (its GPU readings)")

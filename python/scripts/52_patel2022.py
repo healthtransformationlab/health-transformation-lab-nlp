@@ -22,6 +22,10 @@ from health_transformation_lab_nlp.labels import LABELS
 from health_transformation_lab_nlp.paths import DATASETS_DIR
 from health_transformation_lab_nlp.phenotype import PATEL2022_SECTIONS
 from health_transformation_lab_nlp.reliability import confusion_scores
+from health_transformation_lab_nlp import telemetry
+
+telemetry.setup()
+telemetry.start_script("52_patel2022", data_label="synthetic")
 
 v = pd.read_csv(DATASETS_DIR / "visits_structured.csv")
 p = pd.read_csv(DATASETS_DIR / "periodx_visits.csv")
