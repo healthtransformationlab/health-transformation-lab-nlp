@@ -702,3 +702,32 @@ another Python, nine packages at other versions, and a network the agent's comma
 kernels had none, so no count here completes or corrects a Kaggle arm, and the
 Kaggle baseline is still owed (issue 681). Every run had 5 minutes and 40 tool calls a task, not the leaderboard's
 limits, on this project's own tasks: not a leaderboard score.
+
+# The competition's own development set: a prompt that localizes first (November 14, 2026)
+
+gemma-developer-agent PR 98 (its issue #97) changed only the agent's prompt. Its first step is one `run_command` that
+lists the repository and greps the Python files, tests left out, for strings the issue names. It reads conventions
+files and loads `pipeline-doctor` only when the listing shows them, and it names `edit_file`'s arguments. The model,
+tools, budgets and sampling are those of the November 11 run. With the owner's approval, it ran on the 23 of that
+run's seeded 40 that pass both controls (`devset_controls.csv`), so every task is paired: the same evaluator end to end,
+one Kaggle kernel on four L4 GPUs (66 minutes), telemetry on. `gemma-4-e4b-it-qat-w4a16-ct_swegemma_devset-prompt97.csv`
+has one row per task; its `_settings.json` names the agent commit (`e70caa6`). The rows were written from the kernel's
+downloaded output with the runner's own functions, because the runner had no `--label` for the development set when
+it ran (#721).
+
+| On the same 23 tasks | November 11 prompt | PR 98 prompt |
+|---|---|---|
+| **Resolved** | **3** | **4** |
+| Tests fail with the agent's patch | 10 | 13 |
+| Empty patch | 5 | 2 |
+| Errors before any test ran | 3 | 2 |
+| The tests ran out of time (exit code 124) | 2 | 2 |
+| Ended at the context window | 3 | 4 |
+| Tool calls; to a graph tool; to the analyzer | 267; 43; 16 | 287; 17; 7 |
+
+Both resolved `fastapi_14301` and `rich_3454`. Only the PR 98 prompt resolved `fastapi_14873` and `rich_3905`, and
+only the November 11 prompt resolved `rich_3535`. With 2 and 1 discordant tasks, the exact McNemar test gives p = 1.0:
+**no difference can be claimed**. What changed is described, not tested. Empty patches fell from 5 to 2. In 21 of the
+23 traces the first call was `run_command`, 17 of them the localization grep. No run copied the prompt's placeholder
+or called a skill, and none named a path outside the workspace. The patches the agent now writes mostly fail their
+tests, so their correctness, not finding the file, is where the next change would have to act.
