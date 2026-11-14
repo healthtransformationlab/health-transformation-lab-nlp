@@ -39,6 +39,7 @@ PARTS_SINCE = "2026-11-14"          # issues opened from this day (UTC) carry th
 STORY = re.compile(r"^(\d{3}) US\d+[a-z]?:")       # a user story's issue title: "016 US2: ..."
 CODE_TYPES = ("feat", "fix")                         # branches that hold a story's code, so they need its plan too
 ISSUE_NUMBER = re.compile(r"\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?|refs?)\s+#(\d+)\b", re.IGNORECASE)
+CLOSING_NUMBER = re.compile(r"\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#(\d+)\b", re.IGNORECASE)
 
 
 def branch_problems(branch: str) -> list[str]:
@@ -67,8 +68,9 @@ def issue_link(body: str | None) -> bool:
 
 
 def linked_issue_number(body: str | None) -> int | None:
-    """The first GitHub issue number the description links; None for a Jira key or no link."""
-    m = ISSUE_NUMBER.search(body or "")
+    """The issue the description links: its first closing link (Closes, Fixes, Resolves #n), else its first Refs #n;
+    None for a Jira key or no link. A Refs line often names an earlier pull request, so it comes second (#718)."""
+    m = CLOSING_NUMBER.search(body or "") or ISSUE_NUMBER.search(body or "")
     return int(m.group(1)) if m else None
 
 
@@ -107,15 +109,25 @@ def spec_problems(branch: str, issue_title: str | None, issue_number: int, creat
     return []
 
 
-def fetch_issue(repo: str, number: int, token: str) -> tuple[str, str, str]:
-    """The issue's body, created_at and title from GitHub; one retry for a network blip, then the error."""
+def pull_request_link_problems(number: int | None, created_at: str | None) -> list[str]:
+    """A link that names a pull request opened from PARTS_SINCE on links no issue: say so, once. A pull request is
+    not held to an issue's four parts or a story's spec; an older one passes as it did before (#718)."""
+    if not created_at or created_at[:10] < PARTS_SINCE:
+        return []
+    return [(f"#{number} is a pull request, not an issue: link the issue this work belongs to ('Closes #<issue>'; "
+             "AGENTS.md, Branches and issues, rule 3)")]
+
+
+def fetch_issue(repo: str, number: int, token: str) -> tuple[str, str, str, bool]:
+    """The issue's body, created_at and title from GitHub, and whether the number names a pull request (the issues
+    endpoint answers for those too, with a `pull_request` field); one retry for a network blip, then the error."""
     req = urllib.request.Request(f"https://api.github.com/repos/{repo}/issues/{number}", headers={
         "Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json", "User-Agent": "pr-conventions"})
     for attempt in (1, 2):
         try:
             with urllib.request.urlopen(req, timeout=30) as r:
                 d = json.load(r)
-            return d.get("body") or "", d.get("created_at") or "", d.get("title") or ""
+            return d.get("body") or "", d.get("created_at") or "", d.get("title") or "", "pull_request" in d
         except (urllib.error.URLError, TimeoutError) as e:
             if isinstance(e, urllib.error.HTTPError) and e.code < 500 or attempt == 2:
                 raise
@@ -125,7 +137,8 @@ def fetch_issue(repo: str, number: int, token: str) -> tuple[str, str, str]:
 
 def check(branch: str, body: str | None, issue: tuple | None = None, root: Path | str | None = None) -> list[str]:
     """Problems with the branch name, the issue link and, when the linked issue was read (body, created_at and,
-    for spec before code, title), the issue's four parts and its spec in the checkout at `root`."""
+    for spec before code, title; then whether it is a pull request), the issue's four parts and its spec in the
+    checkout at `root`."""
     problems = branch_problems(branch)
     if branch.startswith(NO_ISSUE_NEEDED):
         return problems
@@ -133,8 +146,10 @@ def check(branch: str, body: str | None, issue: tuple | None = None, root: Path 
         problems.append("link the issue in the PR description: 'Closes #<issue>' (or Fixes, Refs, or a Jira key)")
     elif issue is not None:
         issue_body, created_at, *rest = issue
-        problems += issue_problems(issue_body, created_at)
         number = linked_issue_number(body)
+        if len(rest) > 1 and rest[1]:
+            return problems + pull_request_link_problems(number, created_at)
+        problems += issue_problems(issue_body, created_at)
         if rest and root is not None and number:
             problems += spec_problems(branch, rest[0], number, created_at, root)
     return problems
