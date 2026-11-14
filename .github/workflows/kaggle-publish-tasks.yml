@@ -16,9 +16,6 @@ run-name: "Publish the task set (spec 028) to Kaggle"
 on:
   workflow_dispatch:
     inputs:
-      message:
-        description: "Version note (the commit is added)"
-        default: "Update from the repository"
       metadata_only:
         description: "Send only the descriptions, cover, sources and update frequency of the live files; no build, no new version (spec 034)"
         type: boolean
@@ -32,7 +29,7 @@ jobs:
     environment: dev
     timeout-minutes: 150
     permissions:
-      contents: read
+      contents: write   # pushes the release tag data/<slug>-vX.Y.Z (spec 039 US3)
     steps:
       - uses: actions/checkout@v6
         with: {fetch-depth: 0}            # every base commit is checked out and snapshotted
@@ -76,14 +73,13 @@ jobs:
 
       - name: Publish (created public the first time, a new version after)
         env:
-          MESSAGE: ${{ inputs.message }}
           SHA: ${{ github.sha }}
           METADATA_ONLY: ${{ inputs.metadata_only }}
         run: |
           set -o pipefail                      # a refused upload must fail the step, not tee
-          [ "$METADATA_ONLY" = true ] && only="--metadata-only" || only=""
+          [ "$METADATA_ONLY" = true ] && only="--metadata-only" || only="--tag"   # a new version is tagged (spec 039)
           python kaggle/publish_tasks.py --out build/tasks --username "$KAGGLE_USERNAME" --commit "$SHA" \
-            --upload --message "$MESSAGE" $only | tee -a "$GITHUB_STEP_SUMMARY"
+            --upload $only | tee -a "$GITHUB_STEP_SUMMARY"
 
       # #535: the public notebook that loads the task set; it runs once on Kaggle (CPU, about a minute), which proves
       # it works on the published files, and its run is the published version

@@ -20,6 +20,10 @@ hash, all in the same diff.
 Every build also writes ``manifest.json`` into the dataset (spec 039 US2, #708), from the files it holds: the slug,
 the version, the git commit, when it was built (UTC), and each file's SHA-256, size and, for CSV and JSONL, its row
 count. Kaggle and Hugging Face get the same one, so a download can be checked against the commit that made it.
+
+A release carries one string, ``release_message``, as Kaggle's version note and Hugging Face's commit message, and
+is tagged ``data/<slug>-vX.Y.Z`` in git and on Hugging Face (spec 039 US3, #709). Tagging a release twice changes
+nothing.
 """
 
 from __future__ import annotations
@@ -28,6 +32,7 @@ import csv
 import hashlib
 import json
 import re
+import subprocess
 from datetime import UTC, datetime
 from functools import cache
 from pathlib import Path
@@ -38,6 +43,7 @@ from .paths import REPO_ROOT
 from .telemetry import traced
 
 DOCS = REPO_ROOT / "kaggle" / "dataset_docs.yaml"
+REPOSITORY = "https://github.com/healthtransformationlab/health-transformation-lab-nlp"
 SEMVER = re.compile(r"(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)")
 LINE = re.compile(r"(\S+) — (\S.*)")
 RULE = (
@@ -184,3 +190,46 @@ def write_manifest(folder: Path, slug: str, commit: str) -> Path:
     path = Path(folder) / MANIFEST
     path.write_text(json.dumps(build_manifest(folder, slug, commit), indent=1) + "\n")
     return path
+
+
+def _check_commit(commit: str) -> None:
+    if not COMMIT.fullmatch(commit or ""):
+        raise ValueError(f"{commit!r} is not a git commit SHA (7 to 40 lowercase hex characters)")
+
+
+@traced
+def release_message(slug: str, commit: str) -> str:
+    """The one note for a published version, used verbatim as Kaggle's version note and Hugging Face's commit
+    message: ``v<X.Y.Z> — <what changed> (<the commit's first 12 characters>)``. ``<what changed>`` is the newest
+    changelog line's text after its version, so the version isn't written twice."""
+    _check_commit(commit)
+    line = latest_change(slug)
+    match = LINE.fullmatch(line)
+    return f"v{version(slug)} — {match.group(2) if match else line} ({commit[:12]})"
+
+
+@traced
+def release_tag(slug: str) -> str:
+    """The tag that marks a published version, in git and on Hugging Face: ``data/<slug>-v<X.Y.Z>``."""
+    return f"data/{slug}-v{version(slug)}"
+
+
+@traced
+def git_tag_url(tag: str) -> str:
+    """Where a release tag can be browsed on GitHub."""
+    return f"{REPOSITORY}/tree/{tag}"
+
+
+@traced
+def create_git_tag(tag: str, commit: str, *, run=subprocess.run) -> bool:
+    """Create ``tag`` on ``commit`` and push it to ``origin``, unless the remote has it already. True when it was made;
+    False when it was there, so tagging a release twice changes nothing. A remote holding the tag on another commit is
+    left as it is: the version was released there first."""
+    _check_commit(commit)
+    listed = run(["git", "ls-remote", "--tags", "origin", f"refs/tags/{tag}"], capture_output=True, text=True,
+                 check=True).stdout
+    if listed.strip():
+        return False
+    run(["git", "tag", "--force", tag, commit], capture_output=True, text=True, check=True)
+    run(["git", "push", "origin", f"refs/tags/{tag}"], capture_output=True, text=True, check=True)
+    return True

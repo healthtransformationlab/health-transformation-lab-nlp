@@ -23,7 +23,7 @@ on:
         options: [both, notes, results]
         default: both
       message:
-        description: "Version note (the commit is added)"
+        description: "Commit note for the Hugging Face organisation page (each dataset version's note is its release string, spec 039)"
         default: "Update from the repository"
       metadata_only:
         description: "Kaggle: send only the descriptions, cover, sources and update frequency; no new version (spec 034)"
@@ -39,7 +39,7 @@ jobs:
     environment: dev
     timeout-minutes: 40
     permissions:
-      contents: read
+      contents: write   # pushes the release tag data/<slug>-vX.Y.Z (spec 039 US3)
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
@@ -63,16 +63,15 @@ jobs:
       - name: Build and publish the datasets
         env:
           WHICH: ${{ inputs.dataset }}
-          MESSAGE: ${{ inputs.message }}
           SHA: ${{ github.sha }}
           METADATA_ONLY: ${{ inputs.metadata_only }}
         run: |
           set -o pipefail                      # a refused upload must fail the step, not tee
           [ "$WHICH" = both ] && names="notes results" || names="$WHICH"
-          [ "$METADATA_ONLY" = true ] && only="--metadata-only" || only=""
+          [ "$METADATA_ONLY" = true ] && only="--metadata-only" || only="--tag"   # a new version is tagged (spec 039)
           for name in $names; do
             python kaggle/publish.py --dataset "$name" --out "build/$name" --username "$KAGGLE_USERNAME" \
-              --commit "$SHA" --upload --message "$MESSAGE" $only | tee -a "$GITHUB_STEP_SUMMARY"
+              --commit "$SHA" --upload $only | tee -a "$GITHUB_STEP_SUMMARY"
           done
 
       # spec 025 US2: the quickstart reads both datasets, so it goes when both do; it runs once on Kaggle (CPU,
@@ -99,7 +98,7 @@ jobs:
     environment: dev
     timeout-minutes: 30
     permissions:
-      contents: read
+      contents: write   # pushes the release tag data/<slug>-vX.Y.Z (spec 039 US3)
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
@@ -139,7 +138,7 @@ jobs:
           [ "$WHICH" = both ] && names="notes results" || names="$WHICH"
           for name in $names; do
             python huggingface/publish.py --dataset "$name" --out "build/hf-$name" --commit "$SHA" --upload \
-              --message "$MESSAGE" | tee -a "$GITHUB_STEP_SUMMARY"
+              --tag | tee -a "$GITHUB_STEP_SUMMARY"
           done
           if [ "$WHICH" = both ]; then
             python huggingface/publish.py --org-card --out build/hf-org --commit "$SHA" --upload \

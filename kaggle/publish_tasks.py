@@ -1,7 +1,7 @@
 """Build the spec 028 task set as a Kaggle dataset folder and, with --upload, publish it public (T011, #356).
 Used by .github/workflows/kaggle-publish-tasks.yml, after 55_build_tasks.py and a full 57_gate_tasks.py run.
 
-    python kaggle/publish_tasks.py --out build/tasks --username <kaggle user> --commit <sha> [--upload --message ...]
+    python kaggle/publish_tasks.py --out build/tasks --username <kaggle user> --commit <sha> [--upload [--tag]]
 
 The layout is the Gemma 4 Developer Agent competition's, checked against all 129 of its tasks (Nov 3, 2026):
 `tasks.jsonl`, `snapshots/<instance_id>.tgz`, and `graphs/` and `embeddings/` named `<repo name>_<base_commit>`
@@ -181,10 +181,12 @@ def main() -> None:
     ap.add_argument("--username", required=True)
     ap.add_argument("--commit", required=True)
     ap.add_argument("--upload", action="store_true", help="publish it (needs Kaggle credentials)")
-    ap.add_argument("--message", default="Update from the repository")
     ap.add_argument("--metadata-only", action="store_true",
                     help="with --upload: describe the live files and send only the metadata and cover (spec 034)")
+    ap.add_argument("--tag", action="store_true",
+                    help="with --upload: tag the release data/<slug>-vX.Y.Z in git (spec 039; pushes the tag)")
     a = ap.parse_args()
+    publish.check_tag_options(ap, a)
     if a.metadata_only:
         if not a.upload:
             raise SystemExit("--metadata-only reads the live dataset's file list: add --upload")
@@ -203,7 +205,7 @@ def main() -> None:
         from kaggle.api.kaggle_api_extended import KaggleApi
         api = KaggleApi()
         api.authenticate()
-        publish.upload(a.out, meta["id"], f"{a.message} ({a.commit[:12]})", api)
+        publish.release(SLUG, a.out, meta["id"], a.commit, api, tag=a.tag)   # spec 039 US3: the release string
 
 
 if __name__ == "__main__":

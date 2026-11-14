@@ -22,11 +22,11 @@
 
 ## US3 - one version string on both platforms and a release tag (#709)
 
-- [ ] T010 [US3] Failing tests in `python/tests/test_dataset_release.py` (mock the Kaggle and HF clients)
-- [ ] T011 [US3] `release_message` and `release_tag` in `dataset_version` (`@traced`)
-- [ ] T012 [US3] Use `release_message` as the Kaggle version note and the HF commit message; create `data/<slug>-vX.Y.Z`
+- [x] T010 [US3] Failing tests in `python/tests/test_dataset_release.py` (mock the Kaggle and HF clients)
+- [x] T011 [US3] `release_message` and `release_tag` in `dataset_version` (`@traced`)
+- [x] T012 [US3] Use `release_message` as the Kaggle version note and the HF commit message; create `data/<slug>-vX.Y.Z`
   as a git tag and an HF revision tag, both idempotent; print both URLs; `--metadata-only` makes neither
-- [ ] T013 [US3] `ops/secrets_register.yaml`: confirm `HF_PUBLISH_TOKEN` write scope covers tagging; note #649 reuses this
+- [x] T013 [US3] `ops/secrets_register.yaml`: confirm `HF_PUBLISH_TOKEN` write scope covers tagging; note #649 reuses this
 
 ## Across the spec
 
