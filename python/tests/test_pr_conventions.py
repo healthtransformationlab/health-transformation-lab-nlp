@@ -188,3 +188,50 @@ def test_check_holds_a_story_to_its_spec_when_the_issue_and_checkout_are_given(t
     found = pc.check("feat/71-016-results-loader", "Closes #71", issue=issue, root=tmp_path)
     assert found and "spec.md" in " ".join(found)
     assert pc.check("feat/71-016-results-loader", "Closes #71", issue=issue, root=_spec(tmp_path / "a")) == []
+
+
+# A linked pull request is not the issue (issue #718): the check reads the closing link first, and a link that names a
+# pull request is reported as one, not held to an issue's four parts or a story's spec.
+@pytest.mark.parametrize("body, number", [
+    ("Refs #705 (the earlier part).\n\nCloses #712", 712), ("Refs #12, Fixes #14", 14),
+    ("Refs #12 and Resolves #15", 15), ("Refs #12", 12), ("Closes #71. Refs #9", 71),
+    ("Refs #705\n\nCloses: #712", 712), ("Fixes: #8", 8), ("Refs: #12", 12),       # a colon after the keyword
+])
+def test_the_closing_link_is_read_before_a_refs_link(body, number):
+    assert pc.linked_issue_number(body) == number
+
+
+def test_a_linked_pull_request_is_named_as_one_and_not_held_to_an_issues_parts(tmp_path):
+    pull_request = ("A pull request's description, with none of the four parts.", "2026-11-20T10:00:00Z",
+                    "038 US2: each gold schema is a data product", True)
+    found = pc.check("feat/71-038-data-product", "Refs #705", issue=pull_request, root=tmp_path)
+    assert len(found) == 1 and "#705 is a pull request, not an issue" in found[0]
+    assert "lacks" not in found[0] and "spec.md" not in found[0]
+    older = ("Older description.", "2026-11-10T10:00:00Z", "038 US2: each gold schema is a data product", True)
+    assert pc.check("feat/71-038-data-product", "Refs #600", issue=older, root=tmp_path) == []   # as it did before
+    assert pc.pull_request_link_problems(705, "2026-11-13T23:59:59Z") == []
+
+
+def test_fetch_issue_says_whether_the_number_is_a_pull_request(monkeypatch):
+    import io
+    import json
+
+    def answer(fields):
+        class Response(io.BytesIO):
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *exc):
+                return False
+        return lambda req, timeout=None: Response(json.dumps(fields).encode())
+
+    base = {"body": "b", "created_at": "2026-11-20T10:00:00Z", "title": "000 BUG7: x"}
+    monkeypatch.setattr(pc.urllib.request, "urlopen", answer({**base, "pull_request": {"url": "u"}}))
+    assert pc.fetch_issue("o/r", 705, "token") == ("b", "2026-11-20T10:00:00Z", "000 BUG7: x", True)
+    monkeypatch.setattr(pc.urllib.request, "urlopen", answer(base))
+    assert pc.fetch_issue("o/r", 718, "token")[3] is False
+
+
+@pytest.mark.parametrize("body", ["Closes: #712", "Fixes: #8", "Refs: #12", "Resolves: DENT-123"])
+def test_a_colon_after_the_keyword_still_links_the_issue(body):
+    assert pc.issue_link(body)
