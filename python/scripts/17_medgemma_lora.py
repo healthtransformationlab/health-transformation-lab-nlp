@@ -19,10 +19,10 @@ import json
 
 import pandas as pd
 
+from health_transformation_lab_nlp import telemetry
 from health_transformation_lab_nlp.llm_reader import dtype_kwarg, sft_records
 from health_transformation_lab_nlp.paths import DATASETS_DIR
 from health_transformation_lab_nlp.registry import load_registry, model
-from health_transformation_lab_nlp import telemetry
 
 telemetry.setup()
 telemetry.start_script("17_medgemma_lora", data_label="synthetic")

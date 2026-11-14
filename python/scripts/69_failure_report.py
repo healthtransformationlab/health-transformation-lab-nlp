@@ -29,8 +29,8 @@ from pathlib import Path
 
 import pandas as pd
 
-from health_transformation_lab_nlp.paths import REPO_ROOT, TASKS_DIR
 from health_transformation_lab_nlp import telemetry
+from health_transformation_lab_nlp.paths import REPO_ROOT, TASKS_DIR
 
 HERE = Path(__file__).resolve().parent
 OUT = TASKS_DIR / "failure_report_shape.csv"

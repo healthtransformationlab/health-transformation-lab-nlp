@@ -27,8 +27,8 @@ from pathlib import Path
 import pandas as pd
 
 from health_transformation_lab_nlp import agent_harness as ah
-from health_transformation_lab_nlp.paths import REPO_ROOT, TASKS_DIR
 from health_transformation_lab_nlp import telemetry
+from health_transformation_lab_nlp.paths import REPO_ROOT, TASKS_DIR
 
 _spec = importlib.util.spec_from_file_location("kaggle_agent", Path(__file__).resolve().parent / "60_kaggle_agent.py")
 runner = importlib.util.module_from_spec(_spec)

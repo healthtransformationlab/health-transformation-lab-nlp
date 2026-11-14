@@ -9,9 +9,10 @@ a frontier chart PNG.
 
 import argparse
 import json
+import sys
 
 import matplotlib
-import sys
+
 from health_transformation_lab_nlp import telemetry
 
 telemetry.setup()

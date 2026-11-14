@@ -39,7 +39,7 @@ def test_every_script_labels_its_data():
     unlabelled = [f.name for f in sorted(SCRIPTS.glob("*.py"))
                   if f.name not in NOT_PIPELINE_SCRIPTS
                   and "start_script(" in f.read_text()
-                  and not re.search(r"start_script\([^)]*data_label=", f.read_text(), re.S)]
+                  and not re.search(r"start_script\([^)]*data_label=", f.read_text(), re.DOTALL)]
     assert not unlabelled, f"give start_script a data_label (synthetic, public or simulated) in: {unlabelled}"
 
 

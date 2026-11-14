@@ -28,8 +28,8 @@ from pathlib import Path
 import pandas as pd
 import yaml
 
-from health_transformation_lab_nlp.paths import REPO_ROOT
 from health_transformation_lab_nlp import telemetry
+from health_transformation_lab_nlp.paths import REPO_ROOT
 
 TASK_SPAN = "official_agent_kernel.task"
 SECTION_COLUMNS = ["instance_id", "section_name", "span_count", "self_seconds", "input_token_count",

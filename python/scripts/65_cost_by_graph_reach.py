@@ -23,8 +23,8 @@ from __future__ import annotations
 
 import pandas as pd
 
-from health_transformation_lab_nlp.paths import REPO_ROOT, TASKS_DIR
 from health_transformation_lab_nlp import telemetry
+from health_transformation_lab_nlp.paths import REPO_ROOT, TASKS_DIR
 
 COVERAGE = TASKS_DIR / "graph_coverage.csv"
 SEARCH = TASKS_DIR / "statement_search.csv"

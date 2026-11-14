@@ -17,8 +17,8 @@ from __future__ import annotations
 
 import pandas as pd
 
-from health_transformation_lab_nlp.paths import REPO_ROOT, TASKS_DIR
 from health_transformation_lab_nlp import telemetry
+from health_transformation_lab_nlp.paths import REPO_ROOT, TASKS_DIR
 
 SCREEN = TASKS_DIR / "screening" / "agent_screen_all.csv"
 RUNS = TASKS_DIR / "agent_runs" / "gemma-4-e4b-it_kaggle.csv"

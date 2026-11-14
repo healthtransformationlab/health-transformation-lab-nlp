@@ -18,15 +18,14 @@ simulated. Synthetic data only: the review set has passed the de-identification 
 """
 
 import argparse
+import sys
 from pathlib import Path
 
 import pandas as pd
 
 from health_transformation_lab_nlp import mlflow_judge as mj
-from health_transformation_lab_nlp import note_set
+from health_transformation_lab_nlp import note_set, telemetry
 from health_transformation_lab_nlp.paths import DATASETS_DIR, REVIEW_DIR
-import sys
-from health_transformation_lab_nlp import telemetry
 
 telemetry.setup()
 telemetry.start_script("25_judge_monitoring", data_label="simulated" if "--simulated" in sys.argv else "synthetic")

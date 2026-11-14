@@ -17,17 +17,16 @@ judgments_corpus.csv (prefixed simulated_ for the simulated backend).
 
 import argparse
 import glob
+import sys
 from pathlib import Path
 
 import pandas as pd
 import yaml
 
-from health_transformation_lab_nlp import note_set
+from health_transformation_lab_nlp import note_set, telemetry
 from health_transformation_lab_nlp.cost_effectiveness import bakeoff
 from health_transformation_lab_nlp.judge import PROMPT_VERSION, OpenAIJudge, SimulatedJudge
 from health_transformation_lab_nlp.paths import CORPUS_DIR, COSTS_YAML, DATASETS_DIR, REVIEW_DIR
-import sys
-from health_transformation_lab_nlp import telemetry
 
 telemetry.setup()
 telemetry.start_script("15_judge", data_label="simulated" if "--simulated" in sys.argv else "synthetic")

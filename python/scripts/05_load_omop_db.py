@@ -13,9 +13,9 @@ import os
 import pandas as pd
 from sqlalchemy import create_engine
 
+from health_transformation_lab_nlp import telemetry
 from health_transformation_lab_nlp.db import load_omop, perio_chart_from_db
 from health_transformation_lab_nlp.paths import REPO_ROOT
-from health_transformation_lab_nlp import telemetry
 
 telemetry.setup()
 telemetry.start_script("05_load_omop_db", data_label="synthetic")

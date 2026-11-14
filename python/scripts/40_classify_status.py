@@ -20,9 +20,8 @@ import numpy as np
 import pandas as pd
 
 from health_transformation_lab_nlp import classify_status as cs
-from health_transformation_lab_nlp import study
+from health_transformation_lab_nlp import study, telemetry
 from health_transformation_lab_nlp.paths import DATASETS_DIR
-from health_transformation_lab_nlp import telemetry
 
 telemetry.setup()
 telemetry.start_script("40_classify_status", data_label="synthetic")

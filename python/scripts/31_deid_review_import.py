@@ -23,9 +23,8 @@ from pathlib import Path
 
 import pandas as pd
 
-from health_transformation_lab_nlp import deid, deid_eval, deid_review
+from health_transformation_lab_nlp import deid, deid_eval, deid_review, telemetry
 from health_transformation_lab_nlp.paths import DEID_DIR, RAW_DIR
-from health_transformation_lab_nlp import telemetry
 
 telemetry.setup()
 telemetry.start_script("31_deid_review_import", data_label="synthetic")

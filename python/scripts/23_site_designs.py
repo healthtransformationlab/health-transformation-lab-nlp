@@ -15,9 +15,15 @@ import os
 import pandas as pd
 from sqlalchemy import create_engine, text
 
-from health_transformation_lab_nlp.paths import DATASETS_DIR, REPO_ROOT
-from health_transformation_lab_nlp.site_designs import DESIGNS, load_design, run_derived, sql_stats, storage_bytes
 from health_transformation_lab_nlp import telemetry
+from health_transformation_lab_nlp.paths import DATASETS_DIR, REPO_ROOT
+from health_transformation_lab_nlp.site_designs import (
+    DESIGNS,
+    load_design,
+    run_derived,
+    sql_stats,
+    storage_bytes,
+)
 
 telemetry.setup()
 telemetry.start_script("23_site_designs", data_label="synthetic")

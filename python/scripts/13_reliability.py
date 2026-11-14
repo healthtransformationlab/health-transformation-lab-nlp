@@ -6,11 +6,12 @@ rule-based algorithm and each AI model vs the reviewers.
 """
 
 import argparse
+import sys
 from pathlib import Path
 
 import pandas as pd
 
-from health_transformation_lab_nlp import note_set
+from health_transformation_lab_nlp import note_set, telemetry
 from health_transformation_lab_nlp.paths import DATASETS_DIR, REVIEW_DIR
 from health_transformation_lab_nlp.phenotype import collapse5
 from health_transformation_lab_nlp.reliability import (
@@ -18,8 +19,6 @@ from health_transformation_lab_nlp.reliability import (
     by_level,
     reliability_report,
 )
-import sys
-from health_transformation_lab_nlp import telemetry
 
 telemetry.setup()
 telemetry.start_script("13_reliability", data_label="simulated" if "--simulated" in sys.argv else "synthetic")

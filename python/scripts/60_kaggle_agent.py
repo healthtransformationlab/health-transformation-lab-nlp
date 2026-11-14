@@ -29,8 +29,8 @@ import pandas as pd
 
 from health_transformation_lab_nlp import agent_cost as ac
 from health_transformation_lab_nlp import agent_harness as ah
-from health_transformation_lab_nlp.paths import REPO_ROOT, TASKS_DIR
 from health_transformation_lab_nlp import telemetry
+from health_transformation_lab_nlp.paths import REPO_ROOT, TASKS_DIR
 
 _spec = importlib.util.spec_from_file_location("run_agent", Path(__file__).resolve().parent / "59_run_agent.py")
 run_agent = importlib.util.module_from_spec(_spec)

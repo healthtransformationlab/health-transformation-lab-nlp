@@ -7,9 +7,8 @@ uses instead.
 
 import argparse
 
-from health_transformation_lab_nlp import grader_tables
+from health_transformation_lab_nlp import grader_tables, telemetry
 from health_transformation_lab_nlp.paths import DATASETS_DIR
-from health_transformation_lab_nlp import telemetry
 
 telemetry.setup()
 telemetry.start_script("43_simulated_grader", data_label="simulated")

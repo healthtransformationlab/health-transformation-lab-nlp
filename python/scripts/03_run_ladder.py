@@ -18,6 +18,7 @@ from health_transformation_lab_nlp.rungs import make_rung
 
 sys.path.insert(0, str(REPO_ROOT / "eval"))
 from score import score, write
+
 from health_transformation_lab_nlp import telemetry
 
 telemetry.setup()

@@ -31,9 +31,8 @@ from pathlib import Path
 
 import pandas as pd
 
-from health_transformation_lab_nlp import deid, deid_eval, maccrobat
+from health_transformation_lab_nlp import deid, deid_eval, maccrobat, telemetry
 from health_transformation_lab_nlp.paths import DEID_DIR, EXTERNAL_DIR, RAW_DIR
-from health_transformation_lab_nlp import telemetry
 
 telemetry.setup()
 telemetry.start_script("32_maccrobat_deid", data_label="public")

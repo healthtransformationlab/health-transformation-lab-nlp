@@ -11,13 +11,13 @@ reviewers is refused unless --allow-simulated (a simulated pass is not evidence)
 """
 
 import argparse
+import sys
 
 import pandas as pd
 
+from health_transformation_lab_nlp import telemetry
 from health_transformation_lab_nlp.model_registry import promote_if_accepted
 from health_transformation_lab_nlp.paths import REVIEW_DIR
-import sys
-from health_transformation_lab_nlp import telemetry
 
 telemetry.setup()
 telemetry.start_script("24_promote_model", data_label="simulated" if "--simulated" in sys.argv else "synthetic")

@@ -25,8 +25,8 @@ Writes data/tasks/devset/devset_graph_reach.csv: ids, counts and ranks, no text 
 from __future__ import annotations
 
 import argparse
-import importlib.util
 import hashlib
+import importlib.util
 import json
 import os
 import re
@@ -38,8 +38,8 @@ import numpy as np
 import pandas as pd
 
 from health_transformation_lab_nlp import task_graph as tg
-from health_transformation_lab_nlp.paths import TASKS_DIR
 from health_transformation_lab_nlp import telemetry
+from health_transformation_lab_nlp.paths import TASKS_DIR
 
 HERE = Path(__file__).resolve().parent
 OUT = TASKS_DIR / "devset" / "devset_graph_reach.csv"

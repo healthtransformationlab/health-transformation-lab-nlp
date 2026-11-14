@@ -27,12 +27,12 @@ from pathlib import Path
 
 import pandas as pd
 
+from health_transformation_lab_nlp import telemetry
 from health_transformation_lab_nlp.paths import REPO_ROOT, TASKS_DIR
 from health_transformation_lab_nlp.task_graph import (  # one definition of a node's name
     _Defs,
     module_name,
 )
-from health_transformation_lab_nlp import telemetry
 
 OUT = TASKS_DIR / "graph_coverage.csv"
 COLUMNS = ["instance_id", "changed_file_count", "graphed_file_count", "is_fix_in_graph", "edited_node_count",

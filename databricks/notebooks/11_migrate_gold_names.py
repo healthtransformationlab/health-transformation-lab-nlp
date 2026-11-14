@@ -32,7 +32,8 @@ from pyspark.sql import functions as F
 
 dbutils.widgets.text("git_commit", "")  # noqa: F821  set by the job: the commit it was deployed from
 dbutils.widgets.text("telemetry", "azure")  # noqa: F821  spec 014: off / console / azure / otlp
-from health_transformation_lab_nlp import telemetry  # noqa: E402
+from health_transformation_lab_nlp import telemetry
+
 telemetry.use_databricks_secret(dbutils, dbutils.widgets.get("telemetry"))  # noqa: F821  scripts inherit it
 telemetry.setup()                                   # this notebook runs the package's code itself
 telemetry.start_script("11_migrate_gold_names", data_label="synthetic")

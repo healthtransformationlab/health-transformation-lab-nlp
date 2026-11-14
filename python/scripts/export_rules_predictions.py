@@ -9,6 +9,7 @@ from health_transformation_lab_nlp.rungs import rules_predict
 
 sys.path.insert(0, str(REPO_ROOT / "eval"))
 from score import score
+
 from health_transformation_lab_nlp import telemetry
 
 telemetry.setup()

@@ -17,10 +17,9 @@ import argparse
 import json
 import random
 
-from health_transformation_lab_nlp import deid, deid_review
+from health_transformation_lab_nlp import deid, deid_review, telemetry
 from health_transformation_lab_nlp.paths import RAW_DIR
 from health_transformation_lab_nlp.phi_challenge import build_challenge, load_external
-from health_transformation_lab_nlp import telemetry
 
 telemetry.setup()
 telemetry.start_script("30_deid_review_tasks", data_label="synthetic")

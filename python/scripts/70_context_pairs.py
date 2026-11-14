@@ -40,9 +40,9 @@ from pathlib import Path
 
 import pandas as pd
 
+from health_transformation_lab_nlp import telemetry
 from health_transformation_lab_nlp.paths import TASKS_DIR
 from health_transformation_lab_nlp.prevalence import wilson_ci
-from health_transformation_lab_nlp import telemetry
 
 RUNS = TASKS_DIR / "official_agent_runs"
 MODEL = "gemma-4-e4b-it-qat-w4a16-ct"

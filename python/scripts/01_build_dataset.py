@@ -7,9 +7,9 @@
 
 import argparse
 
+from health_transformation_lab_nlp import telemetry
 from health_transformation_lab_nlp.build import build
 from health_transformation_lab_nlp.paths import LABELS_DIR, OMOP_DIR, SYNTHEA_CSV
-from health_transformation_lab_nlp import telemetry
 
 telemetry.setup()
 telemetry.start_script("01_build_dataset", data_label="synthetic")

@@ -26,18 +26,17 @@ not clinical performance.
 
 import argparse
 import glob
+import sys
 from pathlib import Path
 
 import pandas as pd
 import yaml
 
-from health_transformation_lab_nlp import ladder_eval, note_set, study
+from health_transformation_lab_nlp import ladder_eval, note_set, study, telemetry
 from health_transformation_lab_nlp.labels import DEFAULT_GROUPING, LABELS
 from health_transformation_lab_nlp.llm_reader import summarize_details
 from health_transformation_lab_nlp.paths import COSTS_YAML, DATASETS_DIR
 from health_transformation_lab_nlp.registry import load_registry
-import sys
-from health_transformation_lab_nlp import telemetry
 
 telemetry.setup()
 telemetry.start_script("29_medgemma_vs_bert", data_label="simulated" if "--simulated" in sys.argv else "synthetic")

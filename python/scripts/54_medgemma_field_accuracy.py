@@ -17,16 +17,15 @@ about MedGemma (the simulated reader returns no grade or extent at all).
 
 import argparse
 import glob
+import sys
 from pathlib import Path
 
 import pandas as pd
 
-from health_transformation_lab_nlp import note_set
+from health_transformation_lab_nlp import note_set, telemetry
 from health_transformation_lab_nlp.paths import DATASETS_DIR
 from health_transformation_lab_nlp.reference_answers import field_accuracy, field_metrics
 from health_transformation_lab_nlp.tracking import track
-import sys
-from health_transformation_lab_nlp import telemetry
 
 telemetry.setup()
 telemetry.start_script("54_medgemma_field_accuracy", data_label="simulated" if "--simulated" in sys.argv else "synthetic")

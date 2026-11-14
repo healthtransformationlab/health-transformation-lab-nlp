@@ -17,8 +17,8 @@ import sys
 from pathlib import Path
 
 from health_transformation_lab_nlp import data_contracts as dc
-from health_transformation_lab_nlp.paths import CONTRACTS_DIR
 from health_transformation_lab_nlp import telemetry
+from health_transformation_lab_nlp.paths import CONTRACTS_DIR
 
 
 def main(argv: list[str] | None = None) -> int:

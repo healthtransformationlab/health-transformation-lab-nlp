@@ -17,13 +17,13 @@ import time
 import pandas as pd
 import yaml
 
+from health_transformation_lab_nlp import telemetry
 from health_transformation_lab_nlp.cost_effectiveness import method_cost
 from health_transformation_lab_nlp.labels import LABELS
 from health_transformation_lab_nlp.paths import CORPUS_DIR, COSTS_YAML, DATASETS_DIR
 from health_transformation_lab_nlp.registry import load_registry
 from health_transformation_lab_nlp.rungs import make_rung
 from health_transformation_lab_nlp.study import build_corpus_sample
-from health_transformation_lab_nlp import telemetry
 
 telemetry.setup()
 telemetry.start_script("14_benchmark_cost", data_label="synthetic")
