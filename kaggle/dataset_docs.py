@@ -5,6 +5,8 @@
     resources(slug, files) Kaggle's `resources`: each file's path and description, and a schema with each
                            column's description for CSV and JSONL files ({path in dataset: source file})
     missing(slug, files)   what has no description; python/tests/test_kaggle_dataset_docs.py wants it empty
+    schema_sha256(slug, files)  the hash of the published file and column set, which the dataset's declared
+                           schema_sha256 must match (spec 039 US1, #707)
     cut_by_kaggle(meta)    where the metadata holds a "<", which Kaggle reads as the start of a tag (#692)
 
 Columns are read from a CSV's header or a JSONL file's first row. Kaggle shows these on the dataset's Data tab and
@@ -15,6 +17,7 @@ from __future__ import annotations
 
 import csv
 import fnmatch
+import hashlib
 import json
 from functools import lru_cache
 from pathlib import Path
@@ -104,6 +107,23 @@ def missing(slug: str, files: dict) -> list[str]:
         gaps += [f"{dest}: column {c} has no description" for c in columns_of(Path(src))
                  if not column_description(slug, dest, c)]
     return gaps
+
+
+def _file_key(slug: str, dest: str) -> str:
+    """The `files` key that describes `dest`: its own name, else the first pattern it matches, else itself."""
+    files = _entry(slug)["files"]
+    if dest in files:
+        return dest
+    return next((pat for pat in files if fnmatch.fnmatchcase(dest, pat)), dest)
+
+
+def schema_sha256(slug: str, files: dict) -> str:
+    """The SHA-256 of what a dataset publishes: each file's `files` key with its columns, sorted, each pair once.
+    Values, row counts and column order don't count; a file or column added, removed or renamed does. Several files
+    of one described kind (a pattern such as `llm_details_*.csv`) with the same columns count once, so a new model's
+    results file is new rows, not a new schema. The dataset declares it as schema_sha256 (spec 039 US1, #707)."""
+    surface = sorted({(_file_key(slug, dest), tuple(sorted(columns_of(Path(src))))) for dest, src in files.items()})
+    return hashlib.sha256(json.dumps(surface).encode()).hexdigest()
 
 
 def _around(text: str, width: int = 30) -> str:

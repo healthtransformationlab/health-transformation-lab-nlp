@@ -59,6 +59,17 @@ exactly which files go in. Nothing from `data/external/` (others' datasets) and 
 included. The cards in `cards/` become the dataset pages; edit them there, not on kaggle.com, or the next
 version overwrites your edit.
 
+Each dataset declares a semantic version and a changelog in `dataset_docs.yaml` (spec 039, #707). A test
+(`python/tests/test_kaggle_dataset_docs.py`) hashes the files and columns each dataset publishes and fails when they
+no longer match the declared `schema_sha256`. When it fails, bump `version`:
+
+- MAJOR for a removed, renamed or retyped column or a removed file;
+- MINOR for a new file or column;
+- PATCH for values, rows or a fix with no schema change.
+
+Add its line at the top of `changelog` (`"X.Y.Z — what changed"`) and set `schema_sha256` to the hash the failure
+gives. The test catches only file and column changes; bump PATCH yourself when changed values matter to users.
+
 ## Publishing the note classifier
 
 Actions → *Fine-tune the GPU encoders on a free Kaggle GPU* → Run workflow with **`rungs`** `modernbert-base+cw`,

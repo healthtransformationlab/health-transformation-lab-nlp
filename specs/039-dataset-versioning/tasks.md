@@ -2,13 +2,14 @@
 
 ## US1 - declare a version + changelog, gate on drift (#707)
 
-- [ ] T001 [US1] Failing tests in `python/tests/test_dataset_version.py` (plan, "Tests first")
-- [ ] T002 [US1] Add `version` and `changelog` to each dataset in `kaggle/dataset_docs.yaml` (start at `1.0.0`), and
+- [x] T001 [US1] Failing tests in `python/tests/test_dataset_version.py` (plan, "Tests first")
+- [x] T002 [US1] Add `version` and `changelog` to each dataset in `kaggle/dataset_docs.yaml` (start at `1.0.0`), and
   the semver rule as a comment
-- [ ] T003 [US1] `health_transformation_lab_nlp.dataset_version`: `version`, `changelog`, `latest_change` (all `@traced`)
-- [ ] T004 [US1] Extend `test_kaggle_dataset_docs.py` (or a sibling) to store the published file/column hash and fail on
+- [x] T003 [US1] `health_transformation_lab_nlp.dataset_version`: `version`, `changelog`, `latest_change` (all `@traced`)
+- [x] T004 [US1] Extend `test_kaggle_dataset_docs.py` (or a sibling) to store the published file/column hash and fail on
   a change without a version bump + changelog line
 - [ ] T005 [US1] AGENTS.md "Publishing datasets": the version + changelog rule and the semver meaning
+  (moved to #722: a change to AGENTS.md waits for the owner's merge; meanwhile the rule is in `kaggle/README.md`)
 
 ## US2 - provenance manifest inside every dataset (#708)
 

@@ -254,3 +254,40 @@ def test_published_descriptions_give_the_review_sets_own_size():
         text = f.read_text()
         assert "240 review" not in text and "of the 240" not in text, f.name
     assert f"{n} review notes" in (REPO_ROOT / "kaggle" / "dataset_docs.yaml").read_text()
+
+
+# --- Spec 039 US1 (#707): a changed file or column set needs a new version ---------------------------------------
+
+def _published(slug, tmp_path):
+    """The files a dataset publishes, as the tests above derive them."""
+    name = next((n for n, d in pub.DATASETS.items() if d["slug"] == slug), None)
+    return pub.files_of(name) if name else _task_files(tmp_path)
+
+
+@pytest.mark.parametrize("slug", ALL_SLUGS)
+def test_a_changed_file_or_column_set_needs_a_new_version(slug, tmp_path):
+    """The published files and columns hash to the dataset's declared schema_sha256. A file or column added,
+    removed or renamed changes the hash, and the failure says to bump the version (by the semver rule), add a
+    changelog line and record the new hash."""
+    from health_transformation_lab_nlp import dataset_version
+
+    assert dataset_version.problems(slug, schema_sha256=docs.schema_sha256(slug, _published(slug, tmp_path))) == []
+
+
+def test_the_schema_hash_follows_files_and_columns_not_values(tmp_path):
+    def csv_file(name, text):
+        p = tmp_path / name
+        p.write_text(text)
+        return p
+
+    one = csv_file("one.csv", "visit_id,note_text\n1,a\n")
+    other_rows = csv_file("rows.csv", "visit_id,note_text\n2,b\n3,c\n")
+    reordered = csv_file("order.csv", "note_text,visit_id\na,1\n")
+    new_column = csv_file("col.csv", "visit_id,note_text,brand_new_column\n1,a,x\n")
+    h = lambda files: docs.schema_sha256("perio-bench-notes", files)  # noqa: E731
+    assert h({"train.csv": one}) == h({"train.csv": other_rows}) == h({"train.csv": reordered})  # values don't count
+    assert h({"train.csv": one}) != h({"train.csv": new_column})                                # a column does
+    assert h({"train.csv": one}) != h({"train.csv": one, "visits_truth.csv": one})              # so does a file
+    # a second file of a kind already described (the same pattern and columns) is not a schema change
+    r = lambda files: docs.schema_sha256("perio-bench-results", files)  # noqa: E731
+    assert r({"llm_details_a.csv": one}) == r({"llm_details_a.csv": one, "llm_details_b.csv": other_rows})
