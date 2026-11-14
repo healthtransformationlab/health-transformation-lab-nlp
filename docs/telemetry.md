@@ -33,10 +33,21 @@ with telemetry.pipeline_step("transitions", pairs=len(pairs)):   # optional fine
 telemetry.record_value("data_quality.pass_rate", 0.97, check="cal_range")
 ```
 
-Instrumented so far: `11_ai_predict.py` (every model, including the GPU encoders and MedGemma),
-`20_data_quality.py` (with pass rates), `22_build_sites.py`, `37_cal_reliability.py`,
-`38_nhanes_perio.py`. Databricks jobs `medgemma_reader`, `encoder_gpu` and `nhanes_perio` pass the
-switch (`telemetry_exporter`, default `azure`) and read the connection string from the secret scope.
+Every script in `python/scripts/` calls `telemetry.setup()` and opens a run span named for itself with
+`telemetry.start_script("<script name>", data_label=...)`: `synthetic`, `public` (MACCROBAT, the
+competition's tasks, the agent runs) or `simulated` (a dry run: `--simulated`, `15_judge.py --backend simulated` or `--simulated-review`, `14_benchmark_cost.py --simulate-missing`, the simulated grader).
+`_trace_plugin.py` is a pytest plugin, not a script, and is the one file left out.
+`python/tests/test_telemetry_scripts.py` fails CI when a script is missing either call or its data label.
+
+Every Databricks job task that runs a Python notebook passes the switch (`telemetry: ${var.telemetry_exporter}`,
+default `azure`), and its notebook reads it and the connection string from the secret scope
+(`telemetry.use_databricks_secret`), so the scripts it starts inherit them. The notebooks that also run the
+package's code in their own process (`01_run_benchmark`, `07_judge_scorecard`, `10_load_results`,
+`11_migrate_gold_names`, `12_load_open_dental`, `13_pipeline_doctor`, `14_pipeline_digest`) call `telemetry.setup()`,
+open a run span named for themselves and end it with `telemetry.end_script()`, since a notebook's process may not run
+`atexit`. A notebook's error is handled by IPython, not `sys.excepthook`, so a failed notebook doesn't mark its run
+span failed: the failure is on the span of the `@traced` function that raised it. The `llm_judge` job is a SQL
+notebook, which the Python tracer can't reach. The same test checks the jobs and these notebooks.
 
 ## Every call, with a common header
 

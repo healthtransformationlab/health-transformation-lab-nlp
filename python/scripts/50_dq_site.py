@@ -8,7 +8,10 @@ Read from committed results; nothing is re-run. Synthetic data.
 import json
 import sys
 
-from health_transformation_lab_nlp import dq_site
+from health_transformation_lab_nlp import dq_site, telemetry
+
+telemetry.setup()
+telemetry.start_script("50_dq_site", data_label="synthetic")
 
 data = dq_site.build()
 if "--check" in sys.argv:

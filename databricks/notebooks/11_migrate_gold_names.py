@@ -31,6 +31,12 @@ from health_transformation_lab_nlp import gold_names, table_comments, tracking
 from pyspark.sql import functions as F
 
 dbutils.widgets.text("git_commit", "")  # noqa: F821  set by the job: the commit it was deployed from
+dbutils.widgets.text("telemetry", "azure")  # noqa: F821  spec 014: off / console / azure / otlp
+from health_transformation_lab_nlp import telemetry
+
+telemetry.use_databricks_secret(dbutils, dbutils.widgets.get("telemetry"))  # noqa: F821  scripts inherit it
+telemetry.setup()                                   # this notebook runs the package's code itself
+telemetry.start_script("11_migrate_gold_names", data_label="synthetic")
 tracking.use_git_commit(dbutils)  # noqa: F821
 dbutils.widgets.text("catalog", "health_transformation_lab")  # noqa: F821
 dbutils.widgets.text("schema", "gold_perio_bench")  # noqa: F821
@@ -170,3 +176,5 @@ for cat, sch in legacy:
 
 if drops:
     print("Old tables left in place. After checking the new ones, drop them with:\n" + "\n".join(drops))
+
+telemetry.end_script()   # a notebook's process may not run atexit: end the run span here

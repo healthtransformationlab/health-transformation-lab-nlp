@@ -29,6 +29,7 @@ from pathlib import Path
 
 import pandas as pd
 
+from health_transformation_lab_nlp import telemetry
 from health_transformation_lab_nlp.paths import REPO_ROOT, TASKS_DIR
 
 HERE = Path(__file__).resolve().parent
@@ -93,6 +94,8 @@ def check_out_path(path: Path) -> None:
 
 
 def main() -> int:
+    telemetry.setup()
+    telemetry.start_script("69_failure_report", data_label="public")
     ap = argparse.ArgumentParser()
     ap.add_argument("--tasks", type=Path, required=True, help="the published tasks.jsonl")
     ap.add_argument("--snapshots", type=Path, required=True)

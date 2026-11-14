@@ -8,7 +8,10 @@ reads the diagnosis codes again from the seeded build (study.scored_review, #635
 
 import sys
 
-from health_transformation_lab_nlp import standards_doc
+from health_transformation_lab_nlp import standards_doc, telemetry
+
+telemetry.setup()
+telemetry.start_script("48_standards_doc", data_label="synthetic")
 
 text = standards_doc.markdown()
 if "--check" in sys.argv:

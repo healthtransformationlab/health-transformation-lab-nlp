@@ -11,8 +11,12 @@ from pathlib import Path
 
 import pandas as pd
 
+from health_transformation_lab_nlp import telemetry
 from health_transformation_lab_nlp.labelstudio import import_export, simulate_export
 from health_transformation_lab_nlp.paths import DATASETS_DIR, REVIEW_DIR
+
+telemetry.setup()
+telemetry.start_script("12_import_review", data_label="synthetic")
 
 ap = argparse.ArgumentParser()
 ap.add_argument("exports", nargs="*")

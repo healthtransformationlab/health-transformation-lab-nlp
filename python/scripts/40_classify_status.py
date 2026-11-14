@@ -20,8 +20,11 @@ import numpy as np
 import pandas as pd
 
 from health_transformation_lab_nlp import classify_status as cs
-from health_transformation_lab_nlp import study
+from health_transformation_lab_nlp import study, telemetry
 from health_transformation_lab_nlp.paths import DATASETS_DIR
+
+telemetry.setup()
+telemetry.start_script("40_classify_status", data_label="synthetic")
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--outcome", default="algorithm_design", choices=["algorithm_design", "truth_status"])

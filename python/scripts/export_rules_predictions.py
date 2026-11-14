@@ -10,6 +10,11 @@ from health_transformation_lab_nlp.rungs import rules_predict
 sys.path.insert(0, str(REPO_ROOT / "eval"))
 from score import score
 
+from health_transformation_lab_nlp import telemetry
+
+telemetry.setup()
+telemetry.start_script("export_rules_predictions", data_label="synthetic")
+
 notes = pd.read_parquet(LABELS_DIR / "labeled_notes.parquet")
 notes["pred"] = [rules_predict(t) for t in notes["note_text"]]
 notes[["note_id", "pred"]].to_csv(LABELS_DIR / "python_rules_predictions.csv", index=False)

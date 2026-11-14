@@ -23,8 +23,11 @@ from pathlib import Path
 
 import pandas as pd
 
-from health_transformation_lab_nlp import deid, deid_eval, deid_review
+from health_transformation_lab_nlp import deid, deid_eval, deid_review, telemetry
 from health_transformation_lab_nlp.paths import DEID_DIR, RAW_DIR
+
+telemetry.setup()
+telemetry.start_script("31_deid_review_import", data_label="synthetic")
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--gold", nargs="*", default=[], help="Label Studio JSON exports of the gold project")

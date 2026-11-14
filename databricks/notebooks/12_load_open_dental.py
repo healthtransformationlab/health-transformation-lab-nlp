@@ -50,6 +50,12 @@ from health_transformation_lab_nlp import (
 from health_transformation_lab_nlp import tracking as _tracking
 
 dbutils.widgets.text("git_commit", "")  # noqa: F821  set by the job: the commit it was deployed from
+dbutils.widgets.text("telemetry", "azure")  # noqa: F821  spec 014: off / console / azure / otlp
+from health_transformation_lab_nlp import telemetry
+
+telemetry.use_databricks_secret(dbutils, dbutils.widgets.get("telemetry"))  # noqa: F821  scripts inherit it
+telemetry.setup()                                   # this notebook runs the package's code itself
+telemetry.start_script("12_load_open_dental", data_label="synthetic")
 _tracking.use_git_commit(dbutils)  # noqa: F821
 dbutils.widgets.text("run_id", "")  # noqa: F821  the job run ({{job.run_id}}): every retry shares it
 dbutils.widgets.text("od_catalog", "health_transformation_lab")  # noqa: F821
@@ -144,3 +150,5 @@ full = f"{catalog}.{gold}.fact_tooth_loss_prediction"
 if spark.catalog.tableExists(full):  # noqa: F821
     spark.sql(f"DELETE FROM {full} WHERE run_id = '{run_id}'")  # noqa: F821
 save(pred, gold, "fact_tooth_loss_prediction", mode="append")
+
+telemetry.end_script()   # a notebook's process may not run atexit: end the run span here

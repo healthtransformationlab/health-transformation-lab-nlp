@@ -27,10 +27,13 @@ from pathlib import Path
 
 import pandas as pd
 
-from health_transformation_lab_nlp import ladder_eval, note_set, study
+from health_transformation_lab_nlp import ladder_eval, note_set, study, telemetry
 from health_transformation_lab_nlp.labels import DEFAULT_GROUPING, GROUPINGS, LABELS
 from health_transformation_lab_nlp.paths import DATASETS_DIR
 from health_transformation_lab_nlp.phenotype import ABSENT_CODE_RULES, DEFAULT_ABSENT_CODE
+
+telemetry.setup()
+telemetry.start_script("28_ladder_vs_truth", data_label="synthetic")
 
 RULES = ("note_rules", "rules_baseline")
 ap = argparse.ArgumentParser()

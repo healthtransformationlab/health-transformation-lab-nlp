@@ -23,6 +23,10 @@ import subprocess
 import uuid
 
 dbutils.widgets.text("git_commit", "")  # noqa: F821  set by the job: the commit it was deployed from
+dbutils.widgets.text("telemetry", "azure")  # noqa: F821  spec 014: off / console / azure / otlp
+from health_transformation_lab_nlp import telemetry
+
+telemetry.use_databricks_secret(dbutils, dbutils.widgets.get("telemetry"))  # noqa: F821  scripts inherit it
 from health_transformation_lab_nlp import tracking as _tracking
 _tracking.use_git_commit(dbutils)  # noqa: F821  MLflow runs and the scripts it starts are tagged with it
 dbutils.widgets.text("lakebase_instance", "dental-dev")        # noqa: F821

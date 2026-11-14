@@ -12,8 +12,12 @@ import argparse
 
 import pandas as pd
 
+from health_transformation_lab_nlp import telemetry
 from health_transformation_lab_nlp.paths import DATASETS_DIR
 from health_transformation_lab_nlp.prediction import make_pairs, train_eval
+
+telemetry.setup()
+telemetry.start_script("21_predict_progression", data_label="synthetic")
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--outcome", default="algorithm_design")

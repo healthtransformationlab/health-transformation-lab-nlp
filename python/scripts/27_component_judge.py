@@ -13,9 +13,11 @@ consensus per component, and the judge gives one verdict per component. Outputs:
 """
 
 import argparse
+import sys
 
 import pandas as pd
 
+from health_transformation_lab_nlp import telemetry
 from health_transformation_lab_nlp.cost_effectiveness import calibrate_components
 from health_transformation_lab_nlp.judge import (
     COMPONENTS,
@@ -26,6 +28,9 @@ from health_transformation_lab_nlp.judge import (
 from health_transformation_lab_nlp.note_reader import read_extent, read_grade
 from health_transformation_lab_nlp.paths import CORPUS_DIR, DATASETS_DIR, REVIEW_DIR
 from health_transformation_lab_nlp.reliability import consensus
+
+telemetry.setup()
+telemetry.start_script("27_component_judge", data_label="simulated" if "--simulated" in sys.argv else "synthetic")
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--simulated", action="store_true", help="simulated reviewers and simulated judge")

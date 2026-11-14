@@ -20,8 +20,11 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from health_transformation_lab_nlp import maccrobat, phi_tagger
+from health_transformation_lab_nlp import maccrobat, phi_tagger, telemetry
 from health_transformation_lab_nlp.paths import DEID_DIR, EXTERNAL_DIR, REPO_ROOT
+
+telemetry.setup()
+telemetry.start_script("33_maccrobat_phi_tagger", data_label="public")
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--model", default="allenai/longformer-base-4096")

@@ -13,8 +13,12 @@ draws smoking and diabetes at published US shares (spec 033 US3, #486). Every nu
 import argparse
 import json
 
+from health_transformation_lab_nlp import telemetry
 from health_transformation_lab_nlp.paths import DATASETS_DIR, RAW_DIR
 from health_transformation_lab_nlp.study import ANALYSIS_MIN_AGE, ANALYSIS_START_DATE, build_study
+
+telemetry.setup()
+telemetry.start_script("10_build_study", data_label="synthetic")
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--n-people", type=int, default=1200)

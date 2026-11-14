@@ -19,6 +19,11 @@ from health_transformation_lab_nlp.rungs import make_rung
 sys.path.insert(0, str(REPO_ROOT / "eval"))
 from score import score, write
 
+from health_transformation_lab_nlp import telemetry
+
+telemetry.setup()
+telemetry.start_script("03_run_ladder", data_label="synthetic")
+
 ap = argparse.ArgumentParser()
 ap.add_argument("--rungs", help="comma-separated rung ids")
 ap.add_argument("--ladder", help="run a whole ladder from models.yaml")

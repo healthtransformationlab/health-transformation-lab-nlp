@@ -40,6 +40,7 @@ from pathlib import Path
 
 import pandas as pd
 
+from health_transformation_lab_nlp import telemetry
 from health_transformation_lab_nlp.paths import TASKS_DIR
 from health_transformation_lab_nlp.prevalence import wilson_ci
 
@@ -177,6 +178,8 @@ def task_flags(arm: str) -> pd.DataFrame:
 
 
 def main() -> int:
+    telemetry.setup()
+    telemetry.start_script("70_context_pairs", data_label="public")
     ap = argparse.ArgumentParser()
     ap.add_argument("--arm", required=True, choices=sorted(SHAPES), help="the arm to set beside the statement arm")
     ap.add_argument("--ids", help="the pre-registered ids, comma-separated (default: every published task)")

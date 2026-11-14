@@ -17,6 +17,7 @@ import sys
 from pathlib import Path
 
 from health_transformation_lab_nlp import data_contracts as dc
+from health_transformation_lab_nlp import telemetry
 from health_transformation_lab_nlp.paths import CONTRACTS_DIR
 
 
@@ -54,4 +55,6 @@ def main(argv: list[str] | None = None) -> int:
 
 
 if __name__ == "__main__":
+    telemetry.setup()
+    telemetry.start_script("73_build_contracts", data_label="public")
     raise SystemExit(main())

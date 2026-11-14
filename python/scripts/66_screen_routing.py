@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import pandas as pd
 
+from health_transformation_lab_nlp import telemetry
 from health_transformation_lab_nlp.paths import REPO_ROOT, TASKS_DIR
 
 SCREEN = TASKS_DIR / "screening" / "agent_screen_all.csv"
@@ -43,6 +44,8 @@ def routing_table(screen: pd.DataFrame, runs: pd.DataFrame) -> pd.DataFrame:
 
 
 def main() -> int:
+    telemetry.setup()
+    telemetry.start_script("66_screen_routing", data_label="public")
     for path in (SCREEN, RUNS):   # required files: fail naming the missing one
         if not path.exists():
             raise SystemExit(f"{path.relative_to(REPO_ROOT)} is missing")

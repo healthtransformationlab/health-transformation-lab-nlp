@@ -27,6 +27,7 @@ from pathlib import Path
 
 import pandas as pd
 
+from health_transformation_lab_nlp import telemetry
 from health_transformation_lab_nlp.paths import REPO_ROOT, TASKS_DIR
 from health_transformation_lab_nlp.task_graph import (  # one definition of a node's name
     _Defs,
@@ -197,6 +198,8 @@ def base_sources(snapshot: Path, paths: set[str]) -> dict[str, str]:
 
 
 def main() -> int:
+    telemetry.setup()
+    telemetry.start_script("63_graph_coverage", data_label="public")
     ap = argparse.ArgumentParser()
     ap.add_argument("--published", type=Path, required=True,
                     help="the task set as published (tasks.jsonl, graphs/, snapshots/)")

@@ -15,11 +15,16 @@ Writes data/review/[simulated_]reliability_5cat/phenotype_orders.csv.
 """
 
 import argparse
+import sys
 
 import pandas as pd
 
+from health_transformation_lab_nlp import telemetry
 from health_transformation_lab_nlp.paths import DATASETS_DIR, REVIEW_DIR
 from health_transformation_lab_nlp.phenotype import PATEL2022_ROW, score_orders, split_halves
+
+telemetry.setup()
+telemetry.start_script("18_phenotype_order", data_label="simulated" if "--simulated" in sys.argv else "synthetic")
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--simulated", action="store_true")

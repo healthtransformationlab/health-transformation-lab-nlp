@@ -31,9 +31,12 @@ import logging
 import pandas as pd
 import yaml
 
-from health_transformation_lab_nlp import deid, deid_eval
+from health_transformation_lab_nlp import deid, deid_eval, telemetry
 from health_transformation_lab_nlp.paths import COSTS_YAML, DEID_DIR, RAW_DIR
 from health_transformation_lab_nlp.phi_challenge import build_challenge
+
+telemetry.setup()
+telemetry.start_script("26_deid_benchmark", data_label="synthetic")
 
 logging.getLogger("tldextract").setLevel(logging.CRITICAL)   # Presidio's URL recognizer tries the network
 

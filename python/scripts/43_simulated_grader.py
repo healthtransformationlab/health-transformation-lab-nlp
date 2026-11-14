@@ -7,8 +7,11 @@ uses instead.
 
 import argparse
 
-from health_transformation_lab_nlp import grader_tables
+from health_transformation_lab_nlp import grader_tables, telemetry
 from health_transformation_lab_nlp.paths import DATASETS_DIR
+
+telemetry.setup()
+telemetry.start_script("43_simulated_grader", data_label="simulated")
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--seed", type=int, default=2026)

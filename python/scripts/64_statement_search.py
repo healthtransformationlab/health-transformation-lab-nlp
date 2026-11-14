@@ -25,6 +25,7 @@ import numpy as np
 import pandas as pd
 
 from health_transformation_lab_nlp import task_graph as tg
+from health_transformation_lab_nlp import telemetry
 from health_transformation_lab_nlp.paths import REPO_ROOT, TASKS_DIR
 
 COVERAGE = TASKS_DIR / "graph_coverage.csv"
@@ -84,6 +85,8 @@ def load_query_encoder():
 
 
 def main() -> int:
+    telemetry.setup()
+    telemetry.start_script("64_statement_search", data_label="public")
     ap = argparse.ArgumentParser()
     ap.add_argument("--published", type=Path, required=True, help="the task set as published (tasks.jsonl, embeddings/)")
     a = ap.parse_args()

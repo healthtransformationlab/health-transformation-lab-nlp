@@ -27,6 +27,7 @@ from pathlib import Path
 import pandas as pd
 
 from health_transformation_lab_nlp import agent_harness as ah
+from health_transformation_lab_nlp import telemetry
 from health_transformation_lab_nlp.paths import REPO_ROOT, TASKS_DIR
 
 _spec = importlib.util.spec_from_file_location("kaggle_agent", Path(__file__).resolve().parent / "60_kaggle_agent.py")
@@ -142,6 +143,8 @@ def score(a) -> int:
 
 
 def main() -> int:
+    telemetry.setup()
+    telemetry.start_script("62_colab_agent", data_label="public")
     ap = argparse.ArgumentParser()
     sub = ap.add_subparsers(dest="cmd", required=True)
     b = sub.add_parser("bundles")

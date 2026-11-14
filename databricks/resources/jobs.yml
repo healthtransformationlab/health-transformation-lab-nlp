@@ -24,6 +24,7 @@ resources:
               leak_assessment: "false"
               experiment_id: ${resources.experiments.dental_experiment.id}
               run_id: "{{job.run_id}}"   # batch key for benchmark_metric: the same for every retry of this run
+              telemetry: ${var.telemetry_exporter}   # spec 014: off / console / azure / otlp
 
     load_lakebase:
       name: Load Lakebase
@@ -41,6 +42,7 @@ resources:
               lakebase_database: ${var.lakebase_database}
               lakebase_schema: ${var.lakebase_schema}
               secret_scope: ${var.hf_secret_scope}
+              telemetry: ${var.telemetry_exporter}   # spec 014: off / console / azure / otlp
 
     judge_scorecard:
       name: Judge scorecard
@@ -61,6 +63,7 @@ resources:
               usd_per_million_in: ${var.judge_usd_per_million_in}
               usd_per_million_out: ${var.judge_usd_per_million_out}
               max_usd: ${var.judge_max_usd}
+              telemetry: ${var.telemetry_exporter}   # spec 014: off / console / azure / otlp
 
     llm_judge:
       name: LLM judge
@@ -164,6 +167,7 @@ resources:
               sql_warehouse_id: ${var.warehouse_id}
               save_to_repo: "no"
               out_dir: /Volumes/${resources.volumes.perio_bench_data.catalog_name}/${resources.volumes.perio_bench_data.schema_name}/${resources.volumes.perio_bench_data.name}/deid_ai
+              telemetry: ${var.telemetry_exporter}   # spec 014: off / console / azure / otlp
 
     # NHANES 2009-2014 periodontal exam (spec 013 G4): public-domain CDC files, downloaded here because
     # cdc.gov isn't reachable from every environment. Raw files and the aggregate table stay on the volume.
@@ -207,6 +211,7 @@ resources:
               landing_dir: /Volumes/${resources.volumes.opendental_perio_data.catalog_name}/${resources.volumes.opendental_perio_data.schema_name}/${resources.volumes.opendental_perio_data.name}
               seed: "42"
               n_patients: "2000"
+              telemetry: ${var.telemetry_exporter}   # spec 014: off / console / azure / otlp
 
     # Spec 016: every committed model result (Kaggle runs collected into a PR, laptop runs) into the gold
     # tables, next to what the Databricks jobs write. deploy.yml starts it after every deploy; loading again
@@ -227,6 +232,7 @@ resources:
               catalog: ${resources.schemas.perio_bench_gold.catalog_name}
               schema: ${resources.schemas.perio_bench_gold.name}
               legacy_gold_schemas: ${var.legacy_gold_schemas}   # issue #228: rows only an old schema still holds
+              telemetry: ${var.telemetry_exporter}   # spec 014: off / console / azure / otlp
         - task_key: load
           depends_on:
             - task_key: migrate_gold_names
@@ -237,6 +243,7 @@ resources:
               catalog: ${resources.schemas.perio_bench_gold.catalog_name}
               schema: ${resources.schemas.perio_bench_gold.name}
               experiment_name: ${resources.experiments.dental_experiment.name}
+              telemetry: ${var.telemetry_exporter}   # spec 014: off / console / azure / otlp
 
     # Spec 027 US5: the pipeline doctor. Reads the job run timeline (and the span export, when one is set) into
     # fact_pipeline_run, classifies each failed run with rules, recommends the first allowed runbook action and
@@ -271,6 +278,7 @@ resources:
               catalog: ${resources.schemas.perio_bench_gold.catalog_name}
               schema: ${resources.schemas.perio_bench_gold.name}
               digest_email: ${var.digest_email}
+              telemetry: ${var.telemetry_exporter}   # spec 014: off / console / azure / otlp
 
     pipeline_doctor:
       name: Pipeline doctor
@@ -303,3 +311,4 @@ resources:
               billing_schema: ${var.billing_schema}
               decisions: ""     # set per run: run_id=action_code,... the owner's approvals until an approval UI
               decided_by: ""    # who decided, required with decisions
+              telemetry: ${var.telemetry_exporter}   # spec 014: off / console / azure / otlp

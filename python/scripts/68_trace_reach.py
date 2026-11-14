@@ -33,6 +33,7 @@ from pathlib import Path
 
 import pandas as pd
 
+from health_transformation_lab_nlp import telemetry
 from health_transformation_lab_nlp.paths import TASKS_DIR
 
 HERE = Path(__file__).resolve().parent
@@ -157,6 +158,8 @@ def run_task(task: dict, snapshot: Path, package: str | None, timeout: int, mess
 
 
 def main() -> int:
+    telemetry.setup()
+    telemetry.start_script("68_trace_reach", data_label="public")
     ap = argparse.ArgumentParser()
     ap.add_argument("--tasks", type=Path, required=True, help="the published tasks.jsonl")
     ap.add_argument("--snapshots", type=Path, required=True)

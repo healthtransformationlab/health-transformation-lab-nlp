@@ -12,8 +12,12 @@ It is in answer_key/, which reviewers must not open. Synthetic truth, not a clin
 
 import pandas as pd
 
+from health_transformation_lab_nlp import telemetry
 from health_transformation_lab_nlp.paths import DATASETS_DIR
 from health_transformation_lab_nlp.reference_answers import FIELDS, reference_answers
+
+telemetry.setup()
+telemetry.start_script("53_reference_answers", data_label="synthetic")
 
 key = pd.read_csv(DATASETS_DIR / "answer_key" / "review_key.csv")
 ref = reference_answers(key)

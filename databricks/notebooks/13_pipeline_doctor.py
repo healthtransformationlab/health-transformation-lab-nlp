@@ -36,6 +36,12 @@ import pandas as pd
 from health_transformation_lab_nlp import delta, doctor, doctor_job, tracking
 
 dbutils.widgets.text("git_commit", "")  # noqa: F821  set by the job: the commit it was deployed from
+dbutils.widgets.text("telemetry", "azure")  # noqa: F821  spec 014: off / console / azure / otlp
+from health_transformation_lab_nlp import telemetry
+
+telemetry.use_databricks_secret(dbutils, dbutils.widgets.get("telemetry"))  # noqa: F821  scripts inherit it
+telemetry.setup()                                   # this notebook runs the package's code itself
+telemetry.start_script("13_pipeline_doctor", data_label="synthetic")
 commit = tracking.use_git_commit(dbutils)  # noqa: F821
 dbutils.widgets.text("run_id", "")  # noqa: F821  {{job.run_id}}: the batch key on every row
 dbutils.widgets.text("catalog", "health_transformation_lab")  # noqa: F821
@@ -140,6 +146,7 @@ write("fact_remediation_decision", decisions)   # last: a failure above leaves t
 # table (the digest job is spec 027 T023). A new SEV1/SEV2 fails this run so the job's failure notification
 # carries the drafted text to the owner; the rows above are already written, so nothing is lost or repeated.
 print("for the digests:", digest or "nothing new")
+telemetry.end_script()   # the work is done; raising below is the alert to the owner, not a failed run
 if notify_now:
     raise RuntimeError(f"{len(notify_now)} new SEV1/SEV2 decision(s) for the owner:\n" + "\n".join(notify_now))
 print("no new SEV1/SEV2 decisions")

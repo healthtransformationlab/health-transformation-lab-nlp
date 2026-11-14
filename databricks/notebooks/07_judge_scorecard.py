@@ -27,6 +27,12 @@ dbutils.library.restartPython()
 # COMMAND ----------
 
 dbutils.widgets.text("git_commit", "")   # set by the job: the commit it was deployed from
+dbutils.widgets.text("telemetry", "azure")  # noqa: F821  spec 014: off / console / azure / otlp
+from health_transformation_lab_nlp import telemetry
+
+telemetry.use_databricks_secret(dbutils, dbutils.widgets.get("telemetry"))  # noqa: F821  scripts inherit it
+telemetry.setup()                                   # this notebook runs the package's code itself
+telemetry.start_script("07_judge_scorecard", data_label="synthetic")
 from health_transformation_lab_nlp import tracking as _tracking
 _tracking.use_git_commit(dbutils)   # MLflow runs and the scripts it starts are tagged with it
 dbutils.widgets.text("catalog", "health_transformation_lab")
@@ -134,3 +140,5 @@ label = "LLM judgment" if len(judgments) else "no judge run"
 print(f"{label}: {len(judgments)} calls; tables written to {catalog}.{schema}")
 display(agreement)
 display(metrics[metrics.metric == "correct"].sort_values("vs_truth", ascending=False))
+
+telemetry.end_script()   # a notebook's process may not run atexit: end the run span here

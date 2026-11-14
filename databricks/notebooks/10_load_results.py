@@ -37,6 +37,12 @@ from health_transformation_lab_nlp import (agent_cost, doctor, gold_names, gover
 from pyspark.sql import functions as F
 
 dbutils.widgets.text("git_commit", "")  # noqa: F821  set by the job: the commit it was deployed from
+dbutils.widgets.text("telemetry", "azure")  # noqa: F821  spec 014: off / console / azure / otlp
+from health_transformation_lab_nlp import telemetry
+
+telemetry.use_databricks_secret(dbutils, dbutils.widgets.get("telemetry"))  # noqa: F821  scripts inherit it
+telemetry.setup()                                   # this notebook runs the package's code itself
+telemetry.start_script("10_load_results", data_label="synthetic")
 commit = tracking.use_git_commit(dbutils)  # noqa: F821
 dbutils.widgets.text("catalog", "health_transformation_lab")  # noqa: F821
 dbutils.widgets.text("schema", "gold_perio_bench")  # noqa: F821
@@ -156,3 +162,5 @@ for name, df in tables.items():
 # Spec 034 US2 (#534): every declared table that exists gets its table and column comments, whichever job wrote it
 # (the LLM judge's SQL, the reader jobs). This runs after every deploy, so a table rewritten since is put right.
 table_comments.apply_all(spark, catalog)  # noqa: F821
+
+telemetry.end_script()   # a notebook's process may not run atexit: end the run span here
