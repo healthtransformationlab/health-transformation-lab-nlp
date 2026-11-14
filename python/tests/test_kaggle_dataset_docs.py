@@ -126,7 +126,7 @@ def test_writing_the_metadata_refuses_text_kaggle_would_cut(tmp_path):
 def test_the_build_carries_resources_sources_frequency_and_a_cover_beside_it(tmp_path):
     out = tmp_path / "notes"
     meta = pub.build("notes", out, "someone", "abc1234")
-    assert {r["path"] for r in meta["resources"]} == set(pub.files_of("notes"))
+    assert {r["path"] for r in meta["resources"]} == set(pub.files_of("notes")) | {"manifest.json"}
     assert meta["userSpecifiedSources"] and meta["expectedUpdateFrequency"]
     side = pub.meta_dir(out)
     assert (side / "dataset-cover-image.png").exists()
@@ -259,9 +259,26 @@ def test_published_descriptions_give_the_review_sets_own_size():
 # --- Spec 039 US1 (#707): a changed file or column set needs a new version ---------------------------------------
 
 def _published(slug, tmp_path):
-    """The files a dataset publishes, as the tests above derive them."""
+    """The files a dataset publishes, as the tests above derive them, and the manifest every build writes (#708)."""
     name = next((n for n, d in pub.DATASETS.items() if d["slug"] == slug), None)
-    return pub.files_of(name) if name else _task_files(tmp_path)
+    files = pub.files_of(name) if name else _task_files(tmp_path)
+    return {**files, "manifest.json": tmp_path / "manifest.json"}
+
+
+def test_every_kaggle_build_carries_a_manifest_of_its_files(tmp_path):
+    """Spec 039 US2 (#708): the build's manifest.json lists every data file it holds, with the dataset's version and
+    the commit, and is itself described for Kaggle."""
+    from health_transformation_lab_nlp import dataset_version
+
+    out = tmp_path / "notes"
+    meta = pub.build("notes", out, "someone", "abc1234")
+    manifest = json.loads((out / "manifest.json").read_text())
+    assert set(manifest["files"]) == set(pub.files_of("notes"))
+    assert (manifest["slug"], manifest["version"], manifest["git_commit_sha"]) == \
+        ("perio-bench-notes", dataset_version.version("perio-bench-notes"), "abc1234")
+    described = {r["path"]: r["description"] for r in meta["resources"]}
+    assert "SHA-256" in described["manifest.json"]
+    assert dataset_version.MANIFEST_NOTE in meta["description"]   # the card points to it
 
 
 @pytest.mark.parametrize("slug", ALL_SLUGS)

@@ -70,6 +70,10 @@ no longer match the declared `schema_sha256`. When it fails, bump `version`:
 Add its line at the top of `changelog` (`"X.Y.Z — what changed"`) and set `schema_sha256` to the hash the failure
 gives. The test catches only file and column changes; bump PATCH yourself when changed values matter to users.
 
+Every build also writes `manifest.json` into the dataset (spec 039, #708): its slug and version, the commit it was
+built from, when it was built, and each file's SHA-256, size and, for CSV and JSONL files, row count. The same
+builder (`dataset_version.write_manifest`) serves Kaggle and Hugging Face, and the cards end by pointing to it.
+
 ## Publishing the note classifier
 
 Actions → *Fine-tune the GPU encoders on a free Kaggle GPU* → Run workflow with **`rungs`** `modernbert-base+cw`,

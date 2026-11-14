@@ -86,7 +86,7 @@ def card(name: str, out: Path, commit: str) -> str:
     body = (HERE / "cards" / f"{name}.md").read_text(encoding="utf-8").rstrip()
     return ("---\n" + yaml.safe_dump(head, sort_keys=False, allow_unicode=True) + "---\n\n" + body
             + "\n\n## Contents\n\n| File | Size |\n|---|---|\n" + table
-            + f"\n\nPublished from commit `{commit}` of the repository.\n")
+            + f"\n\nPublished from commit `{commit}` of the repository. {kpub.dv.MANIFEST_NOTE}\n")
 
 
 def build(name: str, out: Path, commit: str) -> Path:
@@ -100,6 +100,7 @@ def build(name: str, out: Path, commit: str) -> Path:
         splits(out / "raw", out)
         shutil.copyfile(QUICKSTART, out / QUICKSTART.name)
     (out / "README.md").write_text(card(name, out, commit), encoding="utf-8")
+    kpub.dv.write_manifest(out, kpub.DATASETS[name]["slug"], commit)   # spec 039 US2: Kaggle's manifest, this layout
     return out
 
 

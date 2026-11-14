@@ -22,6 +22,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent / "python"))
 
+from health_transformation_lab_nlp import dataset_version as dv  # spec 039: versions, manifest
 from health_transformation_lab_nlp import note_set
 from health_transformation_lab_nlp.paths import DATASETS_DIR as DATA
 
@@ -85,7 +86,7 @@ def check(name: str) -> None:
 def card(name: str, commit: str) -> str:
     table = "\n".join(f"| `{dest}` | {_rows(src)} |" for dest, src in files_of(name).items())
     return ((HERE / "cards" / f"{name}.md").read_text().rstrip() + "\n\n## Contents\n\n| File | Size |\n|---|---|\n"
-            + table + f"\n\nPublished from commit `{commit}` of the repository.\n")
+            + table + f"\n\nPublished from commit `{commit}` of the repository. {dv.MANIFEST_NOTE}\n")
 
 
 def meta_dir(out: Path) -> Path:
@@ -123,7 +124,7 @@ def write_metadata(out: Path, meta: dict, slug: str) -> None:
 def build(name: str, out: Path, username: str, commit: str) -> dict:
     d = DATASETS[name]
     check(name)
-    gaps = docs.missing(d["slug"], files_of(name))
+    gaps = docs.missing(d["slug"], {**files_of(name), dv.MANIFEST: Path(dv.MANIFEST)})
     if gaps:   # AGENTS.md: every published file and column is described (spec 034)
         raise SystemExit(f"{len(gaps)} undescribed in kaggle/dataset_docs.yaml, e.g. {gaps[0]}")
     if out.exists():
@@ -131,9 +132,10 @@ def build(name: str, out: Path, username: str, commit: str) -> dict:
     for dest, src in files_of(name).items():
         (out / dest).parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(src, out / dest)
+    manifest = dv.write_manifest(out, d["slug"], commit)   # spec 039 US2: provenance inside the dataset (#708)
     meta = {"title": d["title"], "subtitle": d["subtitle"], "id": f"{username}/{d['slug']}",
             "licenses": [{"name": "CC-BY-4.0"}], "keywords": d["keywords"], "description": card(name, commit),
-            **docs.dataset(d["slug"]), "resources": docs.resources(d["slug"], files_of(name))}
+            **docs.dataset(d["slug"]), "resources": docs.resources(d["slug"], {**files_of(name), dv.MANIFEST: manifest})}
     write_metadata(out, meta, d["slug"])
     return meta
 

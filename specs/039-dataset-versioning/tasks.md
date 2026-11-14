@@ -13,11 +13,11 @@
 
 ## US2 - provenance manifest inside every dataset (#708)
 
-- [ ] T006 [US2] Failing tests in `python/tests/test_dataset_manifest.py`
-- [ ] T007 [US2] `build_manifest` and `write_manifest` in `dataset_version` (`@traced`); `row_count` for `.csv`/`.jsonl`
-- [ ] T008 [US2] Call `write_manifest` in `kaggle/publish.py`, `kaggle/publish_tasks.py`, `huggingface/publish.py`
+- [x] T006 [US2] Failing tests in `python/tests/test_dataset_manifest.py`
+- [x] T007 [US2] `build_manifest` and `write_manifest` in `dataset_version` (`@traced`); `row_count` for `.csv`/`.jsonl`
+- [x] T008 [US2] Call `write_manifest` in `kaggle/publish.py`, `kaggle/publish_tasks.py`, `huggingface/publish.py`
   before upload; pass the commit through (workflow `--commit`, else `git rev-parse HEAD`)
-- [ ] T009 [US2] Document `manifest.json` in `kaggle/dataset_docs.yaml` as a published file (so the usability check and
+- [x] T009 [US2] Document `manifest.json` in `kaggle/dataset_docs.yaml` as a published file (so the usability check and
   US1 gate know it) and in the dataset cards
 
 ## US3 - one version string on both platforms and a release tag (#709)
