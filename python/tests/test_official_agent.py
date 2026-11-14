@@ -643,8 +643,9 @@ def test_a_context_needs_a_label_so_its_rows_never_join_another_runs_table(run):
         run.check_arm_options(label=None, context="contexts.jsonl", batch=True, development=False)
     with pytest.raises(SystemExit, match="need --batch"):
         run.check_arm_options(label="report", context="contexts.jsonl", batch=False, development=False)
-    with pytest.raises(SystemExit, match="need --batch"):
-        run.check_arm_options(label="report", context=None, batch=True, development=True)
+    with pytest.raises(SystemExit, match="--context is for a batch of the published tasks"):
+        run.check_arm_options(label="report", context="contexts.jsonl", batch=True, development=True)
+    run.check_arm_options(label="out8k", context=None, batch=True, development=True)   # a development-set arm (#721)
     run.check_arm_options(label="report", context="contexts.jsonl", batch=True, development=False)
     run.check_arm_options(label="statement", context=None, batch=True, development=False)
     run.check_arm_options(label=None, context=None, batch=False, development=False)
@@ -656,3 +657,30 @@ def test_a_collection_can_reuse_output_already_downloaded(run, tmp_path):
     (tmp_path / "result.json").write_text("{}")
     assert run.reusable_output(tmp_path, True) is True
     assert run.reusable_output(tmp_path, False) is False             # only when asked
+
+
+def test_a_labelled_development_set_batch_has_its_own_dataset_kernel_and_table(run, tmp_path, monkeypatch):
+    """Two configurations measured on the competition's development set at once (#721): each labelled batch gets its
+    own dataset, kernel and table, and an unlabelled one keeps the names of the run of November 11."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("official_agent_bundle", REPO_ROOT / "kaggle" / "official_agent_bundle.py")
+    ob = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(ob)
+    assert run.batch_name("competition", None) == "devset"
+    assert run.batch_name("competition", "out8k") == "devset-out8k"
+    with pytest.raises(SystemExit):
+        run.batch_name("competition", "Not A Slug")
+    with pytest.raises(SystemExit, match="need --batch"):
+        run.check_arm_options(label="out8k", context=None, batch=False, development=True)
+    sub = tmp_path / "sub"
+    sub.mkdir()
+    (sub / "agent.yaml").write_text("name: a\n")
+    plain = ob.build_competition_batch(["fastapi_1"], sub, tmp_path / "a", "someone")
+    assert json.loads((plain / "dataset-metadata.json").read_text())["id"] == "someone/htlnlp-official-devset"
+    named = ob.build_competition_batch(["fastapi_1"], sub, tmp_path / "b", "someone", name="devset-out8k")
+    assert json.loads((named / "dataset-metadata.json").read_text())["id"] == "someone/htlnlp-official-devset-out8k"
+    assert run.kernel_metadata("someone", "devset-out8k", None, None)["id"] == "someone/htlnlp-offrun-devset-out8k"
+    monkeypatch.setattr(run, "OUT_DIR", tmp_path)
+    row = {c: None for c in run.COLUMNS} | {"instance_id": "fastapi_1", "is_resolved": False}
+    import pandas as pd
+    assert run.write_table(pd, [row], None, "devset-out8k").name == "gemma-4-e4b-it-qat-w4a16-ct_swegemma_devset-out8k.csv"
