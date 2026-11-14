@@ -8,7 +8,9 @@
 Branches a tool names are allowed as they are: dependabot/*, kaggle-results/* (the Kaggle workflow's results
 PRs). An agent session's assigned claude/* branch is not: the session moves its work to <type>/<issue>-<slug>
 (AGENTS.md rule 4, issue #116). Every PR except dependabot's and kaggle-results' links its issue in the body:
-"Closes #71" (or Fixes, Resolves, Refs; or a Jira key).
+"Closes #71" (or Fixes, Resolves, Refs, with or without a colon after the word; or a Jira key). The issue that is
+read is the first closing link's (Closes, Fixes, Resolves); a Refs link, which often names an earlier pull request,
+only when there is no closing link (issue #718).
 
 The issue itself is checked too (AGENTS.md, "What an issue says", issue #700): an issue opened from PARTS_SINCE on
 has four parts, Problem, Done when, Contract and Read first, as headings or bold labels. A user story ("016 US2:
@@ -32,14 +34,14 @@ TYPES = ("feat", "fix", "docs", "data", "ci", "chore", "spec")
 TOOL_BRANCHES = ("dependabot/", "kaggle-results/")
 NO_ISSUE_NEEDED = ("dependabot/", "kaggle-results/")
 TICKET = r"(?:\d+|[A-Z][A-Z0-9]+-\d+)"
-LINK = re.compile(r"\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?|refs?)\s+(?:#\d+|[A-Z][A-Z0-9]+-\d+)\b", re.IGNORECASE)
+LINK = re.compile(r"\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?|refs?):?\s+(?:#\d+|[A-Z][A-Z0-9]+-\d+)\b", re.IGNORECASE)
 MAX_SLUG = 40
 ISSUE_PARTS = ("Problem", "Done when", "Contract", "Read first")
 PARTS_SINCE = "2026-11-14"          # issues opened from this day (UTC) carry the four parts
 STORY = re.compile(r"^(\d{3}) US\d+[a-z]?:")       # a user story's issue title: "016 US2: ..."
 CODE_TYPES = ("feat", "fix")                         # branches that hold a story's code, so they need its plan too
-ISSUE_NUMBER = re.compile(r"\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?|refs?)\s+#(\d+)\b", re.IGNORECASE)
-CLOSING_NUMBER = re.compile(r"\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#(\d+)\b", re.IGNORECASE)
+ISSUE_NUMBER = re.compile(r"\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?|refs?):?\s+#(\d+)\b", re.IGNORECASE)
+CLOSING_NUMBER = re.compile(r"\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?):?\s+#(\d+)\b", re.IGNORECASE)
 
 
 def branch_problems(branch: str) -> list[str]:
@@ -171,5 +173,9 @@ if __name__ == "__main__":
     for p in found:
         print(f"::error::{p}")
     if not found:
-        print(f"'{branch}', its issue link{' and its issue' if issue else ''} follow AGENTS.md")
+        if issue and len(issue) > 3 and issue[3]:
+            print(f"'{branch}' and its link follow AGENTS.md; #{number} is a pull request opened before {PARTS_SINCE}, "
+                  "so no issue was read")
+        else:
+            print(f"'{branch}', its issue link{' and its issue' if issue else ''} follow AGENTS.md")
     sys.exit(1 if found else 0)

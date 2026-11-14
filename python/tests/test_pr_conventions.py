@@ -195,6 +195,7 @@ def test_check_holds_a_story_to_its_spec_when_the_issue_and_checkout_are_given(t
 @pytest.mark.parametrize("body, number", [
     ("Refs #705 (the earlier part).\n\nCloses #712", 712), ("Refs #12, Fixes #14", 14),
     ("Refs #12 and Resolves #15", 15), ("Refs #12", 12), ("Closes #71. Refs #9", 71),
+    ("Refs #705\n\nCloses: #712", 712), ("Fixes: #8", 8), ("Refs: #12", 12),       # a colon after the keyword
 ])
 def test_the_closing_link_is_read_before_a_refs_link(body, number):
     assert pc.linked_issue_number(body) == number
@@ -229,3 +230,8 @@ def test_fetch_issue_says_whether_the_number_is_a_pull_request(monkeypatch):
     assert pc.fetch_issue("o/r", 705, "token") == ("b", "2026-11-20T10:00:00Z", "000 BUG7: x", True)
     monkeypatch.setattr(pc.urllib.request, "urlopen", answer(base))
     assert pc.fetch_issue("o/r", 718, "token")[3] is False
+
+
+@pytest.mark.parametrize("body", ["Closes: #712", "Fixes: #8", "Refs: #12", "Resolves: DENT-123"])
+def test_a_colon_after_the_keyword_still_links_the_issue(body):
+    assert pc.issue_link(body)
