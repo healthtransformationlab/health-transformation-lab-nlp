@@ -47,6 +47,9 @@ OUT_DIR = REPO_ROOT / "data" / "tasks" / "official_agent_runs"
 WHEELHOUSE = "metric/gemma-4-developer-agent-wheelhouse"                 # the competition's evaluator and vLLM
 MODEL_SOURCE = "google/gemma-4/Other/gemma-4-e4b-it-qat-w4a16-ct/2"      # as the starter notebook attaches it
 STARTER_MACHINE_SHAPE = "NvidiaL4"                                       # the starter notebook's accelerator
+# The starter notebook's pinned image, which every committed run used. Kaggle's current image lacks the CUDA 12
+# runtime that vLLM from the competition's wheelhouse loads (libcudart.so.12), so a new kernel fails without it.
+STARTER_DOCKER_IMAGE = "gcr.io/kaggle-private-byod/python@sha256:37c64f7dd9c54116ecd1bcc88817c5469b88387388fade02bfa8bf3fc647d461"
 POLL_SECONDS, UPLOAD_TRIES, UPLOAD_RETRY_SECONDS = 30, 4, 60
 COLUMNS = ["instance_id", "tier_code", "is_in_sample", "harness_name", "model_name", "is_resolved", "test_exit_code", "reason_text",
            "agent_patch_bytes", "tool_call_count", "llm_call_count", "graph_tool_call_count", "sub_agent_call_count",
@@ -772,7 +775,8 @@ def main() -> int:
     ap.add_argument("--concurrency", type=int, default=2, help="kernels running at once (Kaggle allows two GPU sessions)")
     ap.add_argument("--machine-shape", default=STARTER_MACHINE_SHAPE,
                     help="the accelerator to ask for; the kernel records the GPUs it actually got")
-    ap.add_argument("--docker-image", help="pin the kernel's image (the starter notebook pins one)")
+    ap.add_argument("--docker-image", default=STARTER_DOCKER_IMAGE,
+                    help="pin the kernel's image; by default the starter notebook's, which every committed run used")
     ap.add_argument("--competition", help="attach this competition to the kernel, as the starter notebook does")
     ap.add_argument("--max-time-minutes", type=float, help="override the submission's per-task time budget")
     ap.add_argument("--kernel-minutes", type=int, default=45, help="Kaggle stops a kernel after this long")

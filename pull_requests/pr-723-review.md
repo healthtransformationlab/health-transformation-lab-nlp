@@ -18,9 +18,10 @@ upload over its dataset and merge its rows into the baseline's table. A labelled
 Approve.
 
 ## Scope of Change
-- Files changed: 3 (+51 / -17), plus this review
+- Files changed: 3 (+67 / -18), plus this review
 - Areas touched: Kaggle run tooling (`kaggle/`), python tests
-- Commits: `64f39af` Give each labelled development-set batch its own dataset, kernel and table; this review
+- Commits: `64f39af` Give each labelled development-set batch its own dataset, kernel and table; this review; the
+  default kernel image
 - Range reviewed: `f82c42f..HEAD` (the merge base with `main`)
 
 ## CI Status
@@ -44,6 +45,12 @@ None.
 - **Fixed before the first commit.** `kaggle/official_agent_bundle.py`, `build_competition_batch`: the loop over
   `SUBMISSION_ENTRIES` used `name`, overwriting the new parameter, so every dataset id became the last entry's
   (`htlnlp-official-adapters`). The new test caught it (`ruff` PLR1704 too); the loop variable is `entry`.
+- **Fixed in this PR.** `kaggle/official_agent_run.py`, `--docker-image` had no default. The first labelled run (for
+  gemma-developer-agent pull request 100) pushed a new kernel without it, got Kaggle's current image and ran no task:
+  vLLM from the wheelhouse could not load `libcudart.so.12` (`error_full.txt` of that kernel). Every committed run
+  passed the starter notebook's pinned image by hand. `STARTER_DOCKER_IMAGE` is now the default; a test ties it to
+  the image the committed development-set run recorded and failed before the change. The relaunch with the image ran.
+  Issue 721 has a dated line for it.
 ### 🔵 Nits / suggestions (Minor)
 - `ruff check` on `official_agent_run.py` reports two `UP017` (`timezone.utc`), both already on `main`; left alone.
 
@@ -64,7 +71,7 @@ None.
 
 ## Test Coverage
 `pytest -q tests/test_official_agent.py tests/test_agent_harness.py tests/test_wording.py tests/test_no_org_references.py`:
-106 passed. Covered: batch names with and without a label for both sources, the label rule, the arm options (a
+107 passed. Covered: the default kernel image; batch names with and without a label for both sources, the label rule, the arm options (a
 development-set label accepted, a development-set context refused, a label without `--batch` refused), the dataset id
 of a labelled and an unlabelled development-set batch, its kernel id and its table name. Not covered: a live upload,
 which the run for gemma-developer-agent pull request 100 makes next.

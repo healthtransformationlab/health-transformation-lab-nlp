@@ -684,3 +684,15 @@ def test_a_labelled_development_set_batch_has_its_own_dataset_kernel_and_table(r
     row = {c: None for c in run.COLUMNS} | {"instance_id": "fastapi_1", "is_resolved": False}
     import pandas as pd
     assert run.write_table(pd, [row], None, "devset-out8k").name == "gemma-4-e4b-it-qat-w4a16-ct_swegemma_devset-out8k.csv"
+
+
+def test_a_new_kernel_gets_the_starter_notebooks_pinned_image_by_default(run):
+    """A kernel pushed without an image gets Kaggle's current one, where vLLM from the competition's wheelhouse cannot
+    load libcudart.so.12 (the first attempt of the development-set run for gemma-developer-agent pull request 100,
+    November 14). Every committed run used the starter notebook's pinned image; a new kernel, such as a labelled
+    batch's (#721), now gets it unless told otherwise."""
+    recorded = json.loads((REPO_ROOT / "data" / "tasks" / "official_agent_runs"
+                           / "gemma-4-e4b-it-qat-w4a16-ct_swegemma_devset_settings.json").read_text())["kernel"]["docker_image"]
+    assert run.STARTER_DOCKER_IMAGE == recorded
+    source = (REPO_ROOT / "kaggle" / "official_agent_run.py").read_text()
+    assert '"--docker-image", default=STARTER_DOCKER_IMAGE' in source
