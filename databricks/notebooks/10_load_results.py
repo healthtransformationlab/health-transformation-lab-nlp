@@ -162,3 +162,5 @@ for name, df in tables.items():
 # Spec 034 US2 (#534): every declared table that exists gets its table and column comments, whichever job wrote it
 # (the LLM judge's SQL, the reader jobs). This runs after every deploy, so a table rewritten since is put right.
 table_comments.apply_all(spark, catalog)  # noqa: F821
+
+telemetry.end_script()   # a notebook's process may not run atexit: end the run span here

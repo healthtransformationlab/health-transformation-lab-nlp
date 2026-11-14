@@ -150,3 +150,5 @@ full = f"{catalog}.{gold}.fact_tooth_loss_prediction"
 if spark.catalog.tableExists(full):  # noqa: F821
     spark.sql(f"DELETE FROM {full} WHERE run_id = '{run_id}'")  # noqa: F821
 save(pred, gold, "fact_tooth_loss_prediction", mode="append")
+
+telemetry.end_script()   # a notebook's process may not run atexit: end the run span here

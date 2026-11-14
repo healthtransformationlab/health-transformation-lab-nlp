@@ -12,6 +12,7 @@ Prices come from costs.yaml and are ILLUSTRATIVE until you replace them.
 import argparse
 import json
 import random
+import sys
 import time
 
 import pandas as pd
@@ -26,7 +27,7 @@ from health_transformation_lab_nlp.rungs import make_rung
 from health_transformation_lab_nlp.study import build_corpus_sample
 
 telemetry.setup()
-telemetry.start_script("14_benchmark_cost", data_label="synthetic")
+telemetry.start_script("14_benchmark_cost", data_label="simulated" if "--simulate-missing" in sys.argv else "synthetic")
 
 SIM_ACCURACY = {"distilbert-base": 0.86, "bioclinical-modernbert-base": 0.90, "llm_challenger": 0.88,
                 "medgemma-1.5-4b-it": 0.87, "medgemma-27b-text-it": 0.90}   # placeholders for dry runs only

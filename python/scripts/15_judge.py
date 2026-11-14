@@ -17,7 +17,6 @@ judgments_corpus.csv (prefixed simulated_ for the simulated backend).
 
 import argparse
 import glob
-import sys
 from pathlib import Path
 
 import pandas as pd
@@ -29,7 +28,6 @@ from health_transformation_lab_nlp.judge import PROMPT_VERSION, OpenAIJudge, Sim
 from health_transformation_lab_nlp.paths import CORPUS_DIR, COSTS_YAML, DATASETS_DIR, REVIEW_DIR
 
 telemetry.setup()
-telemetry.start_script("15_judge", data_label="simulated" if "--simulated" in sys.argv else "synthetic")
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--backend", choices=["openai", "mlflow", "simulated"], required=True,
@@ -45,6 +43,8 @@ ap.add_argument("--judges", default=None,
 ap.add_argument("--classifier-families", default="",
                 help="model families of LLMs being evaluated; a judge of the same family is not selected")
 a = ap.parse_args()
+telemetry.start_script("15_judge", data_label="simulated" if (a.backend == "simulated" or a.simulated_review)
+                       else "synthetic")
 
 cfg = yaml.safe_load(COSTS_YAML.read_text())["judge"]
 n_per = a.per_method or cfg["sample_per_method"]

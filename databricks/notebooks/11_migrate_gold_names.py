@@ -176,3 +176,5 @@ for cat, sch in legacy:
 
 if drops:
     print("Old tables left in place. After checking the new ones, drop them with:\n" + "\n".join(drops))
+
+telemetry.end_script()   # a notebook's process may not run atexit: end the run span here

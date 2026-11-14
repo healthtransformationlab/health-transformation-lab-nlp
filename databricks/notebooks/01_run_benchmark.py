@@ -53,6 +53,8 @@ dbutils.widgets.text("telemetry", "azure")  # noqa: F821  spec 014: off / consol
 from health_transformation_lab_nlp import telemetry
 
 telemetry.use_databricks_secret(dbutils, dbutils.widgets.get("telemetry"))  # noqa: F821  scripts inherit it
+telemetry.setup()                                   # this notebook runs the package's code itself
+telemetry.start_script("01_run_benchmark", data_label="synthetic")
 from health_transformation_lab_nlp import tracking as _tracking
 _tracking.use_git_commit(dbutils)   # MLflow runs and the scripts it starts are tagged with it
 dbutils.widgets.text("catalog", "health_transformation_lab")
@@ -191,3 +193,5 @@ if llm_endpoint not in ("", "none"):
         WHERE split_code = 'test'""").toPandas()
     llm["pred"] = llm["pred"].fillna("").str.strip().str.lower()
     display(score(llm["label"], llm["pred"], None, model_id="llm_challenger"))
+
+telemetry.end_script()   # a notebook's process may not run atexit: end the run span here

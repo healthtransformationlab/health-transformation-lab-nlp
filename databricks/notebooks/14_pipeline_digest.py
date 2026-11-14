@@ -113,6 +113,7 @@ except Exception as e:  # noqa: BLE001 - the email is optional; the tables hold 
 
 # SEV1/SEV2 forecasts page now: fail the run with their text, so the job's failure email reaches the owner. The
 # digests are already written, so nothing is lost.
+telemetry.end_script()   # the work is done; raising below is the page to the owner, not a failed run
 page = digests.page_now(alerts)
 if page:
     raise RuntimeError(page)

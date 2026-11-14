@@ -146,6 +146,7 @@ write("fact_remediation_decision", decisions)   # last: a failure above leaves t
 # table (the digest job is spec 027 T023). A new SEV1/SEV2 fails this run so the job's failure notification
 # carries the drafted text to the owner; the rows above are already written, so nothing is lost or repeated.
 print("for the digests:", digest or "nothing new")
+telemetry.end_script()   # the work is done; raising below is the alert to the owner, not a failed run
 if notify_now:
     raise RuntimeError(f"{len(notify_now)} new SEV1/SEV2 decision(s) for the owner:\n" + "\n".join(notify_now))
 print("no new SEV1/SEV2 decisions")

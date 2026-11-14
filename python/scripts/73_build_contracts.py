@@ -22,8 +22,6 @@ from health_transformation_lab_nlp.paths import CONTRACTS_DIR
 
 
 def main(argv: list[str] | None = None) -> int:
-    telemetry.setup()
-    telemetry.start_script("73_build_contracts", data_label="public")
     ap = argparse.ArgumentParser(description="Write or check the gold tables' ODCS contracts and ODPS products.")
     ap.add_argument("--check", action="store_true", help="name stale contracts and exit 1 instead of writing")
     ap.add_argument("--root", type=Path, default=CONTRACTS_DIR, help="the contracts folder (default: contracts/)")
@@ -57,4 +55,6 @@ def main(argv: list[str] | None = None) -> int:
 
 
 if __name__ == "__main__":
+    telemetry.setup()
+    telemetry.start_script("73_build_contracts", data_label="public")
     raise SystemExit(main())

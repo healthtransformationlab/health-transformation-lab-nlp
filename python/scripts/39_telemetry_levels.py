@@ -25,7 +25,7 @@ from health_transformation_lab_nlp import telemetry
 from health_transformation_lab_nlp.paths import REPO_ROOT
 
 telemetry.setup()
-telemetry.start_script("39_telemetry_levels", data_label="simulated" if "--simulated" in sys.argv else "synthetic")
+telemetry.start_script("39_telemetry_levels", data_label="synthetic")
 
 RUNS = [                                    # (script, argv): fast, seeded, cover the package's main paths
     ("10_build_study.py", []),
