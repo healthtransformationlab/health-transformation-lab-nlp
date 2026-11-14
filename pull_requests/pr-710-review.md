@@ -37,8 +37,8 @@ PR only `Refs` them (epic #706).
   credential, no value anywhere.
 - **PHI / real data:** none. Versioning changes how a dataset is released and described; it adds no rows and changes no
   values.
-- **Org names / wording / bench order:** clean (scanned: no CareQuest, no "diagnose/accuracy", no bench named out of
-  order).
+- **Org names / wording / bench order:** clean (scanned: no banned organisation name, no "diagnose/accuracy", no
+  benchmark named out of order).
 
 ## Strengths
 
