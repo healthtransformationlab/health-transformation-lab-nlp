@@ -91,7 +91,8 @@ def test_the_built_folder_holds_exactly_the_set_and_a_cc_by_card(task_dir, tmp_p
     out = tmp_path / "out"
     meta = pt.build(task_dir, out, "someone", "abc1234")
     built = {p.relative_to(out).as_posix() for p in out.rglob("*") if p.is_file()}
-    assert built == set(pt.files_of(task_dir)) | {"dataset-metadata.json"}
+    assert built == set(pt.files_of(task_dir)) | {"dataset-metadata.json", "manifest.json"}
+    assert set(json.loads((out / "manifest.json").read_text())["files"]) == set(pt.files_of(task_dir))   # #708
     assert [json.loads(line)["instance_id"] for line in (out / "tasks.jsonl").read_text().splitlines()] \
         == ["htlnlp_1", "htlnlp_2", "htlnlp_3"]
     assert meta["licenses"] == [{"name": "CC-BY-4.0"}]
@@ -100,7 +101,7 @@ def test_the_built_folder_holds_exactly_the_set_and_a_cc_by_card(task_dir, tmp_p
     assert 6 <= len(meta["title"]) <= 50 and 20 <= len(meta["subtitle"]) <= 80
     card = meta["description"].lower()
     for words in ("not affiliated", "cc by 4.0", "github.com/healthtransformationlab/health-transformation-lab-nlp",
-                  "abc1234", "3 tasks", "embeddinggemma", "wheels"):
+                  "abc1234", "3 tasks", "embeddinggemma", "wheels", "manifest.json"):
         assert words in card, words
     # #696: the set's own material is offered under either licence; Kaggle's licence field stays CC BY 4.0
     assert "or, at your choice, under the apache license 2.0" in " ".join(card.split())
@@ -229,7 +230,7 @@ def test_the_build_describes_every_file_and_column_and_sends_a_cover(task_dir, t
     out = tmp_path / "out"
     meta = pt.build(task_dir, out, "someone", "abc1234")
     res = {r["path"]: r for r in meta["resources"]}
-    assert set(res) == set(pt.files_of(task_dir))
+    assert set(res) == set(pt.files_of(task_dir)) | {"manifest.json"}   # the build's manifest is described too (#708)
     assert all(r["description"] for r in res.values())
     assert all(f["description"] for f in res["tasks.jsonl"]["schema"]["fields"])
     assert meta["expectedUpdateFrequency"] == "monthly" and "github.com" in meta["userSpecifiedSources"]

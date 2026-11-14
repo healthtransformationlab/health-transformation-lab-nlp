@@ -16,11 +16,19 @@ The semver rule:
 ``python/tests/test_kaggle_dataset_docs.py`` hashes what each dataset publishes and fails when the hash isn't the
 declared ``schema_sha256``. So a file or column can't change without a new version, a changelog line and the new
 hash, all in the same diff.
+
+Every build also writes ``manifest.json`` into the dataset (spec 039 US2, #708), from the files it holds: the slug,
+the version, the git commit, when it was built (UTC), and each file's SHA-256, size and, for CSV and JSONL, its row
+count. Kaggle and Hugging Face get the same one, so a download can be checked against the commit that made it.
 """
 
 from __future__ import annotations
 
+import csv
+import hashlib
+import json
 import re
+from datetime import UTC, datetime
 from functools import cache
 from pathlib import Path
 
@@ -35,6 +43,14 @@ LINE = re.compile(r"(\S+) — (\S.*)")
 RULE = (
     "MAJOR for a removed, renamed or retyped column or a removed file; MINOR for a new file or column; "
     "PATCH for values, rows or a fix with no schema change"
+)
+MANIFEST = "manifest.json"
+NOT_DATA = {MANIFEST, "dataset-metadata.json"}   # the manifest itself, and Kaggle's metadata for the upload
+COMMIT = re.compile(r"[0-9a-f]{7,40}")
+# The line every dataset card ends with, after the commit it was published from (#708).
+MANIFEST_NOTE = (
+    "`manifest.json` lists every file with its SHA-256, size and row count, with the dataset's version and this "
+    "commit: check a download against it."
 )
 
 
@@ -117,3 +133,54 @@ def problems(slug: str, *, schema_sha256: str | None = None, docs: Path | None =
             f"to {schema_sha256}."
         )
     return found
+
+
+
+def _sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _row_count(path: Path) -> int | None:
+    """Rows in a CSV (records, header excluded) or a JSONL file (non-blank lines); None for any other file."""
+    if path.suffix == ".csv":
+        with open(path, newline="", encoding="utf-8", errors="replace") as f:
+            return max(sum(1 for _ in csv.reader(f)) - 1, 0)
+    if path.suffix == ".jsonl":
+        with open(path, encoding="utf-8", errors="replace") as f:
+            return sum(1 for line in f if line.strip())
+    return None
+
+
+@traced
+def build_manifest(folder: Path, slug: str, commit: str) -> dict:
+    """The provenance of the files in ``folder``, as published: ``{slug, version, git_commit_sha, built_ts, files}``,
+    with ``files`` mapping each path to ``{sha256, bytes}`` and, for CSV and JSONL, ``row_count``. The manifest
+    itself and Kaggle's ``dataset-metadata.json`` aren't listed. ``commit`` must be a git SHA (7 to 40 hex
+    characters): the workflow passes the commit it built."""
+    if not COMMIT.fullmatch(commit or ""):
+        raise ValueError(f"{commit!r} is not a git commit SHA (7 to 40 lowercase hex characters)")
+    folder = Path(folder)
+    files = {}
+    for path in sorted(p for p in folder.rglob("*") if p.is_file()):
+        rel = path.relative_to(folder).as_posix()
+        if rel in NOT_DATA:
+            continue
+        entry = {"sha256": _sha256(path), "bytes": path.stat().st_size}
+        rows = _row_count(path)
+        if rows is not None:
+            entry["row_count"] = rows
+        files[rel] = entry
+    return {"slug": slug, "version": version(slug), "git_commit_sha": commit,
+            "built_ts": datetime.now(UTC).isoformat(timespec="seconds"), "files": files}
+
+
+@traced
+def write_manifest(folder: Path, slug: str, commit: str) -> Path:
+    """Write ``folder/manifest.json`` (``build_manifest``), replacing any earlier one, and return its path."""
+    path = Path(folder) / MANIFEST
+    path.write_text(json.dumps(build_manifest(folder, slug, commit), indent=1) + "\n")
+    return path

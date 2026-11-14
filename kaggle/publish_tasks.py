@@ -28,6 +28,7 @@ sys.path.insert(0, str(HERE))
 import dataset_docs as docs  # kaggle/dataset_docs.py: file and column descriptions, cover, sources (spec 034)
 import publish  # kaggle/publish.py: the same upload, create-public-then-version
 
+from health_transformation_lab_nlp import dataset_version as dv  # spec 039: the manifest
 from health_transformation_lab_nlp import task_gate as tgate
 from health_transformation_lab_nlp import task_graph as tg
 from health_transformation_lab_nlp import task_mine as tm
@@ -118,7 +119,7 @@ def _card(sizes: dict, n_tasks: int, commit: str) -> str:
     table = "\n".join(f"| `{top}` | {n} | {size / 1e6:.1f} MB |" for top, (n, size) in folders.items())
     return ((HERE / "cards" / "tasks.md").read_text().rstrip()
             + f"\n\n## Contents\n\n{n_tasks} tasks.\n\n| Path | Files | Size |\n|---|---|---|\n" + table
-            + f"\n\nPublished from commit `{commit}` of the repository.\n")
+            + f"\n\nPublished from commit `{commit}` of the repository. {dv.MANIFEST_NOTE}\n")
 
 
 def build(task_dir: Path, out: Path, username: str, commit: str) -> dict:
@@ -128,7 +129,8 @@ def build(task_dir: Path, out: Path, username: str, commit: str) -> dict:
     for dest, src in files_of(task_dir).items():
         (out / dest).parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(src, out / dest)
-    meta = _meta(username, card(task_dir, commit), files_of(task_dir))
+    manifest = dv.write_manifest(out, SLUG, commit)   # spec 039 US2: provenance inside the dataset (#708)
+    meta = _meta(username, card(task_dir, commit), {**files_of(task_dir), dv.MANIFEST: manifest})
     publish.write_metadata(out, meta, SLUG)
     return meta
 

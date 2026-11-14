@@ -37,7 +37,7 @@ def test_listed_files_exist_and_are_neither_simulated_nor_external(name):
 def test_built_folder_holds_exactly_the_listed_files(tmp_path, name):
     out, _ = _build(tmp_path, name)
     built = {p.relative_to(out).as_posix() for p in out.rglob("*") if p.is_file()}
-    assert built == set(pub.files_of(name)) | {"dataset-metadata.json"}
+    assert built == set(pub.files_of(name)) | {"dataset-metadata.json", "manifest.json"}   # the manifest: #708
 
 
 @pytest.mark.parametrize("name", sorted(pub.DATASETS))

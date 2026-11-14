@@ -42,7 +42,20 @@ def test_raw_holds_exactly_spec_020s_files(tmp_path, name):
     raw = {p.relative_to(out / "raw").as_posix() for p in (out / "raw").rglob("*") if p.is_file()}
     assert raw == set(kpub.files_of(name))                       # FR-001: one list for both platforms
     extra = {p.relative_to(out).as_posix() for p in out.rglob("*") if p.is_file()} - {f"raw/{r}" for r in raw}
-    assert extra <= {"README.md", "data/train.csv", "data/test.csv", "perio_bench_quickstart.ipynb"}
+    assert extra <= {"README.md", "data/train.csv", "data/test.csv", "perio_bench_quickstart.ipynb", "manifest.json"}
+
+
+@pytest.mark.parametrize("name", sorted(kpub.DATASETS))
+def test_the_hugging_face_build_carries_the_same_manifest(tmp_path, name):
+    """Spec 039 US2 (#708): one builder for both platforms; here it lists every file of the Hugging Face layout."""
+    import json
+
+    out = _build(tmp_path, name)
+    manifest = json.loads((out / "manifest.json").read_text())
+    files = {p.relative_to(out).as_posix() for p in out.rglob("*") if p.is_file()} - {"manifest.json"}
+    assert set(manifest["files"]) == files
+    assert (manifest["slug"], manifest["git_commit_sha"]) == (kpub.DATASETS[name]["slug"], "abc1234")
+    assert kpub.dv.MANIFEST_NOTE in (out / "README.md").read_text(encoding="utf-8")   # the card points to it
 
 
 def test_notes_splits_share_columns_and_test_is_the_review_set(tmp_path):
