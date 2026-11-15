@@ -6,7 +6,9 @@ and writes to /kaggle/working. A Colab machine is a Linux machine with a GPU and
 (HTL_INPUT, HTL_OUT), installs the model server and the agent framework at the versions the Kaggle kernels recorded,
 and runs the same kernel file. What differs from a Kaggle kernel is said where the run is reported: one GPU, a
 different base image and Python (the kernel leaves out the few wheels compiled for Kaggle's Python alone), and a
-network at the machine's edge.
+network at the machine's edge. A batch of the competition's development tasks reads them from the attached
+competition on Kaggle; no competition is mounted here, so its files for the batch's tasks alone are fetched with the
+notebook's token and laid out where Kaggle mounts them (`fetch_competition_files`, #780).
 
 Two things a Kaggle kernel gave for free are done here by hand:
 
@@ -43,6 +45,7 @@ import traceback
 from pathlib import Path
 
 WHEELHOUSE = "metric/gemma-4-developer-agent-wheelhouse"                 # the competition's evaluator
+COMPETITION = "gemma-4-developer-agent"   # whose development tasks a batch reads, when its order names none
 MODEL = "google/gemma-4/other/gemma-4-e4b-it-qat-w4a16-ct/2"             # as the starter notebook attaches it
 # The versions the Kaggle kernels recorded (their `_settings.json`), from PyPI with their dependencies; the wheels of
 # the wheelhouse are then installed over them by the kernel itself, as on Kaggle.
@@ -176,6 +179,118 @@ def missing_files(listed: list[tuple[str, int | None]], dest: Path) -> list[str]
         if not p.is_file() or (size is not None and p.stat().st_size != size):
             gone.append(name)
     return gone
+
+
+def competition_dir(competition: str, root: Path = KAGGLE) -> Path:
+    """Where Kaggle mounts an attached competition: /kaggle/input/competitions/<its slug>. The kernel searches its
+    inputs for the folder holding HARNESS_README.md, tasks.jsonl and snapshots/ (find_competition)."""
+    return Path(root) / "input" / "competitions" / competition
+
+
+# What every development task needs beside its own files: the harness guide the kernel finds the folder by, the task
+# list, and the tests' wheels and the sandbox's setup script, which the evaluator looks for beside tasks.jsonl.
+COMPETITION_SHARED = ("HARNESS_README.md", "tasks.jsonl")
+COMPETITION_SHARED_FOLDERS = ("wheels/", "sandbox/")
+
+
+def listed_competition_files(api, competition: str) -> list[tuple[str, int | None]]:
+    """Each file the competition lists, with its size in bytes where the listing gives one, every page read."""
+    out, token = [], None
+    while True:
+        page = api.competition_list_files(competition, page_token=token, page_size=200)
+        for f in page.files or []:
+            size = next((v for v in (getattr(f, a, None) for a in ("total_bytes", "totalBytes", "size"))
+                         if isinstance(v, int) and not isinstance(v, bool)), None)
+            out.append((f.name, size))
+        token = getattr(page, "next_page_token", None) or getattr(page, "nextPageToken", None)
+        if not token:
+            return out
+
+
+def competition_files(listed: list[tuple[str, int | None]], tasks: list[dict],
+                      instance_ids: list[str]) -> list[tuple[str, int | None]]:
+    """The competition's files a batch of `instance_ids` reads, from its listing and its tasks.jsonl rows: the shared
+    files, and each task's snapshot, graph and embeddings under the names the kernel looks for
+    (stage_competition_task: `<repo>_<base_commit>` or the task's id). The snapshots of all 129 tasks are 21.5 GB;
+    a batch takes its own tasks' only. Stops on a task tasks.jsonl does not hold, or one with no snapshot."""
+    names = {n for n, _ in listed}
+    rows = {t.get("instance_id"): t for t in tasks}
+    if (unknown := [i for i in instance_ids if i not in rows]):
+        raise SystemExit(f"not in the competition's tasks.jsonl: {', '.join(unknown)}")
+    wanted = {n for n in names if n in COMPETITION_SHARED or n.startswith(COMPETITION_SHARED_FOLDERS)}
+    for iid in instance_ids:
+        if f"snapshots/{iid}.tgz" not in names:
+            raise SystemExit(f"the competition lists no snapshots/{iid}.tgz")
+        stem = f"{rows[iid]['repo'].split('/')[-1]}_{rows[iid]['base_commit']}"
+        wanted |= {f"snapshots/{iid}.tgz"} | {n for n in (f"graphs/{stem}.json", f"graphs/{iid}.json",
+                                                          f"embeddings/{stem}.npz", f"embeddings/{iid}.npz")
+                                             if n in names}
+    return sorted((n, size) for n, size in listed if n in wanted)
+
+
+def download_competition_file(api, competition: str, name: str, dest: Path, tries: int = 3, sleep=time.sleep) -> None:
+    """One competition file to `dest/<name>`, unzipped where Kaggle hands it over zipped, as download_dataset does
+    for a dataset's files."""
+    import zipfile
+    want = Path(dest) / name
+    want.parent.mkdir(parents=True, exist_ok=True)
+    for attempt in range(tries):
+        try:
+            api.competition_download_file(competition, name, path=str(dest), quiet=True)   # writes <path>/<name>
+            break
+        except Exception:   # a blip: the same file again
+            if attempt == tries - 1:
+                raise
+            sleep(5)
+    flat = Path(dest) / Path(name).name   # a client that writes the bare file name instead
+    for got in (want, flat):
+        packed = got.with_name(got.name + ".zip")
+        if packed.exists() and not got.exists():   # Kaggle hands some files over zipped
+            with zipfile.ZipFile(packed) as z:
+                z.extractall(got.parent)
+            packed.unlink()
+    if not want.exists() and flat.exists():
+        flat.rename(want)
+    if not want.exists():
+        raise SystemExit(f"{competition}: {name} was not written where its name says")
+
+
+def fetch_competition_files(api, competition: str, instance_ids: list[str], root: Path = KAGGLE) -> Path:
+    """A development batch's competition files on this machine, laid out where Kaggle mounts the competition
+    (competition_dir), with the Kaggle client the notebook's token authenticated: Colab mounts no competition (#780).
+    Only the batch's own tasks' snapshots, graphs and embeddings are fetched, and another batch's left on the machine
+    are removed, so the agent never has them within reach. A file already there at its listed size is not fetched
+    again; any other is. Returns the competition's folder."""
+    dest = competition_dir(competition, root)
+    listed = listed_competition_files(api, competition)
+    if not listed:
+        raise SystemExit(f"{competition} lists no files: is the account behind the token joined to it?")
+    shared = [(n, size) for n, size in listed if n in COMPETITION_SHARED]
+    if "tasks.jsonl" not in {n for n, _ in shared}:
+        raise SystemExit(f"{competition} lists no tasks.jsonl")
+    for name in missing_files(shared, dest):
+        download_competition_file(api, competition, name, dest)
+    tasks = [json.loads(line) for line in (dest / "tasks.jsonl").read_text().splitlines() if line.strip()]
+    picked = competition_files(listed, tasks, instance_ids)
+    keep = {n for n, _ in picked}
+    for folder in ("snapshots", "graphs", "embeddings"):   # another batch's tasks do not stay beside this one's
+        for p in sorted((dest / folder).glob("*")) if (dest / folder).exists() else []:
+            if p.relative_to(dest).as_posix() not in keep:
+                p.unlink() if p.is_file() or p.is_symlink() else shutil.rmtree(p)
+    gone = missing_files(picked, dest)
+    size = sum(s or 0 for _, s in picked)
+    say(f"{competition}: {len(picked)} files for {len(instance_ids)} tasks ({size / 1e9:.2f} GB), {len(gone)} to fetch "
+        f"-> {dest}")
+    for n, name in enumerate(gone, 1):
+        download_competition_file(api, competition, name, dest)
+        if n % 25 == 0:
+            say(f"  {n} of {len(gone)} files of {competition}")
+    if (left := missing_files(picked, dest)):
+        raise SystemExit(f"{competition}: after the download, {len(left)} files are missing or of another size: "
+                         + ", ".join(left[:10]))
+    say(f"{competition}: all {len(picked)} files for the batch's {len(instance_ids)} tasks, at their listed sizes, "
+        f"where Kaggle mounts the competition")
+    return dest
 
 
 def kernel_paths(root: Path = KAGGLE) -> dict:
@@ -507,7 +622,8 @@ def restore(api, user: str, label: str, out: Path, resume_session: str | None = 
 
 def fetch(api, kagglehub, bundle: str, kernel_dataset: str | None, kernel_url: str | None,
           root: Path = KAGGLE, with_model: bool = True) -> Path:
-    """The inputs at Kaggle's paths, and the kernel file. Returns the kernel file's path."""
+    """The inputs at Kaggle's paths, and the kernel file: for a development batch (its order says
+    `"source": "competition"`), the competition's files for its tasks too. Returns the kernel file's path."""
     (Path(root) / "input").mkdir(parents=True, exist_ok=True)
     for old in stale_bundles(root, dataset_dir(bundle, root)):
         say(f"removing another run's bundle: {old}")
@@ -527,6 +643,10 @@ def fetch(api, kagglehub, bundle: str, kernel_dataset: str | None, kernel_url: s
                 raise SystemExit(f"{ref}: after the download, {len(gone)} listed files are missing or of another size: "
                                  + ", ".join(gone[:10]))
         say(f"{ref}: all {len(listed)} listed files, at their listed sizes")
+    order = dataset_dir(bundle, root) / "official_batch.json"
+    meta = json.loads(order.read_text()) if order.exists() else {}
+    if meta.get("source") == "competition":   # a development batch: no competition is mounted here (#780)
+        fetch_competition_files(api, meta.get("competition") or COMPETITION, meta["instance_ids"], root)
     target = model_dir(root)
     if with_model and not (target / "config.json").exists():
         say(f"downloading the model {MODEL}")
