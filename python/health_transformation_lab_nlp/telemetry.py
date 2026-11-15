@@ -41,6 +41,7 @@ from collections import defaultdict
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass, field
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import ClassVar
 
@@ -329,6 +330,89 @@ def end_script() -> None:
                                                                    {"pipeline.step": name})
     span.end()
     context.detach(token)      # OpenTelemetry logs, never raises, if the context already moved on
+
+
+_EPOCH = datetime(1970, 1, 1, tzinfo=UTC)
+_KINDS = {k.name: k for k in trace.SpanKind}
+
+
+def _iso_ns(text: str) -> int:
+    """A span file's time ("2026-11-15T02:18:52.813000Z", microseconds) as nanoseconds since the epoch, exactly."""
+    t = datetime.fromisoformat(text)
+    if t.tzinfo is None:
+        t = t.replace(tzinfo=UTC)
+    return (t - _EPOCH) // timedelta(microseconds=1) * 1000
+
+
+def _forwardable(value) -> bool:
+    """What a forwarded span keeps: numbers, booleans, lists of them, and text only as a short label (at most
+    MAX_LABEL_CHARS), so a file written by other code (the agent framework's spans) can't carry text to Azure."""
+    if isinstance(value, (bool, int, float)):
+        return True
+    if isinstance(value, list):
+        return all(isinstance(v, (bool, int, float)) for v in value)
+    return isinstance(value, str) and len(value) <= MAX_LABEL_CHARS
+
+
+def _read_spans(path: Path) -> list[dict]:
+    """The span lines of a telemetry.jsonl: metrics batches and a line cut off by a machine that stopped are left out."""
+    spans = []
+    for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+        try:
+            item = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(item, dict) and "context" in item and "start_time" in item and "end_time" in item:
+            spans.append(item)
+    return spans
+
+
+def forward_spans(path: Path) -> int:
+    """Send the spans of a telemetry.jsonl (the `file` exporter's layout, or the Kaggle bundle's and kernel's, which
+    are the same) through the exporter setup() configured, and return how many were sent (spec 014 US7, #791). Each
+    keeps its own start and end time, kind, status and attributes (numbers and short labels only); a child keeps its
+    parent, under new span ids, and a span whose parent isn't in the file starts its own trace. With the exporter off,
+    or no file, nothing is sent."""
+    path = Path(path)
+    if _State.exporter == "off":
+        return 0
+    if not path.is_file():
+        log.warning("no span file at %s: nothing to forward", path.name)
+        return 0
+    spans = sorted(_read_spans(path), key=lambda s: _iso_ns(s["start_time"]))
+    by_id = {str(s["context"].get("span_id")): s for s in spans}
+    made: dict[str, trace.Span] = {}
+
+    def start(s: dict, depth: int = 0) -> trace.Span:
+        sid = str(s["context"].get("span_id"))
+        if sid in made:
+            return made[sid]
+        parent = by_id.get(str(s.get("parent_id")))
+        if parent is not None and parent is not s and depth < 64:
+            ctx = trace.set_span_in_context(start(parent, depth + 1))
+        else:
+            ctx = context.Context()                            # a root: its own trace, not the caller's
+        attrs = {k: v for k, v in (s.get("attributes") or {}).items() if _forwardable(v)}
+        kind = _KINDS.get(str(s.get("kind", "")).rsplit(".", 1)[-1], trace.SpanKind.INTERNAL)
+        made[sid] = _State.tracer.start_span(s.get("name") or "span", context=ctx, kind=kind, attributes=attrs,
+                                             start_time=_iso_ns(s["start_time"]))
+        return made[sid]
+
+    for s in spans:
+        start(s)
+    for s in reversed(spans):                                  # children end first, as they did
+        span = made[str(s["context"].get("span_id"))]
+        status = (s.get("status") or {}).get("status_code", "UNSET")
+        if status == "ERROR":
+            span.set_status(Status(StatusCode.ERROR, str((s.get("status") or {}).get("description") or "")[:64]))
+        elif status == "OK":
+            span.set_status(Status(StatusCode.OK))
+        span.end(end_time=_iso_ns(s["end_time"]))
+    for provider in _State.providers or [trace.get_tracer_provider()]:   # sent now, not at exit (azure: global)
+        flush = getattr(provider, "force_flush", None)
+        if flush is not None and hasattr(provider, "get_tracer"):
+            flush()
+    return len(made)
 
 
 def use_databricks_secret(dbutils, exporter: str = "azure", scope: str = "health_transformation_lab",
