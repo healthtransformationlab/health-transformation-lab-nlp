@@ -243,6 +243,18 @@ A SEV2 that fires every week for the same cause gets its cause fixed or its leve
   own way to get more, and ask the owner to use it: on Kaggle, a linked Colab Pro or Pro+ subscription adds 15 or
   30 GPU hours a week ([`kaggle/README.md`](kaggle/README.md), "GPU hours"). A smaller run, a wait or a second
   platform comes after that, and the issue or PR says what was checked.
+- **The Kaggle GPU hours are rationed** (#772). They are one weekly pool for every session on the account, and on
+  November 15 it was spent in a day.
+  - **Read the quota before and after every GPU run** (`python kaggle/gpu_quota.py`: used, allowed, left, refresh)
+    and put the run's cost in its record.
+  - **One GPU run at a time**, across all sessions, and only for the question worth most. Tell the other sessions
+    before starting one.
+  - **The leaderboard answers "did the score go up"**: an entry runs on the host's machines, not our hours, and
+    scores about 58 hidden tasks. A development-set run is for a mechanism (failed edits, context-window endings),
+    which 23 tasks can show and a resolve rate cannot.
+  - **Keep a reserve**: about 10 hours until the last two days before the refresh (Saturday 00:00 UTC), for a change
+    that turns out to matter.
+  - **No idle GPU notebook**: one open in Kaggle's editor with an accelerator on draws on the same hours.
 
 ## Ingestion and schema drift
 
