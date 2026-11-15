@@ -122,7 +122,16 @@ collection** "Health Transformation Lab: Perio Bench", then add the three notebo
 ## GPU hours
 
 Kaggle's free GPU allowance is about 30 hours a week; the exact number, and how much of it is used, is on
-kaggle.com under **Settings**. A kernel pushed with none left is refused: "Maximum weekly GPU quota of 30.00 hours
+kaggle.com under **Settings**, or from the command line (#772):
+
+```
+KAGGLE_API_TOKEN=... python kaggle/gpu_quota.py
+gpu_hours used 32.34 allowed 60.00 left 27.66 refresh 2026-11-21T00:00:00 UTC
+```
+
+The hours refresh weekly, on Saturday at 00:00 UTC. With a Colab subscription linked the account showed 60 hours
+allowed (November 15). Read the quota before and after every run and record the difference: that is what a run costs,
+and how the rest of the week is planned (AGENTS.md, "Failures, retries and reruns"). A kernel pushed with none left is refused: "Maximum weekly GPU quota of 30.00 hours
 reached." Before a run is made smaller, put off or moved to another platform, check whether Kaggle itself gives
 more (AGENTS.md, "Failures, retries and reruns"):
 
