@@ -1496,3 +1496,39 @@ def test_huggingface_hub_is_pinned_below_2_for_the_pinned_transformers(co):
     """#819 on Modal: an unpinned huggingface-hub resolved to 2.4.0, and transformers 5.13.1 (vLLM 0.19.1's) refused
     to import ("huggingface-hub>=1.5.0,<2.0 is required"), so vLLM never started. Pinned beside the rest."""
     assert "huggingface-hub>=1.5.0,<2.0" in co.PINS
+
+
+def test_the_notebook_runs_without_a_kaggle_username_secret(monkeypatch):
+    """#827: Colab stopped on a missing KAGGLE_USERNAME secret (a notebook opened from a new branch path is a new
+    notebook to Colab's Secrets). The username is no secret, so it falls back to jcblearning; a missing token still
+    stops, saying how to add it."""
+    import os
+    import sys
+    import types
+    nb = json.loads(NOTEBOOK.read_text())
+    cell = "".join(next(c for c in nb["cells"] if c["cell_type"] == "code")["source"])
+    head = cell.split("REPO =", 1)[0]   # the secrets part, before anything is fetched
+
+    class SecretNotFoundError(Exception):
+        pass
+
+    secrets = {"KAGGLE_API_TOKEN": "x"}
+
+    def get(name):
+        if name not in secrets:
+            raise SecretNotFoundError(name)
+        return secrets[name]
+
+    colab = types.ModuleType("google.colab")
+    colab.userdata = types.SimpleNamespace(get=get)
+    google = types.ModuleType("google")
+    google.colab = colab
+    monkeypatch.setitem(sys.modules, "google", google)
+    monkeypatch.setitem(sys.modules, "google.colab", colab)
+    monkeypatch.delenv("KAGGLE_USERNAME", raising=False)
+    monkeypatch.delenv("KAGGLE_API_TOKEN", raising=False)
+    exec(head, {})
+    assert os.environ["KAGGLE_USERNAME"] == "jcblearning"
+    secrets.clear()
+    with pytest.raises(SystemExit, match="KAGGLE_API_TOKEN"):
+        exec(head, {})
