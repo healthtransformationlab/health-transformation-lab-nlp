@@ -114,3 +114,23 @@ Approve-with-nits. Merge waits for all of these:
 3. the table and settings are committed;
 4. `BRANCH`, `BRANCH_FILES` and `stop` are restored, so that `test_once_merged_the_notebook_and_the_helper_read_main` passes;
 5. the owner says "merge".
+
+## Update, 2026-11-15 (commit `7d23e7c`)
+
+The owner moved the comparison to Kaggle as two paired arms. This commit withdraws the Colab arm before any session made it:
+
+- the `colab-e2b-statement` entry is off the run list;
+- `stop` is `true`;
+- `BRANCH` and `BRANCH_FILES` read `main` again.
+
+**Why the entry is removed, not just stopped.** The notebook makes every run the list names, whatever `stop` says. An entry left with `stop` set would still be made once this merges. The new test `test_the_superseded_e2b_colab_arm_is_not_listed` checks this.
+
+**Tests.** `test_once_merged_the_notebook_and_the_helper_read_main` passes again. `test_colab_official`, `test_wording`, `test_no_org_references` and `test_bench_order` give 86 passed, and `ruff` is clean.
+
+**Still before merge:**
+
+- **🟡 E4B is hard-coded for Kaggle kernels.** `kaggle/official_agent_run.py:303` attaches `MODEL_SOURCE` (E4B) to every Kaggle kernel. A `kaggle-e2b-statement` kernel would mount no E2B model, and the kernel's model glob would fail. It needs a tested change that attaches the submission's declared model.
+- **The Kaggle pair's addendum** has to be written and its hash recorded on #748 before any kernel starts.
+- **Kernels wait on two things.** The account's weekly GPU quota (30.19 of 30 h used, resets 2026-11-21 00:00 UTC; the Colab Pro+ hours not yet shown) and both GPU session slots being free.
+
+The verdict is unchanged: hold.
