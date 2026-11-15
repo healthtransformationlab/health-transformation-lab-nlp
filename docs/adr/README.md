@@ -30,3 +30,4 @@ don't rewrite the old one.
 | [0006](0006-agent-sessions-keep-a-one-year-workspace-token.md) | Agent sessions keep a one-year workspace token, held as a network secret | accepted |
 | [0007](0007-gpu-hours-are-a-reserve-and-score-questions-go-to-the-leaderboard.md) | GPU hours are a reserve; score questions go to the leaderboard | accepted |
 | [0008](0008-modal-runs-start-on-their-own-under-a-cost-cap.md) | Modal runs start on their own under a cost cap; above it they wait for the owner | accepted |
+| [0009](0009-task-sets-not-an-r-parity-input.md) | The task sets are not an R parity input | accepted |
