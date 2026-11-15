@@ -96,6 +96,12 @@ in the `function.calls` metric and failures still count. The whole site build (t
 sends 28 spans. With telemetry off, `@traced` is a plain function call: the test suite runs as fast
 as before.
 
+**Rows in and out.** A pipeline step that takes a table and returns one can carry `@counts_rows` directly under
+`@traced` (spec 040 US6, #758). Its span then records `row_in_count`, the rows of its first argument (the sum over a
+dict of tables), and `row_out_count`, the rows it returns (the first item of a tuple); a step that fails records
+`row_in_count` only. Counts only, never a row's values. Seventeen steps carry it (`specs/040-telemetry-tasks/plan.md`);
+once their modules are imported, `telemetry.ROW_COUNTED` names them. Put above `@traced`, it raises `TypeError`.
+
 A test (`tests/test_telemetry_calls.py`) fails if a new public function lacks `@traced`.
 
 ### Verbosity levels

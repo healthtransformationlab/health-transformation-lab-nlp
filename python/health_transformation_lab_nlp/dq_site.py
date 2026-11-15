@@ -19,7 +19,7 @@ import pandas as pd
 from . import grader_tables, open_dental, tooth_loss_dq
 from .completeness import complete_cases
 from .paths import DATASETS_DIR, REPO_ROOT
-from .telemetry import traced
+from .telemetry import counts_rows, traced
 
 OUT = REPO_ROOT / "docs" / "site" / "data-quality.json"
 REPORT_CAL_ICC = True        # spec 032 US8 (#448): the reliability section reports the CAL ICC (spec 013)
@@ -56,6 +56,7 @@ def _pct(x, d: int = 1):
 
 
 @traced
+@counts_rows
 def flag_outliers(values: pd.Series, k: float = 2.0) -> pd.Series:
     """True where a clinic is more than k standard deviations from the mean of all clinics."""
     sd = values.std(ddof=1)

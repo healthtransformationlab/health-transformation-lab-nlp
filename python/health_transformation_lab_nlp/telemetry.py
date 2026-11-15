@@ -32,6 +32,7 @@ from __future__ import annotations
 
 import atexit
 import functools
+import inspect
 import itertools
 import json
 import logging
@@ -547,8 +548,12 @@ def traced(fn):
 
     @functools.wraps(fn)
     def wrapper(*args, **kwargs):
-        if _State.profile is not None:
-            return _profiled(name, fn, args, kwargs)
+        if _State.profile is not None:              # no span: nothing may annotate the caller's
+            token = _annotatable.set(None)
+            try:
+                return _profiled(name, fn, args, kwargs)
+            finally:
+                _annotatable.reset(token)
         if _State.exporter == "off":
             return fn(*args, **kwargs)
         if rank > _State.level:
@@ -561,6 +566,47 @@ def traced(fn):
             return fn(*args, **kwargs)
 
     wrapper.__traced__ = True
+    return wrapper
+
+
+ROW_COUNTED: set[str] = set()   # "<module>.<function>" of each step that records its rows (spec 040 US6, #758)
+
+
+def _row_count(value) -> int | None:
+    """Rows in a table (a DataFrame or Series: its first dimension), or in a dict of tables (their sum). None for
+    anything else, so a step that reads or writes no table records no count."""
+    shape = getattr(value, "shape", None)
+    if shape:
+        return int(shape[0])
+    if isinstance(value, dict) and value and all(getattr(v, "shape", None) for v in value.values()):
+        return int(sum(v.shape[0] for v in value.values()))
+    return None
+
+
+def counts_rows(fn):
+    """Record the rows a table step reads and writes on its own span (spec 040 US6, #758): `row_in_count` from its
+    first argument, `row_out_count` from what it returns (the first item of a tuple). A filter that drops rows shows
+    up only as these two numbers. Put it directly under `@traced`, so `annotate` reaches that function's span.
+    `row_in_count` is written before the body runs, so a step that fails still says how many rows it was given.
+    Counts only, never a row's values; with telemetry off, `annotate` writes nothing and the step is unchanged."""
+    if getattr(fn, "__traced__", False):
+        raise TypeError(f"put @counts_rows directly under @traced, not above it ({fn.__qualname__}): above it, the "
+                        "counts would land on the caller's span")
+    first = next(iter(inspect.signature(fn).parameters), None)
+    module = fn.__module__.rsplit(".", 1)[-1]
+    ROW_COUNTED.add(f"{module}.{fn.__qualname__.split('.<locals>.')[-1]}")
+
+    @functools.wraps(fn)
+    def wrapper(*args, **kwargs):
+        rows_in = _row_count(args[0] if args else kwargs.get(first))
+        if rows_in is not None:
+            annotate(row_in_count=rows_in)
+        out = fn(*args, **kwargs)
+        rows_out = _row_count(out[0] if isinstance(out, tuple) and out else out)
+        if rows_out is not None:
+            annotate(row_out_count=rows_out)
+        return out
+
     return wrapper
 
 
