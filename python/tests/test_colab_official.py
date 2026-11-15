@@ -810,6 +810,16 @@ class _FakeKaggle:
             raise _HttpError(404)
         return "ready"
 
+    def dataset_list(self, user=None, search=None, **k):
+        """The owner's own datasets whose slug holds `search`, private ones included, as Kaggle lists them; or the
+        error set for the listing."""
+        import types
+        self.calls.append(("datasets", user, search))
+        if getattr(self, "list_error", None) is not None:
+            raise self.list_error
+        return [types.SimpleNamespace(ref=r) for r in sorted(self.datasets)
+                if r.split("/")[0] == user and (search or "") in r.split("/")[1]]
+
     def _take(self, folder):
         from pathlib import Path
         files = {str(p.relative_to(folder)): p.read_bytes() for p in Path(folder).rglob("*") if p.is_file()}
@@ -910,6 +920,26 @@ def test_a_status_call_that_fails_stops_the_run_and_only_a_missing_dataset_is_a_
     for failure in (ConnectionError("the network blinked"), _HttpError(500), _HttpError(401)):
         with pytest.raises(SystemExit, match="could not tell"):
             co.restore(_FakeKaggle(status_error=failure), "someone", "colab-graph", out, sleep=lambda s: None)
+
+
+def test_a_403_for_a_dataset_the_owner_does_not_have_is_a_fresh_start_and_any_doubt_still_stops(co, monkeypatch,
+                                                                                                 tmp_path):
+    """#815: Kaggle answers 403, not 404, for a private dataset that does not exist, so a run with a new label stopped
+    before its first upload. After a 403, the owner's own datasets say whether it is there."""
+    _on_machine(co, monkeypatch, tmp_path)
+    out = tmp_path / "content" / "htl_kaggle" / "working"
+    ref = "someone/htlnlp-colab-official-colab-graph"
+    absent = _FakeKaggle({"someone/htlnlp-colab-official-colab-graph-l4": {}}, status_error=_HttpError(403))
+    assert co.restore(absent, "someone", "colab-graph", out, sleep=lambda s: None) == ("fresh", 0)
+    assert ("datasets", "someone", "htlnlp-colab-official-colab-graph") in absent.calls   # its own list was read
+    there = _FakeKaggle({ref: _uploaded(co.session_id())}, status_error=_HttpError(403))
+    assert co.dataset_exists(there, ref, sleep=lambda s: None) is True          # listed: there, so never a fresh start
+    unlisted = _FakeKaggle(status_error=_HttpError(403))
+    unlisted.list_error = ConnectionError("the network blinked")
+    with pytest.raises(SystemExit, match="could not tell"):                     # the list cannot be read: still stops
+        co.restore(unlisted, "someone", "colab-graph", out, sleep=lambda s: None)
+    assert co.is_forbidden(_HttpError(403)) and not co.is_forbidden(_HttpError(404))
+    assert co.is_forbidden(RuntimeError("403 Client Error: Forbidden for url")) and not co.is_forbidden(_HttpError(401))
 
 
 def test_a_session_resumes_its_own_upload_and_another_sessions_only_when_named(co, monkeypatch, tmp_path):

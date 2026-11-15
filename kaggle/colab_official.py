@@ -504,9 +504,31 @@ def is_not_found(e: BaseException) -> bool:
     return "404" in str(e) and "not found" in str(e).lower()
 
 
+def is_forbidden(e: BaseException) -> bool:
+    """Whether an error from the Kaggle client is HTTP 403. Kaggle answers 403, not 404, for a private dataset that
+    does not exist (#815), and also for one the token may not read."""
+    response = getattr(e, "response", None)
+    code = getattr(response, "status_code", None) or getattr(e, "status", None) or getattr(e, "code", None)
+    if isinstance(code, int):
+        return code == 403
+    return "403" in str(e) and "forbidden" in str(e).lower()
+
+
+def listed_as_own(api, ref: str) -> bool | None:
+    """Whether the owner's own datasets, private ones included, hold `ref`: True or False, or None when Kaggle's
+    listing fails. Used after a 403, which alone cannot tell a missing dataset from one that may not be read (#815)."""
+    owner, _, slug = ref.partition("/")
+    try:
+        found = api.dataset_list(user=owner, search=slug) or []
+    except Exception:  # noqa: BLE001 - a listing that fails tells nothing
+        return None
+    return any(str(getattr(d, "ref", d)).lower() == ref.lower() for d in found)
+
+
 def dataset_exists(api, ref: str, tries: int = 3, sleep=time.sleep) -> bool:
-    """True when the dataset is there, False when Kaggle says there is no such dataset. Any other failure is tried
-    again, then raises StatusUnknown (#691, item 3: a failed status call was read as "nothing to resume")."""
+    """True when the dataset is there, False when Kaggle says there is no such dataset: a 404, or a 403 for a dataset
+    its owner's own list does not hold (#815). Any other failure is tried again, then raises StatusUnknown (#691,
+    item 3: a failed status call was read as "nothing to resume")."""
     for attempt in range(tries):
         try:
             api.dataset_status(ref)
@@ -514,6 +536,10 @@ def dataset_exists(api, ref: str, tries: int = 3, sleep=time.sleep) -> bool:
         except Exception as e:  # noqa: BLE001 - sorted below: missing, or not known
             if is_not_found(e):
                 return False
+            if is_forbidden(e):
+                listed = listed_as_own(api, ref)
+                if listed is not None:
+                    return listed
             if attempt == tries - 1:
                 raise StatusUnknown(f"{type(e).__name__}: {str(e)[:200]}") from e
             sleep(15)
