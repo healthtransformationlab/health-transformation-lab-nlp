@@ -79,9 +79,11 @@ each step with `DENTAL_TELEMETRY_LEVEL=detail`, and the run's settings record it
   `ERROR`; otherwise it "finished, but its output looks wrong". The issue's third outcome, "its checks failed", has
   no span attribute to come from today. It is left out, and #753 says so in a dated line.
 - **`span_names`**: `symptom`, plus the innermost `ERROR` span's `name` (the function), `data.label`, `error.type`,
-  and `row_in_count` and `row_out_count` when the span has them.
-- **`span_names_message`**: `span_names`, plus `status.description` with every path, number and quoted value
-  replaced by `<path>`, `<n>` and `<value>`, cut to 240 characters as `69_failure_report.py` cuts error lines.
+  and `row_in_count` and `row_out_count` when the span has them. When no span failed, it gives instead the rows in
+  and out of each step that counts them, at most 10, in the order they started: that is where a filter dropping
+  rows shows.
+- **`span_names_message`**: `span_names`, plus `status.description` with every quoted value, path, file name and
+  number replaced by `<value>`, `<path>` and `<n>`, cut to 240 characters as `69_failure_report.py` cuts error lines.
 - The same lines always give the same text: spans are ordered by `start_time`, and no clock or random value is read.
 
 ## How the pieces fit
