@@ -40,6 +40,8 @@ from pathlib import Path
 
 WHEELHOUSE = "metric/gemma-4-developer-agent-wheelhouse"                 # the competition's evaluator
 MODEL = "google/gemma-4/other/gemma-4-e4b-it-qat-w4a16-ct/2"             # as the starter notebook attaches it
+# A run that names no model gets MODEL. An entry of the run list can name another (`"model": <handle>`), since the
+# kernel serves the one model the submission declares and finds it under the inputs (028 AI12, #748: E2B).
 # The versions the Kaggle kernels recorded (their `_settings.json`), from PyPI with their dependencies; the wheels of
 # the wheelhouse are then installed over them by the kernel itself, as on Kaggle.
 # `docker` is the Docker SDK: the competition's evaluator imports it even for its subprocess sandbox, and Kaggle's image
@@ -61,7 +63,7 @@ UPLOAD_EVERY_SECONDS = 480   # what a dropped session can lose: the tasks finish
 # stop. A new run is made from a branch of its own: point this and the notebook's BRANCH there while it is made, and
 # back before it merges (the runs of #687 read feat/687-028-colab-paired-run).
 BRANCH_FILES = ("https://raw.githubusercontent.com/healthtransformationlab/health-transformation-lab-nlp/"
-                "refs/heads/main/kaggle/")
+                "refs/heads/feat/748-028-colab-e2b-arm/kaggle/")   # back to main before merge (#748)
 FOLLOW_MINUTES = 150     # how long a notebook waits for the run list to name another run, after each run
 POLL_SECONDS = 60
 DONE: dict[str, int] = {}   # label -> the kernel's exit code, for each run this notebook session has made
@@ -229,6 +231,25 @@ def listed_gpu(label: str, get=branch_file, tries: int = 3, sleep=time.sleep) ->
     return None
 
 
+def listed_model(label: str, get=branch_file, tries: int = 3, sleep=time.sleep) -> str:
+    """The model handle the branch's run list names for the run `label`, or MODEL when its entry names none (as no
+    entry before 028 AI12 does) or it is not listed. Unlike the GPU, the model cannot be guessed: a list that cannot
+    be read stops the run, since an E2B arm given E4B would load a model its submission does not declare."""
+    for attempt in range(tries):
+        try:
+            runs = json.loads(get("colab_official_run.json")).get("runs", [])
+            handle = next((r.get("model") for r in runs if r.get("label") == label), None) or MODEL
+            break
+        except Exception as e:  # noqa: BLE001 - a read that fails is tried again, then the run stops
+            say(f"could not read which model {label} is for (try {attempt + 1} of {tries}): {type(e).__name__}")
+            if attempt < tries - 1:
+                sleep(15)
+    else:
+        raise SystemExit(f"could not read which model {label} is for: the run is not made with a guessed model")
+    model_dir(Path("/"), handle)   # a handle that is not owner/model/framework/variation/version stops the run here
+    return handle
+
+
 def follow(done: dict, minutes: float = FOLLOW_MINUTES, get=branch_file, make=None, sleep=time.sleep,
            clock=time.monotonic) -> str:
     """After the runs a notebook was started for: keep reading the branch's run list, and make each run it names that
@@ -367,8 +388,8 @@ def restore(api, user: str, label: str, out: Path) -> tuple[str, int]:
 
 
 def fetch(api, kagglehub, bundle: str, kernel_dataset: str | None, kernel_url: str | None,
-          root: Path = KAGGLE, with_model: bool = True) -> Path:
-    """The inputs at Kaggle's paths, and the kernel file. Returns the kernel file's path."""
+          root: Path = KAGGLE, with_model: bool = True, handle: str = MODEL) -> Path:
+    """The inputs at Kaggle's paths, the model `handle`, and the kernel file. Returns the kernel file's path."""
     (Path(root) / "input").mkdir(parents=True, exist_ok=True)
     for old in stale_bundles(root, dataset_dir(bundle, root)):
         say(f"removing another run's bundle: {old}")
@@ -379,10 +400,10 @@ def fetch(api, kagglehub, bundle: str, kernel_dataset: str | None, kernel_url: s
             say(f"downloading {ref} -> {dest}")
             download_dataset(api, ref, dest)
         say(f"{ref}: {sum(1 for _ in dest.rglob('*'))} entries")
-    target = model_dir(root)
+    target = model_dir(root, handle)
     if with_model and not (target / "config.json").exists():
-        say(f"downloading the model {MODEL}")
-        cached = Path(kagglehub.model_download(MODEL))
+        say(f"downloading the model {handle}")
+        cached = Path(kagglehub.model_download(handle))
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.rmtree(target, ignore_errors=True)
         shutil.copytree(cached, target)
@@ -430,8 +451,9 @@ def main(label: str, bundle: str, kernel_dataset: str | None = None, kernel_url:
 
 
 def run_one(label: str, bundle: str, kernel_dataset: str | None = None, kernel_url: str | None = None,
-            user: str | None = None) -> int:
-    """One run, start to finish. Returns the kernel's exit code (or 1 when it never started)."""
+            user: str | None = None, model: str | None = None) -> int:
+    """One run, start to finish. Returns the kernel's exit code (or 1 when it never started). `model`: the model
+    handle to mount; by default the one the run's entry in the run list names (`listed_model`)."""
     LOG.parent.mkdir(parents=True, exist_ok=True)
     user = user or os.environ["KAGGLE_USERNAME"]
     listed, label = label, base_label(label)   # `<label>-try<n>` is the same run, listed again
@@ -448,6 +470,8 @@ def run_one(label: str, bundle: str, kernel_dataset: str | None = None, kernel_u
         if not is_for_this_gpu(wanted, name):   # another session's run: nothing of it is read, and nothing is sent
             say(f"{label} is for a machine with a {wanted}; this one has a {name}: it is not made here")
             return 0
+        handle = model or listed_model(listed)
+        say(f"{label}: model {handle}")
         if out.exists() and any(out.iterdir()):   # an earlier run's output on this machine: set it aside
             out.rename(out.with_name(f"working_before_{label}_{int(time.time())}"))
         run([sys.executable, "--version"])
@@ -471,7 +495,7 @@ def run_one(label: str, bundle: str, kernel_dataset: str | None = None, kernel_u
             upload(api, user, label, out, "started")
         except Exception as e:  # noqa: BLE001 - a note that fails must not stop the run
             say(f"the first note was not sent, carrying on: {type(e).__name__}: {str(e)[:200]}")
-        kernel = fetch(api, kagglehub, bundle, kernel_dataset, kernel_url)
+        kernel = fetch(api, kagglehub, bundle, kernel_dataset, kernel_url, handle=handle)
         out.mkdir(parents=True, exist_ok=True)
         set_aside_parts(out)
         say("starting the kernel")
