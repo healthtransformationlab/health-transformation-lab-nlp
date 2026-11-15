@@ -5,7 +5,9 @@ a changed file is one that pipeline depends on:
   - the scripts make_parity_inputs.sh runs, and the health_transformation_lab_nlp modules they import, followed through every
     module they import in turn;
   - r/, the inputs the scripts read (data/, eval/, synthea/, omop/, models.yaml, costs.yaml), the package's
-    dependencies (python/pyproject.toml), and this check and the CI workflow themselves.
+    dependencies (python/pyproject.toml), and this check and the CI workflow themselves;
+  - but not data/tasks/, the coding-agent task sets, which no parity script or R test reads (issue #715,
+    docs/adr/0005-task-sets-not-an-r-parity-input.md).
 Everything else (docs, tests, dashboards, notebooks, infra, modules the pipeline never imports) cannot change what R
 is compared against. Pushes to main, manual runs and the weekly run don't ask: they always run parity.
 
@@ -27,6 +29,7 @@ SCRIPT = "python/scripts/make_parity_inputs.sh"
 PACKAGE = "python/health_transformation_lab_nlp"
 ALWAYS = ("r/", "data/", "eval/", "synthea/", "omop/", "models.yaml", "costs.yaml", "python/pyproject.toml",
           SCRIPT, ".github/scripts/parity_needed.py", ".github/workflows/ci.yml")
+NEVER = ("data/tasks/",)   # under data/ but read by no parity script or R test (#715)
 
 
 def _imported_modules(path: Path) -> set[str]:
@@ -79,16 +82,21 @@ def code_changed(changed: list[str]) -> bool:
     return any(not c.lower().endswith(DOC_SUFFIXES) for c in changed)
 
 
+def _reaches(path: str, deps: set[str]) -> bool:
+    return path in deps or (path.startswith(ALWAYS) and not path.startswith(NEVER))
+
+
 def needed(changed: list[str], root: Path = ROOT) -> bool:
     deps = dependencies(root)
-    return any(c in deps or c.startswith(ALWAYS) for c in changed)
+    return any(_reaches(c, deps) for c in changed)
 
 
 if __name__ == "__main__":
     base, head = os.environ.get("BASE", ""), os.environ.get("HEAD", "")
     changed = subprocess.run(["git", "diff", "--name-only", f"{base}...{head}"], cwd=ROOT, check=True,
                              capture_output=True, text=True).stdout.split()
-    hits = sorted(c for c in changed if c in dependencies() or c.startswith(ALWAYS))
+    deps = dependencies()
+    hits = sorted(c for c in changed if _reaches(c, deps))
     print(f"needed={'true' if hits else 'false'}")
     print(f"code={'true' if code_changed(changed) else 'false'}")
     print(f"{len(hits)} of {len(changed)} changed files reach R parity: {', '.join(hits[:10]) or 'none'}", file=sys.stderr)

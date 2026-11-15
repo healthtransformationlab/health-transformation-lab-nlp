@@ -26,3 +26,4 @@ don't rewrite the old one.
 | [0002](0002-no-feature-store-for-now.md) | No feature store for now | accepted |
 | [0003](0003-static-data-quality-page.md) | The data-quality report is a static page, not a FastAPI app | accepted |
 | [0004](0004-task-set-under-two-licences.md) | The coding-agent task set is offered under CC BY 4.0 or Apache 2.0 | accepted |
+| [0005](0005-task-sets-not-an-r-parity-input.md) | The task sets are not an R parity input | accepted |
