@@ -323,6 +323,18 @@ it, the Azure exporter's own warnings go to stderr, and the watcher prints `tele
 `union dependencies, requests, traces | where timestamp > ago(1d) | summarize count() by itemType, cloud_RoleName`
 in the resource's Logs page.
 
+**Verified end to end, November 15 (#807).** The watcher's run of 15:02 UTC (after #802) landed in the workspace:
+`AppDependencies` 8 rows (the spans), `AppMetrics` 8, `AppPerformanceCounters` 32. To check from Cloud Shell, without
+the portal, ask the workspace through Azure Resource Manager; its answer uses `Tables` and `Rows` with capitals, so a
+lowercase `tables[0].rows` prints nothing even when rows arrived:
+
+```bash
+WS=$(az monitor log-analytics workspace list --query "[0].id" -o tsv)
+az rest --method post --url "https://management.azure.com$WS/api/query?api-version=2020-08-01" \
+  --body '{"query": "union AppDependencies, AppMetrics, AppPerformanceCounters | where TimeGenerated > ago(1d) | summarize count() by Type"}' \
+  --query "Tables[0].Rows"
+```
+
 ## Not yet
 
 The pipeline doctor: classify each failure (GPU unavailable, out of memory, schema drift, data
