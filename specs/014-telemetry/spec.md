@@ -118,3 +118,15 @@ nothing. Done in #666:
 - [x] T606 `docs/telemetry.md`, "Agent runs, offline"
 - [ ] T607 a script that sums the files into a cost-and-performance table a task and a fix
 - [x] T608 send the files to Application Insights: a GitHub secret, through `telemetry.forward_spans` (US7, #791)
+
+## Revision 2026-11-15: telemetry off is an alert, not only a warning (BUG1, #792)
+
+Every job had asked for `azure` since this spec, but the Application Insights resource was never created, so no
+connection string existed and telemetry was off everywhere, with one log warning per run. US2's rule stands (a
+missing secret never fails a pipeline); what changes is that off-when-asked is now seen:
+
+- `telemetry.status()`: `asked_exporter_name`, `active_exporter_name`, `reason_text` (no value ever)
+- one stderr line from `setup()` / `use_databricks_secret` naming the setting, the reason and the fix (a
+  `::warning::` annotation under GitHub Actions)
+- `digests.telemetry_alerts(statuses)` and `digests.register_alerts(register, scope_keys)`: SEV3s in the daily
+  digest (`14_pipeline_digest.py`), the second for a registered Databricks-scope secret the scope lacks

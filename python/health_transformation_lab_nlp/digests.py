@@ -8,6 +8,8 @@ count, a repeat flagged. SEV1 and SEV2 never wait for a digest: the doctor pages
     decision_alerts(decisions)           the doctor's SEV3/SEV4 recommendations no one has decided yet
     forecast_alerts(today, history)      pipeline-doctor's forecaster on ops/secrets_register.yaml,
                                          ops/dependency_inventory.csv and the run history
+    telemetry_alerts(statuses)           a pipeline that asked for a telemetry exporter and ran without it (014 BUG1)
+    register_alerts(register, keys)      a register entry stored in the Databricks secret scope that the scope lacks
     build(alerts, period, date, prev)    (items, messages) for one period; an item in the last digest too is a repeat
     periods_due(date)                    daily every day, weekly on Mondays
     rows(df, table, ...)                 typed rows with the batch key, for delta.replace_keys by digest_key
@@ -17,12 +19,14 @@ count, a repeat flagged. SEV1 and SEV2 never wait for a digest: the doctor pages
 
 from __future__ import annotations
 
+import re
+
 import pandas as pd
 from pipeline_doctor import digest as pd_digest
 from pipeline_doctor import forecast as pd_forecast
 
 from .paths import REPO_ROOT
-from .telemetry import traced
+from .telemetry import SECRET_SCOPE, fix_text, traced
 
 ALERT_COLUMNS = list(pd_digest.ALERT_COLUMNS)
 # a failing budget or target check as an alert: its class, and the runbook action to take first
@@ -102,6 +106,57 @@ def forecast_alerts(today, history: pd.DataFrame | None = None) -> pd.DataFrame:
     inventory = pd_forecast.load_dependency_inventory(REPO_ROOT / "ops" / "dependency_inventory.csv")
     out = pd_forecast.forecast_all(load_config(), today, register=register, inventory=inventory, history=history)
     return out.reindex(columns=ALERT_COLUMNS)
+
+
+# "Databricks secret scope health_transformation_lab, key appinsights_connection_string" in a register's stored_in
+SCOPE_KEY = re.compile(r"Databricks secret scope\s+([\w.-]+)\s*,\s*key\s+([\w.-]+)", re.IGNORECASE)
+
+
+def _alert(**fields) -> dict:
+    return {c: fields.get(c) for c in ALERT_COLUMNS}
+
+
+@traced
+def telemetry_alerts(statuses: list[dict]) -> list[dict]:
+    """A SEV3 for each pipeline that asked for a telemetry exporter and ran without it (014 BUG1, #792). Each status
+    is telemetry.status() plus `pipeline_name` (and `owner_name`, default the repo owner). Every such pipeline gets
+    the same subject, so the digest shows the problem once with a count and the pipelines named; the action is the
+    fix. Without telemetry the doctor sees no runs at all, so this is the only place it shows."""
+    out, seen = [], set()
+    for s in statuses or []:
+        asked, active = s.get("asked_exporter_name") or "off", s.get("active_exporter_name") or "off"
+        pipeline = s.get("pipeline_name")
+        if asked == "off" or asked == active or pipeline in seen:
+            continue
+        seen.add(pipeline)
+        reason = s.get("reason_text") or "no reason recorded"
+        out.append(_alert(subject_name=f"telemetry asked for {asked} but {active}", subject_kind_code="telemetry",
+                          pipeline_name=pipeline, predicted_failure_class_code="config", severity_code="SEV3",
+                          recommended_action_code="fix_setting", owner_name=s.get("owner_name") or DEFAULT_OWNER,
+                          evidence_text=(f"DENTAL_TELEMETRY={asked} but telemetry ran {active}: {reason}. "
+                                         f"Fix: {fix_text(reason)}. No spans reach the backend, so the doctor "
+                                         "sees no runs")))
+    return out
+
+
+@traced
+def register_alerts(register: dict, scope_keys: set[str], scope: str = SECRET_SCOPE) -> list[dict]:
+    """A SEV3 for each credential in the secrets register (ops/secrets_register.yaml, as loaded) whose `stored_in`
+    names a key in the Databricks secret scope that the scope doesn't have. `scope_keys` is the scope's key names
+    (dbutils.secrets.list: names only, never a value)."""
+    out = []
+    for c in (register or {}).get("credentials") or []:
+        for s, key in SCOPE_KEY.findall(str(c.get("stored_in") or "")):
+            if s != scope or key in scope_keys:
+                continue
+            out.append(_alert(subject_name=c.get("name"), subject_kind_code="credential",
+                              predicted_failure_class_code="config", severity_code="SEV3",
+                              recommended_action_code="fix_setting", owner_name=c.get("owner") or DEFAULT_OWNER,
+                              evidence_text=(f"ops/secrets_register.yaml says Databricks secret scope {scope}, key "
+                                             f"{key}, but the scope has no key {key}. Fix: make it ({c.get('made_in') or 'see the register'}) "
+                                             f"and put it in {scope}/{key}, or correct stored_in. "
+                                             f"Without it: {c.get('if_it_expires') or 'see the register'}")))
+    return out
 
 
 @traced
