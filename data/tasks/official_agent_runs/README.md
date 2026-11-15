@@ -731,3 +731,42 @@ only the November 11 prompt resolved `rich_3535`. With 2 and 1 discordant tasks,
 23 traces the first call was `run_command`, 17 of them the localization grep. No run copied the prompt's placeholder
 or called a skill, and none named a path outside the workspace. The patches the agent now writes mostly fail their
 tests, so their correctness, not finding the file, is where the next change would have to act.
+
+# The competition's own development set: a quarter of the window for output (November 14, 2026)
+
+gemma-developer-agent PR 100 (its issue #99) changed one setting of the November 11 agent: `max_output_tokens` from
+16,384 to 8,192 (`configs/sampling.yaml`), so the conversation gets 24,576 of the model server's 32,768 tokens instead
+of 16,384. The prompt, tools, budgets and thinking budget (4,096) are the November 11 run's; PR 98's prompt is not in
+it. With the owner's approval it ran on the same 23 tasks, paired with the November 11 run: the same evaluator end to
+end, one Kaggle kernel on four L4 GPUs (`htlnlp-offrun-devset-max-output-8192`, 64 minutes), telemetry on.
+`gemma-4-e4b-it-qat-w4a16-ct_swegemma_devset-max-output-8192.csv` has one row per task, written by the runner
+(`--label max-output-8192`, #721; `--collect --reuse-output` with the fix of #737, so `max_output_tokens` is the
+submission's 8,192, not the evaluator's fallback). Its `_settings.json` names the agent commit (`5dcbb1a`) and
+`generation_used`. A first attempt ran no task: its new kernel got Kaggle's current image, where vLLM from the
+wheelhouse cannot load `libcudart.so.12`; the runner now pins the starter notebook's image by default (#721).
+
+| On the same 23 tasks | November 11 (16,384) | PR 100 (8,192) |
+|---|---|---|
+| **Resolved** | **3** | **3** |
+| Tests fail with the agent's patch | 10 | 10 |
+| Empty patch | 5 | 5 |
+| Errors before any test ran | 3 | 3 |
+| The tests ran out of time (exit code 124) | 2 | 2 |
+| **Ended at the context window** | **3** | **0** |
+| Tool calls; to a graph tool; to the analyzer | 267; 43; 16 | 317; 70; 23 |
+
+Both resolved `fastapi_14301` and `rich_3454`. Only the 8,192 run resolved `fastapi_14463`, one of the three tasks
+that ended at the context window on November 11, and only the November 11 run resolved `rich_3535`. With 1 and 1
+discordant tasks, the exact McNemar test gives p = 1.0: **no difference in resolved tasks can be claimed**.
+
+What the setting is for did change: no run ended at the context window, against 3 of 23 on November 11
+(`fastapi_14463`, now resolved; `rich_3953`, now a patch that fails its tests; `rich_4076`, still empty). In the
+kernel's traces (its output on Kaggle; not committed, since they hold the competition's task text), the largest prompt
+of any of the 418 model calls was 17,155 tokens (`rich_3930`), the only one above 16,384: a call the 16,384 setting
+would have refused, served here. The largest answer was 4,813 tokens (`rich_3180`) and none reached 8,000, so the
+lower limit cut no answer short. Of the five empty patches, `fastapi_14873` used all 40 tool calls and the other four
+ended without an edit; no run reached the 5-minute budget (the longest took 222 seconds). No run called a skill or
+named a path outside the workspace.
+
+Twenty-three tasks at temperature 0.2, one run each: this shows the context-window endings gone at no visible cost on
+these tasks, not a higher resolve rate. The setting and PR 98's prompt have not been run together.
