@@ -776,3 +776,47 @@ named a path outside the workspace.
 
 Twenty-three tasks at temperature 0.2, one run each: this shows the context-window endings gone at no visible cost on
 these tasks, not a higher resolve rate. The setting and PR 98's prompt have not been run together.
+
+# The competition's own development set: the localize-first prompt with an 8,192-token output budget (November 15, 2026)
+
+gemma-developer-agent `main` at `d13dc52` holds both single changes above: PR 98's prompt and PR 100's
+`max_output_tokens` of 8,192 (thinking budget 4,096). They had not run together, and the pair is what the next
+leaderboard entry is built from. With the owner's approval it ran on the same 23 tasks, paired with the three runs
+above: the same evaluator end to end, one Kaggle kernel on four L4 GPUs (`htlnlp-offrun-devset-prompt98-out8192`,
+60.5 minutes), telemetry on. `gemma-4-e4b-it-qat-w4a16-ct_swegemma_devset-prompt98-out8192.csv` has one row per task,
+written by the runner (`--label prompt98-out8192`, with the fixes of #721 and #737). Its `_settings.json` names the
+agent commit and `generation_used`.
+
+| On the same 23 tasks | November 11 | PR 98 (prompt) | PR 100 (8,192) | **Both** |
+|---|---|---|---|---|
+| **Resolved** | **3** | **4** | **3** | **4** |
+| Tests fail with the agent's patch | 10 | 13 | 10 | 12 |
+| Empty patch | 5 | 2 | 5 | 4 |
+| Errors before any test ran | 3 | 2 | 3 | 2 |
+| The tests ran out of time (exit code 124) | 2 | 2 | 2 | 1 |
+| Ended at the context window | 3 | 4 | 0 | 0 |
+| Reached the 5-minute budget | 2 | 0 | 0 | 2 |
+| Tool calls; to a graph tool; to the analyzer | 267; 43; 16 | 287; 17; 7 | 317; 70; 23 | 271; 13; 6 |
+
+The pair resolved `fastapi_13537`, `fastapi_14301`, `fastapi_14463` and `rich_3905`. Against PR 98's prompt alone,
+only the pair resolved `fastapi_13537` and `fastapi_14463`, and only PR 98's run resolved `fastapi_14873` and
+`rich_3454`. With 2 and 2 discordant tasks, the exact McNemar test gives p = 1.0, as it does against November 11
+(3 and 2) and against PR 100 (2 and 1): **no difference can be claimed**. Seven tasks have been resolved by at least
+one of the four runs, and only `fastapi_14301` by all four.
+
+Described, not tested, from the kernel's traces (its output on Kaggle; not committed, since they hold the
+competition's task text):
+
+- **The window.** No run ended at the context window, against 4 for PR 98's prompt alone. Five tasks sent prompts
+  above 16,384 tokens and were served (`fastapi_13537`, `fastapi_15280`, `rich_3454`, `rich_3518`, `rich_3953`), the
+  largest 17,426 in `fastapi_13537`. That task was resolved for the first time in any run here.
+- **The cost.** One of the 341 answers reached the 8,192-token limit (`fastapi_14873`): the evaluator reported that
+  the tool call was cut off before it closed, and the run then reached the 5-minute budget with an empty patch. PR 98's
+  run, at 16,384, had resolved that task. PR 100's run had no answer above 4,813 tokens, so its "no visible cost"
+  held for that run's prompt and does not hold for this pair.
+- **Scratch files.** `fastapi_14463`'s resolving patch is 215,685 bytes: a two-line fix to
+  `fastapi/openapi/utils.py`, plus two files the agent wrote and left in the workspace (`app.py`, 31 lines, and a
+  214 KB `openapi.json`). The evaluator includes untracked files in the patch; these did not stop the tests passing.
+
+Twenty-three tasks at temperature 0.2, one run each. A setting between the two, 12,288 (20,480 for the conversation,
+above the largest prompt seen here, and 8,192 for an answer after thinking), has not been run.
