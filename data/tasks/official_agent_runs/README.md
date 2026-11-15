@@ -663,6 +663,35 @@ status call that fails being read as "nothing to resume", a bundle folder that i
 the audit being a list of words over commands alone, and the runner not checking its Colab options together. They
 are issue 691, to be closed before the helper is used again. The run list says stop.
 
+## E2B against E4B on the same Kaggle machine (#748, addendum 5)
+
+Both arms ran on 2026-11-15, on Kaggle's L4 machine with the starter image, and were scored here by the competition's
+evaluator. They used the 93 published tasks, seed 20261110, the same order and the same budgets. The only difference
+was the model, as frozen in `specs/028-dataops-task-set/preregistration-kaggle-e2b-pair.md`.
+
+| Arm | Agent | Model | Resolved | Patches made | Context window exceeded | Kernel ended |
+|---|---|---|---|---|---|---|
+| `kaggle-e4b-statement` | `b95b235` | `gemma-4-e4b-it-qat-w4a16-ct` | **5 of 93** | 65 | 5 | 12:15 UTC |
+| `kaggle-e2b-statement` | `8f4541f` | `gemma-4-e2b-it-qat-w4a16-ct` | **2 of 93** | 49 | 16 | 11:32 UTC |
+
+**Paired on the 93 tasks:**
+- both arms resolved 2 (`htlnlp_144`, `htlnlp_pr63`);
+- only E4B resolved 3 (`htlnlp_116`, `htlnlp_143`, `htlnlp_174`);
+- only E2B resolved none;
+- neither resolved 88.
+
+Exact McNemar, two-sided: p = 0.25.
+
+**Decision under the frozen rule: stay on E4B.** E2B did not resolve 4 or more tasks beyond E4B. It resolved 3 fewer,
+which is within the 3-task run-to-run noise above, so this is not evidence that E2B is worse either. E2B ran into its
+32K-token context window on 16 tasks, against 5 for E4B, and made fewer patches.
+
+**Checks before scoring, in the environment that scored both arms:**
+- the reference patches resolved 93 of 93, and an empty patch 0 of 93, matching `data/tasks/official_verifier/`;
+- three tasks need the optional `xgboost`, `mlflow` and `statsmodels` to pass with their reference patch; they were installed for both arms.
+
+Each kernel's telemetry stays in its Kaggle output until it is forwarded to Azure (#794).
+
 ## Checks
 
 - **Each run was read from its own session's last upload**, by version and by the session start its log opens
