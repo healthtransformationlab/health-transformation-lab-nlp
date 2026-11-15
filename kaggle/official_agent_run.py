@@ -188,28 +188,51 @@ COLAB_INTERNET = ("open at the machine's edge. The kernel's process had no crede
                   "kaggle/colab_official.py)")
 
 
+def _strings(value) -> list[str]:
+    """Every string in a tool call's arguments, however nested, as written (not JSON-escaped)."""
+    if isinstance(value, str):
+        return [value]
+    if isinstance(value, dict):
+        return [s for v in value.values() for s in _strings(v)]
+    if isinstance(value, (list, tuple)):
+        return [s for v in value for s in _strings(v)]
+    return []
+
+
+def trace_calls(trace: dict) -> list[dict]:
+    """Every tool call in the evaluator's own trace of a task."""
+    return [c for s in trace.get("steps") or [] for c in s.get("tool_calls") or []]
+
+
 def trace_commands(trace: dict) -> list[str]:
-    """Every command the agent ran, from the evaluator's own trace of a task."""
+    """Every command the agent ran, from the evaluator's own trace of a task: run_command's, and run_skill_script's
+    arguments whole (#691, item 7)."""
     out = []
-    for step in trace.get("steps") or []:
-        for call in step.get("tool_calls") or []:
-            if call.get("function_name") == "run_command":
-                args = call.get("arguments") or {}
-                text = args.get("command") or args.get("cmd") or next((v for v in args.values() if isinstance(v, str)), "")
-                out.append(text)
+    for call in trace_calls(trace):
+        args = call.get("arguments") or {}
+        if call.get("function_name") == "run_command":
+            out.append(args.get("command") or args.get("cmd") or next((v for v in args.values() if isinstance(v, str)), ""))
+        elif call.get("function_name") == "run_skill_script":
+            out.append(json.dumps(args))
     return out
 
 
 def network_audit(traces: dict[str, dict]) -> dict:
-    """A run on a machine with a network (Colab): how many of the agent's commands reach for it, and in which
-    tasks. On Kaggle the kernels have no network, so nothing is counted there."""
+    """A run on a machine with a network (Colab): how many of the agent's commands reach for it, and in which tasks;
+    and, since a script can be written and then run, how many tool calls of any kind hold such words in any argument,
+    written text included (#691, item 7). On Kaggle the kernels have no network, so nothing is counted there."""
     spec = importlib.util.spec_from_file_location("colab_official", HERE / "colab_official.py")
     co = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(co)
     commands = {i: trace_commands(t) for i, t in traces.items()}
     hits = {i: co.network_command_count(c) for i, c in commands.items()}
+    calls = {i: ["\n".join(_strings(c.get("arguments") or {})) for c in trace_calls(t)] for i, t in traces.items()}
+    call_hits = {i: co.network_command_count(c) for i, c in calls.items()}
     return {"command_count": sum(len(c) for c in commands.values()), "network_command_count": sum(hits.values()),
-            "instance_ids": sorted(i for i, n in hits.items() if n)}
+            "instance_ids": sorted(i for i, n in hits.items() if n),
+            "tool_call_count": sum(len(c) for c in calls.values()),
+            "network_tool_call_count": sum(call_hits.values()),
+            "tool_call_instance_ids": sorted(i for i, n in call_hits.items() if n)}
 
 
 def batch_name(source: str, label: str | None) -> str:
@@ -318,7 +341,9 @@ def kernel_source(source: str, key: bytes) -> str:
 GRAPH_TOOLS = {"get_code_neighbors", "search_similar_code", "get_code_subgraph"}
 SKILL_TOOLS = {"list_skills", "load_skill", "load_skill_resource", "run_skill_script"}
 WRITTEN_TEXT = {"content", "old_string", "new_string"}   # what the model writes into a file is not a path it reaches
-OUTSIDE = re.compile(r"/kaggle/|/tmp/htl|\.\./\.\.|/root/|/etc/|/proc/")   # a tool argument reaching past the workspace
+# A tool argument reaching past the workspace. `/content` is where a Colab run's inputs and earlier output sit
+# (#691, item 5); an absolute path only, not a folder of that name inside the repository.
+OUTSIDE = re.compile(r"/kaggle/|/tmp/htl|\.\./\.\.|/root/|/etc/|/proc/|(?<![\w.-])/content\b")
 
 
 def trace_counts(trace: dict) -> dict:
@@ -440,7 +465,9 @@ def settings_for(result: dict, seed: int | None, drawn: list[str], pool_count: i
             *((("Run on a Colab machine, not in a Kaggle kernel: the same kernel file, with the competition's wheels, "
                 "the model and the bundle at the paths Kaggle mounts them. The model server and the agent framework "
                 "were installed from PyPI at the versions the Kaggle kernels recorded, and the competition's "
-                "wheelhouse was installed over them by the kernel, as on Kaggle. One GPU and Colab's base image, so "
+                "wheelhouse was installed over them by the kernel, less the wheels compiled for Kaggle's Python "
+                "alone, which stayed at PyPI's versions (the kernel lists them in result.json, wheels_left_out). One "
+                "GPU and Colab's base image, so "
                 "its counts are not set beside a Kaggle kernel's as if one run."),) if colab else ()),
         ],
     }
@@ -648,6 +675,24 @@ def check_arm_options(label: str | None, context, batch: bool, development: bool
         sys.exit("--context is for a batch of the published tasks: not --source competition")
     if context and not label:
         sys.exit("--context needs --label: a run with added context is its own condition and writes its own table")
+
+
+def check_colab_options(colab: bool, batch: bool, label: str | None, collect: bool, colab_session: str | None,
+                        colab_results: str | None) -> None:
+    """The Colab options, checked together before any work (#691, item 8; AGENTS.md, "Check settings before doing
+    work"): --colab without --batch would push Kaggle GPU kernels, without --label it would write into the table of
+    November 10, and --collect --colab without --colab-session would read whichever session uploaded last."""
+    if colab and not batch:
+        sys.exit("--colab needs --batch: without it the runner pushes a Kaggle GPU kernel per task")
+    if colab and not label:
+        sys.exit("--colab needs --label: without it the run's rows go into the table of the run of November 10")
+    if colab and collect and not colab_session:
+        sys.exit("--collect --colab needs --colab-session (HH:MM:SS, UTC): without it whichever session uploaded last "
+                 "is read")
+    if (colab_session or colab_results) and not colab:
+        sys.exit(f"{'--colab-session' if colab_session else '--colab-results'} is for --collect --colab: it needs --colab")
+    if (colab_session or colab_results) and not collect:
+        sys.exit(f"{'--colab-session' if colab_session else '--colab-results'} is for reading a run back: it needs --collect")
 
 
 def reusable_output(out: Path, reuse: bool) -> bool:
@@ -885,6 +930,7 @@ def main() -> int:
     if missing:
         sys.exit(f"not in the tasks.jsonl given, or no snapshot: {', '.join(missing)}")
     check_arm_options(a.label, a.context, a.batch, development)
+    check_colab_options(a.colab, a.batch, a.label, a.collect, a.colab_session, a.colab_results)
     batch_name(a.source, a.label)   # a bad label fails here, before anything is uploaded
     a.context_note = None
     if a.context:

@@ -17,7 +17,9 @@ Two things a Kaggle kernel gave for free are done here by hand:
   listens on, pip has no index, and the Hugging Face hub is offline. None of that reaches the agent's commands: the
   evaluator's list of names holds no proxy, so a command can reach the network (the review of #690 found this after
   the runs of #687). What covers the commands is that each is read afterwards (`network_command_count`) and the
-  count is reported, with the tasks it was in.
+  count is reported, with the tasks it was in. Nothing here blocks the network at the machine (#691, item 6), so a
+  run starts only when its entry in the run list says the operator accepts that it is open
+  (`"network_open_acknowledged": true`; docs/adr/0005-colab-runs-need-the-open-network-accepted.md).
 
 Everything is logged to one file, and the log and whatever the kernel wrote go to a private Kaggle dataset when the
 run ends, however it ends, and every few minutes while it runs: the run can be read without the notebook's screen.
@@ -30,7 +32,9 @@ from __future__ import annotations
 import json
 import os
 import re
+import secrets
 import shutil
+import signal
 import subprocess
 import sys
 import threading
@@ -53,9 +57,19 @@ RESULT_PREFIX = "htlnlp-colab-official-"
 DEAD_PROXY = "http://127.0.0.1:9"                                         # nothing listens there
 SECRET_NAME = re.compile(r"TOKEN|SECRET|PASSWORD|PASSWD|CREDENTIAL|API_KEY|_KEY$|^KAGGLE_|^HF_|^TBE_|^GCE_METADATA|"
                          r"^GOOGLE_APPLICATION|^AWS_|^AZURE_", re.IGNORECASE)
-NETWORK_COMMAND = re.compile(r"(^|[\s;&|(])(curl|wget|ssh|scp|nc|telnet)\s|pip3?\s+(install|download)|"
-                             r"git\s+(clone|fetch|pull|push|ls-remote|remote\s+add)|(apt|apt-get|conda|npm|uv)\s+"
-                             r"(install|add|update)|urllib\.request|requests\.(get|post)|httpx\.", re.IGNORECASE)
+# What reaches for the network, in a command or in any tool call's arguments (#691, item 7: the first list missed
+# Python sockets, `pip -q install`, `git -C x pull`, and anything outside run_command). The registered analyses of
+# #687 keep the audit as it was committed then.
+NETWORK_COMMAND = re.compile(
+    r"(^|[\s;&|(`'\"])(curl|wget|ssh|scp|sftp|rsync|nc|ncat|netcat|socat|telnet|ftp|aria2c|nslookup|dig|ping)\s"
+    r"|pip3?(\s+-{1,2}[\w-]+(=\S+)?)*\s+(install|download)\b"
+    r"|git(\s+-[A-Za-z]\s+\S+|\s+--?[\w-]+(=\S+)?)*\s+(clone|fetch|pull|push|ls-remote|remote\s+add|submodule\s+(update|add))\b"
+    r"|\b(apt|apt-get|conda|mamba|npm|yarn|pnpm|uv|poetry|gem|cargo|brew|easy_install)\s+(\S+\s+)?(install|add|update|sync)\b"
+    r"|\bgo\s+(get|install)\s"
+    r"|urllib\.request|urllib3|requests\.(get|post|put|patch|head|delete|request|Session)|httpx|aiohttp|http\.client"
+    r"|import\s+socket|from\s+socket\s+import|socket\.(socket|create_connection|getaddrinfo)|/dev/(tcp|udp)/"
+    r"|ftplib|smtplib|websocket|hf_hub_download|snapshot_download|huggingface-cli\s+download|\bhf\s+download\b",
+    re.IGNORECASE)
 UPLOAD_EVERY_SECONDS = 480   # what a dropped session can lose: the tasks finished since the last upload
 # The branch whose files a notebook that has made its runs keeps reading (`follow`). `main`, where the run list says
 # stop. A new run is made from a branch of its own: point this and the notebook's BRANCH there while it is made, and
@@ -111,13 +125,7 @@ def download_dataset(api, ref: str, dest: Path) -> None:
     except Exception as e:  # noqa: BLE001 - whatever the whole download said, the files are tried one by one
         say(f"the whole download of {ref} was refused ({type(e).__name__}: {str(e)[:120]}); fetching its files one by one")
     import zipfile
-    names, token = [], None
-    while True:
-        page = api.dataset_list_files(ref, page_token=token, page_size=200)
-        names += [f.name for f in (page.files or [])]
-        token = getattr(page, "next_page_token", None) or getattr(page, "nextPageToken", None)
-        if not token:
-            break
+    names = [name for name, _ in listed_files(api, ref)]
     for n, name in enumerate(names, 1):
         want = dest / name
         want.parent.mkdir(parents=True, exist_ok=True)
@@ -143,6 +151,31 @@ def download_dataset(api, ref: str, dest: Path) -> None:
         if n % 25 == 0:
             say(f"  {n} of {len(names)} files of {ref}")
     say(f"{ref}: {len(names)} files, one by one")
+
+
+def listed_files(api, ref: str) -> list[tuple[str, int | None]]:
+    """Each file a dataset lists, with its size in bytes where the listing gives one, every page read."""
+    out, token = [], None
+    while True:
+        page = api.dataset_list_files(ref, page_token=token, page_size=200)
+        for f in page.files or []:
+            size = next((v for v in (getattr(f, a, None) for a in ("total_bytes", "totalBytes", "size"))
+                         if isinstance(v, int) and not isinstance(v, bool)), None)
+            out.append((f.name, size))
+        token = getattr(page, "next_page_token", None) or getattr(page, "nextPageToken", None)
+        if not token:
+            return out
+
+
+def missing_files(listed: list[tuple[str, int | None]], dest: Path) -> list[str]:
+    """The listed files that are not on disk under `dest`, or are there at another size (#691, item 4: a download
+    that stopped part way left a folder that was not empty, and it counted as complete)."""
+    gone = []
+    for name, size in listed:
+        p = Path(dest) / name
+        if not p.is_file() or (size is not None and p.stat().st_size != size):
+            gone.append(name)
+    return gone
 
 
 def kernel_paths(root: Path = KAGGLE) -> dict:
@@ -214,19 +247,37 @@ def is_for_this_gpu(wanted: str | None, name: str) -> bool:
     return re.search(rf"(?<![A-Za-z0-9]){re.escape(wanted)}(?![A-Za-z0-9])", name, re.IGNORECASE) is not None
 
 
-def listed_gpu(label: str, get=branch_file, tries: int = 3, sleep=time.sleep) -> str | None:
-    """The GPU the branch's run list says the run `label` is for, or None. The run reads its own entry: a session
-    that began before entries could name a GPU hands a run only its label, bundle and kernel. A list that cannot be
-    read gives None, and the run is made."""
+def listed_entry(label: str, get=branch_file, tries: int = 3, sleep=time.sleep) -> dict | None:
+    """The branch's run list's entry for the run `label`, or None when it is not listed or the list cannot be read.
+    The run reads its own entry: a session that began before entries could name a GPU hands a run only its label,
+    bundle and kernel, and what else a run needs to know (`gpu`, `network_open_acknowledged`, `resume_session`) is
+    read here."""
     for attempt in range(tries):
         try:
             runs = json.loads(get("colab_official_run.json")).get("runs", [])
-            return next((r.get("gpu") for r in runs if r.get("label") == label), None) or None
-        except Exception as e:  # noqa: BLE001 - a read that fails is tried again, then the run goes ahead
-            say(f"could not read which GPU {label} is for (try {attempt + 1} of {tries}): {type(e).__name__}")
+            return next((r for r in runs if r.get("label") == label), None)
+        except Exception as e:  # noqa: BLE001 - a read that fails is tried again
+            say(f"could not read the run list's entry for {label} (try {attempt + 1} of {tries}): {type(e).__name__}")
             if attempt < tries - 1:
                 sleep(15)
     return None
+
+
+def listed_gpu(label: str, get=branch_file, tries: int = 3, sleep=time.sleep) -> str | None:
+    """The GPU the branch's run list says the run `label` is for, or None (none named, or the list unread)."""
+    return (listed_entry(label, get, tries, sleep) or {}).get("gpu") or None
+
+
+NETWORK_REFUSAL = ("is not started: the network is open to the agent's commands on this machine (nothing blocks it, "
+                   "#691 item 6), and the run's entry in the run list does not say the operator accepts that. Add "
+                   '"network_open_acknowledged": true to the entry, on the run\'s own branch, only after reading '
+                   "docs/adr/0005-colab-runs-need-the-open-network-accepted.md")
+
+
+def network_open_acknowledged(entry: dict | None) -> bool:
+    """Whether a run's entry says, in so many words, that the operator accepts an open network (#691, item 6). A run
+    list that cannot be read, or an entry that does not say it with `true`, does not."""
+    return bool(entry) and entry.get("network_open_acknowledged") is True
 
 
 def follow(done: dict, minutes: float = FOLLOW_MINUTES, get=branch_file, make=None, sleep=time.sleep,
@@ -262,17 +313,19 @@ def follow(done: dict, minutes: float = FOLLOW_MINUTES, get=branch_file, make=No
 
 def earlier_output(downloaded: Path) -> tuple[str, int]:
     """What a run's own results dataset holds from an earlier start: "finished" when its kernel ended and wrote its
-    result without an error (the run is not made a second time), "partial" with the number of tasks that have a
-    result file (the kernel runs the rest), or "fresh"."""
+    result without an error and without stopping itself (the run is not made a second time), "partial" with the
+    number of tasks that have a result file (the kernel runs the rest), or "fresh". A kernel that stopped itself (its
+    deadline, or two tasks with no answer from the model server) marked the rest skipped: those can still be run."""
     work = Path(downloaded) / "working"
     done = len(list(work.glob("tasks/*/result.json"))) if work.exists() else 0
     try:
         whole = json.loads((work / "result.json").read_text())
     except (OSError, ValueError):
         whole = {}
-    if whole.get("finished_ts") and "error" not in whole:
+    stopped = any(r.get("is_skipped") for r in (whole.get("runs") or {}).values() if isinstance(r, dict))
+    if whole.get("finished_ts") and "error" not in whole and not stopped:
         return "finished", done
-    return ("partial", done) if done else ("fresh", 0)
+    return ("partial", done) if done or stopped else ("fresh", 0)
 
 
 def set_aside_parts(out: Path) -> None:
@@ -300,6 +353,46 @@ def send_until_taken(send, tries: int = 8, wait_seconds: float = 75, sleep=time.
     return False
 
 
+class StatusUnknown(Exception):
+    """Kaggle's status call failed for a reason other than "no such dataset": whether the dataset is there is not
+    known, so nothing may be done that takes it to be missing."""
+
+
+def is_not_found(e: BaseException) -> bool:
+    """Whether an error from the Kaggle client says the dataset does not exist (HTTP 404), as against any other
+    failure (a blip, a refused token, a server error)."""
+    response = getattr(e, "response", None)
+    code = getattr(response, "status_code", None) or getattr(e, "status", None) or getattr(e, "code", None)
+    if isinstance(code, int):
+        return code == 404
+    return "404" in str(e) and "not found" in str(e).lower()
+
+
+def dataset_exists(api, ref: str, tries: int = 3, sleep=time.sleep) -> bool:
+    """True when the dataset is there, False when Kaggle says there is no such dataset. Any other failure is tried
+    again, then raises StatusUnknown (#691, item 3: a failed status call was read as "nothing to resume")."""
+    for attempt in range(tries):
+        try:
+            api.dataset_status(ref)
+            return True
+        except Exception as e:  # noqa: BLE001 - sorted below: missing, or not known
+            if is_not_found(e):
+                return False
+            if attempt == tries - 1:
+                raise StatusUnknown(f"{type(e).__name__}: {str(e)[:200]}") from e
+            sleep(15)
+    return False
+
+
+def was_taken(response) -> bool:
+    """Whether Kaggle took an upload: its answer says "ok" and names no error. The client answers some refusals with
+    a status of "error" and no exception (#691, item 1), and an answer of None is no answer."""
+    if response is None:
+        return False
+    get = response.get if isinstance(response, dict) else lambda k, d=None: getattr(response, k, d)
+    return str(get("status", "") or "").lower() == "ok" and not get("error", None)
+
+
 # ---- below: only run on the Colab machine ----------------------------------------------------------------------------
 
 def say(message: str) -> None:
@@ -320,50 +413,96 @@ def run(command: list[str], tail: int = 4000, **kwargs) -> subprocess.CompletedP
     return done
 
 
+def session_id() -> str:
+    """This notebook session's id: when it first ran a run here (UTC) and a random part, kept on the machine so every
+    run of the session, and every fresh copy of this file `follow` loads, gives the same. A new Colab session is a new
+    machine, and so a new id."""
+    f = LOG.parent / "htl_session"
+    try:
+        sid = f.read_text().strip()
+        if sid:
+            return sid
+    except OSError:
+        pass
+    sid = time.strftime("%Y%m%dT%H%M%SZ", time.gmtime()) + "-" + secrets.token_hex(4)
+    f.parent.mkdir(parents=True, exist_ok=True)
+    f.write_text(sid)
+    return sid
+
+
 def upload(api, user: str, label: str, out: Path, note: str) -> None:
-    """The log and the kernel's output so far, as a new version of the run's private dataset (made on first use)."""
-    stage = Path("/content/htl_upload")
+    """The log and the kernel's output so far, as a new version of the run's private dataset (made on first use),
+    with the session that sent it (`session.json`). Raises unless Kaggle took it (#691, item 1), and leaves no copy
+    of the output behind (item 5)."""
+    ref = results_ref(user, label)
+    stage = LOG.parent / "htl_upload"
     shutil.rmtree(stage, ignore_errors=True)
-    (stage / "working").mkdir(parents=True)
-    if LOG.exists():
-        shutil.copyfile(LOG, stage / "colab.log")
-    for p in files_to_return(out) if Path(out).exists() else []:
-        dest = stage / "working" / p.relative_to(out)
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(p, dest)
-    (stage / "dataset-metadata.json").write_text(json.dumps(results_metadata(user, label)))
     try:
-        api.dataset_status(results_ref(user, label))
-        api.dataset_create_version(str(stage), version_notes=note[:100], quiet=True, dir_mode="zip")
-    except Exception:  # noqa: BLE001 - no such dataset yet
-        api.dataset_create_new(str(stage), public=False, quiet=True, dir_mode="zip")
-    print(f"uploaded to {results_ref(user, label)}: {note}", flush=True)
+        (stage / "working").mkdir(parents=True)
+        if LOG.exists():
+            shutil.copyfile(LOG, stage / "colab.log")
+        for p in files_to_return(out) if Path(out).exists() else []:
+            dest = stage / "working" / p.relative_to(out)
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(p, dest)
+        (stage / "session.json").write_text(json.dumps({
+            "session_id": session_id(), "label": label, "note_text": note[:100],
+            "uploaded_ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}))
+        (stage / "dataset-metadata.json").write_text(json.dumps(results_metadata(user, label)))
+        if dataset_exists(api, ref):   # a status that cannot be had raises: never a new dataset over an existing one
+            answer = api.dataset_create_version(str(stage), version_notes=note[:100], quiet=True, dir_mode="zip")
+        else:
+            answer = api.dataset_create_new(str(stage), public=False, quiet=True, dir_mode="zip")
+        if not was_taken(answer):
+            raise RuntimeError(f"Kaggle did not take the upload to {ref}: status "
+                               f"{getattr(answer, 'status', None)!r}, error {str(getattr(answer, 'error', None))[:200]!r}")
+    finally:
+        shutil.rmtree(stage, ignore_errors=True)
+    print(f"uploaded to {ref}: {note}", flush=True)
 
 
-def restore(api, user: str, label: str, out: Path) -> tuple[str, int]:
+def restore(api, user: str, label: str, out: Path, resume_session: str | None = None,
+            sleep=time.sleep) -> tuple[str, int]:
     """Give a run its own earlier output back, from its results dataset, before anything is uploaded over it: a
-    session that dropped then costs the tasks since its last upload, not the run. A dataset that is there and cannot
-    be read stops the run, since the next upload would replace it."""
+    session that dropped then costs the tasks since its last upload, not the run. Stops the run (#691, item 3) when
+    Kaggle cannot say whether the dataset is there, when it is there and cannot be read, and when an unfinished
+    upload is another session's and the run's entry does not name that session (`resume_session`): two sessions on
+    one GPU model, or a run list that cannot be read, would otherwise go on from each other's output."""
+    ref = results_ref(user, label)
     try:
-        api.dataset_status(results_ref(user, label))
-    except Exception:  # noqa: BLE001 - no such dataset: a first start
-        return "fresh", 0
+        if not dataset_exists(api, ref, sleep=sleep):
+            return "fresh", 0
+    except StatusUnknown as e:
+        raise SystemExit(f"could not tell whether {ref} exists ({e}): stopped, since a run that cannot see its earlier "
+                         "output could be made again over it") from e
     got = LOG.parent / "htl_restore"
     shutil.rmtree(got, ignore_errors=True)
     got.mkdir(parents=True)
-    for attempt in range(3):
+    try:
+        for attempt in range(3):
+            try:
+                download_dataset(api, ref, got)
+                break
+            except Exception as e:
+                if attempt == 2:
+                    raise SystemExit(f"{ref} exists and could not be read: {type(e).__name__}") from e
+                sleep(20)
+        state, done = earlier_output(got)
         try:
-            download_dataset(api, results_ref(user, label), got)
-            break
-        except Exception as e:
-            if attempt == 2:
-                raise SystemExit(f"{results_ref(user, label)} exists and could not be read: {type(e).__name__}") from e
-            time.sleep(20)
-    state, done = earlier_output(got)
-    if state != "fresh" and state != "finished":
-        shutil.rmtree(out, ignore_errors=True)
-        shutil.copytree(got / "working", out)
-    return state, done
+            owner = json.loads((got / "session.json").read_text()).get("session_id") or "unrecorded"
+        except (OSError, ValueError):
+            owner = "unrecorded"   # an upload from before #691
+        mine = session_id()
+        if state != "finished" and owner != mine and resume_session != owner:
+            raise SystemExit(f"{ref} was last sent by session {owner}, not this one ({mine}): another session may be "
+                             f"making this run. To go on from that upload, give the run's entry "
+                             f'"resume_session": "{owner}"')
+        if state != "fresh" and state != "finished":
+            shutil.rmtree(out, ignore_errors=True)
+            shutil.copytree(got / "working", out)
+        return state, done
+    finally:
+        shutil.rmtree(got, ignore_errors=True)   # nothing of an earlier start is kept but what the kernel is given
 
 
 def fetch(api, kagglehub, bundle: str, kernel_dataset: str | None, kernel_url: str | None,
@@ -375,10 +514,19 @@ def fetch(api, kagglehub, bundle: str, kernel_dataset: str | None, kernel_url: s
         shutil.rmtree(old, ignore_errors=True)
     for ref in (WHEELHOUSE, bundle):
         dest = dataset_dir(ref, root)
-        if not dest.exists() or not any(dest.iterdir()):
+        listed = listed_files(api, ref)
+        if not listed:
+            raise SystemExit(f"{ref} lists no files")
+        if (gone := missing_files(listed, dest)):   # a folder that is not empty is not complete (#691, item 4)
+            if dest.exists() and any(dest.iterdir()):
+                say(f"{ref}: {len(gone)} of its {len(listed)} files are missing or of another size; downloading it again")
+                shutil.rmtree(dest)
             say(f"downloading {ref} -> {dest}")
             download_dataset(api, ref, dest)
-        say(f"{ref}: {sum(1 for _ in dest.rglob('*'))} entries")
+            if (gone := missing_files(listed, dest)):
+                raise SystemExit(f"{ref}: after the download, {len(gone)} listed files are missing or of another size: "
+                                 + ", ".join(gone[:10]))
+        say(f"{ref}: all {len(listed)} listed files, at their listed sizes")
     target = model_dir(root)
     if with_model and not (target / "config.json").exists():
         say(f"downloading the model {MODEL}")
@@ -399,6 +547,70 @@ def fetch(api, kagglehub, bundle: str, kernel_dataset: str | None, kernel_url: s
     if not kernel.exists():
         raise SystemExit(f"no official_agent_kernel.py in {kernel_dataset or kernel_url}")
     return kernel
+
+
+def start_kernel(kernel: Path, out: Path, log) -> subprocess.Popen:
+    """The kernel's process, in a process group of its own so that it and everything it started end together, from
+    an environment with no credential."""
+    return subprocess.Popen([sys.executable, "-u", str(kernel)], cwd=str(out),
+                            env={**kernel_env(dict(os.environ)), **kernel_paths(KAGGLE)},
+                            stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
+
+
+def end_process_group(proc: subprocess.Popen, grace_seconds: float = 30) -> None:
+    """End the kernel's whole process group: asked first, then made to."""
+    for sig in (signal.SIGTERM, signal.SIGKILL):   # SIGKILL for whatever of the group is left, leader or not
+        try:
+            os.killpg(proc.pid, sig)
+        except ProcessLookupError:
+            pass
+        try:
+            proc.wait(timeout=grace_seconds)
+        except subprocess.TimeoutExpired:
+            if sig == signal.SIGKILL:
+                say(f"the kernel's process {proc.pid} did not end")
+
+
+def wait_for_kernel(proc: subprocess.Popen, stop: threading.Event, uploader: threading.Thread,
+                    sleep=time.sleep, poll_seconds: float = 60, grace_seconds: float = 30) -> int:
+    """Wait for the kernel, and however the wait ends (the notebook's stop button raises KeyboardInterrupt here),
+    stop the uploader and end the kernel's process group before going on (#691, item 2): an uploader left going
+    would send `working/`, by then the next run's, to this run's dataset."""
+    started = time.monotonic()
+    try:
+        while proc.poll() is None:
+            sleep(poll_seconds)
+            print(f"  kernel running, {round((time.monotonic() - started) / 60)} min", flush=True)
+        return proc.returncode
+    finally:
+        stop.set()
+        if proc.poll() is None:
+            say("the wait was stopped: ending the kernel's processes")
+        end_process_group(proc, grace_seconds)
+        uploader.join(timeout=max(grace_seconds, 1) * 10)   # an upload under way finishes; none starts after it
+
+
+def clear_earlier_output(out: Path, send_earlier) -> None:
+    """An earlier run's output on this machine is sent, then removed, before the next run starts (#691, item 5):
+    nothing of one arm stays on the machine for the next. `send_earlier(label)` uploads it as that run's. Output
+    whose results did not reach Kaggle and still cannot be sent is kept, and no run starts over it."""
+    out = Path(out)
+    if not out.exists() or not any(out.iterdir()):
+        return
+    marker = LOG.parent / "htl_working_label"
+    earlier = marker.read_text().strip() if marker.exists() else ""
+    if not earlier:
+        raise SystemExit(f"{out} holds output this helper did not record the run of: it is neither sent nor removed. "
+                         "Copy it off the machine and remove it, then start again")
+    not_sent = LOG.parent / f"htl_not_sent_{earlier}"
+    if not_sent.exists():
+        say(f"the results of {earlier} did not reach Kaggle: sending them before anything else")
+        if not send_until_taken(lambda: send_earlier(earlier)):
+            raise SystemExit(f"the results of {earlier} are only on this machine and could not be sent: they are kept, "
+                             "and no run starts over them")
+        not_sent.unlink()
+    say(f"removing {earlier}'s output from this machine: it is on Kaggle")
+    shutil.rmtree(out)
 
 
 def release() -> None:
@@ -441,15 +653,17 @@ def run_one(label: str, bundle: str, kernel_dataset: str | None = None, kernel_u
     # has been looked at: never an empty folder over an arm's results.
     may_upload = False
     say(f"run {label}{'' if listed == label else ' (listed as ' + listed + ')'}: bundle {bundle}; "
-        f"kernel from {kernel_dataset or kernel_url}")
+        f"kernel from {kernel_dataset or kernel_url}; session {session_id()}")
     try:
         shown = run(["nvidia-smi", "--query-gpu=name,memory.total,driver_version", "--format=csv"])
-        wanted, name = listed_gpu(listed), gpu_name(shown.stdout)
+        entry = listed_entry(listed)
+        wanted, name = (entry or {}).get("gpu") or None, gpu_name(shown.stdout)
         if not is_for_this_gpu(wanted, name):   # another session's run: nothing of it is read, and nothing is sent
             say(f"{label} is for a machine with a {wanted}; this one has a {name}: it is not made here")
             return 0
-        if out.exists() and any(out.iterdir()):   # an earlier run's output on this machine: set it aside
-            out.rename(out.with_name(f"working_before_{label}_{int(time.time())}"))
+        if not network_open_acknowledged(entry):   # #691, item 6: nothing blocks the network at the machine
+            say(f"{label} {NETWORK_REFUSAL}")
+            return 1
         run([sys.executable, "--version"])
         installed = run([sys.executable, "-m", "pip", "install", "-q", *PINS])
         if installed.returncode:
@@ -460,10 +674,12 @@ def run_one(label: str, bundle: str, kernel_dataset: str | None = None, kernel_u
         api = KaggleApi()
         api.authenticate()
         api.dataset_list(user=user, page=1)   # one cheap call: the token works
-        state, done_count = restore(api, user, label, out)
+        clear_earlier_output(out, lambda earlier: upload(api, user, earlier, out, "finished; sent before the next run"))
+        state, done_count = restore(api, user, label, out, resume_session=(entry or {}).get("resume_session"))
         if state == "finished":
             say(f"{label} already finished in an earlier start ({done_count} tasks with a result): not run again")
             return 0
+        (LOG.parent / "htl_working_label").write_text(label)   # whose output `working/` holds, for the next run
         may_upload = True
         if state == "partial":
             say(f"{label}: an earlier start left {done_count} tasks with a result; the kernel runs the rest")
@@ -486,18 +702,14 @@ def run_one(label: str, bundle: str, kernel_dataset: str | None = None, kernel_u
 
         uploader = threading.Thread(target=keep_uploading, daemon=True)
         uploader.start()
-        with LOG.open("a") as log:
-            proc = subprocess.Popen([sys.executable, "-u", str(kernel)], cwd=str(out),
-                                    env={**kernel_env(dict(os.environ)), **kernel_paths(KAGGLE)},
-                                    stdout=log, stderr=subprocess.STDOUT)
-            started = time.monotonic()
-            while proc.poll() is None:
-                time.sleep(60)
-                print(f"  kernel running, {round((time.monotonic() - started) / 60)} min", flush=True)
-            code = proc.returncode
-        stop.set()
+        try:
+            with LOG.open("a") as log:
+                proc = start_kernel(kernel, out, log)
+                code = wait_for_kernel(proc, stop, uploader)
+        finally:
+            stop.set()
+            subprocess.run(["pkill", "-f", "vllm"], check=False)   # a model server left behind would hold the GPU
         say(f"kernel exit {code}")
-        subprocess.run(["pkill", "-f", "vllm"], check=False)   # a model server left behind would hold the GPU
     except BaseException as e:  # noqa: BLE001 - whatever stops the run is written down and sent back
         say(f"stopped: {type(e).__name__}: {str(e)[:500]}")
         with LOG.open("a") as f:
@@ -517,6 +729,7 @@ def run_one(label: str, bundle: str, kernel_dataset: str | None = None, kernel_u
                   "looked at", flush=True)
         elif send_until_taken(send):
             not_sent.unlink(missing_ok=True)
+            shutil.rmtree(out, ignore_errors=True)   # on Kaggle now: nothing of this run stays for the next (#691, 5)
         else:
             not_sent.write_text("")   # `main` keeps the GPU while this is here
             print("THE LOG COULD NOT BE UPLOADED. Copy the text above.", flush=True)
