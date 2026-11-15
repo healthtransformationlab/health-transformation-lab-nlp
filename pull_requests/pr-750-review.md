@@ -1,80 +1,69 @@
 ---
 pr: 750
 branch: feat/748-028-colab-e2b-arm
-title: "028 AI12: E2B against the Colab baseline, pre-registered, with its sealed bundle and run-list entry"
+title: "028 AI12: E2B against E4B as two paired Kaggle arms, pre-registered and ready to start"
 author: claude (agent session)
 reviewed_at: 2026-11-15
 reviewer: coordinator review against .claude/review-rubric.md (no separate reviewer subagent was available in this session)
-verdict: approve-with-nits (hold: not mergeable until the run is collected and the branch pointers return to main)
+verdict: approve-with-nits (hold: the kernels have not run; results and the paired test are still to come)
 ---
 
-# PR Review: 028 AI12: E2B against the Colab baseline
+# PR Review: 028 AI12: E2B against E4B as two paired Kaggle arms
 
 ## Summary
 
-This PR prepares one new arm, `colab-e2b-statement`. It is the Colab baseline `colab-statement` again, with only the agent's two `model:` lines changed to E2B.
+This PR prepares, but does not run, a paired comparison of E2B and E4B on the 93 published tasks. It does five things:
 
-- **Pre-registration.** The arm is registered in addendum 4, and the addendum's hash is recorded on #748 before any run.
-- **Helper.** `kaggle/colab_official.py` can now mount the model that a run-list entry names, and keeps E4B as the default.
-- **Run list.** The entry is added and `stop` is false.
-- **Notebook and helper branch.** Both read this branch while the run is made.
-- **Bundle.** It is built and uploaded, and its order and settings match the baseline's bundle.
+- **Addendum 5** is frozen, and its hash is on #748. It sets out two Kaggle arms on the same machine shape and image, one test (exact McNemar, two-sided) and a decision rule. The rule switches to E2B only if E2B gains 4 or more tasks, beyond the documented 3-task noise, and p < 0.05.
+- **`official_agent_run.py`** now attaches the model the submission declares, instead of always E4B. The E4B kernel metadata is byte for byte unchanged.
+- **The Colab plan is withdrawn untested.** That was addendum 4, its run-list entry and the notebook pointers.
+- **`colab_official.py`** gains an optional per-entry `model` field, with E4B as the default.
+- **The PR body and the addendum** give the start and collection commands.
 
-The code change is small and tested, and the old entries behave as before. No kernel or GPU run was started.
-
-The verdict is approve-with-nits on content. The PR must still not merge before two things happen:
-
-- the owner makes and collects the run (AGENTS.md rule 6: limited compute);
-- `BRANCH` and `BRANCH_FILES` go back to `main` and `stop` returns to `true`.
-
-`test_once_merged_the_notebook_and_the_helper_read_main` enforces the second point, so it fails now by design.
+The code is small and tested, and the design is sound. The PR is held because the arms have not run: their tables and the paired test belong in this PR before it merges. Starting them needs the owner's word and room in the GPU quota, per AGENTS.md rule 6.
 
 ## Scope of Change
 
-- Files changed: 6 (+282 / -14)
-- Areas touched: kaggle (helper, run list, notebook), python tests, specs
-- Commits:
-  - `b2bca0d` Pre-register the E2B arm against the Colab baseline (addendum 4)
-  - `442992e` Let a run-list entry name the model a Colab run mounts
-  - `520a5f0` List the colab-e2b-statement arm and point the notebook at this branch
-- Range reviewed: `origin/main (0114053)..520a5f0`
+- Files changed (against `main`): `kaggle/official_agent_run.py`, `kaggle/colab_official.py`, `python/tests/test_official_agent.py`, `python/tests/test_colab_official.py`, `specs/028-dataops-task-set/preregistration-colab-e2b-arm.md` (addendum 4, kept as a record), `specs/028-dataops-task-set/preregistration-kaggle-e2b-pair.md` (addendum 5), `specs/028-dataops-task-set/tasks.md`, this file. `kaggle/colab_official_run.json` and `kaggle/colab_official_agent.ipynb` end equal to `main`, apart from the run list's note.
+- Areas touched: kaggle, python tests, specs.
+- Range reviewed: `origin/main..7eaeab8`.
 
 ## CI Status
 
 | Check | Status |
 |---|---|
-| python | expected to fail on one test: `test_once_merged_the_notebook_and_the_helper_read_main` (by design while the branch points at itself) |
-| PR conventions | branch `feat/748-...`, `Closes #748`; the issue has all four parts |
-| postgres, r-parity, bundle | not affected by this change |
+| python | the touched suites pass locally (176); the branch-pointer test passes again |
+| PR conventions | branch `feat/748-…`, `Closes #748`; the issue has all four parts |
+| postgres, r-parity, bundle | not affected |
 
 ## Secrets, PHI and Claims Scan
 
-- **Secrets:** clean. A grep of the diff for token patterns found nothing. The keyed kernel file went only to its private dataset, and the local copy was removed by the runner (`shutil.rmtree(k)`). No `SEAL_KEY` is left in the work folder.
-- **PHI / real data:** clean. Only task ids, hashes and dataset names.
+- **Secrets:** clean. No tokens are in the diff. The command block reads the token from the environment and never echoes it.
+- **PHI / real data:** clean.
 - **Organization claims:** clean.
 
 ## Strengths
 
-- **The design isolates the model.** It uses the same 93 ids, seed, 255-minute deadline, telemetry, kernel file (`6f2500de…`) and `tasks.jsonl` (`c98d4b53…`). The new bundle's `official_batch.json` was checked against the baseline's on Kaggle and is equal entry by entry. The agent variant is two lines away from `b95b235`.
-- **The decision rule is fixed in advance.** It is set before the run, tied to the run-to-run noise the README documents (3 tasks), and kept separate from the significance claim.
-- **The default is safe.** `listed_model` follows the `listed_gpu` pattern, so an entry with no `model` gets E4B. Unlike the GPU, an unreadable list stops the run, because a guessed model would not match the submission.
-- **Earlier arms are passed by.** Their results datasets were checked to read as `finished` (93 each), so a fresh A100 notebook does not resume them.
+- **The E4B arm is unchanged.** `declared_model` and `model_source` are tested for E2B, for a mixed declaration, for an unknown model, for no declaration, and for the runner's allowed list matching the kernel's. The E4B kernel metadata was compared against `main`'s module output for three labels, with and without image and machine shape, and was identical.
+- **Only the model differs between the arms.** Same ids, seed, order, budgets, kernel file, image, machine shape and kernel limits. Session variation falls inside the pair, not between the arms.
+- **The decision rule is fixed before the run.** It is tied to the README's measured noise and also needs significance.
+- **The withdrawal is safe.** The Colab entry is removed, not just stopped, because the notebook makes every listed run. A test checks this.
 
 ## Findings
 
 ### 🔴 Blocking (Critical)
 
-None in content. Merging is held for the reasons in the Summary.
+None in content. Merging is held until both arms are collected and the paired test is committed.
 
 ### 🟡 Should fix (Important, non-blocking)
 
-- **The collection step must use the variant checkout.** `official_agent_run.py:743` records `agent_commit_sha` from `git -C <agent-dir> rev-parse HEAD`. Collecting with the agent repository on `main` would write the wrong SHA into the settings, and verify with the wrong submission folder. This was verified by reading `run_batch`. The fix is procedural: collect with `--agent-dir` checked out at `8f4541f`, as the PR body says.
+- **Collecting needs the competition's evaluator installed** on the collecting machine (`swegemma`, `adk-submission`, `adk-eval-core` from `metric/gemma-4-developer-agent-wheelhouse`). This session doesn't have it. The PR body and the addendum point to `data/tasks/official_verifier/README.md` for the install. If the start processes run without it, collect with `--collect` once it is installed.
 
 ### 🔵 Nits / suggestions (Minor)
 
-- **The E4B arms now depend on reading the run list.** `kaggle/colab_official.py`, `listed_model`: an E4B arm also stops when the run list can't be read three times, where before it went ahead. That is acceptable: 3 tries, 15 s apart, and no listed arm is still to run.
-- **A comment still names E4B.** In the agent variant, the `agent.yaml` comment still says "Small-model bonus: gemma-4-e4b-it-qat-w4a16-ct". It was left on purpose so that only the model changes. It is harmless, but it may confuse a reader of the branch.
-- **A fresh notebook re-checks the earlier arms first.** It reinstalls the pins and downloads each earlier arm's results (about 2 MB each) before it reaches the E2B arm. That costs a few minutes and nothing else.
+- **`ruff` flags UP017** (`datetime.UTC`) at `official_agent_run.py:276` and `test_official_agent.py:402`. Both lines were already on `main` and are not changed here.
+- **Handle version.** `model_source` assumes version 2 for every allowed model. That is true on November 15, 2026 for all four, but a newer Kaggle version would not be picked up. This is intended, because the pinned version makes runs repeatable.
+- **Addendum 4 stays in the tree** as the record of a withdrawn plan. Addendum 5 names it and its hash.
 
 ## Repo-Rule Compliance
 
@@ -83,54 +72,28 @@ None in content. Merging is held for the reasons in the Summary.
 | No secrets | yes | scan clean |
 | Synthetic only, no PHI | yes | |
 | No organization claims | yes | |
-| Test first | yes | 12 new or changed tests failed before the helper change, then passed |
+| Test first | yes | the new tests failed before each change (6 for the runner, 12 for the Colab helper) |
 | Python and R in parity | n/a | no label, scoring, reliability or cost logic |
-| Simulated labelled | yes | no result is claimed; the addendum says no E2B run exists |
-| Seeds fixed | yes | 20261110, as the baseline |
-| Paths | yes | no new `data/` paths |
-| Spec for big changes | yes | spec 028 addendum 4, `tasks.md` T029 |
+| Simulated labelled | yes | no result is claimed; both addenda say no E2B run exists |
+| Seeds fixed | yes | 20261110 |
+| Spec for big changes | yes | spec 028 addenda 4 and 5, T029 |
 | Commits | yes | imperative subjects, bodies say why, co-author trailer |
-| Configuration | yes | the new optional run-list field is documented in the code and in the list's note; no environment changes |
-| Secrets register | n/a | no new credential; the Colab secrets are the existing ones |
-| Idempotent writes | yes | a re-upload creates a new dataset version; results resume as before |
+| Configuration | yes | no environment changes; the new run-list field and the runner behaviour are documented in code |
+| Secrets register | n/a | no new credential |
 
 ## Test Coverage
 
-Run locally (Python 3.13):
+Run locally: `pytest tests/test_official_agent*.py tests/test_colab_official.py tests/test_wording.py tests/test_no_org_references.py tests/test_bench_order.py tests/test_telemetry_*.py` gives 176 passed.
 
-- `pytest tests/test_colab_official.py tests/test_wording.py tests/test_no_org_references.py tests/test_bench_order.py tests/test_telemetry_*.py tests/test_official_agent*.py`: 169 passed, 1 failed (the expected branch-pointer test).
-- `ruff check` on both changed Python files: clean.
+Both arms were dry-run with `--plan-only` from worktrees at `b95b235` and `8f4541f`: 93 tasks each, and the right handles.
 
-Covered by tests: the per-entry model with an E4B default, an unreadable list, a malformed handle, `fetch` mounting only the named model, `run_one` passing the listed or explicit model, and the exact E2B entry.
-
-Not testable here: that vLLM serves E2B on Colab with the kernel's unchanged arguments. The kernel already allows E2B (`ALLOWED_MODELS`). The addendum says what happens if the server does not start.
+Not testable here: that vLLM serves E2B with the kernel's unchanged arguments on 4×L4. If it does not, addendum 5 says the E2B arm has no outcome and nothing is changed to work around it.
 
 ## Verdict
 
-Approve-with-nits. Merge waits for all of these:
+Approve-with-nits on content. Merge waits for all of these:
 
-1. the owner runs the arm;
-2. it is collected with `--agent-dir` at `8f4541f`;
-3. the table and settings are committed;
-4. `BRANCH`, `BRANCH_FILES` and `stop` are restored, so that `test_once_merged_the_notebook_and_the_helper_read_main` passes;
-5. the owner says "merge".
-
-## Update, 2026-11-15 (commit `7d23e7c`)
-
-The owner moved the comparison to Kaggle as two paired arms. This commit withdraws the Colab arm before any session made it:
-
-- the `colab-e2b-statement` entry is off the run list;
-- `stop` is `true`;
-- `BRANCH` and `BRANCH_FILES` read `main` again.
-
-**Why the entry is removed, not just stopped.** The notebook makes every run the list names, whatever `stop` says. An entry left with `stop` set would still be made once this merges. The new test `test_the_superseded_e2b_colab_arm_is_not_listed` checks this.
-
-**Tests.** `test_once_merged_the_notebook_and_the_helper_read_main` passes again. `test_colab_official`, `test_wording`, `test_no_org_references` and `test_bench_order` give 86 passed, and `ruff` is clean.
-
-**Still before merge:**
-
-- **🟡 E4B is hard-coded for Kaggle kernels.** `kaggle/official_agent_run.py:303` attaches `MODEL_SOURCE` (E4B) to every Kaggle kernel. A `kaggle-e2b-statement` kernel would mount no E2B model, and the kernel's model glob would fail. It needs a tested change that attaches the submission's declared model.
-- **The Kaggle pair's addendum** has to be written and its hash recorded on #748 before any kernel starts.
-- **Kernels wait on two things.** The account's weekly GPU quota (30.19 of 30 h used, resets 2026-11-21 00:00 UTC; the Colab Pro+ hours not yet shown) and both GPU session slots being free.
-
-The verdict is unchanged: hold.
+1. the owner's go-ahead and room in the quota;
+2. both kernels run;
+3. both arms are collected, with their tables, settings and the paired McNemar committed here;
+4. the owner says "merge".
