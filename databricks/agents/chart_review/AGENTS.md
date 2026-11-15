@@ -17,7 +17,7 @@ models, which read only the note, it can look up each evidence type, apply that 
 disagree (a stale exam form against a measured probing chart), and say why, quoting the record.
 
 It is one more method in the comparison, not a replacement for the answer key or the rule phenotypes:
-it is scored on the same 240 review charts with the same code, and its results appear as
+it is scored on the same review charts with the same code, and its results appear as
 `agent:chart_review` in the full results table.
 
 ## Rules
@@ -73,7 +73,7 @@ One JSON object per visit, validated before it's kept:
 
 ## Evaluation
 
-- The 240 review charts against the generator's truth, with every phenotyping metric the README uses
+- The review charts against the generator's truth, with every phenotyping metric the README uses
   (correct, incorrectly assigned / ruled out, incorrect stage, no answer, unsafe errors, by note
   difficulty) and its rank among all methods.
 - Next to the two rule phenotypes (*gum measurements first*, *exam form first*): it only earns its cost if

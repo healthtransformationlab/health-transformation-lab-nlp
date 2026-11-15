@@ -332,7 +332,7 @@ erDiagram
         bigint person_id "patient"
         date visit_date "date of the visit (synthetic)"
         bigint visit_seq_num "0 = the patient's first visit"
-        boolean is_in_review "one of the 240 review charts"
+        boolean is_in_review "one of the review charts"
         string note_status_code "status read from the chart note"
         string exam_form_status_code "from the exam form; unknown when missing"
         string dx_completed_status_code "from diagnosis codes on completed procedures"
@@ -955,7 +955,7 @@ One per synthetic visit: each evidence source's status and the truth (statuses o
 |  | `person_id` | bigint | patient |
 |  | `visit_date` | date | date of the visit (synthetic) |
 |  | `visit_seq_num` | bigint | 0 = the patient's first visit |
-|  | `is_in_review` | boolean | one of the 240 review charts |
+|  | `is_in_review` | boolean | one of the review charts |
 |  | `note_status_code` | string | status read from the chart note |
 |  | `exam_form_status_code` | string | from the exam form; unknown when missing |
 |  | `dx_completed_status_code` | string | from diagnosis codes on completed procedures |

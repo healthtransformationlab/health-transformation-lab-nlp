@@ -50,7 +50,7 @@ schema:
     name: is_in_review
     logicalType: boolean
     physicalType: boolean
-    description: one of the 240 review charts
+    description: one of the review charts
   - id: note_status_code
     name: note_status_code
     logicalType: string

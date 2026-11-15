@@ -286,7 +286,7 @@ TABLES = {
             C("person_id", "bigint", "patient"),
             C("visit_date", "date", "date of the visit (synthetic)"),
             C("visit_seq_num", "bigint", "0 = the patient's first visit"),
-            C("is_in_review", "boolean", "one of the 240 review charts"),
+            C("is_in_review", "boolean", "one of the review charts"),
             C("note_status_code", "string", "status read from the chart note"),
             C("exam_form_status_code", "string", "from the exam form; unknown when missing"),
             C("dx_completed_status_code", "string", "from diagnosis codes on completed procedures"),
