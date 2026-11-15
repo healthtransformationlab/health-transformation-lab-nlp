@@ -456,19 +456,37 @@ def test_a_python_installed_under_tmp_is_visible_in_the_sandbox_and_tmp_stays_pr
     import shutil
     import tempfile
     prefix = Path(tempfile.mkdtemp(prefix="htlnlp_py_", dir="/tmp"))
+    canary = Path(tempfile.mkdtemp(prefix="htlnlp_canary_", dir="/tmp"))   # the host's, not bound
     try:
         (prefix / "marker").write_text("bound-ok\n")
         box = ah.Sandbox(session.workdir)
         box.binds.append(str(prefix))
         code, out, _ = box.run(f"cat {prefix}/marker; touch {prefix}/x 2>&1; touch /tmp/scratch && echo tmp-ok; "
-                               f"ls /tmp | grep -c htlnlp_ || true", 30, ah._env("/workspace"))
+                               f"ls -d {canary} 2>&1 || true", 30, ah._env("/workspace"))
         assert code == 0, out                                    # the command ran to its end in the sandbox
         assert "bound-ok" in out, out                            # visible
         assert "Read-only" in out, out                           # and read-only
         assert "tmp-ok" in out, out                              # /tmp is still writable
-        assert out.strip().splitlines()[-1] == "1", out          # and private: only the bound folder shows
+        assert "No such file" in out.strip().splitlines()[-1], out   # and private: the host's canary isn't there
     finally:
         shutil.rmtree(prefix, ignore_errors=True)
+        shutil.rmtree(canary, ignore_errors=True)
+
+
+@needs_sandbox
+def test_a_bind_that_would_show_the_hosts_tmp_is_left_out(session):
+    """Binds sit on the sandbox's private /tmp (#774), so binding /, /tmp or a folder above the sandbox's root would
+    show the host's /tmp, its tokens and config files: such a bind is left out."""
+    import shutil
+    import tempfile
+    canary = Path(tempfile.mkdtemp(prefix="htlnlp_canary_", dir="/tmp"))
+    try:
+        box = ah.Sandbox(session.workdir)
+        box.binds += ["/tmp", "/", str(Path(tempfile.gettempdir()))]
+        _, out, _ = box.run(f"ls -d {canary} 2>&1; touch /tmp/scratch && echo tmp-ok", 30, ah._env("/workspace"))
+        assert "No such file" in out and "tmp-ok" in out, out
+    finally:
+        shutil.rmtree(canary, ignore_errors=True)
 
 
 def test_commands_find_the_running_python_first(session):

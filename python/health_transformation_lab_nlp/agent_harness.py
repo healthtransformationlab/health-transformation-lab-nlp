@@ -172,8 +172,12 @@ class Sandbox:
     def run(self, command: str, timeout: int, env: dict) -> tuple[int | None, str, str]:
         """(exit code or None on timeout, stdout, stderr) of `bash -c command` in /workspace."""
         root = Path(tempfile.mkdtemp(prefix="htlnlp_sbx_"))
+        # the binds sit on the private /tmp (#774): one that is /tmp, or / or a folder above the sandbox's root or
+        # the workspace, would show the host's files there (tokens, config), so it is left out
+        guard = [Path("/tmp"), root, self.workdir]
+        binds = [b for b in self.binds if not any(g == Path(b) or Path(b) in g.parents for g in guard)]
         argv = ["unshare", "--user", "--map-root-user", "--mount", "--net", "--pid", "--fork", "bash", "-c", _INNER,
-                "sandbox", str(root / "r"), str(self.workdir), " ".join(self.binds),
+                "sandbox", str(root / "r"), str(self.workdir), " ".join(binds),
                 *[f"{k}={v}" for k, v in env.items()], "/bin/bash", "-c", f"cd /workspace && {command}"]
         try:
             return _spawn(argv, None, timeout, {"PATH": os.environ.get("PATH", "/usr/bin:/bin"),
