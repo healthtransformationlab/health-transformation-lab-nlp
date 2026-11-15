@@ -1,3 +1,12 @@
 {
- "runs": []
+ "note": "The two-task trial of the Modal path (028 AI15, #804), on this branch only: ADR 0005 keeps an entry that accepts an open network off main. The tasks are htlnlp_pr63 and htlnlp_143, in the order seed 20261110, with the agent at gemma-developer-agent b95b235 and no added context: the statement condition of the Colab L4 arm colab-statement-l4, which resolved both (as did the A100 arm colab-statement). So the trial differs from that arm in the machine alone, and its question is whether the path works end to end on Modal (the machine, the model server, the agent loop, the evaluator's diff and sandbox, the uploads) and what it costs, not a score. The owner accepted the open network for this run on November 15, 2026 by asking for the trial to be prepared, as written in the plan it answered. Start it from Actions, Run the Gemma agent on a Modal GPU, on this branch, with gpu L4 and max_usd 2 (about 1.5 hours at the limits' price).",
+ "runs": [
+  {
+   "label": "modal-l4-trial",
+   "bundle": "jcblearning/htlnlp-official-modal-l4-trial",
+   "kernel_dataset": "jcblearning/htlnlp-colab-kernel-modal-l4-trial",
+   "model": "google/gemma-4/other/gemma-4-e4b-it-qat-w4a16-ct/2",
+   "network_open_acknowledged": true
+  }
+ ]
 }
