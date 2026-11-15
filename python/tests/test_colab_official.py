@@ -1466,3 +1466,27 @@ def test_a_development_batch_collected_from_colab_writes_its_own_devset_table(ru
     assert settings["kernel"]["competition_attached"] == "gemma-4-developer-agent"
     assert any("fetched onto the Colab machine" in n for n in settings["notes"])
     assert not any("The kernel attached the competition" in n for n in settings["notes"])
+
+
+def test_after_a_403_the_username_falls_back_to_the_environment_and_every_doubt_says_why(co, monkeypatch, tmp_path):
+    """#815 on Modal: the 403 check stopped with no reason given. The token's username falls back to KAGGLE_USERNAME
+    (trimmed) when the client's config has none, and each undecided answer logs why, with lengths only."""
+    _on_machine(co, monkeypatch, tmp_path)
+    lines = []
+    monkeypatch.setattr(co, "say", lines.append)
+    ref = "someone/htlnlp-colab-official-colab-graph"
+    no_config = _FakeKaggle(status_error=_HttpError(403))
+    no_config.username = None
+    monkeypatch.setenv("KAGGLE_USERNAME", " someone\n")
+    assert co.dataset_exists(no_config, ref, sleep=lambda s: None) is False      # read from the environment
+    monkeypatch.delenv("KAGGLE_USERNAME")
+    other = _FakeKaggle(status_error=_HttpError(403))
+    other.username = "someone-else"
+    assert co.listed_as_own(other, ref) is None
+    broken = _FakeKaggle(status_error=_HttpError(403))
+    broken.list_error = ConnectionError("the network blinked")
+    assert co.listed_as_own(broken, ref) is None
+    said = "\n".join(lines)
+    assert "after a 403: the token's username (12 characters) is not the dataset owner's (7 characters)" in said
+    assert "after a 403: listing the owner's datasets failed (ConnectionError" in said
+    assert "someone-else" not in said
