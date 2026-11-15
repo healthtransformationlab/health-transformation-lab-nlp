@@ -133,6 +133,7 @@ usernames: an exact match, not by display name. The best-ranked team wins when a
 with no matched team keeps empty score cells.
 
 ```bash
+pip install "kaggle>=2.2"   # the CLI and kagglesdk, which lists the writeups
 KAGGLE_API_TOKEN=... python kaggle/paper_track_scores.py --out paper_track_scores.csv
 ```
 
