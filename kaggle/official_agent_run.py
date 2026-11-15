@@ -341,21 +341,69 @@ COMPETITION_DEFAULTS = {"timeout_seconds": 300, "verification_timeout_seconds": 
 # what the starter notebook and swegemma.config.build_submission_limits use when a submission sets nothing
 
 
+def _load_with_includes(path: Path):
+    """A submission's YAML file with each `!include` resolved as the competition's loader does
+    (`adk_submission.yaml_loader`): from the folder of the file that names it; a .yaml or .yml file parsed, any other
+    (.md, .txt) as its text."""
+    import yaml
+
+    class _Loader(yaml.SafeLoader):
+        pass
+
+    def _include(loader, node):
+        target = path.parent / loader.construct_scalar(node)
+        if target.suffix.lower() in (".yaml", ".yml"):
+            return _load_with_includes(target)
+        return target.read_text(encoding="utf-8")
+
+    _Loader.add_constructor("!include", _include)
+    return yaml.load(path.read_text(encoding="utf-8"), Loader=_Loader)
+
+
+def submission_generation(submission_dir: Path) -> dict:
+    """The output budget the submission sets itself: `max_output_tokens` and `thinking_config.thinking_budget` from its
+    agent.yaml's `generate_content_config`, inline or through `!include`. {} when it sets neither, and then the
+    evaluator's fallback (`generation_defaults`) is what the run used (#737)."""
+    agent = _load_with_includes(Path(submission_dir) / "agent.yaml") or {}
+    gen = agent.get("generate_content_config") or {}
+    out: dict = {}
+    if gen.get("max_output_tokens") is not None:
+        out["max_output_tokens"] = gen["max_output_tokens"]
+    if (gen.get("thinking_config") or {}).get("thinking_budget") is not None:
+        out["thinking_config"] = {"thinking_budget": gen["thinking_config"]["thinking_budget"]}
+    return out
+
+
+def _generation_used(defaults: dict | None, submission: dict) -> dict:
+    """The evaluator's fallback with the submission's own values over it: what each model call was given."""
+    used = {**(defaults or {}), **{k: v for k, v in submission.items() if k != "thinking_config"}}
+    if "thinking_config" in submission:
+        used["thinking_config"] = {**((defaults or {}).get("thinking_config") or {}), **submission["thinking_config"]}
+    return used
+
+
+GENERATION_SETTINGS = ("max_output_tokens", "thinking_budget")   # set in agent.yaml, not in eval_config.yaml
+
+
 def settings_for(result: dict, seed: int | None, drawn: list[str], pool_count: int, machine_shape: str | None,
                  docker_image: str | None, competition: str | None, agent_commit: str | None,
-                 source: str = "published", tasks_per_kernel: int = 1, colab: bool = False) -> dict:
+                 source: str = "published", tasks_per_kernel: int = 1, colab: bool = False,
+                 generation: dict | None = None) -> dict:
     """What a run used, how its sample was drawn, and each budget that differs from the competition's defaults.
-    `colab`: the run was made on a Colab machine by kaggle/colab_official.py, not in a Kaggle kernel (#687)."""
+    `colab`: the run was made on a Colab machine by kaggle/colab_official.py, not in a Kaggle kernel (#687).
+    `generation`: the output budget the submission used (`_generation_used`); without it, the evaluator's fallback."""
     budgets, gen = result.get("budgets") or {}, result.get("generation_defaults") or {}
-    used = {**budgets, "max_output_tokens": gen.get("max_output_tokens"),
-            "thinking_budget": (gen.get("thinking_config") or {}).get("thinking_budget")}
+    gen_used = generation if generation is not None else gen
+    used = {**budgets, "max_output_tokens": gen_used.get("max_output_tokens"),
+            "thinking_budget": (gen_used.get("thinking_config") or {}).get("thinking_budget")}
     version = (result.get("versions") or {}).get("swegemma")
     harness = result.get("harness_name") or "swegemma"
     development = source == "competition"
     return {
         "harness_name": harness.replace("swegemma", f"swegemma {version}", 1) if version else harness,
         "model_name": result.get("model_name"), "versions": result.get("versions"), "server": result.get("server"),
-        "budgets": budgets, "generation_defaults": gen, "context_cache": result.get("context_cache"),
+        "budgets": budgets, "generation_defaults": gen, "generation_used": gen_used,
+        "context_cache": result.get("context_cache"),
         "events_compaction": result.get("events_compaction"),
         "kernel": {"machine_shape_asked": "Colab, one GPU" if colab else machine_shape,
                    "docker_image": None if colab else docker_image, "competition_attached": competition,
@@ -370,7 +418,8 @@ def settings_for(result: dict, seed: int | None, drawn: list[str], pool_count: i
                                   "proportion to each tier's size (largest remainder); not ordered by cost or size")},
         "differences_from_competition_defaults": [
             {"setting_name": k, "used": used.get(k), "competition_default": v,
-             "source_text": "the submission's eval_config.yaml"}
+             "source_text": ("the submission's generate_content_config (agent.yaml)" if k in GENERATION_SETTINGS
+                             else "the submission's eval_config.yaml")}
             for k, v in COMPETITION_DEFAULTS.items() if k in used and used.get(k) != v],
         "notes": [
             ("The agent loop, the model server and the verification are the competition's: swegemma's "
@@ -416,10 +465,12 @@ def _script_seconds(result: dict) -> float | None:
         return None
 
 
-def row_for(result: dict, verdict: dict | None, tier: str, kernel_url: str, in_sample: bool = True) -> dict:
-    """One table row: what the evaluator's agent phase did on Kaggle, and its verification's verdict on the patch."""
+def row_for(result: dict, verdict: dict | None, tier: str, kernel_url: str, in_sample: bool = True,
+            generation: dict | None = None) -> dict:
+    """One table row: what the evaluator's agent phase did on Kaggle, and its verification's verdict on the patch.
+    `generation`: the output budget the submission used; without it, the evaluator's fallback (#737)."""
     budgets, server = result.get("budgets") or {}, result.get("server") or {}
-    gen = result.get("generation_defaults") or {}
+    gen = generation if generation is not None else (result.get("generation_defaults") or {})
     gpus = server.get("gpus") or []
     version = (result.get("versions") or {}).get("swegemma")
     harness = result.get("harness_name") or "swegemma"
@@ -718,9 +769,13 @@ def run_batch(a, api, user: str, ids: list[str], tasks: dict, manifest: dict, ov
     else:
         verdicts = _verify(a.dataset / "tasks.jsonl", a.dataset / "snapshots", a.agent_dir,
                            {i: (r.get("patch") or "") for i, r in done.items()}, work / "_verify")
+    uploaded = work / "bundle" / "submission"   # what the kernel was given; the agent folder if it is gone
+    sub_gen = submission_generation(uploaded if (uploaded / "agent.yaml").is_file() else a.agent_dir)
     rows = [row_for({"instance_id": i, **done[i]}, verdicts.get(i), "" if development else manifest.get(i, ""),
                     (colab_results_url(results) if colab else
-                     f"https://www.kaggle.com/code/{kref}"), in_sample=not a.outside_sample) for i in order if i in done]
+                     f"https://www.kaggle.com/code/{kref}"), in_sample=not a.outside_sample,
+                    generation=_generation_used(done[i].get("generation_defaults"), sub_gen))
+            for i in order if i in done]
     table = pd.DataFrame(rows, columns=COLUMNS)
     if len(table):
         print(table[["instance_id", "tier_code", "is_resolved", "reason_text", "agent_patch_bytes", "tool_call_count",
@@ -742,7 +797,8 @@ def run_batch(a, api, user: str, ids: list[str], tasks: dict, manifest: dict, ov
             commit = subprocess.run(["git", "-C", str(a.agent_dir), "rev-parse", "HEAD"], capture_output=True,
                                     text=True, check=False).stdout.strip() or None
             settings = settings_for(good, a.seed, list(ids), len(manifest), a.machine_shape, a.docker_image,
-                                    a.competition, commit, a.source, tasks_per_kernel=len(order), colab=colab)
+                                    a.competition, commit, a.source, tasks_per_kernel=len(order), colab=colab,
+                                    generation=_generation_used(good.get("generation_defaults"), sub_gen))
             if not a.sample:
                 settings = given_sample(settings, getattr(a, "sample_method", None))
             settings["notes"] += a.note or []
@@ -914,8 +970,10 @@ def main() -> int:
 
     verdicts = _verify(a.dataset / "tasks.jsonl", a.dataset / "snapshots", a.agent_dir,
                        {i: (r.get("patch") or "") for i, r in results.items()}, a.work / "_verify")
+    sub_gen = submission_generation(a.agent_dir)
     rows = [row_for({"instance_id": i, **results[i]}, verdicts.get(i), manifest.get(i, ""),
-                    f"https://www.kaggle.com/code/{user}/{kernel_slug(i)}", in_sample=not a.outside_sample) for i in ids]
+                    f"https://www.kaggle.com/code/{user}/{kernel_slug(i)}", in_sample=not a.outside_sample,
+                    generation=_generation_used(results[i].get("generation_defaults"), sub_gen)) for i in ids]
     table = pd.DataFrame(rows, columns=COLUMNS)
     print(table[["instance_id", "tier_code", "is_resolved", "reason_text", "agent_patch_bytes", "tool_call_count",
                  "agent_seconds", "gpu_count", "gpu_name"]].to_string(index=False))
@@ -929,7 +987,8 @@ def main() -> int:
     if good and a.sample:
         commit = subprocess.run(["git", "-C", str(a.agent_dir), "rev-parse", "HEAD"], capture_output=True, text=True,
                                 check=False).stdout.strip() or None
-        settings = settings_for(good, a.seed, ids, len(manifest), a.machine_shape, a.docker_image, a.competition, commit)
+        settings = settings_for(good, a.seed, ids, len(manifest), a.machine_shape, a.docker_image, a.competition, commit,
+                                generation=_generation_used(good.get("generation_defaults"), sub_gen))
         settings["notes"] += a.note or []
         out.with_name(out.stem + "_settings.json").write_text(json.dumps(settings, indent=1) + "\n")
     return 0
