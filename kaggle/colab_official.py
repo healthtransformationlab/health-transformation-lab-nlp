@@ -54,7 +54,7 @@ MODEL = "google/gemma-4/other/gemma-4-e4b-it-qat-w4a16-ct/2"             # as th
 # `docker` is the Docker SDK: the competition's evaluator imports it even for its subprocess sandbox, and Kaggle's image
 # has it where Colab's does not (the second test run stopped there). Nothing here starts a container.
 PINS = ("vllm==0.19.1", "google-adk==1.36.1", "litellm==1.82.4", "kagglehub", "kaggle==2.2.5", "six", "pytest", "pyyaml",
-        "docker")
+        "docker", "huggingface-hub>=1.5.0,<2.0")
 # Laid out as Kaggle lays out /kaggle, but under /content: Colab has a read-only /kaggle/input of its own.
 KAGGLE = Path("/content/htl_kaggle")
 LOG = Path("/content/htl_colab.log")
