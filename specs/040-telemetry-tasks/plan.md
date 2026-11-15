@@ -7,9 +7,14 @@
 - **Statements** come from one writer (US1) for every condition and both task sets. Nothing else writes one.
 - **Task format, gates and verification** are spec 028's: `task_gate.py` (including `evaluator_verified`) and the
   competition's evaluator.
-- **Runs and the paired test** reuse what the context arms used: `kaggle/official_agent_run.py --label <arm>` (or
-  `kaggle/colab_official.py` on Colab) and `python/scripts/70_context_pairs.py` for the exact McNemar test. Each is
-  extended, not copied.
+- **Runs go to Colab first** (the owner, November 15, 2026: "run ... on colab first to save kaggle"). The question
+  is whether a statement helps, not what the competition's hardware does, so `AGENTS.md` ("The Kaggle GPU hours are
+  rationed", #779) sends it to one Colab GPU. `kaggle/official_agent_run.py --colab --batch --label <arm>` seals the
+  batch's bundle (`kaggle/official_agent_bundle.py`), and the owner runs it from `kaggle/colab_official_agent.ipynb`,
+  which hands it to `kaggle/colab_official.py`: the competition's evaluator loop on Colab. Kaggle's four L4s (the
+  same runner without `--colab`) only if a result turns out to depend on the competition's own hardware or image,
+  and only on the owner's yes for that run.
+  The exact McNemar test is `python/scripts/70_context_pairs.py`. Each is extended, not copied.
 
 ## Names (copied to the issues)
 
@@ -119,7 +124,11 @@ each step with `DENTAL_TELEMETRY_LEVEL=detail`, and the run's settings record it
 - The injector and the run tables are rewritten by key (`instance_id`, and `statement_condition_code` and
   `run_seed_num` for runs), never appended. Every row carries `git_commit_sha`.
 - Snapshots, graphs and embeddings are built, not committed, as for the history tasks.
-- **Compute.** About 45 A100 GPU-hours in all (spec, "Assumptions"). Each GPU run waits for the owner's word. If an
+- **Compute.** About 45 A100 GPU-hours, or about 83 on one L4 (spec, "Assumptions"), on Colab: the owner's
+  subscription, not the Kaggle pool. Each run waits for the owner's word, and the owner opens it: a Colab run starts
+  only when its entry in `kaggle/colab_official_run.json` says `"network_open_acknowledged": true`, set on the run's
+  own branch (ADR 0005), and its commands are read afterwards for network use. The pilot (60 task-runs, about 1.3
+  A100 or 2.3 L4 GPU-hours) comes first, so the main run is booked only once the pilot has worked end to end. If an
   allowance would stop a run, it is raised first, as `AGENTS.md` ("Failures, retries and reruns") requires.
 - No secret, note text, row value or path enters a span, a statement or a table.
 

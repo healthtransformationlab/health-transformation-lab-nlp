@@ -173,8 +173,12 @@ left for later, and the injected tasks in a dataset of their own.
 - **Cost.** The main run is 200 tasks × 3 conditions × 3 runs = 1,800 task-runs. With the 60-run pilot and up to
   about 270 history runs, the total is about 45 A100 GPU-hours, about 84 USD. That is a rental estimate at the 76
   GPU-seconds a task `colab-statement` measured and the 1.87 USD an hour in `ops/cost_settings.yaml`, without loading
-  the model. Adding `symptom` raises the decisions' 1,200 main task-runs to 1,800. Power is unchanged: the primary test
-  still pairs two conditions on 200 tasks (design, "Decisions" 1).
+  the model. On one L4 (140 GPU-seconds a task, `colab-statement-l4`; 0.83 USD an hour) it is about 83 GPU-hours,
+  about 69 USD. Adding `symptom` raises the decisions' 1,200 main task-runs to 1,800. Power is unchanged: the primary
+  test still pairs two conditions on 200 tasks (design, "Decisions" 1).
+- **Where the runs go.** Colab first, not Kaggle's GPU hours (the owner, November 15, 2026; `AGENTS.md`, "The Kaggle
+  GPU hours are rationed"): the question is whether a statement helps, which one Colab GPU answers. Kaggle's four L4s
+  only for a result that depends on the competition's own hardware, on the owner's yes for that run.
 - **Agent, model and harness** are those of spec 028's latest pre-registration unless US3's pre-registration names
   others: `gemma-4-e4b-it-qat-w4a16-ct`, `swegemma` 0.2.11, the agent's own budgets.
 - **Snapshots** for injected tasks are built from a recent passing commit of `main`, so the pipeline steps send spans
