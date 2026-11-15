@@ -260,6 +260,20 @@ A SEV2 that fires every week for the same cause gets its cause fixed or its leve
   - **Keep a reserve**: about 10 hours until the last two days before the refresh (Saturday 00:00 UTC), for a change
     that turns out to matter.
   - **No idle GPU notebook**: one open in Kaggle's editor with an accelerator on draws on the same hours.
+  - **One L4 to learn why the agent fails; Kaggle's four L4s only where the competition's hardware matters** (#779).
+    On the 93 published tasks with the graph-retrieval context, one L4 on Colab resolved 8 at 128 GPU-seconds a task,
+    and Kaggle's four L4s 4 at 297 ([`data/tasks/official_agent_runs/README.md`](data/tasks/official_agent_runs/README.md);
+    different runs on different days, not a controlled test). Four L4s finish a task faster (about 74 seconds against
+    128), which matters only to the few runs that reach the 5-minute budget, and Kaggle counts each hour on them as two
+    of the pool's. Kaggle offers no one-L4 machine (four L4s with the competition attached, two T4s without), so:
+    - a run asking why the agent fails (failed edits, context-window endings, scratch files) goes to one L4 on Colab,
+      which uses the owner's subscription, not the Kaggle pool;
+    - a run whose answer depends on the competition's own hardware or image stays on Kaggle's four L4s.
+
+    The owner opens a Colab run (`kaggle/colab_official_agent.ipynb`; the runner's `--colab --batch --label`; ADR 0005).
+    Colab differs from Kaggle in its Python (3.13) and in 9 of the wheelhouse's 41 packages, and the run's record says
+    so. The Colab path runs batches of the published tasks only: the competition's development set needs its files
+    fetched onto the machine first (#780), and until then a development-set run stays on Kaggle.
 
 ## Ingestion and schema drift
 
