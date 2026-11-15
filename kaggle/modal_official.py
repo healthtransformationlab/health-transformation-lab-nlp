@@ -15,10 +15,16 @@ entry does not accept an open network (ADR 0005). What differs:
   timeout, so the run cannot cost more. A run stopped at the limit loses what it finished since its last upload (up
   to 8 minutes) and its final log, as a Colab session that drops does; to carry on, its entry names the stopped run's
   session (the log names it) in `resume_session`.
+- **Small runs start on their own; larger ones wait for the owner** (#806, ADR 0008). A run whose `max_usd` is within
+  `modal_auto_max_usd`, and that keeps this month's Modal spend within `modal_auto_monthly_usd`, starts without anyone
+  clicking (`approval_needed`). Any other run waits in the GitHub environment `modal-approval` until the owner
+  approves it, and is refused if that environment has no required reviewer (`gate_problems`).
 - **The Kaggle credentials reach the machine for this run only** (`modal.Secret.from_local_environ`), from the GitHub
   environment `dev`; nothing is stored in Modal.
 
-    python kaggle/modal_official.py preflight --label <label> --gpu L4 --max-usd 5 >> "$GITHUB_ENV"
+    python kaggle/modal_official.py preflight --label <label> --gpu L4 --max-usd 5 >> "$GITHUB_OUTPUT"
+    modal billing summary --json | python kaggle/modal_official.py approval --max-usd 5 >> "$GITHUB_OUTPUT"
+    curl .../environments/modal-approval | python kaggle/modal_official.py gate      # only when approval is needed
     modal app list --json | python kaggle/modal_official.py busy
     modal run --detach kaggle/modal_official.py --label <label> --gpu L4 --max-usd 5
 
@@ -65,6 +71,8 @@ PACKAGES = ("vllm", "google.adk", "litellm", "kagglehub", "kaggle", "docker", "y
 # namespaces.
 SANDBOX_PROBE = ("unshare", "--user", "--map-root-user", "--mount", "--net", "--pid", "--fork", "true")
 STOPPED_STATES = ("stopped", "stopping...", "disabled")
+AUTO_KEYS = {"per_run": "modal_auto_max_usd", "monthly": "modal_auto_monthly_usd"}   # ops/cost_settings.yaml
+APPROVAL_ENVIRONMENT = "modal-approval"                    # the GitHub environment an over-limit run waits in
 # The packages the helper installs (colab_official.PINS), baked into the image so a run does not wait for them. Kept
 # as a copy because this file is imported on Modal's machine too, where the helper is not beside it; a test keeps
 # them equal.
@@ -250,17 +258,101 @@ def running_apps(listing) -> list[str]:
             if a.get("description") == APP_NAME and str(a.get("state", "")) not in STOPPED_STATES]
 
 
+def load_auto_limits(path: Path = SETTINGS) -> dict:
+    """What a run may spend without the owner's approval: per run, and this month in all (ops/cost_settings.yaml)."""
+    import yaml
+    settings = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
+    return {name: _price(settings, key, path)["value"] for name, key in AUTO_KEYS.items()}
+
+
+def _json_in(text: str):
+    """The JSON object or list in a command's output, which may carry a line of other text around it."""
+    text = text or ""
+    starts = [i for i in (text.find("{"), text.find("[")) if i >= 0]
+    if not starts:
+        raise ValueError("no JSON")
+    start = min(starts)
+    end = max(text.rfind("}"), text.rfind("]"))
+    return json.loads(text[start:end + 1])
+
+
+def approval_needed(max_usd, summary_text: str, settings: Path = SETTINGS) -> tuple[bool, str]:
+    """Whether the run waits for the owner's approval, and why. It does when `max_usd` is over the per-run limit, when
+    this month's Modal spend (`modal billing summary --json`, its `metered_cost`) plus `max_usd` is over the monthly
+    limit, and when that spend cannot be read: not knowing is never taken for being under."""
+    limits = load_auto_limits(settings)
+    try:
+        usd = float(max_usd)
+    except (TypeError, ValueError):
+        usd = float("nan")
+    if not math.isfinite(usd) or usd <= 0:
+        return True, f"max_usd {max_usd!r} is not a positive number"
+    if usd > limits["per_run"]:
+        return True, (f"max_usd {usd:g} is over the {limits['per_run']:g} USD a run may spend without approval "
+                      f"({AUTO_KEYS['per_run']})")
+    try:
+        spent = float(_json_in(summary_text)["metered_cost"])
+        if not math.isfinite(spent) or spent < 0:
+            raise ValueError(spent)
+    except (ValueError, KeyError, TypeError):
+        return True, "this month's Modal spend could not be read (modal billing summary), so the run waits for approval"
+    if spent + usd > limits["monthly"]:
+        return True, (f"this month's Modal spend, {spent:.2f} USD, plus max_usd {usd:g} is over the "
+                      f"{limits['monthly']:g} USD a month runs may spend without approval ({AUTO_KEYS['monthly']})")
+    return False, (f"max_usd {usd:g} is within {limits['per_run']:g} USD a run, and {spent:.2f} USD spent this month "
+                   f"plus it is within {limits['monthly']:g}: it starts without approval")
+
+
+def gate_problems(environment_text: str) -> list[str]:
+    """Why the approval job must refuse the run, from GitHub's answer for the environment it waited in. GitHub makes a
+    missing environment on the spot, with no rule, so a run is let through only when a required reviewer is set."""
+    try:
+        env = _json_in(environment_text)
+    except ValueError:
+        return [f"the GitHub environment {APPROVAL_ENVIRONMENT} could not be read, so the run is refused"]
+    if not isinstance(env, dict) or env.get("name") != APPROVAL_ENVIRONMENT:
+        why = env.get("message") if isinstance(env, dict) else None
+        return [(f"the GitHub environment {APPROVAL_ENVIRONMENT} could not be read ({why or 'another answer'}), so "
+                 "the run is refused")]
+    rules = env.get("protection_rules") or []
+    if not any(r.get("type") == "required_reviewers" and r.get("reviewers") for r in rules):
+        return [(f"the GitHub environment {APPROVAL_ENVIRONMENT} has no required reviewer, so nobody approved this "
+                 f"over-limit run and it is refused: add the owner under Settings, Environments, "
+                 f"{APPROVAL_ENVIRONMENT}, Required reviewers")]
+    return []
+
+
 def cli(argv: list[str] | None = None, env=None, kaggle_dir: Path = HERE, stdin=None) -> dict:
-    """`preflight`: check everything, then print the GPU and the time limit as KEY=VALUE lines for $GITHUB_ENV, and the
-    plan (no credential in it) on stderr. `busy`: refuse when `modal app list --json` on stdin shows a run going."""
+    """`preflight`: check everything, then print the GPU and the time limit as KEY=VALUE lines for $GITHUB_OUTPUT, and
+    the plan (no credential in it) on stderr. `approval`: from `modal billing summary --json` on stdin, print
+    `needs_approval=` and `reason=`. `gate`: from GitHub's answer for the approval environment on stdin, refuse unless
+    it has a required reviewer. `busy`: refuse when `modal app list --json` on stdin shows a run going, or is empty."""
     ap = argparse.ArgumentParser(prog="modal_official.py")
-    ap.add_argument("command", choices=["preflight", "busy"])
+    ap.add_argument("command", choices=["preflight", "approval", "gate", "busy"])
     ap.add_argument("--label")
     ap.add_argument("--gpu", default="L4")
     ap.add_argument("--max-usd", default="5")
     a = ap.parse_args(argv)
+    text = (stdin or sys.stdin).read() if a.command in ("approval", "gate", "busy") else ""
+    if a.command == "approval":
+        needed, reason = approval_needed(a.max_usd, text)
+        print(f"needs_approval={'true' if needed else 'false'}")
+        print("reason=" + " ".join(reason.split()))
+        print(f"::notice::{reason}", file=sys.stderr)
+        return {"needs_approval": needed, "reason": reason}
+    if a.command == "gate":
+        problems = gate_problems(text)
+        if problems:
+            raise SystemExit("\n".join(problems))
+        print(f"approved by a required reviewer of {APPROVAL_ENVIRONMENT}")
+        return {}
     if a.command == "busy":
-        going = running_apps(json.loads((stdin or sys.stdin).read() or "[]"))
+        try:
+            listing = _json_in(text)
+        except ValueError:
+            raise SystemExit("`modal app list --json` gave nothing to read, so whether a run is going is not known") \
+                from None
+        going = running_apps(listing)
         if going:
             raise SystemExit(f"a Modal run is still going ({', '.join(going)}): wait for it to end, or stop it with "
                              "`modal app stop <id>`")

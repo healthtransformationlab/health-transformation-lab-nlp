@@ -162,7 +162,15 @@ it is decided in an ADR amending 0007 after the two-task trial (#804).
   kernel dataset, `"network_open_acknowledged": true` and no `gpu`. Never put it in `colab_official_run.json`:
   Colab sessions follow that list and start every run in it. Then go to the Actions tab, pick **Run the Gemma
   agent on a Modal GPU**, choose that branch, and fill in the label, the GPU (L4, A10 or A100-40GB) and `max_usd`.
-  Starting it is the owner's yes for that run; an agent does not start it on its own.
+  An agent session can start it the same way, through GitHub's API.
+- **Who has to say yes** (#806, [ADR 0008](../docs/adr/0008-modal-runs-start-on-their-own-under-a-cost-cap.md)):
+  - A run starts on its own when its `max_usd` is at most `modal_auto_max_usd` (5 USD) and this month's Modal
+    spend plus `max_usd` is at most `modal_auto_monthly_usd` (25 USD, inside the Starter plan's 30 USD credit).
+  - Any other run, or any run when this month's spend can't be read, waits in the **approve** job until the
+    owner approves it in Actions. GitHub notifies the reviewer.
+  - The approve job uses the GitHub environment `modal-approval`, which the owner creates once (Settings,
+    Environments, New environment, `modal-approval`, Required reviewers: the owner). It holds no secret. Without a
+    required reviewer, an over-limit run is refused, never let through.
 - **The cap:** `max_usd` becomes Modal's time limit. It is priced at the GPU's rate plus the CPU and memory at their
   hard limits (6 cores and 32 GiB; prices in `ops/cost_settings.yaml`), so the run cannot cost more. At $5 an L4
   run gets about 3.7 hours.
@@ -171,7 +179,8 @@ it is decided in an ADR amending 0007 after the two-task trial (#804).
   session (its log names it), and start it again.
 - **Before the GPU starts,** the workflow:
   - checks the credentials, the entry, the label and the cap, and names what is wrong;
-  - makes one cheap call each to Kaggle and Modal (it prints the Modal token's expiry);
+  - makes one cheap call each to Kaggle and Modal (it prints the Modal token's expiry, and Modal's own prices);
+  - decides whether the run needs the owner's approval, and waits for it if so;
   - refuses while an earlier Modal run is still going;
   - checks the machine on a CPU, for a fraction of a cent: git, pkill, the CUDA compiler, Python 3.13, the
     packages, and the user namespaces the evaluator's sandbox needs.

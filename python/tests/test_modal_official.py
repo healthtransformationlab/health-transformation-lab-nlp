@@ -150,6 +150,58 @@ def test_a_new_run_waits_while_an_earlier_one_is_still_going(mo, capsys):
     listing.append({"app_id": "ap-3", "description": mo.APP_NAME, "state": "ephemeral (detached)"})
     with pytest.raises(SystemExit, match="ap-3.*modal app stop"):
         mo.cli(["busy"], stdin=io.StringIO(json.dumps(listing)))
+    with pytest.raises(SystemExit, match="not known"):                # a listing that failed is not an empty one
+        mo.cli(["busy"], stdin=io.StringIO(""))
+
+
+def _summary(spent):
+    return json.dumps({"metered_cost": str(spent), "billed_cost": "0", "adjustments": {}})
+
+
+def test_a_run_within_both_limits_starts_without_approval(mo):
+    limits = mo.load_auto_limits()
+    assert limits == {"per_run": 5, "monthly": 25}
+    needed, reason = mo.approval_needed(5, _summary("12.40"))
+    assert needed is False and "without approval" in reason
+    assert mo.approval_needed("4.5", "Workspace: x\n" + _summary(0))[0] is False   # a line of other text around it
+
+
+def test_a_run_over_a_limit_or_with_the_spend_unknown_waits_for_approval(mo):
+    for max_usd, summary, word in ((5.01, _summary(0), "modal_auto_max_usd"),
+                                   (5, _summary("20.01"), "modal_auto_monthly_usd"),
+                                   (1, "", "could not be read"),
+                                   (1, json.dumps({"billed_cost": "0"}), "could not be read"),
+                                   (1, _summary("nan"), "could not be read"),
+                                   (1, _summary("-3"), "could not be read"),
+                                   ("inf", _summary(0), "not a positive number")):
+        needed, reason = mo.approval_needed(max_usd, summary)
+        assert needed is True and word in reason, (max_usd, summary, reason)
+
+
+def test_approval_prints_the_decision_and_its_reason_for_the_next_jobs(mo, capsys):
+    mo.cli(["approval", "--max-usd", "8"], stdin=io.StringIO(_summary(0)))
+    out = capsys.readouterr().out.splitlines()
+    assert out[0] == "needs_approval=true" and out[1].startswith("reason=") and len(out) == 2
+
+
+def _environment(rules, name="modal-approval"):
+    return json.dumps({"id": 1, "name": name, "protection_rules": rules})
+
+
+def test_the_gate_lets_a_run_through_only_where_a_required_reviewer_is_set(mo, capsys):
+    reviewer = {"type": "required_reviewers", "reviewers": [{"type": "User", "reviewer": {"login": "owner"}}]}
+    assert mo.gate_problems(_environment([reviewer])) == []
+    mo.cli(["gate"], stdin=io.StringIO(_environment([reviewer])))
+    assert "approved" in capsys.readouterr().out
+    for answer, word in ((_environment([]), "no required reviewer"),                 # made by GitHub on the spot
+                         (_environment([{"type": "wait_timer", "wait_timer": 5}]), "no required reviewer"),
+                         (_environment([{"type": "required_reviewers", "reviewers": []}]), "no required reviewer"),
+                         (json.dumps({"message": "Not Found"}), "Not Found"),
+                         (_environment([reviewer], name="dev"), "could not be read"),
+                         ("", "could not be read")):
+        assert word in " ".join(mo.gate_problems(answer)), answer
+        with pytest.raises(SystemExit):
+            mo.cli(["gate"], stdin=io.StringIO(answer))
 
 
 def test_the_machine_check_names_each_thing_missing(mo):
@@ -254,28 +306,49 @@ def test_the_machine_is_checked_before_the_gpu_and_a_lack_stops_it(with_modal, m
         calls["app"].entrypoint("modal-trial", "A10", "5")
 
 
-def test_the_workflow_is_started_by_hand_and_checks_everything_before_the_run():
+def test_the_workflow_checks_then_waits_for_approval_only_when_needed_then_runs():
     wf = yaml.safe_load(WORKFLOW.read_text())
     triggers = wf.get("on", wf.get(True))
     assert set(triggers) == {"workflow_dispatch"}
     assert set(triggers["workflow_dispatch"]["inputs"]) == {"label", "gpu", "max_usd"}
-    job = next(iter(wf["jobs"].values()))
-    assert job["environment"] == "dev"
-    assert job["env"]["MODAL_TOKEN_ID"] == "${{ secrets.MODAL_TOKEN_ID }}"
-    assert job["env"]["MODAL_TOKEN_SECRET"] == "${{ secrets.MODAL_TOKEN_SECRET }}"
-    assert {"KAGGLE_USERNAME", "KAGGLE_API_TOKEN", "KAGGLE_KEY"} <= set(job["env"])
-    runs = [s.get("run", "") for s in job["steps"]]
-    assert any('"modal==1.6.4"' in r for r in runs)                  # a pinned version
+    assert wf["defaults"]["run"]["shell"] == "bash"                  # pipefail: a failing listing fails its step
+    jobs = wf["jobs"]
+    assert list(jobs) == ["check", "approve", "run"]
+    check, approve, run = jobs["check"], jobs["approve"], jobs["run"]
+    assert check["environment"] == run["environment"] == "dev"
+    for job in (check, run):
+        assert job["env"]["MODAL_TOKEN_ID"] == "${{ secrets.MODAL_TOKEN_ID }}"
+        assert job["env"]["MODAL_TOKEN_SECRET"] == "${{ secrets.MODAL_TOKEN_SECRET }}"
+        assert {"KAGGLE_USERNAME", "KAGGLE_API_TOKEN", "KAGGLE_KEY"} <= set(job["env"])
+    assert approve["environment"] == "modal-approval" and approve["needs"] == "check"
+    assert approve["if"] == "needs.check.outputs.needs_approval == 'true'" and "env" not in approve   # no secret
+    assert "modal_official.py gate" in approve["steps"][-1]["run"] and "environments/modal-approval" in \
+        approve["steps"][-1]["run"]
+    assert run["needs"] == ["check", "approve"]
+    for word in ("!cancelled()", "needs.check.result == 'success'", "needs.approve.result == 'success'",
+                 "needs.approve.result == 'skipped'"):
+        assert word in run["if"], word
 
-    def first(word):
-        return next(i for i, r in enumerate(runs) if word in r)
+    def runs(job):
+        return [st.get("run", "") for st in job["steps"]]
 
-    order = [first(w) for w in ("modal_official.py preflight", "kaggle kernels list", "modal token info",
-                                "modal_official.py busy", "modal run")]
-    assert order == sorted(order) and "--detach" in runs[order[-1]]
-    assert [i for i, r in enumerate(runs) if "GITHUB_ENV" in r] == [order[0]]   # no credential written to a file
+    def order(job, words):
+        found = [next(i for i, r in enumerate(runs(job)) if w in r) for w in words]
+        assert found == sorted(found), words
+        return found
+
+    order(check, ("modal_official.py preflight", "kaggle kernels list", "modal token info", "modal billing summary"))
+    _, i_run = order(run, ("modal_official.py busy", "modal run"))
+    assert "--detach" in runs(run)[i_run]
+    assert any('"modal==1.6.4"' in r for r in runs(check) + runs(run))   # a pinned version
+    every = runs(check) + runs(approve) + runs(run)
+    assert not any("GITHUB_ENV" in r for r in every)                 # no credential written to a file
+    assert [r for r in every if "GITHUB_OUTPUT" in r] == [r for r in runs(check) if "modal_official.py preflight" in r
+                                                          or "modal_official.py approval" in r]
     secret_value = re.compile(r"echo[^\n]*\$\{?(MODAL_TOKEN|KAGGLE_API_TOKEN|KAGGLE_KEY)")
-    assert not any(secret_value.search(r) for r in runs)            # names in messages, never values
+    assert not any(secret_value.search(r) for r in every)            # names in messages, never values
+    assert run["env"]["HTL_MODAL_GPU"] == "${{ needs.check.outputs.gpu }}"
+    assert run["env"]["HTL_MODAL_TIMEOUT"] == "${{ needs.check.outputs.timeout }}"
 
 
 def test_modals_run_list_is_committed_apart_from_colabs():
