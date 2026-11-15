@@ -102,9 +102,14 @@ as files change (spec 034):
 - **At least one public notebook** that loads it.
 - **Sent on every publish:** `kaggle/publish.py` and `kaggle/publish_tasks.py` send the metadata after each upload.
   `--metadata-only` (the workflows' `metadata_only` input) refreshes it without a new version.
+- **A version and a changelog** (spec 039): each dataset declares `version` (MAJOR.MINOR.PATCH), `changelog` (newest
+  first, `"X.Y.Z — what changed"`) and `schema_sha256` in `kaggle/dataset_docs.yaml`. A file or column that changes
+  needs a new version in the same PR: MAJOR for a removed, renamed or retyped column or a removed file, MINOR for a
+  new file or column, PATCH for values, rows or a fix with no schema change. Every build ships `manifest.json` (the
+  version, the commit and each file's SHA-256) inside the dataset.
 
-`python/tests/test_kaggle_dataset_docs.py` fails CI when a published file or column has no description, or a
-dataset lacks a cover, sources or an update frequency.
+`python/tests/test_kaggle_dataset_docs.py` fails CI when a published file or column has no description, a dataset
+lacks a cover, sources or an update frequency, or its files or columns changed without a new version.
 
 ## Decisions and action items
 
