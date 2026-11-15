@@ -206,7 +206,29 @@ def test_statements_without_the_current_comments_still_gives_every_statement():
     assert tc.statements(FQN, cols, table_comment=comment, column_comments=held) == []
 
 
-def test_apply_all_on_a_catalog_already_commented_sends_nothing():
+def test_apply_all_on_a_catalog_already_commented_sends_nothing_and_says_so(capsys):
     cols = ["method_name", "visit_id"]
     spark = FakeSpark({FQN: cols}, comments={FQN: _held(cols)})
     assert tc.apply_all(spark, CAT) == 1 and spark.sql_calls == []
+    assert f"checked 1 tables in {CAT}, sent 0 comment statements" in capsys.readouterr().out
+    spark = FakeSpark({FQN: cols})                               # nothing in place yet: the log counts what went out
+    tc.apply_all(spark, CAT)
+    assert f"sent {len(spark.sql_calls)} comment statements" in capsys.readouterr().out
+
+
+def test_a_comment_with_a_quote_already_in_place_is_not_sent_again():
+    # held as plain text; only the SQL literal escapes it (sql_string), so comparing the literal would resend it forever
+    schema, name, col = next((s, t, c) for s, t in tc.declared_tables()
+                             for c, text in tc.declared(s, t)[1].items() if "'" in text)
+    fqn = f"{CAT}.{schema}.{name}"
+    comment, cols = tc.declared(schema, name)
+    spark = FakeSpark({fqn: [col]}, comments={fqn: (comment, {col: cols[col]})})
+    assert tc.apply(spark, fqn) == 0 and spark.sql_calls == []
+
+
+def test_a_field_without_metadata_still_gets_its_comment():
+    # a fake or an older client may give fields no metadata attribute: the comment is sent, the write never fails
+    bare_field = type("F", (), {"name": "visit_id"})()
+    spark = FakeSpark({FQN: ["visit_id"]})
+    spark.table = lambda name: type("T", (), {"schema": type("S", (), {"fields": [bare_field]})()})()
+    assert tc.apply(spark, FQN) == 2                             # the table comment and visit_id's

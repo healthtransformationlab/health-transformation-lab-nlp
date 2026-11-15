@@ -131,12 +131,11 @@ def apply(spark, table: str) -> int:
     except Exception as e:  # noqa: BLE001 - a comment never fails the job
         print(f"warning: comment not applied on {table}: can't read its columns ({type(e).__name__})")
         return 0
-    columns = [f.name for f in fields]
-    if not statements(table, columns):
+    if not (_NAME.fullmatch(table) and declared(*table.split(".")[1:])[0]):
         print(f"warning: {table} has no declared comment (diagrams/_build/gold_model.py or table_comments.OTHER)")
         return 0
-    todo = statements(table, columns, table_comment=_table_comment(spark, table),
-                      column_comments={f.name: (f.metadata or {}).get("comment") for f in fields})
+    held = {f.name: (getattr(f, "metadata", None) or {}).get("comment") for f in fields}
+    todo = statements(table, list(held), table_comment=_table_comment(spark, table), column_comments=held)
     done = 0
     for s in todo:
         try:
@@ -149,12 +148,13 @@ def apply(spark, table: str) -> int:
 
 @traced
 def apply_all(spark, catalog: str) -> int:
-    """Comment every declared table that exists in the catalog. Returns the tables commented."""
-    n = 0
+    """Comment every declared table that exists in the catalog. Returns the tables checked; the log also says how many
+    statements went out, so a run shows whether the comments in place were read (#741)."""
+    n = sent = 0
     for schema, name in declared_tables():
         table = f"{catalog}.{schema}.{name}"
         if spark.catalog.tableExists(table):
-            apply(spark, table)
+            sent += apply(spark, table)
             n += 1
-    print(f"commented {n} tables in {catalog}")
+    print(f"checked {n} tables in {catalog}, sent {sent} comment statements")
     return n
