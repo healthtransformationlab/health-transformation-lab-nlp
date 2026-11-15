@@ -83,7 +83,9 @@ Mutation check: each of these eight changes makes at least one test fail:
 
 ## Checks
 - `tests/test_modal_official.py`: 19 passed.
-- The whole suite is run before the push (see the PR thread).
+- Whole suite on the second commit: 2,814 passed, 37 skipped, 1 failed. The failure was the register's rule that
+  `expires` is a date, `never` or `unknown`; the second commit had added a note to the value. The third commit puts
+  the value back, and `test_operations_rules.py` and `test_modal_official.py` pass (30).
 - `ruff check` on both changed Python files: clean.
 - With modal 1.6.4: the module imports, and `modal run --help` lists the three options.
 
