@@ -87,6 +87,8 @@ fine-tuned weights (`/kaggle/working/model`), and after the full run the workflo
 review-set predictions (the leaderboard's scoring); a test run (`limit` 10) is never published. The weights go to
 Kaggle, not the workflow artifact. A full run takes hours: to collect it later, run the workflow again with
 **`collect_only`** on and the same `save_model` and `limit` 0. The card names the commit the notebook trained.
+Each instance version's note is the model's release string, from its `version` and `changelog` under `models:` in
+`dataset_docs.yaml`, and the folder ships `manifest.json` with every file's SHA-256 (spec 039, #730).
 
 ## The collection
 

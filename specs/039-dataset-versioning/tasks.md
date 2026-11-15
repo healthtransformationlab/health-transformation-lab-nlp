@@ -28,6 +28,12 @@
   as a git tag and an HF revision tag, both idempotent; print both URLs; `--metadata-only` makes neither
 - [x] T013 [US3] `ops/secrets_register.yaml`: confirm `HF_PUBLISH_TOKEN` write scope covers tagging; note #649 reuses this
 
+## The published model (#730)
+
+- [x] T016 The Kaggle model (`kaggle/publish_model.py`) takes a `version` and `changelog` under `models:` in
+  `kaggle/dataset_docs.yaml`, its instance version's note is `release_message`, and its folder ships `manifest.json`;
+  no tag (spec: "it adopts US1's changelog and US2's manifest, not the dataset tag")
+
 ## Across the spec
 
 - [ ] T014 One PR per user story, each `Closes #<issue>`; a review in `pull_requests/pr-<n>-review.md` against

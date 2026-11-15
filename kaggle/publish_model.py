@@ -5,7 +5,7 @@ model's licence.
 
     python kaggle/publish_model.py --model-dir build/output/model \
         --predictions build/output/ai_predictions_modernbert-base+cw.csv --out build/kaggle-model \
-        --username <kaggle user> --commit <sha the notebook trained> [--upload --message "Trained on Kaggle"]
+        --username <kaggle user> --commit <sha the notebook trained> [--upload]
 
 The card's scores come from --predictions, the review-set predictions of the same run that saved the weights.
 build() refuses a partial or simulated prediction file and a folder that isn't this six-label classifier.
@@ -21,6 +21,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent / "python"))
 
 import pandas as pd
+from health_transformation_lab_nlp import dataset_version as dv   # spec 039: the release note and the manifest
 from health_transformation_lab_nlp.labels import LABELS
 from health_transformation_lab_nlp.ladder_eval import by_difficulty, ladder_table
 from health_transformation_lab_nlp.paths import DATASETS_DIR
@@ -113,6 +114,7 @@ def build(model_dir: Path, predictions: Path, out: Path, username: str, commit: 
             "modelInstanceType": "ExternalVariant", "externalBaseModelUrl": INSTANCE["base_url"]}
     (out / "model-metadata.json").write_text(json.dumps(meta, indent=1) + "\n")
     (out / "model-instance-metadata.json").write_text(json.dumps(inst, indent=1) + "\n")
+    dv.write_manifest(out, MODEL["slug"], commit)   # spec 039 (#730): the model files' provenance, inside the folder
     return meta, inst
 
 
@@ -157,7 +159,6 @@ def main() -> None:
     ap.add_argument("--username", required=True)
     ap.add_argument("--commit", required=True)
     ap.add_argument("--upload", action="store_true", help="publish it (needs Kaggle credentials)")
-    ap.add_argument("--message", default="Trained on Kaggle")
     a = ap.parse_args()
     meta, inst = build(a.model_dir, a.predictions, a.out, a.username, a.commit)
     print(f"prepared {a.username}/{meta['slug']}/transformers/{inst['instanceSlug']} at {a.commit[:12]}")
@@ -165,7 +166,9 @@ def main() -> None:
         from kaggle.api.kaggle_api_extended import KaggleApi
         api = KaggleApi()
         api.authenticate()
-        upload(a.out, f"{a.username}/{meta['slug']}", inst["instanceSlug"], f"{a.message} ({a.commit[:12]})", api)
+        note = dv.release_message(MODEL["slug"], a.commit)   # spec 039 (#730): the version note from the changelog
+        print(f"release: {note}")
+        upload(a.out, f"{a.username}/{meta['slug']}", inst["instanceSlug"], note, api)
 
 
 if __name__ == "__main__":

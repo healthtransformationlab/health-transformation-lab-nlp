@@ -17,6 +17,21 @@ def test_every_dataset_declares_a_version_and_its_changelog(slug):
     assert dv.latest_change(slug).startswith(f"{dv.version(slug)} — ")
 
 
+def test_the_published_model_declares_a_version_and_its_changelog():
+    """#730: the Kaggle model (kaggle/publish_model.py) is declared under `models`, checked as a dataset is."""
+    slug = "perio-bench-note-classifier"
+    assert dv.problems(slug) == []
+    assert dv.latest_change(slug).startswith(f"{dv.version(slug)} — ")
+
+
+def test_a_model_is_found_under_models(tmp_path):
+    path = tmp_path / "dataset_docs.yaml"
+    path.write_text(yaml.safe_dump({"datasets": {}, "models": {"m": {
+        "version": "2.0.0", "changelog": ["2.0.0 — new base model", "1.0.0 — first versioned release"]}}},
+        allow_unicode=True))
+    assert dv.problems("m", docs=path) == [] and dv.version("m", docs=path) == "2.0.0"
+
+
 GOOD = {
     "version": "1.1.0",
     "changelog": ["1.1.0 — adds visits_truth.csv", "1.0.0 — first versioned release"],
