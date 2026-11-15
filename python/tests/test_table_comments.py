@@ -232,3 +232,53 @@ def test_a_field_without_metadata_still_gets_its_comment():
     spark = FakeSpark({FQN: ["visit_id"]})
     spark.table = lambda name: type("T", (), {"schema": type("S", (), {"fields": [bare_field]})()})()
     assert tc.apply(spark, FQN) == 2                             # the table comment and visit_id's
+
+
+# ---------- #751: Load results' overwrites commit their column comments ----------
+# An overwrite from pandas drops the column comments, so apply sent about 214 again on every run. With the comments in
+# the DataFrame's schema, the write commits them.
+class StandInColumn:
+    """What sdf[c] gives: a column that can be re-aliased, with metadata."""
+
+    def __init__(self, name, metadata=None):
+        self.name, self.metadata = name, metadata
+
+    def alias(self, name, metadata=None):
+        return StandInColumn(name, metadata)
+
+
+class StandInFrame:
+    def __init__(self, columns):
+        self.columns, self.selected = list(columns), None
+
+    def __getitem__(self, name):
+        return StandInColumn(name)
+
+    def select(self, *cols):
+        out = StandInFrame([c.name for c in cols])
+        out.selected = cols
+        return out
+
+
+def test_with_comments_puts_each_declared_comment_in_its_columns_metadata():
+    _, cols = tc.declared("gold_perio_bench", "fact_prediction")
+    out = tc.with_comments(StandInFrame(["visit_id", "an_extra_column", "method_name"]), FQN)
+    assert out.columns == ["visit_id", "an_extra_column", "method_name"]           # the same columns, in order
+    assert {c.name: c.metadata for c in out.selected} == {
+        "visit_id": {"comment": cols["visit_id"]}, "an_extra_column": None,         # undeclared: left alone
+        "method_name": {"comment": cols["method_name"]}}
+
+
+def test_with_comments_returns_an_undeclared_tables_frame_unchanged():
+    sdf = StandInFrame(["a"])
+    assert tc.with_comments(sdf, f"{CAT}.gold_perio_bench.not_a_table") is sdf
+    assert tc.with_comments(sdf, "not a table name") is sdf
+
+
+def test_load_results_writes_each_overwrite_with_its_comments_and_says_what_it_sent():
+    lines = (NOTEBOOKS / "10_load_results.py").read_text().splitlines()
+    overwrites = [i for i, line in enumerate(lines) if 'mode("overwrite")' in line]
+    assert overwrites
+    for i in overwrites:                                         # the frame written comes from with_comments
+        assert "table_comments.with_comments(" in "\n".join(lines[max(0, i - 3): i + 1]), lines[i]
+    assert any("comment statements sent" in line for line in lines)

@@ -18,4 +18,5 @@
 ## US2 (Unity Catalog)
 After every write, `table_comments.apply(spark, table)` runs the `COMMENT ON TABLE` and `ALTER TABLE ... ALTER COLUMN ...
 COMMENT` statements whose comment the table doesn't already hold (#741) from the declarations (the delta helpers and each `saveAsTable` site call it); Load results runs
-`apply_all` after every deploy. A failure warns and never fails the write.
+`apply_all` after every deploy, and its overwrites carry the comments in the frame (`with_comments`, #751) so the
+write commits them. A failure warns and never fails the write.
