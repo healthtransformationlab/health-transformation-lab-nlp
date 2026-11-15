@@ -1,8 +1,16 @@
 # Run one batch of sealed tasks on a Modal GPU with the competition's evaluator loop (028 AI15, #804), from here so
-# each run matches a commit. Start it from the Actions tab: "Run the Gemma agent on a Modal GPU" -> pick the run's
-# branch in "Use workflow from" -> Run workflow. It is PAID, from the owner's Modal account: starting it is the owner's
-# yes for that run, and an agent does not start it on its own. When Modal is used beside Colab is decided in an ADR
-# amending ADR 0007 after the two-task trial (#804); until then ADR 0007 stands, and Colab is the default.
+# each run matches a commit. Start it from the Actions tab ("Run the Gemma agent on a Modal GPU", the run's branch in
+# "Use workflow from", Run workflow), or from an agent session through GitHub's API. It is PAID, from the owner's
+# Modal account.
+#
+# Who has to say yes (#806, ADR 0008): a run whose max_usd is within modal_auto_max_usd (main's ops/cost_settings.yaml),
+# and that keeps this month's Modal spend within modal_auto_monthly_usd, starts on its own. Any other run waits in the
+# "approve" job, in the GitHub environment modal-approval, until the owner approves it in Actions: so does any run when
+# this month's spend cannot be read, and any run whose branch changes this workflow, kaggle/modal_official.py or
+# ops/cost_settings.yaml. The approve job refuses the run unless modal-approval has a required reviewer and someone
+# approved this run there, so an environment GitHub makes on its own, or an admin's bypass, never lets a run through.
+# The spend is read again just before the run, and a re-run is refused (it would reuse the first attempt's approval and
+# spend): start a new run instead.
 #
 # The run's entry must be in kaggle/modal_official_run.json on that branch (never colab_official_run.json, which
 # Colab sessions follow), with its bundle, its kernel_dataset and "network_open_acknowledged": true (ADR 0005), and no
@@ -10,11 +18,12 @@
 #
 # max_usd becomes Modal's time limit, at the GPU's price plus the CPU and memory at their hard limits
 # (kaggle/modal_official.py), so the run cannot cost more. Before the GPU starts, the machine is checked on a CPU.
-# The run is detached: cancelling this job does not stop it. To stop it, `modal app list`, then
+# The run is detached: cancelling this workflow does not stop it. To stop it, `modal app list`, then
 # `modal app stop <app id>`. A new run waits until no earlier one is going.
 #
 # Needs, in the GitHub environment `dev`: MODAL_TOKEN_ID and MODAL_TOKEN_SECRET (ops/secrets_register.yaml),
-# KAGGLE_USERNAME (variable or secret) and KAGGLE_API_TOKEN or KAGGLE_KEY.
+# KAGGLE_USERNAME (variable or secret) and KAGGLE_API_TOKEN or KAGGLE_KEY. The environment modal-approval holds no
+# secret: only its required reviewer.
 name: Run the Gemma agent on a Modal GPU
 run-name: "Modal: ${{ inputs.label }} on ${{ inputs.gpu }}, at most ${{ inputs.max_usd }} USD (${{ github.ref_name }})"
 
@@ -30,16 +39,23 @@ on:
         options: [L4, A10, A100-40GB]
         default: L4
       max_usd:
-        description: "The most this run may cost, in USD: Modal stops it when that time is up"
+        description: "The most this run may cost, in USD: Modal stops it then. Over modal_auto_max_usd waits for the owner"
         default: "5"
 
-concurrency: modal-agent   # one job at a time; the "busy" step also waits out a detached run still going
+permissions:
+  contents: read
+  actions: read
+  deployments: read
+
+defaults:
+  run:
+    shell: bash   # -eo pipefail: a command that fails inside a pipe fails its step
 
 jobs:
-  run:
+  check:
     runs-on: ubuntu-latest
     environment: dev
-    timeout-minutes: 355
+    timeout-minutes: 15
     # Credentials come straight from the environment and are never written to a file; GitHub masks them in the log.
     env:
       KAGGLE_USERNAME: ${{ vars.KAGGLE_USERNAME || secrets.KAGGLE_USERNAME }}
@@ -47,6 +63,12 @@ jobs:
       KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
       MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
       MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
+    outputs:
+      gpu: ${{ steps.plan.outputs.HTL_MODAL_GPU }}
+      timeout: ${{ steps.plan.outputs.HTL_MODAL_TIMEOUT }}
+      gating_changed: ${{ steps.gating.outputs.gating_changed }}
+      needs_approval: ${{ steps.approval.outputs.needs_approval }}
+      reason: ${{ steps.approval.outputs.reason }}
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
@@ -54,11 +76,12 @@ jobs:
       - run: pip install --quiet "modal==1.6.4" "kaggle==2.2.5" six pyyaml   # six: kaggle 2.2.5 imports it (#536)
 
       - name: Check everything before Modal is called
+        id: plan
         env:
           LABEL: ${{ inputs.label }}
           GPU: ${{ inputs.gpu }}
           MAX: ${{ inputs.max_usd }}
-        run: python kaggle/modal_official.py preflight --label "$LABEL" --gpu "$GPU" --max-usd "$MAX" >> "$GITHUB_ENV"
+        run: python kaggle/modal_official.py preflight --label "$LABEL" --gpu "$GPU" --max-usd "$MAX" >> "$GITHUB_OUTPUT"
 
       - name: Kaggle accepts the credentials (one cheap call)
         run: |
@@ -72,6 +95,85 @@ jobs:
           modal token info >info.txt 2>&1 || {
             tail -3 info.txt; echo "::error::Modal rejected MODAL_TOKEN_ID and MODAL_TOKEN_SECRET in 'dev'"; exit 1; }
           grep -i "expires at" info.txt || echo "The Modal token has no expiry date"
+
+      - name: Modal's own prices, for the record (the cap uses ops/cost_settings.yaml)
+        run: modal billing rates --json || echo "::warning::Modal's prices could not be read"
+
+      - name: Main's limits, and whether this branch changes what gates the run
+        id: gating
+        run: |
+          git fetch --quiet --depth=1 origin main
+          git show FETCH_HEAD:ops/cost_settings.yaml > "$RUNNER_TEMP/main_cost_settings.yaml"
+          if git diff --quiet FETCH_HEAD -- .github/workflows/modal-agent.yml kaggle/modal_official.py ops/cost_settings.yaml
+          then echo "gating_changed=false" >> "$GITHUB_OUTPUT"; else echo "gating_changed=true" >> "$GITHUB_OUTPUT"; fi
+
+      - name: Does this run need the owner's approval?
+        id: approval
+        env:
+          MAX: ${{ inputs.max_usd }}
+          CHANGED: ${{ steps.gating.outputs.gating_changed }}
+        run: |
+          modal billing summary --json >summary.json 2>err.txt || { head -3 err.txt; : >summary.json; }
+          python kaggle/modal_official.py approval --max-usd "$MAX" --limits "$RUNNER_TEMP/main_cost_settings.yaml" \
+            --gating-changed "$CHANGED" <summary.json >> "$GITHUB_OUTPUT"
+
+  approve:
+    needs: check
+    if: needs.check.outputs.needs_approval != 'false'   # an empty decision waits too
+    runs-on: ubuntu-latest
+    environment: modal-approval   # its required reviewer is who approves; it holds no secret
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - name: "Why it waited: ${{ needs.check.outputs.reason }}"
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          api="$GITHUB_API_URL/repos/$GITHUB_REPOSITORY"
+          curl -sS -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+            "$api/environments/modal-approval" > env.json
+          curl -sS -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+            "$api/actions/runs/$GITHUB_RUN_ID/approvals" > approvals.json
+          python3 kaggle/modal_official.py gate --environment env.json --approvals approvals.json
+
+  run:
+    needs: [check, approve]
+    if: ${{ !cancelled() && needs.check.result == 'success' && (needs.approve.result == 'success' || (needs.approve.result == 'skipped' && needs.check.outputs.needs_approval == 'false')) }}
+    runs-on: ubuntu-latest
+    environment: dev
+    timeout-minutes: 355
+    concurrency:   # one run at a time, set here so a run waiting for approval holds nobody up
+      group: modal-agent
+      cancel-in-progress: false
+    env:
+      KAGGLE_USERNAME: ${{ vars.KAGGLE_USERNAME || secrets.KAGGLE_USERNAME }}
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+      MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
+      MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
+      HTL_MODAL_GPU: ${{ needs.check.outputs.gpu }}
+      HTL_MODAL_TIMEOUT: ${{ needs.check.outputs.timeout }}
+    steps:
+      - name: Not a re-run (it would reuse the first attempt's approval and spend)
+        run: |
+          [ "$GITHUB_RUN_ATTEMPT" = 1 ] || {
+            echo "::error::A re-run reuses the first attempt's approval and spend check: start a new run instead"; exit 1; }
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with: {python-version: "3.13"}
+      - run: pip install --quiet "modal==1.6.4" pyyaml
+
+      - name: The spend again, just before the run (a run may have waited in the queue)
+        env:
+          MAX: ${{ inputs.max_usd }}
+          CHANGED: ${{ needs.check.outputs.gating_changed }}
+          APPROVED: ${{ needs.approve.result }}
+        run: |
+          git fetch --quiet --depth=1 origin main
+          git show FETCH_HEAD:ops/cost_settings.yaml > "$RUNNER_TEMP/main_cost_settings.yaml"
+          modal billing summary --json >summary.json 2>err.txt || { head -3 err.txt; : >summary.json; }
+          python kaggle/modal_official.py approval --max-usd "$MAX" --limits "$RUNNER_TEMP/main_cost_settings.yaml" \
+            --gating-changed "$CHANGED" --approved "$APPROVED" <summary.json
 
       - name: No earlier Modal run is still going
         run: modal app list --json | python kaggle/modal_official.py busy
