@@ -1,0 +1,53 @@
+# Tag one commit of main, run by hand (Actions -> Tag a commit -> Run workflow). An agent session's git proxy refuses
+# tag pushes, so a tag such as submission-2026-11-12 (health-transformation-lab-nlp#649) is made here with the
+# repository's own token. It checks its inputs before it writes anything and can be run again: a tag already at the
+# same commit is left as it is; a tag at another commit fails the run, so nothing is ever moved.
+name: Tag a commit
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag name, e.g. submission-2026-11-12"
+        required: true
+      sha:
+        description: "The full 40-character commit SHA to tag; it must be on main"
+        required: true
+      message:
+        description: "The annotated tag's message"
+        required: true
+
+permissions:
+  contents: write            # the tag; nothing else
+
+concurrency: tag-a-commit
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Check the inputs, then tag and push
+        env:
+          TAG: ${{ inputs.tag }}
+          SHA: ${{ inputs.sha }}
+          MESSAGE: ${{ inputs.message }}
+        run: |
+          set -euo pipefail
+          [[ "$TAG" =~ ^[A-Za-z0-9][A-Za-z0-9._/-]{0,99}$ ]] || { echo "::error::tag '$TAG' is not a plain tag name"; exit 1; }
+          [[ "$SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::sha must be a full 40-character commit SHA"; exit 1; }
+          git cat-file -e "$SHA^{commit}" || { echo "::error::no commit $SHA in this repository"; exit 1; }
+          git merge-base --is-ancestor "$SHA" origin/main || { echo "::error::$SHA is not on main"; exit 1; }
+          git fetch --tags --force --quiet
+          at=$(git rev-parse -q --verify "refs/tags/$TAG^{commit}" || true)
+          if [[ -n "$at" ]]; then
+            [[ "$at" == "$SHA" ]] || { echo "::error::tag $TAG already exists, at $at"; exit 1; }
+            echo "tag $TAG is already at $SHA; nothing to do" | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          git -c user.name="github-actions[bot]" -c user.email="41898333+github-actions[bot]@users.noreply.github.com" \
+            tag -a "$TAG" -m "$MESSAGE" "$SHA"
+          git push origin "refs/tags/$TAG"
+          echo "tagged $SHA as [$TAG]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/tree/$TAG)" | tee -a "$GITHUB_STEP_SUMMARY"
