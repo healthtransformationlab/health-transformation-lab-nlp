@@ -32,8 +32,11 @@ Two cheaper sources answer most questions:
 - **"Did the score go up" is answered by leaderboard entries**, one change per entry, booked in a shared plan so two
   sessions don't spend the same day. A development-set run is never started to compare resolve counts.
 - **A question goes to recorded traces and CPU first**: replay it on the traces already downloaded, or on the
-  competition's offline data. A GPU run only when they can't answer it; then one L4 on Colab (ADR 0005, #779, #780),
-  and Kaggle's four L4s only for what the competition's own hardware or image decides.
+  competition's offline data. A GPU run only when they can't answer it.
+- **Every GPU run goes to the owner's Colab by default** (one L4; ADR 0005, #779, #780), this repository's and
+  getcommunityone/open-navigator's alike, so the Kaggle pool isn't spent. A Kaggle GPU run is an exception, for what
+  only the competition's own hardware or image decides, and needs the owner's yes for that run. The Colab compute
+  units are one subscription shared by both projects, so a Colab run also reads its usage before and after.
 - **For the week of November 15**: no further Kaggle GPU run is planned; the 17.73 hours left are the reserve.
 - **The final two submissions**: one is the best E2B/E4B entry (the small-model bonus requires it), chosen on all the
   evidence, not the single best public score. The other is the owner's choice.
@@ -43,7 +46,8 @@ Two cheaper sources answer most questions:
 - A change waits a day for its leaderboard score, and the score is noisy (about ±1.6 of 58 tasks between identical
   submissions): one change per entry, and the final choice pools every entry and trace.
 - Mechanism checks get cheaper and faster: a trace replay takes seconds.
-- An idea that needs a GPU to test waits for the owner's yes, or for Colab.
+- An idea that needs a GPU to test waits for a Colab session the owner opens by hand, so each costs the owner a few
+  minutes; the Kaggle pool stays nearly untouched.
 
 ## Revisit when
 

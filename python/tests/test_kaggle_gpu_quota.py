@@ -52,3 +52,4 @@ def test_agents_md_records_the_gpu_decisions():
     assert "ADR 0007" in agents
     assert "owner's explicit yes" in agents
     assert "recorded traces" in agents
+    assert "owner's Colab by default" in agents, "every GPU run goes to Colab unless the owner approves Kaggle"

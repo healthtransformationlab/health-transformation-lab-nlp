@@ -260,8 +260,10 @@ A SEV2 that fires every week for the same cause gets its cause fixed or its leve
   - **Keep a reserve**: about 10 hours until the last two days before the refresh (Saturday 00:00 UTC), for a change
     that turns out to matter.
   - **No idle GPU notebook**: one open in Kaggle's editor with an accelerator on draws on the same hours.
-  - **The owner's explicit yes starts a Kaggle GPU run**, given for that run in the session that starts it; "do what
-    you recommend" doesn't (ADR 0007).
+  - **Every GPU run goes to the owner's Colab by default**, this repository's and open-navigator's alike, so the Kaggle
+    pool isn't spent. A Kaggle GPU run is an exception, for what only the competition's hardware or image decides, and
+    starts only on **the owner's explicit yes** for that run, given in the session that starts it; "do what you
+    recommend" doesn't (ADR 0007).
   - **A question goes to recorded traces and CPU first**: a kernel's traces download for free and the competition's
     graphs and embeddings run on CPU. A GPU run only when they can't answer it, and never a development-set run to
     compare resolve counts: six of them on the same 23 tasks resolved 3 or 4 each (p = 1.0, ADR 0007).
