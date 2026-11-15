@@ -86,8 +86,14 @@ def check(name: str) -> None:
             raise SystemExit(f"{dest}: holds simulated (sim:) or calibration (calib:) rows")
 
 
+def kaggle_name(path: str) -> str:
+    """A file's name as Kaggle keeps it: Kaggle drops a "+" from an uploaded file's name (#695), so
+    ai_predictions_bert-base+cw.csv is ai_predictions_bert-basecw.csv on Kaggle."""
+    return path.replace("+", "")
+
+
 def card(name: str, commit: str) -> str:
-    table = "\n".join(f"| `{dest}` | {_rows(src)} |" for dest, src in files_of(name).items())
+    table = "\n".join(f"| `{kaggle_name(dest)}` | {_rows(src)} |" for dest, src in files_of(name).items())
     return ((HERE / "cards" / f"{name}.md").read_text().rstrip() + "\n\n## Contents\n\n| File | Size |\n|---|---|\n"
             + table + f"\n\nPublished from commit `{commit}` of the repository. {dv.MANIFEST_NOTE}\n")
 
@@ -164,8 +170,9 @@ def metadata_only(out: Path, meta: dict, api) -> dict:
     """Send the metadata for the files the live dataset holds: Kaggle refuses a description of a file it doesn't
     have, so a file added since the last version waits for the next one. Returns what was sent."""
     live = live_files(api, meta["id"])
-    sent = {**meta, "resources": [r for r in meta["resources"] if r["path"] in live]}
-    waiting = sorted({r["path"] for r in meta["resources"]} - live)
+    named = [{**r, "path": kaggle_name(r["path"])} for r in meta["resources"]]    # as Kaggle keeps them (#695)
+    sent = {**meta, "resources": [r for r in named if r["path"] in live]}
+    waiting = sorted({r["path"] for r in named} - live)
     if waiting:
         print(f"not on Kaggle yet, described in the next version: {', '.join(waiting)}")
     write_metadata(out, sent, meta["id"].split("/", 1)[1])
@@ -178,7 +185,7 @@ def wait_for_files(api, ref: str, paths: set[str], tries: int = 40, wait: float 
     for a minute or two and lists the old files meanwhile (#602). Returns the paths still missing."""
     missing = set(paths)
     for i in range(tries):
-        missing = set(paths) - live_files(api, ref)
+        missing = {kaggle_name(x) for x in paths} - live_files(api, ref)
         if not missing:
             break
         if i < tries - 1:

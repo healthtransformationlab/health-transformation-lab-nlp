@@ -77,6 +77,10 @@ A new version's note is its release string, `v<X.Y.Z> — <what changed> (<commi
 Face commit carries, and the run tags it `data/<slug>-vX.Y.Z` in git (and on Hugging Face). A metadata-only refresh
 makes no version and no tag, and tagging a version twice changes nothing.
 
+Kaggle drops a `+` from an uploaded file's name (#695): `ai_predictions_modernbert-base+cw.csv` in the repository is
+`ai_predictions_modernbert-basecw.csv` on Kaggle. `publish.kaggle_name` gives Kaggle's form; the metadata step
+matches descriptions by it, and the card lists files by it, so load a file by the name the card gives.
+
 ## Publishing the note classifier
 
 Actions → *Fine-tune the GPU encoders on a free Kaggle GPU* → Run workflow with **`rungs`** `modernbert-base+cw`,
