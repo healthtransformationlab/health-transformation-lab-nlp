@@ -97,3 +97,31 @@ Approve-with-nits on content. Merge waits for all of these:
 2. both kernels run;
 3. both arms are collected, with their tables, settings and the paired McNemar committed here;
 4. the owner says "merge".
+
+## Update, 2026-11-15: the arms ran, and main was merged in
+
+The four conditions in the verdict are now met.
+
+1. **Go-ahead and quota.** The owner said "start". The quota showed 25.7 GPU hours left and no GPU session running.
+2. **Both kernels ran.** Both completed on Kaggle's L4 machine, with all 93 tasks run in each. E2B was served by vLLM with the kernel's unchanged arguments, which settles the point above that couldn't be tested here.
+3. **Both arms are collected, and the result is committed.**
+   - The scoring environment was checked first: reference patches resolved 93 of 93, and an empty patch 0 of 93.
+   - Results: E4B 5 of 93, E2B 2 of 93. Paired: 2 both, 3 E4B only, 0 E2B only, 88 neither. Exact McNemar p = 0.25.
+   - Under addendum 5: stay on E4B.
+   - The tables, settings and the README section are committed. The pair cost 8.0 GPU hours.
+   - Telemetry catch-up is #794.
+4. **The owner said "merge".**
+
+**Merging main in.** It conflicted in `kaggle/official_agent_run.py`, `kaggle/colab_official.py`, the runner's tests and
+the runs README. Both sides were kept:
+- main's download checks, output budget (`generation`) and network refusal;
+- this branch's per-run model (`model_source`, `listed_model`, the `handle` passed to `fetch`).
+
+One test of this branch's was adjusted: main's `fetch` now reads the dataset listing, so the test supplies it.
+`test_official_agent.py`, `test_colab_official.py`, `test_wording.py`, `test_no_org_references.py` and
+`test_bench_order.py` give 161 passed.
+
+**Deviation from the rationing rule.** Main's one-GPU-run-at-a-time rule (#772) arrived with the merge. The two arms
+ran at the same time, before it was on this branch, and the README says so.
+
+**Verdict: approve.** Merge once CI is green.
