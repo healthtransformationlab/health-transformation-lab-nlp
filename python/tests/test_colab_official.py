@@ -53,7 +53,7 @@ def test_results_go_to_a_private_dataset_named_for_the_run(co, tmp_path):
         co.results_ref("jcblearning", "Has Spaces")
     meta = co.results_metadata("jcblearning", "smoke-143")
     assert meta["id"] == "jcblearning/htlnlp-colab-official-smoke-143" and 6 <= len(meta["title"]) <= 50
-    assert "isPrivate" not in meta or meta["isPrivate"] is True
+    # that the dataset is private is the upload's to say (dataset_create_new(public=False)): tested with `upload`
 
 
 def test_what_comes_back_leaves_out_the_submission_copy_and_anything_large(co, tmp_path):
@@ -296,7 +296,8 @@ def test_the_agents_commands_are_read_from_its_trace_for_any_reach_at_the_networ
                                        {"function_name": "run_command", "arguments": {"cmd": "git status"}}]}]}
     assert run.trace_commands(trace) == ["pytest -q", "pip install requests", "git status"]
     assert run.network_audit({"a": trace, "b": {"steps": []}}) == {
-        "command_count": 3, "network_command_count": 1, "instance_ids": ["a"]}
+        "command_count": 3, "network_command_count": 1, "instance_ids": ["a"],
+        "tool_call_count": 4, "network_tool_call_count": 1, "tool_call_instance_ids": ["a"]}
 
 
 def test_the_notebooks_code_is_hidden_so_a_stray_tap_on_a_phone_cannot_change_it():
@@ -433,8 +434,9 @@ def _fake_colab(co, monkeypatch, tmp_path, state):
     monkeypatch.setattr(co, "run", lambda command, **k: subprocess.CompletedProcess(command, 0, "", ""))
     monkeypatch.setattr(co, "upload", lambda api, user, label, out, note: calls["uploads"].append(note))
     monkeypatch.setattr(co, "send_until_taken", lambda send, **k: (send(), True)[1])
+    monkeypatch.setattr(co, "listed_entry", lambda label: {"label": label, "network_open_acknowledged": True})
 
-    def restore(api, user, label, out):
+    def restore(api, user, label, out, resume_session=None):
         if isinstance(state, BaseException):
             raise state
         return state
@@ -587,7 +589,8 @@ def _with_gpu(co, monkeypatch, smi: str, wanted):
     import subprocess
     monkeypatch.setattr(co, "run", lambda command, **k: subprocess.CompletedProcess(
         command, 0, smi if command[0] == "nvidia-smi" else "", ""))
-    monkeypatch.setattr(co, "listed_gpu", lambda label: wanted)
+    monkeypatch.setattr(co, "listed_entry",
+                        lambda label: {"label": label, "gpu": wanted, "network_open_acknowledged": True})
 
 
 def test_a_run_for_another_gpu_is_not_made_here_and_touches_nothing(co, monkeypatch, tmp_path):
@@ -682,3 +685,392 @@ def test_the_committed_colab_settings_say_the_agents_commands_could_reach_the_ne
         assert "no credential" in s["kernel"]["internet"], label
         assert s["network_audit"]["traced_task_count"] == 93, label
         assert any(n.startswith("Corrected on November 12, 2026") for n in s["notes"]), label
+
+
+# --- #691: the helper's quiet failures, each with a stand-in for Kaggle and the machine, never the real thing ------
+
+class _HttpError(Exception):
+    """What the Kaggle client raises for an HTTP answer: requests' HTTPError carries the response."""
+    def __init__(self, code):
+        import types
+        super().__init__(f"{code} Client Error")
+        self.response = types.SimpleNamespace(status_code=code)
+
+
+class _FakeKaggle:
+    """A stand-in for the Kaggle client's dataset calls: each dataset is a dict of file name -> bytes."""
+    def __init__(self, datasets=None, status_error=None, version_answer=("ok", ""), new_answer=("ok", ""),
+                 version_raises=None, truncate=()):
+        self.datasets = {k: dict(v) for k, v in (datasets or {}).items()}
+        self.status_error, self.version_answer, self.new_answer = status_error, version_answer, new_answer
+        self.version_raises, self.truncate = version_raises, set(truncate)
+        self.calls, self.staged = [], []
+
+    def dataset_status(self, ref):
+        self.calls.append(("status", ref))
+        if self.status_error is not None:
+            raise self.status_error
+        if ref not in self.datasets:
+            raise _HttpError(404)
+        return "ready"
+
+    def _take(self, folder):
+        from pathlib import Path
+        files = {str(p.relative_to(folder)): p.read_bytes() for p in Path(folder).rglob("*") if p.is_file()}
+        self.staged.append(files)
+        return files
+
+    def dataset_create_version(self, folder, version_notes=None, **k):
+        import types
+        self.calls.append(("version", version_notes))
+        if self.version_raises is not None:
+            raise self.version_raises
+        self._take(folder)
+        return types.SimpleNamespace(status=self.version_answer[0], error=self.version_answer[1], invalidTags=[])
+
+    def dataset_create_new(self, folder, public=True, **k):
+        import types
+        self.calls.append(("new", public))
+        self._take(folder)
+        return types.SimpleNamespace(status=self.new_answer[0], error=self.new_answer[1], invalidTags=[])
+
+    def dataset_list_files(self, ref, page_token=None, page_size=20):
+        import types
+        self.calls.append(("list", ref))
+        return types.SimpleNamespace(files=[types.SimpleNamespace(name=n, total_bytes=len(b))
+                                            for n, b in sorted(self.datasets[ref].items())], next_page_token="")
+
+    def dataset_download_files(self, ref, path=None, unzip=True, quiet=True):
+        from pathlib import Path
+        self.calls.append(("download", ref))
+        for name, data in self.datasets[ref].items():
+            p = Path(path) / name
+            p.parent.mkdir(parents=True, exist_ok=True)
+            p.write_bytes(data[: len(data) // 2] if ref in self.truncate else data)
+
+
+def _on_machine(co, monkeypatch, tmp_path):
+    """The helper's paths under tmp_path, its log quiet, and no waiting."""
+    monkeypatch.setattr(co, "LOG", tmp_path / "content" / "htl_colab.log")
+    monkeypatch.setattr(co, "KAGGLE", tmp_path / "content" / "htl_kaggle")
+    monkeypatch.setattr(co, "say", lambda message: None)
+    (tmp_path / "content").mkdir(parents=True, exist_ok=True)
+
+
+# 1. A refused last upload must not be reported as sent.
+
+def test_an_upload_kaggle_answers_with_an_error_is_not_taken(co, monkeypatch, tmp_path):
+    """The client answers some refusals with a status of "error" and no exception. Either form is a refusal, so the
+    last upload is tried again, and the GPU is kept when no try is taken."""
+    _on_machine(co, monkeypatch, tmp_path)
+    out = tmp_path / "content" / "htl_kaggle" / "working"
+    out.mkdir(parents=True)
+    (out / "result.json").write_text("{}")
+    ref = "someone/htlnlp-colab-official-colab-graph"
+    for api in (_FakeKaggle(new_answer=("error", "refused")),                               # a new dataset, refused
+                _FakeKaggle({ref: {}}, version_answer=("error", "still processing")),       # a new version, refused
+                _FakeKaggle({ref: {}}, version_raises=RuntimeError("409 Conflict"))):       # a refusal that raises
+        with pytest.raises(Exception):
+            co.upload(api, "someone", "colab-graph", out, "finished, kernel exit 0")
+        assert co.send_until_taken(lambda: co.upload(api, "someone", "colab-graph", out, "finished"),
+                                   tries=2, wait_seconds=0, sleep=lambda s: None) is False
+    refused_version = _FakeKaggle({ref: {}}, version_raises=RuntimeError("409 Conflict"))
+    with pytest.raises(Exception):
+        co.upload(refused_version, "someone", "colab-graph", out, "finished")
+    assert not any(c[0] == "new" for c in refused_version.calls)     # a refused version is not sent as a new dataset
+
+
+def test_an_upload_kaggle_takes_is_sent_to_a_private_dataset_and_leaves_no_copy_behind(co, monkeypatch, tmp_path):
+    _on_machine(co, monkeypatch, tmp_path)
+    out = tmp_path / "content" / "htl_kaggle" / "working"
+    (out / "tasks" / "a").mkdir(parents=True)
+    (out / "tasks" / "a" / "result.json").write_text('{"patch": "diff"}')
+    api = _FakeKaggle()
+    co.upload(api, "someone", "colab-graph", out, "started")
+    assert ("new", False) in api.calls                                        # private
+    assert "working/tasks/a/result.json" in api.staged[0] and "session.json" in api.staged[0]
+    assert json.loads(api.staged[0]["session.json"])["session_id"] == co.session_id()
+    assert not (tmp_path / "content" / "htl_upload").exists()                 # the staged copy is removed
+    api2 = _FakeKaggle({"someone/htlnlp-colab-official-colab-graph": {}})
+    co.upload(api2, "someone", "colab-graph", out, "still running")
+    assert ("version", "still running") in api2.calls
+
+
+# 3. A status call that fails is not "nothing to resume", and a session resumes only its own upload.
+
+def _uploaded(session, tasks=("a", "b"), finished=False):
+    files = {f"working/tasks/{i}/result.json": b'{"patch": "x"}' for i in tasks}
+    if finished:
+        files["working/result.json"] = json.dumps({"finished_ts": "2026-11-12T03:00:00Z", "runs": {}}).encode()
+    if session is not None:
+        files["session.json"] = json.dumps({"session_id": session}).encode()
+    return files
+
+
+def test_a_status_call_that_fails_stops_the_run_and_only_a_missing_dataset_is_a_fresh_start(co, monkeypatch, tmp_path):
+    _on_machine(co, monkeypatch, tmp_path)
+    out = tmp_path / "content" / "htl_kaggle" / "working"
+    assert co.restore(_FakeKaggle(), "someone", "colab-graph", out, sleep=lambda s: None) == ("fresh", 0)
+    for failure in (ConnectionError("the network blinked"), _HttpError(500), _HttpError(401)):
+        with pytest.raises(SystemExit, match="could not tell"):
+            co.restore(_FakeKaggle(status_error=failure), "someone", "colab-graph", out, sleep=lambda s: None)
+
+
+def test_a_session_resumes_its_own_upload_and_another_sessions_only_when_named(co, monkeypatch, tmp_path):
+    """Two sessions on one GPU model, or a run list that cannot be read, would each take the other's upload for its
+    own. Each upload says which session sent it, and a session goes on only from its own, or from the one the run's
+    entry names (`resume_session`), after a session that dropped."""
+    _on_machine(co, monkeypatch, tmp_path)
+    out = tmp_path / "content" / "htl_kaggle" / "working"
+    ref = "someone/htlnlp-colab-official-colab-graph"
+    mine = co.session_id()
+    assert mine == co.session_id()                                           # one id for the machine's whole session
+    state = co.restore(_FakeKaggle({ref: _uploaded(mine)}), "someone", "colab-graph", out, sleep=lambda s: None)
+    assert state == ("partial", 2) and (out / "tasks" / "a" / "result.json").exists()
+    assert not (tmp_path / "content" / "htl_restore").exists()               # the downloaded copy is removed
+    for other in ("20261112T003711Z-abcd1234", None):                         # another session's, or one from before
+        with pytest.raises(SystemExit, match="resume_session"):
+            co.restore(_FakeKaggle({ref: _uploaded(other)}), "someone", "colab-graph", out, sleep=lambda s: None)
+    named = co.restore(_FakeKaggle({ref: _uploaded("20261112T003711Z-abcd1234")}), "someone", "colab-graph", out,
+                       resume_session="20261112T003711Z-abcd1234", sleep=lambda s: None)
+    assert named == ("partial", 2)
+    done = co.restore(_FakeKaggle({ref: _uploaded("20261112T003711Z-abcd1234", finished=True)}), "someone",
+                      "colab-graph", out, sleep=lambda s: None)
+    assert done == ("finished", 2)                                           # a finished run is not made again by anyone
+
+
+# 4. A bundle folder that is not empty is not complete.
+
+def test_a_bundle_that_stopped_part_way_is_downloaded_again(co, monkeypatch, tmp_path):
+    import shutil
+    _on_machine(co, monkeypatch, tmp_path)
+    monkeypatch.setattr(co, "WHEELHOUSE", "metric/wheels")
+    bundle = {"official_batch.json": b"{}", "sealed/a.bin": b"A" * 64, "sealed/b.bin": b"B" * 64}
+    api = _FakeKaggle({"metric/wheels": {"w-1.0-py3-none-any.whl": b"w" * 10}, "someone/htlnlp-official-x": bundle,
+                       "someone/kernel-x": {"official_agent_kernel.py": b"print(1)"}})
+    root = tmp_path / "content" / "htl_kaggle"
+    dest = co.dataset_dir("someone/htlnlp-official-x", root)
+    (dest / "sealed").mkdir(parents=True)
+    (dest / "official_batch.json").write_bytes(b"{}")
+    (dest / "sealed" / "a.bin").write_bytes(b"A" * 10)                       # cut short; b.bin never came
+    co.fetch(api, None, "someone/htlnlp-official-x", "someone/kernel-x", None, root=root, with_model=False)
+    assert ("download", "someone/htlnlp-official-x") in api.calls
+    assert (dest / "sealed" / "a.bin").read_bytes() == b"A" * 64 and (dest / "sealed" / "b.bin").exists()
+    api.calls.clear()
+    co.fetch(api, None, "someone/htlnlp-official-x", "someone/kernel-x", None, root=root, with_model=False)
+    assert ("download", "someone/htlnlp-official-x") not in api.calls        # complete: not downloaded again
+    broken = _FakeKaggle(api.datasets, truncate=["someone/htlnlp-official-x"])
+    shutil.rmtree(dest)
+    with pytest.raises(SystemExit, match="sealed/a.bin"):
+        co.fetch(broken, None, "someone/htlnlp-official-x", "someone/kernel-x", None, root=root, with_model=False)
+
+
+# 5. An earlier run's output is sent, then removed, never set aside on the machine.
+
+def test_an_earlier_runs_output_is_removed_once_it_is_on_kaggle(co, monkeypatch, tmp_path):
+    calls = _fake_colab(co, monkeypatch, tmp_path, ("fresh", 0))
+    work = tmp_path / "content" / "htl_kaggle" / "working"
+    (work / "tasks" / "a").mkdir(parents=True)
+    (work / "tasks" / "a" / "result.json").write_text('{"patch": "the first arm"}')
+    (tmp_path / "content" / "htl_working_label").write_text("colab-statement")   # its results reached Kaggle
+    co.run_one("colab-graph", "x/y", kernel_dataset="x/k", user="someone")
+    assert not (work / "tasks" / "a").exists()
+    assert not list((tmp_path / "content" / "htl_kaggle").glob("working_before_*"))
+    assert calls["fetched"] == 1
+
+
+def test_an_earlier_runs_output_that_never_reached_kaggle_is_sent_first_and_kept_if_it_cannot_be(co, monkeypatch, tmp_path):
+    _fake_colab(co, monkeypatch, tmp_path, ("fresh", 0))
+    sent = []
+    monkeypatch.setattr(co, "upload", lambda api, user, label, out, note: sent.append(label))
+    work = tmp_path / "content" / "htl_kaggle" / "working"
+    (work / "tasks" / "a").mkdir(parents=True)
+    (work / "tasks" / "a" / "result.json").write_text("{}")
+    (tmp_path / "content" / "htl_working_label").write_text("colab-statement")
+    (tmp_path / "content" / "htl_not_sent_colab-statement").write_text("")
+    co.run_one("colab-graph", "x/y", kernel_dataset="x/k", user="someone")
+    assert sent[0] == "colab-statement" and not (work / "tasks" / "a").exists()
+    assert not (tmp_path / "content" / "htl_not_sent_colab-statement").exists()
+    calls = _fake_colab(co, monkeypatch, tmp_path, ("fresh", 0))
+    monkeypatch.setattr(co, "send_until_taken", lambda send, **k: False)
+    (work / "tasks" / "a").mkdir(parents=True)
+    (work / "tasks" / "a" / "result.json").write_text("{}")
+    (tmp_path / "content" / "htl_working_label").write_text("colab-statement")
+    (tmp_path / "content" / "htl_not_sent_colab-statement").write_text("")
+    assert co.run_one("colab-graph", "x/y", kernel_dataset="x/k", user="someone") == 1
+    assert (work / "tasks" / "a" / "result.json").exists() and calls["fetched"] == 0   # kept, and no run over it
+
+
+def test_a_finished_runs_output_leaves_the_machine_once_kaggle_has_it(co, monkeypatch, tmp_path):
+    calls = _fake_colab(co, monkeypatch, tmp_path, ("partial", 1))
+    work = tmp_path / "content" / "htl_kaggle" / "working"
+
+    def restore(api, user, label, out, resume_session=None):
+        (out / "tasks" / "a").mkdir(parents=True)
+        (out / "tasks" / "a" / "result.json").write_text("{}")
+        return "partial", 1
+    monkeypatch.setattr(co, "restore", restore)
+    co.run_one("colab-graph", "x/y", kernel_dataset="x/k", user="someone")
+    assert calls["uploads"][-1].startswith("finished") and not work.exists()
+
+
+def test_a_tool_call_naming_a_path_under_content_is_counted_outside_the_workspace(run):
+    trace = {"steps": [{"tool_calls": [
+        {"function_name": "read_file", "arguments": {"path": "/content/htl_kaggle/working_before_x/tasks/a/result.json"}},
+        {"function_name": "run_command", "arguments": {"command": "ls /content"}},
+        {"function_name": "read_file", "arguments": {"path": "docs/content/guide.md"}},
+        {"function_name": "read_file", "arguments": {"path": "src/contents.py"}}]}]}
+    assert run.trace_counts(trace)["outside_workspace_call_count"] == 2
+
+
+# 2. A stop from the notebook's button ends the kernel and the uploader.
+
+def test_a_kernel_starts_in_a_process_group_of_its_own_without_a_credential(co, monkeypatch, tmp_path):
+    import os
+    import time
+    _on_machine(co, monkeypatch, tmp_path)
+    monkeypatch.setenv("KAGGLE_API_TOKEN", "x")
+    kernel = tmp_path / "k.py"
+    kernel.write_text("import os, time\nopen('env.txt', 'w').write(','.join(sorted(os.environ)))\ntime.sleep(60)\n")
+    out = tmp_path / "out"
+    out.mkdir()
+    with (tmp_path / "log").open("a") as log:
+        proc = co.start_kernel(kernel, out, log)
+    try:
+        assert os.getpgid(proc.pid) == proc.pid                               # its own group, ended as one
+        for _ in range(200):
+            if (out / "env.txt").exists() and (out / "env.txt").read_text():
+                break
+            time.sleep(0.05)
+        assert "KAGGLE_API_TOKEN" not in (out / "env.txt").read_text().split(",")
+    finally:
+        co.end_process_group(proc, grace_seconds=2)
+    assert proc.poll() is not None
+
+
+def test_a_stop_during_the_wait_ends_the_kernels_process_group_and_the_uploader(co, monkeypatch, tmp_path):
+    """The notebook's stop button raises KeyboardInterrupt in the wait. The kernel's processes and the uploader must
+    end with it, or the uploader goes on sending `working/`, by then the next run's, to this run's dataset."""
+    import subprocess
+    import threading
+    import time
+    _on_machine(co, monkeypatch, tmp_path)
+    pidfile = tmp_path / "child.pid"
+    proc = subprocess.Popen(["sh", "-c", f"sleep 300 & echo $! > {pidfile}; wait"], start_new_session=True)
+    for _ in range(200):
+        if pidfile.exists() and pidfile.read_text().strip():
+            break
+        time.sleep(0.05)
+    child = int(pidfile.read_text())
+    stop = threading.Event()
+    uploader = threading.Thread(target=lambda: stop.wait(300), daemon=True)
+    uploader.start()
+
+    def interrupted(seconds):
+        raise KeyboardInterrupt
+    with pytest.raises(KeyboardInterrupt):
+        co.wait_for_kernel(proc, stop, uploader, sleep=interrupted, grace_seconds=2)
+    assert stop.is_set() and not uploader.is_alive() and proc.poll() is not None
+
+    def gone(pid):
+        try:
+            with open(f"/proc/{pid}/stat") as f:
+                return f.read().rsplit(")", 1)[1].split()[0] in ("Z", "X")
+        except OSError:
+            return True
+    for _ in range(200):
+        if gone(child):
+            break
+        time.sleep(0.05)
+    assert gone(child), "the kernel's child process outlived the stop"
+
+
+# 6. The network is open to the agent's commands: no run starts unless its entry says the operator accepts that.
+
+def test_a_run_whose_entry_does_not_accept_an_open_network_is_not_started(co, monkeypatch, tmp_path):
+    calls = _fake_colab(co, monkeypatch, tmp_path, ("fresh", 0))
+    said = []
+    monkeypatch.setattr(co, "say", said.append)
+    for entry in ({"label": "colab-graph"}, {"label": "colab-graph", "network_open_acknowledged": "yes"}, None):
+        monkeypatch.setattr(co, "listed_entry", lambda label, e=entry: e)
+        assert co.run_one("colab-graph", "x/y", kernel_dataset="x/k", user="someone") == 1
+        assert calls == {"uploads": [], "fetched": 0}
+    assert any("network_open_acknowledged" in s for s in said)
+    assert co.network_open_acknowledged({"network_open_acknowledged": True})
+
+
+def test_the_committed_run_list_does_not_accept_an_open_network_for_any_run():
+    """Accepting an open network is a decision for a later run's own branch (docs/adr/0005), not a default."""
+    plan = json.loads((REPO_ROOT / "kaggle" / "colab_official_run.json").read_text())
+    assert not any(r.get("network_open_acknowledged") for r in plan["runs"])
+    assert (REPO_ROOT / "docs" / "adr" / "0005-colab-runs-need-the-open-network-accepted.md").exists()
+
+
+# 7. The audit reads every tool call, with wider words.
+
+def test_the_audit_counts_what_the_word_list_missed(co):
+    for missed in ("python -c 'import socket; socket.create_connection((\"x\", 80))'", "pip -q install requests",
+                   "python -m pip --quiet install foo", "git -C repo pull", "git -c http.proxy= fetch origin",
+                   "uv pip install foo", "python -c 'import http.client'", "bash -c 'cat < /dev/tcp/x/80'",
+                   "huggingface-cli download org/model", "python -c 'import aiohttp'"):
+        assert co.network_command_count([missed]) == 1, missed
+    for innocent in ("pytest -q tests", "git status", "git -C repo log --oneline", "grep -rn 'https://' docs",
+                     "pip list", "pip show requests", "python -c 'print(1)'"):
+        assert co.network_command_count([innocent]) == 0, innocent
+
+
+def test_the_audit_reads_every_tool_call_not_only_run_command(run):
+    """A script written and then run, and run_skill_script, were outside an audit of run_command alone."""
+    skill = {"skill": "s", "script": "curl -s https://example.org"}
+    trace = {"steps": [{"tool_calls": [
+        {"function_name": "write_file", "arguments": {"path": "fetch.py", "content": "import socket\nsocket.socket()\n"}},
+        {"function_name": "run_command", "arguments": {"command": "python fetch.py"}},
+        {"function_name": "run_skill_script", "arguments": skill}]}]}
+    assert run.trace_commands(trace) == ["python fetch.py", json.dumps(skill)]
+    audit = run.network_audit({"a": trace})
+    assert audit["network_command_count"] == 1                               # the skill's script
+    assert audit["tool_call_count"] == 3 and audit["network_tool_call_count"] == 2   # and the written script
+    assert audit["tool_call_instance_ids"] == ["a"]
+
+
+# 8. The runner checks its Colab options together.
+
+def test_the_runner_refuses_colab_options_that_do_not_go_together(run):
+    base = {"colab": True, "batch": True, "label": "colab-x", "collect": False, "colab_session": None,
+            "colab_results": None}
+    run.check_colab_options(**base)
+    run.check_colab_options(**{**base, "collect": True, "colab_session": "01:17:24",
+                               "colab_results": "someone/htlnlp-colab-official-colab-x/3"})
+    run.check_colab_options(**{**base, "colab": False, "label": None})
+    for kwargs, option in (({"batch": False}, "--batch"), ({"label": None}, "--label"),
+                           ({"collect": True}, "--colab-session"),
+                           ({"colab": False, "colab_session": "01:17:24"}, "--colab-session"),
+                           ({"colab": False, "colab_results": "a/b"}, "--colab-results"),
+                           ({"collect": False, "colab_session": "01:17:24"}, "--collect")):
+        with pytest.raises(SystemExit, match=option):
+            run.check_colab_options(**{**base, **kwargs})
+
+
+# Smaller.
+
+def test_a_kernel_that_stopped_itself_is_not_finished_and_the_rest_can_be_resumed(co, tmp_path):
+    """Its 255-minute deadline, or two unanswered tasks, mark the rest skipped: the run goes on from there."""
+    work = tmp_path / "working"
+    (work / "tasks" / "a").mkdir(parents=True)
+    (work / "tasks" / "a" / "result.json").write_text("{}")
+    for why in ("the kernel's time budget ran out", "stopped: two tasks in a row had no answer from the model server"):
+        (work / "result.json").write_text(json.dumps({"finished_ts": "t", "runs": {
+            "a": {"instance_id": "a"}, "b": {"instance_id": "b", "is_skipped": True, "skip_reason_text": why}}}))
+        assert co.earlier_output(tmp_path) == ("partial", 1), why
+
+
+def test_a_colab_runs_settings_name_the_wheels_left_out(run):
+    s = run.settings_for(RESULT, seed=7, drawn=["a"], pool_count=93, machine_shape=None, docker_image=None,
+                         competition=None, agent_commit="abc", tasks_per_kernel=1, colab=True)
+    note = next(n for n in s["notes"] if n.startswith("Run on a Colab machine"))
+    assert "as on Kaggle" not in note and "wheels_left_out" in note
+
+
+def test_the_notebook_claims_no_session_length_without_a_source():
+    text = "".join("".join(c["source"]) for c in json.loads(NOTEBOOK.read_text())["cells"])
+    assert "24 hours" not in text
