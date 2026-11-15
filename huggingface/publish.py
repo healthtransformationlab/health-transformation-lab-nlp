@@ -1,9 +1,11 @@
 """Build a Hugging Face dataset folder from spec 020's file lists and, with --upload, publish it under the
 healthtransformationlab organisation (spec 025). Used by .github/workflows/kaggle-publish.yml; CC BY 4.0.
 
-    python huggingface/publish.py --dataset notes|results --out build/hf-notes --commit <sha>
-        [--upload --message "Update from the repository"]
-    python huggingface/publish.py --org-card --out build/hf-org --commit <sha> [--upload]
+    python huggingface/publish.py --dataset notes|results --out build/hf-notes --commit <sha> [--upload [--tag]]
+    python huggingface/publish.py --org-card --out build/hf-org --commit <sha> [--upload --message "..."]
+
+A dataset's commit message is its release string (dataset_version.release_message, spec 039), the note Kaggle's
+version carries too, and --tag marks it data/<slug>-vX.Y.Z here and in git.
 
 The files are kaggle/publish.py's (FR-001: one list for both platforms), passed through its check() and copied
 under raw/. The notes also get data/train.csv and data/test.csv with one column set, so the dataset viewer and
@@ -17,8 +19,10 @@ import importlib.util
 import os
 import re
 import shutil
+import subprocess
 import sys
 from pathlib import Path
+from urllib.parse import quote
 
 import yaml
 
@@ -162,6 +166,35 @@ def upload(folder: Path, repo: str, message: str, api, repo_type: str = "dataset
     return str(url)
 
 
+def tag(api, repo: str, name: str) -> bool:
+    """Tag the dataset repo's current head `name`, unless it has that tag already. True when it was made; tagging a
+    release twice changes nothing (spec 039 US3, #709)."""
+    if any(t.name == name for t in api.list_repo_refs(repo, repo_type="dataset").tags):
+        return False
+    api.create_tag(repo, tag=name, repo_type="dataset", exist_ok=True)
+    return True
+
+
+_tag = tag   # publish_dataset's `tag` flag shadows the function inside it
+
+
+def publish_dataset(name: str, out: Path, commit: str, api, *, tag: bool = False, run=subprocess.run) -> str:
+    """Upload a built dataset as one commit whose message is its release string, the note Kaggle's version carries
+    too. With tag, mark the release data/<slug>-vX.Y.Z on Hugging Face and in git. Returns the release string."""
+    slug, repo = kpub.DATASETS[name]["slug"], repo_id(name)
+    note = kpub.dv.release_message(slug, commit)
+    print(f"release: {note}")
+    upload(out, repo, note, api, "dataset")
+    if tag:
+        release = kpub.dv.release_tag(slug)
+        made = _tag(api, repo, release)
+        print(f"Hugging Face tag {release} {'created' if made else 'already there'}: "
+              f"https://huggingface.co/datasets/{repo}/tree/{quote(release, safe='')}")
+        made = kpub.dv.create_git_tag(release, commit, run=run)
+        print(f"git tag {release} {'created' if made else 'already there'}: {kpub.dv.git_tag_url(release)}")
+    return note
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--dataset", choices=sorted(kpub.DATASETS))
@@ -169,10 +202,15 @@ def main() -> None:
     ap.add_argument("--out", required=True, type=Path)
     ap.add_argument("--commit", required=True)
     ap.add_argument("--upload", action="store_true", help="publish it (needs HF_PUBLISH_TOKEN)")
-    ap.add_argument("--message", default="Update from the repository")
+    ap.add_argument("--tag", action="store_true",
+                    help="with --upload and --dataset: tag the release data/<slug>-vX.Y.Z here and in git (spec 039)")
+    ap.add_argument("--message", default="Update from the repository",
+                    help="the organisation page's commit message; a dataset's is its release string (spec 039)")
     a = ap.parse_args()
     if not (a.dataset or a.org_card):
         ap.error("give --dataset or --org-card")
+    if a.tag and (not a.upload or a.org_card):
+        ap.error("--tag marks a new version: it needs --upload and --dataset (the organisation page has none)")
     if a.org_card:
         if a.out.exists():
             shutil.rmtree(a.out)
@@ -189,7 +227,10 @@ def main() -> None:
         api = HfApi(token=token or None)
         check_token(token, whoami=lambda t: api.whoami(token=t),
                     source=os.environ.get("HF_TOKEN_SOURCE") or "HF_PUBLISH_TOKEN or HF_TOKEN")
-        upload(a.out, repo, f"{a.message} ({a.commit[:12]})", api, kind, **create)
+        if a.org_card:
+            upload(a.out, repo, f"{a.message} ({a.commit[:12]})", api, kind, **create)
+        else:
+            publish_dataset(a.dataset, a.out, a.commit, api, tag=a.tag)
 
 
 if __name__ == "__main__":

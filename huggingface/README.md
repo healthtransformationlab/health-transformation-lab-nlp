@@ -40,7 +40,9 @@ notebook.
   organisation, the run stops before any work and names the secret it read (`HF_PUBLISH_TOKEN`, or `HF_TOKEN`
   when that isn't set). Spaces, a line break, quotes or a pasted `NAME=` in front are ignored; anything else is
   described (its length, and whether it looks like a secret's name), never printed.
-- **Each run is one commit per dataset**, named after the repository commit.
+- **Each run is one commit per dataset.** Its message is the release string, `v<X.Y.Z> — <what changed> (<commit>)`,
+  the same note the Kaggle version carries, and the release is tagged `data/<slug>-vX.Y.Z` here and in git
+  (spec 039). Tagging a version twice changes nothing.
 - **Files dropped from the list are deleted** from the dataset.
 
 Preview a build locally (no upload, no token):

@@ -73,6 +73,9 @@ gives. The test catches only file and column changes; bump PATCH yourself when c
 Every build also writes `manifest.json` into the dataset (spec 039, #708): its slug and version, the commit it was
 built from, when it was built, and each file's SHA-256, size and, for CSV and JSONL files, row count. The same
 builder (`dataset_version.write_manifest`) serves Kaggle and Hugging Face, and the cards end by pointing to it.
+A new version's note is its release string, `v<X.Y.Z> — <what changed> (<commit>)`, the same message the Hugging
+Face commit carries, and the run tags it `data/<slug>-vX.Y.Z` in git (and on Hugging Face). A metadata-only refresh
+makes no version and no tag, and tagging a version twice changes nothing.
 
 ## Publishing the note classifier
 

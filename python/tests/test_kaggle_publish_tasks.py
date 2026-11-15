@@ -206,8 +206,10 @@ def test_upload_sends_the_built_folder_with_the_commit_in_the_message(task_dir, 
     fake.KaggleApi = FakeApi
     monkeypatch.setitem(sys.modules, "kaggle.api.kaggle_api_extended", fake)
     monkeypatch.setattr(pt.publish, "upload", lambda folder, ref, message, api: calls.append((folder, ref, message)))
-    run_main(monkeypatch, task_dir, tmp_path / "out", "--upload", "--message", "First version")
-    assert calls == ["auth", (tmp_path / "out", "someone/" + pt.SLUG, "First version (abc1234def56)")]
+    run_main(monkeypatch, task_dir, tmp_path / "out", "--upload")
+    note = pt.dv.release_message(pt.SLUG, "abc1234def5678")   # spec 039 US3: the release string is the note
+    assert note.startswith(f"v{pt.dv.version(pt.SLUG)} — ") and note.endswith("(abc1234def56)")
+    assert calls == ["auth", (tmp_path / "out", "someone/" + pt.SLUG, note)]
 
 
 def test_refuses_a_snapshot_holding_withheld_files(task_dir):   # PR #515: the course files

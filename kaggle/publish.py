@@ -3,7 +3,9 @@ publish it: created public the first time, a new version after (spec 020). Used 
 .github/workflows/kaggle-publish.yml; CC BY 4.0.
 
     python kaggle/publish.py --dataset notes|results --out build/notes --username <kaggle user> --commit <sha>
-        [--upload --message "Update from the repository"]
+        [--upload [--tag | --metadata-only]]
+
+A version's note is its release string (dataset_version.release_message, spec 039), and --tag marks it in git.
 
 Files are listed here, or globbed inside named folders, never from the whole tree: nothing from data/external/
 (others' datasets) or data/raw/, and no simulated_* file (dry runs would read as results). check() also refuses
@@ -15,6 +17,7 @@ import argparse
 import csv
 import json
 import shutil
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -210,6 +213,31 @@ def upload(folder: Path, ref: str, message: str, api, sleep=time.sleep) -> str:
     return result.url
 
 
+def release(slug: str, out: Path, ref: str, commit: str, api, *, tag: bool = False, run=subprocess.run) -> str:
+    """Upload a built dataset as a new version whose note is its release string, the one Hugging Face's commit message
+    carries too (spec 039 US3, #709). With tag, mark the release in git as data/<slug>-vX.Y.Z; a tag already there is
+    left as it is. Returns the release string."""
+    note = dv.release_message(slug, commit)
+    print(f"release: {note}")
+    upload(out, ref, note, api)
+    if tag:
+        name = dv.release_tag(slug)
+        made = dv.create_git_tag(name, commit, run=run)
+        print(f"git tag {name} {'created' if made else 'already there'}: {dv.git_tag_url(name)}")
+    return note
+
+
+def publish(name: str, out: Path, meta: dict, commit: str, api, *, tag: bool = False, run=subprocess.run) -> str:
+    """release() for one of DATASETS, built into out with metadata meta."""
+    return release(DATASETS[name]["slug"], out, meta["id"], commit, api, tag=tag, run=run)
+
+
+def check_tag_options(ap: argparse.ArgumentParser, a: argparse.Namespace) -> None:
+    """--tag marks a new version: refuse it, before any work, where no version is made."""
+    if a.tag and (not a.upload or a.metadata_only):
+        ap.error("--tag marks a new version: it needs --upload, and a metadata-only refresh makes none")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--dataset", required=True, choices=sorted(DATASETS))
@@ -217,10 +245,12 @@ def main() -> None:
     ap.add_argument("--username", required=True)
     ap.add_argument("--commit", required=True)
     ap.add_argument("--upload", action="store_true", help="publish it (needs Kaggle credentials)")
-    ap.add_argument("--message", default="Update from the repository")
     ap.add_argument("--metadata-only", action="store_true",
                     help="with --upload: send only the metadata and cover, no new version (spec 034)")
+    ap.add_argument("--tag", action="store_true",
+                    help="with --upload: tag the release data/<slug>-vX.Y.Z in git (spec 039; pushes the tag)")
     a = ap.parse_args()
+    check_tag_options(ap, a)
     meta = build(a.dataset, a.out, a.username, a.commit)
     print(f"prepared {meta['id']}: {len(files_of(a.dataset))} files at {a.commit[:12]}")
     if a.upload:
@@ -230,7 +260,7 @@ def main() -> None:
         if a.metadata_only:
             metadata_only(a.out, meta, api)
         else:
-            upload(a.out, meta["id"], f"{a.message} ({a.commit[:12]})", api)
+            publish(a.dataset, a.out, meta, a.commit, api, tag=a.tag)
 
 
 if __name__ == "__main__":
