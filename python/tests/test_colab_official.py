@@ -446,6 +446,7 @@ def _fake_colab(co, monkeypatch, tmp_path, state):
         calls["fetched"] += 1
         raise RuntimeError("the test stops here: nothing is downloaded")
     monkeypatch.setattr(co, "fetch", fetch)
+    monkeypatch.setattr(co, "listed_model", lambda label: co.MODEL)   # the run list is not read in these tests
     api = types.SimpleNamespace(authenticate=lambda: None, dataset_list=lambda **k: [])
     kaggle_mod = types.ModuleType("kaggle.api.kaggle_api_extended")
     kaggle_mod.KaggleApi = lambda: api
@@ -640,11 +641,106 @@ def test_the_report_arm_is_listed_for_the_session_that_made_the_registered_pair_
     plan = json.loads((REPO_ROOT / "kaggle" / "colab_official_run.json").read_text())
     labels = [r["label"] for r in plan["runs"]]
     report = plan["runs"][labels.index("colab-report")]
-    assert labels.index("colab-report") > labels.index("colab-graph-try2") and labels[-1] == "colab-report"
+    assert labels.index("colab-report") > labels.index("colab-graph-try2")
     assert report["gpu"] == "A100"
     assert report["bundle"].endswith("/htlnlp-official-colab-report")
     assert report["kernel_dataset"].endswith("/htlnlp-colab-kernel-colab-report")
+    assert "model" not in report                                    # the E4B arms name no model: they get the default
     assert len({r["bundle"] for r in plan["runs"]}) == 3            # one sealed bundle per text given with the task
+
+
+E2B = "google/gemma-4/other/gemma-4-e2b-it-qat-w4a16-ct/2"
+
+
+def test_a_run_entry_can_name_its_model_and_one_that_names_none_gets_e4b(co, monkeypatch):
+    """028 AI12 (#748): the kernel serves the one model the submission declares and looks for it under the inputs, so
+    an E2B arm needs the E2B model mounted. An entry names its model; the E4B arms' entries name none and keep E4B."""
+    monkeypatch.setattr(co, "say", lambda message: None)
+    plan = {"runs": [{"label": "colab-statement-try2", "bundle": "x/s"},
+                     {"label": "colab-e2b-statement", "bundle": "x/e", "gpu": "A100", "model": E2B}]}
+    assert co.listed_model("colab-e2b-statement", get=_lists(plan)) == E2B
+    assert co.listed_model("colab-statement-try2", get=_lists(plan)) == co.MODEL
+    assert co.listed_model("not-listed", get=_lists(plan)) == co.MODEL
+    assert co.MODEL == "google/gemma-4/other/gemma-4-e4b-it-qat-w4a16-ct/2"   # the default is unchanged
+    calls = {"n": 0}
+
+    def blinks(name):
+        calls["n"] += 1
+        if calls["n"] < 3:
+            raise OSError("the network blinked")
+        return json.dumps(plan)
+    assert co.listed_model("colab-e2b-statement", get=blinks, sleep=lambda s: None) == E2B   # read again, then found
+
+
+def test_a_run_list_that_cannot_be_read_stops_the_run_rather_than_guess_its_model(co, monkeypatch):
+    """Guessing E4B for an E2B arm would load a model the submission does not declare. Unlike the GPU, which a run
+    can do without, the model must be known."""
+    monkeypatch.setattr(co, "say", lambda message: None)
+
+    def never(name):
+        raise OSError("down")
+    with pytest.raises(SystemExit, match="which model colab-e2b-statement is for"):
+        co.listed_model("colab-e2b-statement", get=never, sleep=lambda s: None)
+
+
+def test_a_bad_model_handle_in_the_run_list_stops_the_run(co, monkeypatch):
+    monkeypatch.setattr(co, "say", lambda message: None)
+    plan = {"runs": [{"label": "colab-e2b-statement", "bundle": "x/e", "model": "google/gemma-4"}]}
+    with pytest.raises(SystemExit, match="owner/model/framework/variation/version"):
+        co.listed_model("colab-e2b-statement", get=_lists(plan))
+
+
+def test_a_run_downloads_and_mounts_the_model_its_entry_names(co, monkeypatch, tmp_path):
+    """`fetch` puts the named model where Kaggle mounts it, and `run_one` hands it the model its entry names."""
+    import types
+    monkeypatch.setattr(co, "say", lambda message: None)
+    asked = []
+
+    def model_download(handle):
+        asked.append(handle)
+        got = tmp_path / "cache" / handle.split("/")[3]
+        got.mkdir(parents=True)
+        (got / "config.json").write_text("{}")
+        return str(got)
+    hub = types.SimpleNamespace(model_download=model_download)
+    for ref in (co.WHEELHOUSE, "x/htlnlp-official-colab-e2b-statement"):
+        (co.dataset_dir(ref, tmp_path)).mkdir(parents=True)
+        (co.dataset_dir(ref, tmp_path) / "f").write_text("")
+    monkeypatch.setattr(co, "LOG", tmp_path / "htl_colab.log")
+    import urllib.request
+    monkeypatch.setattr(urllib.request, "urlopen", lambda url, timeout=60: types.SimpleNamespace(read=lambda: b"# k"))
+    listing = types.SimpleNamespace(files=[types.SimpleNamespace(name="f", total_bytes=0)], next_page_token="")
+    api = types.SimpleNamespace(dataset_list_files=lambda ref, page_token=None, page_size=20: listing)
+    co.fetch(api, hub, "x/htlnlp-official-colab-e2b-statement", None, "https://example.org/k.py", root=tmp_path,
+             handle=E2B)
+    assert asked == [E2B]
+    assert (co.model_dir(tmp_path, E2B) / "config.json").exists()
+    assert not co.model_dir(tmp_path).exists()                      # the E4B model is not fetched for an E2B run
+
+
+def test_run_one_passes_the_listed_model_to_fetch(co, monkeypatch, tmp_path):
+    calls = _fake_colab(co, monkeypatch, tmp_path, ("fresh", 0))
+    _with_gpu(co, monkeypatch, SMI_A100, "A100")
+    seen = []
+
+    def fetch(*a, **k):
+        seen.append(k.get("handle"))
+        raise RuntimeError("the test stops here: nothing is downloaded")
+    monkeypatch.setattr(co, "fetch", fetch)
+    monkeypatch.setattr(co, "listed_model", lambda label: E2B if label == "colab-e2b-statement" else co.MODEL)
+    assert co.run_one("colab-e2b-statement", "x/y", kernel_dataset="x/k", user="someone") == 1
+    assert co.run_one("colab-report", "x/y", kernel_dataset="x/k", user="someone") == 1
+    assert co.run_one("colab-report", "x/y", kernel_dataset="x/k", user="someone", model=E2B) == 1   # given outright
+    assert seen == [E2B, co.MODEL, E2B]
+    assert calls["uploads"][0] == "started"
+
+
+def test_the_superseded_e2b_colab_arm_is_not_listed():
+    """028 AI12 (#748): the E2B arm was listed for Colab, then moved to Kaggle before any session made it. A notebook
+    makes every run the list names, whatever `stop` says, so the entry is gone, not merely stopped."""
+    plan = json.loads((REPO_ROOT / "kaggle" / "colab_official_run.json").read_text())
+    assert "colab-e2b-statement" not in [r["label"] for r in plan["runs"]]
+    assert plan.get("stop") is True
 
 
 def test_a_colab_run_can_be_read_from_one_version_of_its_dataset_and_only_from_the_session_meant(run):

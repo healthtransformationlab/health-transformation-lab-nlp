@@ -46,6 +46,10 @@ REPO_ROOT = HERE.parent
 OUT_DIR = REPO_ROOT / "data" / "tasks" / "official_agent_runs"
 WHEELHOUSE = "metric/gemma-4-developer-agent-wheelhouse"                 # the competition's evaluator and vLLM
 MODEL_SOURCE = "google/gemma-4/Other/gemma-4-e4b-it-qat-w4a16-ct/2"      # as the starter notebook attaches it
+# The models the competition allows, as official_agent_kernel.py lists them. A kernel attaches the one the submission
+# declares (028 AI12, #748): each is version 2 on Kaggle, the latest on November 15, 2026, as for E4B above.
+ALLOWED_MODELS = ("gemma-4-31b-it-qat-w4a16-ct", "gemma-4-12b-it-qat-w4a16-ct", "gemma-4-e4b-it-qat-w4a16-ct",
+                  "gemma-4-e2b-it-qat-w4a16-ct")
 STARTER_MACHINE_SHAPE = "NvidiaL4"                                       # the starter notebook's accelerator
 # The starter notebook's pinned image, which every committed run used. Kaggle's current image lacks the CUDA 12
 # runtime that vLLM from the competition's wheelhouse loads (libcudart.so.12), so a new kernel fails without it.
@@ -327,8 +331,29 @@ def kernel_slug(instance_id: str) -> str:
     return "htlnlp-offrun-" + re.sub(r"[^a-z0-9]+", "-", instance_id.lower()).strip("-")
 
 
+def declared_model(agent_dir: Path) -> str:
+    """The one model a submission declares: every `model:` line of agent.yaml and sub_agents/*.yaml (the competition
+    allows one base model across all agents). Read as lines, since the files use the framework's own `!include` tag.
+    Anything but exactly one allowed model stops the run before anything is uploaded."""
+    agent_dir = Path(agent_dir)
+    files = [agent_dir / "agent.yaml", *sorted((agent_dir / "sub_agents").glob("*.yaml"))]
+    found = {m.group(1) for f in files if f.is_file()
+             for m in re.finditer(r"^model:\s*['\"]?([^\s'\"#]+)", f.read_text(), re.MULTILINE)}
+    if len(found) != 1 or not found <= set(ALLOWED_MODELS):
+        raise SystemExit(f"{agent_dir}: the submission must declare exactly one of {list(ALLOWED_MODELS)}, in every "
+                         f"agent: it declares {sorted(found) or 'none'}")
+    return next(iter(found))
+
+
+def model_source(declared: str) -> str:
+    """The Kaggle model a kernel attaches for a declared model name, as the starter notebook attaches E4B."""
+    if declared not in ALLOWED_MODELS:
+        raise SystemExit(f"the submission must declare exactly one of {list(ALLOWED_MODELS)}: {declared!r}")
+    return f"google/gemma-4/Other/{declared}/2"
+
+
 def kernel_metadata(username: str, instance_id: str, machine_shape: str | None, docker_image: str | None,
-                    competition: str | None = None) -> dict:
+                    competition: str | None = None, model_source: str = MODEL_SOURCE) -> dict:
     """Private, GPU, internet off; this task's bundle, the competition's wheelhouse and the model, nothing else.
     `competition` attaches the competition as the starter notebook does (its accelerator may depend on it); its
     files are the competition's own tasks, not ours."""
@@ -337,7 +362,7 @@ def kernel_metadata(username: str, instance_id: str, machine_shape: str | None, 
             "language": "python", "kernel_type": "script", "is_private": True, "enable_gpu": True, "enable_tpu": False,
             "enable_internet": False, "dataset_sources": [f"{username}/{bundle.slug(instance_id)}", WHEELHOUSE],
             "competition_sources": [competition] if competition else [], "kernel_sources": [],
-            "model_sources": [MODEL_SOURCE]}
+            "model_sources": [model_source]}
     if machine_shape:
         meta["machine_shape"] = machine_shape
     if docker_image:
@@ -427,7 +452,7 @@ GENERATION_SETTINGS = ("max_output_tokens", "thinking_budget")   # set in agent.
 def settings_for(result: dict, seed: int | None, drawn: list[str], pool_count: int, machine_shape: str | None,
                  docker_image: str | None, competition: str | None, agent_commit: str | None,
                  source: str = "published", tasks_per_kernel: int = 1, colab: bool = False,
-                 generation: dict | None = None) -> dict:
+                 generation: dict | None = None, model_source: str | None = None) -> dict:
     """What a run used, how its sample was drawn, and each budget that differs from the competition's defaults.
     `colab`: the run was made on a Colab machine by kaggle/colab_official.py, not in a Kaggle kernel (#687).
     `generation`: the output budget the submission used (`_generation_used`); without it, the evaluator's fallback."""
@@ -447,7 +472,7 @@ def settings_for(result: dict, seed: int | None, drawn: list[str], pool_count: i
         "kernel": {"machine_shape_asked": "Colab, one GPU" if colab else machine_shape,
                    "docker_image": None if colab else docker_image, "competition_attached": competition,
                    "internet": COLAB_INTERNET if colab else False,
-                   "tasks_per_kernel": tasks_per_kernel},
+                   "tasks_per_kernel": tasks_per_kernel, "model_source": None if colab else model_source},
         "agent_commit_sha": agent_commit,
         "sample": {"seed": seed, "drawn_count": len(drawn), "pool_count": pool_count, "instance_ids": drawn,
                    "method_text": ("drawn with the seed from the competition's development set, stratified by "
@@ -779,7 +804,8 @@ def run_batch(a, api, user: str, ids: list[str], tasks: dict, manifest: dict, ov
                   + json.dumps(colab_run_entry(user, name)), flush=True)
             return 0
         (k / "kernel-metadata.json").write_text(json.dumps(
-            kernel_metadata(user, name, a.machine_shape, a.docker_image, a.competition), indent=1))
+            kernel_metadata(user, name, a.machine_shape, a.docker_image, a.competition,
+                            getattr(a, "model_source", MODEL_SOURCE)), indent=1))
         try:
             push_kernel(api, k, a.kernel_minutes * 60, kref)
         finally:
@@ -863,7 +889,8 @@ def run_batch(a, api, user: str, ids: list[str], tasks: dict, manifest: dict, ov
                                     text=True, check=False).stdout.strip() or None
             settings = settings_for(good, a.seed, list(ids), len(manifest), a.machine_shape, a.docker_image,
                                     a.competition, commit, a.source, tasks_per_kernel=len(order), colab=colab,
-                                    generation=_generation_used(good.get("generation_defaults"), sub_gen))
+                                    generation=_generation_used(good.get("generation_defaults"), sub_gen),
+                                    model_source=getattr(a, "model_source", MODEL_SOURCE))
             if not a.sample:
                 settings = given_sample(settings, getattr(a, "sample_method", None))
             settings["notes"] += a.note or []
@@ -952,6 +979,7 @@ def main() -> int:
     check_arm_options(a.label, a.context, a.batch, development)
     check_colab_options(a.colab, a.batch, a.label, a.collect, a.colab_session, a.colab_results)
     batch_name(a.source, a.label)   # a bad label fails here, before anything is uploaded
+    a.model_source = model_source(declared_model(a.agent_dir))   # the model the kernel attaches: the one declared
     a.context_note = None
     if a.context:
         contexts = read_context(a.context)
@@ -996,7 +1024,8 @@ def main() -> int:
                 k.mkdir(parents=True)
                 shutil.copyfile(HERE / "official_agent_kernel.py", k / "official_agent_kernel.py")
                 (k / "kernel-metadata.json").write_text(json.dumps(
-                    kernel_metadata(user, iid, a.machine_shape, a.docker_image, a.competition), indent=1))
+                    kernel_metadata(user, iid, a.machine_shape, a.docker_image, a.competition, a.model_source),
+                    indent=1))
                 try:
                     pushed = api.kernels_push(str(k), timeout=str(a.kernel_minutes * 60))
                     refused = getattr(pushed, "error", None)
@@ -1058,7 +1087,8 @@ def main() -> int:
         commit = subprocess.run(["git", "-C", str(a.agent_dir), "rev-parse", "HEAD"], capture_output=True, text=True,
                                 check=False).stdout.strip() or None
         settings = settings_for(good, a.seed, ids, len(manifest), a.machine_shape, a.docker_image, a.competition, commit,
-                                generation=_generation_used(good.get("generation_defaults"), sub_gen))
+                                generation=_generation_used(good.get("generation_defaults"), sub_gen),
+                                model_source=a.model_source)
         settings["notes"] += a.note or []
         out.with_name(out.stem + "_settings.json").write_text(json.dumps(settings, indent=1) + "\n")
     return 0
