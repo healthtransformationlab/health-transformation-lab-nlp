@@ -15,13 +15,38 @@ def _register():
     return yaml.safe_load(REGISTER.read_text())["credentials"]
 
 
+def _credential_rows(agents: str) -> list[str]:
+    """The first cell of each row of AGENTS.md's credentials table, indented or not, without its header and rule
+    line, and with backticks removed so "`gh` login" reads as the register's "gh login" (#785)."""
+    lines = agents[agents.index("| Credential |"):].splitlines()[2:]     # the header and the |---| rule
+    rows = []
+    for line in lines:
+        cells = line.strip()
+        if not cells.startswith("|"):
+            break                                                       # the table has ended
+        rows.append(cells.strip("|").split("|")[0].strip().replace("`", ""))
+    return rows
+
+
+def _unregistered(rows: list[str], names: set[str]) -> list[str]:
+    """The rows that name no credential in the register."""
+    return [r for r in rows if not any(n in r for n in names)]
+
+
 def test_every_credential_in_agents_md_is_in_the_register():
-    agents = (REPO_ROOT / "AGENTS.md").read_text()
-    table = agents[agents.index("| Credential |"):]
-    listed = re.findall(r"^\| ([^|]+?) \|", table, re.M)[2:]          # skip the header and the rule
-    names = {c["name"] for c in _register()}
-    for row in listed:
-        assert any(n in row for n in names), f"AGENTS.md lists '{row}' but ops/secrets_register.yaml doesn't"
+    rows = _credential_rows((REPO_ROOT / "AGENTS.md").read_text())
+    assert rows and "Credential" not in rows, rows                    # the rows, not the header (#785)
+    missing = _unregistered(rows, {c["name"] for c in _register()})
+    assert not missing, f"AGENTS.md lists {missing} but ops/secrets_register.yaml doesn't"
+
+
+def test_the_credentials_table_reader_finds_indented_rows_and_a_missing_credential():
+    """The table sits indented under a bullet since 8cadc13, and the old reader then matched only its header, so
+    the check above passed without looking at a row (#785)."""
+    text = ("Intro.\n\n  | Credential | Where | Scope | Goes to |\n  |---|---|---|---|\n"
+            "  | `a` token for x | x | y | z |\n  | b key (note) | x | y | z |\n\nAfter the table.\n")
+    assert _credential_rows(text) == ["a token for x", "b key (note)"]   # backticks gone, header and rule skipped
+    assert _unregistered(_credential_rows(text), {"a token"}) == ["b key (note)"]
 
 
 def test_register_entries_say_when_they_expire_and_who_renews_them():
