@@ -81,6 +81,12 @@ Kaggle drops a `+` from an uploaded file's name (#695): `ai_predictions_modernbe
 `ai_predictions_modernbert-basecw.csv` on Kaggle. `publish.kaggle_name` gives Kaggle's form; the metadata step
 matches descriptions by it, and the card lists files by it, so load a file by the name the card gives.
 
+Kaggle's server drops the column descriptions sent through its API ([Kaggle/kaggle-cli#1207](https://github.com/Kaggle/kaggle-cli/issues/1207), #694),
+so each dataset's usability stays at 9.41 until they are typed into Kaggle's editor, which keeps them.
+`python kaggle/column_descriptions.py --out build/column_descriptions.html` writes every one (495 across the three
+datasets) by the file name Kaggle shows, with a Copy button each. When that issue closes, a metadata-only run sends
+them and this step goes away.
+
 ## Publishing the note classifier
 
 Actions → *Fine-tune the GPU encoders on a free Kaggle GPU* → Run workflow with **`rungs`** `modernbert-base+cw`,

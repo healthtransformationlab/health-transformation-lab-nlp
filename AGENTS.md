@@ -108,6 +108,11 @@ as files change (spec 034):
   new file or column, PATCH for values, rows or a fix with no schema change. Every build ships `manifest.json` (the
   version, the commit and each file's SHA-256) inside the dataset.
 
+**Column descriptions reach Kaggle only through its site** until [Kaggle/kaggle-cli#1207](https://github.com/Kaggle/kaggle-cli/issues/1207)
+closes: Kaggle's server drops the ones sent through its API, so each dataset's usability reads 9.41 ("Include column
+descriptors") however complete `dataset_docs.yaml` is (#694). `kaggle/column_descriptions.py` writes a page with each
+one and a Copy button, for pasting into Kaggle's editor; enter them again after a version that adds or renames a column.
+
 `python/tests/test_kaggle_dataset_docs.py` fails CI when a published file or column has no description, a dataset
 lacks a cover, sources or an update frequency, or its files or columns changed without a new version.
 
