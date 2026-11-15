@@ -20,7 +20,7 @@ of its wordings across these files. One Important and five Minor findings were f
 two draw.io PNGs could not be re-rendered here and are left for the owner, as the PR says. Approve with nits.
 
 ## Scope of Change
-- Files changed: 19 (+1 binary) excluding this review: rules file, gold model and architecture builders, their
+- Files changed: 17 (+91 / -30) before this review file, one of them a binary PNG: rules file, gold model and architecture builders, their
   generated diagrams and contract, a flow diagram and PNG, two notebooks, the claims register, a dashboard, a
   docstring, two test files.
 - Areas touched: docs / diagrams / contracts / kaggle / databricks (dashboard caption, folder rules file) / python
