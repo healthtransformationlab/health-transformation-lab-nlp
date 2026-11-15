@@ -1,3 +1,10 @@
 {
- "runs": []
+ "runs": [
+  {
+   "label": "colab-skill",
+   "bundle": "jcblearning/htlnlp-official-colab-skill",
+   "kernel_dataset": "jcblearning/htlnlp-colab-kernel-colab-skill",
+   "network_open_acknowledged": true
+  }
+ ]
 }
