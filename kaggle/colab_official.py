@@ -80,7 +80,7 @@ UPLOAD_EVERY_SECONDS = 480   # what a dropped session can lose: the tasks finish
 # stop. A new run is made from a branch of its own: point this and the notebook's BRANCH there while it is made, and
 # back before it merges (the runs of #687 read feat/687-028-colab-paired-run).
 BRANCH_FILES = ("https://raw.githubusercontent.com/healthtransformationlab/health-transformation-lab-nlp/"
-                "refs/heads/main/kaggle/")
+                "refs/heads/data/812-028-colab-skill/kaggle/")
 FOLLOW_MINUTES = 150     # how long a notebook waits for the run list to name another run, after each run
 POLL_SECONDS = 60
 DONE: dict[str, int] = {}   # label -> the kernel's exit code, for each run this notebook session has made
