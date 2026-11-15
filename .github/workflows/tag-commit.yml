@@ -1,8 +1,8 @@
-# Tag one commit of main, run by hand (Actions -> Tag a commit -> Run workflow). An agent session's git proxy refuses
+# Tag one commit of main, run by hand (Actions -> Tag one commit of main -> Run workflow). An agent session's git proxy refuses
 # tag pushes, so a tag such as submission-2026-11-12 (health-transformation-lab-nlp#649) is made here with the
 # repository's own token. It checks its inputs before it writes anything and can be run again: a tag already at the
 # same commit is left as it is; a tag at another commit fails the run, so nothing is ever moved.
-name: Tag a commit
+name: Tag one commit of main
 
 on:
   workflow_dispatch:
@@ -26,7 +26,7 @@ jobs:
   tag:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - name: Check the inputs, then tag and push
