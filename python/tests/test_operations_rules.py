@@ -140,3 +140,4 @@ def test_the_agents_longer_lived_workspace_token_is_a_recorded_decision():
     row = next((line for line in agents if line.lstrip().startswith("| Workspace personal access token")), None)
     assert row, "AGENTS.md's credentials table has no 'Workspace personal access token' row"
     assert "network secret" in row and "placeholder" in row and f"ADR {adr.group(1)}" in row, row
+    assert not re.search(r"expired|15-day", entry["stored_in"]), entry["stored_in"]   # the placeholder is set (#784)
