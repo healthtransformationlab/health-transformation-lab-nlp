@@ -10,8 +10,8 @@
 
 - [x] T004 [US1] Add the dated line to #753 that drops the "checks failed" outcome (plan, "How the writer reads a span
   file")
-- [ ] T005 [US1] Failing test `python/tests/test_span_statement.py` with fixture span files
-- [ ] T006 [US1] `health_transformation_lab_nlp.span_statement`: `read_spans`, `write_statement`, `CONDITIONS`, all
+- [x] T005 [US1] Failing test `python/tests/test_span_statement.py` with fixture span files
+- [x] T006 [US1] `health_transformation_lab_nlp.span_statement`: `read_spans`, `write_statement`, `CONDITIONS`, all
   `@traced`
 
 ## US2 - 200 injected tasks and a 20-task pilot (#754)
