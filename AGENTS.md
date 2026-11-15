@@ -272,8 +272,8 @@ A SEV2 that fires every week for the same cause gets its cause fixed or its leve
 
     The owner opens a Colab run (`kaggle/colab_official_agent.ipynb`; the runner's `--colab --batch --label`; ADR 0005).
     Colab differs from Kaggle in its Python (3.13) and in 9 of the wheelhouse's 41 packages, and the run's record says
-    so. The Colab path runs batches of the published tasks only: the competition's development set needs its files
-    fetched onto the machine first (#780), and until then a development-set run stays on Kaggle.
+    so. A development-set batch runs there too, the competition's files for its tasks fetched onto the machine first
+    (#780): `--source competition --batch --competition gemma-4-developer-agent --label <name> --colab`.
 
 ## Ingestion and schema drift
 
