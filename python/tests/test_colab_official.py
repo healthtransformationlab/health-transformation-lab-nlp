@@ -643,8 +643,7 @@ def test_the_report_arm_is_listed_for_the_session_that_made_the_registered_pair_
     assert report["bundle"].endswith("/htlnlp-official-colab-report")
     assert report["kernel_dataset"].endswith("/htlnlp-colab-kernel-colab-report")
     assert "model" not in report                                    # the E4B arms name no model: they get the default
-    # one sealed bundle per text given with the task, and one for the E2B arm (028 AI12, #748)
-    assert len({r["bundle"] for r in plan["runs"]}) == 4
+    assert len({r["bundle"] for r in plan["runs"]}) == 3            # one sealed bundle per text given with the task
 
 
 E2B = "google/gemma-4/other/gemma-4-e2b-it-qat-w4a16-ct/2"
@@ -731,14 +730,12 @@ def test_run_one_passes_the_listed_model_to_fetch(co, monkeypatch, tmp_path):
     assert calls["uploads"][0] == "started"
 
 
-def test_the_e2b_arm_is_listed_for_the_a100_with_its_own_bundle_kernel_and_model():
-    """028 AI12 (#748, specs/028-dataops-task-set/preregistration-colab-e2b-arm.md): E2B against `colab-statement`,
-    on an A100, from a sealed bundle of its own; nothing else differs."""
+def test_the_superseded_e2b_colab_arm_is_not_listed():
+    """028 AI12 (#748): the E2B arm was listed for Colab, then moved to Kaggle before any session made it. A notebook
+    makes every run the list names, whatever `stop` says, so the entry is gone, not merely stopped."""
     plan = json.loads((REPO_ROOT / "kaggle" / "colab_official_run.json").read_text())
-    arm = next(r for r in plan["runs"] if r["label"] == "colab-e2b-statement")
-    assert arm == {"label": "colab-e2b-statement", "bundle": "jcblearning/htlnlp-official-colab-e2b-statement",
-                   "kernel_dataset": "jcblearning/htlnlp-colab-kernel-colab-e2b-statement", "gpu": "A100",
-                   "model": E2B}
+    assert "colab-e2b-statement" not in [r["label"] for r in plan["runs"]]
+    assert plan.get("stop") is True
 
 
 def test_a_colab_run_can_be_read_from_one_version_of_its_dataset_and_only_from_the_session_meant(run):
