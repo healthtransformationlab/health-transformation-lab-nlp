@@ -1490,3 +1490,9 @@ def test_after_a_403_the_username_falls_back_to_the_environment_and_every_doubt_
     assert "after a 403: the token's username (12 characters) is not the dataset owner's (7 characters)" in said
     assert "after a 403: listing the owner's datasets failed (ConnectionError" in said
     assert "someone-else" not in said
+
+
+def test_huggingface_hub_is_pinned_below_2_for_the_pinned_transformers(co):
+    """#819 on Modal: an unpinned huggingface-hub resolved to 2.4.0, and transformers 5.13.1 (vLLM 0.19.1's) refused
+    to import ("huggingface-hub>=1.5.0,<2.0 is required"), so vLLM never started. Pinned beside the rest."""
+    assert "huggingface-hub>=1.5.0,<2.0" in co.PINS
