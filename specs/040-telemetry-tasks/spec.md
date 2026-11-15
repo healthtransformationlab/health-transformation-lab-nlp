@@ -13,7 +13,7 @@ The 93 history tasks (spec 028) have one source of problem statements, people, a
 tests need. An AI screen found 76 of the 93 whose tests need a name, path or text the statement never gives. Over five
 runs a small local model resolved 26 of 85 task-runs on the other 17 and 1 of 380 on those 76
 (`data/tasks/official_agent_runs/README.md`, "The core split"). Since #712 every pipeline run sends telemetry naming
-the step, the function, the data label, the counts in and out, and the error type. This spec asks one question:
+the step, the function, the data label and the error type; US6 adds the rows in and out. This spec asks one question:
 **does a statement written from a failing run's telemetry let a small local agent fix more than one that only says
 what went wrong?**
 
@@ -35,7 +35,8 @@ with what the repository has already run it changes three things.
      both resolved 3, the plain statement alone 1, the report alone 1, neither 88: exact McNemar p = 1.0
      (`data/tasks/official_agent_runs/README.md`, "The paired tests").
    - A fair telemetry statement for a history task needs a failing run that does not use the task's own tests. Most
-     history tasks are features: 4 of the 30 screened are fixes (`data/tasks/screening/agent_screen.csv`). So few can
+     history tasks are features or maintenance: 4 of the 30 screened are fixes, 14 features and 12 maintenance
+     (`data/tasks/screening/agent_screen.csv`). So few can
      have one, the paired history comparison cannot carry a test, and US4 describes it instead.
 2. **The injected tasks get a baseline.**
    - Injected tasks have no person-written statement, so the design's two conditions for them (`span_names`,
@@ -196,3 +197,6 @@ left for later, and the injected tasks in a dataset of their own.
   will say so.
 - **Too few kept faults.** The pre-registration states the final size, and the power table in the design says what
   that size can find.
+- **History spans are thinner.** The history tasks' base commits predate the run spans (#712) and the row counts
+  (US6), so their `span_names` names the function, label and error but no counts. That is one more reason US4 is
+  described, not tested.

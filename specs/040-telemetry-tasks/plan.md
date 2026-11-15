@@ -82,7 +82,10 @@ each step with `DENTAL_TELEMETRY_LEVEL=detail`, and the run's settings record it
    pre-registration is written from it and frozen. The main run follows (n × 3 × 3). `70_context_pairs.py` gains an
    option to read `injected_runs.csv`, apply the majority-of-three rule and print the primary and secondary tables.
 5. **US4** can run once US1 is done. It classes the 93 history tasks by running each base commit's pipeline step
-   without the test patch, then writes and runs the statements for those that fail there.
+   without the test patch, then writes and runs the statements for those that fail there. Their base commits
+   (October 25 to 29, 2026) predate the run spans of #712 and the counts of US6, though their functions are already
+   `@traced` (`trace_reach.csv` found them). So the writer takes the outermost span's name as the step when no span
+   has `pipeline.step`, and leaves counts out; `history_eligibility.csv` records which tasks lack either.
 6. **US5** last, and only on the owner's word.
 
 ## Tests first (each story)
