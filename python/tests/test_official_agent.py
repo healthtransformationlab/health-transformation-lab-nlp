@@ -696,3 +696,78 @@ def test_a_new_kernel_gets_the_starter_notebooks_pinned_image_by_default(run):
     assert run.STARTER_DOCKER_IMAGE == recorded
     source = (REPO_ROOT / "kaggle" / "official_agent_run.py").read_text()
     assert '"--docker-image", default=STARTER_DOCKER_IMAGE' in source
+
+
+# 028 AI12 (#748): a Kaggle kernel attaches the model the submission declares, so an E2B agent gets the E2B model.
+E4B_SOURCE = "google/gemma-4/Other/gemma-4-e4b-it-qat-w4a16-ct/2"
+E2B_SOURCE = "google/gemma-4/Other/gemma-4-e2b-it-qat-w4a16-ct/2"
+
+
+def _agent(tmp_path, *models, sub_models=None):
+    d = tmp_path / "agent"
+    (d / "sub_agents").mkdir(parents=True, exist_ok=True)
+    (d / "agent.yaml").write_text("# Small-model bonus: gemma-4-e4b-it-qat-w4a16-ct (a comment, not a declaration)\n"
+                                  "name: fixer\n" + "".join(f"model: {m}\n" for m in models)
+                                  + "instruction: !include prompts/system.md\n")
+    for i, m in enumerate(sub_models or []):
+        (d / "sub_agents" / f"a{i}.yaml").write_text(f"name: a{i}\nmodel: {m}\n")
+    return d
+
+
+def test_the_declared_model_is_read_from_every_agent_file(run, tmp_path):
+    assert run.declared_model(_agent(tmp_path, "gemma-4-e2b-it-qat-w4a16-ct",
+                                     sub_models=["gemma-4-e2b-it-qat-w4a16-ct"])) == "gemma-4-e2b-it-qat-w4a16-ct"
+
+
+def test_a_submission_that_declares_other_than_one_allowed_model_stops(run, tmp_path):
+    with pytest.raises(SystemExit, match="exactly one of"):
+        run.declared_model(_agent(tmp_path, "gemma-4-e2b-it-qat-w4a16-ct", sub_models=["gemma-4-e4b-it-qat-w4a16-ct"]))
+    with pytest.raises(SystemExit, match="exactly one of"):
+        run.declared_model(_agent(tmp_path / "x", "gemma-3-1b-it"))
+    with pytest.raises(SystemExit, match="exactly one of"):
+        run.declared_model(_agent(tmp_path / "y"))                       # none declared
+
+
+def test_each_allowed_model_maps_to_its_kaggle_handle_and_e4b_is_unchanged(run):
+    assert run.model_source("gemma-4-e4b-it-qat-w4a16-ct") == E4B_SOURCE == run.MODEL_SOURCE
+    assert run.model_source("gemma-4-e2b-it-qat-w4a16-ct") == E2B_SOURCE
+    assert set(run.ALLOWED_MODELS) == {"gemma-4-31b-it-qat-w4a16-ct", "gemma-4-12b-it-qat-w4a16-ct",
+                                       "gemma-4-e4b-it-qat-w4a16-ct", "gemma-4-e2b-it-qat-w4a16-ct"}
+    with pytest.raises(SystemExit, match="exactly one of"):
+        run.model_source("gemma-3-1b-it")
+
+
+def test_the_runner_and_the_kernel_allow_the_same_models(run):
+    import ast
+    tree = ast.parse((REPO_ROOT / "kaggle" / "official_agent_kernel.py").read_text())
+    kernel = next(ast.literal_eval(n.value) for n in ast.walk(tree)
+                  if isinstance(n, ast.Assign) and getattr(n.targets[0], "id", "") == "ALLOWED_MODELS")
+    assert set(run.ALLOWED_MODELS) == kernel
+
+
+def test_an_e2b_agent_gets_the_e2b_model_and_an_e4b_kernel_is_byte_for_byte_as_before(run, tmp_path):
+    e2b = run.model_source(run.declared_model(_agent(tmp_path, "gemma-4-e2b-it-qat-w4a16-ct")))
+    meta = run.kernel_metadata("someone", "kaggle-e2b-statement", "NvidiaL4", None, model_source=e2b)
+    assert meta["model_sources"] == [E2B_SOURCE]
+    args = ("someone", "kaggle-e4b-statement", run.STARTER_MACHINE_SHAPE, run.STARTER_DOCKER_IMAGE,
+            "gemma-4-developer-agent")
+    before = {"id": "someone/htlnlp-offrun-kaggle-e4b-statement", "title": "htlnlp offrun kaggle e4b statement",
+              "code_file": "official_agent_kernel.py", "language": "python", "kernel_type": "script",
+              "is_private": True, "enable_gpu": True, "enable_tpu": False, "enable_internet": False,
+              "dataset_sources": ["someone/htlnlp-official-kaggle-e4b-statement", run.WHEELHOUSE],
+              "competition_sources": ["gemma-4-developer-agent"], "kernel_sources": [],
+              "model_sources": [E4B_SOURCE], "machine_shape": run.STARTER_MACHINE_SHAPE,
+              "docker_image": run.STARTER_DOCKER_IMAGE, "docker_image_pinning_type": "original"}
+    e4b = run.model_source(run.declared_model(_agent(tmp_path / "e4b", "gemma-4-e4b-it-qat-w4a16-ct")))
+    for meta in (run.kernel_metadata(*args), run.kernel_metadata(*args, model_source=e4b)):
+        assert json.dumps(meta, indent=1) == json.dumps(before, indent=1)
+
+
+def test_the_settings_record_the_model_a_kaggle_kernel_attached(run):
+    result = {"model_name": "gemma-4-e2b-it-qat-w4a16-ct", "budgets": {}, "generation_defaults": {}}
+    s = run.settings_for(result, seed=None, drawn=["a"], pool_count=93, machine_shape="NvidiaL4", docker_image="img",
+                         competition=None, agent_commit="8f4541f", tasks_per_kernel=93, model_source=E2B_SOURCE)
+    assert s["kernel"]["model_source"] == E2B_SOURCE
+    colab = run.settings_for(result, seed=None, drawn=["a"], pool_count=93, machine_shape=None, docker_image=None,
+                             competition=None, agent_commit="x", tasks_per_kernel=93, colab=True)
+    assert colab["kernel"]["model_source"] is None                    # a Colab run mounts its model in colab_official.py
