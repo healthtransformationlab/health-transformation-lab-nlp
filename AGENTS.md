@@ -352,7 +352,7 @@ Full pipeline and dry runs: `README.md`. Study design: `docs/process.md`.
   `mode: development` (it adds them): each environment is its own workspace.
   dev is deployed by CI on every merge to `main`; don't `bundle deploy` it from a laptop.
 - Secrets and tokens: whenever you tell the user to create one, give the exact scope(s)
-  to select, a short lifetime, and where it goes, and add it to `ops/secrets_register.yaml` with its expiry.
+  to select, a short lifetime (the agent sessions' workspace token may live up to one year: ADR 0006), and where it goes, and add it to `ops/secrets_register.yaml` with its expiry.
   Never ask for it in chat. For this repo:
 
   | Credential | Where it's made | Scope | Goes to |

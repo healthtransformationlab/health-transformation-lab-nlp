@@ -99,11 +99,13 @@ def test_the_agents_longer_lived_workspace_token_is_a_recorded_decision():
     """The rule said 15 days at most; on November 15, 2026 the owner kept a one-year token for agent sessions (#749).
     The register's entry points to the decision record, and AGENTS.md says where the token lives and that the
     variable holds only a placeholder."""
-    entry = next(c for c in _register() if c["name"] == "Workspace personal access token")
+    entry = next((c for c in _register() if c["name"] == "Workspace personal access token"), None)
+    assert entry, "ops/secrets_register.yaml has no 'Workspace personal access token' entry"
     adr = re.search(r"ADR (\d{4})", entry["lifetime"])
     assert adr, entry["lifetime"]
     files = list((REPO_ROOT / "docs" / "adr").glob(f"{adr.group(1)}-*.md"))
     assert len(files) == 1 and "Status: accepted" in files[0].read_text(), files
     agents = (REPO_ROOT / "AGENTS.md").read_text().splitlines()
-    row = next(line for line in agents if line.lstrip().startswith("| Workspace personal access token"))
+    row = next((line for line in agents if line.lstrip().startswith("| Workspace personal access token")), None)
+    assert row, "AGENTS.md's credentials table has no 'Workspace personal access token' row"
     assert "network secret" in row and "placeholder" in row and f"ADR {adr.group(1)}" in row, row
