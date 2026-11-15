@@ -523,28 +523,36 @@ def listed_as_own(api, ref: str) -> bool | None:
     not a full one. Used after a 403, which alone cannot tell a missing dataset from one that may not be read (#815).
     Only the owner's own token sees its private datasets, so a token of another account answers None, as do a listing
     that fails or comes back empty-handed or in another form, and one longer than LISTING_PAGES pages (Kaggle's search
-    matches loosely, so the dataset can sit past the first page)."""
+    matches loosely, so the dataset can sit past the first page). Each None says why in the log (#815, on Modal), with
+    lengths and kinds only: never a credential, never a name the runner masks."""
     owner, _, slug = ref.partition("/")
     try:
-        me = str(api.get_config_value("username") or "")
-    except Exception:  # noqa: BLE001 - whose token it is is not known
+        me = str(api.get_config_value("username") or os.environ.get("KAGGLE_USERNAME") or "").strip()
+    except Exception as e:  # noqa: BLE001 - whose token it is is not known
+        say(f"after a 403: whose token this is could not be read ({type(e).__name__})")
         return None
-    if not slug or me.lower() != owner.lower():
+    if not slug or me.lower() != owner.strip().lower():
+        say(f"after a 403: the token's username ({len(me)} characters) is not the dataset owner's "
+            f"({len(owner.strip())} characters), so its private datasets cannot be listed")
         return None
     try:
         for page in range(1, LISTING_PAGES + 1):
             found = api.dataset_list(mine=True, search=slug, page=page)
             if found is None:
+                say(f"after a 403: listing the owner's datasets (page {page}) gave no answer")
                 return None
             refs = [str(getattr(d, "ref", "") or "") for d in found]
             if any("/" not in r for r in refs):
+                say(f"after a 403: listing the owner's datasets (page {page}) gave refs without an owner")
                 return None
             if any(r.lower() == ref.lower() for r in refs):
                 return True
             if len(refs) < LISTING_PAGE_SIZE:
                 return False
-    except Exception:  # noqa: BLE001 - a listing that fails tells nothing
+    except Exception as e:  # noqa: BLE001 - a listing that fails tells nothing
+        say(f"after a 403: listing the owner's datasets failed ({type(e).__name__}: {str(e)[:160]})")
         return None
+    say(f"after a 403: the owner's datasets run past {LISTING_PAGES} pages for this search")
     return None
 
 
