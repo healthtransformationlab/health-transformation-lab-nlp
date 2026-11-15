@@ -20,7 +20,7 @@ all match. Two passes found four Important and eleven Minor points. All are fixe
 deliberately left for the owner, listed below. Nothing blocks. Approve with nits.
 
 ## Scope of Change
-- Files changed: 18 docs and data READMEs, 1 new test file; no data files
+- Files changed: 16 (+414 / -98 before this review file): 15 docs and data READMEs, 1 new test file; no data files
 - Areas touched: docs / python (tests only)
 - Commits:
   - `ffaf98b` Bring the other docs in line with the 223-chart build
