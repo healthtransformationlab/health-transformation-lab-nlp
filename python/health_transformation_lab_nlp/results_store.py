@@ -25,7 +25,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from .telemetry import traced
+from .telemetry import counts_rows, traced
 
 MANIFEST = "results_manifest.csv"
 MANIFEST_COLUMNS = ["file", "source", "run_url", "recorded_at"]
@@ -63,6 +63,7 @@ def result_files(folder: Path) -> pd.DataFrame:
 
 
 @traced
+@counts_rows
 def new_files(files: pd.DataFrame, loaded_sha256: set) -> pd.DataFrame:
     return files[~files.sha256.isin(loaded_sha256)].reset_index(drop=True)
 
@@ -77,11 +78,13 @@ def _with_provenance(files: pd.DataFrame, folder: Path, columns: list | None) ->
 
 
 @traced
+@counts_rows
 def prediction_rows(files: pd.DataFrame, folder: Path) -> pd.DataFrame:
     return _with_provenance(files, folder, ["method", "visit_id", "pred", "sha256", "source"])
 
 
 @traced
+@counts_rows
 def detail_rows(files: pd.DataFrame, folder: Path) -> pd.DataFrame:
     return _with_provenance(files, folder, None)
 

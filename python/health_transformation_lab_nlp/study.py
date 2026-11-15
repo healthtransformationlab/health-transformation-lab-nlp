@@ -51,7 +51,7 @@ from .radiograph import read_radiograph, simulate_radiograph, to_json
 from .radiograph import summary as rad_summary
 from .sources import READERS, UNKNOWN, generate_sources
 from .synthetic import draw_chart, draw_history, draw_pct_teeth_involved, draw_risk
-from .telemetry import traced
+from .telemetry import counts_rows, traced
 
 REVIEW_STRATA = {  # target share of the review set; rare classes oversampled
     "healthy": 0.15, "gingivitis": 0.20, "periodontitis_stage_1": 0.17,
@@ -192,6 +192,7 @@ def _visit_masks(df: pd.DataFrame, min_age: int | None, start_date: str | None) 
 
 
 @traced
+@counts_rows
 def visits_in_study(df: pd.DataFrame, min_age: int | None = ANALYSIS_MIN_AGE,
                     start_date: str | None = ANALYSIS_START_DATE) -> pd.DataFrame:
     """The visits that count (spec 032 US2): aged at least `min_age` at the visit when one is set, and on or after

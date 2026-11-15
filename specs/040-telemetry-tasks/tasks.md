@@ -2,9 +2,9 @@
 
 ## US6 - pipeline steps record their rows in and out (#758)
 
-- [ ] T001 [US6] Failing test `python/tests/test_step_row_counts.py` (plan, "Tests first")
-- [ ] T002 [US6] List the targeted functions in the six modules (plan, "Steps the injector can target") in the PR
-- [ ] T003 [US6] Record `row_in_count` and `row_out_count` on each listed function's span
+- [x] T001 [US6] Failing test `python/tests/test_step_row_counts.py` (plan, "Tests first")
+- [x] T002 [US6] List the targeted functions in the six modules (plan, "Steps the injector can target") in the PR
+- [x] T003 [US6] Record `row_in_count` and `row_out_count` on each listed function's span
 
 ## US1 - a statement from a failing run's spans (#753)
 

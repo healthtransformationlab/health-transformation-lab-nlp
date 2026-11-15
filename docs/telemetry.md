@@ -263,6 +263,7 @@ What a span holds, each with its start and end time:
 | `agent_kernel` (the run) | `instance_id`, `model_name`, `load_seconds`, `is_patch_submitted`, `turn_count`, `error_type_code` |
 | `gemma_agent.GemmaModel.step` (a model turn) | `model_name`, `prompt_token_count`, `prefill_token_count`, `output_token_count`, `turn_seconds`, `is_over_context` |
 | `agent_harness.call_tool` (a tool call) | `tool_name`, `tool_error_code` |
+| a pipeline step marked `@counts_rows` (spec 040 US6, #758) | `row_in_count` (rows of its first argument), `row_out_count` (rows it returns); `telemetry.ROW_COUNTED` lists the 17 steps |
 
 Never the prompt, the reply, a command or a patch: `telemetry.annotate()` keeps numbers and booleans, and text only
 as a short label (a key ending `_name`, `_code` or `_id`, at most 64 characters). An error is recorded by its type.

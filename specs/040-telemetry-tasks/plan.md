@@ -47,8 +47,21 @@ match pipelines in `data/ops/incident.csv`:
 | `tooth_loss_dq.py` | `test_tooth_loss_dq.py` | |
 | `dq_site.py` | `test_dq_site.py` | |
 
-US6's pull request lists the exact functions: those in these modules that take or return a table and are called by
-the module's own tests. Each gets `row_in_count` and `row_out_count`. The injector targets only that list.
+The exact functions (US6, #758): each takes a table and returns one, so both counts mean something, and is called
+by its module's own tests, so a fault in it can be caught. Each carries `@counts_rows` under `@traced`, which records
+`row_in_count` and `row_out_count`, and `telemetry.ROW_COUNTED` lists them. The injector targets only that list.
+
+| Module | Functions |
+|---|---|
+| `results_store.py` | `new_files`, `prediction_rows`, `detail_rows` |
+| `nhanes.py` | `to_site_tables`, `weighted_prevalence`, `edentulous_by_age`, `classify_people`, `missing_teeth_by_age` |
+| `study.py` | `visits_in_study` (its other table functions are not called by `test_study.py`) |
+| `completeness.py` | `column_completeness`, `complete_cases`, `prevalence_by_scale` |
+| `tooth_loss_dq.py` | `flag_against_rest`, `office_missing`, `run_checks`, `group_consistency` |
+| `dq_site.py` | `flag_outliers` |
+
+`row_in_count` counts the first argument's rows (the sum over a dict of tables); `row_out_count` counts the table
+returned (the first item of a tuple). A step that fails records `row_in_count` only.
 
 A traced function makes a span only at or above the level `DENTAL_TELEMETRY_LEVEL` asks for (`telemetry_levels.yaml`;
 the default is `call`), and `annotate` writes nothing when there is no span. So US6's test, the injector and US4 run
