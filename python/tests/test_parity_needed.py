@@ -114,3 +114,11 @@ def test_ci_runs_on_every_pull_request_and_skips_only_jobs_docs_cannot_affect():
         assert job["if"] == "needs.changes.outputs.code == 'true'", name
     step = wf["jobs"]["changes"]["steps"][-1]["run"]
     assert "code=true" in step                                      # pushes, manual and weekly runs run everything
+
+
+def test_the_task_sets_are_not_a_parity_input():
+    """#715, the owner's decision of November 15, 2026 (docs/adr/0009): r/tests/test_parity.R reads data/datasets/ and
+    data/labels/, never data/tasks/ (the coding-agent task sets), so a change only there doesn't start the R job."""
+    assert not pn.needed(["data/tasks/task_gates.csv", "data/tasks/official_agent_runs/README.md"], REPO_ROOT)
+    assert pn.needed(["data/tasks/task_gates.csv", "data/datasets/answer_key/review_key.csv"], REPO_ROOT)
+    assert pn.needed(["data/labels/split.csv"], REPO_ROOT)
