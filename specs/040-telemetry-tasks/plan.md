@@ -48,14 +48,15 @@ match pipelines in `data/ops/incident.csv`:
 | `dq_site.py` | `test_dq_site.py` | |
 
 The exact functions (US6, #758): each takes a table and returns one, so both counts mean something, and is called
-by its module's own tests, so a fault in it can be caught. Each carries `@counts_rows` under `@traced`, which records
-`row_in_count` and `row_out_count`, and `telemetry.ROW_COUNTED` lists them. The injector targets only that list.
+directly by its module's own tests, so a fault in it can be caught. Each carries `@counts_rows` under `@traced`,
+which records `row_in_count` and `row_out_count`, and `telemetry.ROW_COUNTED` lists them. The injector targets only
+that list.
 
 | Module | Functions |
 |---|---|
 | `results_store.py` | `new_files`, `prediction_rows`, `detail_rows` |
 | `nhanes.py` | `to_site_tables`, `weighted_prevalence`, `edentulous_by_age`, `classify_people`, `missing_teeth_by_age` |
-| `study.py` | `visits_in_study` (its other table functions are not called by `test_study.py`) |
+| `study.py` | `visits_in_study` (`test_study.py` reaches its other table functions only through `build_study`, never directly) |
 | `completeness.py` | `column_completeness`, `complete_cases`, `prevalence_by_scale` |
 | `tooth_loss_dq.py` | `flag_against_rest`, `office_missing`, `run_checks`, `group_consistency` |
 | `dq_site.py` | `flag_outliers` |

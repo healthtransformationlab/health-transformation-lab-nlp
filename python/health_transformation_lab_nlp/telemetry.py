@@ -548,8 +548,12 @@ def traced(fn):
 
     @functools.wraps(fn)
     def wrapper(*args, **kwargs):
-        if _State.profile is not None:
-            return _profiled(name, fn, args, kwargs)
+        if _State.profile is not None:              # no span: nothing may annotate the caller's
+            token = _annotatable.set(None)
+            try:
+                return _profiled(name, fn, args, kwargs)
+            finally:
+                _annotatable.reset(token)
         if _State.exporter == "off":
             return fn(*args, **kwargs)
         if rank > _State.level:
@@ -585,6 +589,9 @@ def counts_rows(fn):
     up only as these two numbers. Put it directly under `@traced`, so `annotate` reaches that function's span.
     `row_in_count` is written before the body runs, so a step that fails still says how many rows it was given.
     Counts only, never a row's values; with telemetry off, `annotate` writes nothing and the step is unchanged."""
+    if getattr(fn, "__traced__", False):
+        raise TypeError(f"put @counts_rows directly under @traced, not above it ({fn.__qualname__}): above it, the "
+                        "counts would land on the caller's span")
     first = next(iter(inspect.signature(fn).parameters), None)
     module = fn.__module__.rsplit(".", 1)[-1]
     ROW_COUNTED.add(f"{module}.{fn.__qualname__.split('.<locals>.')[-1]}")

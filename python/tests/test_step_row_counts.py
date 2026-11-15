@@ -99,3 +99,45 @@ def test_every_step_the_injector_can_target_counts_its_rows_and_no_other_does():
     expected = {f"{m}.{f}" for m, names in STEPS.items() for f in names}
     counted = {name for name in tm.ROW_COUNTED if name.split(".")[0] in STEPS}
     assert counted == expected, f"missing: {sorted(expected - counted)}; not in the plan: {sorted(counted - expected)}"
+
+
+def test_a_filter_that_drops_every_row_records_zero_and_so_does_an_empty_table(span_file):
+    """Zero is the count that shows a filter dropping every row, so it is written, not left out."""
+    from health_transformation_lab_nlp import results_store as rs
+
+    files = pd.DataFrame({"file": ["a.csv", "b.csv", "c.csv"], "sha256": ["1", "2", "3"]})
+    assert rs.new_files(files, {"1", "2", "3"}).empty
+    attrs = _spans(span_file)["results_store.new_files"]["attributes"]
+    assert attrs["row_in_count"] == 3 and attrs["row_out_count"] == 0
+
+    tm.setup(tm.TelemetryConfig(exporter="file", file_path=str(span_file), level="detail"))
+    rs.new_files(files.iloc[0:0], set())
+    attrs = _spans(span_file)["results_store.new_files"]["attributes"]
+    assert attrs["row_in_count"] == 0 and attrs["row_out_count"] == 0
+
+
+def test_the_first_table_is_found_when_it_is_passed_by_name(span_file):
+    from health_transformation_lab_nlp import results_store as rs
+
+    files = pd.DataFrame({"file": ["a.csv", "b.csv", "c.csv"], "sha256": ["1", "2", "3"]})
+    rs.new_files(files=files, loaded_sha256={"2"})
+    attrs = _spans(span_file)["results_store.new_files"]["attributes"]
+    assert attrs["row_in_count"] == 3 and attrs["row_out_count"] == 2
+
+
+def test_counts_rows_above_traced_is_refused_since_its_counts_would_reach_the_callers_span():
+    with pytest.raises(TypeError, match="directly under @traced"):
+        @tm.counts_rows
+        @tm.traced
+        def wrong_order(frame: pd.DataFrame) -> pd.DataFrame:
+            return frame
+
+
+def test_in_profile_mode_no_count_lands_on_the_enclosing_span(span_file):
+    from health_transformation_lab_nlp import results_store as rs
+
+    files = pd.DataFrame({"file": ["a.csv", "b.csv"], "sha256": ["1", "2"]})
+    with tm.pipeline_step("outer_step"), tm.profile():
+        rs.new_files(files, {"2"})
+    attrs = _spans(span_file)["outer_step"]["attributes"]
+    assert "row_in_count" not in attrs and "row_out_count" not in attrs
