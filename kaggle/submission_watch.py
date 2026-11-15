@@ -175,6 +175,23 @@ def main(argv=None) -> int:
         return 0
     finally:
         telemetry.end_script()
+        report_export(telemetry)
+
+
+def report_export(telemetry) -> bool:
+    """Send the run's spans now and say whether the backend took them (014 BUG2, #801): a switch that says "azure"
+    is not evidence that anything arrived. Prints nothing when telemetry is off."""
+    if telemetry.active_exporter() == "off":
+        return True
+    ok = telemetry.flush()
+    if ok:
+        print("telemetry export: ok")
+    else:
+        line = "telemetry export: FAILED (the spans did not reach the backend; the exporter's warnings are above)"
+        if os.environ.get("GITHUB_ACTIONS") == "true":
+            print(f"::warning title=telemetry export::{line}")
+        print(line, file=sys.stderr)
+    return ok
 
 
 if __name__ == "__main__":

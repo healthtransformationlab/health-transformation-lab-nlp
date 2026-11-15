@@ -119,6 +119,7 @@ class _State:
     profile = None                          # dict while telemetry.profile() is running
     script = None
     providers: ClassVar[list] = []          # the SDK providers setup() made, shut down (flushed) by the next setup
+    providers_global = False                # azure: the process's global providers, flushed but never shut down here
     file = None                             # the file exporter's open file
     status: ClassVar[dict] = {"asked_exporter_name": "off", "active_exporter_name": "off", "reason_text": ""}
     pending: ClassVar[dict] = {}            # use_databricks_secret found no secret: the next setup() keeps saying so
@@ -178,10 +179,14 @@ def _shutdown_providers() -> None:
     exit, after the run span has ended)."""
     for provider in _State.providers:
         try:
-            provider.shutdown()
+            if getattr(_State, "providers_global", False):
+                provider.force_flush()     # azure: global providers, flushed, left running (#801)
+            else:
+                provider.shutdown()
         except Exception:  # noqa: BLE001 - stopping telemetry never fails the run
             pass
     _State.providers = []
+    _State.providers_global = False
     if _State.file is not None:
         _State.file.close()
         _State.file = None
@@ -244,9 +249,46 @@ def setup(config: TelemetryConfig | None = None):
         configure_azure_monitor(connection_string=c.connection_string, sampling_ratio=c.sampling_ratio,
                                 enable_live_metrics=True, logger_name=LOGGER, resource=_resource(c),
                                 span_processors=[_header_processor()])
+        # Recorded like the other exporters' providers, so flush() and exit send what is queued (014 BUG2, #801):
+        # without this a short script's spans sat in the batch queue and never reached Application Insights.
+        # They are the process's global providers, set once: flushed at the next setup and at exit, never shut down
+        # here, or a later setup's spans would go to a stopped provider (the SDK shuts them down at exit itself).
+        _State.providers = [trace.get_tracer_provider(), metrics.get_meter_provider()]
+        _State.providers_global = True
+        _azure_warnings_to_stderr()
         _State.tracer, _State.meter = trace.get_tracer(SERVICE), metrics.get_meter(SERVICE)
     _State.exporter = c.exporter
     return out
+
+
+AZURE_EXPORTER_LOGGER = "azure.monitor.opentelemetry.exporter"
+
+
+def _azure_warnings_to_stderr() -> None:
+    """A rejected or failed export is logged by the Azure exporter; print its warnings and errors, once (#801)."""
+    log = logging.getLogger(AZURE_EXPORTER_LOGGER)
+    if not any(getattr(h, "_htl_stderr", False) for h in log.handlers):
+        h = logging.StreamHandler(sys.stderr)
+        h._htl_stderr = True
+        h.setLevel(logging.WARNING)
+        log.addHandler(h)
+    if log.level == logging.NOTSET or log.level > logging.WARNING:
+        log.setLevel(logging.WARNING)
+
+
+def flush(timeout_millis: int = 10000) -> bool:
+    """Send what is queued now and say whether every provider's flush succeeded (014 BUG2, #801). True when
+    telemetry is off. A provider without force_flush (the SDK's no-op default) counts as nothing to send."""
+    ok = True
+    for provider in _State.providers:
+        fn = getattr(provider, "force_flush", None)
+        if fn is None:
+            continue
+        try:
+            ok = bool(fn(timeout_millis=timeout_millis)) and ok
+        except Exception:  # noqa: BLE001 - a failed flush is reported, never raised
+            ok = False
+    return ok
 
 
 def active_exporter() -> str:
