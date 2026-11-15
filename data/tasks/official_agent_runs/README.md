@@ -820,3 +820,40 @@ competition's task text):
 
 Twenty-three tasks at temperature 0.2, one run each. A setting between the two, 12,288 (20,480 for the conversation,
 above the largest prompt seen here, and 8,192 for an answer after thinking), has not been run.
+
+# The competition's own development set: the analyzer first and a compile check (November 15, 2026)
+
+gemma-developer-agent PR 60 (its issue #59) adds three steps to PR 98's prompt: start from the analyzer's "Where to
+look" code map when it names a likely fix, check the edited file with `py_compile`, and run the targeted tests, never
+submitting a file that failed the check. Main, with PR 98's prompt, is merged into it (agent commit `e421229`);
+`max_output_tokens` is 16,384, as in PR 98's run, and the budgets are the same (5 minutes, 40 tool calls). With the
+owner's approval it ran on the same 23 tasks, paired with PR 98's run: the same evaluator end to end, one Kaggle kernel
+on four L4 GPUs (`htlnlp-offrun-devset-devset-pr60`, 69 minutes), telemetry on.
+`gemma-4-e4b-it-qat-w4a16-ct_swegemma_devset-pr60.csv` has one row per task, written by the runner (`--label pr60
+--collect --reuse-output`); its `_settings.json` names the agent commit. The kernel ran under the label `devset-pr60`,
+which the runner prefixes with `devset-` again, so the kernel's name doubles it; the table's links name that kernel.
+
+| On the same 23 tasks | PR 98 | PR 60 |
+|---|---|---|
+| **Resolved** | **4** | **4** |
+| Tests fail with the agent's patch | 13 | 8 |
+| Empty patch | 2 | 7 |
+| Errors before any test ran | 2 | 2 |
+| The tests ran out of time (exit code 124) | 2 | 2 |
+| Ended at the context window | 4 | 4 |
+| Tool calls; to a graph tool | 287; 17 | 387; 126 |
+
+Both resolved `fastapi_14301` and `rich_3454`. Only PR 98 resolved `fastapi_14873` and `rich_3905`; only PR 60 resolved
+`fastapi_14463` and `rich_3518`. With 2 and 2 discordant tasks, the exact McNemar test gives p = 1.0: **no difference
+in resolved tasks can be claimed**.
+
+What changed is described, not tested. Five fewer patches failed their tests and five more runs ended with no patch:
+the compile check and the tests stop a wrong edit from being submitted, but on these tasks they turned it into no
+edit, not a right one. Both score zero. The graph tools were called seven times as often. Two runs reached the
+5-minute budget (`fastapi_14463`, resolved all the same, and `rich_3944`); four ended at the context window
+(`fastapi_14986`, `rich_3905`, `rich_3930`, `rich_4006`), which the 8,192 output budget of PR 100 would have left room
+for. No run called a skill or named a path outside the workspace.
+
+Twenty-three tasks at temperature 0.2, one run each: this is not a leaderboard score. The November 15 leaderboard entry
+was main (PR 98's prompt with PR 100's 8,192 output budget), which ties both at 4 of 23 on these tasks and ended no run
+at the context window (its record: #762).
