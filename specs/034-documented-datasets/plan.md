@@ -16,6 +16,6 @@
   never uploads data.
 
 ## US2 (Unity Catalog)
-After every write, `table_comments.apply(spark, table)` runs `COMMENT ON TABLE` and `ALTER TABLE ... ALTER COLUMN ...
-COMMENT` from the declarations (the delta helpers and each `saveAsTable` site call it); Load results runs
+After every write, `table_comments.apply(spark, table)` runs the `COMMENT ON TABLE` and `ALTER TABLE ... ALTER COLUMN ...
+COMMENT` statements whose comment the table doesn't already hold (#741) from the declarations (the delta helpers and each `saveAsTable` site call it); Load results runs
 `apply_all` after every deploy. A failure warns and never fails the write.
