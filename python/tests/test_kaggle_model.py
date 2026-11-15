@@ -7,6 +7,7 @@ import json
 import re
 import subprocess
 import sys
+import types
 
 import pandas as pd
 import pytest
@@ -221,3 +222,38 @@ def test_workflow_publishes_the_model_only_after_a_full_run():
     assert 'rev-parse", "HEAD"' in _code() and '"commit": commit.strip()' in _code()
     artifact = next(s for s in wf["jobs"]["run"]["steps"] if "upload-artifact" in s.get("uses", ""))
     assert "!build/output/model" in artifact["with"]["path"]     # the weights go to Kaggle, not the artifact
+
+
+# ---- spec 039 (#730): the model's version, changelog and manifest ------------------------------------------
+
+def test_the_model_folder_carries_a_manifest_of_its_files(tmp_path, PREDICTIONS):
+    from health_transformation_lab_nlp import dataset_version as dv
+
+    out = tmp_path / "build"
+    pm.build(_model_dir(tmp_path), PREDICTIONS, out, "someone", "abc123def456")
+    manifest = json.loads((out / "manifest.json").read_text())
+    kaggle_metadata = {"model-metadata.json", "model-instance-metadata.json"}
+    assert set(manifest["files"]) == {p.name for p in out.iterdir()} - kaggle_metadata - {"manifest.json"}
+    assert (manifest["slug"], manifest["version"], manifest["git_commit_sha"]) == \
+        (pm.MODEL["slug"], dv.version(pm.MODEL["slug"]), "abc123def456")
+
+
+def test_the_instance_version_note_is_the_models_release_string(tmp_path, PREDICTIONS, monkeypatch):
+    from health_transformation_lab_nlp import dataset_version as dv
+
+    sent = []
+    fake = types.ModuleType("kaggle.api.kaggle_api_extended")
+    fake.KaggleApi = type("KaggleApi", (), {"authenticate": lambda self: None})
+    monkeypatch.setitem(sys.modules, "kaggle.api.kaggle_api_extended", fake)
+    monkeypatch.setattr(pm, "upload", lambda folder, ref, instance, notes, api: sent.append(notes))
+    monkeypatch.setattr(sys, "argv", ["publish_model.py", "--model-dir", str(_model_dir(tmp_path)),
+                                      "--predictions", str(PREDICTIONS), "--out", str(tmp_path / "out"),
+                                      "--username", "someone", "--commit", "abc123def456", "--upload"])
+    pm.main()
+    assert sent == [dv.release_message(pm.MODEL["slug"], "abc123def456")]
+
+
+def test_the_workflow_leaves_the_note_to_the_release_string():
+    steps = [s for job in yaml.safe_load(WF.read_text())["jobs"].values() for s in job["steps"]]
+    publish = next(s["run"] for s in steps if "publish_model.py" in s.get("run", ""))
+    assert "--message" not in publish

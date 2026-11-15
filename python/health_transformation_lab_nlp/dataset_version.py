@@ -51,7 +51,8 @@ RULE = (
     "PATCH for values, rows or a fix with no schema change"
 )
 MANIFEST = "manifest.json"
-NOT_DATA = {MANIFEST, "dataset-metadata.json"}   # the manifest itself, and Kaggle's metadata for the upload
+# the manifest itself, and Kaggle's metadata for a dataset's or a model's upload
+NOT_DATA = {MANIFEST, "dataset-metadata.json", "model-metadata.json", "model-instance-metadata.json"}
 COMMIT = re.compile(r"[0-9a-f]{7,40}")
 # The line every dataset card ends with, after the commit it was published from (#708).
 MANIFEST_NOTE = (
@@ -60,16 +61,22 @@ MANIFEST_NOTE = (
 )
 
 
+def _declared(data: dict) -> dict:
+    """Every declared release: the datasets, and the published models (#730), which take a version, a changelog and
+    a manifest but no schema hash."""
+    return {**(data.get("models") or {}), **(data.get("datasets") or {})}
+
+
 @cache
 def _shipped() -> dict:
-    return yaml.safe_load(DOCS.read_text())["datasets"]
+    return _declared(yaml.safe_load(DOCS.read_text()) or {})
 
 
 def _entry(slug: str, docs: Path | None) -> dict:
-    datasets = _shipped() if docs is None else (yaml.safe_load(Path(docs).read_text()) or {}).get("datasets") or {}
-    if slug not in datasets:
+    declared = _shipped() if docs is None else _declared(yaml.safe_load(Path(docs).read_text()) or {})
+    if slug not in declared:
         raise KeyError(f"{slug}: not in {Path(docs or DOCS).name}")
-    return datasets[slug] or {}
+    return declared[slug] or {}
 
 
 def _key(version: str) -> tuple[int, ...]:

@@ -18,7 +18,7 @@ from __future__ import annotations
 import pandas as pd
 
 from .sources import UNKNOWN
-from .telemetry import traced
+from .telemetry import counts_rows, traced
 
 CHART_INPUTS = ["rec_max_cal_mm", "rec_bop_pct", "rec_max_probing_depth_mm", "rec_teeth_lost_perio"]
 SCALES = ["all_visits", "complete_cases", "reference_set"]
@@ -38,6 +38,7 @@ def element_completeness(expected: dict[str, list[str]], actual: dict[str, list[
 
 
 @traced
+@counts_rows
 def column_completeness(v: pd.DataFrame, columns: list[str]) -> pd.DataFrame:
     return pd.DataFrame([{"column": c, "n_rows": len(v), "n_missing": int(_missing(v[c]).sum()),
                           "pct_missing": 100.0 * float(_missing(v[c]).mean()) if len(v) else float("nan")}
@@ -54,6 +55,7 @@ def row_completeness(v: pd.DataFrame, inputs: list[str], where: str = "charted")
 
 
 @traced
+@counts_rows
 def complete_cases(v: pd.DataFrame) -> pd.DataFrame:
     """Visits where every evidence type can be compared: an exam-form status, a treatment plan
     (planned procedure codes, with or without a diagnosis), a complete probing chart and a note."""
@@ -63,6 +65,7 @@ def complete_cases(v: pd.DataFrame) -> pd.DataFrame:
 
 
 @traced
+@counts_rows
 def prevalence_by_scale(v: pd.DataFrame, status_col: str) -> pd.DataFrame:
     """Visit-level share with periodontitis and with stage III-IV on each scale (known calls only)."""
     scales = {"all_visits": v, "complete_cases": complete_cases(v), "reference_set": v[v["in_review"].astype(bool)]}

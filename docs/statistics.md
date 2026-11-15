@@ -37,7 +37,7 @@ All three have R twins in `r/R/04_reliability.R`, parity-tested against Python.
 ## Confidence intervals: how sure is the number?
 
 A result from a sample is an estimate. If the model agrees with the reviewer
-consensus on 86% of 237 reviewed charts, the "true" agreement on all charts
+consensus on 86% of 223 reviewed charts, the "true" agreement on all charts
 could be a bit higher or lower.
 
 A **95% confidence interval** of, say, 81–90% means: if the study were repeated

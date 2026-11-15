@@ -97,7 +97,7 @@ def sources(d, physical):
                      "kaggle-medgemma.yml opens a results PR" if physical else "collected into a pull request"), 10, 58, 190, 76, EXT)
     git = d.v(sub("GitHub repo (laptop runs)", "data/datasets/ai_predictions_*.csv" if physical else "committed result files",
                   "llm_details_*.csv · results_manifest.csv" if physical else "with their source and run URL"), 10, 146, 190, 76, EXT)
-    key_ = d.v(sub("Synthetic study data", "answer_key/review_key.csv" if physical else "240 de-identified review charts",
+    key_ = d.v(sub("Synthetic study data", "answer_key/review_key.csv" if physical else "de-identified review charts",
                    "data/deid/scores.csv" if physical else "de-identification benchmark", "seeded, no PHI"), 10, 234, 190, 90, EXT)
     return kaggle, git, key_
 

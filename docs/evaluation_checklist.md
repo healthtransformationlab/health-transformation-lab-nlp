@@ -2,7 +2,7 @@
 
 The practices reviewers and examiners look for in a study that builds or tests a model on health records, with where
 this repo stands on each (#395). There are two columns:
-- **PerioBench:** finding gum disease in records (phenotyping) on the 240 review charts;
+- **PerioBench:** finding gum disease in records (phenotyping) on the 223 review charts;
 - **Tooth-loss model:** spec 029, whose plan is [analysis_plan.md](../specs/029-tooth-loss/analysis_plan.md).
 
 Status: ✅ done · 🟡 partly done or planned · ❌ needs real data or a decision. Updated 2026-10-31.
@@ -12,7 +12,7 @@ Status: ✅ done · 🟡 partly done or planned · ❌ needs real data or a deci
 | 1 | **Write the plan first** | The question, data, outcome, metrics and comparisons are written down before any result, and changes are logged | 🟡 Specs 002, 005 and 030 set the method; not written as one locked plan | ✅ [analysis_plan.md](../specs/029-tooth-loss/analysis_plan.md), with a change log |
 | 2 | **Follow a reporting checklist** | TRIPOD+AI for prediction models, RECORD for routinely collected records ([references](references.md) items 59, 60) | ❌ Not mapped yet | 🟡 The plan follows TRIPOD+AI's order; results will be reported against it |
 | 3 | **A defensible reference standard** | What a method is compared with, and how much experts agree on it | ❌ Synthetic answer key and simulated reviewers only ([scoring.md](scoring.md)) | ❌ The label is the recorded diagnosis; a small expert check is plan section 13 |
-| 4 | **Split by patient; the test set used once** | No patient in both training and testing | ✅ 240 held-out patients ([scoring.md](scoring.md#which-records-each-number-counts)) | 🟡 Planned: 70/30 by patient, stratified |
+| 4 | **Split by patient; the test set used once** | No patient in both training and testing | ✅ 223 held-out patients ([scoring.md](scoring.md#which-records-each-number-counts)) | 🟡 Planned: 70/30 by patient, stratified |
 | 5 | **Test over time and at a second site** | Train on earlier years and test on later ones; then a second practice, unchanged | ❌ Needs real data | 🟡 Over time: planned. Second site: needs a second extract |
 | 6 | **Uncertainty, and stability** | Confidence intervals; results that hold on other test sets or seeds | ✅ Bootstrap intervals and rank ranges; 5 generator seeds (`seed_stability_summary.csv`, [scoring.md](scoring.md#do-the-scores-hold-on-other-test-sets)) | 🟡 Planned: patient-level bootstrap, 5 generator seeds |
 | 7 | **Calibration** | When a method says 70%, it's right about 70% of the time | ✅ Calibration error per method | 🟡 Planned: intercept, slope, 10-bin table |

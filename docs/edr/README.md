@@ -124,7 +124,7 @@ step, with links to the code; the Databricks notebook
 | 2 | Remove names, dates and other identifiers; a final check holds back any note with one left | [2](../code_walkthrough.md#2-de-identify-and-gate) |
 | 3 | Read and compare the diagnostic evidence; build the rule-based phenotype | [3–5](../code_walkthrough.md#3-read-the-diagnostic-evidence) |
 | 4 | AI models read the notes only: baselines, 12 BERT models, MedGemma 1.5 4B and 4B v1 | [6](../code_walkthrough.md#6-ai-models-read-the-notes) |
-| 5 | Periodontists label the same 240 charts, each on their own, in a labeling tool (Label Studio) | [7](../code_walkthrough.md#7-reviewers-stage-charts) |
+| 5 | Periodontists label the same 223 charts, each on their own, in a labeling tool (Label Studio) | [7](../code_walkthrough.md#7-reviewers-stage-charts) |
 | 6 | Does the AI agree with the periodontists as often as they agree with each other? Also: which order of checking the evidence agrees best | [8–9](../code_walkthrough.md#8-reliability-and-the-acceptance-test) |
 | 7 | Over time: catch impossible changes and bad data; compare clinics; predict who gets worse | [10–12](../code_walkthrough.md#10-over-time-plausibility-and-data-quality) |
 | 8 | Tooth-by-tooth measurements; both classifications; three ways to store them in OMOP | [13–15](../code_walkthrough.md#13-site-level-charts-both-classifications) |
@@ -168,29 +168,31 @@ All 12 are BERT-type models: AI that reads text and picks a label. [What is a BE
 
 Plus baselines and MedGemma ([1.5 4B](https://huggingface.co/google/medgemma-1.5-4b-it),
 [27B text](https://huggingface.co/google/medgemma-27b-text-it); [arXiv 2507.05201](https://arxiv.org/abs/2507.05201)).
-**Status:** eleven encoders have results (3 epochs): the base-size models on CPU (2026-10-26), and the large
-ModernBERTs and the Longformers on Kaggle GPUs (#225). On the 240 synthetic review charts
-(against the generator's truth, with 95% bootstrap CIs; `28_ladder_vs_truth.py`):
-- alone they score 77-83% (ModernBERT base and large best), **not distinguishable** from the note rules (79%), and
-  miss nearly every stage IV chart (7 in 3,484 training notes);
-- letting the note rules decide stage IV (`+rules4`) lifts every model to 87-91%, the only methods
-  clearly better than the rules (difference CI excludes 0);
-- they're overconfident (calibration error 0.14-0.18 vs 0.06 for TF-IDF).
+**Status:** twelve encoders have results: the ten classifiers in the table above (not SapBERT or GTE-ModernColBERT,
+which don't assign a status) plus Bio_ClinicalBERT and GatorTron, all run on Kaggle GPUs on the current notes (2026-11-04,
+`data/datasets/results_manifest.csv`). On the 223 synthetic review charts (against the generator's truth at five
+status groups, with 95% bootstrap CIs; `28_ladder_vs_truth.py`, `data/datasets/ladder/ladder_vs_truth.csv`):
+- alone they score 81.2-88.3 per 100 (ModernBERT large best, GatorTron lowest); only ModernBERT large is
+  **clearly better** than the note rules (82.1; difference CI excludes 0). None ever answers stage IV: the training
+  notes hold no stage IV visit (0 of 3,016), because the 12 patients with one are all in the review set;
+- letting the note rules decide stage IV (`+rules4`) lifts every model to 83.9-91.0, and 12 of the 16 runs are
+  then clearly better than the rules;
+- calibration error is 0.070-0.118, against 0.073 for TF-IDF and 0.059 for TF-IDF plus the X-ray reading;
 - class-weighted training (`--class-weight sqrt`) gives **no reliable gain**: over three seeds ModernBERT base
-  averages 82% (80-84%) with stage IV recall 21%, 0%, 0%; BERT base stays at 0%. The seed alone moves accuracy
-  ~4 points, as much as the spread between encoders. The `+rules4` hybrid holds at 90-91% on every seed;
-- Bio_ClinicalBERT (trained on hospital notes) scores 80%, like the others.
+  scores 85.2, 85.2 and 82.5 (84.3 without class weights), and BERT base 84.8 (82.5 without). The seed alone moves
+  accuracy about 3 points. The `+rules4` hybrid gives 87.9, 87.9 and 85.2 on the three seeds;
+- Bio_ClinicalBERT (trained on hospital notes) scores 83.9, like the others.
 
 Agreement with *simulated* reviewers is a dry run, not a result.
 
 **MedGemma vs BERT:** `29_medgemma_vs_bert.py` scores each MedGemma run (zero-shot, few-shot, LoRA)
 against the best encoder on the same charts (paired CI, stage IV recall, by note difficulty, fallback
-rate, assumed cost). Two real zero-shot runs: `medgemma-1.5-4b-it` on CPU scores **0.758** (0.700-0.808)
-and `medgemma-4b-it` (MedGemma 4B v1, on Kaggle) **0.779** (0.725-0.833), against 0.825 for
-`modernbert-base+cw`: differences -0.067 (-0.138 to 0.000) and -0.046 (-0.104 to 0.012), so on 240 charts
-neither can be told apart from the encoder. On L1 / L2 / L3, 1.5 gets 100% / 97% / 16% and 4B v1
-97% / 68% / 43%: 1.5 reads a written diagnosis but rarely stages from the chart, while 4B v1 stages more
-charts from their findings and handles old terms and copied-forward text worse ([details](../medgemma.md)). Few-shot and LoRA not run yet (gated: accept the [HAI-DEF terms](https://developers.google.com/health-ai-developer-foundations/terms) on Hugging Face and set `HF_TOKEN`; LoRA needs a GPU:
+rate, assumed cost). Two real zero-shot runs, on Kaggle on the current notes: `medgemma-1.5-4b-it` scores
+**78.5** (73.1-83.4) and `medgemma-4b-it` (MedGemma 4B v1) **79.8** (74.4-84.8), against 88.3 for
+`modernbert-large`: differences -0.099 (-0.161 to -0.031) and -0.085 (-0.143 to -0.031), so on these notes the
+encoder reads better. On L1 / L2 / L3, 1.5 gets 99% / 78% / 34% and 4B v1 98% / 74% / 44%, against the
+encoder's 90% / 91% / 84%: both read a diagnosis that is written and fits the chart, and lose most where the note
+gives none or one the chart contradicts ([details](../medgemma.md)). Few-shot and LoRA not run yet (gated: accept the [HAI-DEF terms](https://developers.google.com/health-ai-developer-foundations/terms) on Hugging Face and set `HF_TOKEN`; LoRA needs a GPU:
 [notebook 03](../../databricks/notebooks/03_medgemma_reader.py)); `--simulated` is a dry run, not a result.
 
 ## Tooth-level model: was a missing tooth lost to gum disease? (spec 029)

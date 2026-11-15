@@ -26,7 +26,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from .telemetry import traced
+from .telemetry import counts_rows, traced
 
 CYCLES = {"F": "2009", "G": "2011", "H": "2013"}
 FILES = ("OHXPER", "OHXDEN", "DEMO")
@@ -100,6 +100,7 @@ def sites_from_labels(labels: dict[str, str]) -> dict[tuple[str, str, str], str]
 
 
 @traced
+@counts_rows
 def to_site_tables(per: pd.DataFrame, den: pd.DataFrame, labels: dict[str, str]) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Wide NHANES exam -> sites (SEQN, tooth, site, pd_mm, cal_mm, bop) and teeth (SEQN, tooth, present,
     missing_reason, furcation_class, mobility_degree). Universal tooth numbers, as NHANES uses."""
@@ -128,6 +129,7 @@ def to_site_tables(per: pd.DataFrame, den: pd.DataFrame, labels: dict[str, str])
 
 
 @traced
+@counts_rows
 def weighted_prevalence(d: pd.DataFrame, col: str, w: str = "w", strata: str = "strata", psu: str = "psu",
                         domain: str = "domain", z: float = 1.959963984540054) -> pd.DataFrame:
     """Share of each category of `col` within the domain, % with linearized SE and Wald 95% CI.
@@ -160,6 +162,7 @@ EDENTULOUS_AGE_BANDS = ((30, 34), (35, 44), (45, 54), (55, 64), (65, 74), (75, N
 
 
 @traced
+@counts_rows
 def edentulous_by_age(people: pd.DataFrame, bands=EDENTULOUS_AGE_BANDS) -> pd.DataFrame:
     """The weighted share with no natural teeth (third molars aside) in each age band, in the adults30_all domain
     (a complete periodontal exam, or edentulous), with its linearized 95% CI. `people`: classify_people's rows with
@@ -204,6 +207,7 @@ def nhanes_cdc_aap_published() -> pd.DataFrame:
 
 
 @traced
+@counts_rows
 def classify_people(per: pd.DataFrame, den: pd.DataFrame, demo: pd.DataFrame, labels: dict[str, str]) -> pd.DataFrame:
     """One cycle -> one row per person: age, design, exam status, edentulous, CDC/AAP and ACES categories."""
     from .aces import AcesRules, aces_all
@@ -240,6 +244,7 @@ MISSING_AGE_BANDS = ((25, 34), (35, 44), (45, 54), (55, 64), (65, 74), (75, None
 
 
 @traced
+@counts_rows
 def missing_teeth_by_age(den: pd.DataFrame, demo: pd.DataFrame, bands=MISSING_AGE_BANDS) -> pd.DataFrame:
     """How many natural teeth (third molars aside) adults have lost, by age band (spec 037): the weighted mean, and
     the weighted shares with none lost and with six or more lost (every tooth lost included), with linearized 95% CIs

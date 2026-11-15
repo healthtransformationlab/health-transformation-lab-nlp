@@ -13,10 +13,13 @@ CAT = "health_transformation_lab"
 
 
 class FakeSpark:
-    """Records SQL; tables exist with the columns given."""
+    """Records SQL; tables exist with the columns given. `comments` gives the comments a table already holds,
+    {table: (table comment or None, {column: comment})}, read as Spark gives them: column comments in the schema's
+    field metadata, the table's from catalog.getTable. An `unreadable` table's comment can't be read (#741)."""
 
-    def __init__(self, tables, fail_on=None):
+    def __init__(self, tables, fail_on=None, comments=None, unreadable=()):
         self.tables, self.sql_calls, self.fail_on = tables, [], fail_on
+        self.comments, self.unreadable = comments or {}, set(unreadable)
         self.catalog = self
 
     def tableExists(self, name):
@@ -24,8 +27,15 @@ class FakeSpark:
 
     def table(self, name):
         cols = self.tables[name]
+        held = self.comments.get(name, (None, {}))[1]
+        fields = [type("F", (), {"name": c, "metadata": {"comment": held[c]} if c in held else {}})() for c in cols]
         return type("T", (), {"columns": cols, "schema": type("S", (), {"fieldNames": lambda s: cols,
-                                                                         "fields": []})()})()
+                                                                         "fields": fields})()})()
+
+    def getTable(self, name):
+        if name in self.unreadable:
+            raise RuntimeError("cannot read the table's metadata")
+        return type("Table", (), {"description": self.comments.get(name, (None, {}))[0]})()
 
     def sql(self, statement):
         if self.fail_on and self.fail_on in statement:
@@ -151,3 +161,135 @@ def test_the_sql_judge_sets_its_table_comment_from_gold_model():
     comment, _ = tc.declared("gold_perio_bench", "fact_corpus_judge_call")
     sql = (NOTEBOOKS / "02_llm_judge.sql").read_text()
     assert f"COMMENT ON TABLE IDENTIFIER(:catalog || '.' || :schema || '.fact_corpus_judge_call') IS {tc.sql_string(comment)};" in sql
+
+
+# ---------- #741: a comment already in place is not sent again ----------
+# Load results sweeps every declared table after each deploy (apply_all). Sending every comment, one statement each,
+# made its `load` task about 17 minutes instead of about 1, on every merge, on the shared Free Edition allowance.
+FQN = f"{CAT}.gold_perio_bench.fact_prediction"
+
+
+def _held(columns):
+    """The declared comments of fact_prediction, as a table that already holds them would."""
+    comment, cols = tc.declared("gold_perio_bench", "fact_prediction")
+    return comment, {c: cols[c] for c in columns}
+
+
+def test_a_table_whose_comments_are_all_in_place_gets_no_statement():
+    cols = ["method_name", "visit_id"]
+    spark = FakeSpark({FQN: cols}, comments={FQN: _held(cols)})
+    assert tc.apply(spark, FQN) == 0 and spark.sql_calls == []
+
+
+def test_only_the_column_comments_missing_or_different_are_sent():
+    comment, held = _held(["method_name", "visit_id"])
+    held["visit_id"] = "an older description"                   # predicted_status_code has none yet
+    spark = FakeSpark({FQN: ["method_name", "visit_id", "predicted_status_code"]}, comments={FQN: (comment, held)})
+    assert tc.apply(spark, FQN) == 2
+    altered = [re.search(r"ALTER COLUMN (\w+) COMMENT", s).group(1) for s in spark.sql_calls]
+    assert altered == ["visit_id", "predicted_status_code"]
+
+
+def test_the_table_comment_is_sent_when_it_differs_or_cant_be_read():
+    cols = ["method_name"]
+    _, held = _held(cols)
+    stale = FakeSpark({FQN: cols}, comments={FQN: ("an older table comment", held)})
+    assert tc.apply(stale, FQN) == 1 and stale.sql_calls[0].startswith(f"COMMENT ON TABLE {FQN} IS '")
+    unreadable = FakeSpark({FQN: cols}, comments={FQN: _held(cols)}, unreadable={FQN})
+    assert tc.apply(unreadable, FQN) == 1 and unreadable.sql_calls[0].startswith(f"COMMENT ON TABLE {FQN} IS '")
+
+
+def test_statements_without_the_current_comments_still_gives_every_statement():
+    cols = ["method_name", "visit_id"]
+    comment, held = _held(cols)
+    assert len(tc.statements(FQN, cols)) == 3
+    assert tc.statements(FQN, cols, table_comment=comment, column_comments=held) == []
+
+
+def test_apply_all_on_a_catalog_already_commented_sends_nothing_and_says_so(capsys):
+    cols = ["method_name", "visit_id"]
+    spark = FakeSpark({FQN: cols}, comments={FQN: _held(cols)})
+    assert tc.apply_all(spark, CAT) == 1 and spark.sql_calls == []
+    assert f"checked 1 tables in {CAT}, sent 0 comment statements" in capsys.readouterr().out
+    spark = FakeSpark({FQN: cols})                               # nothing in place yet: the log counts what went out
+    tc.apply_all(spark, CAT)
+    assert f"sent {len(spark.sql_calls)} comment statements" in capsys.readouterr().out
+
+
+def test_a_comment_with_a_quote_already_in_place_is_not_sent_again():
+    # held as plain text; only the SQL literal escapes it (sql_string), so comparing the literal would resend it forever
+    schema, name, col = next((s, t, c) for s, t in tc.declared_tables()
+                             for c, text in tc.declared(s, t)[1].items() if "'" in text)
+    fqn = f"{CAT}.{schema}.{name}"
+    comment, cols = tc.declared(schema, name)
+    spark = FakeSpark({fqn: [col]}, comments={fqn: (comment, {col: cols[col]})})
+    assert tc.apply(spark, fqn) == 0 and spark.sql_calls == []
+
+
+def test_a_field_without_metadata_still_gets_its_comment():
+    # a fake or an older client may give fields no metadata attribute: the comment is sent, the write never fails
+    bare_field = type("F", (), {"name": "visit_id"})()
+    spark = FakeSpark({FQN: ["visit_id"]})
+    spark.table = lambda name: type("T", (), {"schema": type("S", (), {"fields": [bare_field]})()})()
+    assert tc.apply(spark, FQN) == 2                             # the table comment and visit_id's
+
+
+# ---------- #751: Load results' overwrites commit their column comments ----------
+# An overwrite from pandas drops the column comments, so apply sent about 214 again on every run. With the comments in
+# the DataFrame's schema, the write commits them.
+class StandInColumn:
+    """What sdf[c] gives: a column that can be re-aliased, with metadata."""
+
+    def __init__(self, name, metadata=None):
+        self.name, self.metadata = name, metadata
+
+    def alias(self, name, metadata=None):
+        return StandInColumn(name, metadata)
+
+
+class StandInFrame:
+    def __init__(self, columns):
+        self.columns, self.selected = list(columns), None
+
+    def __getitem__(self, name):
+        return StandInColumn(name)
+
+    def select(self, *cols):
+        out = StandInFrame([c.name for c in cols])
+        out.selected = cols
+        return out
+
+
+def test_with_comments_puts_each_declared_comment_in_its_columns_metadata():
+    _, cols = tc.declared("gold_perio_bench", "fact_prediction")
+    out = tc.with_comments(StandInFrame(["visit_id", "an_extra_column", "method_name"]), FQN)
+    assert out.columns == ["visit_id", "an_extra_column", "method_name"]           # the same columns, in order
+    assert {c.name: c.metadata for c in out.selected} == {
+        "visit_id": {"comment": cols["visit_id"]}, "an_extra_column": None,         # undeclared: left alone
+        "method_name": {"comment": cols["method_name"]}}
+
+
+def test_with_comments_returns_an_undeclared_tables_frame_unchanged():
+    sdf = StandInFrame(["a"])
+    assert tc.with_comments(sdf, f"{CAT}.gold_perio_bench.not_a_table") is sdf
+    assert tc.with_comments(sdf, "not a table name") is sdf
+
+
+def test_load_results_writes_each_overwrite_with_its_comments_and_says_what_it_sent():
+    lines = (NOTEBOOKS / "10_load_results.py").read_text().splitlines()
+    overwrites = [i for i, line in enumerate(lines) if 'mode("overwrite")' in line]
+    assert overwrites
+    for i in overwrites:                         # the frame written is the one with_comments returned, the line before
+        made = re.match(r"\s*(\w+) = table_comments\.with_comments\(", lines[i - 1])
+        assert made and lines[i].lstrip().startswith(f"{made.group(1)}.write."), lines[i]
+    assert any("comment statements sent" in line for line in lines)
+
+
+def test_what_with_comments_writes_is_what_apply_reads():
+    cols = ["method_name", "visit_id", "predicted_status_code"]
+    held = {c.name: c.metadata["comment"] for c in tc.with_comments(StandInFrame(cols), FQN).selected}  # as committed
+    comment, _ = tc.declared("gold_perio_bench", "fact_prediction")
+    kept = FakeSpark({FQN: cols}, comments={FQN: (comment, held)})
+    assert tc.apply(kept, FQN) == 0                                # the overwrite kept the table's own comment too
+    dropped = FakeSpark({FQN: cols}, comments={FQN: (None, held)})
+    assert tc.apply(dropped, FQN) == 1 and dropped.sql_calls[0].startswith("COMMENT ON TABLE")   # only the table's own

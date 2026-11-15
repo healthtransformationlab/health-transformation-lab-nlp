@@ -91,7 +91,7 @@ erDiagram
     fact_pipeline_run ||--o| fact_remediation_decision : "run_id (failed runs)"
     dim_study_note }o..o{ benchmark_metric : "run_id (its test split)"
     review_key {
-        bigint visit_id PK "review chart (240)"
+        bigint visit_id PK "review chart"
         string truth_status "the generator's truth"
         string difficulty "L1 · L2 · L3"
         string note_text "de-identified note, through the leak gate"
@@ -332,7 +332,7 @@ erDiagram
         bigint person_id "patient"
         date visit_date "date of the visit (synthetic)"
         bigint visit_seq_num "0 = the patient's first visit"
-        boolean is_in_review "one of the 240 review charts"
+        boolean is_in_review "one of the review charts"
         string note_status_code "status read from the chart note"
         string exam_form_status_code "from the exam form; unknown when missing"
         string dx_completed_status_code "from diagnosis codes on completed procedures"
@@ -624,7 +624,7 @@ One per synthetic review chart (answer_key/review_key.csv, not a table). Written
 
 | Key | Column | Type | Description |
 |---|---|---|---|
-| PK | `visit_id` | bigint | review chart (240) |
+| PK | `visit_id` | bigint | review chart |
 |  | `truth_status` | string | the generator's truth |
 |  | `difficulty` | string | L1 · L2 · L3 |
 |  | `note_text` | string | de-identified note, through the leak gate |
@@ -955,7 +955,7 @@ One per synthetic visit: each evidence source's status and the truth (statuses o
 |  | `person_id` | bigint | patient |
 |  | `visit_date` | date | date of the visit (synthetic) |
 |  | `visit_seq_num` | bigint | 0 = the patient's first visit |
-|  | `is_in_review` | boolean | one of the 240 review charts |
+|  | `is_in_review` | boolean | one of the review charts |
 |  | `note_status_code` | string | status read from the chart note |
 |  | `exam_form_status_code` | string | from the exam form; unknown when missing |
 |  | `dx_completed_status_code` | string | from diagnosis codes on completed procedures |

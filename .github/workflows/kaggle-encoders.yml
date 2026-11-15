@@ -161,8 +161,7 @@ jobs:
           [ "$full" = True ] || { echo "::error::The Kaggle run that saved the model was a test run; publish only a full run"; exit 1; }
           python kaggle/publish_model.py --model-dir build/output/model --predictions "build/output/$pred" \
             --out build/kaggle-model --username "$KAGGLE_USERNAME" --commit "$commit" --upload \
-            --message "Trained on Kaggle by ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
-            | tee -a "$GITHUB_STEP_SUMMARY"
+            | tee -a "$GITHUB_STEP_SUMMARY"   # the version note is the model's release string (spec 039, #730)
 
       - uses: actions/upload-artifact@v4
         if: ${{ always() && (inputs.wait || inputs.collect_only) }}

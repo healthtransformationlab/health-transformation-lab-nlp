@@ -1,4 +1,4 @@
-# ADR 0005: The task sets are not an R parity input
+# ADR 0009: The task sets are not an R parity input
 
 Date: 2026-11-15 · Status: accepted · Issue: #715
 

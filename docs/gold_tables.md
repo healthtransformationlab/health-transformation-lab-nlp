@@ -2,7 +2,7 @@
 
 > Personal learning project; synthetic data only. See [DISCLAIMER](../DISCLAIMER.md).
 
-The gold schema holds the study's results: every model's answers on the 240 synthetic review charts, the
+The gold schema holds the study's results: every model's answers on the 223 synthetic review charts, the
 LLM reader's per-note details, and the judge scorecard behind the **Scorecard** AI/BI dashboard. The names
 are the same in every target, because each environment is its own workspace. They follow AGENTS.md,
 "SQL and data names" (spec 018): singular, `fact_` / `dim_` or a subject prefix, and a suffix on every column

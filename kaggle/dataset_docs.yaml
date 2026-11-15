@@ -168,6 +168,15 @@ datasets:
       swegemma_verification.csv:
         reason_text: Why the evaluator did not resolve the task with that patch; empty when it did.
 
+# The published Kaggle model (kaggle/publish_model.py) keeps Kaggle's own instance versions, and takes a version and a
+# changelog as a dataset does; its folder ships manifest.json too (spec 039, #730). A model publishes no columns, so it
+# has no schema_sha256.
+models:
+  perio-bench-note-classifier:
+    version: "1.0.0"
+    changelog:
+      - "1.0.0 — first versioned release"
+
 columns:
   # people, visits, clinics
   visit_id: Synthetic visit's id; joins the notes, the structured record, the truth and every prediction file.

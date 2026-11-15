@@ -51,3 +51,10 @@ None blocking, none to fix.
 ## Verdict
 
 Approve, and merge when every check is green on the latest commit.
+
+## Update, 2026-11-15: main merged in, the ADR renumbered to 0009
+
+Main conflicted in `docs/adr/README.md`. By the time it was merged, main had its own ADRs 0005 to 0008, the first being
+`0005-colab-runs-need-the-open-network-accepted.md`, so this PR's decision record is now ADR 0009
+(`docs/adr/0009-task-sets-not-an-r-parity-input.md`). Its references in `parity_needed.py` and `test_parity_needed.py`
+follow, and its text is otherwise unchanged. The verdict stands: approve once CI is green.

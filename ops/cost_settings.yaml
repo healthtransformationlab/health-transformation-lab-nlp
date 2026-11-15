@@ -33,3 +33,54 @@ a100_usd_per_gpu_hour:
   value: 1.87
   source: https://getdeploying.com/gpus/nvidia-a100
   read_date: "2026-11-12"
+
+# Modal's prices for the GPUs kaggle/modal_official.py offers (028 AI15, #804), billed by the second while the GPU runs:
+# L4 0.000222, A10 0.000306, A100 40 GB 0.000583 USD a second, times 3,600. These are PAID, unlike Kaggle's GPUs, and
+# they come from a third-party price list: modal.com/pricing could not be read from the agent session that wrote
+# them. Check Modal's page before budgeting, and update the value and date here when it differs. The CPU and memory
+# beside the GPU are billed too (below); the run's max_usd at the GPU's price plus theirs at the hard limits
+# kaggle/modal_official.py sets is Modal's time limit.
+modal_l4_usd_per_gpu_hour:
+  value: 0.80
+  source: https://usagepricing.com/tools/pricing-calculator/modal
+  read_date: "2026-11-15"
+
+modal_a10_usd_per_gpu_hour:
+  value: 1.10
+  source: https://usagepricing.com/tools/pricing-calculator/modal
+  read_date: "2026-11-15"
+
+modal_a100_40gb_usd_per_gpu_hour:
+  value: 2.10
+  source: https://usagepricing.com/tools/pricing-calculator/modal
+  read_date: "2026-11-15"
+
+# Modal's CPU and memory, billed beside the GPU by the second on whichever is larger, the request or the use:
+# 0.0000131 USD a physical core-second and 0.00000222 USD a GiB-second, times 3,600. A web search's summary of
+# modal.com/pricing (costbench.com and others quote the same rates); neither modal.com nor those pages could be read
+# from the agent session. PAID, like the GPU prices above; check Modal's page before budgeting.
+modal_cpu_usd_per_core_hour:
+  value: 0.0472
+  source: https://www.costbench.com/software/ai-gpu-cloud/modal/
+  read_date: "2026-11-15"
+
+modal_memory_usd_per_gib_hour:
+  value: 0.0080
+  source: https://www.costbench.com/software/ai-gpu-cloud/modal/
+  read_date: "2026-11-15"
+
+# What a Modal run may spend without the owner's approval (#806, ADR 0008): the owner asked on November 15, 2026 to
+# "automate with cap, approve if over some reasonable limit". A run whose max_usd is within modal_auto_max_usd, and
+# that keeps this month's Modal spend (modal billing summary) within modal_auto_monthly_usd, starts on its own; any
+# other run waits in the GitHub environment modal-approval for the owner. 5 USD buys about 3.7 hours of an L4 with the
+# CPU and memory at their limits; 25 USD keeps a month of runs that start on their own inside the Starter plan's 30 USD
+# credit, with 5 to spare. Change them by pull request.
+modal_auto_max_usd:
+  value: 5
+  source: the owner's ask of November 15, 2026 (#806); docs/adr/0008-modal-runs-start-on-their-own-under-a-cost-cap.md
+  read_date: "2026-11-15"
+
+modal_auto_monthly_usd:
+  value: 25
+  source: the owner's ask of November 15, 2026 (#806); docs/adr/0008-modal-runs-start-on-their-own-under-a-cost-cap.md
+  read_date: "2026-11-15"

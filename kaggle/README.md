@@ -7,15 +7,26 @@ data only, and no token is ever stored in it.
 
 ## What's on Kaggle
 
-| On Kaggle (user `jcblearning`) | What it is | Made by (Actions tab) | Files here |
-|---|---|---|---|
-| Notebook `perio-bench-medgemma-reader` | MedGemma 1.5 4B reads the 223 review notes | *Run MedGemma on a free Kaggle GPU* | `medgemma_reader.ipynb`, `keras_to_hf.py`, `hf_config/`, `gemma3_chat_template.jinja` |
-| Notebook `perio-bench-encoder-gpu` | Fine-tunes the large encoders (ModernBERT-large, Longformer, GatorTron) | *Fine-tune the GPU encoders on a free Kaggle GPU* | `encoder_gpu.ipynb` |
-| Dataset `perio-bench-notes` | Synthetic notes, labels, structured visits, 223-note review set and answer key | *Publish datasets (Kaggle and Hugging Face)* | `publish.py`, `cards/notes.md` |
-| Dataset `perio-bench-results` | Every model's answers on the review set, the leaderboard, the judge scorecard | *Publish datasets (Kaggle and Hugging Face)* | `publish.py`, `cards/results.md` |
-| Notebook `perio-bench-quickstart` (spec 025) | Loads both datasets, trains a baseline on a CPU in about a minute, scores it beside the leaderboard | *Publish datasets (Kaggle and Hugging Face)* | `../notebooks/perio_bench_quickstart.ipynb`, `prepare_kernel.py --job quickstart` |
-| Benchmark task `perio-bench` (Kaggle Benchmarks) | The reader task Kaggle's leaderboard runs: read a note, name the status, quote it; a judge checks it (`docs/kaggle_benchmarks.md`) | *Run PerioBench on Kaggle Benchmarks* | `perio_bench_task.py`, `../python/health_transformation_lab_nlp/kbench.py` |
-| Model `perio-bench-note-classifier` (spec 020 US3) | The top fine-tuned note classifier, ModernBERT-base class-weighted, in transformers format (Apache 2.0) | *Fine-tune the GPU encoders on a free Kaggle GPU* with `save_model` | `publish_model.py`, `cards/model.md` |
+| On Kaggle (user `jcblearning`) | What it is | Visibility; competition link | Made by (Actions tab) | Files here |
+|---|---|---|---|---|
+| Notebook `perio-bench-medgemma-reader` | MedGemma 1.5 4B reads the 223 review notes | public; none | *Run MedGemma on a free Kaggle GPU* | `medgemma_reader.ipynb`, `keras_to_hf.py`, `hf_config/`, `gemma3_chat_template.jinja` |
+| Notebook `perio-bench-encoder-gpu` | Fine-tunes the large encoders (ModernBERT-large, Longformer, GatorTron) | public; none | *Fine-tune the GPU encoders on a free Kaggle GPU* | `encoder_gpu.ipynb` |
+| Dataset `perio-bench-notes` | Synthetic notes, labels, structured visits, 223-note review set and answer key | public; datasets have no link | *Publish datasets (Kaggle and Hugging Face)* | `publish.py`, `cards/notes.md` |
+| Dataset `perio-bench-results` | Every model's answers on the review set, the leaderboard, the judge scorecard | public; datasets have no link | *Publish datasets (Kaggle and Hugging Face)* | `publish.py`, `cards/results.md` |
+| Notebook `perio-bench-quickstart` (spec 025) | Loads both datasets, trains a baseline on a CPU in about a minute, scores it beside the leaderboard | public; none | *Publish datasets (Kaggle and Hugging Face)* | `../notebooks/perio_bench_quickstart.ipynb`, `prepare_kernel.py --job quickstart` |
+| Benchmark task `perio-bench` (Kaggle Benchmarks) | The reader task Kaggle's leaderboard runs: read a note, name the status, quote it; a judge checks it (`docs/kaggle_benchmarks.md`) | public; none | *Run PerioBench on Kaggle Benchmarks* | `perio_bench_task.py`, `../python/health_transformation_lab_nlp/kbench.py` |
+| Notebook `new-benchmark-task-f9ca8` | The benchmark task's backing notebook, made by `kaggle b t publish` under Kaggle's default title; left as it is, so the task keeps its notebook (`new-benchmark-task-37c04`, private, is an earlier draft) | public; none | `kaggle b t publish perio-bench` (`docs/kaggle_benchmarks.md`) | `perio_bench_task.py` |
+| Model `perio-bench-note-classifier` (spec 020 US3) | The top fine-tuned note classifier, ModernBERT-base class-weighted, in transformers format (Apache 2.0) | public; models have no link | *Fine-tune the GPU encoders on a free Kaggle GPU* with `save_model` | `publish_model.py`, `cards/model.md` |
+| Dataset `health-transformation-lab-coding-agent-tasks` (spec 028) | 93 coding-agent tasks mined from this repository, in the Gemma 4 Developer Agent competition's layout, each verified with its evaluator | public; datasets have no link | *Publish the task set (Kaggle)* | `publish_tasks.py`, `cards/tasks.md` |
+| Notebook `coding-agent-tasks-quickstart` (#535) | Loads the task set and walks through one task: its problem, fix and tests, its snapshot, its code graph and embeddings; cited in the Paper Track writeup | public; **Gemma 4 Developer Agent**, set by hand (below) | *Publish the task set (Kaggle)* | `../notebooks/agent_tasks_quickstart.ipynb`, `prepare_kernel.py --job tasks-quickstart` |
+| Notebooks `htlnlp-run-*`, `htlnlp-offrun-*`; datasets `htlnlp-agent-*`, `htlnlp-official-*` | One per agent run (this repository's harness, and the competition's evaluator): the evidence behind the run tables in `data/tasks/` | private; none (an evaluator run attaches the competition's data instead) | a session: `../python/scripts/60_kaggle_agent.py`, `official_agent_run.py` | deleted after the Paper Track is judged (#720) |
+
+**Linking a notebook to a competition.** On the notebook's page: **Settings → Competitions → Link to Competition**
+(only competitions the account has joined are listed), then **Link** and **Save Changes**. It is done by hand: Kaggle's
+API has no field for it (the save-kernel request in Kaggle CLI 2.2.5 sets competition *data sources*, which attach a
+competition's files, not the link), so `kernels push` cannot set or keep it. Datasets and models have no competition
+link. The column above is the record of which link each notebook should have; a notebook pushed under a new name
+needs its link set again.
 
 The notebook `dental-omop-medgemma-keras-test` was a one-off comparison (MedGemma through Keras vs converted to
 transformers; the decision is in PR #99) and can be deleted.
@@ -77,6 +88,16 @@ A new version's note is its release string, `v<X.Y.Z> — <what changed> (<commi
 Face commit carries, and the run tags it `data/<slug>-vX.Y.Z` in git (and on Hugging Face). A metadata-only refresh
 makes no version and no tag, and tagging a version twice changes nothing.
 
+Kaggle drops a `+` from an uploaded file's name (#695): `ai_predictions_modernbert-base+cw.csv` in the repository is
+`ai_predictions_modernbert-basecw.csv` on Kaggle. `publish.kaggle_name` gives Kaggle's form; the metadata step
+matches descriptions by it, and the card lists files by it, so load a file by the name the card gives.
+
+Kaggle's server drops the column descriptions sent through its API ([Kaggle/kaggle-cli#1207](https://github.com/Kaggle/kaggle-cli/issues/1207), #694),
+so each dataset's usability stays at 9.41 until they are typed into Kaggle's editor, which keeps them.
+`python kaggle/column_descriptions.py --out build/column_descriptions.html` writes every one (495 across the three
+datasets) by the file name Kaggle shows, with a Copy button each. When that issue closes, a metadata-only run sends
+them and this step goes away.
+
 ## Publishing the note classifier
 
 Actions → *Fine-tune the GPU encoders on a free Kaggle GPU* → Run workflow with **`rungs`** `modernbert-base+cw`,
@@ -87,6 +108,8 @@ fine-tuned weights (`/kaggle/working/model`), and after the full run the workflo
 review-set predictions (the leaderboard's scoring); a test run (`limit` 10) is never published. The weights go to
 Kaggle, not the workflow artifact. A full run takes hours: to collect it later, run the workflow again with
 **`collect_only`** on and the same `save_model` and `limit` 0. The card names the commit the notebook trained.
+Each instance version's note is the model's release string, from its `version` and `changelog` under `models:` in
+`dataset_docs.yaml`, and the folder ships `manifest.json` with every file's SHA-256 (spec 039, #730).
 
 ## The collection
 
@@ -99,7 +122,18 @@ collection** "Health Transformation Lab: Perio Bench", then add the three notebo
 ## GPU hours
 
 Kaggle's free GPU allowance is about 30 hours a week; the exact number, and how much of it is used, is on
-kaggle.com under **Settings**. A kernel pushed with none left is refused: "Maximum weekly GPU quota of 30.00 hours
+kaggle.com under **Settings**, or from the command line (#772):
+
+```
+KAGGLE_API_TOKEN=... python kaggle/gpu_quota.py
+gpu_hours used 32.34 allowed 60.00 left 27.66 refresh 2026-11-21T00:00:00 UTC
+```
+
+The hours refresh weekly, on Saturday at 00:00 UTC. With a Colab subscription linked the account showed 60 hours
+allowed (November 15). Read the quota before and after every run and record the difference: that is what a run costs,
+and how the rest of the week is planned (AGENTS.md, "Failures, retries and reruns"). Measured on November 15: one
+23-task development-set run on four L4 GPUs took 61 minutes and **2.00 quota hours**, so a four-GPU kernel counts
+double (`data/tasks/official_agent_runs/README.md`, the PR 107 run). A kernel pushed with none left is refused: "Maximum weekly GPU quota of 30.00 hours
 reached." Before a run is made smaller, put off or moved to another platform, check whether Kaggle itself gives
 more (AGENTS.md, "Failures, retries and reruns"):
 
@@ -117,6 +151,50 @@ Why this is written down: on November 11, 2026 the weekly allowance ran out befo
 to Colab, with another Python, other package versions and a notebook opened by hand, and nobody had checked for
 the link first (#698).
 
+## A Modal GPU (paid; started from Actions)
+
+`modal_official.py` runs the same kind of batch a Colab run makes, on a Modal GPU (028 AI15, #804). It runs the Colab
+helper's `run_one`, with the same packages, layout, sealed bundle, results dataset and network rule (ADR 0005). It is
+**paid**, by the second, from the owner's Modal account. ADR 0007 makes Colab the default; when Modal is used beside
+it is decided in an ADR amending 0007 after the two-task trial (#804).
+
+- **To start one:** put the run's entry in **`modal_official_run.json`** on its own branch, with its bundle, its
+  kernel dataset, `"network_open_acknowledged": true` and no `gpu`. Never put it in `colab_official_run.json`:
+  Colab sessions follow that list and start every run in it. Then go to the Actions tab, pick **Run the Gemma
+  agent on a Modal GPU**, choose that branch, and fill in the label, the GPU (L4, A10 or A100-40GB) and `max_usd`.
+  An agent session can start it the same way, through GitHub's API.
+- **Who has to say yes** (#806, [ADR 0008](../docs/adr/0008-modal-runs-start-on-their-own-under-a-cost-cap.md)):
+  - A run starts on its own when its `max_usd` is at most `modal_auto_max_usd` (5 USD) and this month's Modal
+    spend plus `max_usd` is at most `modal_auto_monthly_usd` (25 USD, inside the Starter plan's 30 USD credit).
+  - Any other run waits in the **approve** job until the owner approves it in Actions, and GitHub notifies the
+    reviewer. So does any run when this month's spend can't be read, and any run whose branch changes the
+    workflow, `modal_official.py` or `ops/cost_settings.yaml`. The limits are always read from `main`.
+  - The spend is read again just before the run. A re-run is refused, because it would reuse the first attempt's
+    approval: start a new run instead.
+  - The approve job uses the GitHub environment `modal-approval`, which the owner creates once (Settings,
+    Environments, New environment, `modal-approval`, Required reviewers: the owner). It holds no secret. Without a
+    required reviewer, and an approval of that run recorded by GitHub, an over-limit run is refused, never let through.
+- **The cap:** `max_usd` becomes Modal's time limit. It is priced at the GPU's rate plus the CPU and memory at their
+  hard limits (6 cores and 32 GiB; prices in `ops/cost_settings.yaml`), so the run cannot cost more. At $5 an L4
+  run gets about 3.7 hours.
+- **A run stopped at the limit** loses what it finished since its last upload (up to 8 minutes) and its final log,
+  as a dropped Colab session does. To carry on, add `"resume_session"` to its entry, naming the stopped run's
+  session (its log names it), and start it again.
+- **Before the GPU starts,** the workflow:
+  - checks the credentials, the entry, the label and the cap, and names what is wrong;
+  - makes one cheap call each to Kaggle and Modal (it prints the Modal token's expiry, and Modal's own prices);
+  - decides whether the run needs the owner's approval, and waits for it if so;
+  - refuses while an earlier Modal run is still going;
+  - checks the machine on a CPU, for a fraction of a cent: git, pkill, the CUDA compiler, Python 3.13, the
+    packages, and the user namespaces the evaluator's sandbox needs.
+- **To stop a run:** cancelling the Actions job does not stop it. Run `modal app list`, then
+  `modal app stop <app id>`.
+- **Credentials:** `MODAL_TOKEN_ID`, `MODAL_TOKEN_SECRET`, `KAGGLE_USERNAME`, and `KAGGLE_API_TOKEN` or
+  `KAGGLE_KEY`, all in the GitHub environment `dev` (`ops/secrets_register.yaml`). The Kaggle ones reach the Modal
+  machine for that run only.
+- **Its rows:** collected from the results dataset as a Colab run's are (`official_agent_run.py --colab --collect`).
+  The collector still records the machine as Colab, so the first Modal run's rows correct that (#804).
+
 ## When something fails
 
 | Symptom | Cause and fix |
@@ -127,6 +205,31 @@ the link first (#698).
 | Status `error` | Read the log the workflow printed; the full log is in the run's artifact |
 | Still running after the wait | Run again with `collect_only` |
 | The results PR has no CI | PRs opened by the workflow token don't start CI: push any commit to the branch |
+
+## Paper Track writeups: their main-leaderboard scores
+
+`paper_track_scores.py` (#731) downloads the full public leaderboard of `gemma-4-developer-agent` and every published
+writeup of `gemma-4-developer-agent-paper`. It matches each writeup to a leaderboard team by its authors' Kaggle
+usernames: an exact match, not by display name. The best-ranked team wins when an author is on more than one. A writeup
+with no matched team keeps empty score cells.
+
+```bash
+pip install "kaggle>=2.2"   # the CLI and kagglesdk, which lists the writeups
+KAGGLE_API_TOKEN=... python kaggle/paper_track_scores.py --out paper_track_scores.csv
+```
+
+It writes one row per writeup:
+- `writeup_id`, `title`, `kaggle_url`, `authors`, `author_usernames`;
+- `main_lb_team`, `main_lb_rank`, `main_lb_score`, `main_lb_entries`, `main_lb_last_submission`;
+- `matched_on`, `leaderboard_taken_at`.
+
+The public leaderboard is scored on about half the test data, so the final standings can differ, and every row says
+when it was taken. The CSV is about other people's entries, so it isn't committed.
+
+To refresh the owner's Paper Track sheets:
+1. Upload the CSV to Drive as a Google Sheet.
+2. Replace each sheet's *Main leaderboard (live)* tab with it, keeping the tab's name.
+3. The score, team and rank columns look writeups up in that tab by `writeup_id`, so they update on their own.
 
 ## Other files
 
@@ -143,6 +246,27 @@ the link first (#698).
   --colab-session <start>` reads one session's upload and verifies its patches. The notebook takes the Kaggle
   token from Colab Secrets (`ops/secrets_register.yaml`), never from a cell. What was run this way, and how it
   differs from a Kaggle kernel: `data/tasks/official_agent_runs/README.md`.
+  **What a later run must check first** (#691): (1) the network is still open to the agent's commands: nothing
+  blocks it at the machine, so a run starts only when its entry in the run list says
+  `"network_open_acknowledged": true`, written on the run's own branch after reading
+  [ADR 0005](../docs/adr/0005-colab-runs-need-the-open-network-accepted.md). This item of #691 (item 6) is
+  documented and guarded, not fixed. (2) Each entry names its `gpu`, and a run that goes on from a session that
+  dropped names that session (`"resume_session"`, the id in the earlier upload's `session.json` and at the top of its
+  log); without it a session resumes only its own upload. (3) The runner is called with `--colab --batch --label`,
+  and collected with `--collect --colab --colab-session <start>`; it refuses any other mix. The other items of #691
+  are fixed in the helper: a refused upload is not taken for sent, the stop button ends the kernel and the uploader,
+  a failed status call stops the run, a bundle is checked file by file and size by size, an arm's output leaves the
+  machine once it is on Kaggle, and the audit reads every tool call.
+  **A development-set batch can go to Colab too** (#780): `official_agent_run.py --source competition --batch
+  --competition gemma-4-developer-agent --sample 23 --label <name> --colab` uploads the order and the submission
+  (as for a Kaggle development batch) and the keyed kernel file, pushes no kernel, and prints the run list's entry
+  (label `devset-<name>`). No competition is mounted on a Colab machine, so the helper reads the bundle's order and
+  fetches the competition's files for those tasks alone (`fetch_competition_files`: `HARNESS_README.md`,
+  `tasks.jsonl`, `wheels/`, `sandbox/`, and each task's snapshot, graph and embeddings; never all 21.5 GB of
+  snapshots) with the notebook's Kaggle token, to `/content/htl_kaggle/input/competitions/<slug>/`, where the
+  kernel's own search finds them, and logs it. Another batch's snapshots left on the machine are removed first. The
+  account behind the token must have joined the competition. `--collect --colab --colab-session <start>` writes the
+  rows to `<model>_swegemma_devset-<name>.csv`, with `machine_shape_asked` "Colab, one GPU".
 
 More: `docs/medgemma.md` (why Kaggle, how MedGemma is loaded), spec 016 (results into Delta), spec 020
 (publishing).

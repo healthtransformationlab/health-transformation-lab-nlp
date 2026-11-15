@@ -75,7 +75,7 @@
       "multilineTextboxSpec": {
        "lines": [
         "## Phenotyping: every system against the truth and against an LLM judge\n",
-        "Synthetic data, 240 review charts: **not clinical performance**. *vs truth* is the README's number (the generator's answer key); *vs judge* scores the same answers against an LLM judge's own reading of each note (**LLM judgment**, on the charts it gave a status for). The gap shows how far the judge could stand in for an answer key on real notes. Metric names as in the README.\n"
+        "Synthetic data, the 240 review charts before #467 (the judge's rerun on the current notes is pending): **not clinical performance**. *vs truth* scores each system against the generator's answer key on those charts; *vs judge* scores the same answers against an LLM judge's own reading of each note (**LLM judgment**, on the charts it gave a status for). The gap shows how far the judge could stand in for an answer key on real notes. Metric names as in the README.\n"
        ]
       }
      },

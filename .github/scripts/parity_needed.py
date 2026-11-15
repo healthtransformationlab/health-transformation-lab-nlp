@@ -7,7 +7,7 @@ a changed file is one that pipeline depends on:
   - r/, the inputs the scripts read (data/, eval/, synthea/, omop/, models.yaml, costs.yaml), the package's
     dependencies (python/pyproject.toml), and this check and the CI workflow themselves;
   - but not data/tasks/, the coding-agent task sets, which no parity script or R test reads (issue #715,
-    docs/adr/0005-task-sets-not-an-r-parity-input.md).
+    docs/adr/0009-task-sets-not-an-r-parity-input.md).
 Everything else (docs, tests, dashboards, notebooks, infra, modules the pipeline never imports) cannot change what R
 is compared against. Pushes to main, manual runs and the weekly run don't ask: they always run parity.
 

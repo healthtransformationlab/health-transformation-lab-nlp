@@ -22,7 +22,7 @@ from datetime import date
 import pandas as pd
 
 from . import open_dental as od
-from .telemetry import traced
+from .telemetry import counts_rows, traced
 
 MIN_GAP = 0.05                       # a flagged group also differs from the rest by at least 5 points
 MIN_CHARTS = 30                      # groups with fewer charts are reported, never flagged or used as the rest
@@ -96,6 +96,7 @@ def _num(s: pd.Series) -> pd.Series:
 
 
 @traced
+@counts_rows
 def flag_against_rest(values: pd.Series) -> pd.DataFrame:
     """Each value against the mean and SD of the others: flagged beyond 2 SD and at least MIN_GAP away; when the
     others don't vary at all, any gap of MIN_GAP flags; with one other value there is no SD and no flag."""
@@ -112,6 +113,7 @@ def flag_against_rest(values: pd.Series) -> pd.DataFrame:
 
 
 @traced
+@counts_rows
 def office_missing(tables: dict[str, pd.DataFrame]) -> pd.DataFrame:
     """Kookal et al.'s consistency check: each office's share of missing cells, across every table that names a
     patient, against the other offices. One row per office."""
@@ -136,6 +138,7 @@ def office_missing(tables: dict[str, pd.DataFrame]) -> pd.DataFrame:
 
 
 @traced
+@counts_rows
 def run_checks(tables: dict[str, pd.DataFrame], switch_date: date = od.Params.list_switch_date) -> pd.DataFrame:
     """One row per check in CHECKS: what was checked, what was found, the share, and whether it is flagged (any
     fault found; the missing-value share is reported, not flagged)."""
@@ -247,6 +250,7 @@ def _age_band(age: float) -> str:
 
 
 @traced
+@counts_rows
 def group_consistency(tables: dict[str, pd.DataFrame], group_types: tuple = GROUP_TYPES) -> pd.DataFrame:
     """For each group of each type (by default office, provider, sex, race, exam year, age band and, since spec 032
     US8, `insurance_type`, which needs the insurance tables): how many of its perio charts have no gum-margin readings (so no attachment loss), and

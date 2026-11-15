@@ -46,6 +46,10 @@ REPO_ROOT = HERE.parent
 OUT_DIR = REPO_ROOT / "data" / "tasks" / "official_agent_runs"
 WHEELHOUSE = "metric/gemma-4-developer-agent-wheelhouse"                 # the competition's evaluator and vLLM
 MODEL_SOURCE = "google/gemma-4/Other/gemma-4-e4b-it-qat-w4a16-ct/2"      # as the starter notebook attaches it
+# The models the competition allows, as official_agent_kernel.py lists them. A kernel attaches the one the submission
+# declares (028 AI12, #748): each is version 2 on Kaggle, the latest on November 15, 2026, as for E4B above.
+ALLOWED_MODELS = ("gemma-4-31b-it-qat-w4a16-ct", "gemma-4-12b-it-qat-w4a16-ct", "gemma-4-e4b-it-qat-w4a16-ct",
+                  "gemma-4-e2b-it-qat-w4a16-ct")
 STARTER_MACHINE_SHAPE = "NvidiaL4"                                       # the starter notebook's accelerator
 # The starter notebook's pinned image, which every committed run used. Kaggle's current image lacks the CUDA 12
 # runtime that vLLM from the competition's wheelhouse loads (libcudart.so.12), so a new kernel fails without it.
@@ -179,6 +183,20 @@ def merge_parts(out: Path) -> None:
             p.unlink()
 
 
+def forward_run_telemetry(out: Path) -> int:
+    """Send a collected run's spans (its telemetry.jsonl, written with the internet off) on through the exporter the
+    environment sets (spec 014 US7, #791): to Application Insights with DENTAL_TELEMETRY=azure. Off by default, as
+    is the rest of the package's telemetry; a run made without --telemetry has no file and sends nothing."""
+    from health_transformation_lab_nlp import telemetry
+    path = Path(out) / "telemetry.jsonl"
+    if not path.is_file():
+        return 0
+    sent = telemetry.forward_spans(path)
+    if sent:
+        print(f"forwarded {sent} spans from {path.name} ({telemetry.active_exporter()})", flush=True)
+    return sent
+
+
 # What a Colab run's settings say of the network. The proxies set on the kernel's process do not reach the agent's
 # commands: the evaluator's sandbox starts each from its own short list of environment names (the review of #690).
 COLAB_INTERNET = ("open at the machine's edge. The kernel's process had no credential and every proxy pointed at a port "
@@ -188,28 +206,51 @@ COLAB_INTERNET = ("open at the machine's edge. The kernel's process had no crede
                   "kaggle/colab_official.py)")
 
 
+def _strings(value) -> list[str]:
+    """Every string in a tool call's arguments, however nested, as written (not JSON-escaped)."""
+    if isinstance(value, str):
+        return [value]
+    if isinstance(value, dict):
+        return [s for v in value.values() for s in _strings(v)]
+    if isinstance(value, (list, tuple)):
+        return [s for v in value for s in _strings(v)]
+    return []
+
+
+def trace_calls(trace: dict) -> list[dict]:
+    """Every tool call in the evaluator's own trace of a task."""
+    return [c for s in trace.get("steps") or [] for c in s.get("tool_calls") or []]
+
+
 def trace_commands(trace: dict) -> list[str]:
-    """Every command the agent ran, from the evaluator's own trace of a task."""
+    """Every command the agent ran, from the evaluator's own trace of a task: run_command's, and run_skill_script's
+    arguments whole (#691, item 7)."""
     out = []
-    for step in trace.get("steps") or []:
-        for call in step.get("tool_calls") or []:
-            if call.get("function_name") == "run_command":
-                args = call.get("arguments") or {}
-                text = args.get("command") or args.get("cmd") or next((v for v in args.values() if isinstance(v, str)), "")
-                out.append(text)
+    for call in trace_calls(trace):
+        args = call.get("arguments") or {}
+        if call.get("function_name") == "run_command":
+            out.append(args.get("command") or args.get("cmd") or next((v for v in args.values() if isinstance(v, str)), ""))
+        elif call.get("function_name") == "run_skill_script":
+            out.append(json.dumps(args))
     return out
 
 
 def network_audit(traces: dict[str, dict]) -> dict:
-    """A run on a machine with a network (Colab): how many of the agent's commands reach for it, and in which
-    tasks. On Kaggle the kernels have no network, so nothing is counted there."""
+    """A run on a machine with a network (Colab): how many of the agent's commands reach for it, and in which tasks;
+    and, since a script can be written and then run, how many tool calls of any kind hold such words in any argument,
+    written text included (#691, item 7). On Kaggle the kernels have no network, so nothing is counted there."""
     spec = importlib.util.spec_from_file_location("colab_official", HERE / "colab_official.py")
     co = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(co)
     commands = {i: trace_commands(t) for i, t in traces.items()}
     hits = {i: co.network_command_count(c) for i, c in commands.items()}
+    calls = {i: ["\n".join(_strings(c.get("arguments") or {})) for c in trace_calls(t)] for i, t in traces.items()}
+    call_hits = {i: co.network_command_count(c) for i, c in calls.items()}
     return {"command_count": sum(len(c) for c in commands.values()), "network_command_count": sum(hits.values()),
-            "instance_ids": sorted(i for i, n in hits.items() if n)}
+            "instance_ids": sorted(i for i, n in hits.items() if n),
+            "tool_call_count": sum(len(c) for c in calls.values()),
+            "network_tool_call_count": sum(call_hits.values()),
+            "tool_call_instance_ids": sorted(i for i, n in call_hits.items() if n)}
 
 
 def batch_name(source: str, label: str | None) -> str:
@@ -290,8 +331,29 @@ def kernel_slug(instance_id: str) -> str:
     return "htlnlp-offrun-" + re.sub(r"[^a-z0-9]+", "-", instance_id.lower()).strip("-")
 
 
+def declared_model(agent_dir: Path) -> str:
+    """The one model a submission declares: every `model:` line of agent.yaml and sub_agents/*.yaml (the competition
+    allows one base model across all agents). Read as lines, since the files use the framework's own `!include` tag.
+    Anything but exactly one allowed model stops the run before anything is uploaded."""
+    agent_dir = Path(agent_dir)
+    files = [agent_dir / "agent.yaml", *sorted((agent_dir / "sub_agents").glob("*.yaml"))]
+    found = {m.group(1) for f in files if f.is_file()
+             for m in re.finditer(r"^model:\s*['\"]?([^\s'\"#]+)", f.read_text(), re.MULTILINE)}
+    if len(found) != 1 or not found <= set(ALLOWED_MODELS):
+        raise SystemExit(f"{agent_dir}: the submission must declare exactly one of {list(ALLOWED_MODELS)}, in every "
+                         f"agent: it declares {sorted(found) or 'none'}")
+    return next(iter(found))
+
+
+def model_source(declared: str) -> str:
+    """The Kaggle model a kernel attaches for a declared model name, as the starter notebook attaches E4B."""
+    if declared not in ALLOWED_MODELS:
+        raise SystemExit(f"the submission must declare exactly one of {list(ALLOWED_MODELS)}: {declared!r}")
+    return f"google/gemma-4/Other/{declared}/2"
+
+
 def kernel_metadata(username: str, instance_id: str, machine_shape: str | None, docker_image: str | None,
-                    competition: str | None = None) -> dict:
+                    competition: str | None = None, model_source: str = MODEL_SOURCE) -> dict:
     """Private, GPU, internet off; this task's bundle, the competition's wheelhouse and the model, nothing else.
     `competition` attaches the competition as the starter notebook does (its accelerator may depend on it); its
     files are the competition's own tasks, not ours."""
@@ -300,7 +362,7 @@ def kernel_metadata(username: str, instance_id: str, machine_shape: str | None, 
             "language": "python", "kernel_type": "script", "is_private": True, "enable_gpu": True, "enable_tpu": False,
             "enable_internet": False, "dataset_sources": [f"{username}/{bundle.slug(instance_id)}", WHEELHOUSE],
             "competition_sources": [competition] if competition else [], "kernel_sources": [],
-            "model_sources": [MODEL_SOURCE]}
+            "model_sources": [model_source]}
     if machine_shape:
         meta["machine_shape"] = machine_shape
     if docker_image:
@@ -318,7 +380,9 @@ def kernel_source(source: str, key: bytes) -> str:
 GRAPH_TOOLS = {"get_code_neighbors", "search_similar_code", "get_code_subgraph"}
 SKILL_TOOLS = {"list_skills", "load_skill", "load_skill_resource", "run_skill_script"}
 WRITTEN_TEXT = {"content", "old_string", "new_string"}   # what the model writes into a file is not a path it reaches
-OUTSIDE = re.compile(r"/kaggle/|/tmp/htl|\.\./\.\.|/root/|/etc/|/proc/")   # a tool argument reaching past the workspace
+# A tool argument reaching past the workspace. `/content` is where a Colab run's inputs and earlier output sit
+# (#691, item 5); an absolute path only, not a folder of that name inside the repository.
+OUTSIDE = re.compile(r"/kaggle/|/tmp/htl|\.\./\.\.|/root/|/etc/|/proc/|(?<![\w.-])/content\b")
 
 
 def trace_counts(trace: dict) -> dict:
@@ -341,26 +405,74 @@ COMPETITION_DEFAULTS = {"timeout_seconds": 300, "verification_timeout_seconds": 
 # what the starter notebook and swegemma.config.build_submission_limits use when a submission sets nothing
 
 
+def _load_with_includes(path: Path):
+    """A submission's YAML file with each `!include` resolved as the competition's loader does
+    (`adk_submission.yaml_loader`): from the folder of the file that names it; a .yaml or .yml file parsed, any other
+    (.md, .txt) as its text."""
+    import yaml
+
+    class _Loader(yaml.SafeLoader):
+        pass
+
+    def _include(loader, node):
+        target = path.parent / loader.construct_scalar(node)
+        if target.suffix.lower() in (".yaml", ".yml"):
+            return _load_with_includes(target)
+        return target.read_text(encoding="utf-8")
+
+    _Loader.add_constructor("!include", _include)
+    return yaml.load(path.read_text(encoding="utf-8"), Loader=_Loader)
+
+
+def submission_generation(submission_dir: Path) -> dict:
+    """The output budget the submission sets itself: `max_output_tokens` and `thinking_config.thinking_budget` from its
+    agent.yaml's `generate_content_config`, inline or through `!include`. {} when it sets neither, and then the
+    evaluator's fallback (`generation_defaults`) is what the run used (#737)."""
+    agent = _load_with_includes(Path(submission_dir) / "agent.yaml") or {}
+    gen = agent.get("generate_content_config") or {}
+    out: dict = {}
+    if gen.get("max_output_tokens") is not None:
+        out["max_output_tokens"] = gen["max_output_tokens"]
+    if (gen.get("thinking_config") or {}).get("thinking_budget") is not None:
+        out["thinking_config"] = {"thinking_budget": gen["thinking_config"]["thinking_budget"]}
+    return out
+
+
+def _generation_used(defaults: dict | None, submission: dict) -> dict:
+    """The evaluator's fallback with the submission's own values over it: what each model call was given."""
+    used = {**(defaults or {}), **{k: v for k, v in submission.items() if k != "thinking_config"}}
+    if "thinking_config" in submission:
+        used["thinking_config"] = {**((defaults or {}).get("thinking_config") or {}), **submission["thinking_config"]}
+    return used
+
+
+GENERATION_SETTINGS = ("max_output_tokens", "thinking_budget")   # set in agent.yaml, not in eval_config.yaml
+
+
 def settings_for(result: dict, seed: int | None, drawn: list[str], pool_count: int, machine_shape: str | None,
                  docker_image: str | None, competition: str | None, agent_commit: str | None,
-                 source: str = "published", tasks_per_kernel: int = 1, colab: bool = False) -> dict:
+                 source: str = "published", tasks_per_kernel: int = 1, colab: bool = False,
+                 generation: dict | None = None, model_source: str | None = None) -> dict:
     """What a run used, how its sample was drawn, and each budget that differs from the competition's defaults.
-    `colab`: the run was made on a Colab machine by kaggle/colab_official.py, not in a Kaggle kernel (#687)."""
+    `colab`: the run was made on a Colab machine by kaggle/colab_official.py, not in a Kaggle kernel (#687).
+    `generation`: the output budget the submission used (`_generation_used`); without it, the evaluator's fallback."""
     budgets, gen = result.get("budgets") or {}, result.get("generation_defaults") or {}
-    used = {**budgets, "max_output_tokens": gen.get("max_output_tokens"),
-            "thinking_budget": (gen.get("thinking_config") or {}).get("thinking_budget")}
+    gen_used = generation if generation is not None else gen
+    used = {**budgets, "max_output_tokens": gen_used.get("max_output_tokens"),
+            "thinking_budget": (gen_used.get("thinking_config") or {}).get("thinking_budget")}
     version = (result.get("versions") or {}).get("swegemma")
     harness = result.get("harness_name") or "swegemma"
     development = source == "competition"
     return {
         "harness_name": harness.replace("swegemma", f"swegemma {version}", 1) if version else harness,
         "model_name": result.get("model_name"), "versions": result.get("versions"), "server": result.get("server"),
-        "budgets": budgets, "generation_defaults": gen, "context_cache": result.get("context_cache"),
+        "budgets": budgets, "generation_defaults": gen, "generation_used": gen_used,
+        "context_cache": result.get("context_cache"),
         "events_compaction": result.get("events_compaction"),
         "kernel": {"machine_shape_asked": "Colab, one GPU" if colab else machine_shape,
                    "docker_image": None if colab else docker_image, "competition_attached": competition,
                    "internet": COLAB_INTERNET if colab else False,
-                   "tasks_per_kernel": tasks_per_kernel},
+                   "tasks_per_kernel": tasks_per_kernel, "model_source": None if colab else model_source},
         "agent_commit_sha": agent_commit,
         "sample": {"seed": seed, "drawn_count": len(drawn), "pool_count": pool_count, "instance_ids": drawn,
                    "method_text": ("drawn with the seed from the competition's development set, stratified by "
@@ -370,16 +482,21 @@ def settings_for(result: dict, seed: int | None, drawn: list[str], pool_count: i
                                   "proportion to each tier's size (largest remainder); not ordered by cost or size")},
         "differences_from_competition_defaults": [
             {"setting_name": k, "used": used.get(k), "competition_default": v,
-             "source_text": "the submission's eval_config.yaml"}
+             "source_text": ("the submission's generate_content_config (agent.yaml)" if k in GENERATION_SETTINGS
+                             else "the submission's eval_config.yaml")}
             for k, v in COMPETITION_DEFAULTS.items() if k in used and used.get(k) != v],
         "notes": [
             ("The agent loop, the model server and the verification are the competition's: swegemma's "
              "Evaluator.evaluate_task (subprocess sandbox), vLLM from the competition's wheelhouse dataset, and "
              "swegemma's verify_task, following the competition's starter notebook."),
-            ("The kernel attached the competition and read each development task from its mounted files, with no "
-             "reference patch staged beside the agent; the evaluator verified each patch there with the task's tests, "
-             "as the competition's own run does. Tool calls naming a path outside the workspace are counted in "
-             "outside_workspace_call_count.") if development else
+            (("The competition's files for the drawn tasks (tasks.jsonl, their snapshots, graphs and embeddings, "
+              "the tests' wheels and the sandbox's setup) were fetched onto the Colab machine with the Kaggle API "
+              "and laid out where Kaggle mounts them, and the kernel read each development task from there"
+              if colab else
+              "The kernel attached the competition and read each development task from its mounted files")
+             + ", with no reference patch staged beside the agent; the evaluator verified each patch there with the "
+             "task's tests, as the competition's own run does. Tool calls naming a path outside the workspace are "
+             "counted in outside_workspace_call_count.") if development else
             ((f"All {tasks_per_kernel} tasks were given to one process on a Colab machine, each sealed until its turn, "
               "beside a bundle" if colab else
               f"All {tasks_per_kernel} tasks were given to one private, offline kernel, each sealed until its turn, beside a "
@@ -391,7 +508,9 @@ def settings_for(result: dict, seed: int | None, drawn: list[str], pool_count: i
             *((("Run on a Colab machine, not in a Kaggle kernel: the same kernel file, with the competition's wheels, "
                 "the model and the bundle at the paths Kaggle mounts them. The model server and the agent framework "
                 "were installed from PyPI at the versions the Kaggle kernels recorded, and the competition's "
-                "wheelhouse was installed over them by the kernel, as on Kaggle. One GPU and Colab's base image, so "
+                "wheelhouse was installed over them by the kernel, less the wheels compiled for Kaggle's Python "
+                "alone, which stayed at PyPI's versions (the kernel lists them in result.json, wheels_left_out). One "
+                "GPU and Colab's base image, so "
                 "its counts are not set beside a Kaggle kernel's as if one run."),) if colab else ()),
         ],
     }
@@ -416,10 +535,12 @@ def _script_seconds(result: dict) -> float | None:
         return None
 
 
-def row_for(result: dict, verdict: dict | None, tier: str, kernel_url: str, in_sample: bool = True) -> dict:
-    """One table row: what the evaluator's agent phase did on Kaggle, and its verification's verdict on the patch."""
+def row_for(result: dict, verdict: dict | None, tier: str, kernel_url: str, in_sample: bool = True,
+            generation: dict | None = None) -> dict:
+    """One table row: what the evaluator's agent phase did on Kaggle, and its verification's verdict on the patch.
+    `generation`: the output budget the submission used; without it, the evaluator's fallback (#737)."""
     budgets, server = result.get("budgets") or {}, result.get("server") or {}
-    gen = result.get("generation_defaults") or {}
+    gen = generation if generation is not None else (result.get("generation_defaults") or {})
     gpus = server.get("gpus") or []
     version = (result.get("versions") or {}).get("swegemma")
     harness = result.get("harness_name") or "swegemma"
@@ -599,6 +720,24 @@ def check_arm_options(label: str | None, context, batch: bool, development: bool
         sys.exit("--context needs --label: a run with added context is its own condition and writes its own table")
 
 
+def check_colab_options(colab: bool, batch: bool, label: str | None, collect: bool, colab_session: str | None,
+                        colab_results: str | None) -> None:
+    """The Colab options, checked together before any work (#691, item 8; AGENTS.md, "Check settings before doing
+    work"): --colab without --batch would push Kaggle GPU kernels, without --label it would write into the table of
+    November 10, and --collect --colab without --colab-session would read whichever session uploaded last."""
+    if colab and not batch:
+        sys.exit("--colab needs --batch: without it the runner pushes a Kaggle GPU kernel per task")
+    if colab and not label:
+        sys.exit("--colab needs --label: without it the run's rows go into the table of the run of November 10")
+    if colab and collect and not colab_session:
+        sys.exit("--collect --colab needs --colab-session (HH:MM:SS, UTC): without it whichever session uploaded last "
+                 "is read")
+    if (colab_session or colab_results) and not colab:
+        sys.exit(f"{'--colab-session' if colab_session else '--colab-results'} is for --collect --colab: it needs --colab")
+    if (colab_session or colab_results) and not collect:
+        sys.exit(f"{'--colab-session' if colab_session else '--colab-results'} is for reading a run back: it needs --collect")
+
+
 def reusable_output(out: Path, reuse: bool) -> bool:
     """True when a collection was asked to reuse a kernel's output that is already in `out`."""
     return bool(reuse) and (Path(out) / "result.json").exists()
@@ -643,7 +782,8 @@ def run_batch(a, api, user: str, ids: list[str], tasks: dict, manifest: dict, ov
                     a.dataset / "embeddings" / f"{stem}.npz")
 
         meta = batch_meta(a, overrides)
-        if development:
+        if development:   # which competition's files the tasks are read from: a Colab machine fetches them (#780)
+            meta["competition"] = a.competition
             b = bundle.build_competition_batch(order, a.agent_dir, work / "bundle", user, meta, name=name)
         else:
             b = bundle.build_batch([tasks[i] for i in ids], files_of, a.agent_dir, work / "bundle", user, key, order,
@@ -664,7 +804,8 @@ def run_batch(a, api, user: str, ids: list[str], tasks: dict, manifest: dict, ov
                   + json.dumps(colab_run_entry(user, name)), flush=True)
             return 0
         (k / "kernel-metadata.json").write_text(json.dumps(
-            kernel_metadata(user, name, a.machine_shape, a.docker_image, a.competition), indent=1))
+            kernel_metadata(user, name, a.machine_shape, a.docker_image, a.competition,
+                            getattr(a, "model_source", MODEL_SOURCE)), indent=1))
         try:
             push_kernel(api, k, a.kernel_minutes * 60, kref)
         finally:
@@ -699,6 +840,7 @@ def run_batch(a, api, user: str, ids: list[str], tasks: dict, manifest: dict, ov
         out.mkdir(parents=True, exist_ok=True)
         api.kernels_output(kref, str(out), force=True)
     session = time.monotonic() - t0
+    forward_run_telemetry(out)
     res = json.loads((out / "result.json").read_text()) if (out / "result.json").exists() else {
         "error": f"kernel ended {status} and wrote no result.json"}
     print(f"kernel {status} after {session / 60:.1f} min; GPUs {(res.get('server') or {}).get('gpus') or res.get('gpus_seen')}"
@@ -718,9 +860,13 @@ def run_batch(a, api, user: str, ids: list[str], tasks: dict, manifest: dict, ov
     else:
         verdicts = _verify(a.dataset / "tasks.jsonl", a.dataset / "snapshots", a.agent_dir,
                            {i: (r.get("patch") or "") for i, r in done.items()}, work / "_verify")
+    uploaded = work / "bundle" / "submission"   # what the kernel was given; the agent folder if it is gone
+    sub_gen = submission_generation(uploaded if (uploaded / "agent.yaml").is_file() else a.agent_dir)
     rows = [row_for({"instance_id": i, **done[i]}, verdicts.get(i), "" if development else manifest.get(i, ""),
                     (colab_results_url(results) if colab else
-                     f"https://www.kaggle.com/code/{kref}"), in_sample=not a.outside_sample) for i in order if i in done]
+                     f"https://www.kaggle.com/code/{kref}"), in_sample=not a.outside_sample,
+                    generation=_generation_used(done[i].get("generation_defaults"), sub_gen))
+            for i in order if i in done]
     table = pd.DataFrame(rows, columns=COLUMNS)
     if len(table):
         print(table[["instance_id", "tier_code", "is_resolved", "reason_text", "agent_patch_bytes", "tool_call_count",
@@ -742,7 +888,9 @@ def run_batch(a, api, user: str, ids: list[str], tasks: dict, manifest: dict, ov
             commit = subprocess.run(["git", "-C", str(a.agent_dir), "rev-parse", "HEAD"], capture_output=True,
                                     text=True, check=False).stdout.strip() or None
             settings = settings_for(good, a.seed, list(ids), len(manifest), a.machine_shape, a.docker_image,
-                                    a.competition, commit, a.source, tasks_per_kernel=len(order), colab=colab)
+                                    a.competition, commit, a.source, tasks_per_kernel=len(order), colab=colab,
+                                    generation=_generation_used(good.get("generation_defaults"), sub_gen),
+                                    model_source=getattr(a, "model_source", MODEL_SOURCE))
             if not a.sample:
                 settings = given_sample(settings, getattr(a, "sample_method", None))
             settings["notes"] += a.note or []
@@ -829,7 +977,9 @@ def main() -> int:
     if missing:
         sys.exit(f"not in the tasks.jsonl given, or no snapshot: {', '.join(missing)}")
     check_arm_options(a.label, a.context, a.batch, development)
+    check_colab_options(a.colab, a.batch, a.label, a.collect, a.colab_session, a.colab_results)
     batch_name(a.source, a.label)   # a bad label fails here, before anything is uploaded
+    a.model_source = model_source(declared_model(a.agent_dir))   # the model the kernel attaches: the one declared
     a.context_note = None
     if a.context:
         contexts = read_context(a.context)
@@ -841,6 +991,10 @@ def main() -> int:
           + f" ({', '.join(f'{t} {n}' for t, n in by_tier.items())}): {', '.join(ids)}")
     if a.plan_only:
         return 0
+    if a.collect:   # the run span, and where its forwarded spans go: DENTAL_TELEMETRY (off by default; spec 014 US7)
+        from health_transformation_lab_nlp import telemetry
+        telemetry.setup()
+        telemetry.start_script("official_agent_run", data_label="public", is_development_set=development)
     if not (os.environ.get("KAGGLE_API_TOKEN") or os.environ.get("KAGGLE_KEY")):
         sys.exit("KAGGLE_API_TOKEN is not set (ops/secrets_register.yaml, Kaggle API token)")
     user = os.environ.get("KAGGLE_USERNAME") or "jcblearning"
@@ -870,7 +1024,8 @@ def main() -> int:
                 k.mkdir(parents=True)
                 shutil.copyfile(HERE / "official_agent_kernel.py", k / "official_agent_kernel.py")
                 (k / "kernel-metadata.json").write_text(json.dumps(
-                    kernel_metadata(user, iid, a.machine_shape, a.docker_image, a.competition), indent=1))
+                    kernel_metadata(user, iid, a.machine_shape, a.docker_image, a.competition, a.model_source),
+                    indent=1))
                 try:
                     pushed = api.kernels_push(str(k), timeout=str(a.kernel_minutes * 60))
                     refused = getattr(pushed, "error", None)
@@ -914,8 +1069,10 @@ def main() -> int:
 
     verdicts = _verify(a.dataset / "tasks.jsonl", a.dataset / "snapshots", a.agent_dir,
                        {i: (r.get("patch") or "") for i, r in results.items()}, a.work / "_verify")
+    sub_gen = submission_generation(a.agent_dir)
     rows = [row_for({"instance_id": i, **results[i]}, verdicts.get(i), manifest.get(i, ""),
-                    f"https://www.kaggle.com/code/{user}/{kernel_slug(i)}", in_sample=not a.outside_sample) for i in ids]
+                    f"https://www.kaggle.com/code/{user}/{kernel_slug(i)}", in_sample=not a.outside_sample,
+                    generation=_generation_used(results[i].get("generation_defaults"), sub_gen)) for i in ids]
     table = pd.DataFrame(rows, columns=COLUMNS)
     print(table[["instance_id", "tier_code", "is_resolved", "reason_text", "agent_patch_bytes", "tool_call_count",
                  "agent_seconds", "gpu_count", "gpu_name"]].to_string(index=False))
@@ -929,7 +1086,9 @@ def main() -> int:
     if good and a.sample:
         commit = subprocess.run(["git", "-C", str(a.agent_dir), "rev-parse", "HEAD"], capture_output=True, text=True,
                                 check=False).stdout.strip() or None
-        settings = settings_for(good, a.seed, ids, len(manifest), a.machine_shape, a.docker_image, a.competition, commit)
+        settings = settings_for(good, a.seed, ids, len(manifest), a.machine_shape, a.docker_image, a.competition, commit,
+                                generation=_generation_used(good.get("generation_defaults"), sub_gen),
+                                model_source=a.model_source)
         settings["notes"] += a.note or []
         out.with_name(out.stem + "_settings.json").write_text(json.dumps(settings, indent=1) + "\n")
     return 0

@@ -148,28 +148,30 @@ not clinical performance. The right column is the paper's own published figures,
 school**, cited by figure or table. They come from a different population, with different definitions, and are
 never computed here. Nothing on this page is a replication.
 
-| Measure | This repo: synthetic, 240 review charts | Patel et al. 2022: real records, one dental school |
+| Measure | This repo: synthetic, 223 review charts | Patel et al. 2022: real records, one dental school |
 |---|---|---|
-| Section has a status (M1 / M2 / M3) | 69.6% / 75.4% / 81.2% | 36% / 18% / 80% as the text gives them (Fig. 1 swaps the first two) |
-| Merged phenotype has a status | 98.8% | 100% (Fig. 1) |
-| Visits decided by M1 / M2 / M3 | 69.6% / 23.3% / 5.8% | not reported in this form |
-| Diagnoser F1 | 0.56 pooled over six statuses, against the generator's truth | 97% against two experts on 200 charts (text) |
-| Extractor F1 | 0.66 pooled over six statuses | 95% as stated; its own 91% precision and 87% recall give 0.89 (text; Table 1) |
-| Phenotype, correct status | 67.5 per 100 charts (95% CI 61.3–73.3) | not validated against experts in the paper |
+| Section has a status (M1 / M2 / M3) | 65.0% / 79.8% / 76.2% | 36% / 18% / 80% as the text gives them (Fig. 1 swaps the first two) |
+| Merged phenotype has a status | 98.7% | 100% (Fig. 1) |
+| Visits decided by M1 / M2 / M3 | 65.0% / 29.1% / 4.5% | not reported in this form |
+| Diagnoser F1 | 0.50 pooled over six statuses, against the generator's truth | 97% against two experts on 200 charts (text) |
+| Extractor F1 | 0.69 pooled over six statuses | 95% as stated; its own 91% precision and 87% recall give 0.89 (text; Table 1) |
+| Phenotype, correct status | 69.1 per 100 charts (95% CI 63.2–75.3), at five status groups as the leaderboard scores | not validated against experts in the paper |
 
-On all 4,343 synthetic visits, the sections have a status on 70.5% / 73.6% / 79.1% of visits, and the merged
-phenotype on 98.2%.
+On all 3,794 synthetic visits, the sections have a status on 70.0% / 73.7% / 78.8% of visits, and the merged
+phenotype on 98.5%. From `data_quality/completeness_patel2022.csv`, `periodx/confusion_scores.csv` and the
+`algorithm_patel2022` row of [results.md](results.md).
 
 **What the synthetic numbers show (and don't):**
-- The Diagnoser finds almost no stage I (recall 0.02). The generator's stage I charts have pockets under 4 mm,
-  and Fig. 2 calls a chart periodontitis only with a PD ≥ 4 mm, so those charts land in "reduced periodontium"
-  (healthy or gingivitis). That is the figure working as drawn on charts drawn from the AAP worksheet, not a bug.
-- Of the 59 review notes with no status from the Extractor, 53 read as periodontitis with no stage. All of them
-  mention "bone loss" and name no stage the word list can read. Periodontitis with no stage has no status, so
-  the phenotype goes on to the chart. Turning negation on
-  makes no difference on these notes.
-- The diagnosis codes decide 70% of visits and are right on 65% of those. The note decides 23% (79% right) and the
-  chart 6% (71% right). So the codes, more than either PerioDx reader, set the phenotype's score.
+- The Diagnoser finds no stage I (0 of 41). The generator's stage I charts have pockets under 4 mm,
+  and Fig. 2 calls a chart periodontitis only with a PD ≥ 4 mm, so 33 of them land in "reduced periodontium"
+  (healthy or gingivitis); the other 8 have no gum chart, so no status. That is the figure working as drawn on charts drawn from the AAP worksheet, not a bug.
+- Of the 223 review notes, 45 get no status from the Extractor; 40 of them read as periodontitis with no stage,
+  and the other 5 state no diagnosis. All 40 mention "bone loss" and name no stage the word list can read.
+  Periodontitis with no stage has no status, so the phenotype goes on to the chart. Turning negation on makes no
+  difference on these 45 notes.
+- The diagnosis codes decide 65% of the review charts and are right on 66% of those, at five status groups. The
+  note decides 29% (77% right) and the chart 4% (8 of 10 right). So the codes, more than either PerioDx reader, set
+  the phenotype's score.
 
 **The paper's own inconsistencies,** recorded and not resolved by guessing ([references](references.md), item 4):
 - Fig. 1 attaches the text's 36% and 18% to the other section.
