@@ -6,6 +6,13 @@
    "kernel_dataset": "jcblearning/htlnlp-colab-kernel-colab-31b-smoke",
    "model": "google/gemma-4/other/gemma-4-31b-it-qat-w4a16-ct/2",
    "network_open_acknowledged": true
+  },
+  {
+   "label": "colab-31b-smoke-2",
+   "bundle": "jcblearning/htlnlp-official-colab-31b-smoke",
+   "kernel_dataset": "jcblearning/htlnlp-colab-kernel-colab-31b-smoke",
+   "model": "google/gemma-4/other/gemma-4-31b-it-qat-w4a16-ct/2",
+   "network_open_acknowledged": true
   }
  ]
 }
