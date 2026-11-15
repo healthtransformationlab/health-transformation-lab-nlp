@@ -514,15 +514,38 @@ def is_forbidden(e: BaseException) -> bool:
     return "403" in str(e) and "forbidden" in str(e).lower()
 
 
+LISTING_PAGE_SIZE = 20   # what kaggle 2.2.5's dataset_list asks for; a shorter page is the last
+LISTING_PAGES = 25       # read no further: a listing longer than this answers nothing
+
+
 def listed_as_own(api, ref: str) -> bool | None:
-    """Whether the owner's own datasets, private ones included, hold `ref`: True or False, or None when Kaggle's
-    listing fails. Used after a 403, which alone cannot tell a missing dataset from one that may not be read (#815)."""
+    """Whether the owner's own datasets, private ones included, hold `ref`: True or False, or None when the answer is
+    not a full one. Used after a 403, which alone cannot tell a missing dataset from one that may not be read (#815).
+    Only the owner's own token sees its private datasets, so a token of another account answers None, as do a listing
+    that fails or comes back empty-handed or in another form, and one longer than LISTING_PAGES pages (Kaggle's search
+    matches loosely, so the dataset can sit past the first page)."""
     owner, _, slug = ref.partition("/")
     try:
-        found = api.dataset_list(user=owner, search=slug) or []
+        me = str(api.get_config_value("username") or "")
+    except Exception:  # noqa: BLE001 - whose token it is is not known
+        return None
+    if not slug or me.lower() != owner.lower():
+        return None
+    try:
+        for page in range(1, LISTING_PAGES + 1):
+            found = api.dataset_list(mine=True, search=slug, page=page)
+            if found is None:
+                return None
+            refs = [str(getattr(d, "ref", "") or "") for d in found]
+            if any("/" not in r for r in refs):
+                return None
+            if any(r.lower() == ref.lower() for r in refs):
+                return True
+            if len(refs) < LISTING_PAGE_SIZE:
+                return False
     except Exception:  # noqa: BLE001 - a listing that fails tells nothing
         return None
-    return any(str(getattr(d, "ref", d)).lower() == ref.lower() for d in found)
+    return None
 
 
 def dataset_exists(api, ref: str, tries: int = 3, sleep=time.sleep) -> bool:

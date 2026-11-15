@@ -810,15 +810,24 @@ class _FakeKaggle:
             raise _HttpError(404)
         return "ready"
 
-    def dataset_list(self, user=None, search=None, **k):
-        """The owner's own datasets whose slug holds `search`, private ones included, as Kaggle lists them; or the
-        error set for the listing."""
+    username = "someone"   # whose token this is, as Kaggle reports it after checking the token
+
+    def get_config_value(self, name):
+        return self.username if name == "username" else None
+
+    def dataset_list(self, user=None, search=None, mine=False, page=1, **k):
+        """The token owner's own datasets (`mine`) whose slug holds `search`, private ones included, 20 to a page as
+        kaggle 2.2.5 asks for them; or the error or odd answer set for the listing."""
         import types
-        self.calls.append(("datasets", user, search))
+        self.calls.append(("datasets", mine, search, page))
         if getattr(self, "list_error", None) is not None:
             raise self.list_error
-        return [types.SimpleNamespace(ref=r) for r in sorted(self.datasets)
-                if r.split("/")[0] == user and (search or "") in r.split("/")[1]]
+        if hasattr(self, "list_answer"):
+            return self.list_answer
+        rows = [types.SimpleNamespace(ref=r) for r in getattr(self, "decoys", []) + sorted(self.datasets)
+                if mine and r.split("/")[0].lower() == self.username.lower()
+                and (search or "").lower() in r.split("/")[-1].lower()]
+        return rows[(page - 1) * 20: page * 20]
 
     def _take(self, folder):
         from pathlib import Path
@@ -925,19 +934,39 @@ def test_a_status_call_that_fails_stops_the_run_and_only_a_missing_dataset_is_a_
 def test_a_403_for_a_dataset_the_owner_does_not_have_is_a_fresh_start_and_any_doubt_still_stops(co, monkeypatch,
                                                                                                  tmp_path):
     """#815: Kaggle answers 403, not 404, for a private dataset that does not exist, so a run with a new label stopped
-    before its first upload. After a 403, the owner's own datasets say whether it is there."""
+    before its first upload. After a 403, the token owner's own datasets, every page of them, say whether it is
+    there; anything less than a full answer from the owner's own token still stops the run."""
     _on_machine(co, monkeypatch, tmp_path)
     out = tmp_path / "content" / "htl_kaggle" / "working"
     ref = "someone/htlnlp-colab-official-colab-graph"
     absent = _FakeKaggle({"someone/htlnlp-colab-official-colab-graph-l4": {}}, status_error=_HttpError(403))
     assert co.restore(absent, "someone", "colab-graph", out, sleep=lambda s: None) == ("fresh", 0)
-    assert ("datasets", "someone", "htlnlp-colab-official-colab-graph") in absent.calls   # its own list was read
+    assert ("datasets", True, "htlnlp-colab-official-colab-graph", 1) in absent.calls   # its own list was read
     there = _FakeKaggle({ref: _uploaded(co.session_id())}, status_error=_HttpError(403))
-    assert co.dataset_exists(there, ref, sleep=lambda s: None) is True          # listed: there, so never a fresh start
-    unlisted = _FakeKaggle(status_error=_HttpError(403))
-    unlisted.list_error = ConnectionError("the network blinked")
-    with pytest.raises(SystemExit, match="could not tell"):                     # the list cannot be read: still stops
-        co.restore(unlisted, "someone", "colab-graph", out, sleep=lambda s: None)
+    there.decoys = [f"someone/htlnlp-colab-official-colab-graph-arm{i:02d}" for i in range(25)]   # past page one
+    assert co.dataset_exists(there, ref, sleep=lambda s: None) is True          # found on page two: never fresh
+    assert ("datasets", True, "htlnlp-colab-official-colab-graph", 2) in there.calls
+    upper = _FakeKaggle({"Someone/HTLNLP-colab-official-colab-graph": {}}, status_error=_HttpError(403))
+    upper.username = "SOMEONE"
+    assert co.dataset_exists(upper, ref, sleep=lambda s: None) is True          # Kaggle's names ignore case
+    doubts = []
+    other = _FakeKaggle(status_error=_HttpError(403))
+    other.username = "someone-else"                                              # another account's token: cannot see
+    doubts.append(other)
+    broken = _FakeKaggle(status_error=_HttpError(403))
+    broken.list_error = ConnectionError("the network blinked")
+    doubts.append(broken)
+    for answer in (None, [type("Row", (), {"ref": "htlnlp-colab-official-colab-graph"})()]):   # no answer; odd form
+        odd = _FakeKaggle(status_error=_HttpError(403))
+        odd.list_answer = answer
+        doubts.append(odd)
+    endless = _FakeKaggle(status_error=_HttpError(403))
+    endless.decoys = [f"someone/htlnlp-colab-official-colab-graph-arm{i:04d}" for i in range(20 * co.LISTING_PAGES)]
+    doubts.append(endless)                                                       # more pages than it reads
+    for api in doubts:
+        with pytest.raises(SystemExit, match="could not tell"):
+            co.restore(api, "someone", "colab-graph", out, sleep=lambda s: None)
+        assert sum(c[0] == "status" for c in api.calls) == 3                     # tried again before stopping
     assert co.is_forbidden(_HttpError(403)) and not co.is_forbidden(_HttpError(404))
     assert co.is_forbidden(RuntimeError("403 Client Error: Forbidden for url")) and not co.is_forbidden(_HttpError(401))
 
