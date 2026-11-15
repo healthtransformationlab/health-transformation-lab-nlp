@@ -857,3 +857,41 @@ for. No run called a skill or named a path outside the workspace.
 Twenty-three tasks at temperature 0.2, one run each: this is not a leaderboard score. The November 15 leaderboard entry
 was main (PR 98's prompt with PR 100's 8,192 output budget), which ties both at 4 of 23 on these tasks and ended no run
 at the context window (its record: #762).
+
+# The competition's own development set: scratch files removed and 12,288 tokens for output (November 15, 2026)
+
+gemma-developer-agent PR 107 (issues #104 and #105, carrying PR 106) changes two things on top of main at 8,192
+(PR 98's prompt): the step that runs the targeted tests also lists the workspace with `git status --short` and says to
+delete files made only to try or check the fix, and `max_output_tokens` is 12,288 (20,480 for input, above the largest
+prompt seen at 8,192; 8,192 for an answer after the 4,096 thinking budget). With the owner's approval it ran on the same
+23 tasks, paired with main's run at 8,192: the same evaluator end to end, one Kaggle kernel on four L4 GPUs
+(`htlnlp-offrun-devset-pr107`, 61 minutes), telemetry on. `gemma-4-e4b-it-qat-w4a16-ct_swegemma_devset-pr107.csv` has
+one row per task, written by the runner (`--label pr107 --collect --reuse-output`). Its `_settings.json` names the
+commit that ran, `5ce5f98`; the runner first read the branch's later merge commit, which was corrected by hand.
+
+It was also the first run whose cost in GPU quota was measured (`kaggle/gpu_quota.py`, #773): 32.34 hours used before
+and 34.34 after, **2.00 hours for 61 minutes**, so a four-GPU kernel counts double.
+
+| On the same 23 tasks | main at 8,192 | PR 107 |
+|---|---|---|
+| **Resolved** | **4** | **4** |
+| Tests fail with the agent's patch | 12 | 9 |
+| Empty patch | 4 | 3 |
+| Errors before any test ran | 2 | 5 |
+| The tests ran out of time (exit code 124) | 1 | 2 |
+| Ended at the context window | 0 | 0 |
+| An answer cut off at the output limit | 1 (exactly 8,192) | 0 (largest 5,443) |
+| `fastapi_14463`'s resolving patch | 215,685 bytes | 783 bytes |
+| Tool calls; to a graph tool | 271; 13 | 257; 10 |
+
+Both resolved `fastapi_14301` and `fastapi_14463`. Only main at 8,192 resolved `fastapi_13537` and `rich_3905`; only
+PR 107 resolved `rich_3454` and `rich_3518`. With 2 and 2 discordant tasks, the exact McNemar test gives p = 1.0: **no
+difference in resolved tasks can be claimed**.
+
+What the two changes are for both worked, at no visible cost. The scratch files that went into main's patches are
+gone: `fastapi_14463`'s two-line fix is a 783-byte patch, and the only new file in any patch, `scripts/release.sh`, is
+in a task whose own fix adds a file. No answer was cut off and no run ended at the context window. In the kernel's
+traces (its output on Kaggle; not committed, since they hold the competition's task text), 27 of the 59 `edit_file`
+calls (46%) failed with "old_string not found". Across four runs on these tasks that rate is 37% (92 of 252), higher
+for anchors with a backslash (50%) or of nine lines or more (54%); gemma-developer-agent PRs 109 (the copyfix adapter)
+and 117 (short anchors) act on it. Twenty-three tasks at temperature 0.2, one run each: not a leaderboard score.
