@@ -449,6 +449,28 @@ def test_the_sandbox_has_the_hosts_packages_dev_fd_and_shm(session):
     assert _site.getusersitepackages() in out["stdout"]
 
 
+@needs_sandbox
+def test_a_python_installed_under_tmp_is_visible_in_the_sandbox_and_tmp_stays_private(session):
+    """A virtual environment under /tmp (a cloud session's scratch folder) was hidden by the sandbox's own /tmp, so
+    python3 fell back to the system's, without pytest, and verification failed even the reference patch (#774)."""
+    import shutil
+    import tempfile
+    prefix = Path(tempfile.mkdtemp(prefix="htlnlp_py_", dir="/tmp"))
+    try:
+        (prefix / "marker").write_text("bound-ok\n")
+        box = ah.Sandbox(session.workdir)
+        box.binds.append(str(prefix))
+        code, out, _ = box.run(f"cat {prefix}/marker; touch {prefix}/x 2>&1; touch /tmp/scratch && echo tmp-ok; "
+                               f"ls /tmp | grep -c htlnlp_ || true", 30, ah._env("/workspace"))
+        assert code == 0, out                                    # the command ran to its end in the sandbox
+        assert "bound-ok" in out, out                            # visible
+        assert "Read-only" in out, out                           # and read-only
+        assert "tmp-ok" in out, out                              # /tmp is still writable
+        assert out.strip().splitlines()[-1] == "1", out          # and private: only the bound folder shows
+    finally:
+        shutil.rmtree(prefix, ignore_errors=True)
+
+
 def test_commands_find_the_running_python_first(session):
     """CI's Python lives in /opt/hostedtoolcache and Kaggle's in /opt/conda: python3 in a command must be the
     interpreter running the harness, with its packages, not whatever /usr/bin holds (CI on PR #549)."""
