@@ -6,8 +6,9 @@ One writer for every condition and both task sets, so the conditions differ only
   finished but its output looks wrong.
 - `span_names`: `symptom`, plus the function that failed, the data label, its rows in and out (spec 040 US6) and the
   error type. When nothing failed, the rows in and out of each step that counts them.
-- `span_names_message`: `span_names`, plus the failing span's error message with every quoted value, path, file name
-  and number masked, cut to 240 characters.
+- `span_names_message`: `span_names`, plus the failing span's error message, masked: everything after its first
+  `": "` (where Python and pandas print the value at fault, quoted or not), then every quoted value, path, file name
+  and number in what is left, cut to 240 characters. A message that embeds a traceback is left out.
 
 It reads the span file a run writes under `DENTAL_TELEMETRY=file` (one OpenTelemetry span a line, the SDK's own
 JSON) and uses only each span's `name`, `parent_id`, `start_time`, `status` and the attributes `pipeline.step`,
@@ -27,10 +28,13 @@ CONDITIONS = ("symptom", "span_names", "span_names_message")
 MAX_MESSAGE_CHARS = 240                  # as 69_failure_report.py cuts an error line
 MAX_COUNTED_STEPS = 10                   # a run that did not fail: at most this many counted steps are named
 
-_QUOTED = re.compile(r"'[^']*'|\"[^\"]*\"")
+_TRACEBACK = "Traceback (most recent call last)"
+# A quoted value: an apostrophe inside a word is text; a quote left open, as a cut message leaves it, runs
+# to the end.
+_QUOTED = re.compile(r"(?<!\w)'.*?(?:'(?!\w)|$)|\"[^\"]*(?:\"|$)")
 _PATH = re.compile(r"[\w.~:\-]*[\\/][\w.~\\/\-]*")
-_FILE = re.compile(r"\b[\w\-]+\.(?:csv|tsv|py|json|jsonl|parquet|txt|ya?ml|xpt|md|ipynb|sql|r|zip|gz)\b", re.IGNORECASE)
-_NUMBER = re.compile(r"\b\d+(?:\.\d+)?\b")
+_FILE = re.compile(r"\b[\w\-]+\.[A-Za-z][A-Za-z0-9]{0,4}\b")           # a bare file name, any short extension
+_NUMBER = re.compile(r"\d+(?:\.\d+)?(?:[eE][-+]?\d+)?")                 # also inside an identifier: V3437
 
 
 @traced
@@ -39,10 +43,12 @@ def read_spans(path: Path) -> list[dict]:
     skipped."""
     spans = []
     for line in Path(path).read_text(encoding="utf-8").splitlines():
-        if line.strip():
-            item = json.loads(line)
-            if isinstance(item, dict) and "context" in item:
-                spans.append(item)
+        try:
+            item = json.loads(line) if line.strip() else None
+        except json.JSONDecodeError:              # a run killed mid-write leaves a cut-off last line
+            continue
+        if isinstance(item, dict) and "context" in item:
+            spans.append(item)
     return _ordered(spans)
 
 
@@ -55,15 +61,15 @@ def write_statement(spans: list[dict], condition: str) -> str:
         raise ValueError("no spans: a statement needs the spans of one run")
     spans = _ordered(spans)
     failed = _innermost_failure(spans)
-    step = _step_name(spans)
+    step = _step_name(spans, failed)
     lines = [f"The {step} step stopped with an error." if failed
              else f"The {step} step finished, but its output looks wrong."]
     if condition == "symptom":
         return lines[0]
 
-    label = next((s["attributes"]["data.label"] for s in spans if s.get("attributes", {}).get("data.label")), None)
+    label = next((_attrs(s)["data.label"] for s in spans if _attrs(s).get("data.label")), None)
     if failed:
-        attrs = failed.get("attributes", {})
+        attrs = _attrs(failed)
         lines.append(f"It failed in {failed['name']}.")
         if label:
             lines.append(f"Data label: {label}.")
@@ -78,10 +84,14 @@ def write_statement(spans: list[dict], condition: str) -> str:
         counted = [s for s in spans if _counts(s)][:MAX_COUNTED_STEPS]
         lines += [f"{s['name']}: {_counts(s)}." for s in counted]
     if condition == "span_names_message" and failed:
-        message = (failed.get("status") or {}).get("description")
+        message = _mask((failed.get("status") or {}).get("description") or "")
         if message:
-            lines.append(f"Error message: {_mask(message)}")
+            lines.append(f"Error message: {message}")
     return "\n".join(lines)
+
+
+def _attrs(span: dict) -> dict:
+    return span.get("attributes") or {}
 
 
 def _ordered(spans: list[dict]) -> list[dict]:
@@ -89,52 +99,77 @@ def _ordered(spans: list[dict]) -> list[dict]:
                                         (s.get("context") or {}).get("span_id") or ""))
 
 
+def _id(span: dict) -> str | None:
+    return (span.get("context") or {}).get("span_id")
+
+
 def _failed(span: dict) -> bool:
     return (span.get("status") or {}).get("status_code") == "ERROR"
 
 
-def _depth(span: dict, parents: dict) -> int:
-    depth, seen, parent = 0, set(), span.get("parent_id")
-    while parent in parents and parent not in seen:
-        seen.add(parent)
-        depth += 1
-        parent = parents[parent]
-    return depth
+def _last_ended(spans: list[dict]) -> dict:
+    return max(spans, key=lambda s: (s.get("end_time") or "", s.get("start_time") or "", _id(s) or ""))
 
 
 def _innermost_failure(spans: list[dict]) -> dict | None:
-    """The deepest span with status ERROR: an exception marks every span it passes through, so the deepest is where
-    it was raised. Ties go to the one that started first."""
-    parents = {(s.get("context") or {}).get("span_id"): s.get("parent_id") for s in spans}
+    """Where the exception that ended the run was raised. An exception marks every span it passes through, so follow
+    the failed spans down from the outermost, taking at each level the failed child that ended last: a failure the
+    code caught ends before the one that got through. None when no span failed."""
+    by_id = {_id(s): s for s in spans}
     failures = [s for s in spans if _failed(s)]
     if not failures:
         return None
-    deepest = max(_depth(s, parents) for s in failures)
-    return next(s for s in failures if _depth(s, parents) == deepest)
+    top = [s for s in failures if not _failed(by_id.get(s.get("parent_id"), {}))]
+    here, seen = _last_ended(top or failures), set()
+    while _id(here) not in seen:
+        seen.add(_id(here))
+        children = [s for s in failures if s.get("parent_id") == _id(here) and s is not here]
+        if not children:
+            break
+        here = _last_ended(children)
+    return here
 
 
-def _step_name(spans: list[dict]) -> str:
-    """The run's step: a script's run span (#712), else any span naming a pipeline step, else the outermost span,
-    which stands for the step in runs older than the run spans."""
-    for kind in ("script", None):
-        for s in spans:
-            attrs = s.get("attributes") or {}
-            if attrs.get("pipeline.step") and (kind is None or attrs.get("pipeline.kind") == kind):
-                return attrs["pipeline.step"]
-    roots = [s for s in spans if not s.get("parent_id")]
+def _step_name(spans: list[dict], failed: dict | None) -> str:
+    """The run's step: a script's run span (#712); else the pipeline step around the failure (the failing span or its
+    nearest ancestor that names one), or the first named step when nothing failed; else the outermost span around the
+    failure, which stands for the step in runs older than the run spans."""
+    for s in spans:
+        if _attrs(s).get("pipeline.step") and _attrs(s).get("pipeline.kind") == "script":
+            return _attrs(s)["pipeline.step"]
+    by_id = {_id(s): s for s in spans}
+    chain, here, seen = [], failed, set()
+    while here is not None and _id(here) not in seen:
+        seen.add(_id(here))
+        chain.append(here)
+        here = by_id.get(here.get("parent_id"))
+    for s in chain or spans:
+        if _attrs(s).get("pipeline.step"):
+            return _attrs(s)["pipeline.step"]
+    if chain:
+        return chain[-1]["name"]
+    roots = [s for s in spans if not s.get("parent_id") or s.get("parent_id") not in by_id]
     return (roots or spans)[0]["name"]
 
 
 def _counts(span: dict) -> str:
-    attrs = span.get("attributes") or {}
+    attrs = _attrs(span)
     parts = [f"{words} {attrs[key]}" for key, words in (("row_in_count", "rows in"), ("row_out_count", "rows out"))
              if isinstance(attrs.get(key), int)]
     return ", ".join(parts)
 
 
-def _mask(message: str) -> str:
-    """The error message with quoted values, paths, file names and numbers masked, cut to MAX_MESSAGE_CHARS."""
-    text = _QUOTED.sub("<value>", " ".join(message.split()))
+def _mask(message: str) -> str | None:
+    """The error message masked, or None when there is nothing safe to give. Everything after the first ": " is the
+    value at fault (Python and pandas print it there, quoted or not); then quoted values, paths, bare file names and
+    numbers in what is left. Cut to MAX_MESSAGE_CHARS. A message that embeds a traceback carries source lines and is
+    left out."""
+    text = " ".join(message.split())
+    if not text or _TRACEBACK in text:
+        return None
+    head, colon, _ = text.partition(": ")
+    text = head + (": <value>" if colon else "")
+    text = _QUOTED.sub("<value>", text)
     text = _PATH.sub("<path>", text)
     text = _FILE.sub("<path>", text)
     text = _NUMBER.sub("<n>", text)

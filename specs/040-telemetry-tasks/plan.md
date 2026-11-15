@@ -78,12 +78,23 @@ each step with `DENTAL_TELEMETRY_LEVEL=detail`, and the run's settings record it
 - **`symptom`**: the run span's `pipeline.step`, and the outcome. It "stopped with an error" if any span has status
   `ERROR`; otherwise it "finished, but its output looks wrong". The issue's third outcome, "its checks failed", has
   no span attribute to come from today. It is left out, and #753 says so in a dated line.
-- **`span_names`**: `symptom`, plus the innermost `ERROR` span's `name` (the function), `data.label`, `error.type`,
+- **The failure and the step.** The failing function is where the exception that ended the run was raised: follow
+  the `ERROR` spans down from the outermost, taking at each level the failed child that ended last, so a failure the
+  code caught is passed over. The step is a script's run span if there is one; else the pipeline step around the
+  failure (the failing span or its nearest ancestor naming one), or the first named step when nothing failed; else
+  the outermost span around the failure.
+- **`span_names`**: `symptom`, plus the failing span's `name` (the function), `data.label`, `error.type`,
   and `row_in_count` and `row_out_count` when the span has them. When no span failed, it gives instead the rows in
   and out of each step that counts them, at most 10, in the order they started: that is where a filter dropping
   rows shows.
-- **`span_names_message`**: `span_names`, plus `status.description` with every quoted value, path, file name and
-  number replaced by `<value>`, `<path>` and `<n>`, cut to 240 characters as `69_failure_report.py` cuts error lines.
+- **`span_names_message`**: `span_names`, plus `status.description`, masked. Everything after its first `": "` becomes
+  `<value>`: Python and pandas print the value at fault there, quoted or not (a pandas date error prints a whole
+  note). In what is left, every quoted value (an apostrophe inside a word is text; a quote left open, as the 500
+  characters `telemetry` keeps can leave it, runs to the end), path, bare file name and number (also inside an
+  identifier) becomes `<value>`, `<path>` or `<n>`. Cut to 240 characters as `69_failure_report.py` cuts error lines.
+  A message that embeds a traceback is left out. What masking cannot catch: a message that is a bare value with no
+  `": "` and no quotes. The target modules raise none (their messages interpolate file names, counts and settings),
+  and the span already holds the same text, which `telemetry` keeps under its own rule.
 - The same lines always give the same text: spans are ordered by `start_time`, and no clock or random value is read.
 
 ## How the pieces fit
