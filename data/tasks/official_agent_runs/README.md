@@ -926,3 +926,34 @@ traces (its output on Kaggle; not committed, since they hold the competition's t
 calls (46%) failed with "old_string not found". Across four runs on these tasks that rate is 37% (92 of 252), higher
 for anchors with a backslash (50%) or of nine lines or more (54%); gemma-developer-agent PRs 109 (the copyfix adapter)
 and 117 (short anchors) act on it. Twenty-three tasks at temperature 0.2, one run each: not a leaderboard score.
+
+## colab-skill: does E4B call the edit-fallback scripts? (028 AI17, #812; run on Modal)
+
+A mechanism check, not an effect. It asks whether E4B calls gemma-developer-agent's edit-fallback skill at all, which
+installs `find.py` and `edit.py` with one `run_skill_script` call. It does not ask whether the skill resolves more
+tasks. The baseline ran agent b95b235, which differs from this run's agent (gemma-developer-agent c7d68ea) in the
+prompt, the anchors, the graph tools and the output cap as well as the skill.
+
+- **Where it ran:** on Modal, not Colab. Both Colab sessions ended before they uploaded anything, so the run moved to
+  Modal: one L4, Actions run 43764031588, November 15, 2026, 21:30 to 22:34 UTC, capped at 4 USD.
+- **The bundle:** `jcblearning/htlnlp-official-colab-skill`, 30 of `colab-statement-l4`'s 93 tasks (seed 20261110).
+  Only the first 10 ran inside the kernel's default 45-minute deadline. The traces are in the private results dataset
+  `jcblearning/htlnlp-colab-official-colab-skill`.
+- **The counts:** [`colab_skill_script_use.csv`](colab_skill_script_use.csv), one row per task, made by
+  `kaggle/skill_use_counts.py` from those traces.
+
+| What the traces show | 10 tasks |
+|---|---|
+| Tasks that called `run_skill_script` (the install) | 0 |
+| Tasks that ran `find.py` | 0 |
+| `edit.py` calls | 1 (htlnlp_cca2d155), which failed with "No such file" because nothing was installed |
+| `edit_file` failures: not found / occurs N times | 3 / 1 |
+| Tool calls, all tasks | 102 |
+| Agent seconds a task: mean; tasks at the 5-minute limit | 216.5; 5 (four at 303 s, one at 300 s) |
+
+**What it means:** on that prompt, E4B never used the skill. The install was step 2 of the prompt's "Order of work",
+below the editing rules. The agent's first call was `read_file` in 6 tasks, `code_analyzer` in 2, `run_command` in 1
+and `get_status` in 1. The 31B smoke test (#818, the same prompt) installed it in 0 of 3 tasks. So the skill's
+evidence is still CPU-only. gemma-developer-agent #154 moved the install and `find.py` to the agent's first two calls
+(commit a09e97e). The development-set runs listed on `data/824-028-colab-devset` and the Kaggle run
+`devset-e4b-all-k` check whether the agent now makes them.
