@@ -168,7 +168,8 @@ All 12 are BERT-type models: AI that reads text and picks a label. [What is a BE
 
 Plus baselines and MedGemma ([1.5 4B](https://huggingface.co/google/medgemma-1.5-4b-it),
 [27B text](https://huggingface.co/google/medgemma-27b-text-it); [arXiv 2507.05201](https://arxiv.org/abs/2507.05201)).
-**Status:** twelve encoders have results (3 epochs), all run on Kaggle GPUs on the current notes (2026-11-04,
+**Status:** twelve encoders have results: the ten classifiers in the table above (not SapBERT or GTE-ModernColBERT,
+which don't assign a status) plus Bio_ClinicalBERT and GatorTron, all run on Kaggle GPUs on the current notes (2026-11-04,
 `data/datasets/results_manifest.csv`). On the 223 synthetic review charts (against the generator's truth at five
 status groups, with 95% bootstrap CIs; `28_ladder_vs_truth.py`, `data/datasets/ladder/ladder_vs_truth.csv`):
 - alone they score 81.2-88.3 per 100 (ModernBERT large best, GatorTron lowest); only ModernBERT large is

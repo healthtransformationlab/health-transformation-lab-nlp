@@ -79,7 +79,7 @@ def test_every_review_count_in_the_docs_is_the_answer_keys(key):
                        "that quotes the earlier build:\n" + "\n".join(wrong))
 
 
-def test_the_guard_reads_nested_rules_files_and_hand_written_parts():
+def test_the_guard_reads_hand_written_parts_and_skips_the_rules_files():
     files = _markdown_files()
     assert "docs/edr/README.md" in files and "AGENTS.md" not in files
     assert "databricks/agents/chart_review/AGENTS.md" not in files
@@ -144,10 +144,13 @@ def test_periodx_bullets_count_the_review_notes(key):
     from health_transformation_lab_nlp.periodx import note_status
     assert all(note_status(t) == note_status(t, negation=True) for t in no_status["note_text"])
     assert f"Turning negation on makes no difference on these {len(no_status)} notes" in page
-    stage1 = rev.loc[rev["truth_status"] == "periodontitis_stage_1", "periodx_chart_label"].fillna("unknown")
-    reduced, none = int(stage1.isin(["healthy", "gingivitis"]).sum()), int((stage1 == "unknown").sum())
-    assert f"so {reduced} of them land in \"reduced periodontium\" (healthy or gingivitis) and the other {none} get no " \
-           "status" in page
+    stage1 = rev[rev["truth_status"] == "periodontitis_stage_1"]
+    label = stage1["periodx_chart_label"].fillna("unknown")
+    reduced, none = int(label.isin(["healthy", "gingivitis"]).sum()), int((label == "unknown").sum())
+    charted = pd.read_csv(DATASETS_DIR / "visits_structured.csv", usecols=["visit_id", "charted"]).set_index("visit_id")
+    assert not charted.loc[stage1.loc[label == "unknown", "visit_id"], "charted"].any()   # no gum chart to read
+    assert (f"so {reduced} of them land in \"reduced periodontium\" (healthy or gingivitis); the other {none} have no "
+            "gum chart, so no status") in page
     from health_transformation_lab_nlp.ladder_eval import grouped
     right = grouped(rev["algorithm_patel2022"]) == grouped(rev["truth_status"])
     by = rev["algorithm_patel2022_decided_by"]
@@ -198,7 +201,8 @@ def test_medgemma_current_runs_are_the_ladders(ladder, key):
         assert f"Stage IV {n4 * r['stage4_recall']:.0f} of {n4}" in page, run
         assert f"{details['output_tokens'].mean():.0f} out" in page and f"{details['latency_s'].mean():.1f} s" in page
         rules4 = ladder.loc[f"{run}+rules4", "accuracy"]
-        assert _per_100(rules4) in page, run
+        same = "the same with the note rules deciding stage IV"
+        assert (same if rules4 == r["accuracy"] else f"{_per_100(rules4)} with the note rules deciding stage IV") in page
     falls = [int(pd.read_csv(DATASETS_DIR / f"llm_details_{m}.csv")["fallback"].astype(bool).sum())
              for m in ("medgemma-1.5-4b-it", "medgemma-4b-it")]
     assert f"The current runs fell back on {falls[0]} (1.5) and {falls[1]} (4B) of the 223 notes" in page
@@ -263,4 +267,17 @@ def test_edr_status_is_the_ladders(ladder, key):
     for run in ("medgemma-1.5-4b-it", "medgemma-4b-it"):
         r = ladder.loc[run]
         assert f"**{_per_100(r['accuracy'])}** ({_per_100(r['acc_lo'])}-{_per_100(r['acc_hi'])})" in page, run
-    assert "240" not in page.replace("(up to 240", "")
+    assert not re.search(r"(?<![\d,.])240(?![\d,])", page)
+
+
+def test_the_code_walkthrough_status_is_the_edrs(ladder):
+    line = next(x for x in _read("docs/code_walkthrough.md").splitlines() if x.startswith("- Status: baselines and"))
+    llms, baselines = ("medgemma", "llama"), ("note_rules", "tfidf_logreg", "fusion_tfidf_rad")
+    alone = ladder[[not m.endswith("+rules4") and not m.startswith(llms) and m not in baselines for m in ladder.index]]
+    hybrid = ladder.loc[[f"{m}+rules4" for m in alone.index]]
+    for figure in (f"{_per_100(alone['accuracy'].min())}-{_per_100(alone['accuracy'].max())}",
+                   f"{_per_100(hybrid['accuracy'].min())}-{_per_100(hybrid['accuracy'].max())}",
+                   _per_100(ladder.loc["note_rules", "accuracy"]),
+                   (f"{_per_100(ladder.loc['medgemma-1.5-4b-it', 'accuracy'])} and "
+                    f"{_per_100(ladder.loc['medgemma-4b-it', 'accuracy'])}")):
+        assert figure in line, figure

@@ -24,7 +24,7 @@ refuses to call one unless its endpoint is configured.
 | Longformer · [2004.05150](https://arxiv.org/abs/2004.05150) · general, long context; also the base of the PHI tagger | `allenai/longformer-base-4096` | Allen Institute for AI | Apache-2.0 | results as a classifier; also the base of the PHI tagger (section 3) |
 | SciBERT · [1903.10676](https://arxiv.org/abs/1903.10676) · scientific, classifier | `allenai/scibert_scivocab_uncased` | Allen Institute for AI | **none on the card** (the `allenai/scibert` GitHub repository is Apache-2.0): confirm before approval | results |
 | Bio_ClinicalBERT · [1904.03323](https://arxiv.org/abs/1904.03323) · clinical, classifier | `emilyalsentzer/Bio_ClinicalBERT` | Alsentzer et al. (MIT) | MIT | results |
-| GatorTron base · [Nature Digital Medicine 2022](https://doi.org/10.1038/s41746-022-00742-2) · clinical, classifier | `UFNLP/gatortron-base` | University of Florida / NVIDIA | Apache-2.0 | not run |
+| GatorTron base · [Nature Digital Medicine 2022](https://doi.org/10.1038/s41746-022-00742-2) · clinical, classifier | `UFNLP/gatortron-base` | University of Florida / NVIDIA | Apache-2.0 | results (learning rate 2e-05, Kaggle, 2026-11-04) |
 | BiomedBERT · [2007.15779](https://arxiv.org/abs/2007.15779) · biomedical, classifier | `microsoft/BiomedNLP-BiomedBERT-base-uncased-abstract-fulltext` | Microsoft | MIT | results |
 | BioClinical ModernBERT base · [2506.10896](https://arxiv.org/abs/2506.10896) · clinical, classifier, long context | `thomas-sounack/BioClinical-ModernBERT-base` | Sounack et al. (Dana-Farber) | MIT | results |
 | BioClinical ModernBERT large · [2506.10896](https://arxiv.org/abs/2506.10896) · clinical, classifier, long context | `thomas-sounack/BioClinical-ModernBERT-large` | Sounack et al. (Dana-Farber) | MIT | results |
@@ -105,5 +105,5 @@ workspace settings change where the text can go:
 - **Databricks-managed models**: `ai_classify`, `ai_extract`, `ai_mask` and the default built-in judge run on
   models Databricks doesn't name in their documentation, and can change. Record the workspace's cross-Geo and
   partner-powered AI settings with the approval.
-- **Not run yet** (no real results): GatorTron, SapBERT, GTE-ModernColBERT, MedGemma 27B,
-  `ai_classify`, and every service in section 4 except the judge.
+- **Not run yet** (no real results): SapBERT, GTE-ModernColBERT, MedGemma 27B, `ai_classify`, and the services
+  in section 4 marked not run.
