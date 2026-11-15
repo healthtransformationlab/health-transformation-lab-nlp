@@ -52,7 +52,7 @@ def test_metadata_is_cc_by_with_a_card_and_kaggle_length_limits(tmp_path, name):
                   "abc1234"):
         assert words in card, words
     for f in pub.files_of(name):              # the card lists every file
-        assert f"`{f}`" in meta["description"], f
+        assert f"`{pub.kaggle_name(f)}`" in meta["description"], f      # as Kaggle names it (#695)
 
 
 def test_no_simulated_file_reaches_the_results_dataset():
@@ -215,3 +215,24 @@ def test_upload_describes_only_live_files_when_the_version_is_still_processing(t
     pub.upload(_folder(tmp_path, ["a.csv", "b.csv"]), "o/perio-bench-results", "n", api, sleep=lambda s: None)
     assert [r["path"] for r in api.sent["resources"]] == ["a.csv"]
     assert "b.csv" in capsys.readouterr().out
+
+
+# ---- #695: Kaggle drops the + from a file name, so a description must be matched to Kaggle's form of the name
+
+def test_kaggle_name_drops_the_plus_as_kaggle_does():
+    assert pub.kaggle_name("ai_predictions_modernbert-base+cw+s1.csv") == "ai_predictions_modernbert-basecws1.csv"
+    assert pub.kaggle_name("ladder/ladder_summary.csv") == "ladder/ladder_summary.csv"
+
+
+def test_a_file_whose_plus_kaggle_dropped_still_gets_its_description(tmp_path, capsys):
+    api = _SlowApi(["a.csv", "bert-basecw.csv"], ["a.csv", "bert-basecw.csv"], lag=0)
+    pub.upload(_folder(tmp_path, ["a.csv", "bert-base+cw.csv"]), "o/perio-bench-results", "n", api,
+               sleep=lambda s: pytest.fail("waited for a file Kaggle already holds under its own name"))
+    assert [r["path"] for r in api.sent["resources"]] == ["a.csv", "bert-basecw.csv"]
+    assert "not on Kaggle yet" not in capsys.readouterr().out
+
+
+def test_the_card_lists_each_file_by_the_name_kaggle_shows(monkeypatch):
+    monkeypatch.setattr(pub, "files_of", lambda name: {"ai_predictions_bert-base+cw.csv": pub.DATA / "train.csv"})
+    text = pub.card("results", "abc1234")
+    assert "`ai_predictions_bert-basecw.csv`" in text and "+cw" not in text
