@@ -1,0 +1,97 @@
+# Watch this team's leaderboard entries in the Gemma 4 Developer Agent competition (spec 014 US7, #791): every two
+# hours, and from the Actions tab ("Watch the competition's leaderboard entries" -> Run workflow).
+#
+# kaggle/submission_watch.py updates data/tasks/leaderboard_entries.csv (one row per entry, pending ones looked up by
+# ref) and sends one span per status change to Application Insights. An entry runs on Kaggle's machines with no code
+# of ours, so its status, score and dates are all there is to see. An entry that turns to error fails this workflow
+# (SEV2: GitHub emails the owner the same day), after the ledger has gone to its pull request.
+#
+# Needs, in the GitHub environment `dev`: KAGGLE_API_TOKEN (or KAGGLE_KEY) and KAGGLE_USERNAME, as the other Kaggle
+# workflows; and APPINSIGHTS_CONNECTION_STRING (ops/secrets_register.yaml). Without it: a warning, telemetry off, and
+# the ledger is still updated. Read-only on Kaggle: it submits nothing and uses no GPU.
+name: Watch the competition's leaderboard entries
+run-name: "Leaderboard watch (gemma-4-developer-agent)"
+
+on:
+  schedule:
+    - cron: '0 */2 * * *'
+  workflow_dispatch:
+
+concurrency: leaderboard-watch
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    environment: dev
+    timeout-minutes: 15
+    permissions:
+      contents: write          # push the ledger branch
+      pull-requests: write     # open its PR
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with: {python-version: "3.12"}
+      - run: pip install --quiet "kaggle==2.2.5" six -e "./python[azure]"   # kaggle 2.2.5 imports six without declaring it (#450)
+
+      - name: Kaggle credentials and the telemetry switch (values stay masked)
+        env:
+          U: ${{ vars.KAGGLE_USERNAME || secrets.KAGGLE_USERNAME }}
+          T: ${{ secrets.KAGGLE_API_TOKEN }}
+          K: ${{ secrets.KAGGLE_KEY }}
+          AI: ${{ secrets.APPINSIGHTS_CONNECTION_STRING }}
+        run: |
+          [ -n "$U" ] && echo "KAGGLE_USERNAME=$U" >> "$GITHUB_ENV"
+          tok="${T:-$K}"
+          [ -n "$tok" ] || { echo "::error::Set KAGGLE_API_TOKEN (or KAGGLE_KEY) in the GitHub environment 'dev'"; exit 1; }
+          echo "KAGGLE_API_TOKEN=$tok" >> "$GITHUB_ENV"
+          [ -n "$K" ] && echo "KAGGLE_KEY=$K" >> "$GITHUB_ENV"
+          if [ -n "$AI" ]; then
+            echo "APPLICATIONINSIGHTS_CONNECTION_STRING=$AI" >> "$GITHUB_ENV"
+            echo "DENTAL_TELEMETRY=azure" >> "$GITHUB_ENV"
+            echo "Telemetry: Application Insights"
+          else
+            echo "::warning::APPINSIGHTS_CONNECTION_STRING is not set in the GitHub environment 'dev': telemetry off, the ledger is still updated (ops/secrets_register.yaml)"
+          fi
+
+      - name: Read the entries and update the ledger
+        id: watch
+        run: |
+          set +e
+          python kaggle/submission_watch.py --competition gemma-4-developer-agent --ledger data/tasks/leaderboard_entries.csv
+          rc=$?
+          echo "rc=$rc" >> "$GITHUB_OUTPUT"
+          [ "$rc" = 0 ] || [ "$rc" = 1 ] || exit "$rc"   # 1: an entry in error, failed after the ledger is pushed
+
+      # The branch starts from main, so the PR holds the ledger only. A PR opened by the workflow token doesn't
+      # start CI: push a commit to the branch to run the checks before merging.
+      - name: Open a pull request with the ledger
+        if: ${{ !cancelled() && steps.watch.outcome == 'success' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          BRANCH: kaggle-results/leaderboard-entries-${{ github.run_id }}
+        run: |
+          if [ -z "$(git status --porcelain data/tasks/leaderboard_entries.csv)" ]; then echo "The ledger is the same as on main"; exit 0; fi
+          cp data/tasks/leaderboard_entries.csv "$RUNNER_TEMP/leaderboard_entries.csv"
+          git fetch --quiet --depth 1 origin main
+          git worktree add --quiet -b "$BRANCH" ../results origin/main
+          cp "$RUNNER_TEMP/leaderboard_entries.csv" ../results/data/tasks/leaderboard_entries.csv
+          cd ../results
+          if [ -z "$(git status --porcelain data/tasks/leaderboard_entries.csv)" ]; then echo "The ledger is the same as on main"; exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/tasks/leaderboard_entries.csv
+          git commit --quiet -m "Update the leaderboard entries ledger" \
+            -m "Read from the Kaggle API by the leaderboard-watch workflow, $RUN_URL (spec 014 US7)."
+          git push --quiet -u origin "$BRANCH"
+          body="This team's leaderboard entries in gemma-4-developer-agent, read from the Kaggle API by $RUN_URL (spec 014 US7, #791): status, score and dates only.
+
+          A pull request opened by the workflow token doesn't start CI: push a commit to this branch to run the checks before merging."
+          gh pr create --base main --head "$BRANCH" --title "Update the leaderboard entries ledger" --body "$body" \
+            || echo "::warning::Pushed $BRANCH but couldn't open the PR (Settings -> Actions -> General -> Allow GitHub Actions to create and approve pull requests). Open it here: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/compare/main...$BRANCH"
+
+      - name: Fail when an entry is in error
+        if: ${{ !cancelled() && steps.watch.outputs.rc == '1' }}
+        run: |
+          echo "::error::A leaderboard entry is in error (SEV2): see the watch step's log and the ledger's pull request"
+          exit 1

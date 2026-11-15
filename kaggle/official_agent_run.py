@@ -179,6 +179,20 @@ def merge_parts(out: Path) -> None:
             p.unlink()
 
 
+def forward_run_telemetry(out: Path) -> int:
+    """Send a collected run's spans (its telemetry.jsonl, written with the internet off) on through the exporter the
+    environment sets (spec 014 US7, #791): to Application Insights with DENTAL_TELEMETRY=azure. Off by default, as
+    is the rest of the package's telemetry; a run made without --telemetry has no file and sends nothing."""
+    from health_transformation_lab_nlp import telemetry
+    path = Path(out) / "telemetry.jsonl"
+    if not path.is_file():
+        return 0
+    sent = telemetry.forward_spans(path)
+    if sent:
+        print(f"forwarded {sent} spans from {path.name} ({telemetry.active_exporter()})", flush=True)
+    return sent
+
+
 # What a Colab run's settings say of the network. The proxies set on the kernel's process do not reach the agent's
 # commands: the evaluator's sandbox starts each from its own short list of environment names (the review of #690).
 COLAB_INTERNET = ("open at the machine's edge. The kernel's process had no credential and every proxy pointed at a port "
@@ -800,6 +814,7 @@ def run_batch(a, api, user: str, ids: list[str], tasks: dict, manifest: dict, ov
         out.mkdir(parents=True, exist_ok=True)
         api.kernels_output(kref, str(out), force=True)
     session = time.monotonic() - t0
+    forward_run_telemetry(out)
     res = json.loads((out / "result.json").read_text()) if (out / "result.json").exists() else {
         "error": f"kernel ended {status} and wrote no result.json"}
     print(f"kernel {status} after {session / 60:.1f} min; GPUs {(res.get('server') or {}).get('gpus') or res.get('gpus_seen')}"
@@ -948,6 +963,10 @@ def main() -> int:
           + f" ({', '.join(f'{t} {n}' for t, n in by_tier.items())}): {', '.join(ids)}")
     if a.plan_only:
         return 0
+    if a.collect:   # the run span, and where its forwarded spans go: DENTAL_TELEMETRY (off by default; spec 014 US7)
+        from health_transformation_lab_nlp import telemetry
+        telemetry.setup()
+        telemetry.start_script("official_agent_run", data_label="public", is_development_set=development)
     if not (os.environ.get("KAGGLE_API_TOKEN") or os.environ.get("KAGGLE_KEY")):
         sys.exit("KAGGLE_API_TOKEN is not set (ops/secrets_register.yaml, Kaggle API token)")
     user = os.environ.get("KAGGLE_USERNAME") or "jcblearning"
