@@ -3,6 +3,7 @@
 import datetime as dt
 import re
 
+import pytest
 import yaml
 
 from health_transformation_lab_nlp.paths import REPO_ROOT
@@ -18,12 +19,14 @@ def _register():
 def _credential_rows(agents: str) -> list[str]:
     """The first cell of each row of AGENTS.md's credentials table, indented or not, without its header and rule
     line, and with backticks removed so "`gh` login" reads as the register's "gh login" (#785)."""
+    assert "| Credential |" in agents, "AGENTS.md has no credentials table (its header '| Credential |')"
     lines = agents[agents.index("| Credential |"):].splitlines()[2:]     # the header and the |---| rule
     rows = []
     for line in lines:
         cells = line.strip()
-        if not cells.startswith("|"):
-            break                                                       # the table has ended
+        if not cells:
+            break                                                       # the table ends at the first blank line
+        assert cells.startswith("|"), f"a line inside the credentials table isn't a row: {line!r}"
         rows.append(cells.strip("|").split("|")[0].strip().replace("`", ""))
     return rows
 
@@ -46,7 +49,10 @@ def test_the_credentials_table_reader_finds_indented_rows_and_a_missing_credenti
     text = ("Intro.\n\n  | Credential | Where | Scope | Goes to |\n  |---|---|---|---|\n"
             "  | `a` token for x | x | y | z |\n  | b key (note) | x | y | z |\n\nAfter the table.\n")
     assert _credential_rows(text) == ["a token for x", "b key (note)"]   # backticks gone, header and rule skipped
+    assert _credential_rows(text.replace("\n  |", "\n|")) == ["a token for x", "b key (note)"]   # not indented
     assert _unregistered(_credential_rows(text), {"a token"}) == ["b key (note)"]
+    with pytest.raises(AssertionError, match="isn't a row"):              # a stray line no longer hides later rows
+        _credential_rows(text.replace("  | b key", "Stray text.\n  | b key"))
 
 
 def test_register_entries_say_when_they_expire_and_who_renews_them():
