@@ -717,6 +717,13 @@ def test_the_submissions_own_output_budget_is_read_from_its_agent_yaml(run, tmp_
     inline = _submission_with(tmp_path / "b", "name: coder\ngenerate_content_config:\n  max_output_tokens: 6144\n")
     assert run.submission_generation(inline) == {"max_output_tokens": 6144}
     assert run.submission_generation(_submission_with(tmp_path / "c", "name: coder\ninstruction: hi\n")) == {}
+    # As the competition's loader does: a .md or .txt include is text, not YAML, and an include is read from the
+    # folder of the file that names it. gemma-developer-agent's agent.yaml includes its prompt this way.
+    real = _submission_with(tmp_path / "d", "name: coder\ninstruction: !include prompts/system.md\n"
+                                            "generate_content_config: !include configs/sampling.yaml\n",
+                            {"prompts/system.md": "Calls and minutes. The issue: {problem_description}\n- a: b\n",
+                             "configs/sampling.yaml": "max_output_tokens: 8192\n"})
+    assert run.submission_generation(real) == {"max_output_tokens": 8192}
 
 
 def test_rows_and_settings_record_the_output_budget_the_submission_used(run):

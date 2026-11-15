@@ -45,8 +45,11 @@ None.
 ### 🟡 Should fix (Important, non-blocking)
 None.
 ### 🔵 Nits / suggestions (Minor)
-- `submission_generation` resolves `!include` from the submission's root, as the competition's compiler resolves a
-  skill's path; an include written relative to a sub-agent's folder would not be found. No submission here has one.
+- **Fixed before merging.** The first version parsed every `!include` as YAML and read it from the submission's root.
+  Tabulating the pull request 100 run with `--collect` failed on the real `agent.yaml`, whose `instruction` includes
+  `prompts/system.md`. It now follows the competition's loader (`adk_submission.yaml_loader`): a `.md` or `.txt`
+  include is text, a `.yaml` or `.yml` one is parsed, and each is read from the folder of the file that names it. A
+  test with the real file's shape failed first.
 - A YAML tag other than `!include` in `agent.yaml` raises, which stops the tabulation with the error rather than
   record the fallback silently.
 

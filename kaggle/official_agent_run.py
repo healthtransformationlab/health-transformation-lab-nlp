@@ -341,19 +341,30 @@ COMPETITION_DEFAULTS = {"timeout_seconds": 300, "verification_timeout_seconds": 
 # what the starter notebook and swegemma.config.build_submission_limits use when a submission sets nothing
 
 
-def submission_generation(submission_dir: Path) -> dict:
-    """The output budget the submission sets itself: `max_output_tokens` and `thinking_config.thinking_budget` from its
-    agent.yaml's `generate_content_config`, inline or through `!include <path>` from the submission's root. {} when it
-    sets neither, and then the evaluator's fallback (`generation_defaults`) is what the run used (#737)."""
+def _load_with_includes(path: Path):
+    """A submission's YAML file with each `!include` resolved as the competition's loader does
+    (`adk_submission.yaml_loader`): from the folder of the file that names it; a .yaml or .yml file parsed, any other
+    (.md, .txt) as its text."""
     import yaml
-    root = Path(submission_dir)
 
     class _Loader(yaml.SafeLoader):
         pass
 
-    _Loader.add_constructor("!include", lambda loader, node: yaml.load(
-        (root / loader.construct_scalar(node)).read_text(), Loader=_Loader))
-    agent = yaml.load((root / "agent.yaml").read_text(), Loader=_Loader) or {}
+    def _include(loader, node):
+        target = path.parent / loader.construct_scalar(node)
+        if target.suffix.lower() in (".yaml", ".yml"):
+            return _load_with_includes(target)
+        return target.read_text(encoding="utf-8")
+
+    _Loader.add_constructor("!include", _include)
+    return yaml.load(path.read_text(encoding="utf-8"), Loader=_Loader)
+
+
+def submission_generation(submission_dir: Path) -> dict:
+    """The output budget the submission sets itself: `max_output_tokens` and `thinking_config.thinking_budget` from its
+    agent.yaml's `generate_content_config`, inline or through `!include`. {} when it sets neither, and then the
+    evaluator's fallback (`generation_defaults`) is what the run used (#737)."""
+    agent = _load_with_includes(Path(submission_dir) / "agent.yaml") or {}
     gen = agent.get("generate_content_config") or {}
     out: dict = {}
     if gen.get("max_output_tokens") is not None:
