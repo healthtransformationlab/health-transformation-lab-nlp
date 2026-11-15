@@ -1,7 +1,8 @@
 # Design: telemetry-grounded tasks, a second source beside the 93 history tasks
 
-Draft, 2026-11-14. Not yet a spec: it becomes one (`specs/NNN-telemetry-tasks/`) once the open questions at the end
-are settled. Personal learning project, not affiliated; every record here is synthetic.
+Draft, 2026-11-14; its three open questions were settled on 2026-11-15 ("Decisions", at the end). Not yet a spec:
+it becomes one (`specs/NNN-telemetry-tasks/`) next. Personal learning project, not affiliated; every record here is
+synthetic.
 
 ## Why
 
@@ -84,10 +85,66 @@ New work: a fault injector (seeded, one operator per fault), a statement writer 
 - **Too few history tasks touch an instrumented step.** Count them first. If there are fewer than about 20, the
   history comparison becomes descriptive and the injected set carries the test.
 
-## Open questions
+## Decisions (2026-11-15)
 
-1. How many injected tasks? Enough for the McNemar test to detect a 10-point difference, about 150 to 200, is the
-   working target.
-2. Should the doctor's classification (failure class and runbook action from spans, spec 027) be a second task kind
-   in the same paper, scored by exact match, or kept for a later one?
-3. Should the injected tasks be published as a dataset on their own, or only beside the history tasks?
+The owner asked for the recommended answers to be taken (#736). The spec that follows can reopen any of them.
+
+### 1. Two hundred injected tasks, 50 per fault class, sized before any run
+
+- **The number.** 200 tasks, 50 for each operator (`schema_drift`, `volume_anomaly`, `quality_fail`, `config`). An
+  operator that cannot reach 50 faults an existing test catches keeps the ones it has, and the shortfall is
+  reported. No test is added and no class is filled from another.
+- **Why 200, not 150.** The registered test is the exact McNemar test, and its power depends on the share of tasks
+  where the two conditions disagree. Two runs of the same arm on the same 93 tasks already disagree on 3, all among
+  the 17 of the core split (the tasks whose statement gives what their tests need): 18% of those 17
+  (`data/tasks/official_agent_runs/README.md`, "Two runs of the same baseline" and "The core split"). A real
+  difference adds to that. Power to detect a 10-point difference, two-sided, alpha 0.05:
+
+  | Tasks | 15% disagree | 20% | 25% | 30% |
+  |---|---|---|---|---|
+  | 150 | 0.88 | 0.75 | 0.64 | 0.56 |
+  | 200 | 0.96 | 0.88 | 0.79 | 0.70 |
+  | 250 | 0.99 | 0.94 | 0.88 | 0.80 |
+
+  150 tasks keep 80% power only while at most 17% of tasks disagree; 200 keep it up to 24%, 250 up to 30%. Each
+  cell is exact: the number of disagreeing tasks is binomial, and so is the split of those tasks between the two
+  conditions.
+- **A pilot first, outside the 200.** 20 more tasks, 5 per operator, one run per condition. They check the injector
+  and the statement writer end to end and measure how often the conditions disagree. If more than 24% do, the
+  pre-registration either adds tasks (250) or names the larger difference 200 can find (12 points at 30%), decided
+  before any of the 200 runs. The pilot's tasks are never counted.
+- **Repeats.** Three seeded runs per task and condition. The registered test counts a task as resolved under a
+  condition when at least two of its three runs resolve it; each run's own result is reported beside it.
+- **Cost.** 200 tasks, 2 telemetry conditions and 3 runs are 1,200 task-runs. At the 76 GPU-seconds a task that
+  `colab-statement` measured on one A100, that is about 25 GPU-hours, about 47 USD at the 1.87 USD an A100 hour in
+  `ops/cost_settings.yaml`: a rental estimate, not what Colab charges, and without loading the model. One task per
+  Kaggle kernel, as on November 10 (21 kernels in 3.2 hours), would take about 183 kernel-hours, six weeks of the
+  account's 30-hour weekly allowance. So cost does not limit the size; how many faults existing tests catch does.
+- **Revisit** if the pilot's disagreement is above 24%, or if fewer than about 30 faults per operator pass the
+  gates.
+
+### 2. The doctor's classification waits for a later paper
+
+- **Kept out.** This design asks one question, whether a statement written from telemetry helps a small local agent
+  fix the code, and scores every task one way: the competition's evaluator runs its tests. Naming the failure class
+  and runbook action from spans is scored by exact match against `data/ops/incident.csv`, in another format, by
+  another harness (spec 027). One paper would split its words and its runs between two questions.
+- **What carries over.** The span files and the statement writer this design builds are what a classification task
+  would read, so spec 027 can reuse them.
+- **Revisit** once the telemetry comparison is reported, or if spec 027 needs the injected faults as its cases.
+
+### 3. Injected tasks get a dataset of their own; history tasks' telemetry statements go beside the 93
+
+- **Injected tasks: their own dataset.** The published task dataset's card says each task "is a real change: the
+  issue or pull-request text written at the time, the code patch, and the tests that went with it"
+  (`kaggle/cards/tasks.md`), and `tier_code` says which of those texts the statement is. An injected fault is
+  neither: its patch reverts a seeded change and a program writes its statement. Mixed in, it would make that
+  sentence false and give `tier_code` a value it was not built for. On its own it is versioned separately (spec
+  039) and meets "Publishing datasets" in `AGENTS.md` like any other: a card, a cover, every file and column
+  described, a public notebook.
+- **History tasks: beside the 93.** A telemetry statement for a history task is a second statement for the same
+  task, not a new task. It goes in the existing dataset as an added file keyed by `instance_id`, and the
+  person-written `problem_statement` stays as it is, so the card stays true.
+- Publishing either still waits for the owner, as every publish does.
+- **Revisit** if the spec finds a reader needs both sets in one place: add a notebook that loads both, not a combined
+  dataset.
