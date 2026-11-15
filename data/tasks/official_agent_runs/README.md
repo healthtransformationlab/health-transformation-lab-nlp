@@ -663,6 +663,12 @@ status call that fails being read as "nothing to resume", a bundle folder that i
 the audit being a list of words over commands alone, and the runner not checking its Colab options together. They
 are issue 691, to be closed before the helper is used again. The run list says stop.
 
+Changed 2026-11-15 (#691): those defects are fixed in the helper, with tests, except the open network, which needs a
+real machine to block: a run now starts only when its entry in the run list accepts that the network is open
+(`"network_open_acknowledged": true`; `docs/adr/0005-colab-runs-need-the-open-network-accepted.md`). What a later run
+must check first is in `kaggle/README.md`. The audit is wider now and `outside_workspace_call_count` covers
+`/content`, for runs collected from now on; the five runs above keep the audit as it was committed.
+
 ## Checks
 
 - **Each run was read from its own session's last upload**, by version and by the session start its log opens

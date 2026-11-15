@@ -170,6 +170,17 @@ To refresh the owner's Paper Track sheets:
   --colab-session <start>` reads one session's upload and verifies its patches. The notebook takes the Kaggle
   token from Colab Secrets (`ops/secrets_register.yaml`), never from a cell. What was run this way, and how it
   differs from a Kaggle kernel: `data/tasks/official_agent_runs/README.md`.
+  **What a later run must check first** (#691): (1) the network is still open to the agent's commands: nothing
+  blocks it at the machine, so a run starts only when its entry in the run list says
+  `"network_open_acknowledged": true`, written on the run's own branch after reading
+  [ADR 0005](../docs/adr/0005-colab-runs-need-the-open-network-accepted.md). This item of #691 (item 6) is
+  documented and guarded, not fixed. (2) Each entry names its `gpu`, and a run that goes on from a session that
+  dropped names that session (`"resume_session"`, the id in the earlier upload's `session.json` and at the top of its
+  log); without it a session resumes only its own upload. (3) The runner is called with `--colab --batch --label`,
+  and collected with `--collect --colab --colab-session <start>`; it refuses any other mix. The other items of #691
+  are fixed in the helper: a refused upload is not taken for sent, the stop button ends the kernel and the uploader,
+  a failed status call stops the run, a bundle is checked file by file and size by size, an arm's output leaves the
+  machine once it is on Kaggle, and the audit reads every tool call.
 
 More: `docs/medgemma.md` (why Kaggle, how MedGemma is loaded), spec 016 (results into Delta), spec 020
 (publishing).
