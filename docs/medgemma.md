@@ -63,9 +63,11 @@ the leaderboard scores ([results](results.md): five status groups), from `data/d
 - Against the note rules (82.1), neither difference is clear: 1.5 -0.036 (-0.076 to 0.000), 4B -0.022 (-0.063 to
   0.013). Against the best encoder alone, the difference is clear for both: 1.5 against `modernbert-large`
   -0.099 (-0.161 to -0.031), and 4B against `modernbert-large` -0.085 (-0.143 to -0.031). The gap is on L3, where
-  no diagnosis is written and the encoder gets 84%; on L1 MedGemma reads better (99% and 98% against 90%).
+  the note gives no diagnosis (19 of the 64 notes) or one that disagrees with the chart (45), and the encoder gets
+  84%; on L1 MedGemma reads better (99% and 98% against 90%).
 
-Both read a written diagnosis well (L1) and stage from the findings much less often (L3). These are measurements
+Both read a diagnosis that is written and fits the chart (L1) well, and do much worse when the note gives none or
+one the chart contradicts (L3). These are measurements
 on synthetic notes, not evidence about either model on real records. The two paragraphs below are the first runs,
 kept as the record of what was measured then.
 
@@ -96,7 +98,8 @@ suppresses it (it otherwise used up the 300 new tokens before the JSON) and
 An answer falls back to `note_rules` when it fails the gate: bad JSON, a status outside the six, or a
 quote that isn't the note's own words. Every fallback in the two runs before #467, on the 240 synthetic review notes
 (then in `data/datasets/llm_details_medgemma-4b-it.csv` and `llm_details_medgemma-1.5-4b-it.csv`), was read against
-its note. The current runs fell back on 10 (1.5) and 11 (4B) of the 223 notes; those have not been read one by one:
+its note. The current runs fell back on 10 (1.5) and 11 (4B) of the 223 notes, which have not been read one by one.
+The earlier runs' fallbacks:
 
 | Why the gate failed | 4B v1 | 1.5 | Verdict |
 |---|---:|---:|---|

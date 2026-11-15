@@ -5,8 +5,9 @@
 > Hugging Face card on 2026-10-28; re-check the card before approval, because cards change.
 > A test (`tests/test_model_inventory.py`) fails if code or `models.yaml` names a model that isn't here.
 
-**What runs where.** Every model in sections 1–3 downloads its weights from Hugging Face and runs
-locally or on Databricks/Kaggle compute; no note text leaves that machine. Section 4 lists hosted
+**What runs where.** Every model in sections 1–3 downloads its weights from Hugging Face (the committed MedGemma
+runs loaded Kaggle Models' Keras checkpoints instead, [medgemma.md](medgemma.md)) and runs locally or on
+Databricks/Kaggle compute; no note text leaves that machine. Section 4 lists hosted
 services that receive the text; they only ever get synthetic or de-identified notes, and the code
 refuses to call one unless its endpoint is configured.
 

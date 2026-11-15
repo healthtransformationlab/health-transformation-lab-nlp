@@ -3,7 +3,7 @@
 Every phenotyping system's answer on the 240 synthetic review charts before #467, an LLM judge's reading of the
 same charts, and every README phenotyping metric computed twice: against the generator's truth and
 against the judge. Built by `python/scripts/36_judge_scorecard.py`; method in
-`python/dental_omop_nlp/judge_scorecard.py`; R twin `r/R/11_judge_scorecard.R`.
+`python/health_transformation_lab_nlp/judge_scorecard.py`; R twin `r/R/11_judge_scorecard.R`.
 
 These files were made on the notes before #467 rebuilt them, and are kept as they ran: the leaderboard
 (`docs/results.md`) leaves them out until the judge is rerun on the current 223 notes.

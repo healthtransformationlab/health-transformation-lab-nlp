@@ -16,14 +16,23 @@ EARLIER = "before #467"
 COUNT = re.compile(r"(?<![\d.])(\d[\d,]*) (?:synthetic )?(?:review(?:ed)? (?:charts?|notes|visits)|held-out patients)\b",
                    re.IGNORECASE)
 # records of a moment, kept as written: specs and past reviews; the before-and-after table of presets.md; a dated plan;
-# generated pages (results.md, the EDR summary; the gold data model, drawn from gold_model.py); and the rules files
-RECORDS = ("specs/", "pull_requests/", "diagrams/", "docs/presets.md", "docs/plan.md", "docs/results.md",
-           "docs/edr/README.md")
-RULES_FILES = ("AGENTS.md", "CLAUDE.md")
+# generated pages (results.md; the gold data model, drawn from gold_model.py)
+RECORDS = ("specs/", "pull_requests/", "diagrams/", "docs/presets.md", "docs/plan.md", "docs/results.md")
+# the rules files: the owner changes them (AGENTS.md, Branches and issues, rule 6); the chart-review agent's still says
+# 240 and is left for the owner (#738)
+RULES_FILES = ("AGENTS.md", "CLAUDE.md", "databricks/agents/chart_review/AGENTS.md")
+# a generated block inside a hand-written page (docs/edr/README.md): 35_readme_results.py writes it, and its own
+# tests check it
+GENERATED = re.compile(r"<!-- results:start.*?<!-- results:end -->", re.DOTALL)
 
 
 def _read(rel: str) -> str:
     return (REPO_ROOT / rel).read_text(encoding="utf-8")
+
+
+def _hand_written(rel: str) -> str:
+    """The file without any generated block, keeping its line count so line numbers still point at the file."""
+    return GENERATED.sub(lambda m: "\n" * m.group(0).count("\n"), _read(rel))
 
 
 def _prose(rel: str) -> str:
@@ -33,8 +42,7 @@ def _prose(rel: str) -> str:
 
 def _markdown_files() -> list[str]:
     out = subprocess.run(["git", "ls-files", "-z", "*.md"], cwd=REPO_ROOT, capture_output=True, check=True).stdout
-    return [f for f in out.decode().split("\0")
-            if f and not f.startswith(RECORDS) and f.rsplit("/", 1)[-1] not in RULES_FILES]
+    return [f for f in out.decode().split("\0") if f and not f.startswith(RECORDS) and f not in RULES_FILES]
 
 
 def _row(rel: str, first_cell: str) -> str:
@@ -61,7 +69,7 @@ def _per_100(x: float) -> str:
 def test_every_review_count_in_the_docs_is_the_answer_keys(key):
     wrong = []
     for rel in _markdown_files():
-        for number, line in enumerate(_read(rel).splitlines(), start=1):
+        for number, line in enumerate(_hand_written(rel).splitlines(), start=1):
             if EARLIER in line:
                 continue
             for m in COUNT.finditer(line):
@@ -69,6 +77,14 @@ def test_every_review_count_in_the_docs_is_the_answer_keys(key):
                     wrong.append(f"{rel}:{number}: {m.group(0)!r}")
     assert not wrong, (f"the answer key has {len(key)} review charts; give that count, or say {EARLIER!r} on a line "
                        "that quotes the earlier build:\n" + "\n".join(wrong))
+
+
+def test_the_guard_reads_nested_rules_files_and_hand_written_parts():
+    files = _markdown_files()
+    assert "docs/edr/README.md" in files and "AGENTS.md" not in files
+    assert "databricks/agents/chart_review/AGENTS.md" not in files
+    page = _hand_written("docs/edr/README.md")
+    assert "results:start" not in page and page.count("\n") == _read("docs/edr/README.md").count("\n")
 
 
 def test_the_guard_reads_counts_as_they_are_written():
@@ -121,7 +137,17 @@ def test_periodx_bullets_count_the_review_notes(key):
     assert no_stage["note_text"].str.contains("bone loss", case=False).all()
     page = _prose("docs/periodx.md")
     assert (f"Of the {len(key)} review notes, {len(no_status)} get no status from the Extractor; {len(no_stage)} of "
-            "them read as periodontitis with no stage") in page
+            f"them read as periodontitis with no stage, and the other {len(no_status) - len(no_stage)} state no "
+            "diagnosis") in page
+    assert (no_status.loc[no_status["periodx_note_status"] != "periodontitis", "periodx_note_status"]
+            == "no_diagnosis").all()
+    from health_transformation_lab_nlp.periodx import note_status
+    assert all(note_status(t) == note_status(t, negation=True) for t in no_status["note_text"])
+    assert f"Turning negation on makes no difference on these {len(no_status)} notes" in page
+    stage1 = rev.loc[rev["truth_status"] == "periodontitis_stage_1", "periodx_chart_label"].fillna("unknown")
+    reduced, none = int(stage1.isin(["healthy", "gingivitis"]).sum()), int((stage1 == "unknown").sum())
+    assert f"so {reduced} of them land in \"reduced periodontium\" (healthy or gingivitis) and the other {none} get no " \
+           "status" in page
     from health_transformation_lab_nlp.ladder_eval import grouped
     right = grouped(rev["algorithm_patel2022"]) == grouped(rev["truth_status"])
     by = rev["algorithm_patel2022_decided_by"]
@@ -149,7 +175,8 @@ def test_medgemma_field_accuracy_table_is_the_committed_file():
     assert sorted(got) == sorted(expected)
 
 
-def test_medgemma_current_runs_are_the_ladders(ladder):
+def test_medgemma_current_runs_are_the_ladders(ladder, key):
+    key_frame, key_truth = key, key["truth_status"]
     vs = pd.read_csv(DATASETS_DIR / "ladder" / "medgemma_vs_bert.csv").set_index("method")
     diff = pd.read_csv(DATASETS_DIR / "ladder" / "medgemma_vs_bert_by_difficulty.csv").set_index(["method", "difficulty"])
     page = _prose("docs/medgemma.md")
@@ -164,6 +191,27 @@ def test_medgemma_current_runs_are_the_ladders(ladder):
         levels = " / ".join(f"{100 * diff.loc[(run, lv), 'accuracy']:.0f}%" for lv in ("L1", "L2", "L3"))
         assert f"L1 / L2 / L3 {levels}" in page, run
         assert f"gate pass {100 * v['gate_pass']:.1f}%" in page, run
+        details = pd.read_csv(DATASETS_DIR / f"llm_details_{run}.csv")
+        fallbacks = int(details["fallback"].astype(bool).sum())
+        assert f"fallback {100 * fallbacks / len(details):.1f}%" in page, run
+        n4 = int((key_truth == "periodontitis_stage_4").sum())
+        assert f"Stage IV {n4 * r['stage4_recall']:.0f} of {n4}" in page, run
+        assert f"{details['output_tokens'].mean():.0f} out" in page and f"{details['latency_s'].mean():.1f} s" in page
+        rules4 = ladder.loc[f"{run}+rules4", "accuracy"]
+        assert _per_100(rules4) in page, run
+    falls = [int(pd.read_csv(DATASETS_DIR / f"llm_details_{m}.csv")["fallback"].astype(bool).sum())
+             for m in ("medgemma-1.5-4b-it", "medgemma-4b-it")]
+    assert f"The current runs fell back on {falls[0]} (1.5) and {falls[1]} (4B) of the 223 notes" in page
+    for run, short in (("medgemma-1.5-4b-it", "1.5"), ("medgemma-4b-it", "4B")):
+        r = ladder.loc[run]
+        assert (f"{short} {r['diff_vs_ref']:.3f} ({r['diff_lo']:.3f} to {r['diff_hi']:.3f})") in page, run
+    assert f"Against the note rules ({_per_100(ladder.loc['note_rules', 'accuracy'])})" in page
+    enc = {lv: f"{100 * diff.loc[(best, lv), 'accuracy']:.0f}%" for lv in ("L1", "L2", "L3")}
+    assert f"the encoder gets {enc['L3']}" in page and f"against {enc['L1']})" in page
+    l3 = key_frame[key_frame["difficulty"] == "L3"]
+    no_dx = int((l3["dx_pattern"] == "none").sum())
+    assert (f"the note gives no diagnosis ({no_dx} of the {len(l3)} notes) or one that disagrees with the chart "
+            f"({len(l3) - no_dx})") in page
     llama = ladder.loc["llama-3.3-70b-instruct", "accuracy"]
     assert (f"Llama 3.3 70B ({_per_100(llama)}) already scores higher than MedGemma 1.5 4B "
             f"({_per_100(ladder.loc['medgemma-1.5-4b-it', 'accuracy'])})") in page
@@ -183,8 +231,10 @@ def test_medgemma_extent_comparison_is_the_committed_runs():
 
 # ---------- docs/scoring.md: the Open Dental row ----------
 def test_open_dental_row_names_where_each_size_comes_from():
-    jobs = re.findall(r'n_patients:\s*"(\d+)"', _read("databricks/resources/jobs.yml"))
-    assert len(jobs) == 1, "expected one n_patients in databricks/resources/jobs.yml (the open_dental_load job)"
+    import yaml
+    job = yaml.safe_load(_read("databricks/resources/jobs.yml"))["resources"]["jobs"]["open_dental_load"]
+    jobs = re.findall(r"'n_patients': '(\d+)'", str(job))
+    assert len(jobs) == 1, "expected one n_patients in the open_dental_load job (databricks/resources/jobs.yml)"
     model = re.search(r'add_argument\("--patients", type=int, default=(\d+)',
                       _read("python/scripts/51_tooth_loss_model.py")).group(1)
     sample = len(pd.read_csv(DATASETS_DIR / "tooth_loss" / "patient.csv"))
@@ -193,3 +243,24 @@ def test_open_dental_row_names_where_each_size_comes_from():
         assert figure in row, figure
     for name in ("`open_dental_load`", "`51_tooth_loss_model.py`", "`data/datasets/tooth_loss/`"):
         assert name in row, name
+
+
+# ---------- docs/edr/README.md, the hand-written status under the generated block ----------
+def test_edr_status_is_the_ladders(ladder, key):
+    page = " ".join(_hand_written("docs/edr/README.md").split())
+    llms, baselines = ("medgemma", "llama"), ("note_rules", "tfidf_logreg", "fusion_tfidf_rad")
+    alone = ladder[[not m.endswith("+rules4") and not m.startswith(llms) and m not in baselines for m in ladder.index]]
+    hybrid = ladder[[m.endswith("+rules4") and m.removesuffix("+rules4") in alone.index for m in ladder.index]]
+    assert f"alone they score {_per_100(alone['accuracy'].min())}-{_per_100(alone['accuracy'].max())} per 100" in page
+    assert alone["accuracy"].idxmax() == "modernbert-large" and list(alone.index[alone["diff_lo"] > 0]) == ["modernbert-large"]
+    assert f"the note rules ({_per_100(ladder.loc['note_rules', 'accuracy'])};" in page
+    assert alone["stage4_recall"].max() == 0
+    train = pd.read_csv(DATASETS_DIR / "train.csv", usecols=["label"])
+    assert f"no stage IV visit ({int((train['label'] == 'periodontitis_stage_4').sum())} of {len(train):,})" in page
+    assert (f"lifts every model to {_per_100(hybrid['accuracy'].min())}-{_per_100(hybrid['accuracy'].max())}, and "
+            f"{int((hybrid['diff_lo'] > 0).sum())} of the {len(hybrid)} runs") in page
+    assert f"calibration error is {alone['ece'].min():.3f}-{alone['ece'].max():.3f}" in page
+    for run in ("medgemma-1.5-4b-it", "medgemma-4b-it"):
+        r = ladder.loc[run]
+        assert f"**{_per_100(r['accuracy'])}** ({_per_100(r['acc_lo'])}-{_per_100(r['acc_hi'])})" in page, run
+    assert "240" not in page.replace("(up to 240", "")

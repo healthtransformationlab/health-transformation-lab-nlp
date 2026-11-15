@@ -163,8 +163,8 @@ phenotype on 98.5%. From `data_quality/completeness_patel2022.csv`, `periodx/con
 
 **What the synthetic numbers show (and don't):**
 - The Diagnoser finds no stage I (0 of 41). The generator's stage I charts have pockets under 4 mm,
-  and Fig. 2 calls a chart periodontitis only with a PD ≥ 4 mm, so those charts land in "reduced periodontium"
-  (healthy or gingivitis). That is the figure working as drawn on charts drawn from the AAP worksheet, not a bug.
+  and Fig. 2 calls a chart periodontitis only with a PD ≥ 4 mm, so 33 of them land in "reduced periodontium"
+  (healthy or gingivitis) and the other 8 get no status. That is the figure working as drawn on charts drawn from the AAP worksheet, not a bug.
 - Of the 223 review notes, 45 get no status from the Extractor; 40 of them read as periodontitis with no stage,
   and the other 5 state no diagnosis. All 40 mention "bone loss" and name no stage the word list can read.
   Periodontitis with no stage has no status, so the phenotype goes on to the chart. Turning negation on makes no
