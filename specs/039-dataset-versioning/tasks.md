@@ -8,8 +8,7 @@
 - [x] T003 [US1] `health_transformation_lab_nlp.dataset_version`: `version`, `changelog`, `latest_change` (all `@traced`)
 - [x] T004 [US1] Extend `test_kaggle_dataset_docs.py` (or a sibling) to store the published file/column hash and fail on
   a change without a version bump + changelog line
-- [ ] T005 [US1] AGENTS.md "Publishing datasets": the version + changelog rule and the semver meaning
-  (moved to #722: a change to AGENTS.md waits for the owner's merge; meanwhile the rule is in `kaggle/README.md`)
+- [x] T005 [US1] AGENTS.md "Publishing datasets": the version + changelog rule and the semver meaning (#722)
 
 ## US2 - provenance manifest inside every dataset (#708)
 
