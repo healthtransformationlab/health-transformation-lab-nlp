@@ -131,7 +131,9 @@ gpu_hours used 32.34 allowed 60.00 left 27.66 refresh 2026-11-21T00:00:00 UTC
 
 The hours refresh weekly, on Saturday at 00:00 UTC. With a Colab subscription linked the account showed 60 hours
 allowed (November 15). Read the quota before and after every run and record the difference: that is what a run costs,
-and how the rest of the week is planned (AGENTS.md, "Failures, retries and reruns"). A kernel pushed with none left is refused: "Maximum weekly GPU quota of 30.00 hours
+and how the rest of the week is planned (AGENTS.md, "Failures, retries and reruns"). Measured on November 15: one
+23-task development-set run on four L4 GPUs took 61 minutes and **2.00 quota hours**, so a four-GPU kernel counts
+double (`data/tasks/official_agent_runs/README.md`, the PR 107 run). A kernel pushed with none left is refused: "Maximum weekly GPU quota of 30.00 hours
 reached." Before a run is made smaller, put off or moved to another platform, check whether Kaggle itself gives
 more (AGENTS.md, "Failures, retries and reruns"):
 
