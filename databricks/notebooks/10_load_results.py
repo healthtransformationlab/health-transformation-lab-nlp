@@ -152,10 +152,11 @@ print(f"dq_check: {len(gov)} cost and performance rows, {int((gov['status'] == '
 for name, df in tables.items():
     df = gold_names.to_gold(df.assign(git_commit=commit, loaded_at=now), name)   # gold column names
     empty = [c for c in df.columns if df[c].isna().all()]
-    spark.createDataFrame(df.astype({c: "string" for c in empty})) \
-        .write.mode("overwrite").option("overwriteSchema", "true").saveAsTable(table(name))  # noqa: F821
-    table_comments.apply(spark, table(name))  # noqa: F821  an overwrite drops them
-    print(f"{name}: {len(df)} rows")
+    # #751: an overwrite from pandas drops the column comments, so the frame carries them and the write commits them
+    sdf = table_comments.with_comments(spark.createDataFrame(df.astype({c: "string" for c in empty})), table(name))  # noqa: F821
+    sdf.write.mode("overwrite").option("overwriteSchema", "true").saveAsTable(table(name))
+    sent = table_comments.apply(spark, table(name))  # noqa: F821  what the write didn't keep, e.g. the table's own
+    print(f"{name}: {len(df)} rows, {sent} comment statements sent")
 
 # COMMAND ----------
 

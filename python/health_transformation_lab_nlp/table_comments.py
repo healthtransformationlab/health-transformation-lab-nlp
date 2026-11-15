@@ -8,10 +8,12 @@
                              declared columns it has; given the comments in place, only those that differ (#741)
     apply(spark, table)      run the ones the table doesn't already hold, after a write; a failure warns and never
                              fails the job (a comment is documentation, not data: AGENTS.md, optional settings warn)
+    with_comments(sdf, table)  the frame with each declared column's comment in its schema, for an overwrite to
+                             commit with the data (#751); a refused comment then fails that write
     apply_all(spark, catalog)  every declared table that exists (Load results runs it after each deploy)
 
-The writers save with saveAsTable, and an overwrite with overwriteSchema drops comments, so each write checks them
-and sends the missing ones again. Genie and Catalog Explorer read them.
+The writers save with saveAsTable, and an overwrite with overwriteSchema drops comments unless the frame carries them
+(with_comments), so each write checks them and sends the missing ones again. Genie and Catalog Explorer read them.
 """
 
 from __future__ import annotations
@@ -144,6 +146,21 @@ def apply(spark, table: str) -> int:
         except Exception as e:  # noqa: BLE001 - a comment never fails the job; the warning names it
             print(f"warning: comment not applied on {table}: {type(e).__name__}: {str(e)[:200]}")
     return done
+
+
+@traced
+def with_comments(sdf, table: str):
+    """`sdf` with each declared column's comment in its schema (metadata["comment"]), so an overwrite commits them and
+    apply sends no column comment afterwards; the table's own may still be sent. Load results' overwrites from pandas
+    dropped them, and 200 column comments were sent again on every run (#751). The comments are written with the data,
+    so one the catalog refused would fail that write. Columns keep their names and order; an undeclared table's frame
+    comes back as it is."""
+    if not _NAME.fullmatch(table):
+        return sdf
+    comment, cols = declared(*table.split(".")[1:])
+    if not comment:
+        return sdf
+    return sdf.select(*[sdf[c].alias(c, metadata={"comment": cols[c]}) if c in cols else sdf[c] for c in sdf.columns])
 
 
 @traced
