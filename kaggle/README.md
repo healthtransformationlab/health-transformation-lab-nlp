@@ -153,22 +153,35 @@ the link first (#698).
 
 ## A Modal GPU (paid; started from Actions)
 
-`modal_official.py` runs the same batch a Colab run makes on a Modal GPU (028 AI15, #804). It runs the Colab
-helper's `run_one`, with the same packages, layout, sealed bundle, results dataset and network rule (ADR 0005). It
-is **paid**, by the second, from the owner's Modal account. Colab stays the default on cost (ADR 0007); Modal is for
-speed, or for a run nobody has to open by hand.
+`modal_official.py` runs the same kind of batch a Colab run makes, on a Modal GPU (028 AI15, #804). It runs the Colab
+helper's `run_one`, with the same packages, layout, sealed bundle, results dataset and network rule (ADR 0005). It is
+**paid**, by the second, from the owner's Modal account. ADR 0007 makes Colab the default; when Modal is used beside
+it is decided in an ADR amending 0007 after the two-task trial (#804).
 
-- **To start one:** put the run's entry in `colab_official_run.json` on its own branch (bundle, kernel dataset,
-  `"network_open_acknowledged": true`). Then go to the Actions tab, pick **Run the Gemma agent on a Modal GPU**,
-  choose that branch, and fill in the label, the GPU (L4, A10 or A100-40GB) and `max_usd`. Starting it is the
-  owner's yes for that run.
-- **The cap:** `max_usd` at the GPU's Modal price (`ops/cost_settings.yaml`) is Modal's time limit for the GPU, so it
-  cannot run past it. The CPU and memory beside it cost a little more. A run stopped at the limit resumes where it
-  stopped when started again.
-- **Before Modal is called,** the workflow checks the credentials, the entry and the cap, and names what is wrong.
-  It then makes one cheap call with the token (`modal token info`).
-- **Credentials:** `MODAL_TOKEN_ID`, `MODAL_TOKEN_SECRET`, `KAGGLE_USERNAME` and `KAGGLE_API_TOKEN`, all in the
-  GitHub environment `dev` (`ops/secrets_register.yaml`). The Kaggle ones reach the Modal machine for that run only.
+- **To start one:** put the run's entry in **`modal_official_run.json`** on its own branch, with its bundle, its
+  kernel dataset, `"network_open_acknowledged": true` and no `gpu`. Never put it in `colab_official_run.json`:
+  Colab sessions follow that list and start every run in it. Then go to the Actions tab, pick **Run the Gemma
+  agent on a Modal GPU**, choose that branch, and fill in the label, the GPU (L4, A10 or A100-40GB) and `max_usd`.
+  Starting it is the owner's yes for that run; an agent does not start it on its own.
+- **The cap:** `max_usd` becomes Modal's time limit. It is priced at the GPU's rate plus the CPU and memory at their
+  hard limits (6 cores and 32 GiB; prices in `ops/cost_settings.yaml`), so the run cannot cost more. At $5 an L4
+  run gets about 3.7 hours.
+- **A run stopped at the limit** loses what it finished since its last upload (up to 8 minutes) and its final log,
+  as a dropped Colab session does. To carry on, add `"resume_session"` to its entry, naming the stopped run's
+  session (its log names it), and start it again.
+- **Before the GPU starts,** the workflow:
+  - checks the credentials, the entry, the label and the cap, and names what is wrong;
+  - makes one cheap call each to Kaggle and Modal (it prints the Modal token's expiry);
+  - refuses while an earlier Modal run is still going;
+  - checks the machine on a CPU, for a fraction of a cent: git, pkill, the CUDA compiler, Python 3.13, the
+    packages, and the user namespaces the evaluator's sandbox needs.
+- **To stop a run:** cancelling the Actions job does not stop it. Run `modal app list`, then
+  `modal app stop <app id>`.
+- **Credentials:** `MODAL_TOKEN_ID`, `MODAL_TOKEN_SECRET`, `KAGGLE_USERNAME`, and `KAGGLE_API_TOKEN` or
+  `KAGGLE_KEY`, all in the GitHub environment `dev` (`ops/secrets_register.yaml`). The Kaggle ones reach the Modal
+  machine for that run only.
+- **Its rows:** collected from the results dataset as a Colab run's are (`official_agent_run.py --colab --collect`).
+  The collector still records the machine as Colab, so the first Modal run's rows correct that (#804).
 
 ## When something fails
 

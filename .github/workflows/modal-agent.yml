@@ -1,12 +1,17 @@
 # Run one batch of sealed tasks on a Modal GPU with the competition's evaluator loop (028 AI15, #804), from here so
 # each run matches a commit. Start it from the Actions tab: "Run the Gemma agent on a Modal GPU" -> pick the run's
-# branch in "Use workflow from" -> Run workflow. Starting it is the owner's yes for that run (ADR 0007); Colab stays
-# the default on cost, Modal is for speed or a run nobody has to open by hand.
+# branch in "Use workflow from" -> Run workflow. It is PAID, from the owner's Modal account: starting it is the owner's
+# yes for that run, and an agent does not start it on its own. When Modal is used beside Colab is decided in an ADR
+# amending ADR 0007 after the two-task trial (#804); until then ADR 0007 stands, and Colab is the default.
 #
-# The run's entry must be in kaggle/colab_official_run.json on that branch, with its bundle and
-# "network_open_acknowledged": true (ADR 0005), as for Colab. The results go to the same private Kaggle dataset a
-# Colab run's go to. max_usd becomes Modal's time limit for the GPU (kaggle/modal_official.py), so the GPU cannot run
-# past it; the run is detached, so it carries on after this job's 6 hours if it needs to.
+# The run's entry must be in kaggle/modal_official_run.json on that branch (never colab_official_run.json, which
+# Colab sessions follow), with its bundle, its kernel_dataset and "network_open_acknowledged": true (ADR 0005), and no
+# gpu (the input below chooses it). The results go to the same private Kaggle dataset a Colab run's go to.
+#
+# max_usd becomes Modal's time limit, at the GPU's price plus the CPU and memory at their hard limits
+# (kaggle/modal_official.py), so the run cannot cost more. Before the GPU starts, the machine is checked on a CPU.
+# The run is detached: cancelling this job does not stop it. To stop it, `modal app list`, then
+# `modal app stop <app id>`. A new run waits until no earlier one is going.
 #
 # Needs, in the GitHub environment `dev`: MODAL_TOKEN_ID and MODAL_TOKEN_SECRET (ops/secrets_register.yaml),
 # KAGGLE_USERNAME (variable or secret) and KAGGLE_API_TOKEN or KAGGLE_KEY.
@@ -17,7 +22,7 @@ on:
   workflow_dispatch:
     inputs:
       label:
-        description: "The run's label in kaggle/colab_official_run.json on this branch"
+        description: "The run's label in kaggle/modal_official_run.json on this branch"
         required: true
       gpu:
         description: "Modal GPU (L4 is the cheapest; prices in ops/cost_settings.yaml)"
@@ -25,34 +30,28 @@ on:
         options: [L4, A10, A100-40GB]
         default: L4
       max_usd:
-        description: "The most this run's GPU may cost, in USD: Modal stops it when that time is up"
+        description: "The most this run may cost, in USD: Modal stops it when that time is up"
         default: "5"
 
-concurrency: modal-agent   # one Modal run at a time
+concurrency: modal-agent   # one job at a time; the "busy" step also waits out a detached run still going
 
 jobs:
   run:
     runs-on: ubuntu-latest
     environment: dev
     timeout-minutes: 355
+    # Credentials come straight from the environment and are never written to a file; GitHub masks them in the log.
+    env:
+      KAGGLE_USERNAME: ${{ vars.KAGGLE_USERNAME || secrets.KAGGLE_USERNAME }}
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+      MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
+      MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
         with: {python-version: "3.13"}
-      - run: pip install --quiet "modal==1.6.4" pyyaml
-
-      - name: Credentials (values stay masked)
-        env:
-          U: ${{ vars.KAGGLE_USERNAME || secrets.KAGGLE_USERNAME }}
-          T: ${{ secrets.KAGGLE_API_TOKEN }}
-          K: ${{ secrets.KAGGLE_KEY }}
-          MI: ${{ secrets.MODAL_TOKEN_ID }}
-          MS: ${{ secrets.MODAL_TOKEN_SECRET }}
-        run: |
-          echo "KAGGLE_USERNAME=$U" >> "$GITHUB_ENV"
-          echo "KAGGLE_API_TOKEN=${T:-$K}" >> "$GITHUB_ENV"
-          echo "MODAL_TOKEN_ID=$MI" >> "$GITHUB_ENV"
-          echo "MODAL_TOKEN_SECRET=$MS" >> "$GITHUB_ENV"
+      - run: pip install --quiet "modal==1.6.4" "kaggle==2.2.5" six pyyaml   # six: kaggle 2.2.5 imports it (#536)
 
       - name: Check everything before Modal is called
         env:
@@ -61,10 +60,23 @@ jobs:
           MAX: ${{ inputs.max_usd }}
         run: python kaggle/modal_official.py preflight --label "$LABEL" --gpu "$GPU" --max-usd "$MAX" >> "$GITHUB_ENV"
 
-      - name: One cheap call to Modal with the token
-        run: modal token info
+      - name: Kaggle accepts the credentials (one cheap call)
+        run: |
+          [ -n "$KAGGLE_API_TOKEN" ] || unset KAGGLE_API_TOKEN
+          [ -n "$KAGGLE_KEY" ] || unset KAGGLE_KEY
+          kaggle kernels list --mine --page-size 1 >/dev/null 2>err.txt || {
+            head -5 err.txt; echo "::error::Kaggle rejected KAGGLE_USERNAME with KAGGLE_API_TOKEN or KAGGLE_KEY in 'dev'"; exit 1; }
 
-      - name: Run on Modal
+      - name: Modal accepts the token (one cheap call), and when it expires
+        run: |
+          modal token info >info.txt 2>&1 || {
+            tail -3 info.txt; echo "::error::Modal rejected MODAL_TOKEN_ID and MODAL_TOKEN_SECRET in 'dev'"; exit 1; }
+          grep -i "expires at" info.txt || echo "The Modal token has no expiry date"
+
+      - name: No earlier Modal run is still going
+        run: modal app list --json | python kaggle/modal_official.py busy
+
+      - name: Run on Modal (the machine is checked on a CPU first)
         env:
           LABEL: ${{ inputs.label }}
           GPU: ${{ inputs.gpu }}
