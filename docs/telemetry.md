@@ -18,8 +18,26 @@ types only.
 | `azure` | Application Insights, through the Azure Monitor OpenTelemetry distro | `APPLICATIONINSIGHTS_CONNECTION_STRING`; `pip install -e "python[azure]"` |
 | `otlp` | any OpenTelemetry backend (self-hosted Grafana Tempo/Loki, Jaeger, SigNoz) | `OTEL_EXPORTER_OTLP_ENDPOINT`; `pip install -e "python[otlp]"` |
 
-`azure` without a connection string logs a warning and runs with telemetry off: a missing secret
-never fails a pipeline. `DENTAL_TELEMETRY_SAMPLING` (0–1, default 1.0) sets trace sampling;
+`azure` without a connection string runs with telemetry off: a missing secret never fails a pipeline.
+Off is not quiet, though (014 BUG1, #792: every job asked for `azure` for weeks while the Application Insights
+resource had never been created, and only a log warning said so):
+
+- `telemetry.status()` returns what was asked (`asked_exporter_name`), what is on (`active_exporter_name`) and why
+  they differ (`reason_text`: no connection string, malformed connection string, no secret, no file), never a value.
+- When they differ, `setup()` (and `use_databricks_secret`, when the secret isn't in the scope) carries on and prints
+  one line to stderr naming the setting, the reason and the fix (create the resource with `infra/azure`, then put the
+  connection string in `APPLICATIONINSIGHTS_CONNECTION_STRING` or the Databricks secret
+  `health_transformation_lab/appinsights_connection_string`); under GitHub Actions the line is a `::warning::`
+  annotation. The log warning is still written too.
+- It is a **SEV3 in the daily digest** (`digests.telemetry_alerts`, owner and fix included), built by
+  `databricks/notebooks/14_pipeline_digest.py`. The jobs' own statuses aren't recorded anywhere yet (the doctor's run
+  table comes from the spans, so with telemetry off it has no rows), and every job reads the same switch and secret,
+  so the digest notebook's own status stands for the whole workspace.
+- The same notebook checks the secrets register: each credential in `ops/secrets_register.yaml` whose `stored_in` is
+  the Databricks secret scope must have its key in the scope (`digests.register_alerts`, reading the scope with
+  `dbutils.secrets.list`, key names only); one that is missing is a SEV3 in the daily digest too.
+
+`DENTAL_TELEMETRY_SAMPLING` (0–1, default 1.0) sets trace sampling;
 `DENTAL_ENVIRONMENT` (default `dev`) is recorded on every span.
 
 Code: `python/health_transformation_lab_nlp/telemetry.py`. In a script, two lines:
