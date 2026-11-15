@@ -119,15 +119,15 @@ def prepare_workspace(task: dict, source: Path, dest: Path) -> Path:
 _INNER = r"""
 set -e
 root=$1; ws=$2; binds=$3; shift 3
-mkdir -p "$root"
+mkdir -p "$root/tmp"
+mount -t tmpfs tmpfs "$root/tmp"      # first: a Python under /tmp, bound below, must not be hidden by it (#774)
 for d in $binds; do
   [ -e "$d" ] || continue
   if [ -L "$d" ]; then mkdir -p "$root$(dirname "$d")"; ln -sfn "$(readlink "$d")" "$root$d"; continue; fi
   mkdir -p "$root$d"; mount --rbind "$d" "$root$d"; mount -o remount,bind,ro "$root$d" 2>/dev/null || true
 done
-mkdir -p "$root/workspace" "$root/tmp" "$root/dev" "$root/proc"
+mkdir -p "$root/workspace" "$root/dev" "$root/proc"
 mount --bind "$ws" "$root/workspace"
-mount -t tmpfs tmpfs "$root/tmp"
 for n in null zero random urandom; do touch "$root/dev/$n"; mount --bind "/dev/$n" "$root/dev/$n"; done
 mkdir -p "$root/dev/shm"; mount -t tmpfs tmpfs "$root/dev/shm"      # multiprocessing and joblib need it
 ln -s /proc/self/fd "$root/dev/fd"                                 # bash process substitution: < <(...)
@@ -172,8 +172,12 @@ class Sandbox:
     def run(self, command: str, timeout: int, env: dict) -> tuple[int | None, str, str]:
         """(exit code or None on timeout, stdout, stderr) of `bash -c command` in /workspace."""
         root = Path(tempfile.mkdtemp(prefix="htlnlp_sbx_"))
+        # the binds sit on the private /tmp (#774): one that is /tmp, or / or a folder above the sandbox's root or
+        # the workspace, would show the host's files there (tokens, config), so it is left out
+        guard = [Path("/tmp"), root, self.workdir]
+        binds = [b for b in self.binds if not any(g == Path(b) or Path(b) in g.parents for g in guard)]
         argv = ["unshare", "--user", "--map-root-user", "--mount", "--net", "--pid", "--fork", "bash", "-c", _INNER,
-                "sandbox", str(root / "r"), str(self.workdir), " ".join(self.binds),
+                "sandbox", str(root / "r"), str(self.workdir), " ".join(binds),
                 *[f"{k}={v}" for k, v in env.items()], "/bin/bash", "-c", f"cd /workspace && {command}"]
         try:
             return _spawn(argv, None, timeout, {"PATH": os.environ.get("PATH", "/usr/bin:/bin"),
