@@ -91,7 +91,7 @@ erDiagram
     fact_pipeline_run ||--o| fact_remediation_decision : "run_id (failed runs)"
     dim_study_note }o..o{ benchmark_metric : "run_id (its test split)"
     review_key {
-        bigint visit_id PK "review chart (240)"
+        bigint visit_id PK "review chart"
         string truth_status "the generator's truth"
         string difficulty "L1 · L2 · L3"
         string note_text "de-identified note, through the leak gate"
@@ -624,7 +624,7 @@ One per synthetic review chart (answer_key/review_key.csv, not a table). Written
 
 | Key | Column | Type | Description |
 |---|---|---|---|
-| PK | `visit_id` | bigint | review chart (240) |
+| PK | `visit_id` | bigint | review chart |
 |  | `truth_status` | string | the generator's truth |
 |  | `difficulty` | string | L1 · L2 · L3 |
 |  | `note_text` | string | de-identified note, through the leak gate |

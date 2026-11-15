@@ -1,6 +1,6 @@
 %%{init: {"themeVariables": {"fontSize": "18px"}}}%%
 flowchart TB
-    T["review_tasks.json<br/>~240 charts, every source,<br/>de-identified"] --> P1["Reviewer 1"] & P2["Reviewer 2"] & P3["Reviewer 3"] & P4["Reviewer 4"]
+    T["review_tasks.json<br/>review charts, every source,<br/>de-identified"] --> P1["Reviewer 1"] & P2["Reviewer 2"] & P3["Reviewer 3"] & P4["Reviewer 4"]
     P1 & P2 & P3 & P4 --> L["reviewer_labels.csv"]
     L --> H["Human bar<br/>mean kappa over reviewer pairs"]
     L --> M["Each method<br/>mean kappa vs each reviewer"]

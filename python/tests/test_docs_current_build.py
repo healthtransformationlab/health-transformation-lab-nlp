@@ -286,17 +286,21 @@ def test_the_code_walkthrough_status_is_the_edrs(ladder):
 # ---------- #763: code, generated files and notebooks outside the Markdown docs ----------
 OUTSIDE = ("diagrams/_build/gold_model.py", "diagrams/gold/data_model.md",
            "diagrams/gold/source/gold_data_model_full.mmd", "diagrams/gold/source/gold_data_model_full.drawio",
+           "diagrams/_build/gold_architecture.py", "diagrams/gold/source/gold_logical_architecture.drawio",
+           "diagrams/flows/02_review_and_acceptance.mmd", "databricks/dashboards/scorecard.lvdash.json",
            "contracts/gold_perio_bench/fact_visit_evidence.odcs.yaml", "kaggle/medgemma_reader.ipynb",
-           "kaggle/encoder_gpu.ipynb", "python/health_transformation_lab_nlp/ladder_eval.py")
+           "kaggle/encoder_gpu.ipynb", "python/health_transformation_lab_nlp/ladder_eval.py",
+           "python/tests/test_reference_answers.py")
 # the earlier review set's size in any wording: "the 240 review charts", "all 240 notes", "the 240-note run", "the full
-# 240"; a draw.io coordinate (x="240") is not one
+# 240", "~240 charts", "review chart (240)"; a draw.io coordinate (x="240") is not one
 EARLIER_SET = re.compile(r"(?<![\d,.])240(?![\d,])(?=(?:[- ][\w*]+){0,2}[- ](?:review|notes?|charts?|visits?|run)\b)"
-                         r"|full 240\b")
+                         r"|full 240\b|(?:review|charts?|notes?)\s*\(240\)")
 
 
 def test_the_earlier_set_pattern_reads_each_wording():
     for text in ("the 240 review charts", "the same 240 **synthetic** review notes", "read all 240 notes",
-                 "skipping the 240-note run", "a quick check before the full 240"):
+                 "skipping the 240-note run", "a quick check before the full 240", "review chart (240)",
+                 "~240 charts, every source", "240 de-identified review charts"):
         assert EARLIER_SET.search(text), text
     for text in ('<mxGeometry x="240" y="80"', "1,240 notes", "240.5 charts", "223 review charts"):
         assert not EARLIER_SET.search(text), text
@@ -309,22 +313,31 @@ def test_no_file_outside_the_docs_gives_the_earlier_review_set(rel):
     assert not left, f"{rel} still gives the earlier review set's size:\n" + "\n".join(left)
 
 
-def test_the_review_flag_is_described_without_a_count():
+def test_the_gold_model_describes_the_review_set_without_a_count():
     import importlib.util
     spec = importlib.util.spec_from_file_location("gold_model", REPO_ROOT / "diagrams" / "_build" / "gold_model.py")
     gm = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(gm)
     flags = [c for t in gm.TABLES.values() for c in t.columns if c.name == "is_in_review"]
     assert flags and not any(re.search(r"\d", c.description) for c in flags)
+    texts = [(name, x) for name, t in gm.TABLES.items() for x in (t.description, t.writer, *(c.description for c in t.columns))]
+    assert not [(name, x) for name, x in texts if re.search(r"(?<![\d,.])240(?![\d,])", x)]
 
 
 def test_the_ladder_docstring_names_no_stage_iv_count():
     from health_transformation_lab_nlp import ladder_eval
-    assert not re.search(r"\d+ stage IV notes", ladder_eval.__doc__)
+    assert not re.search(r"\d+ stage IV", ladder_eval.__doc__)
     assert "stage IV" in ladder_eval.__doc__
 
 
-def test_the_claims_register_does_not_call_finished_reruns_pending():
+def test_the_claims_register_says_whether_the_reruns_are_done():
     pending = pd.read_csv(DATASETS_DIR / "ladder" / "ladder_pending.csv")
-    if pending.empty:
-        assert '"Rerun pending" until they are redone' not in _read("docs/claims.yaml")
+    claims = _read("docs/claims.yaml")
+    if pending.empty:      # every model run is on the current notes: the comment gives the day they were recorded
+        manifest = pd.read_csv(DATASETS_DIR / "results_manifest.csv")
+        runs = manifest[manifest["file"].str.startswith("ai_predictions_")]
+        day = runs["recorded_at"].str[:10].max()
+        assert f"were rerun on them on Kaggle on {day}" in claims
+        assert '"Rerun pending" until they are redone' not in claims
+    else:                  # some runs are still on another note set: the comment must not say they were redone
+        assert "were rerun on them" not in claims

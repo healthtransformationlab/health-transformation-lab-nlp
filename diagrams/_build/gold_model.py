@@ -55,7 +55,7 @@ DOCTOR_PROV = [C("doctor_run_id", "string", "the Pipeline doctor run that wrote 
 TABLES = {
     "review_key": Table(
         "file", "One per synthetic review chart (answer_key/review_key.csv, not a table)", "10_build_study.py (seeded)", [
-            C("visit_id", "bigint", "review chart (240)", "PK"),
+            C("visit_id", "bigint", "review chart", "PK"),
             C("truth_status", "string", "the generator's truth"),
             C("difficulty", "string", "L1 · L2 · L3"),
             C("note_text", "string", "de-identified note, through the leak gate"),

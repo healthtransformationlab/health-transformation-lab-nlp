@@ -126,7 +126,7 @@ def test_committed_per_field_table_matches_the_committed_runs():
     for run, got in out.groupby("run"):
         want = ra.field_accuracy(pd.read_csv(DATASETS_DIR / f"llm_details_{run}.csv"), ref)
         pd.testing.assert_frame_equal(got.drop(columns="run").reset_index(drop=True), want, check_dtype=False)
-    # the status row is the rung's accuracy (pred, after fallback) at the six statuses on all 240 review charts: the
+    # the status row is the rung's accuracy (pred, after fallback) at the six statuses on every review chart: the
     # reader's fields are scored as read, not at the scoring defaults of medgemma_vs_bert.csv (spec 032 US8)
     key = pd.read_csv(DATASETS_DIR / "answer_key" / "review_key.csv").set_index("visit_id")["truth_status"]
     st = out[out.field == "status"].set_index("run")["accuracy"]

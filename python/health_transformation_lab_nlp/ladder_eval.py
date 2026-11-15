@@ -15,8 +15,8 @@ groups (healthy and gingivitis merged; `grouped`) on the review charts that coun
 LLM reader and a fine-tuned encoder are most likely to differ (scripts/29_medgemma_vs_bert.py).
 
 `rules_override` is the stage IV hybrid: where the note rules say stage IV, use that; otherwise the
-model. Fine-tuned encoders see few or no stage IV notes in training (the review set takes the patients who have
-one), so on their own they miss stage IV.
+model. Fine-tuned encoders see few or no stage IV notes in training, because the review set oversamples stage IV
+(study.REVIEW_STRATA), so on their own they miss stage IV.
 R twin: r/R/10_ladder.R (point estimates; bootstrap CIs differ by RNG).
 """
 
