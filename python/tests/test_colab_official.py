@@ -873,10 +873,16 @@ def test_an_earlier_runs_output_is_removed_once_it_is_on_kaggle(co, monkeypatch,
     (work / "tasks" / "a").mkdir(parents=True)
     (work / "tasks" / "a" / "result.json").write_text('{"patch": "the first arm"}')
     (tmp_path / "content" / "htl_working_label").write_text("colab-statement")   # its results reached Kaggle
+    seen = []
+
+    def fetch(*a, **k):   # what is on the machine when this run's inputs are fetched, before its kernel starts
+        seen.append((work / "tasks" / "a").exists() or bool(list(work.parent.glob("working_before_*"))))
+        raise RuntimeError("the test stops here")
+    monkeypatch.setattr(co, "fetch", fetch)
     co.run_one("colab-graph", "x/y", kernel_dataset="x/k", user="someone")
+    assert seen == [False]
     assert not (work / "tasks" / "a").exists()
     assert not list((tmp_path / "content" / "htl_kaggle").glob("working_before_*"))
-    assert calls["fetched"] == 1
 
 
 def test_an_earlier_runs_output_that_never_reached_kaggle_is_sent_first_and_kept_if_it_cannot_be(co, monkeypatch, tmp_path):
@@ -1049,6 +1055,10 @@ def test_the_runner_refuses_colab_options_that_do_not_go_together(run):
                            ({"collect": False, "colab_session": "01:17:24"}, "--collect")):
         with pytest.raises(SystemExit, match=option):
             run.check_colab_options(**{**base, **kwargs})
+    import inspect
+    lines = [line.split("#")[0].strip() for line in inspect.getsource(run.main).splitlines()]   # and checks them first
+    called = [n for n, line in enumerate(lines) if line.startswith("check_colab_options(a.colab, a.batch, a.label")]
+    assert called and called[0] < next(n for n, line in enumerate(lines) if "KaggleApi()" in line)
 
 
 # Smaller.
