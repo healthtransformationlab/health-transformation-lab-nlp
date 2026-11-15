@@ -1,14 +1,29 @@
 {
- "note": "Branch data/818-028-colab-31b-smoke only (028 AI18, #818), never merged to main: ADR 0005 keeps `network_open_acknowledged` off main. One run, `colab-31b-smoke`: gemma-developer-agent at ed11c15 (the queued 31B leaderboard entry) on 3 published tasks drawn with seed 20261110, stratified by tier, on one A100, model the 31B. A smoke test (does the 31B serve and finish tasks?), not a timing for the 12-hour limit: one A100 is not the scorer's 4xL4. Approved by the owner on November 15, on Colab compute units, no Kaggle GPU hours (ADR 0007). ADR 0005 read: the network is open at the machine and the audit reads every tool call afterwards. The runs main lists were all made; they are left off so this list offers nothing but this run.",
- "stop": false,
+ "note": "What kaggle/colab_official_agent.ipynb runs, in order (028 AI9, #687): the two arms of the registered pair (specs/028-dataops-task-set/preregistration-colab-paired-run.md). A notebook that has made the runs it started with keeps reading this list. A run whose results are already on Kaggle is not made again, and one that stopped part way goes on from where it stopped. `-try2`: each arm stopped before its kernel started, on Kaggle's \"not found\" for the whole download of its bundle; listed again so a notebook that is still open makes it, with the bundle fetched file by file. `gpu`: two notebook sessions were open and both made the first arm, one on an A100 and one on an L4 (issue 687, the comment of 03:25 UTC on November 12). An entry that names a GPU is made only on a machine that has it: the A100 session makes the registered second arm, and the L4 session makes the same sealed tasks as `colab-graph-l4`, into a dataset of its own. `colab-report` (addendum 3, specs/028-dataops-task-set/preregistration-colab-report-arm.md): the failing test's report as a third arm, on the A100 session after its second arm, with its own sealed bundle and its own results. `stop`: every run named here has been made, and the A100 session's three arms have been collected with no task left out (the report arm's kernel ended at 08:11:53 UTC on November 12, 2026). `colab-e2b-statement` (028 AI12, #748, addendum 4, specs/028-dataops-task-set/preregistration-colab-e2b-arm.md): the baseline's tasks, order and seed with the agent's two `model:` lines on E2B, on an A100, with its own sealed bundle and results; `model` names the Kaggle model a run mounts (a run that names none gets E4B), was listed here on November 15, 2026 and taken off the same day, before any session made it: the owner chose to run the E2B comparison on Kaggle instead (#748). Its bundle `jcblearning/htlnlp-official-colab-e2b-statement` and kernel file `jcblearning/htlnlp-colab-kernel-colab-e2b-statement` are unused and kept. A notebook makes every run this list names, whatever `stop` says, so an entry that must not run is taken off rather than left with `stop` set. A session that has made its runs and reads this list gives its GPU back; the L4 session does so when its `colab-graph-l4` ends.",
+ "stop": true,
  "runs": [
   {
-   "label": "colab-31b-smoke",
-   "bundle": "jcblearning/htlnlp-official-colab-31b-smoke",
-   "kernel_dataset": "jcblearning/htlnlp-colab-kernel-colab-31b-smoke",
-   "gpu": "A100",
-   "model": "google/gemma-4/other/gemma-4-31b-it-qat-w4a16-ct/2",
-   "network_open_acknowledged": true
+   "label": "colab-statement-try2",
+   "bundle": "jcblearning/htlnlp-official-colab-statement",
+   "kernel_dataset": "jcblearning/htlnlp-colab-kernel-colab-statement"
+  },
+  {
+   "label": "colab-graph-try2",
+   "bundle": "jcblearning/htlnlp-official-colab-graph",
+   "kernel_dataset": "jcblearning/htlnlp-colab-kernel-colab-graph",
+   "gpu": "A100"
+  },
+  {
+   "label": "colab-graph-l4",
+   "bundle": "jcblearning/htlnlp-official-colab-graph",
+   "kernel_dataset": "jcblearning/htlnlp-colab-kernel-colab-graph",
+   "gpu": "L4"
+  },
+  {
+   "label": "colab-report",
+   "bundle": "jcblearning/htlnlp-official-colab-report",
+   "kernel_dataset": "jcblearning/htlnlp-colab-kernel-colab-report",
+   "gpu": "A100"
   }
  ]
 }
