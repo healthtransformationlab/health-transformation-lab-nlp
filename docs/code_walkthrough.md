@@ -125,13 +125,13 @@ What a BERT model is, in plain words: [bert.md](bert.md).
 - Code: [`rungs.py`](../python/health_transformation_lab_nlp/rungs.py) `make_rung`; [`models.yaml`](../models.yaml) (Hugging Face ids, papers);
   [`llm_reader.py`](../python/health_transformation_lab_nlp/llm_reader.py); [`scripts/11_ai_predict.py`](../python/scripts/11_ai_predict.py).
 - Output: `data/datasets/ai_predictions_<rung>.csv` (LLMs also `llm_details_<rung>.csv`).
-- Status: baselines and eleven encoders run (base-size on CPU; the Longformers and large ModernBERTs on Kaggle GPUs): 77-83% correct on the synthetic review charts, not distinguishable from the note rules (79%); all miss nearly every stage IV chart (7 training examples). With the note rules deciding stage IV (`+rules4`) they reach 87-91%. MedGemma 1.5 4B and 4B v1 (zero-shot) score 76% and 78%; see [MedGemma](medgemma.md).
+- Status: baselines and twelve encoders run, all on Kaggle GPUs on the current notes: alone they score 81.2-88.3 per 100 on the 223 synthetic review charts, against 82.1 for the note rules (only ModernBERT large clearly better), and none answers stage IV, which no training note has. With the note rules deciding stage IV (`+rules4`) they reach 83.9-91.0. MedGemma 1.5 4B and 4B v1 (zero-shot) score 78.5 and 79.8; see [MedGemma](medgemma.md) and the [EDR study](edr/README.md).
 - Compare against the truth: [`scripts/28_ladder_vs_truth.py`](../python/scripts/28_ladder_vs_truth.py) → `data/datasets/ladder/ladder_vs_truth.csv` (accuracy with bootstrap CIs, difference from note rules, stage IV recall, unsafe rate, calibration); R twin `r/R/10_ladder.R`.
 - MedGemma vs BERT: [`scripts/29_medgemma_vs_bert.py`](../python/scripts/29_medgemma_vs_bert.py) → `data/datasets/ladder/medgemma_vs_bert.csv` (each MedGemma run minus the best encoder, paired bootstrap CI; stage IV recall; gate and fallback rates; assumed corpus cost) and `..._by_difficulty.csv`. MedGemma variants keep their own files (`+lora`, `+k<shots>`, `+terse`). `--simulated` uses the placeholder reader: a dry run.
 
 ## 7. Reviewers stage charts
 
-**In plain words:** several periodontists each read the same 240 de-identified charts and record
+**In plain words:** several periodontists each read the same 223 de-identified charts and record
 the status they'd assign (healthy, gingivitis, or periodontitis with stage, grade and extent),
 plus which evidence decided it. They work separately and never see each other's answers. Their
 labels are the human benchmark the AI and the rules are checked against.

@@ -66,7 +66,7 @@ flowchart LR
 3. **Labeling inside the boundary.** Can Label Studio run as a Databricks App
    (Django + Postgres, with Lakebase as the database)? Or is an MLflow
    labeling session / Review App with custom categorical schemas a better
-   fit for "several reviewers independently stage the same 240 charts"?
+   fit for "several reviewers independently stage the same 223 charts"?
 4. **GPU for fine-tuning.** For a dozen encoders on a few thousand notes, is
    serverless GPU available to us, or should we plan a small classic GPU
    cluster? What does a run cost?
