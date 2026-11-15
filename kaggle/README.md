@@ -166,11 +166,14 @@ it is decided in an ADR amending 0007 after the two-task trial (#804).
 - **Who has to say yes** (#806, [ADR 0008](../docs/adr/0008-modal-runs-start-on-their-own-under-a-cost-cap.md)):
   - A run starts on its own when its `max_usd` is at most `modal_auto_max_usd` (5 USD) and this month's Modal
     spend plus `max_usd` is at most `modal_auto_monthly_usd` (25 USD, inside the Starter plan's 30 USD credit).
-  - Any other run, or any run when this month's spend can't be read, waits in the **approve** job until the
-    owner approves it in Actions. GitHub notifies the reviewer.
+  - Any other run waits in the **approve** job until the owner approves it in Actions, and GitHub notifies the
+    reviewer. So does any run when this month's spend can't be read, and any run whose branch changes the
+    workflow, `modal_official.py` or `ops/cost_settings.yaml`. The limits are always read from `main`.
+  - The spend is read again just before the run. A re-run is refused, because it would reuse the first attempt's
+    approval: start a new run instead.
   - The approve job uses the GitHub environment `modal-approval`, which the owner creates once (Settings,
     Environments, New environment, `modal-approval`, Required reviewers: the owner). It holds no secret. Without a
-    required reviewer, an over-limit run is refused, never let through.
+    required reviewer, and an approval of that run recorded by GitHub, an over-limit run is refused, never let through.
 - **The cap:** `max_usd` becomes Modal's time limit. It is priced at the GPU's rate plus the CPU and memory at their
   hard limits (6 cores and 32 GiB; prices in `ops/cost_settings.yaml`), so the run cannot cost more. At $5 an L4
   run gets about 3.7 hours.

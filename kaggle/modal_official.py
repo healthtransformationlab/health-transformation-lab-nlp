@@ -23,8 +23,9 @@ entry does not accept an open network (ADR 0005). What differs:
   environment `dev`; nothing is stored in Modal.
 
     python kaggle/modal_official.py preflight --label <label> --gpu L4 --max-usd 5 >> "$GITHUB_OUTPUT"
-    modal billing summary --json | python kaggle/modal_official.py approval --max-usd 5 >> "$GITHUB_OUTPUT"
-    curl .../environments/modal-approval | python kaggle/modal_official.py gate      # only when approval is needed
+    modal billing summary --json | python kaggle/modal_official.py approval --max-usd 5 --limits <main's settings> \
+        --gating-changed false >> "$GITHUB_OUTPUT"
+    python kaggle/modal_official.py gate --environment env.json --approvals approvals.json   # only when it is needed
     modal app list --json | python kaggle/modal_official.py busy
     modal run --detach kaggle/modal_official.py --label <label> --gpu L4 --max-usd 5
 
@@ -276,10 +277,16 @@ def _json_in(text: str):
     return json.loads(text[start:end + 1])
 
 
-def approval_needed(max_usd, summary_text: str, settings: Path = SETTINGS) -> tuple[bool, str]:
-    """Whether the run waits for the owner's approval, and why. It does when `max_usd` is over the per-run limit, when
-    this month's Modal spend (`modal billing summary --json`, its `metered_cost`) plus `max_usd` is over the monthly
-    limit, and when that spend cannot be read: not knowing is never taken for being under."""
+def approval_needed(max_usd, summary_text: str, settings: Path = SETTINGS,
+                    gating_changed: str = "false") -> tuple[bool, str]:
+    """Whether the run waits for the owner's approval, and why. It does when the run's branch changes the files that
+    gate it (`gating_changed`: anything but "false"), when `max_usd` is over the per-run limit, when this month's Modal
+    spend (`modal billing summary --json`, its `metered_cost`) plus `max_usd` is over the monthly limit, and when that
+    spend cannot be read: not knowing is never taken for being under. `settings` is main's copy of the limits, so a
+    branch cannot raise its own."""
+    if str(gating_changed).strip().lower() != "false":
+        return True, ("this branch changes what decides whether a run needs approval (the workflow, "
+                      "kaggle/modal_official.py or ops/cost_settings.yaml differ from main's), so it waits for the owner")
     limits = load_auto_limits(settings)
     try:
         usd = float(max_usd)
@@ -291,7 +298,10 @@ def approval_needed(max_usd, summary_text: str, settings: Path = SETTINGS) -> tu
         return True, (f"max_usd {usd:g} is over the {limits['per_run']:g} USD a run may spend without approval "
                       f"({AUTO_KEYS['per_run']})")
     try:
-        spent = float(_json_in(summary_text)["metered_cost"])
+        raw = _json_in(summary_text)["metered_cost"]
+        if isinstance(raw, bool):
+            raise TypeError(raw)
+        spent = float(raw)
         if not math.isfinite(spent) or spent < 0:
             raise ValueError(spent)
     except (ValueError, KeyError, TypeError):
@@ -303,9 +313,38 @@ def approval_needed(max_usd, summary_text: str, settings: Path = SETTINGS) -> tu
                    f"plus it is within {limits['monthly']:g}: it starts without approval")
 
 
-def gate_problems(environment_text: str) -> list[str]:
-    """Why the approval job must refuse the run, from GitHub's answer for the environment it waited in. GitHub makes a
-    missing environment on the spot, with no rule, so a run is let through only when a required reviewer is set."""
+def gate_problems(environment_text: str, approvals_text: str) -> list[str]:
+    """Why the approval job must refuse the run, from GitHub's answers for the environment it waited in and for this
+    run's review history (`GET .../actions/runs/{run_id}/approvals`). GitHub makes a missing environment on the spot,
+    with no rule, and an admin can start a waiting job without a review, so a run is let through only when the
+    environment has a required reviewer and someone approved this run for it."""
+    problems = _environment_problems(environment_text)
+    try:
+        reviews = _json_in(approvals_text)
+    except ValueError:
+        reviews = None
+    if not isinstance(reviews, list):
+        return problems + ["this run's review history could not be read from GitHub, so the run is refused"]
+    approved = [r for r in reviews if isinstance(r, dict) and r.get("state") == "approved"
+                and any((e or {}).get("name") == APPROVAL_ENVIRONMENT for e in r.get("environments") or [])]
+    if not approved:
+        problems.append(f"nobody approved this run for {APPROVAL_ENVIRONMENT} (an admin may have started it without "
+                        "a review), so it is refused")
+    return problems
+
+
+def approvers(approvals_text: str) -> list[str]:
+    """Who approved this run for the approval environment, from its review history."""
+    try:
+        reviews = _json_in(approvals_text)
+    except ValueError:
+        return []
+    return [str((r.get("user") or {}).get("login")) for r in reviews if isinstance(reviews, list) and
+            isinstance(r, dict) and r.get("state") == "approved"
+            and any((e or {}).get("name") == APPROVAL_ENVIRONMENT for e in r.get("environments") or [])]
+
+
+def _environment_problems(environment_text: str) -> list[str]:
     try:
         env = _json_in(environment_text)
     except ValueError:
@@ -325,26 +364,45 @@ def gate_problems(environment_text: str) -> list[str]:
 def cli(argv: list[str] | None = None, env=None, kaggle_dir: Path = HERE, stdin=None) -> dict:
     """`preflight`: check everything, then print the GPU and the time limit as KEY=VALUE lines for $GITHUB_OUTPUT, and
     the plan (no credential in it) on stderr. `approval`: from `modal billing summary --json` on stdin, print
-    `needs_approval=` and `reason=`. `gate`: from GitHub's answer for the approval environment on stdin, refuse unless
-    it has a required reviewer. `busy`: refuse when `modal app list --json` on stdin shows a run going, or is empty."""
+    `needs_approval=` and `reason=`; with `--approved`, refuse unless approval is not needed or was given. `gate`: from
+    GitHub's answers for the approval environment and this run's review history, refuse unless it has a required
+    reviewer and someone approved this run. `busy`: refuse when `modal app list --json` on stdin shows a run going, or
+    gives no list."""
     ap = argparse.ArgumentParser(prog="modal_official.py")
     ap.add_argument("command", choices=["preflight", "approval", "gate", "busy"])
     ap.add_argument("--label")
     ap.add_argument("--gpu", default="L4")
     ap.add_argument("--max-usd", default="5")
+    ap.add_argument("--limits", type=Path, default=SETTINGS, help="approval: main's ops/cost_settings.yaml")
+    ap.add_argument("--gating-changed", default="true", help="approval: \"false\" when the branch's gating files are main's")
+    ap.add_argument("--approved", help="approval, just before the run: the approve job's result; refuse unless "
+                                       "approval is not needed or this is \"success\"")
+    ap.add_argument("--environment", type=Path, help="gate: GitHub's answer for the approval environment")
+    ap.add_argument("--approvals", type=Path, help="gate: GitHub's review history of this run")
     a = ap.parse_args(argv)
-    text = (stdin or sys.stdin).read() if a.command in ("approval", "gate", "busy") else ""
+    text = (stdin or sys.stdin).read() if a.command in ("approval", "busy") else ""
     if a.command == "approval":
-        needed, reason = approval_needed(a.max_usd, text)
+        needed, reason = approval_needed(a.max_usd, text, a.limits, a.gating_changed)
+        if a.approved is not None:   # just before the run: the spend is read again, after any wait in the queue
+            if needed and a.approved != "success":
+                raise SystemExit(f"not started: {reason}, and this run was not approved (approve: {a.approved or 'none'})")
+            print(f"going ahead: {reason}" + (" (approved)" if needed else ""))
+            return {"needs_approval": needed, "reason": reason}
         print(f"needs_approval={'true' if needed else 'false'}")
         print("reason=" + " ".join(reason.split()))
         print(f"::notice::{reason}", file=sys.stderr)
         return {"needs_approval": needed, "reason": reason}
     if a.command == "gate":
-        problems = gate_problems(text)
+        def read(path):
+            try:
+                return Path(path).read_text(encoding="utf-8") if path else ""
+            except OSError:
+                return ""
+        environment_text, approvals_text = read(a.environment), read(a.approvals)
+        problems = gate_problems(environment_text, approvals_text)
         if problems:
             raise SystemExit("\n".join(problems))
-        print(f"approved by a required reviewer of {APPROVAL_ENVIRONMENT}")
+        print(f"approved for {APPROVAL_ENVIRONMENT} by {', '.join(approvers(approvals_text))}")
         return {}
     if a.command == "busy":
         try:
@@ -352,6 +410,8 @@ def cli(argv: list[str] | None = None, env=None, kaggle_dir: Path = HERE, stdin=
         except ValueError:
             raise SystemExit("`modal app list --json` gave nothing to read, so whether a run is going is not known") \
                 from None
+        if not isinstance(listing, list):
+            raise SystemExit("`modal app list --json` did not give a list, so whether a run is going is not known")
         going = running_apps(listing)
         if going:
             raise SystemExit(f"a Modal run is still going ({', '.join(going)}): wait for it to end, or stop it with "

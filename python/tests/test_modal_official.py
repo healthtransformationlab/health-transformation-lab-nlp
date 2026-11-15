@@ -152,6 +152,8 @@ def test_a_new_run_waits_while_an_earlier_one_is_still_going(mo, capsys):
         mo.cli(["busy"], stdin=io.StringIO(json.dumps(listing)))
     with pytest.raises(SystemExit, match="not known"):                # a listing that failed is not an empty one
         mo.cli(["busy"], stdin=io.StringIO(""))
+    with pytest.raises(SystemExit, match="not known"):
+        mo.cli(["busy"], stdin=io.StringIO(json.dumps({"app_id": "ap-3"})))
 
 
 def _summary(spent):
@@ -173,35 +175,85 @@ def test_a_run_over_a_limit_or_with_the_spend_unknown_waits_for_approval(mo):
                                    (1, json.dumps({"billed_cost": "0"}), "could not be read"),
                                    (1, _summary("nan"), "could not be read"),
                                    (1, _summary("-3"), "could not be read"),
+                                   (1, json.dumps({"metered_cost": True}), "could not be read"),
                                    ("inf", _summary(0), "not a positive number")):
         needed, reason = mo.approval_needed(max_usd, summary)
         assert needed is True and word in reason, (max_usd, summary, reason)
 
 
+def test_a_branch_that_changes_what_gates_it_waits_and_cannot_raise_its_own_limits(mo, tmp_path):
+    for changed in ("true", "", "anything"):
+        needed, reason = mo.approval_needed(1, _summary(0), gating_changed=changed)
+        assert needed is True and "differ from main" in reason, changed
+    assert mo.approval_needed(1, _summary(0), gating_changed="false")[0] is False
+    main = tmp_path / "main_cost_settings.yaml"                     # the limits come from the file given: main's
+    main.write_text(yaml.safe_dump({k: {"value": v, "source": "s", "read_date": "2026-11-15"}
+                                    for k, v in (("modal_auto_max_usd", 1), ("modal_auto_monthly_usd", 25))}))
+    assert mo.approval_needed(2, _summary(0), main, "false")[0] is True
+
+
 def test_approval_prints_the_decision_and_its_reason_for_the_next_jobs(mo, capsys):
-    mo.cli(["approval", "--max-usd", "8"], stdin=io.StringIO(_summary(0)))
+    mo.cli(["approval", "--max-usd", "8", "--gating-changed", "false"], stdin=io.StringIO(_summary(0)))
     out = capsys.readouterr().out.splitlines()
     assert out[0] == "needs_approval=true" and out[1].startswith("reason=") and len(out) == 2
+    mo.cli(["approval", "--max-usd", "1"], stdin=io.StringIO(_summary(0)))   # by default, taken as changed: it waits
+    assert capsys.readouterr().out.startswith("needs_approval=true")
+
+
+def test_just_before_the_run_the_spend_is_read_again_and_an_unapproved_overrun_stops(mo, capsys):
+    def again(max_usd, spent, approved):
+        return mo.cli(["approval", "--max-usd", str(max_usd), "--gating-changed", "false", "--approved", approved],
+                      stdin=io.StringIO(_summary(spent)))
+
+    assert again(5, 10, "skipped")["needs_approval"] is False         # still within: goes ahead
+    with pytest.raises(SystemExit, match="not approved"):
+        again(5, "21", "skipped")                                    # another run spent meanwhile
+    assert again(5, "21", "success")["needs_approval"] is True        # the owner approved it: goes ahead
+    with pytest.raises(SystemExit, match="not approved"):
+        mo.cli(["approval", "--max-usd", "1", "--gating-changed", "false", "--approved", "skipped"],
+               stdin=io.StringIO(""))                                # the spend unreadable now
+    assert "going ahead" in capsys.readouterr().out
 
 
 def _environment(rules, name="modal-approval"):
     return json.dumps({"id": 1, "name": name, "protection_rules": rules})
 
 
-def test_the_gate_lets_a_run_through_only_where_a_required_reviewer_is_set(mo, capsys):
-    reviewer = {"type": "required_reviewers", "reviewers": [{"type": "User", "reviewer": {"login": "owner"}}]}
-    assert mo.gate_problems(_environment([reviewer])) == []
-    mo.cli(["gate"], stdin=io.StringIO(_environment([reviewer])))
-    assert "approved" in capsys.readouterr().out
-    for answer, word in ((_environment([]), "no required reviewer"),                 # made by GitHub on the spot
-                         (_environment([{"type": "wait_timer", "wait_timer": 5}]), "no required reviewer"),
-                         (_environment([{"type": "required_reviewers", "reviewers": []}]), "no required reviewer"),
-                         (json.dumps({"message": "Not Found"}), "Not Found"),
-                         (_environment([reviewer], name="dev"), "could not be read"),
-                         ("", "could not be read")):
-        assert word in " ".join(mo.gate_problems(answer)), answer
+REVIEWER = {"type": "required_reviewers", "reviewers": [{"type": "User", "reviewer": {"login": "owner"}}]}
+
+
+def _reviews(*states, environment="modal-approval"):
+    return json.dumps([{"state": st, "comment": "", "user": {"login": "owner"},
+                        "environments": [{"id": 1, "name": environment}]} for st in states])
+
+
+def test_the_gate_needs_a_required_reviewer_and_an_approval_of_this_run(mo, tmp_path, capsys):
+    assert mo.gate_problems(_environment([REVIEWER]), _reviews("approved")) == []
+    env, rev = tmp_path / "env.json", tmp_path / "approvals.json"
+    env.write_text(_environment([REVIEWER]))
+    rev.write_text(_reviews("approved"))
+    mo.cli(["gate", "--environment", str(env), "--approvals", str(rev)])
+    assert "approved for modal-approval by owner" in capsys.readouterr().out
+    cases = ((_environment([]), _reviews("approved"), "no required reviewer"),        # made by GitHub on the spot
+             (_environment([{"type": "wait_timer", "wait_timer": 5}]), _reviews("approved"), "no required reviewer"),
+             (_environment([{"type": "required_reviewers", "reviewers": []}]), _reviews("approved"),
+              "no required reviewer"),
+             (json.dumps({"message": "Not Found"}), _reviews("approved"), "Not Found"),
+             (_environment([REVIEWER], name="dev"), _reviews("approved"), "could not be read"),
+             ("", _reviews("approved"), "could not be read"),
+             (_environment([REVIEWER]), json.dumps([]), "nobody approved"),              # an admin's bypass
+             (_environment([REVIEWER]), _reviews("rejected"), "nobody approved"),
+             (_environment([REVIEWER]), _reviews("approved", environment="dev"), "nobody approved"),
+             (_environment([REVIEWER]), json.dumps({"message": "Not Found"}), "review history could not be read"),
+             (_environment([REVIEWER]), "", "review history could not be read"))
+    for environment, reviews, word in cases:
+        assert word in " ".join(mo.gate_problems(environment, reviews)), (environment, reviews)
+        env.write_text(environment)
+        rev.write_text(reviews)
         with pytest.raises(SystemExit):
-            mo.cli(["gate"], stdin=io.StringIO(answer))
+            mo.cli(["gate", "--environment", str(env), "--approvals", str(rev)])
+    with pytest.raises(SystemExit):
+        mo.cli(["gate", "--environment", str(tmp_path / "missing.json"), "--approvals", str(rev)])
 
 
 def test_the_machine_check_names_each_thing_missing(mo):
@@ -312,6 +364,7 @@ def test_the_workflow_checks_then_waits_for_approval_only_when_needed_then_runs(
     assert set(triggers) == {"workflow_dispatch"}
     assert set(triggers["workflow_dispatch"]["inputs"]) == {"label", "gpu", "max_usd"}
     assert wf["defaults"]["run"]["shell"] == "bash"                  # pipefail: a failing listing fails its step
+    assert "concurrency" not in wf                                   # a run waiting for approval holds nobody up
     jobs = wf["jobs"]
     assert list(jobs) == ["check", "approve", "run"]
     check, approve, run = jobs["check"], jobs["approve"], jobs["run"]
@@ -320,14 +373,23 @@ def test_the_workflow_checks_then_waits_for_approval_only_when_needed_then_runs(
         assert job["env"]["MODAL_TOKEN_ID"] == "${{ secrets.MODAL_TOKEN_ID }}"
         assert job["env"]["MODAL_TOKEN_SECRET"] == "${{ secrets.MODAL_TOKEN_SECRET }}"
         assert {"KAGGLE_USERNAME", "KAGGLE_API_TOKEN", "KAGGLE_KEY"} <= set(job["env"])
-    assert approve["environment"] == "modal-approval" and approve["needs"] == "check"
-    assert approve["if"] == "needs.check.outputs.needs_approval == 'true'" and "env" not in approve   # no secret
-    assert "modal_official.py gate" in approve["steps"][-1]["run"] and "environments/modal-approval" in \
-        approve["steps"][-1]["run"]
+    steps = {st.get("id"): st for st in check["steps"] if st.get("id")}
+    assert check["outputs"]["needs_approval"] == "${{ steps.approval.outputs.needs_approval }}"
+    assert check["outputs"]["gating_changed"] == "${{ steps.gating.outputs.gating_changed }}"
+    assert "modal_official.py approval" in steps["approval"]["run"] and "--limits" in steps["approval"]["run"]
+    assert steps["approval"]["env"]["CHANGED"] == "${{ steps.gating.outputs.gating_changed }}"
+    assert "git show FETCH_HEAD:ops/cost_settings.yaml" in steps["gating"]["run"]
+    assert all(f in steps["gating"]["run"] for f in (".github/workflows/modal-agent.yml", "kaggle/modal_official.py",
+                                                     "ops/cost_settings.yaml"))
+    assert approve["environment"] == "modal-approval" and approve["needs"] == "check" and "env" not in approve
+    assert approve["if"] == "needs.check.outputs.needs_approval != 'false'"   # an empty decision waits too
+    gate = approve["steps"][-1]["run"]
+    assert "environments/modal-approval" in gate and "actions/runs/$GITHUB_RUN_ID/approvals" in gate
+    assert "modal_official.py gate --environment env.json --approvals approvals.json" in gate
     assert run["needs"] == ["check", "approve"]
-    for word in ("!cancelled()", "needs.check.result == 'success'", "needs.approve.result == 'success'",
-                 "needs.approve.result == 'skipped'"):
-        assert word in run["if"], word
+    assert run["if"] == ("${{ !cancelled() && needs.check.result == 'success' && (needs.approve.result == 'success' || "
+                         "(needs.approve.result == 'skipped' && needs.check.outputs.needs_approval == 'false')) }}")
+    assert run["concurrency"] == {"group": "modal-agent", "cancel-in-progress": False}
 
     def runs(job):
         return [st.get("run", "") for st in job["steps"]]
@@ -337,14 +399,18 @@ def test_the_workflow_checks_then_waits_for_approval_only_when_needed_then_runs(
         assert found == sorted(found), words
         return found
 
-    order(check, ("modal_official.py preflight", "kaggle kernels list", "modal token info", "modal billing summary"))
-    _, i_run = order(run, ("modal_official.py busy", "modal run"))
-    assert "--detach" in runs(run)[i_run]
+    order(check, ("modal_official.py preflight", "kaggle kernels list", "modal token info", "git show FETCH_HEAD",
+                  "modal billing summary"))
+    i_attempt, i_again, _, i_run = order(run, ('"$GITHUB_RUN_ATTEMPT" = 1', "--approved", "modal_official.py busy",
+                                               "modal run"))
+    assert i_attempt == 0 and "--detach" in runs(run)[i_run]
+    again = run["steps"][i_again]
+    assert again["env"]["APPROVED"] == "${{ needs.approve.result }}" and "--limits" in again["run"]
     assert any('"modal==1.6.4"' in r for r in runs(check) + runs(run))   # a pinned version
     every = runs(check) + runs(approve) + runs(run)
     assert not any("GITHUB_ENV" in r for r in every)                 # no credential written to a file
-    assert [r for r in every if "GITHUB_OUTPUT" in r] == [r for r in runs(check) if "modal_official.py preflight" in r
-                                                          or "modal_official.py approval" in r]
+    assert [r for r in every if "GITHUB_OUTPUT" in r] == [steps["plan"]["run"], steps["gating"]["run"],
+                                                          steps["approval"]["run"]]
     secret_value = re.compile(r"echo[^\n]*\$\{?(MODAL_TOKEN|KAGGLE_API_TOKEN|KAGGLE_KEY)")
     assert not any(secret_value.search(r) for r in every)            # names in messages, never values
     assert run["env"]["HTL_MODAL_GPU"] == "${{ needs.check.outputs.gpu }}"
