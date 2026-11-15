@@ -28,3 +28,4 @@ don't rewrite the old one.
 | [0004](0004-task-set-under-two-licences.md) | The coding-agent task set is offered under CC BY 4.0 or Apache 2.0 | accepted |
 | [0005](0005-colab-runs-need-the-open-network-accepted.md) | A Colab run starts only when its entry accepts an open network | accepted |
 | [0006](0006-agent-sessions-keep-a-one-year-workspace-token.md) | Agent sessions keep a one-year workspace token, held as a network secret | accepted |
+| [0007](0007-gpu-hours-are-a-reserve-and-score-questions-go-to-the-leaderboard.md) | GPU hours are a reserve; score questions go to the leaderboard | accepted |
