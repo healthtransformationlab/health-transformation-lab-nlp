@@ -5,13 +5,13 @@
                              comment only for the tables nothing declares (the OMOP tables, load_log)
     declared_tables()        every (schema, table) with a declared comment
     statements(table, cols)  COMMENT ON TABLE and ALTER TABLE ... ALTER COLUMN ... COMMENT for one table, for the
-                             declared columns it has
-    apply(spark, table)      run them after a write; a failure warns and never fails the job (a comment is
-                             documentation, not data: AGENTS.md, optional settings warn)
+                             declared columns it has; given the comments in place, only those that differ (#741)
+    apply(spark, table)      run the ones the table doesn't already hold, after a write; a failure warns and never
+                             fails the job (a comment is documentation, not data: AGENTS.md, optional settings warn)
     apply_all(spark, catalog)  every declared table that exists (Load results runs it after each deploy)
 
-The writers save with saveAsTable, and an overwrite with overwriteSchema drops comments, so each write applies them
-again. Genie and Catalog Explorer read them.
+The writers save with saveAsTable, and an overwrite with overwriteSchema drops comments, so each write checks them
+and sends the missing ones again. Genie and Catalog Explorer read them.
 """
 
 from __future__ import annotations
@@ -96,32 +96,47 @@ def sql_string(text: str) -> str:
 
 
 @traced
-def statements(table: str, columns: list[str]) -> list[str]:
+def statements(table: str, columns: list[str], *, table_comment: str | None = None,
+               column_comments: dict | None = None) -> list[str]:
+    """`table_comment` and `column_comments` ({column: comment or None}) are the comments already in place: a
+    statement whose comment equals its declared text is left out (#741). Without them, every statement."""
     if not _NAME.fullmatch(table):
         raise ValueError(f"table {table!r}: catalog.schema.table, letters, digits and _ only")
     _, schema, name = table.split(".")
     comment, cols = declared(schema, name)
     if not comment:
         return []
-    out = [f"COMMENT ON TABLE {table} IS {sql_string(comment)}"]
+    held = column_comments or {}
+    out = [] if table_comment == comment else [f"COMMENT ON TABLE {table} IS {sql_string(comment)}"]
     out += [f"ALTER TABLE {table} ALTER COLUMN {c} COMMENT {sql_string(cols[c])}"
-            for c in columns if c in cols and re.fullmatch(r"\w+", c)]
+            for c in columns if c in cols and re.fullmatch(r"\w+", c) and held.get(c) != cols[c]]
     return out
+
+
+def _table_comment(spark, table: str) -> str | None:
+    """The comment Unity Catalog holds for the table; None when it can't be read, so the comment is sent again."""
+    try:
+        return spark.catalog.getTable(table).description
+    except Exception:  # noqa: BLE001 - unreadable means send it, as before #741
+        return None
 
 
 @traced
 def apply(spark, table: str) -> int:
-    """Comment one table after a write. Returns the statements that ran. Nothing here fails the write: a table
-    that can't be read or commented gets a warning."""
+    """Comment one table after a write, sending only the comments it doesn't already hold: sending all of them, one
+    statement each, made Load results' sweep about 17 minutes a run (#741). Returns the statements that ran. Nothing
+    here fails the write: a table that can't be read or commented gets a warning."""
     try:
-        columns = list(spark.table(table).columns)
+        fields = list(spark.table(table).schema.fields)
     except Exception as e:  # noqa: BLE001 - a comment never fails the job
         print(f"warning: comment not applied on {table}: can't read its columns ({type(e).__name__})")
         return 0
-    todo = statements(table, columns)
-    if not todo:
+    columns = [f.name for f in fields]
+    if not statements(table, columns):
         print(f"warning: {table} has no declared comment (diagrams/_build/gold_model.py or table_comments.OTHER)")
         return 0
+    todo = statements(table, columns, table_comment=_table_comment(spark, table),
+                      column_comments={f.name: (f.metadata or {}).get("comment") for f in fields})
     done = 0
     for s in todo:
         try:

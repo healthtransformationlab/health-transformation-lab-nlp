@@ -13,10 +13,13 @@ CAT = "health_transformation_lab"
 
 
 class FakeSpark:
-    """Records SQL; tables exist with the columns given."""
+    """Records SQL; tables exist with the columns given. `comments` gives the comments a table already holds,
+    {table: (table comment or None, {column: comment})}, read as Spark gives them: column comments in the schema's
+    field metadata, the table's from catalog.getTable. An `unreadable` table's comment can't be read (#741)."""
 
-    def __init__(self, tables, fail_on=None):
+    def __init__(self, tables, fail_on=None, comments=None, unreadable=()):
         self.tables, self.sql_calls, self.fail_on = tables, [], fail_on
+        self.comments, self.unreadable = comments or {}, set(unreadable)
         self.catalog = self
 
     def tableExists(self, name):
@@ -24,8 +27,15 @@ class FakeSpark:
 
     def table(self, name):
         cols = self.tables[name]
+        held = self.comments.get(name, (None, {}))[1]
+        fields = [type("F", (), {"name": c, "metadata": {"comment": held[c]} if c in held else {}})() for c in cols]
         return type("T", (), {"columns": cols, "schema": type("S", (), {"fieldNames": lambda s: cols,
-                                                                         "fields": []})()})()
+                                                                         "fields": fields})()})()
+
+    def getTable(self, name):
+        if name in self.unreadable:
+            raise RuntimeError("cannot read the table's metadata")
+        return type("Table", (), {"description": self.comments.get(name, (None, {}))[0]})()
 
     def sql(self, statement):
         if self.fail_on and self.fail_on in statement:
@@ -151,3 +161,52 @@ def test_the_sql_judge_sets_its_table_comment_from_gold_model():
     comment, _ = tc.declared("gold_perio_bench", "fact_corpus_judge_call")
     sql = (NOTEBOOKS / "02_llm_judge.sql").read_text()
     assert f"COMMENT ON TABLE IDENTIFIER(:catalog || '.' || :schema || '.fact_corpus_judge_call') IS {tc.sql_string(comment)};" in sql
+
+
+# ---------- #741: a comment already in place is not sent again ----------
+# Load results sweeps every declared table after each deploy (apply_all). Sending every comment, one statement each,
+# made its `load` task about 17 minutes instead of about 1, on every merge, on the shared Free Edition allowance.
+FQN = f"{CAT}.gold_perio_bench.fact_prediction"
+
+
+def _held(columns):
+    """The declared comments of fact_prediction, as a table that already holds them would."""
+    comment, cols = tc.declared("gold_perio_bench", "fact_prediction")
+    return comment, {c: cols[c] for c in columns}
+
+
+def test_a_table_whose_comments_are_all_in_place_gets_no_statement():
+    cols = ["method_name", "visit_id"]
+    spark = FakeSpark({FQN: cols}, comments={FQN: _held(cols)})
+    assert tc.apply(spark, FQN) == 0 and spark.sql_calls == []
+
+
+def test_only_the_column_comments_missing_or_different_are_sent():
+    comment, held = _held(["method_name", "visit_id"])
+    held["visit_id"] = "an older description"                   # predicted_status_code has none yet
+    spark = FakeSpark({FQN: ["method_name", "visit_id", "predicted_status_code"]}, comments={FQN: (comment, held)})
+    assert tc.apply(spark, FQN) == 2
+    altered = [re.search(r"ALTER COLUMN (\w+) COMMENT", s).group(1) for s in spark.sql_calls]
+    assert altered == ["visit_id", "predicted_status_code"]
+
+
+def test_the_table_comment_is_sent_when_it_differs_or_cant_be_read():
+    cols = ["method_name"]
+    _, held = _held(cols)
+    stale = FakeSpark({FQN: cols}, comments={FQN: ("an older table comment", held)})
+    assert tc.apply(stale, FQN) == 1 and stale.sql_calls[0].startswith(f"COMMENT ON TABLE {FQN} IS '")
+    unreadable = FakeSpark({FQN: cols}, comments={FQN: _held(cols)}, unreadable={FQN})
+    assert tc.apply(unreadable, FQN) == 1 and unreadable.sql_calls[0].startswith(f"COMMENT ON TABLE {FQN} IS '")
+
+
+def test_statements_without_the_current_comments_still_gives_every_statement():
+    cols = ["method_name", "visit_id"]
+    comment, held = _held(cols)
+    assert len(tc.statements(FQN, cols)) == 3
+    assert tc.statements(FQN, cols, table_comment=comment, column_comments=held) == []
+
+
+def test_apply_all_on_a_catalog_already_commented_sends_nothing():
+    cols = ["method_name", "visit_id"]
+    spark = FakeSpark({FQN: cols}, comments={FQN: _held(cols)})
+    assert tc.apply_all(spark, CAT) == 1 and spark.sql_calls == []
