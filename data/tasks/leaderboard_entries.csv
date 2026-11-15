@@ -1,4 +1,4 @@
 ref,description,submitted_ts,status,public_score,first_seen_ts,completed_ts,scoring_hours,agent_commit_sha
 58290615,"entry 1: one agent, E4B, answer cap 6144, 4.5 min",2026-11-13T01:09:18Z,complete,0.05,2026-11-15T09:38:24Z,,,
 58333590,"entry 3: one agent, E4B, lean prompt, no submit_patch",2026-11-14T05:52:38Z,complete,0.03,2026-11-15T09:38:24Z,,,
-58364801,"entry 4: E4B, localize-first prompt (PR 98) + max_output_tokens 8192 (PR 100), main 76bc6d6; dev set 4/23",2026-11-15T02:18:52Z,pending,,2026-11-15T09:38:24Z,,,76bc6d6
+58364801,"entry 4: E4B, localize-first prompt (PR 98) + max_output_tokens 8192 (PR 100), main 76bc6d6; dev set 4/23",2026-11-15T02:18:52Z,complete,0.05,2026-11-15T09:38:24Z,2026-11-15T17:48:36Z,15.50,76bc6d6
