@@ -35,3 +35,10 @@ def test_agents_md_and_the_readme_carry_the_rationing_rules():
     assert "kaggle/gpu_quota.py" in agents and "kaggle/gpu_quota.py" in readme
     assert "one gpu run at a time" in agents.lower()
     assert "reserve" in agents
+
+
+def test_agents_md_sends_development_set_mechanism_runs_to_colab():
+    """#787: once a development-set batch can run on Colab (#780), AGENTS.md no longer keeps it on Kaggle."""
+    agents = (REPO_ROOT / "AGENTS.md").read_text()
+    assert "development-set run stays on Kaggle" not in agents
+    assert "--source competition --batch --competition gemma-4-developer-agent --label" in agents
