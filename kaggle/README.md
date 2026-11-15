@@ -213,6 +213,16 @@ To refresh the owner's Paper Track sheets:
   are fixed in the helper: a refused upload is not taken for sent, the stop button ends the kernel and the uploader,
   a failed status call stops the run, a bundle is checked file by file and size by size, an arm's output leaves the
   machine once it is on Kaggle, and the audit reads every tool call.
+  **A development-set batch can go to Colab too** (#780): `official_agent_run.py --source competition --batch
+  --competition gemma-4-developer-agent --sample 23 --label <name> --colab` uploads the order and the submission
+  (as for a Kaggle development batch) and the keyed kernel file, pushes no kernel, and prints the run list's entry
+  (label `devset-<name>`). No competition is mounted on a Colab machine, so the helper reads the bundle's order and
+  fetches the competition's files for those tasks alone (`fetch_competition_files`: `HARNESS_README.md`,
+  `tasks.jsonl`, `wheels/`, `sandbox/`, and each task's snapshot, graph and embeddings; never all 21.5 GB of
+  snapshots) with the notebook's Kaggle token, to `/content/htl_kaggle/input/competitions/<slug>/`, where the
+  kernel's own search finds them, and logs it. Another batch's snapshots left on the machine are removed first. The
+  account behind the token must have joined the competition. `--collect --colab --colab-session <start>` writes the
+  rows to `<model>_swegemma_devset-<name>.csv`, with `machine_shape_asked` "Colab, one GPU".
 
 More: `docs/medgemma.md` (why Kaggle, how MedGemma is loaded), spec 016 (results into Delta), spec 020
 (publishing).

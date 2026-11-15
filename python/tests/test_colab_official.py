@@ -1084,3 +1084,230 @@ def test_a_colab_runs_settings_name_the_wheels_left_out(run):
 def test_the_notebook_claims_no_session_length_without_a_source():
     text = "".join("".join(c["source"]) for c in json.loads(NOTEBOOK.read_text())["cells"])
     assert "24 hours" not in text
+
+
+# --- a development-set batch on Colab (028, #780): the competition's files fetched, not mounted --------------------
+
+DEV_IDS = ["fastapi_2", "rich_7"]
+DEV_TASKS = [{"instance_id": "fastapi_1", "repo": "fastapi/fastapi", "base_commit": "aaa"},
+             {"instance_id": "fastapi_2", "repo": "fastapi/fastapi", "base_commit": "bbb"},
+             {"instance_id": "rich_7", "repo": "Textualize/rich", "base_commit": "ccc"}]
+
+
+def _competition(extra=()):
+    """The competition's files as Kaggle lists them (names as the real listing gives them), each a few bytes."""
+    files = {"HARNESS_README.md": b"the harness", "tasks.jsonl": "".join(json.dumps(t) + "\n" for t in DEV_TASKS).encode(),
+             "sandbox/setup.py": b"setup", "wheels/pytest-8.3.4-py3-none-any.whl": b"w" * 9,
+             "wheels/rich-15.0.0-py3-none-any.whl": b"r" * 7, "docker/Dockerfile": b"FROM x",
+             "sample_submission/agent.yaml": b"name: x", **dict(extra)}
+    for t in DEV_TASKS:
+        stem = f"{t['repo'].split('/')[1]}_{t['base_commit']}"
+        files[f"snapshots/{t['instance_id']}.tgz"] = t["instance_id"].encode() * 20
+        files[f"graphs/{stem}.json"] = b"{}"
+        files[f"embeddings/{stem}.npz"] = b"vectors"
+    return files
+
+
+class _FakeCompetition:
+    """The Kaggle client's competition calls: files listed a page at a time, each downloaded on its own, some
+    handed over zipped. It knows nothing of a token: none is needed to stand in for Kaggle."""
+    def __init__(self, files, zipped=(), slug="gemma-4-developer-agent"):
+        self.files, self.zipped, self.slug, self.downloaded, self.pages = dict(files), set(zipped), slug, [], 0
+
+    def competition_list_files(self, competition, page_token=None, page_size=20):
+        import types
+        assert competition == self.slug
+        self.pages += 1
+        names = sorted(self.files)
+        start = int(page_token or 0)
+        nxt = str(start + 3) if start + 3 < len(names) else ""
+        return types.SimpleNamespace(next_page_token=nxt, files=[
+            types.SimpleNamespace(name=n, total_bytes=len(self.files[n])) for n in names[start:start + 3]])
+
+    def competition_download_file(self, competition, file_name, path=None, quiet=True, **k):
+        import zipfile
+        from pathlib import Path
+        assert competition == self.slug and quiet
+        self.downloaded.append(file_name)
+        where = Path(path) / file_name
+        where.parent.mkdir(parents=True, exist_ok=True)
+        if file_name in self.zipped:
+            with zipfile.ZipFile(where.with_name(where.name + ".zip"), "w") as z:
+                z.writestr(where.name, self.files[file_name])
+        else:
+            where.write_bytes(self.files[file_name])
+
+
+def test_a_development_batch_takes_only_its_own_tasks_snapshots_graphs_and_embeddings(co):
+    """The snapshots are 21.5 GB for all 129 tasks: a batch takes its own tasks' files, and what every task needs
+    (the harness guide, tasks.jsonl, the tests' wheels and the sandbox's setup), never the docker files or the
+    sample submission, which the kernel does not read."""
+    listing = [(n, len(b)) for n, b in _competition().items()]
+    picked = co.competition_files(listing, DEV_TASKS, DEV_IDS)
+    assert [n for n, _ in picked] == sorted([
+        "HARNESS_README.md", "tasks.jsonl", "sandbox/setup.py", "wheels/pytest-8.3.4-py3-none-any.whl",
+        "wheels/rich-15.0.0-py3-none-any.whl", "snapshots/fastapi_2.tgz", "snapshots/rich_7.tgz",
+        "graphs/fastapi_bbb.json", "graphs/rich_ccc.json", "embeddings/fastapi_bbb.npz", "embeddings/rich_ccc.npz"])
+    by_id = co.competition_files(listing + [("graphs/rich_7.json", 2)], DEV_TASKS, DEV_IDS)
+    assert "graphs/rich_7.json" in [n for n, _ in by_id]        # a graph named for the task, as the kernel also reads
+    with pytest.raises(SystemExit, match="rich_9"):
+        co.competition_files(listing, DEV_TASKS, ["rich_9"])     # not in tasks.jsonl
+    no_snapshot = [(n, s) for n, s in listing if n != "snapshots/rich_7.tgz"]
+    with pytest.raises(SystemExit, match="snapshots/rich_7.tgz"):
+        co.competition_files(no_snapshot, DEV_TASKS, DEV_IDS)
+
+
+def test_the_competitions_files_are_fetched_where_the_kernel_finds_them_and_logged(co, monkeypatch, tmp_path):
+    """No competition is mounted on a Colab machine: its files are fetched with the notebook's Kaggle token and laid
+    out as Kaggle mounts them, where the kernel's own search finds them, and the log says so, never the token."""
+    monkeypatch.setenv("KAGGLE_API_TOKEN", "KGAT_sentinel_never_logged")
+    said = []
+    monkeypatch.setattr(co, "say", said.append)
+    root = tmp_path / "htl_kaggle"
+    api = _FakeCompetition(_competition(), zipped=["tasks.jsonl", "snapshots/rich_7.tgz"])
+    comp = co.fetch_competition_files(api, "gemma-4-developer-agent", DEV_IDS, root)
+    assert comp == root / "input" / "competitions" / "gemma-4-developer-agent"
+    got = sorted(str(p.relative_to(comp)) for p in comp.rglob("*") if p.is_file())
+    assert got == sorted(n for n, _ in co.competition_files(
+        [(n, len(b)) for n, b in _competition().items()], DEV_TASKS, DEV_IDS))
+    assert (comp / "snapshots" / "rich_7.tgz").read_bytes() == b"rich_7" * 20       # unzipped where its name says
+    assert not list(comp.rglob("*.zip"))
+    assert api.pages == len(_competition()) // 3 + 1                                # every page of the listing read
+    assert _kernel("find_competition")["find_competition"](root / "input") == comp  # the kernel's own search
+    log = "\n".join(said)
+    assert "gemma-4-developer-agent" in log and "2 tasks" in log and "11 files" in log
+    assert "KGAT_sentinel_never_logged" not in log
+    api.downloaded.clear()
+    co.fetch_competition_files(api, "gemma-4-developer-agent", DEV_IDS, root)
+    assert api.downloaded == []                                  # complete at the listed sizes: nothing fetched again
+
+
+def test_another_batchs_tasks_do_not_stay_beside_this_ones(co, monkeypatch, tmp_path):
+    """A second batch on the same machine must not leave the first one's snapshots within the agent's reach, and a
+    file cut short is fetched again."""
+    monkeypatch.setattr(co, "say", lambda message: None)
+    root = tmp_path / "htl_kaggle"
+    api = _FakeCompetition(_competition())
+    comp = co.fetch_competition_files(api, "gemma-4-developer-agent", ["fastapi_1"], root)
+    (comp / "tasks.jsonl").write_bytes(b"cut")
+    api.downloaded.clear()
+    co.fetch_competition_files(api, "gemma-4-developer-agent", DEV_IDS, root)
+    assert "tasks.jsonl" in api.downloaded and "snapshots/fastapi_1.tgz" not in api.downloaded
+    assert not (comp / "snapshots" / "fastapi_1.tgz").exists() and not (comp / "graphs" / "fastapi_aaa.json").exists()
+    assert (comp / "snapshots" / "fastapi_2.tgz").exists() and (comp / "snapshots" / "rich_7.tgz").exists()
+
+
+def test_the_fetch_step_reads_no_credential_itself(co):
+    """The notebook hands the token to the Kaggle client through the environment; the fetch step never reads it."""
+    import inspect
+    for fn in (co.fetch_competition_files, co.competition_files, co.listed_competition_files):
+        src = inspect.getsource(fn)
+        assert "environ" not in src and "TOKEN" not in src
+
+
+def test_a_development_batchs_bundle_has_the_competition_fetched_beside_it(co, monkeypatch, tmp_path):
+    """`fetch` reads the bundle's order: a development batch (`"source": "competition"`) has the competition's
+    files for its tasks fetched; a batch of the published tasks does not."""
+    _on_machine(co, monkeypatch, tmp_path)
+    monkeypatch.setattr(co, "WHEELHOUSE", "metric/wheels")
+
+    class Both(_FakeKaggle, _FakeCompetition):
+        def __init__(self, datasets, files):
+            _FakeKaggle.__init__(self, datasets)
+            _FakeCompetition.__init__(self, files, slug="gemma-4-developer-agent")
+
+    order = {"instance_ids": DEV_IDS, "source": "competition", "competition": "gemma-4-developer-agent"}
+    datasets = {"metric/wheels": {"w-1.0-py3-none-any.whl": b"w"},
+                "someone/htlnlp-official-devset-x": {"official_batch.json": json.dumps(order).encode(),
+                                                     "submission/agent.yaml": b"name: a"},
+                "someone/htlnlp-official-x": {"official_batch.json": b'{"instance_ids": ["htlnlp_1"]}'},
+                "someone/kernel-x": {"official_agent_kernel.py": b"print(1)"}}
+    root = tmp_path / "content" / "htl_kaggle"
+    api = Both(datasets, _competition())
+    co.fetch(api, None, "someone/htlnlp-official-devset-x", "someone/kernel-x", None, root=root, with_model=False)
+    comp = root / "input" / "competitions" / "gemma-4-developer-agent"
+    assert sorted(p.name for p in (comp / "snapshots").iterdir()) == ["fastapi_2.tgz", "rich_7.tgz"]
+    api = Both(datasets, _competition())
+    co.fetch(api, None, "someone/htlnlp-official-x", "someone/kernel-x", None, root=root, with_model=False)
+    assert api.downloaded == []                                  # a published batch: no competition file
+
+
+# --- the runner's side of a development-set batch on Colab (#780) --------------------------------------------------
+
+def _dev_args(tmp_path, collect=False):
+    import types
+    sub = tmp_path / "sub"
+    sub.mkdir(exist_ok=True)
+    (sub / "agent.yaml").write_text("name: a\n")
+    return types.SimpleNamespace(
+        seed=7, source="competition", label="colab-x", collect=collect, colab=True, colab_results=None,
+        colab_session="01:02:03" if collect else None, reuse_output=False, order_of_ids=None, work=tmp_path / "work",
+        dataset=tmp_path / "dataset", agent_dir=sub, deadline_minutes=600.0, telemetry=False, outside_sample=False,
+        no_table=False, sample=2, machine_shape="NvidiaL4", docker_image="img", competition="gemma-4-developer-agent",
+        note=[], context_note=None, sample_method=None, kernel_minutes=45)
+
+
+class _NoKernel:
+    """A Kaggle client on which pushing a kernel fails the test: a Colab batch pushes none."""
+    def kernels_push(self, *a, **k):
+        raise AssertionError("a Colab batch pushes no Kaggle kernel")
+
+    def kernels_status(self, *a, **k):
+        raise AssertionError("a Colab batch waits for no Kaggle kernel")
+
+
+def test_a_development_batch_for_colab_uploads_the_order_and_the_kernel_file_and_pushes_no_kernel(run, monkeypatch,
+                                                                                                tmp_path, capsys):
+    import pandas as pd
+    sent = {}
+
+    def upload(api, folder, ref):
+        from pathlib import Path
+        sent[ref] = {str(p.relative_to(folder)): p.read_text() for p in Path(folder).rglob("*") if p.is_file()}
+    monkeypatch.setattr(run, "_upload_bundle", upload)
+    run.check_colab_options(True, True, "colab-x", False, None, None)       # --colab is accepted for this batch
+    run.check_arm_options("colab-x", None, True, True)
+    a = _dev_args(tmp_path)
+    assert run.run_batch(a, _NoKernel(), "someone", DEV_IDS, {}, {}, {}, pd) == 0
+    order = json.loads(sent["someone/htlnlp-official-devset-colab-x"]["official_batch.json"])
+    assert order["source"] == "competition" and order["competition"] == "gemma-4-developer-agent"
+    assert sorted(order["instance_ids"]) == sorted(DEV_IDS)
+    assert not any(k.startswith(("sealed/", "snapshots/")) for k in sent["someone/htlnlp-official-devset-colab-x"])
+    kernel = sent["someone/htlnlp-colab-kernel-devset-colab-x"]["official_agent_kernel.py"]
+    assert 'SEAL_KEY = ""' not in kernel                                     # the keyed copy, in its private dataset
+    assert not (a.work / "devset-colab-x" / "kernel").exists()              # and not left on this machine
+    entry = json.loads(capsys.readouterr().out.split("kaggle/colab_official_run.json:\n", 1)[1].splitlines()[0])
+    assert entry == {"label": "devset-colab-x", "bundle": "someone/htlnlp-official-devset-colab-x",
+                     "kernel_dataset": "someone/htlnlp-colab-kernel-devset-colab-x"}
+
+
+def test_a_development_batch_collected_from_colab_writes_its_own_devset_table(run, monkeypatch, tmp_path):
+    import pandas as pd
+    monkeypatch.setattr(run, "OUT_DIR", tmp_path / "tables")
+    monkeypatch.setattr(run, "REPO_ROOT", tmp_path)                       # the table's path is printed from here
+    runs = {i: {"instance_id": i, "patch": "diff", "tool_call_count": 3, "llm_call_count": 2,
+                "budgets": RESULT["budgets"], "generation_defaults": RESULT["generation_defaults"],
+                "verification": {"is_resolved": i == "rich_7", "test_exit_code": 0 if i == "rich_7" else 1}}
+            for i in DEV_IDS}
+    result = {**{k: v for k, v in RESULT.items() if k not in ("budgets", "generation_defaults")},
+              "finished_ts": "2026-11-16T03:00:00Z", "runs": runs}
+
+    class Uploaded(_NoKernel):
+        def dataset_download_files(self, ref, path=None, unzip=True, quiet=True):
+            from pathlib import Path
+            assert ref == "someone/htlnlp-colab-official-devset-colab-x"
+            (Path(path) / "working").mkdir(parents=True)
+            (Path(path) / "working" / "result.json").write_text(json.dumps(result))
+            (Path(path) / "colab.log").write_text("[01:02:03Z] run devset-colab-x\n")
+
+    a = _dev_args(tmp_path, collect=True)
+    assert run.run_batch(a, Uploaded(), "someone", DEV_IDS, {}, {i: "x" for i in DEV_IDS}, {}, pd) == 0
+    table = tmp_path / "tables" / "gemma-4-e4b-it-qat-w4a16-ct_swegemma_devset-colab-x.csv"
+    rows = pd.read_csv(table)
+    assert sorted(rows.instance_id) == sorted(DEV_IDS) and rows.is_resolved.sum() == 1
+    assert rows.kaggle_kernel_url.str.contains("htlnlp-colab-official-devset-colab-x").all()
+    settings = json.loads(table.with_name(table.stem + "_settings.json").read_text())
+    assert settings["kernel"]["machine_shape_asked"] == "Colab, one GPU"
+    assert settings["kernel"]["competition_attached"] == "gemma-4-developer-agent"
+    assert any("fetched onto the Colab machine" in n for n in settings["notes"])
+    assert not any("The kernel attached the competition" in n for n in settings["notes"])

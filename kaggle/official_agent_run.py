@@ -450,10 +450,14 @@ def settings_for(result: dict, seed: int | None, drawn: list[str], pool_count: i
             ("The agent loop, the model server and the verification are the competition's: swegemma's "
              "Evaluator.evaluate_task (subprocess sandbox), vLLM from the competition's wheelhouse dataset, and "
              "swegemma's verify_task, following the competition's starter notebook."),
-            ("The kernel attached the competition and read each development task from its mounted files, with no "
-             "reference patch staged beside the agent; the evaluator verified each patch there with the task's tests, "
-             "as the competition's own run does. Tool calls naming a path outside the workspace are counted in "
-             "outside_workspace_call_count.") if development else
+            (("The competition's files for the drawn tasks (tasks.jsonl, their snapshots, graphs and embeddings, "
+              "the tests' wheels and the sandbox's setup) were fetched onto the Colab machine with the Kaggle API "
+              "and laid out where Kaggle mounts them, and the kernel read each development task from there"
+              if colab else
+              "The kernel attached the competition and read each development task from its mounted files")
+             + ", with no reference patch staged beside the agent; the evaluator verified each patch there with the "
+             "task's tests, as the competition's own run does. Tool calls naming a path outside the workspace are "
+             "counted in outside_workspace_call_count.") if development else
             ((f"All {tasks_per_kernel} tasks were given to one process on a Colab machine, each sealed until its turn, "
               "beside a bundle" if colab else
               f"All {tasks_per_kernel} tasks were given to one private, offline kernel, each sealed until its turn, beside a "
@@ -739,7 +743,8 @@ def run_batch(a, api, user: str, ids: list[str], tasks: dict, manifest: dict, ov
                     a.dataset / "embeddings" / f"{stem}.npz")
 
         meta = batch_meta(a, overrides)
-        if development:
+        if development:   # which competition's files the tasks are read from: a Colab machine fetches them (#780)
+            meta["competition"] = a.competition
             b = bundle.build_competition_batch(order, a.agent_dir, work / "bundle", user, meta, name=name)
         else:
             b = bundle.build_batch([tasks[i] for i in ids], files_of, a.agent_dir, work / "bundle", user, key, order,
