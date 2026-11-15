@@ -279,6 +279,17 @@ def test_load_results_writes_each_overwrite_with_its_comments_and_says_what_it_s
     lines = (NOTEBOOKS / "10_load_results.py").read_text().splitlines()
     overwrites = [i for i, line in enumerate(lines) if 'mode("overwrite")' in line]
     assert overwrites
-    for i in overwrites:                                         # the frame written comes from with_comments
-        assert "table_comments.with_comments(" in "\n".join(lines[max(0, i - 3): i + 1]), lines[i]
+    for i in overwrites:                         # the frame written is the one with_comments returned, the line before
+        made = re.match(r"\s*(\w+) = table_comments\.with_comments\(", lines[i - 1])
+        assert made and lines[i].lstrip().startswith(f"{made.group(1)}.write."), lines[i]
     assert any("comment statements sent" in line for line in lines)
+
+
+def test_what_with_comments_writes_is_what_apply_reads():
+    cols = ["method_name", "visit_id", "predicted_status_code"]
+    held = {c.name: c.metadata["comment"] for c in tc.with_comments(StandInFrame(cols), FQN).selected}  # as committed
+    comment, _ = tc.declared("gold_perio_bench", "fact_prediction")
+    kept = FakeSpark({FQN: cols}, comments={FQN: (comment, held)})
+    assert tc.apply(kept, FQN) == 0                                # the overwrite kept the table's own comment too
+    dropped = FakeSpark({FQN: cols}, comments={FQN: (None, held)})
+    assert tc.apply(dropped, FQN) == 1 and dropped.sql_calls[0].startswith("COMMENT ON TABLE")   # only the table's own

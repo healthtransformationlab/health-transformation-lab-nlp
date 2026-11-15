@@ -9,7 +9,7 @@
     apply(spark, table)      run the ones the table doesn't already hold, after a write; a failure warns and never
                              fails the job (a comment is documentation, not data: AGENTS.md, optional settings warn)
     with_comments(sdf, table)  the frame with each declared column's comment in its schema, for an overwrite to
-                             commit (#751)
+                             commit with the data (#751); a refused comment then fails that write
     apply_all(spark, catalog)  every declared table that exists (Load results runs it after each deploy)
 
 The writers save with saveAsTable, and an overwrite with overwriteSchema drops comments unless the frame carries them
@@ -151,8 +151,10 @@ def apply(spark, table: str) -> int:
 @traced
 def with_comments(sdf, table: str):
     """`sdf` with each declared column's comment in its schema (metadata["comment"]), so an overwrite commits them and
-    apply sends none afterwards: Load results' overwrites from pandas dropped them, and about 214 were sent again on
-    every run (#751). Columns keep their names and order; an undeclared table's frame comes back as it is."""
+    apply sends no column comment afterwards; the table's own may still be sent. Load results' overwrites from pandas
+    dropped them, and 200 column comments were sent again on every run (#751). The comments are written with the data,
+    so one the catalog refused would fail that write. Columns keep their names and order; an undeclared table's frame
+    comes back as it is."""
     if not _NAME.fullmatch(table):
         return sdf
     comment, cols = declared(*table.split(".")[1:])
