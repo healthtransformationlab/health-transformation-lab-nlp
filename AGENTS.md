@@ -108,6 +108,11 @@ as files change (spec 034):
   new file or column, PATCH for values, rows or a fix with no schema change. Every build ships `manifest.json` (the
   version, the commit and each file's SHA-256) inside the dataset.
 
+**Column descriptions reach Kaggle only through its site** until [Kaggle/kaggle-cli#1207](https://github.com/Kaggle/kaggle-cli/issues/1207)
+closes: Kaggle's server drops the ones sent through its API, so each dataset's usability reads 9.41 ("Include column
+descriptors") however complete `dataset_docs.yaml` is (#694). `kaggle/column_descriptions.py` writes a page with each
+one and a Copy button, for pasting into Kaggle's editor; enter them again after a version that adds or renames a column.
+
 `python/tests/test_kaggle_dataset_docs.py` fails CI when a published file or column has no description, a dataset
 lacks a cover, sources or an update frequency, or its files or columns changed without a new version.
 
@@ -243,6 +248,32 @@ A SEV2 that fires every week for the same cause gets its cause fixed or its leve
   own way to get more, and ask the owner to use it: on Kaggle, a linked Colab Pro or Pro+ subscription adds 15 or
   30 GPU hours a week ([`kaggle/README.md`](kaggle/README.md), "GPU hours"). A smaller run, a wait or a second
   platform comes after that, and the issue or PR says what was checked.
+- **The Kaggle GPU hours are rationed** (#772). They are one weekly pool for every session on the account, and on
+  November 15 it was spent in a day.
+  - **Read the quota before and after every GPU run** (`python kaggle/gpu_quota.py`: used, allowed, left, refresh)
+    and put the run's cost in its record.
+  - **One GPU run at a time**, across all sessions, and only for the question worth most. Tell the other sessions
+    before starting one.
+  - **The leaderboard answers "did the score go up"**: an entry runs on the host's machines, not our hours, and
+    scores about 58 hidden tasks. A development-set run is for a mechanism (failed edits, context-window endings),
+    which 23 tasks can show and a resolve rate cannot.
+  - **Keep a reserve**: about 10 hours until the last two days before the refresh (Saturday 00:00 UTC), for a change
+    that turns out to matter.
+  - **No idle GPU notebook**: one open in Kaggle's editor with an accelerator on draws on the same hours.
+  - **One L4 to learn why the agent fails; Kaggle's four L4s only where the competition's hardware matters** (#779).
+    On the 93 published tasks with the graph-retrieval context, one L4 on Colab resolved 8 at 128 GPU-seconds a task,
+    and Kaggle's four L4s 4 at 297 ([`data/tasks/official_agent_runs/README.md`](data/tasks/official_agent_runs/README.md);
+    different runs on different days, not a controlled test). Four L4s finish a task faster (about 74 seconds against
+    128), which matters only to the few runs that reach the 5-minute budget, and Kaggle counts each hour on them as two
+    of the pool's. Kaggle offers no one-L4 machine (four L4s with the competition attached, two T4s without), so:
+    - a run asking why the agent fails (failed edits, context-window endings, scratch files) goes to one L4 on Colab,
+      which uses the owner's subscription, not the Kaggle pool;
+    - a run whose answer depends on the competition's own hardware or image stays on Kaggle's four L4s.
+
+    The owner opens a Colab run (`kaggle/colab_official_agent.ipynb`; the runner's `--colab --batch --label`; ADR 0005).
+    Colab differs from Kaggle in its Python (3.13) and in 9 of the wheelhouse's 41 packages, and the run's record says
+    so. The Colab path runs batches of the published tasks only: the competition's development set needs its files
+    fetched onto the machine first (#780), and until then a development-set run stays on Kaggle.
 
 ## Ingestion and schema drift
 
@@ -335,13 +366,13 @@ Full pipeline and dry runs: `README.md`. Study design: `docs/process.md`.
   `mode: development` (it adds them): each environment is its own workspace.
   dev is deployed by CI on every merge to `main`; don't `bundle deploy` it from a laptop.
 - Secrets and tokens: whenever you tell the user to create one, give the exact scope(s)
-  to select, a short lifetime, and where it goes, and add it to `ops/secrets_register.yaml` with its expiry.
+  to select, a short lifetime (the agent sessions' workspace token may live up to one year: ADR 0006), and where it goes, and add it to `ops/secrets_register.yaml` with its expiry.
   Never ask for it in chat. For this repo:
 
   | Credential | Where it's made | Scope | Goes to |
   |---|---|---|---|
   | `dental-omop-ci` OAuth secret | Databricks → Settings → Identity and access → Service principals → Secrets | `all-apis` (bundle deploy touches jobs, workspace files, Unity Catalog, MLflow, SQL) | GitHub environment secret `DATABRICKS_CLIENT_SECRET` |
-  | Workspace personal access token (admin setup; agent reads job runs) | Databricks → Settings → Developer → Access tokens | `all-apis`, 15 days at most; revoke when not needed | cloud environment variable `DATABRICKS_TOKEN` |
+  | Workspace personal access token (admin setup; agent reads job runs) | Databricks → Settings → Developer → Access tokens | `all-apis`, up to one year for agent sessions (ADR 0006); revoke when not needed | network secret of the agent's cloud environment for the dev workspace's host; the cloud environment variable `DATABRICKS_TOKEN` holds only a placeholder |
   | `gh` login for `gh secret set` / `gh variable set` | `gh auth login` | `repo` (classic), or fine-grained: this repo, Secrets, Variables and Environments read and write | your laptop only |
   | Hugging Face token for MedGemma | huggingface.co → Settings → Access tokens | Read | Databricks secret scope `health_transformation_lab`, key `hf_token` |
   | Application Insights connection string (telemetry, spec 014) | Azure portal → Application Insights `health-transformation-lab-nlp-appi` → Overview, or `terraform -chdir=infra/azure output -raw connection_string` piped straight into the secret (docs/telemetry.md); also in the git-ignored Terraform state | ingestion only: can send telemetry, can't read; doesn't expire, so rotate by recreating the resource | Databricks secret scope `health_transformation_lab`, key `appinsights_connection_string` |

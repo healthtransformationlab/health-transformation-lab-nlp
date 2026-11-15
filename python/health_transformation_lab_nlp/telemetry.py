@@ -6,7 +6,8 @@ One switch, `DENTAL_TELEMETRY`, picks where traces, metrics and logs go:
     console  print spans and metrics (debugging)
     azure    Azure Application Insights through the Azure Monitor OpenTelemetry distro;
              needs APPLICATIONINSIGHTS_CONNECTION_STRING (Databricks: secret scope `health_transformation_lab`,
-             key `appinsights_connection_string`). Without it: a warning, then off.
+             key `appinsights_connection_string`). Without it: off, with a warning, one stderr line naming the fix,
+             and status() saying why (014 BUG1, #792); the daily digest carries it as a SEV3.
     otlp     any OpenTelemetry backend over OTLP (self-hosted Grafana Tempo/Loki, Jaeger, SigNoz);
              OTEL_EXPORTER_OTLP_ENDPOINT as usual
     memory   in-process, for tests
@@ -41,6 +42,7 @@ from collections import defaultdict
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass, field
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import ClassVar
 
@@ -56,6 +58,14 @@ LOGGER = "health_transformation_lab_nlp"
 EXPORTERS = ("off", "console", "azure", "otlp", "memory", "file")
 LABEL_SUFFIXES = ("_name", "_code", "_id")   # annotate() keeps text only as a short label (AGENTS.md data names)
 MAX_LABEL_CHARS = 64
+AZURE_SETTING = "APPLICATIONINSIGHTS_CONNECTION_STRING"
+SECRET_SCOPE, SECRET_KEY = "health_transformation_lab", "appinsights_connection_string"   # Databricks secret
+REASONS = {                                 # why an asked-for exporter is off (status()["reason_text"] starts so)
+    "no_connection_string": f"no connection string: {AZURE_SETTING} is not set",
+    "malformed_connection_string": f"malformed connection string: {AZURE_SETTING} has no InstrumentationKey=...",
+    "no_secret": "no secret",
+    "no_file": "no file: DENTAL_TELEMETRY_FILE is not set",
+}
 log = logging.getLogger(LOGGER)
 
 
@@ -109,6 +119,8 @@ class _State:
     script = None
     providers: ClassVar[list] = []          # the SDK providers setup() made, shut down (flushed) by the next setup
     file = None                             # the file exporter's open file
+    status: ClassVar[dict] = {"asked_exporter_name": "off", "active_exporter_name": "off", "reason_text": ""}
+    pending: ClassVar[dict] = {}            # use_databricks_secret found no secret: the next setup() keeps saying so
 
 
 _annotatable: ContextVar = ContextVar("dental_annotatable_span", default=None)   # the span annotate() writes on
@@ -186,16 +198,24 @@ def setup(config: TelemetryConfig | None = None):
     _State.level = LEVELS.index(c.level)
     logging.getLogger(LOGGER).setLevel(logging.INFO)
     out = None
+    asked, reason = c.exporter, ""
     if c.exporter == "azure" and not c.connection_string:
         log.warning("DENTAL_TELEMETRY=azure but APPLICATIONINSIGHTS_CONNECTION_STRING is not set: telemetry off")
+        reason = REASONS["no_connection_string"]
         c = TelemetryConfig(exporter="off")
     elif c.exporter == "azure" and not _looks_valid(c.connection_string):   # never log the value itself
         log.warning("APPLICATIONINSIGHTS_CONNECTION_STRING is not a valid Application Insights connection "
                     "string (expected InstrumentationKey=...;IngestionEndpoint=...): telemetry off")
+        reason = REASONS["malformed_connection_string"]
         c = TelemetryConfig(exporter="off")
     if c.exporter == "file" and not c.file_path:
         log.warning("DENTAL_TELEMETRY=file but DENTAL_TELEMETRY_FILE is not set: telemetry off")
+        reason = REASONS["no_file"]
         c = TelemetryConfig(exporter="off")
+    pending, _State.pending = _State.pending, {}
+    if asked == "off" and pending:          # use_databricks_secret asked for an exporter and found no secret
+        asked, reason = pending["asked_exporter_name"], pending["reason_text"]
+    _set_status(asked, c.exporter, reason, announce=not pending)
     if c.exporter == "off":
         _State.tracer, _State.meter = trace.NoOpTracer(), metrics.NoOpMeter(SERVICE)
     elif c.exporter == "memory":
@@ -230,6 +250,38 @@ def setup(config: TelemetryConfig | None = None):
 
 def active_exporter() -> str:
     return _State.exporter
+
+
+def status() -> dict:
+    """What the last setup() was asked for, what is on, and why they differ (014 BUG1, #792): `asked_exporter_name`,
+    `active_exporter_name`, `reason_text` (empty when they agree). Names and reasons only, never a secret's value.
+    A missing Databricks secret (use_databricks_secret) shows here at once and through the next setup()."""
+    return dict(_State.status)
+
+
+def fix_text(reason_text: str) -> str:
+    """The fix for a reason status() gives: what to create or set, by name."""
+    if reason_text.startswith(REASONS["no_file"]):
+        return "set DENTAL_TELEMETRY_FILE to the span file's path"
+    if reason_text.startswith(REASONS["malformed_connection_string"]):
+        return ("put the resource's own connection string (InstrumentationKey=...;IngestionEndpoint=..., from "
+                f"terraform -chdir=infra/azure output -raw connection_string) in {AZURE_SETTING} or the Databricks "
+                f"secret {SECRET_SCOPE}/{SECRET_KEY}")
+    return ("create the Application Insights resource with infra/azure (terraform -chdir=infra/azure apply), then put "
+            f"its connection string in {AZURE_SETTING} or the Databricks secret {SECRET_SCOPE}/{SECRET_KEY}")
+
+
+def _set_status(asked: str, active: str, reason: str, announce: bool = True) -> None:
+    """Record the outcome; when asked and active differ, say so on one stderr line (a workflow warning annotation
+    under GitHub Actions), so it shows in a job's output, not only in a log. Telemetry stays optional: no raise."""
+    _State.status = {"asked_exporter_name": asked, "active_exporter_name": active,
+                     "reason_text": reason if asked != active else ""}
+    if asked == active or not announce:
+        return
+    line = (f"telemetry off: DENTAL_TELEMETRY={asked} was asked but telemetry is {active} ({reason}). "
+            f"Fix: {fix_text(reason)}. Until then no spans reach the backend; the daily digest carries it as a SEV3.")
+    prefix = "::warning title=telemetry off::" if os.environ.get("GITHUB_ACTIONS", "").lower() == "true" else ""
+    print(prefix + line, file=sys.stderr, flush=True)
 
 
 def _instrument(kind: str, name: str, unit: str = ""):
@@ -331,15 +383,101 @@ def end_script() -> None:
     context.detach(token)      # OpenTelemetry logs, never raises, if the context already moved on
 
 
-def use_databricks_secret(dbutils, exporter: str = "azure", scope: str = "health_transformation_lab",
-                          key: str = "appinsights_connection_string") -> str:
+_EPOCH = datetime(1970, 1, 1, tzinfo=UTC)
+_KINDS = {k.name: k for k in trace.SpanKind}
+
+
+def _iso_ns(text: str) -> int:
+    """A span file's time ("2026-11-15T02:18:52.813000Z", microseconds) as nanoseconds since the epoch, exactly."""
+    t = datetime.fromisoformat(text)
+    if t.tzinfo is None:
+        t = t.replace(tzinfo=UTC)
+    return (t - _EPOCH) // timedelta(microseconds=1) * 1000
+
+
+def _forwardable(value) -> bool:
+    """What a forwarded span keeps: numbers, booleans, lists of them, and text only as a short label (at most
+    MAX_LABEL_CHARS), so a file written by other code (the agent framework's spans) can't carry text to Azure."""
+    if isinstance(value, (bool, int, float)):
+        return True
+    if isinstance(value, list):
+        return all(isinstance(v, (bool, int, float)) for v in value)
+    return isinstance(value, str) and len(value) <= MAX_LABEL_CHARS
+
+
+def _read_spans(path: Path) -> list[dict]:
+    """The span lines of a telemetry.jsonl: metrics batches and a line cut off by a machine that stopped are left out."""
+    spans = []
+    for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+        try:
+            item = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(item, dict) and "context" in item and "start_time" in item and "end_time" in item:
+            spans.append(item)
+    return spans
+
+
+def forward_spans(path: Path) -> int:
+    """Send the spans of a telemetry.jsonl (the `file` exporter's layout, or the Kaggle bundle's and kernel's, which
+    are the same) through the exporter setup() configured, and return how many were sent (spec 014 US7, #791). Each
+    keeps its own start and end time, kind, status and attributes (numbers and short labels only); a child keeps its
+    parent, under new span ids, and a span whose parent isn't in the file starts its own trace. With the exporter off,
+    or no file, nothing is sent."""
+    path = Path(path)
+    if _State.exporter == "off":
+        return 0
+    if not path.is_file():
+        log.warning("no span file at %s: nothing to forward", path.name)
+        return 0
+    spans = sorted(_read_spans(path), key=lambda s: _iso_ns(s["start_time"]))
+    by_id = {str(s["context"].get("span_id")): s for s in spans}
+    made: dict[str, trace.Span] = {}
+
+    def start(s: dict, depth: int = 0) -> trace.Span:
+        sid = str(s["context"].get("span_id"))
+        if sid in made:
+            return made[sid]
+        parent = by_id.get(str(s.get("parent_id")))
+        if parent is not None and parent is not s and depth < 64:
+            ctx = trace.set_span_in_context(start(parent, depth + 1))
+        else:
+            ctx = context.Context()                            # a root: its own trace, not the caller's
+        attrs = {k: v for k, v in (s.get("attributes") or {}).items() if _forwardable(v)}
+        kind = _KINDS.get(str(s.get("kind", "")).rsplit(".", 1)[-1], trace.SpanKind.INTERNAL)
+        made[sid] = _State.tracer.start_span(s.get("name") or "span", context=ctx, kind=kind, attributes=attrs,
+                                             start_time=_iso_ns(s["start_time"]))
+        return made[sid]
+
+    for s in spans:
+        start(s)
+    for s in reversed(spans):                                  # children end first, as they did
+        span = made[str(s["context"].get("span_id"))]
+        status = (s.get("status") or {}).get("status_code", "UNSET")
+        if status == "ERROR":
+            span.set_status(Status(StatusCode.ERROR, str((s.get("status") or {}).get("description") or "")[:64]))
+        elif status == "OK":
+            span.set_status(Status(StatusCode.OK))
+        span.end(end_time=_iso_ns(s["end_time"]))
+    for provider in _State.providers or [trace.get_tracer_provider()]:   # sent now, not at exit (azure: global)
+        flush = getattr(provider, "force_flush", None)
+        if flush is not None and hasattr(provider, "get_tracer"):
+            flush()
+    return len(made)
+
+
+def use_databricks_secret(dbutils, exporter: str = "azure", scope: str = SECRET_SCOPE, key: str = SECRET_KEY) -> str:
     """In a Databricks notebook: put the telemetry settings in the environment, where the scripts the
     notebook starts pick them up. A missing secret turns telemetry off; it never fails the job."""
+    _State.pending = {}
     if exporter == "azure":
         try:
             os.environ["APPLICATIONINSIGHTS_CONNECTION_STRING"] = _clean(dbutils.secrets.get(scope, key))
         except Exception as e:  # noqa: BLE001  dbutils raises its own exception types
             log.warning("no secret %s/%s (%s): telemetry off", scope, key, type(e).__name__)
+            reason = f"{REASONS['no_secret']}: the Databricks secret {scope}/{key} is not there ({type(e).__name__})"
+            _set_status("azure", "off", reason)
+            _State.pending = dict(_State.status)
             exporter = "off"
     os.environ["DENTAL_TELEMETRY"] = exporter
     return exporter

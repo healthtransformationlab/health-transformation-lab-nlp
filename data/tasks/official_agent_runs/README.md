@@ -690,7 +690,15 @@ which is within the 3-task run-to-run noise above, so this is not evidence that 
 - the reference patches resolved 93 of 93, and an empty patch 0 of 93, matching `data/tasks/official_verifier/`;
 - three tasks need the optional `xgboost`, `mlflow` and `statsmodels` to pass with their reference patch; they were installed for both arms.
 
+**Cost:** both kernels ran at once, before the one-GPU-run-at-a-time rule (#772) reached this branch. The quota read 25.7 hours left before the start and 17.7 after, so the pair cost 8.0 of the week's 60 hours.
+
 Each kernel's telemetry stays in its Kaggle output until it is forwarded to Azure (#794).
+
+Changed 2026-11-15 (#691): those defects are fixed in the helper, with tests, except the open network, which needs a
+real machine to block: a run now starts only when its entry in the run list accepts that the network is open
+(`"network_open_acknowledged": true`; `docs/adr/0005-colab-runs-need-the-open-network-accepted.md`). What a later run
+must check first is in `kaggle/README.md`. The audit is wider now and `outside_workspace_call_count` covers
+`/content`, for runs collected from now on; the five runs above keep the audit as it was committed.
 
 ## Checks
 
@@ -760,3 +768,161 @@ only the November 11 prompt resolved `rich_3535`. With 2 and 1 discordant tasks,
 23 traces the first call was `run_command`, 17 of them the localization grep. No run copied the prompt's placeholder
 or called a skill, and none named a path outside the workspace. The patches the agent now writes mostly fail their
 tests, so their correctness, not finding the file, is where the next change would have to act.
+
+# The competition's own development set: a quarter of the window for output (November 14, 2026)
+
+gemma-developer-agent PR 100 (its issue #99) changed one setting of the November 11 agent: `max_output_tokens` from
+16,384 to 8,192 (`configs/sampling.yaml`), so the conversation gets 24,576 of the model server's 32,768 tokens instead
+of 16,384. The prompt, tools, budgets and thinking budget (4,096) are the November 11 run's; PR 98's prompt is not in
+it. With the owner's approval it ran on the same 23 tasks, paired with the November 11 run: the same evaluator end to
+end, one Kaggle kernel on four L4 GPUs (`htlnlp-offrun-devset-max-output-8192`, 64 minutes), telemetry on.
+`gemma-4-e4b-it-qat-w4a16-ct_swegemma_devset-max-output-8192.csv` has one row per task, written by the runner
+(`--label max-output-8192`, #721; `--collect --reuse-output` with the fix of #737, so `max_output_tokens` is the
+submission's 8,192, not the evaluator's fallback). Its `_settings.json` names the agent commit (`5dcbb1a`) and
+`generation_used`. A first attempt ran no task: its new kernel got Kaggle's current image, where vLLM from the
+wheelhouse cannot load `libcudart.so.12`; the runner now pins the starter notebook's image by default (#721).
+
+| On the same 23 tasks | November 11 (16,384) | PR 100 (8,192) |
+|---|---|---|
+| **Resolved** | **3** | **3** |
+| Tests fail with the agent's patch | 10 | 10 |
+| Empty patch | 5 | 5 |
+| Errors before any test ran | 3 | 3 |
+| The tests ran out of time (exit code 124) | 2 | 2 |
+| **Ended at the context window** | **3** | **0** |
+| Tool calls; to a graph tool; to the analyzer | 267; 43; 16 | 317; 70; 23 |
+
+Both resolved `fastapi_14301` and `rich_3454`. Only the 8,192 run resolved `fastapi_14463`, one of the three tasks
+that ended at the context window on November 11, and only the November 11 run resolved `rich_3535`. With 1 and 1
+discordant tasks, the exact McNemar test gives p = 1.0: **no difference in resolved tasks can be claimed**.
+
+What the setting is for did change: no run ended at the context window, against 3 of 23 on November 11
+(`fastapi_14463`, now resolved; `rich_3953`, now a patch that fails its tests; `rich_4076`, still empty). In the
+kernel's traces (its output on Kaggle; not committed, since they hold the competition's task text), the largest prompt
+of any of the 418 model calls was 17,155 tokens (`rich_3930`), the only one above 16,384: a call the 16,384 setting
+would have refused, served here. The largest answer was 4,813 tokens (`rich_3180`) and none reached 8,000, so the
+lower limit cut no answer short. Of the five empty patches, `fastapi_14873` used all 40 tool calls and the other four
+ended without an edit; no run reached the 5-minute budget (the longest took 222 seconds). No run called a skill or
+named a path outside the workspace.
+
+Twenty-three tasks at temperature 0.2, one run each: this shows the context-window endings gone at no visible cost on
+these tasks, not a higher resolve rate. The setting and PR 98's prompt have not been run together.
+
+# The competition's own development set: the localize-first prompt with an 8,192-token output budget (November 15, 2026)
+
+gemma-developer-agent `main` at `d13dc52` holds both single changes above: PR 98's prompt and PR 100's
+`max_output_tokens` of 8,192 (thinking budget 4,096). They had not run together, and the pair is what the next
+leaderboard entry is built from. With the owner's approval it ran on the same 23 tasks, paired with the three runs
+above: the same evaluator end to end, one Kaggle kernel on four L4 GPUs (`htlnlp-offrun-devset-prompt98-out8192`,
+60.5 minutes), telemetry on. `gemma-4-e4b-it-qat-w4a16-ct_swegemma_devset-prompt98-out8192.csv` has one row per task,
+written by the runner (`--label prompt98-out8192`, with the fixes of #721 and #737). Its `_settings.json` names the
+agent commit and `generation_used`.
+
+| On the same 23 tasks | November 11 | PR 98 (prompt) | PR 100 (8,192) | **Both** |
+|---|---|---|---|---|
+| **Resolved** | **3** | **4** | **3** | **4** |
+| Tests fail with the agent's patch | 10 | 13 | 10 | 12 |
+| Empty patch | 5 | 2 | 5 | 4 |
+| Errors before any test ran | 3 | 2 | 3 | 2 |
+| The tests ran out of time (exit code 124) | 2 | 2 | 2 | 1 |
+| Ended at the context window | 3 | 4 | 0 | 0 |
+| Reached the 5-minute budget | 2 | 0 | 0 | 2 |
+| Tool calls; to a graph tool; to the analyzer | 267; 43; 16 | 287; 17; 7 | 317; 70; 23 | 271; 13; 6 |
+
+The pair resolved `fastapi_13537`, `fastapi_14301`, `fastapi_14463` and `rich_3905`. Against PR 98's prompt alone,
+only the pair resolved `fastapi_13537` and `fastapi_14463`, and only PR 98's run resolved `fastapi_14873` and
+`rich_3454`. With 2 and 2 discordant tasks, the exact McNemar test gives p = 1.0, as it does against November 11
+(3 and 2) and against PR 100 (2 and 1): **no difference can be claimed**. Seven tasks have been resolved by at least
+one of the four runs, and only `fastapi_14301` by all four.
+
+Described, not tested, from the kernel's traces (its output on Kaggle; not committed, since they hold the
+competition's task text):
+
+- **The window.** No run ended at the context window, against 4 for PR 98's prompt alone. Five tasks sent prompts
+  above 16,384 tokens and were served (`fastapi_13537`, `fastapi_15280`, `rich_3454`, `rich_3518`, `rich_3953`), the
+  largest 17,426 in `fastapi_13537`. That task was resolved for the first time in any run here.
+- **The cost.** One of the 341 answers reached the 8,192-token limit (`fastapi_14873`): the evaluator reported that
+  the tool call was cut off before it closed, and the run then reached the 5-minute budget with an empty patch. PR 98's
+  run, at 16,384, had resolved that task. PR 100's run had no answer above 4,813 tokens, so its "no visible cost"
+  held for that run's prompt and does not hold for this pair.
+- **Scratch files.** `fastapi_14463`'s resolving patch is 215,685 bytes: a two-line fix to
+  `fastapi/openapi/utils.py`, plus two files the agent wrote and left in the workspace (`app.py`, 31 lines, and a
+  214 KB `openapi.json`). The evaluator includes untracked files in the patch; these did not stop the tests passing.
+
+Twenty-three tasks at temperature 0.2, one run each. A setting between the two, 12,288 (20,480 for the conversation,
+above the largest prompt seen here, and 8,192 for an answer after thinking), has not been run.
+
+# The competition's own development set: the analyzer first and a compile check (November 15, 2026)
+
+gemma-developer-agent PR 60 (its issue #59) adds three steps to PR 98's prompt: start from the analyzer's "Where to
+look" code map when it names a likely fix, check the edited file with `py_compile`, and run the targeted tests, never
+submitting a file that failed the check. Main, with PR 98's prompt, is merged into it (agent commit `e421229`);
+`max_output_tokens` is 16,384, as in PR 98's run, and the budgets are the same (5 minutes, 40 tool calls). With the
+owner's approval it ran on the same 23 tasks, paired with PR 98's run: the same evaluator end to end, one Kaggle kernel
+on four L4 GPUs (`htlnlp-offrun-devset-devset-pr60`, 69 minutes), telemetry on.
+`gemma-4-e4b-it-qat-w4a16-ct_swegemma_devset-pr60.csv` has one row per task, written by the runner (`--label pr60
+--collect --reuse-output`); its `_settings.json` names the agent commit. The kernel ran under the label `devset-pr60`,
+which the runner prefixes with `devset-` again, so the kernel's name doubles it; the table's links name that kernel.
+
+| On the same 23 tasks | PR 98 | PR 60 |
+|---|---|---|
+| **Resolved** | **4** | **4** |
+| Tests fail with the agent's patch | 13 | 8 |
+| Empty patch | 2 | 7 |
+| Errors before any test ran | 2 | 2 |
+| The tests ran out of time (exit code 124) | 2 | 2 |
+| Ended at the context window | 4 | 4 |
+| Tool calls; to a graph tool | 287; 17 | 387; 126 |
+
+Both resolved `fastapi_14301` and `rich_3454`. Only PR 98 resolved `fastapi_14873` and `rich_3905`; only PR 60 resolved
+`fastapi_14463` and `rich_3518`. With 2 and 2 discordant tasks, the exact McNemar test gives p = 1.0: **no difference
+in resolved tasks can be claimed**.
+
+What changed is described, not tested. Five fewer patches failed their tests and five more runs ended with no patch:
+the compile check and the tests stop a wrong edit from being submitted, but on these tasks they turned it into no
+edit, not a right one. Both score zero. The graph tools were called seven times as often. Two runs reached the
+5-minute budget (`fastapi_14463`, resolved all the same, and `rich_3944`); four ended at the context window
+(`fastapi_14986`, `rich_3905`, `rich_3930`, `rich_4006`), which the 8,192 output budget of PR 100 would have left room
+for. No run called a skill or named a path outside the workspace.
+
+Twenty-three tasks at temperature 0.2, one run each: this is not a leaderboard score. The November 15 leaderboard entry
+was main (PR 98's prompt with PR 100's 8,192 output budget), which ties both at 4 of 23 on these tasks and ended no run
+at the context window (its record: #762).
+
+# The competition's own development set: scratch files removed and 12,288 tokens for output (November 15, 2026)
+
+gemma-developer-agent PR 107 (issues #104 and #105, carrying PR 106) changes two things on top of main at 8,192
+(PR 98's prompt): the step that runs the targeted tests also lists the workspace with `git status --short` and says to
+delete files made only to try or check the fix, and `max_output_tokens` is 12,288 (20,480 for input, above the largest
+prompt seen at 8,192; 8,192 for an answer after the 4,096 thinking budget). With the owner's approval it ran on the same
+23 tasks, paired with main's run at 8,192: the same evaluator end to end, one Kaggle kernel on four L4 GPUs
+(`htlnlp-offrun-devset-pr107`, 61 minutes), telemetry on. `gemma-4-e4b-it-qat-w4a16-ct_swegemma_devset-pr107.csv` has
+one row per task, written by the runner (`--label pr107 --collect --reuse-output`). Its `_settings.json` names the
+commit that ran, `5ce5f98`; the runner first read the branch's later merge commit, which was corrected by hand.
+
+It was also the first run whose cost in GPU quota was measured (`kaggle/gpu_quota.py`, #773): 32.34 hours used before
+and 34.34 after, **2.00 hours for 61 minutes**, so a four-GPU kernel counts double.
+
+| On the same 23 tasks | main at 8,192 | PR 107 |
+|---|---|---|
+| **Resolved** | **4** | **4** |
+| Tests fail with the agent's patch | 12 | 9 |
+| Empty patch | 4 | 3 |
+| Errors before any test ran | 2 | 5 |
+| The tests ran out of time (exit code 124) | 1 | 2 |
+| Ended at the context window | 0 | 0 |
+| An answer cut off at the output limit | 1 (exactly 8,192) | 0 (largest 5,443) |
+| `fastapi_14463`'s resolving patch | 215,685 bytes | 783 bytes |
+| Tool calls; to a graph tool | 271; 13 | 257; 10 |
+
+Both resolved `fastapi_14301` and `fastapi_14463`. Only main at 8,192 resolved `fastapi_13537` and `rich_3905`; only
+PR 107 resolved `rich_3454` and `rich_3518`. With 2 and 2 discordant tasks, the exact McNemar test gives p = 1.0: **no
+difference in resolved tasks can be claimed**.
+
+What the two changes are for both worked, at no visible cost. The scratch files that went into main's patches are
+gone: `fastapi_14463`'s two-line fix is a 783-byte patch, and the only new file in any patch, `scripts/release.sh`, is
+in a task whose own fix adds a file. No answer was cut off and no run ended at the context window. In the kernel's
+traces (its output on Kaggle; not committed, since they hold the competition's task text), 27 of the 59 `edit_file`
+calls (46%) failed with "old_string not found". Across four runs on these tasks that rate is 37% (92 of 252), higher
+for anchors with a backslash (50%) or of nine lines or more (54%); gemma-developer-agent PRs 109 (the copyfix adapter)
+and 117 (short anchors) act on it. Twenty-three tasks at temperature 0.2, one run each: not a leaderboard score.

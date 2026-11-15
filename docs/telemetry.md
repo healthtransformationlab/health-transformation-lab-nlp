@@ -18,8 +18,26 @@ types only.
 | `azure` | Application Insights, through the Azure Monitor OpenTelemetry distro | `APPLICATIONINSIGHTS_CONNECTION_STRING`; `pip install -e "python[azure]"` |
 | `otlp` | any OpenTelemetry backend (self-hosted Grafana Tempo/Loki, Jaeger, SigNoz) | `OTEL_EXPORTER_OTLP_ENDPOINT`; `pip install -e "python[otlp]"` |
 
-`azure` without a connection string logs a warning and runs with telemetry off: a missing secret
-never fails a pipeline. `DENTAL_TELEMETRY_SAMPLING` (0–1, default 1.0) sets trace sampling;
+`azure` without a connection string runs with telemetry off: a missing secret never fails a pipeline.
+Off is not quiet, though (014 BUG1, #792: every job asked for `azure` for weeks while the Application Insights
+resource had never been created, and only a log warning said so):
+
+- `telemetry.status()` returns what was asked (`asked_exporter_name`), what is on (`active_exporter_name`) and why
+  they differ (`reason_text`: no connection string, malformed connection string, no secret, no file), never a value.
+- When they differ, `setup()` (and `use_databricks_secret`, when the secret isn't in the scope) carries on and prints
+  one line to stderr naming the setting, the reason and the fix (create the resource with `infra/azure`, then put the
+  connection string in `APPLICATIONINSIGHTS_CONNECTION_STRING` or the Databricks secret
+  `health_transformation_lab/appinsights_connection_string`); under GitHub Actions the line is a `::warning::`
+  annotation. The log warning is still written too.
+- It is a **SEV3 in the daily digest** (`digests.telemetry_alerts`, owner and fix included), built by
+  `databricks/notebooks/14_pipeline_digest.py`. The jobs' own statuses aren't recorded anywhere yet (the doctor's run
+  table comes from the spans, so with telemetry off it has no rows), and every job reads the same switch and secret,
+  so the digest notebook's own status stands for the whole workspace.
+- The same notebook checks the secrets register: each credential in `ops/secrets_register.yaml` whose `stored_in` is
+  the Databricks secret scope must have its key in the scope (`digests.register_alerts`, reading the scope with
+  `dbutils.secrets.list`, key names only); one that is missing is a SEV3 in the daily digest too.
+
+`DENTAL_TELEMETRY_SAMPLING` (0–1, default 1.0) sets trace sampling;
 `DENTAL_ENVIRONMENT` (default `dev`) is recorded on every span.
 
 Code: `python/health_transformation_lab_nlp/telemetry.py`. In a script, two lines:
@@ -257,9 +275,38 @@ print(sum(t.get("output_token_count", 0) for t in turns), "output tokens in", le
 ```
 
 Next: a script that sums the files into a cost-and-performance table (tokens, seconds and tool calls a task and a
-fix), and a step that sends them to Application Insights. The connection string is only in the Databricks secret
-scope, so that step runs as a Databricks job, or the owner adds it as a GitHub environment secret and to
-`ops/secrets_register.yaml`.
+fix). Sending the files on is below.
+
+## The competition's runs and entries (US7)
+
+Where the Gemma 4 Developer Agent competition's telemetry goes (spec 014 US7, #791):
+
+- **Development-set runs on a Kaggle or Colab GPU.** The kernel writes its spans to `telemetry.jsonl` with the internet
+  off (`--telemetry`). `kaggle/official_agent_run.py --collect` sets telemetry up, opens the run span
+  `official_agent_run`, and after reading the run back sends the file on with `telemetry.forward_spans(path)`: each span
+  keeps its own start and end time, status and attributes (numbers and text of at most 64 characters), and a child
+  keeps its parent under new span ids. Run the collect with `DENTAL_TELEMETRY=azure` and the connection string set to
+  send them to Application Insights; off by default, as everywhere else.
+- **Leaderboard entries.** An entry runs on Kaggle's machines with no code of ours, so it can't be traced: the API
+  gives its status, score and dates, nothing more. `.github/workflows/leaderboard-watch.yml` runs
+  `kaggle/submission_watch.py` every two hours. It keeps `data/tasks/leaderboard_entries.csv` (one row per entry; a
+  pending entry, which the submissions list hides, is looked up by its ref) and sends one span `leaderboard_entry`
+  per status change, with `submission_ref_id`, `status_code` and `public_score_ratio`, under the run span
+  `submission_watch`. The ledger's changes go to a `kaggle-results/leaderboard-entries-<run_id>` pull request. An
+  entry that turns to error fails the workflow (SEV2: GitHub emails the owner).
+- **The connection string** for the workflow is the GitHub `dev` environment secret `APPINSIGHTS_CONNECTION_STRING`
+  (`ops/secrets_register.yaml`), the same value as the Databricks secret. The workflow passes it on as
+  `APPLICATIONINSIGHTS_CONNECTION_STRING` with `DENTAL_TELEMETRY=azure`; without it, a warning and telemetry off,
+  and the ledger is still updated. Set it from your laptop without the value passing through a file or the chat:
+  `terraform -chdir=infra/azure output -raw connection_string | gh secret set APPINSIGHTS_CONNECTION_STRING --env dev`.
+
+```kusto
+AppDependencies
+| where Name == "leaderboard_entry"
+| project TimeGenerated, ref = tostring(Properties["submission_ref_id"]), status = tostring(Properties["status_code"]),
+          score = todouble(Properties["public_score_ratio"])
+| order by TimeGenerated desc
+```
 
 ## Not yet
 

@@ -7,7 +7,10 @@
 # MAGIC - failing budget and target checks (`dq_check`, categories cost and performance; spec 036);
 # MAGIC - the pipeline doctor's SEV3 and SEV4 recommendations no one has decided yet (`fact_remediation_decision`);
 # MAGIC - pipeline-doctor's forecaster on `ops/secrets_register.yaml`, `ops/dependency_inventory.csv` and the run
-# MAGIC   history (`fact_pipeline_run`): expiries, deprecations, trends.
+# MAGIC   history (`fact_pipeline_run`): expiries, deprecations, trends;
+# MAGIC - telemetry asked for but off (014 BUG1, #792): this notebook's own `telemetry.status()`, and each credential the
+# MAGIC   secrets register keeps in the Databricks secret scope that the scope doesn't have (`dbutils.secrets.list`:
+# MAGIC   key names only, never a value).
 # MAGIC
 # MAGIC Writes `fact_digest_item` and `fact_digest_message`, delete-then-append by `digest_key` (a rerun the same day
 # MAGIC replaces that day's digest). Two Databricks SQL alerts, one per period, email the day's message to
@@ -26,7 +29,9 @@ dbutils.library.restartPython()  # noqa: F821
 # COMMAND ----------
 
 import pandas as pd
+import yaml
 from health_transformation_lab_nlp import delta, digests, table_comments, tracking
+from health_transformation_lab_nlp.paths import REPO_ROOT
 
 dbutils.widgets.text("git_commit", "")  # noqa: F821  set by the job: the commit it was deployed from
 dbutils.widgets.text("telemetry", "azure")  # noqa: F821  spec 014: off / console / azure / otlp
@@ -56,10 +61,25 @@ def read(name: str):
 
 # COMMAND ----------
 
+# Telemetry off when asked (014 BUG1, #792). The jobs' own telemetry statuses aren't recorded anywhere yet: the
+# doctor's run table is built from the spans, so with telemetry off it has no rows at all. Every job reads the same
+# `telemetry` variable and the same secret, so this notebook's own status stands for the whole workspace: off here
+# means off in every job. The register check names the missing secret itself.
+statuses = [{"pipeline_name": "14_pipeline_digest", **telemetry.status()}]
+try:
+    scope_keys = {s.key for s in dbutils.secrets.list("health_transformation_lab")}  # noqa: F821  names only
+except Exception as e:  # noqa: BLE001 - no scope at all: every registered key in it is missing
+    print(f"warning: couldn't list the secret scope health_transformation_lab ({type(e).__name__})")
+    scope_keys = set()
+register = yaml.safe_load((REPO_ROOT / "ops" / "secrets_register.yaml").read_text())
+
 now = pd.Timestamp.now(tz="UTC")
 alerts = pd.concat([digests.governance_alerts(read("dq_check"), digests.load_budgets_owners()),
                     digests.decision_alerts(read("fact_remediation_decision")),
-                    digests.forecast_alerts(now, read("fact_pipeline_run"))], ignore_index=True)
+                    digests.forecast_alerts(now, read("fact_pipeline_run")),
+                    pd.DataFrame(digests.telemetry_alerts(statuses), columns=digests.ALERT_COLUMNS),
+                    pd.DataFrame(digests.register_alerts(register, scope_keys), columns=digests.ALERT_COLUMNS)],
+                   ignore_index=True)
 print(f"{len(alerts)} alerts:", alerts["severity_code"].value_counts().to_dict() if len(alerts) else {})
 
 # COMMAND ----------

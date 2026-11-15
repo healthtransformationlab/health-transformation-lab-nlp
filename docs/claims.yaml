@@ -94,7 +94,7 @@ edr:
       covers: synthetic review charts that periodontists (simulated so far) label
   results:
     # #467: the notes rebuilt for adults from 2021-04-01, scored at five status groups on the 223 review charts; the GPU
-    # encoders and MedGemma read the old notes, so they show as "Rerun pending" until they are redone
+    # encoders and MedGemma were rerun on them on Kaggle on 2026-11-04 (data/datasets/results_manifest.csv)
     - value: "207"
       kind: measured
       file: docs/edr/README.md

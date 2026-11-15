@@ -18,7 +18,7 @@ different parts of it, so two numbers that look like they conflict usually count
 | Review charts (test set) | 223 | one visit each of the other 223 patients, held out (up to 240; only 12 patients' latest visit is stage IV, under the 29 asked for), with the answer key (`review_key.csv`) | the review set every method answers |
 | Scored review charts | 223 | every review chart: the note set holds only adults' visits on or after 2021-04-01 (#467), scored at five status groups (spec 032 US8, [presets](presets.md); `study.scored_review` checks the filter) | **every method's score**: 207 vs 176, the leaderboard |
 | Charted visits | 2,990 | the visits, of all 3,794, that have a gum chart | comparing the definitions (2017, CDC/AAP, ACES) and how often the record's parts agree ([standards.md](standards.md)) |
-| Open Dental extract | 2,000 patients | a separate synthetic set in Open Dental's table format (spec 029) | the tooth-loss model, one row per tooth |
+| Open Dental extract | 2,000 patients on Databricks; 6,000 in the tooth-loss results | a separate synthetic set in Open Dental's table format (spec 029): the Databricks job `open_dental_load` builds 2,000 patients, `51_tooth_loss_model.py` draws 6,000 for the results in [tooth_loss.md](tooth_loss.md), and a 200-patient sample is committed (`data/datasets/tooth_loss/`) | the tooth-loss model, one row per tooth |
 
 No patient is in both the training notes and the review charts. The other 555 visits of the 223 held-out patients
 aren't used for training either, so a model never sees a held-out patient.

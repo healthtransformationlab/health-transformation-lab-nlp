@@ -16,7 +16,7 @@ It shows what the output looks like. It is not a result.*
 ```mermaid
 %%{init: {"themeVariables": {"fontSize": "18px"}}}%%
 flowchart LR
-    G["240 reviewed charts<br/>human consensus"] --> CAL["Calibrate judge<br/>sensitivity, specificity"]
+    G["223 reviewed charts<br/>human consensus"] --> CAL["Calibrate judge<br/>sensitivity, specificity"]
     P["Each method's predictions<br/>on the reviewed charts"] --> CAL
     C["1M+ de-identified notes"] --> S["Stratified sample<br/>per method"]
     S --> J["LLM judge<br/>verdict + verbatim quote"]
@@ -31,7 +31,7 @@ flowchart LR
    same reviewed-chart pairs; the one with the highest kappa against the
    reviewers, and not from the same model family as any LLM being evaluated,
    is selected (`judge_bakeoff.csv`; method from GlobalDentBench,
-   [dentbench_methods.md](dentbench_methods.md)). On the 240 reviewed charts we know whether
+   [dentbench_methods.md](dentbench_methods.md)). On the 223 reviewed charts we know whether
    each method's prediction matched the reviewers. The judge judges the same
    pairs, which gives its sensitivity and specificity. Good models are rarely
    wrong, so the readings from single evidence types (exam form, procedure codes) on

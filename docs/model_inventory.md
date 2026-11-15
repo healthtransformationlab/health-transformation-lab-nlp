@@ -5,8 +5,9 @@
 > Hugging Face card on 2026-10-28; re-check the card before approval, because cards change.
 > A test (`tests/test_model_inventory.py`) fails if code or `models.yaml` names a model that isn't here.
 
-**What runs where.** Every model in sections 1–3 downloads its weights from Hugging Face and runs
-locally or on Databricks/Kaggle compute; no note text leaves that machine. Section 4 lists hosted
+**What runs where.** Every model in sections 1–3 downloads its weights from Hugging Face (the committed MedGemma
+runs loaded Kaggle Models' Keras checkpoints instead, [medgemma.md](medgemma.md)) and runs locally or on
+Databricks/Kaggle compute; no note text leaves that machine. Section 4 lists hosted
 services that receive the text; they only ever get synthetic or de-identified notes, and the code
 refuses to call one unless its endpoint is configured.
 
@@ -23,7 +24,7 @@ refuses to call one unless its endpoint is configured.
 | Longformer · [2004.05150](https://arxiv.org/abs/2004.05150) · general, long context; also the base of the PHI tagger | `allenai/longformer-base-4096` | Allen Institute for AI | Apache-2.0 | results as a classifier; also the base of the PHI tagger (section 3) |
 | SciBERT · [1903.10676](https://arxiv.org/abs/1903.10676) · scientific, classifier | `allenai/scibert_scivocab_uncased` | Allen Institute for AI | **none on the card** (the `allenai/scibert` GitHub repository is Apache-2.0): confirm before approval | results |
 | Bio_ClinicalBERT · [1904.03323](https://arxiv.org/abs/1904.03323) · clinical, classifier | `emilyalsentzer/Bio_ClinicalBERT` | Alsentzer et al. (MIT) | MIT | results |
-| GatorTron base · [Nature Digital Medicine 2022](https://doi.org/10.1038/s41746-022-00742-2) · clinical, classifier | `UFNLP/gatortron-base` | University of Florida / NVIDIA | Apache-2.0 | not run |
+| GatorTron base · [Nature Digital Medicine 2022](https://doi.org/10.1038/s41746-022-00742-2) · clinical, classifier | `UFNLP/gatortron-base` | University of Florida / NVIDIA | Apache-2.0 | results (learning rate 2e-05, Kaggle, 2026-11-04) |
 | BiomedBERT · [2007.15779](https://arxiv.org/abs/2007.15779) · biomedical, classifier | `microsoft/BiomedNLP-BiomedBERT-base-uncased-abstract-fulltext` | Microsoft | MIT | results |
 | BioClinical ModernBERT base · [2506.10896](https://arxiv.org/abs/2506.10896) · clinical, classifier, long context | `thomas-sounack/BioClinical-ModernBERT-base` | Sounack et al. (Dana-Farber) | MIT | results |
 | BioClinical ModernBERT large · [2506.10896](https://arxiv.org/abs/2506.10896) · clinical, classifier, long context | `thomas-sounack/BioClinical-ModernBERT-large` | Sounack et al. (Dana-Farber) | MIT | results |
@@ -44,8 +45,8 @@ Bio_ClinicalBERT and Clinical-Longformer); only their published weights are used
 
 | Model · paper · domain, role | Source | Organisation | Licence | Status |
 |---|---|---|---|---|
-| MedGemma 1.5 4B (instruction-tuned) · [2507.05201](https://arxiv.org/abs/2507.05201) · medical, note reader (LLM) | `google/medgemma-1.5-4b-it` | Google (Health AI Developer Foundations) | [HAI-DEF terms of use](https://developers.google.com/health-ai-developer-foundations/terms) (accept on Hugging Face first) | results (240 notes) |
-| MedGemma 4B (instruction-tuned) · [2507.05201](https://arxiv.org/abs/2507.05201) · medical, note reader (LLM) | `google/medgemma-4b-it` | Google (HAI-DEF) | HAI-DEF terms | results (240 notes) |
+| MedGemma 1.5 4B (instruction-tuned) · [2507.05201](https://arxiv.org/abs/2507.05201) · medical, note reader (LLM) | `google/medgemma-1.5-4b-it` | Google (Health AI Developer Foundations) | [HAI-DEF terms of use](https://developers.google.com/health-ai-developer-foundations/terms) (accept on Hugging Face first) | results (223 review notes, Kaggle, 2026-11-04) |
+| MedGemma 4B (instruction-tuned) · [2507.05201](https://arxiv.org/abs/2507.05201) · medical, note reader (LLM) | `google/medgemma-4b-it` | Google (HAI-DEF) | HAI-DEF terms | results (223 review notes, Kaggle, 2026-11-04) |
 | MedGemma 27B text (instruction-tuned) · [2507.05201](https://arxiv.org/abs/2507.05201) · medical, note reader (LLM) | `google/medgemma-27b-text-it` | Google (HAI-DEF) | HAI-DEF terms | not run (needs a large GPU) |
 | PHI tagger: Longformer base fine-tuned on MACCROBAT (CC BY 4.0) · spec 010 · de-identification | `allenai/longformer-base-4096` + own fine-tune (not published) | this repo | Apache-2.0 base; MACCROBAT CC BY 4.0 | results (`data/deid/maccrobat_*`) |
 | Stanford de-identifier · Chambon et al., JAMIA 2023 · clinical, de-identification | `StanfordAIMI/stanford-deidentifier-base` | Stanford AIMI | MIT | results (de-id benchmark) |
@@ -56,7 +57,7 @@ Bio_ClinicalBERT and Clinical-Longformer); only their published weights are used
 
 | Service · role | Where | Licence / terms | Status |
 |---|---|---|---|
-| Meta Llama 3.3 70B Instruct · LLM judge (spec 012), LLM de-identification, and a zero-shot note reader (spec 017, `llama-3.3-70b-instruct`; Hugging Face reference `meta-llama/Llama-3.3-70B-Instruct`) | Databricks Foundation Model API, pay-per-token endpoint `databricks-meta-llama-3-3-70b-instruct` | Llama 3.3 Community License; Databricks terms | judge: run in dev (2 runs, 2026-10-27); reader: results (240 notes, 2026-10-28); de-id: not run |
+| Meta Llama 3.3 70B Instruct · LLM judge (spec 012), LLM de-identification, and a zero-shot note reader (spec 017, `llama-3.3-70b-instruct`; Hugging Face reference `meta-llama/Llama-3.3-70B-Instruct`) | Databricks Foundation Model API, pay-per-token endpoint `databricks-meta-llama-3-3-70b-instruct` | Llama 3.3 Community License; Databricks terms | judge: run in dev (2 runs, 2026-10-27); reader: results (223 review notes, rerun after #467); de-id: not run |
 | `ai_mask` · de-identification | Databricks SQL AI Function (Public Preview), Databricks-hosted model | Databricks terms | results (400 synthetic challenge notes, 2026-10-28) |
 | Azure Health Data Services de-identification · de-identification | Azure (needs `AZURE_DEID_ENDPOINT`) | Microsoft terms | not run |
 | Azure AI Language PII detection · de-identification | Azure (needs `AZURE_LANGUAGE_ENDPOINT`) | Microsoft terms | not run |
@@ -104,5 +105,5 @@ workspace settings change where the text can go:
 - **Databricks-managed models**: `ai_classify`, `ai_extract`, `ai_mask` and the default built-in judge run on
   models Databricks doesn't name in their documentation, and can change. Record the workspace's cross-Geo and
   partner-powered AI settings with the approval.
-- **Not run yet** (no real results): GatorTron, SapBERT, GTE-ModernColBERT, MedGemma 27B,
-  `ai_classify`, and every service in section 4 except the judge.
+- **Not run yet** (no real results): SapBERT, GTE-ModernColBERT, MedGemma 27B, `ai_classify`, and the services
+  in section 4 marked not run.

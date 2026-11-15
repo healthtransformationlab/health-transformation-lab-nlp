@@ -52,6 +52,31 @@ never on its caller's, and never text: no prompt, reply, command or patch reache
 evaluator keeps tracing off, so its runs stay comparable. Sending the files to Application Insights is the next step
 (the connection string is only in the Databricks secret scope).
 
+### US7 - Leaderboard entries and the GPU runs' spans reach Azure (P2) #791
+The competition's work reaches Application Insights. A leaderboard entry runs on Kaggle's machines with no code of
+ours, so it can't be traced: the API gives its status, score and dates, and the submissions list hides a pending entry.
+A watcher keeps a ledger of this team's entries and sends one span per status change; an entry that turns to error
+fails the watch (SEV2). The development-set runs on Kaggle and Colab GPUs write their spans to `telemetry.jsonl` with the
+internet off; collecting a run now sends that file on, each span with its own times. Telemetry off stays the default.
+
+Acceptance scenarios:
+
+1. **Given** the ledger holds a pending entry the submissions list leaves out, **when** `kaggle/submission_watch.py`
+   runs, **then** it looks the entry up by ref, writes `data/tasks/leaderboard_entries.csv` (one row per entry,
+   overwritten), and sends one `leaderboard_entry` span (`submission_ref_id`, `status_code`, `public_score_ratio`)
+   per status change; a second run with nothing new changes nothing and sends none.
+2. **Given** an entry turns to error, **when** the watcher runs, **then** it writes the ledger and ends non-zero.
+3. **Given** a `telemetry.jsonl`, **when** `telemetry.forward_spans(path)` runs with an exporter set up, **then** each
+   span is sent with its original start and end times, attributes (numbers and short labels) and parent, and the count
+   is returned; with the exporter off it sends none.
+4. **Given** a collected run, **when** `kaggle/official_agent_run.py --collect` finishes collecting, **then** it has set
+   telemetry up and forwarded the run's `telemetry.jsonl`.
+5. **Given** `.github/workflows/leaderboard-watch.yml`, **then** it runs every two hours and on demand in the `dev`
+   environment with `KAGGLE_API_TOKEN` and, if set, `APPINSIGHTS_CONNECTION_STRING` (missing: a warning, telemetry off,
+   the ledger still updated), and ledger changes go to a `kaggle-results/leaderboard-entries-<run_id>` branch and a
+   pull request.
+6. **Given** `ops/secrets_register.yaml`, **then** it lists the GitHub secret `APPINSIGHTS_CONNECTION_STRING`.
+
 ## Out of scope (next spec)
 The "pipeline doctor": classifying failures, choosing a recovery, escalation and notification, and
 its evaluation on this repo's real incidents.
@@ -92,4 +117,16 @@ nothing. Done in #666:
 - [x] T605 the local-harness kernel writes `/kaggle/working/telemetry.jsonl`; the runner keeps one file a task
 - [x] T606 `docs/telemetry.md`, "Agent runs, offline"
 - [ ] T607 a script that sums the files into a cost-and-performance table a task and a fix
-- [ ] T608 send the files to Application Insights (a Databricks job, or a GitHub secret: the owner's choice)
+- [x] T608 send the files to Application Insights: a GitHub secret, through `telemetry.forward_spans` (US7, #791)
+
+## Revision 2026-11-15: telemetry off is an alert, not only a warning (BUG1, #792)
+
+Every job had asked for `azure` since this spec, but the Application Insights resource was never created, so no
+connection string existed and telemetry was off everywhere, with one log warning per run. US2's rule stands (a
+missing secret never fails a pipeline); what changes is that off-when-asked is now seen:
+
+- `telemetry.status()`: `asked_exporter_name`, `active_exporter_name`, `reason_text` (no value ever)
+- one stderr line from `setup()` / `use_databricks_secret` naming the setting, the reason and the fix (a
+  `::warning::` annotation under GitHub Actions)
+- `digests.telemetry_alerts(statuses)` and `digests.register_alerts(register, scope_keys)`: SEV3s in the daily
+  digest (`14_pipeline_digest.py`), the second for a registered Databricks-scope secret the scope lacks
