@@ -1,0 +1,72 @@
+# Run one batch of sealed tasks on a Modal GPU with the competition's evaluator loop (028 AI15, #804), from here so
+# each run matches a commit. Start it from the Actions tab: "Run the Gemma agent on a Modal GPU" -> pick the run's
+# branch in "Use workflow from" -> Run workflow. Starting it is the owner's yes for that run (ADR 0007); Colab stays
+# the default on cost, Modal is for speed or a run nobody has to open by hand.
+#
+# The run's entry must be in kaggle/colab_official_run.json on that branch, with its bundle and
+# "network_open_acknowledged": true (ADR 0005), as for Colab. The results go to the same private Kaggle dataset a
+# Colab run's go to. max_usd becomes Modal's time limit for the GPU (kaggle/modal_official.py), so the GPU cannot run
+# past it; the run is detached, so it carries on after this job's 6 hours if it needs to.
+#
+# Needs, in the GitHub environment `dev`: MODAL_TOKEN_ID and MODAL_TOKEN_SECRET (ops/secrets_register.yaml),
+# KAGGLE_USERNAME (variable or secret) and KAGGLE_API_TOKEN or KAGGLE_KEY.
+name: Run the Gemma agent on a Modal GPU
+run-name: "Modal: ${{ inputs.label }} on ${{ inputs.gpu }}, at most ${{ inputs.max_usd }} USD (${{ github.ref_name }})"
+
+on:
+  workflow_dispatch:
+    inputs:
+      label:
+        description: "The run's label in kaggle/colab_official_run.json on this branch"
+        required: true
+      gpu:
+        description: "Modal GPU (L4 is the cheapest; prices in ops/cost_settings.yaml)"
+        type: choice
+        options: [L4, A10, A100-40GB]
+        default: L4
+      max_usd:
+        description: "The most this run's GPU may cost, in USD: Modal stops it when that time is up"
+        default: "5"
+
+concurrency: modal-agent   # one Modal run at a time
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    environment: dev
+    timeout-minutes: 355
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with: {python-version: "3.13"}
+      - run: pip install --quiet "modal==1.6.4" pyyaml
+
+      - name: Credentials (values stay masked)
+        env:
+          U: ${{ vars.KAGGLE_USERNAME || secrets.KAGGLE_USERNAME }}
+          T: ${{ secrets.KAGGLE_API_TOKEN }}
+          K: ${{ secrets.KAGGLE_KEY }}
+          MI: ${{ secrets.MODAL_TOKEN_ID }}
+          MS: ${{ secrets.MODAL_TOKEN_SECRET }}
+        run: |
+          echo "KAGGLE_USERNAME=$U" >> "$GITHUB_ENV"
+          echo "KAGGLE_API_TOKEN=${T:-$K}" >> "$GITHUB_ENV"
+          echo "MODAL_TOKEN_ID=$MI" >> "$GITHUB_ENV"
+          echo "MODAL_TOKEN_SECRET=$MS" >> "$GITHUB_ENV"
+
+      - name: Check everything before Modal is called
+        env:
+          LABEL: ${{ inputs.label }}
+          GPU: ${{ inputs.gpu }}
+          MAX: ${{ inputs.max_usd }}
+        run: python kaggle/modal_official.py preflight --label "$LABEL" --gpu "$GPU" --max-usd "$MAX" >> "$GITHUB_ENV"
+
+      - name: One cheap call to Modal with the token
+        run: modal token info
+
+      - name: Run on Modal
+        env:
+          LABEL: ${{ inputs.label }}
+          GPU: ${{ inputs.gpu }}
+          MAX: ${{ inputs.max_usd }}
+        run: modal run --detach kaggle/modal_official.py --label "$LABEL" --gpu "$GPU" --max-usd "$MAX"

@@ -151,6 +151,25 @@ Why this is written down: on November 11, 2026 the weekly allowance ran out befo
 to Colab, with another Python, other package versions and a notebook opened by hand, and nobody had checked for
 the link first (#698).
 
+## A Modal GPU (paid; started from Actions)
+
+`modal_official.py` runs the same batch a Colab run makes on a Modal GPU (028 AI15, #804). It runs the Colab
+helper's `run_one`, with the same packages, layout, sealed bundle, results dataset and network rule (ADR 0005). It
+is **paid**, by the second, from the owner's Modal account. Colab stays the default on cost (ADR 0007); Modal is for
+speed, or for a run nobody has to open by hand.
+
+- **To start one:** put the run's entry in `colab_official_run.json` on its own branch (bundle, kernel dataset,
+  `"network_open_acknowledged": true`). Then go to the Actions tab, pick **Run the Gemma agent on a Modal GPU**,
+  choose that branch, and fill in the label, the GPU (L4, A10 or A100-40GB) and `max_usd`. Starting it is the
+  owner's yes for that run.
+- **The cap:** `max_usd` at the GPU's Modal price (`ops/cost_settings.yaml`) is Modal's time limit for the GPU, so it
+  cannot run past it. The CPU and memory beside it cost a little more. A run stopped at the limit resumes where it
+  stopped when started again.
+- **Before Modal is called,** the workflow checks the credentials, the entry and the cap, and names what is wrong.
+  It then makes one cheap call with the token (`modal token info`).
+- **Credentials:** `MODAL_TOKEN_ID`, `MODAL_TOKEN_SECRET`, `KAGGLE_USERNAME` and `KAGGLE_API_TOKEN`, all in the
+  GitHub environment `dev` (`ops/secrets_register.yaml`). The Kaggle ones reach the Modal machine for that run only.
+
 ## When something fails
 
 | Symptom | Cause and fix |

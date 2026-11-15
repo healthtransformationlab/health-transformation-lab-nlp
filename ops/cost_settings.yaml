@@ -33,3 +33,23 @@ a100_usd_per_gpu_hour:
   value: 1.87
   source: https://getdeploying.com/gpus/nvidia-a100
   read_date: "2026-11-12"
+
+# Modal's prices for the GPUs kaggle/modal_official.py offers (028 AI15, #804), billed by the second while the GPU runs:
+# L4 0.000222, A10 0.000306, A100 40 GB 0.000583 USD a second, times 3,600. These are PAID, unlike Kaggle's GPUs, and
+# they come from a third-party price list: modal.com/pricing could not be read from the agent session that wrote
+# them. Check Modal's page before budgeting, and update the value and date here when it differs. The CPU and memory
+# beside the GPU are billed too and are not in these figures. The run's max_usd at this price is Modal's time limit.
+modal_l4_usd_per_gpu_hour:
+  value: 0.80
+  source: https://usagepricing.com/tools/pricing-calculator/modal
+  read_date: "2026-11-15"
+
+modal_a10_usd_per_gpu_hour:
+  value: 1.10
+  source: https://usagepricing.com/tools/pricing-calculator/modal
+  read_date: "2026-11-15"
+
+modal_a100_40gb_usd_per_gpu_hour:
+  value: 2.10
+  source: https://usagepricing.com/tools/pricing-calculator/modal
+  read_date: "2026-11-15"
