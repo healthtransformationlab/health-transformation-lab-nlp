@@ -24,10 +24,10 @@
 
 ## US3 - pilot, pre-register, run (#755)
 
-- [ ] T010 [US3] Pilot run: 20 tasks × 3 conditions × 1 run (owner's word first)
+- [ ] T010 [US3] Pilot run on Colab: 20 tasks × 3 conditions × 1 run, from a sealed bundle (owner's word first)
 - [ ] T011 [US3] Write and freeze `preregistration-injected-run.md`; record its SHA-256 on #755
 - [ ] T012 [US3] Failing test, then `70_context_pairs.py` reads `injected_runs.csv` with the majority-of-three rule
-- [ ] T013 [US3] Main run: n × 3 × 3 (owner's word first); `injected_runs.csv` and `telemetry_runs/README.md`
+- [ ] T013 [US3] Main run on Colab: n × 3 × 3 (owner's word first); `injected_runs.csv` and `telemetry_runs/README.md`
 
 ## US4 - history tasks, described (#756)
 
