@@ -15,10 +15,17 @@ entry does not accept an open network (ADR 0005). What differs:
   timeout, so the run cannot cost more. A run stopped at the limit loses what it finished since its last upload (up
   to 8 minutes) and its final log, as a Colab session that drops does; to carry on, its entry names the stopped run's
   session (the log names it) in `resume_session`.
+- **Small runs start on their own; larger ones wait for the owner** (#806, ADR 0008). A run whose `max_usd` is within
+  `modal_auto_max_usd`, and that keeps this month's Modal spend within `modal_auto_monthly_usd`, starts without anyone
+  clicking (`approval_needed`). Any other run waits in the GitHub environment `modal-approval` until the owner
+  approves it, and is refused if that environment has no required reviewer (`gate_problems`).
 - **The Kaggle credentials reach the machine for this run only** (`modal.Secret.from_local_environ`), from the GitHub
   environment `dev`; nothing is stored in Modal.
 
-    python kaggle/modal_official.py preflight --label <label> --gpu L4 --max-usd 5 >> "$GITHUB_ENV"
+    python kaggle/modal_official.py preflight --label <label> --gpu L4 --max-usd 5 >> "$GITHUB_OUTPUT"
+    modal billing summary --json | python kaggle/modal_official.py approval --max-usd 5 --limits <main's settings> \
+        --gating-changed false >> "$GITHUB_OUTPUT"
+    python kaggle/modal_official.py gate --environment env.json --approvals approvals.json   # only when it is needed
     modal app list --json | python kaggle/modal_official.py busy
     modal run --detach kaggle/modal_official.py --label <label> --gpu L4 --max-usd 5
 
@@ -65,6 +72,8 @@ PACKAGES = ("vllm", "google.adk", "litellm", "kagglehub", "kaggle", "docker", "y
 # namespaces.
 SANDBOX_PROBE = ("unshare", "--user", "--map-root-user", "--mount", "--net", "--pid", "--fork", "true")
 STOPPED_STATES = ("stopped", "stopping...", "disabled")
+AUTO_KEYS = {"per_run": "modal_auto_max_usd", "monthly": "modal_auto_monthly_usd"}   # ops/cost_settings.yaml
+APPROVAL_ENVIRONMENT = "modal-approval"                    # the GitHub environment an over-limit run waits in
 # The packages the helper installs (colab_official.PINS), baked into the image so a run does not wait for them. Kept
 # as a copy because this file is imported on Modal's machine too, where the helper is not beside it; a test keeps
 # them equal.
@@ -250,17 +259,160 @@ def running_apps(listing) -> list[str]:
             if a.get("description") == APP_NAME and str(a.get("state", "")) not in STOPPED_STATES]
 
 
+def load_auto_limits(path: Path = SETTINGS) -> dict:
+    """What a run may spend without the owner's approval: per run, and this month in all (ops/cost_settings.yaml)."""
+    import yaml
+    settings = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
+    return {name: _price(settings, key, path)["value"] for name, key in AUTO_KEYS.items()}
+
+
+def _json_in(text: str):
+    """The JSON object or list in a command's output, which may carry a line of other text around it."""
+    text = text or ""
+    starts = [i for i in (text.find("{"), text.find("[")) if i >= 0]
+    if not starts:
+        raise ValueError("no JSON")
+    start = min(starts)
+    end = max(text.rfind("}"), text.rfind("]"))
+    return json.loads(text[start:end + 1])
+
+
+def approval_needed(max_usd, summary_text: str, settings: Path = SETTINGS,
+                    gating_changed: str = "false") -> tuple[bool, str]:
+    """Whether the run waits for the owner's approval, and why. It does when the run's branch changes the files that
+    gate it (`gating_changed`: anything but "false"), when `max_usd` is over the per-run limit, when this month's Modal
+    spend (`modal billing summary --json`, its `metered_cost`) plus `max_usd` is over the monthly limit, and when that
+    spend cannot be read: not knowing is never taken for being under. `settings` is main's copy of the limits, so a
+    branch cannot raise its own."""
+    if str(gating_changed).strip().lower() != "false":
+        return True, ("this branch changes what decides whether a run needs approval (the workflow, "
+                      "kaggle/modal_official.py or ops/cost_settings.yaml differ from main's), so it waits for the owner")
+    limits = load_auto_limits(settings)
+    try:
+        usd = float(max_usd)
+    except (TypeError, ValueError):
+        usd = float("nan")
+    if not math.isfinite(usd) or usd <= 0:
+        return True, f"max_usd {max_usd!r} is not a positive number"
+    if usd > limits["per_run"]:
+        return True, (f"max_usd {usd:g} is over the {limits['per_run']:g} USD a run may spend without approval "
+                      f"({AUTO_KEYS['per_run']})")
+    try:
+        raw = _json_in(summary_text)["metered_cost"]
+        if isinstance(raw, bool):
+            raise TypeError(raw)
+        spent = float(raw)
+        if not math.isfinite(spent) or spent < 0:
+            raise ValueError(spent)
+    except (ValueError, KeyError, TypeError):
+        return True, "this month's Modal spend could not be read (modal billing summary), so the run waits for approval"
+    if spent + usd > limits["monthly"]:
+        return True, (f"this month's Modal spend, {spent:.2f} USD, plus max_usd {usd:g} is over the "
+                      f"{limits['monthly']:g} USD a month runs may spend without approval ({AUTO_KEYS['monthly']})")
+    return False, (f"max_usd {usd:g} is within {limits['per_run']:g} USD a run, and {spent:.2f} USD spent this month "
+                   f"plus it is within {limits['monthly']:g}: it starts without approval")
+
+
+def gate_problems(environment_text: str, approvals_text: str) -> list[str]:
+    """Why the approval job must refuse the run, from GitHub's answers for the environment it waited in and for this
+    run's review history (`GET .../actions/runs/{run_id}/approvals`). GitHub makes a missing environment on the spot,
+    with no rule, and an admin can start a waiting job without a review, so a run is let through only when the
+    environment has a required reviewer and someone approved this run for it."""
+    problems = _environment_problems(environment_text)
+    try:
+        reviews = _json_in(approvals_text)
+    except ValueError:
+        reviews = None
+    if not isinstance(reviews, list):
+        return problems + ["this run's review history could not be read from GitHub, so the run is refused"]
+    approved = [r for r in reviews if isinstance(r, dict) and r.get("state") == "approved"
+                and any((e or {}).get("name") == APPROVAL_ENVIRONMENT for e in r.get("environments") or [])]
+    if not approved:
+        problems.append(f"nobody approved this run for {APPROVAL_ENVIRONMENT} (an admin may have started it without "
+                        "a review), so it is refused")
+    return problems
+
+
+def approvers(approvals_text: str) -> list[str]:
+    """Who approved this run for the approval environment, from its review history."""
+    try:
+        reviews = _json_in(approvals_text)
+    except ValueError:
+        return []
+    return [str((r.get("user") or {}).get("login")) for r in reviews if isinstance(reviews, list) and
+            isinstance(r, dict) and r.get("state") == "approved"
+            and any((e or {}).get("name") == APPROVAL_ENVIRONMENT for e in r.get("environments") or [])]
+
+
+def _environment_problems(environment_text: str) -> list[str]:
+    try:
+        env = _json_in(environment_text)
+    except ValueError:
+        return [f"the GitHub environment {APPROVAL_ENVIRONMENT} could not be read, so the run is refused"]
+    if not isinstance(env, dict) or env.get("name") != APPROVAL_ENVIRONMENT:
+        why = env.get("message") if isinstance(env, dict) else None
+        return [(f"the GitHub environment {APPROVAL_ENVIRONMENT} could not be read ({why or 'another answer'}), so "
+                 "the run is refused")]
+    rules = env.get("protection_rules") or []
+    if not any(r.get("type") == "required_reviewers" and r.get("reviewers") for r in rules):
+        return [(f"the GitHub environment {APPROVAL_ENVIRONMENT} has no required reviewer, so nobody approved this "
+                 f"over-limit run and it is refused: add the owner under Settings, Environments, "
+                 f"{APPROVAL_ENVIRONMENT}, Required reviewers")]
+    return []
+
+
 def cli(argv: list[str] | None = None, env=None, kaggle_dir: Path = HERE, stdin=None) -> dict:
-    """`preflight`: check everything, then print the GPU and the time limit as KEY=VALUE lines for $GITHUB_ENV, and the
-    plan (no credential in it) on stderr. `busy`: refuse when `modal app list --json` on stdin shows a run going."""
+    """`preflight`: check everything, then print the GPU and the time limit as KEY=VALUE lines for $GITHUB_OUTPUT, and
+    the plan (no credential in it) on stderr. `approval`: from `modal billing summary --json` on stdin, print
+    `needs_approval=` and `reason=`; with `--approved`, refuse unless approval is not needed or was given. `gate`: from
+    GitHub's answers for the approval environment and this run's review history, refuse unless it has a required
+    reviewer and someone approved this run. `busy`: refuse when `modal app list --json` on stdin shows a run going, or
+    gives no list."""
     ap = argparse.ArgumentParser(prog="modal_official.py")
-    ap.add_argument("command", choices=["preflight", "busy"])
+    ap.add_argument("command", choices=["preflight", "approval", "gate", "busy"])
     ap.add_argument("--label")
     ap.add_argument("--gpu", default="L4")
     ap.add_argument("--max-usd", default="5")
+    ap.add_argument("--limits", type=Path, default=SETTINGS, help="approval: main's ops/cost_settings.yaml")
+    ap.add_argument("--gating-changed", default="true", help="approval: \"false\" when the branch's gating files are main's")
+    ap.add_argument("--approved", help="approval, just before the run: the approve job's result; refuse unless "
+                                       "approval is not needed or this is \"success\"")
+    ap.add_argument("--environment", type=Path, help="gate: GitHub's answer for the approval environment")
+    ap.add_argument("--approvals", type=Path, help="gate: GitHub's review history of this run")
     a = ap.parse_args(argv)
+    text = (stdin or sys.stdin).read() if a.command in ("approval", "busy") else ""
+    if a.command == "approval":
+        needed, reason = approval_needed(a.max_usd, text, a.limits, a.gating_changed)
+        if a.approved is not None:   # just before the run: the spend is read again, after any wait in the queue
+            if needed and a.approved != "success":
+                raise SystemExit(f"not started: {reason}, and this run was not approved (approve: {a.approved or 'none'})")
+            print(f"going ahead: {reason}" + (" (approved)" if needed else ""))
+            return {"needs_approval": needed, "reason": reason}
+        print(f"needs_approval={'true' if needed else 'false'}")
+        print("reason=" + " ".join(reason.split()))
+        print(f"::notice::{reason}", file=sys.stderr)
+        return {"needs_approval": needed, "reason": reason}
+    if a.command == "gate":
+        def read(path):
+            try:
+                return Path(path).read_text(encoding="utf-8") if path else ""
+            except OSError:
+                return ""
+        environment_text, approvals_text = read(a.environment), read(a.approvals)
+        problems = gate_problems(environment_text, approvals_text)
+        if problems:
+            raise SystemExit("\n".join(problems))
+        print(f"approved for {APPROVAL_ENVIRONMENT} by {', '.join(approvers(approvals_text))}")
+        return {}
     if a.command == "busy":
-        going = running_apps(json.loads((stdin or sys.stdin).read() or "[]"))
+        try:
+            listing = _json_in(text)
+        except ValueError:
+            raise SystemExit("`modal app list --json` gave nothing to read, so whether a run is going is not known") \
+                from None
+        if not isinstance(listing, list):
+            raise SystemExit("`modal app list --json` did not give a list, so whether a run is going is not known")
+        going = running_apps(listing)
         if going:
             raise SystemExit(f"a Modal run is still going ({', '.join(going)}): wait for it to end, or stop it with "
                              "`modal app stop <id>`")

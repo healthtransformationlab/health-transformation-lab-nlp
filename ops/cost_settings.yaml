@@ -68,3 +68,19 @@ modal_memory_usd_per_gib_hour:
   value: 0.0080
   source: https://www.costbench.com/software/ai-gpu-cloud/modal/
   read_date: "2026-11-15"
+
+# What a Modal run may spend without the owner's approval (#806, ADR 0008): the owner asked on November 15, 2026 to
+# "automate with cap, approve if over some reasonable limit". A run whose max_usd is within modal_auto_max_usd, and
+# that keeps this month's Modal spend (modal billing summary) within modal_auto_monthly_usd, starts on its own; any
+# other run waits in the GitHub environment modal-approval for the owner. 5 USD buys about 3.7 hours of an L4 with the
+# CPU and memory at their limits; 25 USD keeps a month of runs that start on their own inside the Starter plan's 30 USD
+# credit, with 5 to spare. Change them by pull request.
+modal_auto_max_usd:
+  value: 5
+  source: the owner's ask of November 15, 2026 (#806); docs/adr/0008-modal-runs-start-on-their-own-under-a-cost-cap.md
+  read_date: "2026-11-15"
+
+modal_auto_monthly_usd:
+  value: 25
+  source: the owner's ask of November 15, 2026 (#806); docs/adr/0008-modal-runs-start-on-their-own-under-a-cost-cap.md
+  read_date: "2026-11-15"
