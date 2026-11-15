@@ -7,15 +7,26 @@ data only, and no token is ever stored in it.
 
 ## What's on Kaggle
 
-| On Kaggle (user `jcblearning`) | What it is | Made by (Actions tab) | Files here |
-|---|---|---|---|
-| Notebook `perio-bench-medgemma-reader` | MedGemma 1.5 4B reads the 223 review notes | *Run MedGemma on a free Kaggle GPU* | `medgemma_reader.ipynb`, `keras_to_hf.py`, `hf_config/`, `gemma3_chat_template.jinja` |
-| Notebook `perio-bench-encoder-gpu` | Fine-tunes the large encoders (ModernBERT-large, Longformer, GatorTron) | *Fine-tune the GPU encoders on a free Kaggle GPU* | `encoder_gpu.ipynb` |
-| Dataset `perio-bench-notes` | Synthetic notes, labels, structured visits, 223-note review set and answer key | *Publish datasets (Kaggle and Hugging Face)* | `publish.py`, `cards/notes.md` |
-| Dataset `perio-bench-results` | Every model's answers on the review set, the leaderboard, the judge scorecard | *Publish datasets (Kaggle and Hugging Face)* | `publish.py`, `cards/results.md` |
-| Notebook `perio-bench-quickstart` (spec 025) | Loads both datasets, trains a baseline on a CPU in about a minute, scores it beside the leaderboard | *Publish datasets (Kaggle and Hugging Face)* | `../notebooks/perio_bench_quickstart.ipynb`, `prepare_kernel.py --job quickstart` |
-| Benchmark task `perio-bench` (Kaggle Benchmarks) | The reader task Kaggle's leaderboard runs: read a note, name the status, quote it; a judge checks it (`docs/kaggle_benchmarks.md`) | *Run PerioBench on Kaggle Benchmarks* | `perio_bench_task.py`, `../python/health_transformation_lab_nlp/kbench.py` |
-| Model `perio-bench-note-classifier` (spec 020 US3) | The top fine-tuned note classifier, ModernBERT-base class-weighted, in transformers format (Apache 2.0) | *Fine-tune the GPU encoders on a free Kaggle GPU* with `save_model` | `publish_model.py`, `cards/model.md` |
+| On Kaggle (user `jcblearning`) | What it is | Visibility; competition link | Made by (Actions tab) | Files here |
+|---|---|---|---|---|
+| Notebook `perio-bench-medgemma-reader` | MedGemma 1.5 4B reads the 223 review notes | public; none | *Run MedGemma on a free Kaggle GPU* | `medgemma_reader.ipynb`, `keras_to_hf.py`, `hf_config/`, `gemma3_chat_template.jinja` |
+| Notebook `perio-bench-encoder-gpu` | Fine-tunes the large encoders (ModernBERT-large, Longformer, GatorTron) | public; none | *Fine-tune the GPU encoders on a free Kaggle GPU* | `encoder_gpu.ipynb` |
+| Dataset `perio-bench-notes` | Synthetic notes, labels, structured visits, 223-note review set and answer key | public; datasets have no link | *Publish datasets (Kaggle and Hugging Face)* | `publish.py`, `cards/notes.md` |
+| Dataset `perio-bench-results` | Every model's answers on the review set, the leaderboard, the judge scorecard | public; datasets have no link | *Publish datasets (Kaggle and Hugging Face)* | `publish.py`, `cards/results.md` |
+| Notebook `perio-bench-quickstart` (spec 025) | Loads both datasets, trains a baseline on a CPU in about a minute, scores it beside the leaderboard | public; none | *Publish datasets (Kaggle and Hugging Face)* | `../notebooks/perio_bench_quickstart.ipynb`, `prepare_kernel.py --job quickstart` |
+| Benchmark task `perio-bench` (Kaggle Benchmarks) | The reader task Kaggle's leaderboard runs: read a note, name the status, quote it; a judge checks it (`docs/kaggle_benchmarks.md`) | public; none | *Run PerioBench on Kaggle Benchmarks* | `perio_bench_task.py`, `../python/health_transformation_lab_nlp/kbench.py` |
+| Notebook `new-benchmark-task-f9ca8` | The benchmark task's backing notebook, made by `kaggle b t publish` under Kaggle's default title; left as it is, so the task keeps its notebook (`new-benchmark-task-37c04`, private, is an earlier draft) | public; none | `kaggle b t publish perio-bench` (`docs/kaggle_benchmarks.md`) | `perio_bench_task.py` |
+| Model `perio-bench-note-classifier` (spec 020 US3) | The top fine-tuned note classifier, ModernBERT-base class-weighted, in transformers format (Apache 2.0) | public; models have no link | *Fine-tune the GPU encoders on a free Kaggle GPU* with `save_model` | `publish_model.py`, `cards/model.md` |
+| Dataset `health-transformation-lab-coding-agent-tasks` (spec 028) | 93 coding-agent tasks mined from this repository, in the Gemma 4 Developer Agent competition's layout, each verified with its evaluator | public; datasets have no link | *Publish the task set (Kaggle)* | `publish_tasks.py`, `cards/tasks.md` |
+| Notebook `coding-agent-tasks-quickstart` (#535) | Loads the task set and walks through one task: its problem, fix and tests, its snapshot, its code graph and embeddings; cited in the Paper Track writeup | public; **Gemma 4 Developer Agent**, set by hand (below) | *Publish the task set (Kaggle)* | `../notebooks/agent_tasks_quickstart.ipynb`, `prepare_kernel.py --job tasks-quickstart` |
+| Notebooks `htlnlp-run-*`, `htlnlp-offrun-*`; datasets `htlnlp-agent-*`, `htlnlp-official-*` | One per agent run (this repository's harness, and the competition's evaluator): the evidence behind the run tables in `data/tasks/` | private; none (an evaluator run attaches the competition's data instead) | a session: `../python/scripts/60_kaggle_agent.py`, `official_agent_run.py` | deleted after the Paper Track is judged (#720) |
+
+**Linking a notebook to a competition.** On the notebook's page: **Settings → Competitions → Link to Competition**
+(only competitions the account has joined are listed), then **Link** and **Save Changes**. It is done by hand: Kaggle's
+API has no field for it (the save-kernel request in Kaggle CLI 2.2.5 sets competition *data sources*, which attach a
+competition's files, not the link), so `kernels push` cannot set or keep it. Datasets and models have no competition
+link. The column above is the record of which link each notebook should have; a notebook pushed under a new name
+needs its link set again.
 
 The notebook `dental-omop-medgemma-keras-test` was a one-off comparison (MedGemma through Keras vs converted to
 transformers; the decision is in PR #99) and can be deleted.
