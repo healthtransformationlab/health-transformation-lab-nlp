@@ -42,3 +42,13 @@ def test_agents_md_sends_development_set_mechanism_runs_to_colab():
     agents = (REPO_ROOT / "AGENTS.md").read_text()
     assert "development-set run stays on Kaggle" not in agents
     assert "--source competition --batch --competition gemma-4-developer-agent --label" in agents
+
+
+def test_agents_md_records_the_gpu_decisions():
+    """#797: the decisions of November 15 are in ADR 0007, and AGENTS.md's rules cite it."""
+    agents = (REPO_ROOT / "AGENTS.md").read_text()
+    adr = REPO_ROOT / "docs" / "adr" / "0007-gpu-hours-are-a-reserve-and-score-questions-go-to-the-leaderboard.md"
+    assert adr.exists() and "0007" in (REPO_ROOT / "docs" / "adr" / "README.md").read_text()
+    assert "ADR 0007" in agents
+    assert "owner's explicit yes" in agents
+    assert "recorded traces" in agents

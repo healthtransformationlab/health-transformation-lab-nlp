@@ -260,6 +260,12 @@ A SEV2 that fires every week for the same cause gets its cause fixed or its leve
   - **Keep a reserve**: about 10 hours until the last two days before the refresh (Saturday 00:00 UTC), for a change
     that turns out to matter.
   - **No idle GPU notebook**: one open in Kaggle's editor with an accelerator on draws on the same hours.
+  - **The owner's explicit yes starts a Kaggle GPU run**, given for that run in the session that starts it; "do what
+    you recommend" doesn't (ADR 0007).
+  - **A question goes to recorded traces and CPU first**: a kernel's traces download for free and the competition's
+    graphs and embeddings run on CPU. A GPU run only when they can't answer it, and never a development-set run to
+    compare resolve counts: six of them on the same 23 tasks resolved 3 or 4 each (p = 1.0, ADR 0007).
+  - **One change per leaderboard entry**, booked in a shared plan so two sessions don't spend the same day.
   - **One L4 to learn why the agent fails; Kaggle's four L4s only where the competition's hardware matters** (#779).
     On the 93 published tasks with the graph-retrieval context, one L4 on Colab resolved 8 at 128 GPU-seconds a task,
     and Kaggle's four L4s 4 at 297 ([`data/tasks/official_agent_runs/README.md`](data/tasks/official_agent_runs/README.md);
