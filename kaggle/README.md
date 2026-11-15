@@ -130,6 +130,31 @@ the link first (#698).
 | Still running after the wait | Run again with `collect_only` |
 | The results PR has no CI | PRs opened by the workflow token don't start CI: push any commit to the branch |
 
+## Paper Track writeups: their main-leaderboard scores
+
+`paper_track_scores.py` (#731) downloads the full public leaderboard of `gemma-4-developer-agent` and every published
+writeup of `gemma-4-developer-agent-paper`. It matches each writeup to a leaderboard team by its authors' Kaggle
+usernames: an exact match, not by display name. The best-ranked team wins when an author is on more than one. A writeup
+with no matched team keeps empty score cells.
+
+```bash
+pip install "kaggle>=2.2"   # the CLI and kagglesdk, which lists the writeups
+KAGGLE_API_TOKEN=... python kaggle/paper_track_scores.py --out paper_track_scores.csv
+```
+
+It writes one row per writeup:
+- `writeup_id`, `title`, `kaggle_url`, `authors`, `author_usernames`;
+- `main_lb_team`, `main_lb_rank`, `main_lb_score`, `main_lb_entries`, `main_lb_last_submission`;
+- `matched_on`, `leaderboard_taken_at`.
+
+The public leaderboard is scored on about half the test data, so the final standings can differ, and every row says
+when it was taken. The CSV is about other people's entries, so it isn't committed.
+
+To refresh the owner's Paper Track sheets:
+1. Upload the CSV to Drive as a Google Sheet.
+2. Replace each sheet's *Main leaderboard (live)* tab with it, keeping the tab's name.
+3. The score, team and rank columns look writeups up in that tab by `writeup_id`, so they update on their own.
+
 ## Other files
 
 - `prepare_kernel.py` fills a notebook's settings and writes `kernel-metadata.json` (GPU, internet, the
