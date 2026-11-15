@@ -1,3 +1,10 @@
 {
- "runs": []
+ "runs": [
+  {
+   "label": "devset-skillcheck",
+   "bundle": "jcblearning/htlnlp-official-devset-skillcheck",
+   "kernel_dataset": "jcblearning/htlnlp-colab-kernel-devset-skillcheck",
+   "network_open_acknowledged": true
+  }
+ ]
 }
