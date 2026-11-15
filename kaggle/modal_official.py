@@ -78,7 +78,7 @@ APPROVAL_ENVIRONMENT = "modal-approval"                    # the GitHub environm
 # as a copy because this file is imported on Modal's machine too, where the helper is not beside it; a test keeps
 # them equal.
 PINS = ("vllm==0.19.1", "google-adk==1.36.1", "litellm==1.82.4", "kagglehub", "kaggle==2.2.5", "six", "pytest",
-        "pyyaml", "docker")
+        "pyyaml", "docker", "huggingface-hub>=1.5.0,<2.0")
 
 
 def gpu_choice(name: str) -> str:
