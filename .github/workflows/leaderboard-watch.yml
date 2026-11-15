@@ -16,6 +16,9 @@ on:
   schedule:
     - cron: '0 */2 * * *'
   workflow_dispatch:
+  push:                        # GitHub skips scheduled runs at times (Nov 15: 12:00 and 14:00), so a merged ledger
+    branches: [main]           # PR also starts a watch (#801); an unchanged ledger opens no PR, so this can't loop
+    paths: ['data/tasks/leaderboard_entries.csv']
 
 concurrency: leaderboard-watch
 

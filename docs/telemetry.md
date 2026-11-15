@@ -314,6 +314,15 @@ AppDependencies
 | order by TimeGenerated desc
 ```
 
+
+**Evidence, not a switch (014 BUG2, #801).** Until November 15 the `azure` exporter's providers were never flushed at
+exit, so a short script's spans could sit in the batch queue and never arrive: the watcher's first run said "telemetry
+azure" and the workspace held no rows. `telemetry.flush()` now sends what is queued and says whether every provider took
+it, the Azure exporter's own warnings go to stderr, and the watcher prints `telemetry export: ok` or
+`telemetry export: FAILED` (a `::warning::` annotation in GitHub Actions) on every run. To check what arrived:
+`union dependencies, requests, traces | where timestamp > ago(1d) | summarize count() by itemType, cloud_RoleName`
+in the resource's Logs page.
+
 ## Not yet
 
 The pipeline doctor: classify each failure (GPU unavailable, out of memory, schema drift, data
