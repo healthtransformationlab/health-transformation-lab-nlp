@@ -131,7 +131,7 @@ What a BERT model is, in plain words: [bert.md](bert.md).
 
 ## 7. Reviewers stage charts
 
-**In plain words:** several periodontists each read the same 240 de-identified charts and record
+**In plain words:** several periodontists each read the same 223 de-identified charts and record
 the status they'd assign (healthy, gingivitis, or periodontitis with stage, grade and extent),
 plus which evidence decided it. They work separately and never see each other's answers. Their
 labels are the human benchmark the AI and the rules are checked against.

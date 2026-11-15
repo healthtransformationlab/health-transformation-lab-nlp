@@ -44,8 +44,8 @@ Bio_ClinicalBERT and Clinical-Longformer); only their published weights are used
 
 | Model · paper · domain, role | Source | Organisation | Licence | Status |
 |---|---|---|---|---|
-| MedGemma 1.5 4B (instruction-tuned) · [2507.05201](https://arxiv.org/abs/2507.05201) · medical, note reader (LLM) | `google/medgemma-1.5-4b-it` | Google (Health AI Developer Foundations) | [HAI-DEF terms of use](https://developers.google.com/health-ai-developer-foundations/terms) (accept on Hugging Face first) | results (240 notes) |
-| MedGemma 4B (instruction-tuned) · [2507.05201](https://arxiv.org/abs/2507.05201) · medical, note reader (LLM) | `google/medgemma-4b-it` | Google (HAI-DEF) | HAI-DEF terms | results (240 notes) |
+| MedGemma 1.5 4B (instruction-tuned) · [2507.05201](https://arxiv.org/abs/2507.05201) · medical, note reader (LLM) | `google/medgemma-1.5-4b-it` | Google (Health AI Developer Foundations) | [HAI-DEF terms of use](https://developers.google.com/health-ai-developer-foundations/terms) (accept on Hugging Face first) | results (223 review notes, Kaggle, 2026-11-04) |
+| MedGemma 4B (instruction-tuned) · [2507.05201](https://arxiv.org/abs/2507.05201) · medical, note reader (LLM) | `google/medgemma-4b-it` | Google (HAI-DEF) | HAI-DEF terms | results (223 review notes, Kaggle, 2026-11-04) |
 | MedGemma 27B text (instruction-tuned) · [2507.05201](https://arxiv.org/abs/2507.05201) · medical, note reader (LLM) | `google/medgemma-27b-text-it` | Google (HAI-DEF) | HAI-DEF terms | not run (needs a large GPU) |
 | PHI tagger: Longformer base fine-tuned on MACCROBAT (CC BY 4.0) · spec 010 · de-identification | `allenai/longformer-base-4096` + own fine-tune (not published) | this repo | Apache-2.0 base; MACCROBAT CC BY 4.0 | results (`data/deid/maccrobat_*`) |
 | Stanford de-identifier · Chambon et al., JAMIA 2023 · clinical, de-identification | `StanfordAIMI/stanford-deidentifier-base` | Stanford AIMI | MIT | results (de-id benchmark) |
@@ -56,7 +56,7 @@ Bio_ClinicalBERT and Clinical-Longformer); only their published weights are used
 
 | Service · role | Where | Licence / terms | Status |
 |---|---|---|---|
-| Meta Llama 3.3 70B Instruct · LLM judge (spec 012), LLM de-identification, and a zero-shot note reader (spec 017, `llama-3.3-70b-instruct`; Hugging Face reference `meta-llama/Llama-3.3-70B-Instruct`) | Databricks Foundation Model API, pay-per-token endpoint `databricks-meta-llama-3-3-70b-instruct` | Llama 3.3 Community License; Databricks terms | judge: run in dev (2 runs, 2026-10-27); reader: results (240 notes, 2026-10-28); de-id: not run |
+| Meta Llama 3.3 70B Instruct · LLM judge (spec 012), LLM de-identification, and a zero-shot note reader (spec 017, `llama-3.3-70b-instruct`; Hugging Face reference `meta-llama/Llama-3.3-70B-Instruct`) | Databricks Foundation Model API, pay-per-token endpoint `databricks-meta-llama-3-3-70b-instruct` | Llama 3.3 Community License; Databricks terms | judge: run in dev (2 runs, 2026-10-27); reader: results (223 review notes, rerun after #467); de-id: not run |
 | `ai_mask` · de-identification | Databricks SQL AI Function (Public Preview), Databricks-hosted model | Databricks terms | results (400 synthetic challenge notes, 2026-10-28) |
 | Azure Health Data Services de-identification · de-identification | Azure (needs `AZURE_DEID_ENDPOINT`) | Microsoft terms | not run |
 | Azure AI Language PII detection · de-identification | Azure (needs `AZURE_LANGUAGE_ENDPOINT`) | Microsoft terms | not run |

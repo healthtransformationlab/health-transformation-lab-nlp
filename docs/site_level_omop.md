@@ -20,7 +20,7 @@ Postgres (Lakebase), a concept-mapping table and an Atlas feasibility check.
 - Generated from each charted visit's chart so the derived measures reproduce it
   (max interproximal CAL, max PD, teeth lost exactly; bleeding share on the same side of 10%).
   Tested: the stage from the sites equals the stage from the chart.
-- Dry run: 3,437 charted exams, 611,154 site rows, 109,984 tooth rows.
+- Dry run, on the 4,343-visit build before #467: 3,437 charted exams, 611,154 site rows, 109,984 tooth rows.
 
 ## 2. The derived-measure layer
 
@@ -75,7 +75,7 @@ Postgres 16 (Lakebase is managed Postgres). `health_transformation_lab_nlp/site_
 | Design-specific SQL | 26 lines | 23 lines | **18 lines** |
 | Extra rows | 256,480 SITE + 2,163,414 SITE_EVENT | — | — |
 | Storage (measurement, site, site_event, concept) | 529 MB | **276 MB** | 309 MB |
-| Derived query, 3,437 exams | 6.8 s | 4.2 s | **2.2 s** |
+| Derived query, 3,437 exams (before #467) | 6.8 s | 4.2 s | **2.2 s** |
 | Matches Python | exactly | exactly | exactly |
 
 All three: 2,163,414 MEASUREMENT rows (3 per site, 3 per tooth). Timings are

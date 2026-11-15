@@ -51,7 +51,7 @@ Two things to take from the shape, not the numbers:
    whole record with examples and reasoning, three calls a visit (assumed tokens;
    `docs/claims.yaml`, `tiers`). Choose the least costly model that passes the
    acceptance test.
-2. **Overlapping intervals.** Most rows' CIs overlap, so on ~240 reviewed charts
+2. **Overlapping intervals.** Most rows' CIs overlap, so on 223 reviewed charts
    the frontier can't separate them. More review charts, or the acceptance test,
    decide, not the point estimates.
 

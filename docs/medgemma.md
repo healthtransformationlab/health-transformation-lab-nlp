@@ -48,10 +48,28 @@ adapter. `models.yaml` marks these entries `gated: true` with the licence link.
 ## Implemented (spec 004)
 
 Uses 1 (reader), 2 (LoRA fine-tune) and 3 (judge family rule) are in the code.
-The zero-shot reader has been run once on real `medgemma-1.5-4b-it` weights (CPU,
-reader-v2, 240 review charts); the LoRA fine-tune has not (needs a GPU).
+The zero-shot reader (reader-v2) has been run on real weights of both 4B models: first on the 240 review notes before #467,
+then on Kaggle on the current 223 (November 4, 2026; `data/datasets/results_manifest.csv`). The LoRA fine-tune has
+not been run (needs a GPU).
 
-**First real run (synthetic notes, generator truth; not clinical performance).**
+**Current runs, on the 223 review notes (synthetic notes, generator truth; not clinical performance).** Scored as
+the leaderboard scores ([results](results.md): five status groups), from `data/datasets/ladder/ladder_vs_truth.csv`,
+`medgemma_vs_bert.csv` and `medgemma_vs_bert_by_difficulty.csv`:
+- `medgemma-1.5-4b-it`: 78.5 of 100 (95% CI 73.1–83.4), and the same with the note rules deciding stage IV. By
+  difficulty, L1 / L2 / L3 99% / 78% / 34% (136, 23 and 64 notes). Stage IV 9 of 12; gate pass 95.5%, fallback
+  4.5%; about 851 tokens in and 74 out per note, 8.7 s per note on Kaggle.
+- `medgemma-4b-it`: 79.8 of 100 (95% CI 74.4–84.8); 80.3 with the note rules deciding stage IV. L1 / L2 / L3
+  98% / 74% / 44%. Stage IV 6 of 12; gate pass 95.1%, fallback 4.9%; about 851 tokens in and 97 out, 9.8 s per note.
+- Against the note rules (82.1), neither difference is clear: 1.5 -0.036 (-0.076 to 0.000), 4B -0.022 (-0.063 to
+  0.013). Against the best encoder alone, the difference is clear for both: 1.5 against `modernbert-large`
+  -0.099 (-0.161 to -0.031), and 4B against `modernbert-large` -0.085 (-0.143 to -0.031). The gap is on L3, where
+  no diagnosis is written and the encoder gets 84%; on L1 MedGemma reads better (99% and 98% against 90%).
+
+Both read a written diagnosis well (L1) and stage from the findings much less often (L3). These are measurements
+on synthetic notes, not evidence about either model on real records. The two paragraphs below are the first runs,
+kept as the record of what was measured then.
+
+**First real run, on the 240 review notes before #467 (CPU; synthetic notes, generator truth; not clinical performance).**
 Accuracy 0.758 (95% CI 0.700-0.808) against note_rules' 0.788, paired difference
 -0.029 (-0.058 to 0.000); with the note rules deciding stage IV, 0.771. By difficulty:
 L1 100% (141), L2 97% (31), L3 16% (68). Gate pass 97.9%, fallback 2.1%, ~850 tokens
@@ -59,10 +77,10 @@ in and ~75 out per note, ~27 s per note on 4 CPU cores. So it reads a written
 diagnosis well and does not yet stage from the chart findings when none is
 written; L3 is where few-shot, prompt variants or the LoRA fine-tune would have to
 help. Against the best encoder alone (`modernbert-base+cw`, 0.825) the difference is
--0.067 (-0.138 to 0.000), so on 240 charts the two can't be told apart; on L3 the encoder gets 81%. Full
-tables: `data/datasets/ladder/ladder_vs_truth.csv` and `medgemma_vs_bert*.csv`.
+-0.067 (-0.138 to 0.000), so on those 240 charts the two couldn't be told apart; on L3 the encoder got 81%. The
+tables of that run were replaced by the current runs' above.
 
-**MedGemma 4B v1 (Kaggle, same 240 notes, #210).** Accuracy 0.779 (0.725-0.833); with the note rules
+**MedGemma 4B v1 (Kaggle, the same 240 notes before #467, #210).** Accuracy 0.779 (0.725-0.833); with the note rules
 deciding stage IV, 0.817. Against `modernbert-base+cw` the difference is -0.046 (-0.104 to 0.012), so again
 not distinguishable. By difficulty: L1 97%, L2 68%, L3 43%. Against 1.5 it stages more charts from their
 findings when no diagnosis is written (L3 43% vs 16%) but does worse when old terms or copied-forward text
@@ -76,9 +94,9 @@ suppresses it (it otherwise used up the 300 new tokens before the JSON) and
 ### Why some answers fell back (#134)
 
 An answer falls back to `note_rules` when it fails the gate: bad JSON, a status outside the six, or a
-quote that isn't the note's own words. Every fallback in the two committed runs (240 synthetic review
-notes each, `data/datasets/llm_details_medgemma-4b-it.csv` and `llm_details_medgemma-1.5-4b-it.csv`) was
-read against its note:
+quote that isn't the note's own words. Every fallback in the two runs before #467, on the 240 synthetic review notes
+(then in `data/datasets/llm_details_medgemma-4b-it.csv` and `llm_details_medgemma-1.5-4b-it.csv`), was read against
+its note. The current runs fell back on 10 (1.5) and 11 (4B) of the 223 notes; those have not been read one by one:
 
 | Why the gate failed | 4B v1 | 1.5 | Verdict |
 |---|---:|---:|---|
@@ -95,13 +113,13 @@ at the token limit. So the 4B v1 run's fallbacks are mostly the model rewriting 
 rather than copying it; a future prompt version could say "copy the words character for character, even
 misspellings", which needs a new prompt version and a re-run to measure.
 
-**What a re-run would show.** MedGemma was not re-run (no GPU). Re-parsing the committed raw outputs
+**What a re-run would show (written before #467).** MedGemma had not been re-run then (no GPU). Re-parsing the committed raw outputs
 with the fixed gate turns 3 of the 4B v1 run's 14 fallbacks into passes (visits 776, 3689, 4218): gate
 pass 94.2% to 95.4%, fallback 5.8% to 4.6%. Accuracy against generator truth goes from 0.779 to 0.775,
 because in one of the three (4218) MedGemma's own answer (stage II) was further from the generator's
 label than the note rules' fallback was. The 1.5 run and the Llama 3.3 70B run are unchanged (no
-case-only quotes). The committed files keep the gate as it ran. All of this is synthetic notes, not
-evidence about either model on real records.
+case-only quotes). The files then kept the gate as it ran. Both models have since been rerun on the current
+notes (above). All of this is synthetic notes, not evidence about either model on real records.
 
 | Piece | Where |
 |---|---|
@@ -127,21 +145,22 @@ against those reference answers, one row per field, and writes `data/datasets/la
 (R twin `r/R/17_spec004.R`, checked by the parity test). It logs `field_accuracy_<field>` and `field_n_<field>` to
 MLflow, and `11_ai_predict.py` logs the same metrics after a complete reader run. How each field is scored:
 
-- **status**: the rung's answer after any fallback to note_rules, on all 240 visits. This is the headline accuracy above.
-- **grade** and **extent**: only the 156 visits whose truth is periodontitis, and only answers that passed the
+- **status**: the rung's answer after any fallback to note_rules, on all 223 review visits, at the six statuses. The
+  leaderboard scores five status groups, so its figure above is a little higher.
+- **grade** and **extent**: only the 139 visits whose truth is periodontitis, and only answers that passed the
   quote gate. note_rules reads neither field, so a fallback row counts as wrong. A grade can be right while the stage is wrong.
 
 | Run | Field | n | Accuracy (95% Wilson CI) |
 |---|---|---|---|
-| `medgemma-4b-it` | status | 240 | 0.779 (0.723-0.827) |
-| | grade | 156 | 0.795 (0.725-0.851) |
-| | extent | 156 | 0.679 (0.603-0.748) |
-| `medgemma-1.5-4b-it` | status | 240 | 0.758 (0.700-0.808) |
-| | grade | 156 | 0.801 (0.732-0.856) |
-| | extent | 156 | 0.833 (0.767-0.884) |
+| `medgemma-4b-it` | status | 223 | 0.780 (0.721-0.830) |
+|  | grade | 139 | 0.777 (0.701-0.838) |
+|  | extent | 139 | 0.727 (0.647-0.794) |
+| `medgemma-1.5-4b-it` | status | 223 | 0.749 (0.688-0.801) |
+|  | grade | 139 | 0.748 (0.670-0.813) |
+|  | extent | 139 | 0.784 (0.709-0.844) |
 
-So the two models read grade about equally well. On extent, 1.5 does better than 4B and their intervals don't
-overlap: 4B called 26 of the 65 localized cases generalized (1.5 called 6). These are measurements on synthetic notes against
+So the two models read grade about equally well. On extent, 1.5 does better than 4B, though their intervals
+overlap: 4B called 16 of the 69 localized cases generalized (1.5 called 5). These are measurements on synthetic notes against
 the generator's truth, not evidence about either model on real records. The simulated dry run
 (`simulated_medgemma_field_accuracy.csv`) has no grade or extent at all, because the placeholder reader returns
 none.
@@ -178,7 +197,7 @@ placeholder error rates and say nothing about MedGemma.
   verification and free capacity, and some accounts get none, so the `medgemma_reader` job can wait and
   retry for hours without starting. [`kaggle/medgemma_reader.ipynb`](../kaggle/medgemma_reader.ipynb) runs
   the same `11_ai_predict.py` on Kaggle's free "GPU T4 x2" (about 30 GPU-hours a week): clone, install,
-  convert MedGemma, a 10-note test, then all 240 notes with *Save & Run All*. No Hugging Face token: the
+  convert MedGemma, a 10-note test, then every review note with *Save & Run All*. No Hugging Face token: the
   weights come from Kaggle Models ([keras/medgemma](https://www.kaggle.com/models/keras/medgemma), the
   `kaggle:` handle in `models.yaml`, attached through `model_sources`), a Keras preset that
   [`kaggle/keras_to_hf.py`](../kaggle/keras_to_hf.py) exports to a `transformers` folder (keras-hub's
@@ -191,7 +210,7 @@ placeholder error rates and say nothing about MedGemma.
   the Kaggle log as a workflow artifact. Needs `KAGGLE_USERNAME` and `KAGGLE_API_TOKEN` (or
   `KAGGLE_KEY`) in the GitHub environment `dev` (Kaggle → Settings → API → Generate New Token; delete it
   there when done). Nothing to set up on kaggle.com: a pushed notebook can't read Kaggle Secrets, which is
-  why it no longer uses a Hugging Face token. `limit` 10 is a test; `limit` 0 reads all 240 notes (hours: turn `wait` off, then rerun with `collect_only`).
+  why it no longer uses a Hugging Face token. `limit` 10 is a test; `limit` 0 reads every review note (hours: turn `wait` off, then rerun with `collect_only`).
 - **Paid Databricks:** register through MLflow, serve on GPU Model Serving, and
   batch-score with `ai_query`. Costs go in `costs.yaml` as a self-hosted GPU method.
 - **Evaluation:** the same split, scorer, harm grading, difficulty levels and
@@ -202,14 +221,16 @@ placeholder error rates and say nothing about MedGemma.
 
 Google publishes five MedGemma models on Hugging Face. They are different models, not updates of one, so
 every result names the model, and since 2026-10-28 also the exact revision: `models.yaml` pins a
-Hugging Face commit per model, the reader loads that commit, and each run's `llm_details_*.csv` records it in
-a `revision` column. Google updated the 1.5 weights on 2026-04-13. The committed 1.5 run (October 2026)
-used the pinned revision.
+Hugging Face commit per model, the reader loads that commit, and each run's `llm_details_*.csv` records the
+weights it loaded in a `revision` column. Google updated the 1.5 weights on 2026-04-13. The committed runs (Kaggle,
+November 4, 2026) loaded Kaggle Models' Keras checkpoints, which that column names
+(`keras/medgemma/keras/medgemma_1.5_instruct_4b/1` and `keras/medgemma/keras/medgemma_instruct_4b/1`), not a
+Hugging Face commit.
 
 | Model | Kind | Pinned revision | Status here |
 |---|---|---|---|
-| `medgemma-1.5-4b-it` | 4B, text and images, instruction-tuned (Jan 2026) | `91850547d9f0` | **run**: 75.8% correct on the 240 review notes |
-| `medgemma-4b-it` | 4B, text and images, instruction-tuned (MedGemma 1, 2025) | `290cda5eeccb` | **run** on Kaggle: 77.9% correct on the 240 review notes |
+| `medgemma-1.5-4b-it` | 4B, text and images, instruction-tuned (Jan 2026) | `91850547d9f0` | **run** on Kaggle: 78.5 of 100 on the 223 review notes (five status groups) |
+| `medgemma-4b-it` | 4B, text and images, instruction-tuned (MedGemma 1, 2025) | `290cda5eeccb` | **run** on Kaggle: 79.8 of 100 on the 223 review notes (five status groups) |
 | `medgemma-27b-text-it` | 27B, text only, instruction-tuned (2025) | `5b667cf2ddcf` | not run: needs a larger GPU (below) |
 | `medgemma-27b-it` | 27B, text and images (2025) | not in the registry | the text-only 27B suits notes better |
 | `medgemma-4b-pt` | 4B, pretrained only | not in the registry | not instruction-tuned, so unsuited to a zero-shot reader |
@@ -229,8 +250,8 @@ Runs on Hugging Face weights instead load the pinned revision.
 **Why it matters.** The 27B is the version most likely to read notes better.
 - Google's [MedGemma Technical Report](https://arxiv.org/abs/2507.05201) (Table 3) gives **87.7%** on
   MedQA for the 27B, with Google's test-time scaling, against **64.4%** for the 4B.
-- In this repo, the larger general-purpose Llama 3.3 70B (83.8%) already beats MedGemma 1.5 4B (75.8%) on
-  the 240 review notes.
+- In this repo, the larger general-purpose Llama 3.3 70B (83.9) already scores higher than MedGemma 1.5 4B (78.5)
+  on the 223 review notes, per 100 at five status groups, though their intervals overlap.
 
 That's an expectation, not a result. MedQA is exam questions, not dental charts, and the 27B is
 **not run** here yet. Until it is, no number in this repo stands for it.
@@ -244,7 +265,7 @@ Options, best first:
 
 | Option | Fits | Cost | What to record |
 |---|---|---|---|
-| One A100 80 GB or H100 (paid Databricks GPU compute, or a cloud VM) | yes, in bfloat16 | paid per GPU-hour; the 240 notes take well under an hour | `--rung medgemma-27b-text-it --backend hf`; revision, dtype, GPU |
+| One A100 80 GB or H100 (paid Databricks GPU compute, or a cloud VM) | yes, in bfloat16 | paid per GPU-hour; the 223 review notes take well under an hour | `--rung medgemma-27b-text-it --backend hf`; revision, dtype, GPU |
 | Serve it on GPU Model Serving (paid Databricks) and call it with `--backend openai --endpoint <name>` or `ai_query` | yes | paid; scales to zero | endpoint, revision |
 | 4-bit quantization (about 15–17 GB) on Kaggle T4 x2 or an A10 | yes | free | label it `medgemma-27b-text-it+4bit`: compressed weights are a slightly different model, scored as their own row |
 | Gemma 3 12B, which Databricks hosts pay-per-token (`databricks-gemma-3-12b`) | yes | pennies | not MedGemma: the general model MedGemma is built from, so a size and medical-training comparison, not a substitute |
