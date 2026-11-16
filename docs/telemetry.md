@@ -360,3 +360,24 @@ The pipeline doctor: classify each failure (GPU unavailable, out of memory, sche
 quality, dependency), choose a recovery (retry, repair run, quarantine, escalate), notify downstream
 users, and evaluate all of it on this repo's real incidents. That is the next spec; this one gives
 it the record to work from.
+
+## Reading it back from an agent session
+
+An agent session can query the telemetry it sends, read only, with the key in `ops/secrets_register.yaml`
+("Application Insights read key for agent sessions"; issue 836). The cloud environment's proxy adds the key for host
+`api.applicationinsights.io`, so a session only names the resource's application id, which it keeps in its own notes
+rather than in this public repository:
+
+```bash
+curl -sS -G "https://api.applicationinsights.io/v1/apps/$APP_ID/query" \
+  --data-urlencode "query=dependencies | where name == 'leaderboard_entry' | top 5 by timestamp desc | project timestamp, customDimensions"
+```
+
+Two span names answer most questions:
+
+- `leaderboard_entry`: one per status change of a competition entry, with `submission_ref_id`, `status_code`,
+  `previous_status_code` and, once scored, `public_score_ratio`, from the leaderboard watcher.
+- `agent_task`: one per task of a forwarded development run, from `forward-run-telemetry`.
+
+The key reads nothing else and changes nothing; the leaderboard watcher's ledger
+(`data/tasks/leaderboard_entries.csv`) holds the same scores for a session without it.
