@@ -81,6 +81,6 @@ modal_auto_max_usd:
   read_date: "2026-11-15"
 
 modal_auto_monthly_usd:
-  value: 35
-  source: the owner's ask of November 15, 2026 (#806), raised from 25 the same evening for tonight's runs (#825), about 5 USD beyond the Starter plan's 30 USD credit at most; docs/adr/0008-modal-runs-start-on-their-own-under-a-cost-cap.md
-  read_date: "2026-11-15"
+  value: 60
+  source: the owner's ask of November 15, 2026 (#806), raised from 25 to 35 that evening (#825) and to 60 on November 16 ("Raise limit", #845) so the four 10 USD chunks of the 31B-e full run (#842) start on their own after 13.59 USD already used this period; up to 30 USD beyond the Starter plan's 30 USD credit; docs/adr/0008-modal-runs-start-on-their-own-under-a-cost-cap.md
+  read_date: "2026-11-16"
