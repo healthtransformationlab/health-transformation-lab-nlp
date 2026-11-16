@@ -104,6 +104,15 @@ resolves and whose empty patch it does not (`task_gate.evaluator_verified`, from
 publish step refuses a task without that verdict and ships the table. Our own gate is unchanged. The evaluator
 verified patches; it has not run an agent on these tasks.
 
+### US7 - Before a Colab tab is opened, a check says what it would run and whether a dropped tab is still running (P2) #847
+Colab runs of the evaluator loop send `session.json` (session id, a note, the time sent) to their results dataset about
+every eight minutes. On November 15-16, 2026 four of the owner's tabs looked disconnected and no one could tell what
+each was still doing: one that "disconnected quickly" at 03:11 had finished both its L4 runs by 06:16, which was found
+only at 15:19, and a tab opened then would have re-made a run another machine had already covered.
+`kaggle/colab_status.py` reads a branch's run list and each run's `session.json`, and says per run finished, running
+(an upload in the last 20 minutes), stale or not started, and which run a new tab on a GPU would make; AGENTS.md
+("Failures, retries and reruns") says to run it, and to turn off any VPN on the device, before opening a tab.
+
 ## Out of scope
 Rewriting any statement text; tasks from other repositories; LoRA training.
 

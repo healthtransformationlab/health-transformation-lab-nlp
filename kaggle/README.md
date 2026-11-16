@@ -246,6 +246,8 @@ To refresh the owner's Paper Track sheets:
   --colab-session <start>` reads one session's upload and verifies its patches. The notebook takes the Kaggle
   token from Colab Secrets (`ops/secrets_register.yaml`), never from a cell. What was run this way, and how it
   differs from a Kaggle kernel: `data/tasks/official_agent_runs/README.md`.
+  **Before opening a tab** (#847): `python kaggle/colab_status.py --branch <run branch> --gpu <L4|A100>` says which
+  runs are finished, running, stale or not started, and which one the tab would make (AGENTS.md).
   **What a later run must check first** (#691): (1) the network is still open to the agent's commands: nothing
   blocks it at the machine, so a run starts only when its entry in the run list says
   `"network_open_acknowledged": true`, written on the run's own branch after reading

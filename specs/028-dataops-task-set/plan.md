@@ -25,6 +25,7 @@ distributed (#449, #453). Official swegemma scoring happens only on Kaggle (US5)
 | Gate every task; `data/tasks/task_gates.csv` (committed, one row per task) | `python/scripts/57_gate_tasks.py` |
 | `tasks.jsonl` (git-ignored, ~62 MB of patches), the excluded list and a 3-row sample (committed) | `data/tasks/` |
 | Publish as a Kaggle dataset (US5) | `.github/workflows/kaggle-publish.yml` (spec 025 pattern) |
+| Before a Colab tab: each listed run finished, running, stale or not started, and the run a tab would make (US7, #847) | `kaggle/colab_status.py` |
 
 Squash merges appear as single-parent commits on `main` whose subject ends `(#n)`; merge commits name the
 PR in `merge_commit_sha`. Both map to their PR; what is left is a direct commit (tier C).
