@@ -1,5 +1,5 @@
 {
- "note": "Branch data/824-028-colab-devset only (#824), never merged to main (ADR 0005). The owner moved testing to Colab on November 15 (\"testing on collab not kaggle databricks and modal; we need more data\"). Runs on the competition's development set, the same 23 tasks as the five earlier E4B runs: devset-e4b-all (gemma-developer-agent a09e97e: E4B, copyfix, the edit-fallback skill with 'Your first two tool calls'), on an L4 session; devset-31b-d2 (gemma-developer-agent 40264cc, #158: the 31B-d stack on main, first two calls, patch first, 8 minutes, 28 calls), on an A100 session, kernel deadline 240 minutes. For mechanism (skill use, failure stages, time a task), not resolve counts. ADR 0005 read: the network is open at the machine; the audit reads every tool call afterwards. devset-e4b-tests (gemma-developer-agent 7a1141f, #170: find.py --tests and step 7 runs the named test files under timeout 120), first on an L4 session (devset-e4b-all moved behind it: the Kaggle run devset-e4b-all-k already made that run on the same 23 tasks), the same 23 tasks as devset-e4b-all-k, paired with it. devset-e4b-all was taken off on November 16: the Kaggle run devset-e4b-all-k covered it, and devset-e4b-tests has finished, so an L4 tab would only repeat it.",
+ "note": "Branch data/824-028-colab-devset only (#824), never merged to main (ADR 0005). The owner moved testing to Colab on November 15 (\"testing on collab not kaggle databricks and modal; we need more data\"). Runs on the competition's development set, the same 23 tasks as the five earlier E4B runs: devset-e4b-all (gemma-developer-agent a09e97e: E4B, copyfix, the edit-fallback skill with 'Your first two tool calls'), on an L4 session; devset-31b-d2 (gemma-developer-agent 40264cc, #158: the 31B-d stack on main, first two calls, patch first, 8 minutes, 28 calls), on an A100 session, kernel deadline 240 minutes. For mechanism (skill use, failure stages, time a task), not resolve counts. ADR 0005 read: the network is open at the machine; the audit reads every tool call afterwards. devset-e4b-tests (gemma-developer-agent 7a1141f, #170: find.py --tests and step 7 runs the named test files under timeout 120), first on an L4 session (devset-e4b-all moved behind it: the Kaggle run devset-e4b-all-k already made that run on the same 23 tasks), the same 23 tasks as devset-e4b-all-k, paired with it. devset-e4b-all was taken off on November 16: the Kaggle run devset-e4b-all-k covered it, and devset-e4b-tests has finished, so an L4 tab would only repeat it. devset-31b-d2 was taken off on November 16 (#849): 31B-e8 on its own branch replaces it.",
  "stop": false,
  "runs": [
   {
@@ -7,14 +7,6 @@
    "bundle": "jcblearning/htlnlp-official-devset-e4b-tests",
    "kernel_dataset": "jcblearning/htlnlp-colab-kernel-devset-e4b-tests",
    "gpu": "L4",
-   "network_open_acknowledged": true
-  },
-  {
-   "label": "devset-31b-d2",
-   "bundle": "jcblearning/htlnlp-official-devset-31b-d2",
-   "kernel_dataset": "jcblearning/htlnlp-colab-kernel-devset-31b-d2",
-   "gpu": "A100",
-   "model": "google/gemma-4/other/gemma-4-31b-it-qat-w4a16-ct/2",
    "network_open_acknowledged": true
   }
  ]
