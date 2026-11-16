@@ -1,5 +1,5 @@
 {
- "note": "Branch data/849-028-colab-public-bundle only (#849), never merged to main (ADR 0005). The public Budget-Fit Single Agent bundle (Kaggle notebook verracodeguacas/gemma-4-agent-budget-fit-single-agent), its four files packed as published in private datasets only, on the four chunks of #842. Each parallel Colab run has its own branch and notebook link so two tabs cannot make the same run. ADR 0005 read: the network is open at the machine; the audit reads every tool call afterwards.",
+ "note": "Branch data/849-028-colab-public-bundle only (#849), never merged to main (ADR 0005). The public Budget-Fit Single Agent bundle (Kaggle notebook verracodeguacas/gemma-4-agent-budget-fit-single-agent), its four files packed as published in private datasets only, on the four chunks of #842. Each parallel Colab run has its own branch and notebook link so two tabs cannot make the same run. ADR 0005 read: the network is open at the machine; the audit reads every tool call afterwards. Since November 16, 21:05 UTC the four 31B-e8 chunks (devset-c31be8-c1..c4, also listed on data/849-028-colab-31be8) follow the public-bundle chunks here, so the tabs already open on this branch make them without another tap from the owner; a run another session is making is refused by its session check, so listing it on both branches cannot make it twice.",
  "stop": false,
  "runs": [
   {
@@ -39,6 +39,38 @@
    "label": "devset-cpub-c4",
    "bundle": "jcblearning/htlnlp-official-devset-cpub-c4",
    "kernel_dataset": "jcblearning/htlnlp-colab-kernel-devset-cpub-c4",
+   "gpu": "A100",
+   "model": "google/gemma-4/other/gemma-4-31b-it-qat-w4a16-ct/2",
+   "network_open_acknowledged": true
+  },
+  {
+   "label": "devset-c31be8-c1",
+   "bundle": "jcblearning/htlnlp-official-devset-c31be8-c1",
+   "kernel_dataset": "jcblearning/htlnlp-colab-kernel-devset-c31be8-c1",
+   "gpu": "A100",
+   "model": "google/gemma-4/other/gemma-4-31b-it-qat-w4a16-ct/2",
+   "network_open_acknowledged": true
+  },
+  {
+   "label": "devset-c31be8-c2",
+   "bundle": "jcblearning/htlnlp-official-devset-c31be8-c2",
+   "kernel_dataset": "jcblearning/htlnlp-colab-kernel-devset-c31be8-c2",
+   "gpu": "A100",
+   "model": "google/gemma-4/other/gemma-4-31b-it-qat-w4a16-ct/2",
+   "network_open_acknowledged": true
+  },
+  {
+   "label": "devset-c31be8-c3",
+   "bundle": "jcblearning/htlnlp-official-devset-c31be8-c3",
+   "kernel_dataset": "jcblearning/htlnlp-colab-kernel-devset-c31be8-c3",
+   "gpu": "A100",
+   "model": "google/gemma-4/other/gemma-4-31b-it-qat-w4a16-ct/2",
+   "network_open_acknowledged": true
+  },
+  {
+   "label": "devset-c31be8-c4",
+   "bundle": "jcblearning/htlnlp-official-devset-c31be8-c4",
+   "kernel_dataset": "jcblearning/htlnlp-colab-kernel-devset-c31be8-c4",
    "gpu": "A100",
    "model": "google/gemma-4/other/gemma-4-31b-it-qat-w4a16-ct/2",
    "network_open_acknowledged": true
