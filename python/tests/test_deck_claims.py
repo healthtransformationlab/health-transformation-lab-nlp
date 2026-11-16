@@ -106,6 +106,25 @@ def test_the_pitch_cites_noharm_by_version_and_for_severe_errors():
                 assert "severe" in sentence, f"pitch/harm gives the share without saying severe: {sentence}"
 
 
+def test_the_pitch_scopes_globaldentbench_rates_to_what_was_rated():
+    """#840: GlobalDentBench's "1 in 7" (14.15%) is one discipline's rate, the one the paper calls Systemic Health,
+    Pharmacology and Safety, not every answer that involves a medicine (anesthesia answers were 8.93%), and its
+    "1 in 3" (31.01%) is of the answers to case questions, not of every answer. The slides said "Where medicines are
+    involved" and "1 in 3 answers", and the problem slide's notes gave 4.51% as "about one in twenty"."""
+    said = {sid: " ".join(build_decks.visible_text(section)) + " " + notes
+            for deck, sid, section, notes in deck_slides() if deck == "pitch" and sid in ("problem", "harm")}
+    for sid, text in said.items():
+        for wide in ("medicines are involved", "involving medicines", "conditions are involved"):
+            assert wide not in text, f"pitch/{sid}: '{wide}'"
+        sentences = [t for t in re.split(r"(?<=[.?!])\s+", text) if "1 in 7" in t or "one in seven" in t]
+        assert sentences, f"pitch/{sid}: the slide and its notes give the 1 in 7"
+        for sentence in sentences:
+            assert "on medicines and medical conditions" in sentence.lower(), f"pitch/{sid}: {sentence}"
+    assert "1 in 3 of those answers was rated unsafe" in said["problem"]
+    assert "Systemic Health, Pharmacology and Safety" in said["problem"]
+    assert "about one in twenty" not in said["problem"], "4.51% is 1 in 22: say fewer than one in twenty"
+
+
 def tier_cost(t: dict) -> float:
     """US dollars for a million visits: tokens per call x list price x calls per visit."""
     per_call = (t["in_tokens"] * t["usd_per_1m_in"] + t["out_tokens"] * t["usd_per_1m_out"]) / 1e6
