@@ -18,10 +18,10 @@ _spec.loader.exec_module(build_decks)
 REGISTER = yaml.safe_load((REPO_ROOT / "docs" / "claims.yaml").read_text(encoding="utf-8"))
 KINDS = {"measured", "cited", "derived", "illustrative", "proposal", "identifier"}
 # a figure: money, a percent, hours, a multiple, millions, thousands ("20k"), a number of 3+ digits or with thousands
-# commas, the count in "41 of 2,462", or a rate written "1 in 7" or "1-in-7" (#838; a year after "in" is prose:
-# "3 in 2026")
+# commas, the count in "41 of 2,462", or a rate written "1 in 7" or "1-in-7" (#838). Prose is left alone: a year after
+# "in" ("3 in 2026", so "1 in 2000" needs its comma), "2-in-1", and the end of a decimal ("2.5 in 10")
 FIGURE = re.compile(r"\$[\d,.]+\s?[kKM]?|\d[\d,.]*\s?(?:%|h\b|×|M\b|million\b|billion\b)|\b\d+k\b|\b\d{1,3}(?:,\d{3})+\b|\b\d{3,}\b"
-                    r"|\b\d+(?= of \d)|\b\d+(?: in |-in-)(?!(?:19|20)\d\d\b)\d[\d,]*\b")
+                    r"|\b\d+(?= of \d)|(?<![\d.,])\b\d+(?:\s+in\s+|[-\u2011]in[-\u2011])(?!(?:19|20)\d\d\b|1\b(?!,\d))\d[\d,]*\b")
 ARXIV = re.compile(r"\b\d{4}\.\d{4,5}\b")
 YEAR = re.compile(r"(?:19|20)\d\d")
 # wording that claims more than any source can show; a slide says what was measured or priced instead. "never" is
@@ -33,16 +33,20 @@ ABSOLUTE = re.compile(r"\b(?:cheap\w*|always|any model|even the largest|guarante
 
 def figures(section: str) -> set[str]:
     text = ARXIV.sub("", " ".join(build_decks.visible_text(section)))
-    found = (m.group(0).strip().rstrip(",.") for m in FIGURE.finditer(text))
+    found = (" ".join(m.group(0).split()).rstrip(",.") for m in FIGURE.finditer(text))   # "1&nbsp;in&nbsp;7" is "1 in 7"
     return {f for f in found if not YEAR.fullmatch(f)}
 
 
 def test_figures_include_n_in_m_rates_but_not_prose():
     """#838: "1 in 7" is a figure, so a slide that shows one needs a register entry; the pitch's "3 in 4" (#645)
-    went unchecked because the pattern didn't see it. A number then "in" and a year or a word is prose."""
+    went unchecked because the pattern didn't see it. A number then "in" and a year or a word is prose, and so are
+    "3-in-1" and the "5" of "2.5 in 10"."""
     assert figures("<p>1 in 3 answers; 1 in 11 did the same; a 1-in-7 risk; 1 in 1,000 visits; 41 of 2,462</p>") == \
         {"1 in 3", "1 in 11", "1-in-7", "1 in 1,000", "41", "2,462"}
-    assert figures("<p>It came out 3 in 2026 and runs 2 in the morning, 4 in total, in 12 models</p>") == set()
+    assert figures("<p>1&nbsp;in&nbsp;9 kept together, 1 in  12 typed twice, a 1\u2011in\u20115 risk</p>") == \
+        {"1 in 9", "1 in 12", "1\u2011in\u20115"}
+    assert figures("<p>It came out 3 in 2026 and runs 2 in the morning, 4 in total, in 12 models; a 3-in-1 tool; "
+                   "2.5 in 10</p>") == set()
 
 
 def deck_slides():
