@@ -1,7 +1,7 @@
 # Implementation plan: pipeline telemetry (spec 014)
 
 US1 to US6 were built before this repository kept a plan beside each spec; their tasks are in `spec.md`'s revisions.
-This plan covers US7.
+This plan covers US7, US8 and US9.
 
 ## US7 - Leaderboard entries and the GPU runs' spans reach Azure (#791)
 
@@ -57,3 +57,59 @@ This plan covers US7.
   stops at once), the committed ledger, the workflow, the register, this spec and plan.
 - `python/tests/test_telemetry_forward.py`: `forward_spans` with the `memory` exporter (times, attributes, parents,
   status; the `file` exporter's own output; skipped lines; exporter off; no file) and the runner's `--collect`.
+
+## US8 - Development runs on Modal, Colab and Kaggle reach Azure (#830)
+
+- **Where it runs:** a `workflow_dispatch` workflow in the `dev` environment, because only it holds
+  `APPINSIGHTS_CONNECTION_STRING`; agent sessions never do.
+- **What it sends:** `kaggle/forward_run_telemetry.py` reads `tasks/*/result.json` under the downloaded results dataset
+  and sends `run_forward` with one `agent_task` child per task through `telemetry.pipeline_step`, numbers and short
+  labels only; `telemetry.forward_spans` sends any `telemetry.jsonl` (US7's reader, no second format).
+- **Contract:** `task_attrs(result, instance_id)`; spans `run_forward`, `agent_task`; workflow inputs `results_dataset`,
+  `label`, `platform`.
+- **Tests:** `python/tests/test_forward_run_telemetry.py` (memory exporter; no task text or patch in any attribute).
+
+## US9 - A coding-agent run's full trace reaches Azure on request (#850)
+
+- **Where the content comes from:** the trace file every task already writes (`tasks/<id>/results/traces/*.json`:
+  `steps[]` with `message`, `tool_calls[].function_name` and `arguments`, `observation.content`, `metrics`, `extra`)
+  and its `result.json`. Nothing changes in the kernel, so runs already finished can be forwarded again in full, and
+  the kernel's own spans keep text out as before (`MAX_SPAN_TEXT`).
+- **One setting:** `DENTAL_TELEMETRY_CONTENT`, `labels` or `full`, read by `telemetry.content_level()`; any other value
+  stops the forwarder at once. The workflow's `content` input sets it, `full` by default; the option `--content`
+  overrides it for one call.
+- **In `telemetry.py`:**
+  - `scrub(text)`: token shapes and private-key blocks; a value given to a telling name, quoted (as written or
+    JSON-escaped) or unquoted after a NAME in capitals; command-line options and headers; credentials in a URL or a
+    query string; Azure connection-string keys; the process's own secret environment values. A value that reads as
+    ordinary (`bearer`, `/token`, a sentence) is left, so code stays readable.
+  - `scrub_value(value)`: the same over what `json.loads` gives, leaf by leaf, with any text under a telling key
+    redacted. The forwarder uses it before `json.dumps`, so a quoted secret is seen as it was typed.
+  - `text_parts(text, size)`, and `content_span(name, start_ns, end_ns, parent, **attrs)`, which is the only way text
+    reaches a span: it scrubs every text value, splits one longer than `MAX_TEXT_CHARS` into child spans
+    `<name>_part`, and sends nothing unless the level is `full`. `MAX_TEXT_CHARS` is 8,000: Application Insights
+    keeps 8,192 characters of a property value and 64 KB of an item
+    ([Azure Monitor service limits](https://learn.microsoft.com/en-us/azure/azure-monitor/fundamentals/service-limits#application-insights)).
+  - `forward_spans(path, extra)` adds the forwarding's labels to the kernel's own spans. `annotate()` is unchanged.
+- **In the forwarder:**
+  - `step_attrs(step, instance_id)`; in full mode `agent_task` is made by `content_span` with `patch_text` and
+    `agent_error_text`, and each step is an `agent_step` child of it.
+  - The queue is flushed after every task (the batch processor keeps 2,048 spans; a 129-task run sends more), and a
+    failed flush fails the export report.
+  - One file that isn't what it should be costs its own task: it is named with the kind of error, never the message,
+    and the rest is sent. Numbers are read with a helper that gives 0 for anything else, so text in a numeric field
+    cannot reach an exception, a span's status or the workflow's public log.
+  - Every span carries `forward_id`, 12 hex characters made once a call, so a run forwarded twice can be told apart:
+    Application Insights is an event log, and a second forwarding appends.
+  - A task's times are the kernel's (`started_unix`, `ended_unix`); without them, its first and last step's.
+- **Cost:** forwarding 21 tasks of devset-m31be-c1 (640 steps) to a file sent 1.96 MB of text, so a 129-task run is
+  about 12 MB and ten runs about 0.12 GB against the workspace's 5 GB a month free allowance (US3). `labels` stays the
+  default everywhere else.
+- **Not yet checked:** whether Application Insights keeps the original time of a step forwarded days after its run.
+  The first forwardings after the merge are of runs a few hours old.
+- **Tests:** `python/tests/test_telemetry_content.py` (the setting; the scrubber on 20 token shapes, 54 realistic
+  leaks and 28 lines of ordinary code; speed on long text; the parts; `content_span` with the memory exporter; that
+  only the forwarder calls it) and `python/tests/test_forward_run_telemetry.py` (labels mode unchanged; full mode's
+  spans; a secret inside a tool call's arguments; the option against the setting; times; odd files; the kernel's
+  spans; the flush; the workflow's input).
+

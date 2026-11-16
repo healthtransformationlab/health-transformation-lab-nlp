@@ -130,3 +130,46 @@ missing secret never fails a pipeline); what changes is that off-when-asked is n
   `::warning::` annotation under GitHub Actions)
 - `digests.telemetry_alerts(statuses)` and `digests.register_alerts(register, scope_keys)`: SEV3s in the daily
   digest (`14_pipeline_digest.py`), the second for a registered Databricks-scope secret the scope lacks
+
+### US8 - Development runs on Modal, Colab and Kaggle reach Azure (P2) #830
+A development run on any of the three writes its per-task results, and with `--telemetry` the agent's spans, into a
+private Kaggle results dataset. The agent sessions that collect runs hold no secrets, so until now nothing from these
+runs reached Application Insights. A manual workflow in the `dev` environment downloads a finished run's results and
+sends them, so every platform's runs sit beside the watcher's and Databricks' spans.
+
+Acceptance scenarios:
+
+1. **Given** a results folder with `tasks/*/result.json`, **when** `kaggle/forward_run_telemetry.py <dir> --label <label>
+   --platform <modal|colab|kaggle>` runs with an exporter set up, **then** it sends one `run_forward` span (label,
+   platform, task count) and one `agent_task` span per task (instance id, agent seconds, tool calls, patch made,
+   resolved, error kind), never task text or a patch, forwards any `telemetry.jsonl`, and prints the export result.
+2. **Given** `.github/workflows/forward-run-telemetry.yml`, **then** it runs on demand in `dev` with the Kaggle token and,
+   if set, `APPINSIGHTS_CONNECTION_STRING` (missing: a warning, telemetry off).
+
+### US9 - A coding-agent run's full trace reaches Azure on request (P2) #850
+US8's spans hold counts and short labels, so a failed task still has to be diagnosed from the trace file inside a
+private Kaggle dataset. The owner asked on November 16, 2026 for the data a diagnosis needs: "none of this is public
+you can make it an override setting but for these repos we can log everything except password". One setting,
+`DENTAL_TELEMETRY_CONTENT`, turns a coding-agent run's own content on for the forwarder: `labels` (the default, as
+before) or `full`. Dental-record code never sends text, whatever the setting (ADR 0010).
+
+Acceptance scenarios:
+
+1. **Given** `DENTAL_TELEMETRY_CONTENT` unset or `labels`, **when** the forwarder runs, **then** it sends what US8 sends,
+   with no `agent_step` span and no text; every span of the forwarding, the kernel's own included, carries one
+   `forward_id`.
+2. **Given** `DENTAL_TELEMETRY_CONTENT=full` (or `--content full`), **then** each task with a trace also gets one
+   `agent_step` span per step: the step's message, each tool call's name and arguments, the tool's output, the token
+   counts and the times; the task's `agent_task` span holds the patch and the agent's error text.
+3. **Given** any other value, **then** the forwarder stops at once, naming `DENTAL_TELEMETRY_CONTENT` and its two values.
+4. **Given** a secret in any text (a known token shape or private-key block; a value given to a name such as
+   `password`, `token` or `api_key`, quoted or after a NAME in capitals; a `--password` option; an `Authorization`,
+   `Bearer`, `X-API-Key` or `Cookie` header; `user:password@` in a URL; an Azure connection string's key; the value
+   of one of the forwarder's own secret environment variables), written plainly or inside JSON, **then** `[REDACTED]`
+   is sent in its place; ordinary code such as `password: str` or `"token_type": "bearer"` is unchanged.
+5. **Given** a text longer than 8,000 characters, **then** the span holds its first part and `<key>_part_count`, and
+   each further part is a child span `<name>_part` (`field_name`, `part_num`, `part_text`); the parts joined give the
+   scrubbed text.
+6. **Given** the workflow "Forward a development run's telemetry to Azure", **then** it has a `content` input, `full` by
+   default, passed as `DENTAL_TELEMETRY_CONTENT`.
+

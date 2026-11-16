@@ -18,9 +18,10 @@ _spec.loader.exec_module(build_decks)
 REGISTER = yaml.safe_load((REPO_ROOT / "docs" / "claims.yaml").read_text(encoding="utf-8"))
 KINDS = {"measured", "cited", "derived", "illustrative", "proposal", "identifier"}
 # a figure: money, a percent, hours, a multiple, millions, thousands ("20k"), a number of 3+ digits or with thousands
-# commas, or the count in "41 of 2,462"
+# commas, the count in "41 of 2,462", or a rate written "1 in 7" or "1-in-7" (#838). Prose is left alone: a year after
+# "in" ("3 in 2026", so "1 in 2000" needs its comma), "2-in-1", and the end of a decimal ("2.5 in 10")
 FIGURE = re.compile(r"\$[\d,.]+\s?[kKM]?|\d[\d,.]*\s?(?:%|h\b|×|M\b|million\b|billion\b)|\b\d+k\b|\b\d{1,3}(?:,\d{3})+\b|\b\d{3,}\b"
-                    r"|\b\d+(?= of \d)")
+                    r"|\b\d+(?= of \d)|(?<![\d.,])\b\d+(?:\s+in\s+|[-\u2011]in[-\u2011])(?!(?:19|20)\d\d\b|1\b(?!,\d))\d[\d,]*\b")
 ARXIV = re.compile(r"\b\d{4}\.\d{4,5}\b")
 YEAR = re.compile(r"(?:19|20)\d\d")
 # wording that claims more than any source can show; a slide says what was measured or priced instead. "never" is
@@ -32,8 +33,20 @@ ABSOLUTE = re.compile(r"\b(?:cheap\w*|always|any model|even the largest|guarante
 
 def figures(section: str) -> set[str]:
     text = ARXIV.sub("", " ".join(build_decks.visible_text(section)))
-    found = (m.group(0).strip().rstrip(",.") for m in FIGURE.finditer(text))
+    found = (" ".join(m.group(0).split()).rstrip(",.") for m in FIGURE.finditer(text))   # "1&nbsp;in&nbsp;7" is "1 in 7"
     return {f for f in found if not YEAR.fullmatch(f)}
+
+
+def test_figures_include_n_in_m_rates_but_not_prose():
+    """#838: "1 in 7" is a figure, so a slide that shows one needs a register entry; the pitch's "3 in 4" (#645)
+    went unchecked because the pattern didn't see it. A number then "in" and a year or a word is prose, and so are
+    "3-in-1" and the "5" of "2.5 in 10"."""
+    assert figures("<p>1 in 3 answers; 1 in 11 did the same; a 1-in-7 risk; 1 in 1,000 visits; 41 of 2,462</p>") == \
+        {"1 in 3", "1 in 11", "1-in-7", "1 in 1,000", "41", "2,462"}
+    assert figures("<p>1&nbsp;in&nbsp;9 kept together, 1 in  12 typed twice, a 1\u2011in\u20115 risk</p>") == \
+        {"1 in 9", "1 in 12", "1\u2011in\u20115"}
+    assert figures("<p>It came out 3 in 2026 and runs 2 in the morning, 4 in total, in 12 models; a 3-in-1 tool; "
+                   "2.5 in 10</p>") == set()
 
 
 def deck_slides():
@@ -104,6 +117,36 @@ def test_the_pitch_cites_noharm_by_version_and_for_severe_errors():
             assert len(sentences) >= 2, "pitch/harm: the slide and its notes both give the share"
             for sentence in sentences:
                 assert "severe" in sentence, f"pitch/harm gives the share without saying severe: {sentence}"
+
+
+def test_the_pitch_scopes_globaldentbench_rates_to_what_was_rated():
+    """#840: GlobalDentBench's "1 in 7" (14.15%) is one discipline's rate, the one the paper calls Systemic Health,
+    Pharmacology and Safety, not every answer that involves a medicine (anesthesia answers were 8.93%), and its
+    "1 in 3" (31.01%) is of the answers to case questions, not of every answer. The slides said "Where medicines are
+    involved" and "1 in 3 answers", and the problem slide's notes gave 4.51% as "about one in twenty"."""
+    pitch = {sid: {"slide": " ".join(build_decks.visible_text(section)), "notes": notes}
+             for deck, sid, section, notes in deck_slides() if deck == "pitch" and sid in ("problem", "harm")}
+    for sid, parts in pitch.items():
+        for where, text in parts.items():
+            for wide in ("medicines are involved", "involving medicines", "conditions are involved"):
+                assert wide not in text, f"pitch/{sid} {where}: '{wide}'"
+            sentences = [t for t in re.split(r"(?<=[.?!])\s+", text) if "1 in 7" in t or "one in seven" in t]
+            assert sentences, f"pitch/{sid}: the {where} give the 1 in 7"
+            for sentence in sentences:
+                assert "on medicines and medical conditions" in sentence.lower(), f"pitch/{sid} {where}: {sentence}"
+    assert "1 in 3 of those answers was rated unsafe" in pitch["problem"]["slide"]
+    # the safety ratings are the study's AI judge's: dentists checked its grading, not its safety ratings (#839)
+    for needed in ("rated unsafe by the study's AI judge", "14.15 percent", "Systemic Health, Pharmacology and Safety",
+                   "fewer than one in twenty"):
+        assert needed in pitch["problem"]["notes"], f"pitch/problem notes: '{needed}'"
+    assert "about one in twenty" not in pitch["problem"]["notes"], "4.51% is 1 in 22: say fewer than one in twenty"
+    assert "of the answers to case questions" in pitch["harm"]["notes"]
+    # the harm slide ranks the disciplines by their rate of harm that cannot be undone (S2), as the paper does; by the
+    # overall unsafe rate orthodontics is highest (44.30%), so "most dangerous" claims a ranking the paper doesn't make
+    harm = next(s for d, sid, s, _ in deck_slides() if d == "pitch" and sid == "harm")
+    assert build_decks.heading(harm, "harm") == \
+        "Where AI most often risked permanent harm: medicines, medical conditions and emergencies"
+    assert "most dangerous" not in pitch["harm"]["slide"] + pitch["harm"]["notes"]
 
 
 def tier_cost(t: dict) -> float:

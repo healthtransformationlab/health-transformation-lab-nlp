@@ -54,7 +54,7 @@ MODEL = "google/gemma-4/other/gemma-4-e4b-it-qat-w4a16-ct/2"             # as th
 # `docker` is the Docker SDK: the competition's evaluator imports it even for its subprocess sandbox, and Kaggle's image
 # has it where Colab's does not (the second test run stopped there). Nothing here starts a container.
 PINS = ("vllm==0.19.1", "google-adk==1.36.1", "litellm==1.82.4", "kagglehub", "kaggle==2.2.5", "six", "pytest", "pyyaml",
-        "docker")
+        "docker", "huggingface-hub>=1.5.0,<2.0")
 # Laid out as Kaggle lays out /kaggle, but under /content: Colab has a read-only /kaggle/input of its own.
 KAGGLE = Path("/content/htl_kaggle")
 LOG = Path("/content/htl_colab.log")
@@ -504,9 +504,62 @@ def is_not_found(e: BaseException) -> bool:
     return "404" in str(e) and "not found" in str(e).lower()
 
 
+def is_forbidden(e: BaseException) -> bool:
+    """Whether an error from the Kaggle client is HTTP 403. Kaggle answers 403, not 404, for a private dataset that
+    does not exist (#815), and also for one the token may not read."""
+    response = getattr(e, "response", None)
+    code = getattr(response, "status_code", None) or getattr(e, "status", None) or getattr(e, "code", None)
+    if isinstance(code, int):
+        return code == 403
+    return "403" in str(e) and "forbidden" in str(e).lower()
+
+
+LISTING_PAGE_SIZE = 20   # what kaggle 2.2.5's dataset_list asks for; a shorter page is the last
+LISTING_PAGES = 25       # read no further: a listing longer than this answers nothing
+
+
+def listed_as_own(api, ref: str) -> bool | None:
+    """Whether the owner's own datasets, private ones included, hold `ref`: True or False, or None when the answer is
+    not a full one. Used after a 403, which alone cannot tell a missing dataset from one that may not be read (#815).
+    Only the owner's own token sees its private datasets, so a token of another account answers None, as do a listing
+    that fails or comes back empty-handed or in another form, and one longer than LISTING_PAGES pages (Kaggle's search
+    matches loosely, so the dataset can sit past the first page). Each None says why in the log (#815, on Modal), with
+    lengths and kinds only: never a credential, never a name the runner masks."""
+    owner, _, slug = ref.partition("/")
+    try:
+        me = str(api.get_config_value("username") or os.environ.get("KAGGLE_USERNAME") or "").strip()
+    except Exception as e:  # noqa: BLE001 - whose token it is is not known
+        say(f"after a 403: whose token this is could not be read ({type(e).__name__})")
+        return None
+    if not slug or me.lower() != owner.strip().lower():
+        say(f"after a 403: the token's username ({len(me)} characters) is not the dataset owner's "
+            f"({len(owner.strip())} characters), so its private datasets cannot be listed")
+        return None
+    try:
+        for page in range(1, LISTING_PAGES + 1):
+            found = api.dataset_list(mine=True, search=slug, page=page)
+            if found is None:
+                say(f"after a 403: listing the owner's datasets (page {page}) gave no answer")
+                return None
+            refs = [str(getattr(d, "ref", "") or "") for d in found]
+            if any("/" not in r for r in refs):
+                say(f"after a 403: listing the owner's datasets (page {page}) gave refs without an owner")
+                return None
+            if any(r.lower() == ref.lower() for r in refs):
+                return True
+            if len(refs) < LISTING_PAGE_SIZE:
+                return False
+    except Exception as e:  # noqa: BLE001 - a listing that fails tells nothing
+        say(f"after a 403: listing the owner's datasets failed ({type(e).__name__}: {str(e)[:160]})")
+        return None
+    say(f"after a 403: the owner's datasets run past {LISTING_PAGES} pages for this search")
+    return None
+
+
 def dataset_exists(api, ref: str, tries: int = 3, sleep=time.sleep) -> bool:
-    """True when the dataset is there, False when Kaggle says there is no such dataset. Any other failure is tried
-    again, then raises StatusUnknown (#691, item 3: a failed status call was read as "nothing to resume")."""
+    """True when the dataset is there, False when Kaggle says there is no such dataset: a 404, or a 403 for a dataset
+    its owner's own list does not hold (#815). Any other failure is tried again, then raises StatusUnknown (#691,
+    item 3: a failed status call was read as "nothing to resume")."""
     for attempt in range(tries):
         try:
             api.dataset_status(ref)
@@ -514,6 +567,10 @@ def dataset_exists(api, ref: str, tries: int = 3, sleep=time.sleep) -> bool:
         except Exception as e:  # noqa: BLE001 - sorted below: missing, or not known
             if is_not_found(e):
                 return False
+            if is_forbidden(e):
+                listed = listed_as_own(api, ref)
+                if listed is not None:
+                    return listed
             if attempt == tries - 1:
                 raise StatusUnknown(f"{type(e).__name__}: {str(e)[:200]}") from e
             sleep(15)

@@ -57,6 +57,7 @@ VLLM_EXTRA_ARGS = {"gemma-4-12b-it-qat-w4a16-ct": ("--hf-overrides",
                                                     '{"architectures": ["Gemma4ForCausalLM"], "model_type": "gemma4"}')}
 HARNESS_NAME = "swegemma (Evaluator.evaluate_task, subprocess sandbox)"
 SPAN_TEXT_KEYS = ("_name", "_code", "_id", ".name", ".model", ".type", ".system", ".operation")
+AGENT_COMMAND_MEMORY_MIB = 8192   # address space for each command a task starts (#834): the scorer's sandbox has 4 GiB
 MAX_SPAN_TEXT = 64   # with telemetry on, a span keeps text only as a short label: requests, replies, code stay here
 result: dict = {"started_ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
 
@@ -304,6 +305,38 @@ def versions() -> dict:
     return out
 
 
+def cap_child_memory(mib: int):
+    """A block in which every process started gets an address-space limit of `mib` MiB (RLIMIT_AS), its own
+    preexec_fn still run after it. Off Kaggle the evaluator's subprocess sandbox has no memory cap, and one agent
+    command that looped and allocated (rich_4006) filled a 32 GiB Modal container twice and ended both runs (#834);
+    the scorer's Docker sandbox caps each container at 4 GiB, so capped, the command fails on its own as it would
+    there. asyncio's subprocesses are started by subprocess.Popen, so they are capped too."""
+    import contextlib
+    import resource
+    import subprocess as sp
+
+    limit = mib * 1024 * 1024
+    base = sp.Popen
+
+    class Capped(base):
+        def __init__(self, *args, preexec_fn=None, **kwargs):
+            def capped_then_own():
+                resource.setrlimit(resource.RLIMIT_AS, (limit, limit))
+                if preexec_fn is not None:
+                    preexec_fn()
+            super().__init__(*args, preexec_fn=capped_then_own, **kwargs)
+
+    @contextlib.contextmanager
+    def block():
+        sp.Popen = Capped
+        try:
+            yield
+        finally:
+            sp.Popen = base
+
+    return block()
+
+
 def run_task(bundle: Path, agent_dir: Path, models, adapters, overrides: dict, out_dir: Path,
              with_tests: bool = False) -> dict:
     """The starter notebook's cell 10 for one task, with the agent's patch kept as soon as the agent phase ends.
@@ -354,7 +387,8 @@ def run_task(bundle: Path, agent_dir: Path, models, adapters, overrides: dict, o
 
     evaluator = KeepingEvaluator(config)
     t0 = time.monotonic()
-    res = asyncio.run(evaluator.evaluate_task(task=task, task_index=1, total_tasks=1))
+    with cap_child_memory(AGENT_COMMAND_MEMORY_MIB):
+        res = asyncio.run(evaluator.evaluate_task(task=task, task_index=1, total_tasks=1))
     out = {"instance_id": task.instance_id, "patch": kept.get("patch", res.agent_patch or ""),
            "agent_error": kept.get("agent_error"), "agent_phase_seconds": kept.get("agent_phase_seconds"),
            "evaluate_seconds": round(time.monotonic() - t0, 1), "tool_call_count": int(res.tool_calls or 0),

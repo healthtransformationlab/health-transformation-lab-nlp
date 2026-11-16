@@ -1,0 +1,82 @@
+# Send a finished development run's results to Application Insights (014 US8, #830). Modal, Colab and Kaggle runs write
+# their per-task results (and, built with --telemetry, the agent's spans) into a private Kaggle results dataset; agent
+# sessions hold no secrets, so the forwarding runs here, with the dev environment's connection string. Read-only on
+# Kaggle; no GPU. Start it from the Actions tab once a run has finished. With `content: full` (the default, 014 US9) each
+# task's trace goes too, step by step, so a failed task can be read in Application Insights without a download.
+#
+# Needs, in the GitHub environment `dev`: KAGGLE_API_TOKEN (or KAGGLE_KEY), KAGGLE_USERNAME, and
+# APPINSIGHTS_CONNECTION_STRING (ops/secrets_register.yaml). Without the last: a warning, telemetry off.
+name: Forward a development run's telemetry to Azure
+run-name: "Forward telemetry: ${{ inputs.label }} (${{ inputs.platform }})"
+
+on:
+  workflow_dispatch:
+    inputs:
+      results_dataset:
+        description: "The run's results dataset, e.g. jcblearning/htlnlp-colab-official-devset-m31b-d2"
+        required: true
+      label:
+        description: "The run's label, e.g. devset-m31b-d2"
+        required: true
+      platform:
+        description: "Where it ran"
+        type: choice
+        options: [modal, colab, kaggle]
+        default: modal
+      content:
+        description: "full: every step's text too (messages, commands, outputs, the patch), secrets taken out. labels: counts and short labels only"
+        type: choice
+        options: [full, labels]
+        default: full
+
+concurrency: forward-run-telemetry-${{ inputs.label }}
+
+jobs:
+  forward:
+    runs-on: ubuntu-latest
+    environment: dev
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with: {python-version: "3.12"}
+      - run: pip install --quiet "kaggle==2.2.5" six -e "./python[azure]"   # kaggle 2.2.5 imports six without declaring it (#450)
+
+      - name: Kaggle credentials and the telemetry switch (values stay masked)
+        env:
+          U: ${{ vars.KAGGLE_USERNAME || secrets.KAGGLE_USERNAME }}
+          T: ${{ secrets.KAGGLE_API_TOKEN }}
+          K: ${{ secrets.KAGGLE_KEY }}
+          AI: ${{ secrets.APPINSIGHTS_CONNECTION_STRING }}
+        run: |
+          [ -n "$U" ] && echo "KAGGLE_USERNAME=$U" >> "$GITHUB_ENV"
+          tok="${T:-$K}"
+          [ -n "$tok" ] || { echo "::error::Set KAGGLE_API_TOKEN (or KAGGLE_KEY) in the GitHub environment 'dev'"; exit 1; }
+          echo "KAGGLE_API_TOKEN=$tok" >> "$GITHUB_ENV"
+          [ -n "$K" ] && echo "KAGGLE_KEY=$K" >> "$GITHUB_ENV"
+          if [ -n "$AI" ]; then
+            echo "APPLICATIONINSIGHTS_CONNECTION_STRING=$AI" >> "$GITHUB_ENV"
+            echo "DENTAL_TELEMETRY=azure" >> "$GITHUB_ENV"
+          else
+            echo "::warning::APPINSIGHTS_CONNECTION_STRING is not set in the GitHub environment 'dev': telemetry off"
+          fi
+
+      - name: Download the run's results
+        env:
+          DATASET: ${{ inputs.results_dataset }}
+        run: |
+          python - <<'PY'
+          import os
+          from kaggle.api.kaggle_api_extended import KaggleApi
+          api = KaggleApi(); api.authenticate()
+          api.dataset_download_files(os.environ["DATASET"], path="results", unzip=True, quiet=True)
+          PY
+
+      - name: Send its spans
+        env:
+          LABEL: ${{ inputs.label }}
+          PLATFORM: ${{ inputs.platform }}
+          DENTAL_TELEMETRY_CONTENT: ${{ inputs.content }}   # 014 US9 (#850, ADR 0010): a coding-agent run's own content
+        run: python kaggle/forward_run_telemetry.py results --label "$LABEL" --platform "$PLATFORM"

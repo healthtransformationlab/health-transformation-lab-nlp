@@ -810,6 +810,25 @@ class _FakeKaggle:
             raise _HttpError(404)
         return "ready"
 
+    username = "someone"   # whose token this is, as Kaggle reports it after checking the token
+
+    def get_config_value(self, name):
+        return self.username if name == "username" else None
+
+    def dataset_list(self, user=None, search=None, mine=False, page=1, **k):
+        """The token owner's own datasets (`mine`) whose slug holds `search`, private ones included, 20 to a page as
+        kaggle 2.2.5 asks for them; or the error or odd answer set for the listing."""
+        import types
+        self.calls.append(("datasets", mine, search, page))
+        if getattr(self, "list_error", None) is not None:
+            raise self.list_error
+        if hasattr(self, "list_answer"):
+            return self.list_answer
+        rows = [types.SimpleNamespace(ref=r) for r in getattr(self, "decoys", []) + sorted(self.datasets)
+                if mine and r.split("/")[0].lower() == self.username.lower()
+                and (search or "").lower() in r.split("/")[-1].lower()]
+        return rows[(page - 1) * 20: page * 20]
+
     def _take(self, folder):
         from pathlib import Path
         files = {str(p.relative_to(folder)): p.read_bytes() for p in Path(folder).rglob("*") if p.is_file()}
@@ -910,6 +929,46 @@ def test_a_status_call_that_fails_stops_the_run_and_only_a_missing_dataset_is_a_
     for failure in (ConnectionError("the network blinked"), _HttpError(500), _HttpError(401)):
         with pytest.raises(SystemExit, match="could not tell"):
             co.restore(_FakeKaggle(status_error=failure), "someone", "colab-graph", out, sleep=lambda s: None)
+
+
+def test_a_403_for_a_dataset_the_owner_does_not_have_is_a_fresh_start_and_any_doubt_still_stops(co, monkeypatch,
+                                                                                                 tmp_path):
+    """#815: Kaggle answers 403, not 404, for a private dataset that does not exist, so a run with a new label stopped
+    before its first upload. After a 403, the token owner's own datasets, every page of them, say whether it is
+    there; anything less than a full answer from the owner's own token still stops the run."""
+    _on_machine(co, monkeypatch, tmp_path)
+    out = tmp_path / "content" / "htl_kaggle" / "working"
+    ref = "someone/htlnlp-colab-official-colab-graph"
+    absent = _FakeKaggle({"someone/htlnlp-colab-official-colab-graph-l4": {}}, status_error=_HttpError(403))
+    assert co.restore(absent, "someone", "colab-graph", out, sleep=lambda s: None) == ("fresh", 0)
+    assert ("datasets", True, "htlnlp-colab-official-colab-graph", 1) in absent.calls   # its own list was read
+    there = _FakeKaggle({ref: _uploaded(co.session_id())}, status_error=_HttpError(403))
+    there.decoys = [f"someone/htlnlp-colab-official-colab-graph-arm{i:02d}" for i in range(25)]   # past page one
+    assert co.dataset_exists(there, ref, sleep=lambda s: None) is True          # found on page two: never fresh
+    assert ("datasets", True, "htlnlp-colab-official-colab-graph", 2) in there.calls
+    upper = _FakeKaggle({"Someone/HTLNLP-colab-official-colab-graph": {}}, status_error=_HttpError(403))
+    upper.username = "SOMEONE"
+    assert co.dataset_exists(upper, ref, sleep=lambda s: None) is True          # Kaggle's names ignore case
+    doubts = []
+    other = _FakeKaggle(status_error=_HttpError(403))
+    other.username = "someone-else"                                              # another account's token: cannot see
+    doubts.append(other)
+    broken = _FakeKaggle(status_error=_HttpError(403))
+    broken.list_error = ConnectionError("the network blinked")
+    doubts.append(broken)
+    for answer in (None, [type("Row", (), {"ref": "htlnlp-colab-official-colab-graph"})()]):   # no answer; odd form
+        odd = _FakeKaggle(status_error=_HttpError(403))
+        odd.list_answer = answer
+        doubts.append(odd)
+    endless = _FakeKaggle(status_error=_HttpError(403))
+    endless.decoys = [f"someone/htlnlp-colab-official-colab-graph-arm{i:04d}" for i in range(20 * co.LISTING_PAGES)]
+    doubts.append(endless)                                                       # more pages than it reads
+    for api in doubts:
+        with pytest.raises(SystemExit, match="could not tell"):
+            co.restore(api, "someone", "colab-graph", out, sleep=lambda s: None)
+        assert sum(c[0] == "status" for c in api.calls) == 3                     # tried again before stopping
+    assert co.is_forbidden(_HttpError(403)) and not co.is_forbidden(_HttpError(404))
+    assert co.is_forbidden(RuntimeError("403 Client Error: Forbidden for url")) and not co.is_forbidden(_HttpError(401))
 
 
 def test_a_session_resumes_its_own_upload_and_another_sessions_only_when_named(co, monkeypatch, tmp_path):
@@ -1407,3 +1466,69 @@ def test_a_development_batch_collected_from_colab_writes_its_own_devset_table(ru
     assert settings["kernel"]["competition_attached"] == "gemma-4-developer-agent"
     assert any("fetched onto the Colab machine" in n for n in settings["notes"])
     assert not any("The kernel attached the competition" in n for n in settings["notes"])
+
+
+def test_after_a_403_the_username_falls_back_to_the_environment_and_every_doubt_says_why(co, monkeypatch, tmp_path):
+    """#815 on Modal: the 403 check stopped with no reason given. The token's username falls back to KAGGLE_USERNAME
+    (trimmed) when the client's config has none, and each undecided answer logs why, with lengths only."""
+    _on_machine(co, monkeypatch, tmp_path)
+    lines = []
+    monkeypatch.setattr(co, "say", lines.append)
+    ref = "someone/htlnlp-colab-official-colab-graph"
+    no_config = _FakeKaggle(status_error=_HttpError(403))
+    no_config.username = None
+    monkeypatch.setenv("KAGGLE_USERNAME", " someone\n")
+    assert co.dataset_exists(no_config, ref, sleep=lambda s: None) is False      # read from the environment
+    monkeypatch.delenv("KAGGLE_USERNAME")
+    other = _FakeKaggle(status_error=_HttpError(403))
+    other.username = "someone-else"
+    assert co.listed_as_own(other, ref) is None
+    broken = _FakeKaggle(status_error=_HttpError(403))
+    broken.list_error = ConnectionError("the network blinked")
+    assert co.listed_as_own(broken, ref) is None
+    said = "\n".join(lines)
+    assert "after a 403: the token's username (12 characters) is not the dataset owner's (7 characters)" in said
+    assert "after a 403: listing the owner's datasets failed (ConnectionError" in said
+    assert "someone-else" not in said
+
+
+def test_huggingface_hub_is_pinned_below_2_for_the_pinned_transformers(co):
+    """#819 on Modal: an unpinned huggingface-hub resolved to 2.4.0, and transformers 5.13.1 (vLLM 0.19.1's) refused
+    to import ("huggingface-hub>=1.5.0,<2.0 is required"), so vLLM never started. Pinned beside the rest."""
+    assert "huggingface-hub>=1.5.0,<2.0" in co.PINS
+
+
+def test_the_notebook_runs_without_a_kaggle_username_secret(monkeypatch):
+    """#827: Colab stopped on a missing KAGGLE_USERNAME secret (a notebook opened from a new branch path is a new
+    notebook to Colab's Secrets). The username is no secret, so it falls back to jcblearning; a missing token still
+    stops, saying how to add it."""
+    import os
+    import sys
+    import types
+    nb = json.loads(NOTEBOOK.read_text())
+    cell = "".join(next(c for c in nb["cells"] if c["cell_type"] == "code")["source"])
+    head = cell.split("REPO =", 1)[0]   # the secrets part, before anything is fetched
+
+    class SecretNotFoundError(Exception):
+        pass
+
+    secrets = {"KAGGLE_API_TOKEN": "x"}
+
+    def get(name):
+        if name not in secrets:
+            raise SecretNotFoundError(name)
+        return secrets[name]
+
+    colab = types.ModuleType("google.colab")
+    colab.userdata = types.SimpleNamespace(get=get)
+    google = types.ModuleType("google")
+    google.colab = colab
+    monkeypatch.setitem(sys.modules, "google", google)
+    monkeypatch.setitem(sys.modules, "google.colab", colab)
+    monkeypatch.delenv("KAGGLE_USERNAME", raising=False)
+    monkeypatch.delenv("KAGGLE_API_TOKEN", raising=False)
+    exec(head, {})
+    assert os.environ["KAGGLE_USERNAME"] == "jcblearning"
+    secrets.clear()
+    with pytest.raises(SystemExit, match="KAGGLE_API_TOKEN"):
+        exec(head, {})

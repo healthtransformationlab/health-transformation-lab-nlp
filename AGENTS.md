@@ -264,6 +264,12 @@ A SEV2 that fires every week for the same cause gets its cause fixed or its leve
     pool isn't spent. A Kaggle GPU run is an exception, for what only the competition's hardware or image decides, and
     starts only on **the owner's explicit yes** for that run, given in the session that starts it; "do what you
     recommend" doesn't (ADR 0007).
+  - **Check before opening a Colab tab** (#847). Run `python kaggle/colab_status.py --branch <run branch> --gpu
+    <L4|A100>`: it says, for each listed run, finished, running, stale (no upload for 20 minutes) or not started, and
+    which run a new tab on that GPU would make. Don't open a tab when it says `nothing`, or while a run is `running`. A
+    tab that looks disconnected may still be running: on November 16 one that "disconnected quickly" finished both its
+    runs over the next three hours. On the device, turn off any VPN (Surfshark is suspected of dropping the owner's tabs
+    on November 15–16), and use a laptop that stays awake with the tab open.
   - **A question goes to recorded traces and CPU first**: a kernel's traces download for free and the competition's
     graphs and embeddings run on CPU. A GPU run only when they can't answer it, and never a development-set run to
     compare resolve counts: six of them on the same 23 tasks resolved 3 or 4 each (p = 1.0, ADR 0007).
@@ -364,6 +370,10 @@ Full pipeline and dry runs: `README.md`. Study design: `docs/process.md`.
 - Paths: use `health_transformation_lab_nlp.paths`, never hard-code `data/`.
 - Telemetry: every public function or method in `python/health_transformation_lab_nlp/` gets `@traced` (from
   `.telemetry`); a test fails without it. Never put note text or row-level data in span attributes or logs.
+  One exception, the owner's (ADR 0010, #850): a coding-agent run's own trace (public code, the model's messages,
+  its patch) is forwarded in full when `DENTAL_TELEMETRY_CONTENT=full`, through `telemetry.content_span` only, with
+  secrets scrubbed by shape and by name (`telemetry.scrub`; what it cannot know is listed in `docs/telemetry.md`).
+  A secret found in a span is a SEV1: rotate it, purge the rows, add its shape to `scrub` with a test.
 - Names: simulated files `simulated_*`, simulated methods `sim:<name>`, calibration-only methods `calib:<name>`.
 - R: base R only, matching Python to 1e-9 (`r/tests/test_parity.R`).
 - Databricks names: identical in every target (catalog `health_transformation_lab`, schemas `<layer>_<bench>`:
