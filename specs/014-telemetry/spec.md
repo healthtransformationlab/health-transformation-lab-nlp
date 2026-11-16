@@ -156,15 +156,17 @@ before) or `full`. Dental-record code never sends text, whatever the setting (AD
 Acceptance scenarios:
 
 1. **Given** `DENTAL_TELEMETRY_CONTENT` unset or `labels`, **when** the forwarder runs, **then** it sends what US8 sends,
-   with no `agent_step` span and no text; every span of the forwarding carries one `forward_id`.
+   with no `agent_step` span and no text; every span of the forwarding, the kernel's own included, carries one
+   `forward_id`.
 2. **Given** `DENTAL_TELEMETRY_CONTENT=full` (or `--content full`), **then** each task with a trace also gets one
    `agent_step` span per step: the step's message, each tool call's name and arguments, the tool's output, the token
    counts and the times; the task's `agent_task` span holds the patch and the agent's error text.
 3. **Given** any other value, **then** the forwarder stops at once, naming `DENTAL_TELEMETRY_CONTENT` and its two values.
-4. **Given** a secret in any text (a Kaggle, Hugging Face, GitHub or `sk-` token, an AWS access key id, a `Bearer`
-   token, an Azure connection string's key, a quoted value assigned to a name such as `password` or `api_key`, or the
-   value of one of the forwarder's own secret environment variables), **then** `[REDACTED]` is sent in its place;
-   ordinary code such as `password: str` is unchanged.
+4. **Given** a secret in any text (a known token shape or private-key block; a value given to a name such as
+   `password`, `token` or `api_key`, quoted or after a NAME in capitals; a `--password` option; an `Authorization`,
+   `Bearer`, `X-API-Key` or `Cookie` header; `user:password@` in a URL; an Azure connection string's key; the value
+   of one of the forwarder's own secret environment variables), written plainly or inside JSON, **then** `[REDACTED]`
+   is sent in its place; ordinary code such as `password: str` or `"token_type": "bearer"` is unchanged.
 5. **Given** a text longer than 8,000 characters, **then** the span holds its first part and `<key>_part_count`, and
    each further part is a child span `<name>_part` (`field_name`, `part_num`, `part_text`); the parts joined give the
    scrubbed text.

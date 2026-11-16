@@ -30,9 +30,19 @@ What a coding-agent run holds is not what the rule protects:
   message, tool calls with their arguments, the tool's output, token counts and times, and the task's patch and error
   text. The workflow that forwards a run asks for `full` by default.
 - **Text reaches a span only through `telemetry.content_span`**, which scrubs every text value first
-  (`telemetry.scrub`): token shapes (Kaggle, Hugging Face, GitHub, `sk-`, AWS), `Bearer` tokens, Azure connection-string
-  keys, quoted values assigned to names such as `password` or `api_key`, and the values of the process's own secret
-  environment variables. A secret is never logged, whatever the setting.
+  (`telemetry.scrub`), and a test fails if anything but the forwarder calls it. The scrubber knows shapes and names:
+  - token shapes (Kaggle, Hugging Face, GitHub, `sk-`, AWS, Databricks, Google, Slack, PyPI, GitLab, npm, Modal, JSON
+    web tokens) and private-key blocks;
+  - a value given to a telling name (`password`, `secret`, `token`, `api_key`, `private_key`, `credentials`, `auth`,
+    `key`), quoted in code or JSON, or unquoted after a NAME in capitals (`export`, `.env`, `printenv`);
+  - `--password` and `--token` options, `curl -u`, `Authorization`, `Bearer`, `X-API-Key` and `Cookie` headers,
+    `scheme://user:password@host`, a secret in a query string, an Azure connection string's key;
+  - the values of the forwarder's own secret environment variables.
+
+  JSON (a tool call's arguments, an output written as JSON) is scrubbed leaf by leaf before it is written out, so a
+  quoted secret is seen as it was typed (`telemetry.scrub_value`).
+- **A secret is never meant to reach a span, whatever the setting, but a scrubber of shapes is not a proof.** What it
+  cannot know is under "Harder" and in `docs/telemetry.md`.
 - **Dental-record code is unchanged, whatever the setting.** `annotate()`, `@traced` and `forward_spans()` still keep
   text only as a short label. Note text and row-level data never reach a span or a log.
 
@@ -41,10 +51,21 @@ What a coding-agent run holds is not what the rule protects:
 - **Easier:** "why did task X fail in run Y" is one query (`agent_step` spans by `run_label` and `instance_id`), from an
   agent session or the portal, for runs already finished too, since the content comes from the trace files.
 - **Harder:**
-  - A scrubber works on shapes. A secret in a shape it doesn't know, with a name that doesn't say so, would be sent.
-    The agent's sandbox is given no credentials, which is the real protection; the scrubber is the second one.
-  - Ingestion grows from kilobytes to about 2 MB of text for a 33-task run. Ten full 129-task runs are about 0.1 GB
-    against the 5 GB a month the workspace takes free (014 US3).
+  - A scrubber works on shapes and names. It lets through: a secret in a shape it has no rule for under a name that
+    doesn't tell; a password that is one plain word (`"hunter"` reads as ordinary text, the price of leaving
+    `"token_type": "bearer"` readable); an unquoted YAML or ini value with no digit in it; a secret encoded again
+    (base64, URL-encoded). An independent review tried 78 realistic inputs against it: 61 leaked through the first
+    version and none through this one, which is now the test (`python/tests/test_telemetry_content.py`).
+  - It also redacts some ordinary text: a quoted value with a digit under a telling name
+    (`token: "OAuth2Token"`), and the password part of an example URL such as `https://user:pass@example.com`.
+  - What the agent's sandbox can see differs by platform. On Colab the kernel's environment is stripped of
+    credentials by name (`kaggle/colab_official.py`); on Kaggle and Modal it is whatever the platform gives the
+    process, which is why `NAME=value` lines and web tokens are scrubbed.
+  - Ingestion grows from kilobytes to megabytes. Forwarding 21 tasks of one run (640 steps) to a file sent 1.96 MB
+    of text (this session's check; the traces are development-task content and are not committed), so a 129-task
+    run is about 12 MB and ten runs about 0.12 GB, against the 5 GB a month the workspace takes free (014 US3).
+  - One item may be 64 KB. A step's three long texts are 8,000 characters each at most, which is under it for
+    ordinary code and could pass it for text that is mostly non-Latin script.
   - A run forwarded twice is there twice; `forward_id` tells the two apart.
 - **The public repository shows how the content is sent, not the content.** Development-task text stays out of the
   repository as before.

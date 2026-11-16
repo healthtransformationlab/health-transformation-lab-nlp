@@ -64,7 +64,8 @@ MAX_LABEL_CHARS = 64
 AZURE_SETTING = "APPLICATIONINSIGHTS_CONNECTION_STRING"
 CONTENT_SETTING = "DENTAL_TELEMETRY_CONTENT"   # a coding-agent run's own content on a span (spec 014 US9, ADR 0010)
 CONTENT_LEVELS = ("labels", "full")           # labels: numbers and short labels, the default; full: text too, scrubbed
-MAX_TEXT_CHARS = 8000                         # Application Insights keeps 8,192 characters of one property
+MAX_TEXT_CHARS = 8000                         # Application Insights: property value string length 8,192, and
+#                                               64 KB an item (Azure Monitor service limits, read 2026-11-16)
 REDACTED = "[REDACTED]"
 SECRET_SCOPE, SECRET_KEY = "health_transformation_lab", "appinsights_connection_string"   # Databricks secret
 REASONS = {                                 # why an asked-for exporter is off (status()["reason_text"] starts so)
@@ -394,33 +395,133 @@ def content_level() -> str:
     return value
 
 
-_SECRET_NAME = r"(?:password|passwd|secret|token|api_?key)[A-Za-z0-9_]*"   # the name from its telling word on
-_SECRET_PATTERNS = (   # (pattern, replacement); a group named `keep` is what stays in front of the redaction
-    (re.compile(r"KGAT_[A-Za-z0-9]{16,}"), REDACTED),                                        # Kaggle
-    (re.compile(r"hf_[A-Za-z0-9]{20,}"), REDACTED),                                          # Hugging Face
-    (re.compile(r"gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}"), REDACTED),      # GitHub
-    (re.compile(r"sk-[A-Za-z0-9_-]{20,}"), REDACTED),                                        # sk- API keys
-    (re.compile(r"AKIA[0-9A-Z]{16}"), REDACTED),                                             # AWS access key id
-    (re.compile(r"(?i)(?P<keep>bearer\s+)[A-Za-z0-9._~+/=-]{16,}"), r"\g<keep>" + REDACTED),
-    (re.compile(r"(?i)(?P<keep>(?:InstrumentationKey|AccountKey|SharedAccessKey|SharedAccessSignature)=)[^;\s\"']+"),
-     r"\g<keep>" + REDACTED),                                                               # Azure connection strings
-    (re.compile(rf"""(?i)(?P<keep>{_SECRET_NAME}["']?\s*[:=]\s*(?P<q>["']))[^"'\n]{{6,}}(?P=q)"""),
-     r"\g<keep>" + REDACTED + r"\g<q>"),                                # a quoted value assigned to a secret-like name
+_B = r"(?<![A-Za-z0-9])"                       # a token shape starts where no letter or digit runs into it
+_TOKEN_SHAPES = re.compile(_B + r"(?:" + "|".join((
+    r"KGAT_[A-Za-z0-9]{16,}",                                                # Kaggle
+    r"hf_[A-Za-z0-9]{20,}",                                                  # Hugging Face
+    r"gh[pousr]_[A-Za-z0-9]{20,}", r"github_pat_[A-Za-z0-9_]{20,}",          # GitHub
+    r"sk-(?=[A-Za-z0-9_-]*\d)[A-Za-z0-9_-]{20,}",                            # sk- API keys (a digit somewhere)
+    r"[sr]k_(?:live|test)_[A-Za-z0-9]{16,}",                                 # Stripe-style
+    r"A[KS]IA[0-9A-Z]{16}",                                                  # AWS access key ids
+    r"dapi[0-9a-f]{32}",                                                     # Databricks
+    r"AIza[0-9A-Za-z_-]{30,}",                                               # Google
+    r"xox[abprs]-[A-Za-z0-9-]{10,}",                                         # Slack
+    r"pypi-[A-Za-z0-9_-]{20,}", r"glpat-[A-Za-z0-9_-]{16,}", r"npm_[A-Za-z0-9]{30,}",
+    r"a[ks]-[A-Za-z0-9]{20,}",                                               # Modal token id and secret
+    r"eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}",           # a JSON web token
+)) + r")")
+_PEM = re.compile(r"-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----.*?(?:-----END [A-Z0-9 ]*PRIVATE KEY-----|\Z)", re.S)
+_TELLING = (r"(?:pass(?:word|wd|phrase)|\bpwd\b|secret|token|api_?key|private_?key|instrumentation_?key"
+            r"|credentials?|\bauth\b|\bkey\b)")
+_Q = r"""(?P<q>\\?["'])"""                     # a quote, as written or as JSON escapes it
+_QUOTED_VALUE = r"(?P<v>(?:(?!(?P=q))[^\n]){4,}?)(?P=q)"
+_RULES = (   # (pattern with groups keep and v, which values it redacts: "any", "unless_ordinary" or "if_mixed")
+    # a quoted value given to a telling name: NAME = "v", "NAME": "v", NAME["X"] = "v", getenv("NAME", "v")
+    (re.compile(rf"""(?i)(?P<keep>{_TELLING}[A-Za-z0-9_]{{0,40}}(?:\\?["'])?\]?\s*[:=,]\s*[bruf]{{0,2}}{_Q}){_QUOTED_VALUE}"""),
+     "unless_ordinary"),
+    (re.compile(rf"""(?i)(?P<keep>\bauth\s*=\s*\(\s*\\?["'][^"'\\\n]*\\?["']\s*,\s*{_Q}){_QUOTED_VALUE}"""), "any"),
+    # NAME=value with no quotes, the name in capitals: a shell line, a .env file, printenv's output
+    (re.compile(r"""(?P<keep>(?<![A-Za-z0-9_])[A-Z0-9_]{0,40}(?:KEY|TOKEN|SECRET|PASSWORD|PASSWD|CREDENTIALS)"""
+                r"""[A-Z0-9_]{0,40}=)(?P<v>[^\s"'\\&;]{4,})"""), "unless_ordinary"),
+    # name: value or name = value without quotes (YAML, ini, .netrc), only when the value mixes letters and digits
+    (re.compile(r"""(?i)(?P<keep>(?<![A-Za-z0-9_])[A-Za-z0-9_]{0,40}(?:password|passwd|secret|token|api_?key)"""
+                r"""[A-Za-z0-9_]{0,20}(?:\s*[:=]\s*|\s+))(?P<v>[^\s"'\\#,)(]{6,})"""), "if_mixed"),
+    # command-line options and logins
+    (re.compile(r"""(?i)(?P<keep>--?(?:password|passwd|token|api[-_]?key|secret|access[-_]?token|auth[-_]?token)"""
+                r"""(?:=|\s+))(?P<v>[^\s"'\\-][^\s"'\\]{3,})"""), "unless_ordinary"),
+    (re.compile(r"""(?P<keep>(?:\s-u|--user)\s+[^\s:"'\\]+:)(?P<v>[^\s"'\\]+)"""), "any"),
+    (re.compile(r"""(?P<keep>\bmysql\b[^\n|;&]*?\s-p)(?P<v>[^\s"'\\]+)"""), "any"),
+    (re.compile(r"""(?P<keep>\bdocker\s+login\b[^\n|;&]*?\s-p\s+)(?P<v>[^\s"'\\]+)"""), "any"),
+    # headers
+    (re.compile(r"""(?i)(?P<keep>authorization(?:\\?["'])?\s*[:=]\s*(?:\\?["'])?\s*(?:basic|bearer|token)\s+)"""
+                r"""(?P<v>(?=[^\s"'\\]*\d)[^\s"'\\]{6,})"""), "any"),
+    (re.compile(r"""(?i)(?P<keep>\bbearer\s+)(?P<v>(?=[A-Za-z0-9._~+/=-]*\d)[A-Za-z0-9._~+/=-]{8,})"""), "any"),
+    (re.compile(r"""(?i)(?P<keep>(?:x-api-key|x-auth-token|private-token|api-key)(?:\\?["'])?\s*[:=]\s*(?:\\?["'])?\s*)"""
+                r"""(?P<v>[^\s"'\\]{6,})"""), "unless_ordinary"),
+    (re.compile(r"""(?P<keep>(?:^|[\s"'])(?:Set-)?Cookie(?:\\?["'])?:\s*(?:\\?["'])?)(?P<v>[^\n"'\\]*=[^\n"'\\]{4,})""",
+                re.M), "any"),
+    # URLs: scheme://user:password@host, and a secret in the query string
+    (re.compile(r"""(?P<keep>[A-Za-z][A-Za-z0-9+.-]{1,20}://[^\s/:@"'\\]+:)(?P<v>[^\s/@"'\\]+)(?=@)"""), "any"),
+    (re.compile(r"""(?i)(?P<keep>[?&](?:api[-_]?key|access[-_]?token|token|sig|signature|password|secret|key)=)"""
+                r"""(?P<v>[^&\s"'\\#]{6,})"""), "unless_ordinary"),
+    # Azure connection strings
+    (re.compile(r"""(?i)(?P<keep>(?:InstrumentationKey|AccountKey|SharedAccessKey|SharedAccessSignature)=)"""
+                r"""(?P<v>[^;\s"'\\]+)"""), "any"),
 )
-_SECRET_ENV = re.compile(r"(?i)key|token|secret|password|passwd|connection_string")
+_SECRET_ENV = re.compile(r"(?i)(?:^|_)(?:key|token|secret|password|passwd|credentials?)(?:$|_)|connection_string")
+_PLAIN_WORDS = re.compile(r"[A-Za-z]+(?:[-_.][A-Za-z]+)*")
+
+
+def _ordinary(value: str) -> bool:
+    """A value that reads as a name, a path or a sentence, not a secret: letters only (`bearer`, `new_password`,
+    `X-API-Key`, `bert-base-uncased`), a path or a placeholder (`/token`, `<mask>`, `{token}`, `$TOKEN`), three or
+    more words, or a small number. A password that is one plain word passes as ordinary: the price of readable code."""
+    if value == REDACTED or value[:1] in "/<{$.~%" or len(value.split()) >= 3:
+        return True
+    if value.isdigit() and len(value) <= 6:
+        return True
+    return len(value) <= 24 and _PLAIN_WORDS.fullmatch(value) is not None
+
+
+def _mixed(value: str) -> bool:
+    return any(c.isdigit() for c in value) and any(c.isalpha() for c in value)
+
+
+def _redact(match, which: str) -> str:
+    value = match.group("v")
+    if which == "unless_ordinary" and _ordinary(value) or which == "if_mixed" and not _mixed(value):
+        return match.group(0)
+    tail = match.group(0)[match.end("v") - match.start(0):]
+    return match.group("keep") + REDACTED + tail
 
 
 def scrub(text: str) -> str:
-    """`text` with every secret replaced by `[REDACTED]`: the token shapes above, a `Bearer` token, an Azure connection
-    string's key, a quoted value assigned to a name such as `password` or `api_key`, and the value of any of this
-    process's environment variables whose name says it is a secret (the forwarder runs with the Kaggle token and the
-    connection string in its environment). Ordinary code (`password: str`, `password=form.password`) is unchanged."""
+    """`text` with secrets replaced by `[REDACTED]` (spec 014 US9, ADR 0010). It knows shapes, not secrets:
+
+    - token shapes (Kaggle, Hugging Face, GitHub, `sk-`, AWS, Databricks, Google, Slack, PyPI, GitLab, npm, Modal,
+      JSON web tokens) and private-key blocks;
+    - a value given to a telling name (`password`, `secret`, `token`, `api_key`, `private_key`, `credentials`, `auth`,
+      `key`): quoted in code or JSON, as written or JSON-escaped; unquoted after a NAME in capitals (`export`, `.env`,
+      `printenv`); unquoted in YAML, ini or .netrc when it mixes letters and digits;
+    - `--password`/`--token` options, `curl -u`, `mysql -p`, `docker login -p`;
+    - `Authorization`, `Bearer`, `X-API-Key` and `Cookie` headers;
+    - `scheme://user:password@host`, a secret in a query string, and an Azure connection string's key;
+    - the value of any of this process's environment variables whose name says it is a secret (the forwarder runs
+      with the Kaggle token and the connection string in its environment).
+
+    Ordinary code stays readable: `password: str`, `password=form.password`, `"token_type": "bearer"`. What it cannot
+    know is a secret in a shape it has no rule for under a name that doesn't tell; docs/telemetry.md lists the gaps."""
     for name, value in os.environ.items():
-        if len(value) >= 8 and _SECRET_ENV.search(name) and value in text:
-            text = text.replace(value, REDACTED)
-    for pattern, replacement in _SECRET_PATTERNS:
-        text = pattern.sub(replacement, text)
+        if len(value) >= 12 and _SECRET_ENV.search(name):
+            for form in {value, json.dumps(value)[1:-1]}:
+                if form in text:
+                    text = text.replace(form, REDACTED)
+    text = _PEM.sub(REDACTED, text)
+    text = _TOKEN_SHAPES.sub(REDACTED, text)
+    for pattern, which in _RULES:
+        text = pattern.sub(functools.partial(_redact, which=which), text)
     return text
+
+
+def scrub_value(value):
+    """`value` (what `json.loads` gives: dicts, lists, text, numbers) with every text in it scrubbed, and any text
+    stored under a telling key (`password`, `token`, `client_secret`, `private_key`, `auth`, `key`, ...) redacted
+    unless it reads as ordinary. Scrubbing before `json.dumps` sees the text as it was written, quotes and newlines
+    unescaped; `content_span` scrubs the result once more."""
+    if isinstance(value, dict):
+        out = {}
+        for key, item in value.items():
+            if isinstance(item, str) and _TELLING_KEY.search(str(key)) and not _ordinary(item):
+                out[key] = REDACTED
+            else:
+                out[key] = scrub_value(item)
+        return out
+    if isinstance(value, list):
+        return [scrub_value(item) for item in value]
+    return scrub(value) if isinstance(value, str) else value
+
+
+_TELLING_KEY = re.compile(rf"(?i){_TELLING}")
 
 
 def text_parts(text: str, size: int = MAX_TEXT_CHARS) -> list[str]:
@@ -564,12 +665,13 @@ def _read_spans(path: Path) -> list[dict]:
     return spans
 
 
-def forward_spans(path: Path) -> int:
+def forward_spans(path: Path, extra: dict | None = None) -> int:
     """Send the spans of a telemetry.jsonl (the `file` exporter's layout, or the Kaggle bundle's and kernel's, which
     are the same) through the exporter setup() configured, and return how many were sent (spec 014 US7, #791). Each
     keeps its own start and end time, kind, status and attributes (numbers and short labels only); a child keeps its
-    parent, under new span ids, and a span whose parent isn't in the file starts its own trace. With the exporter off,
-    or no file, nothing is sent."""
+    parent, under new span ids, and a span whose parent isn't in the file starts its own trace. `extra` is added to
+    every span (the forwarding's `run_label` and `forward_id`), under the same rule: numbers and short labels. With
+    the exporter off, or no file, nothing is sent."""
     path = Path(path)
     if _State.exporter == "off":
         return 0
@@ -589,7 +691,7 @@ def forward_spans(path: Path) -> int:
             ctx = trace.set_span_in_context(start(parent, depth + 1))
         else:
             ctx = context.Context()                            # a root: its own trace, not the caller's
-        attrs = {k: v for k, v in (s.get("attributes") or {}).items() if _forwardable(v)}
+        attrs = {k: v for k, v in {**(extra or {}), **(s.get("attributes") or {})}.items() if _forwardable(v)}
         kind = _KINDS.get(str(s.get("kind", "")).rsplit(".", 1)[-1], trace.SpanKind.INTERNAL)
         made[sid] = _State.tracer.start_span(s.get("name") or "span", context=ctx, kind=kind, attributes=attrs,
                                              start_time=_iso_ns(s["start_time"]))

@@ -148,6 +148,125 @@ def test_with_the_exporter_off_no_step_is_counted_as_sent(fw, tmp_path, monkeypa
     assert "content full, 0 steps in full; telemetry off" in capsys.readouterr().out
 
 
+def _memory(fw, monkeypatch):
+    exporter = tm.setup(tm.TelemetryConfig(exporter="memory"))
+    monkeypatch.setattr(fw.telemetry, "setup", lambda *a, **k: None)
+    return exporter
+
+
+def _sent(exporter) -> str:
+    return json.dumps([[s.name, dict(s.attributes), s.status.description, [e.name for e in s.events]]
+                       for s in exporter.get_finished_spans()])
+
+
+def test_the_option_wins_over_the_setting_both_ways_and_leaves_the_setting_as_it_was(fw, tmp_path, monkeypatch):
+    exporter = _memory(fw, monkeypatch)
+    monkeypatch.setenv("DENTAL_TELEMETRY_CONTENT", "full")
+    assert fw.main([str(_run(tmp_path)), "--label", "devset-x", "--platform", "modal", "--content", "labels"]) == 0
+    spans = exporter.get_finished_spans()
+    assert not [s for s in spans if s.name == "agent_step"] and "TASK TEXT" not in _sent(exporter)
+    assert next(s for s in spans if s.name == "run_forward").attributes["content_level_name"] == "labels"
+    assert tm.content_level() == "full", "the option is for one call: the setting is put back"
+    monkeypatch.delenv("DENTAL_TELEMETRY_CONTENT")
+    assert fw.main([str(tmp_path), "--label", "devset-x", "--platform", "modal", "--content", "full"]) == 0
+    assert tm.content_level() == "labels", "no setting before, none after"
+
+
+def test_a_secret_inside_a_tool_call_or_a_json_output_is_redacted(fw, tmp_path, monkeypatch):
+    """What the forwarder really sends: arguments are a dict and many outputs a JSON string, so a quoted secret sits
+    behind JSON's escapes once written out (the review of PR 851, B1)."""
+    exporter = _memory(fw, monkeypatch)
+    monkeypatch.setenv("DENTAL_TELEMETRY_CONTENT", "full")
+    password, key = "S3cret" + "Passw0rd", "abcd1234" + "efgh5678ijkl"
+    step = {"step_id": 4, "source": "agent", "message": f'I will set password = "{password}".',
+            "tool_calls": [{"function_name": "run_command",
+                            "arguments": {"command": f'export DB_PASSWORD="{password}" && pytest -q', "token": key}}],
+            "observation": {"content": json.dumps({"status": "ok", "stdout": f'api_key = "{key}"\nMY_TOKEN={key}\n'})},
+            "extra": {"timestamp": 1794845070.0}}
+    root = _run(tmp_path)
+    (root / "working/tasks/fastapi_1/results/traces/trace_fastapi_1.json").write_text(json.dumps({"steps": [step]}))
+    result = root / "working/tasks/fastapi_1/result.json"
+    result.write_text(json.dumps({**json.loads(result.read_text()), "patch": f'+PASSWORD = "{password}"\n'}))
+    assert fw.main([str(root), "--label", "devset-x", "--platform", "modal"]) == 0
+    sent = _sent(exporter)
+    assert password not in sent and key not in sent
+    a = next(s for s in exporter.get_finished_spans() if s.name == "agent_step").attributes
+    assert "pytest -q" in a["arguments_text"] and '"status": "ok"' in a["output_text"] and tm.REDACTED in a["message_text"]
+
+
+def test_a_task_takes_the_kernels_times_and_without_them_its_steps(fw, tmp_path, monkeypatch):
+    exporter = _memory(fw, monkeypatch)
+    monkeypatch.setenv("DENTAL_TELEMETRY_CONTENT", "full")
+    root = _run(tmp_path)
+    result = root / "working/tasks/fastapi_1/result.json"
+    result.write_text(json.dumps({**json.loads(result.read_text()), "started_unix": 1794845060.5, "ended_unix": 1794845400.25}))
+    assert fw.main([str(root), "--label", "devset-x", "--platform", "modal"]) == 0
+    task = next(s for s in exporter.get_finished_spans() if s.name == "agent_task" and s.attributes["instance_id"] == "fastapi_1")
+    assert (task.start_time, task.end_time) == (1794845060_500_000_000, 1794845400_250_000_000)
+    exporter.clear()
+    result.write_text(json.dumps({k: v for k, v in json.loads(result.read_text()).items() if not k.endswith("_unix")}))
+    assert fw.main([str(root), "--label", "devset-x", "--platform", "modal"]) == 0
+    task = next(s for s in exporter.get_finished_spans() if s.name == "agent_task" and s.attributes["instance_id"] == "fastapi_1")
+    assert (task.start_time, task.end_time) == (1794845064_000_000_000, 1794845067_000_000_000), "its first and last step"
+
+
+@pytest.mark.parametrize("content", ["labels", "full"])
+def test_one_odd_file_costs_its_own_task_and_no_text_from_it_is_sent(fw, tmp_path, monkeypatch, capsys, content):
+    exporter = _memory(fw, monkeypatch)
+    root = _run(tmp_path)
+    for iid, text in (("bad_1", "{ cut off"), ("bad_2", "[1, 2]"),
+                      ("odd_3", json.dumps({"agent_phase_seconds": "n/a password=S3cretPassw0rd", "tool_call_count": "x",
+                                            "patch": 7, "started_unix": "Infinity", "verification": "no"}))):
+        (root / "working/tasks" / iid).mkdir()
+        (root / "working/tasks" / iid / "result.json").write_text(text)
+    traces = root / "working/tasks/odd_3/results/traces"
+    traces.mkdir(parents=True)
+    (traces / "a.json").write_text("[1, 2]")                                  # a list, not a trace
+    (traces / "b.json").write_text('{"steps": ["text", {"step_id": "x", "observation": "plain", "metrics": 5, '
+                                   '"tool_calls": ["no", {"function_name": "ls"}], "extra": {"timestamp": 1e999}}]}')
+    assert fw.main([str(root), "--label", "devset-x", "--platform", "modal", "--content", content]) == 0
+    out = capsys.readouterr().out
+    assert "bad_1: skipped (JSONDecodeError)" in out and "bad_2: skipped (ValueError)" in out
+    assert "3 of 5 tasks" in out and "S3cretPassw0rd" not in out and "S3cretPassw0rd" not in _sent(exporter)
+    tasks = {s.attributes["instance_id"]: s.attributes for s in exporter.get_finished_spans() if s.name == "agent_task"}
+    assert set(tasks) == {"fastapi_1", "rich_2", "odd_3"}
+    assert tasks["odd_3"]["agent_seconds"] == 0 and tasks["odd_3"]["tool_call_count"] == 0 and tasks["odd_3"]["is_resolved"] is False
+    if content == "full":
+        odd = [s.attributes for s in exporter.get_finished_spans() if s.name == "agent_step" and s.attributes["instance_id"] == "odd_3"]
+        assert len(odd) == 1 and odd[0]["output_text"] == "plain" and odd[0]["tool_name"] == "ls" and odd[0]["step_num"] == 0
+        assert "a.json holds no steps" in out
+
+
+def test_a_task_that_failed_in_the_kernel_says_so(fw):
+    a = fw.task_attrs({"error": "RuntimeError: the sandbox did not start", "trace": "Traceback ..."}, "rich_7")
+    assert a["agent_error_code"] == "other" and a["is_patch_made"] is False
+
+
+def test_the_kernels_own_spans_carry_the_forwarding_too(fw, tmp_path, monkeypatch):
+    exporter = _memory(fw, monkeypatch)
+    monkeypatch.delenv("DENTAL_TELEMETRY_CONTENT", raising=False)
+    root = _run(tmp_path)
+    (root / "working" / "telemetry.jsonl").write_text(json.dumps({
+        "name": "call_llm", "context": {"trace_id": "0x" + "a" * 32, "span_id": "0x01"}, "kind": "SpanKind.INTERNAL",
+        "parent_id": None, "start_time": "2026-11-16T15:29:01.353211Z", "end_time": "2026-11-16T15:29:02.353211Z",
+        "status": {"status_code": "UNSET"}, "attributes": {"gen_ai.operation.name": "call_llm", "prompt": "P" * 100}}) + "\n")
+    assert fw.main([str(root), "--label", "devset-x", "--platform", "kaggle"]) == 0
+    spans = exporter.get_finished_spans()
+    llm = next(s for s in spans if s.name == "call_llm")
+    assert llm.attributes["run_label"] == "devset-x" and "prompt" not in llm.attributes, "labels only, as before"
+    assert {s.attributes.get("forward_id") for s in spans} == {llm.attributes["forward_id"]}
+
+
+def test_the_queue_is_sent_on_after_every_task_and_a_failed_send_is_reported(fw, tmp_path, monkeypatch, capsys):
+    _memory(fw, monkeypatch)
+    monkeypatch.setenv("DENTAL_TELEMETRY_CONTENT", "full")
+    calls = []
+    monkeypatch.setattr(fw.telemetry, "flush", lambda *a, **k: calls.append(1) or len(calls) != 1)   # the first one fails
+    assert fw.main([str(_run(tmp_path)), "--label", "devset-x", "--platform", "modal"]) == 0
+    assert len(calls) == 3, "once a task, and once at the end"
+    assert "telemetry export: FAILED" in capsys.readouterr().err
+
+
 def test_the_workflow_asks_for_the_content_level_full_by_default():
     text = (REPO_ROOT / ".github" / "workflows" / "forward-run-telemetry.yml").read_text()
     block = text[text.index("      content:"):]

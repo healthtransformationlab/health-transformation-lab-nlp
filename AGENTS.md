@@ -372,7 +372,8 @@ Full pipeline and dry runs: `README.md`. Study design: `docs/process.md`.
   `.telemetry`); a test fails without it. Never put note text or row-level data in span attributes or logs.
   One exception, the owner's (ADR 0010, #850): a coding-agent run's own trace (public code, the model's messages,
   its patch) is forwarded in full when `DENTAL_TELEMETRY_CONTENT=full`, through `telemetry.content_span` only, with
-  secrets scrubbed. A secret is never logged, whatever the setting.
+  secrets scrubbed by shape and by name (`telemetry.scrub`; what it cannot know is listed in `docs/telemetry.md`).
+  A secret found in a span is a SEV1: rotate it, purge the rows, add its shape to `scrub` with a test.
 - Names: simulated files `simulated_*`, simulated methods `sim:<name>`, calibration-only methods `calib:<name>`.
 - R: base R only, matching Python to 1e-9 (`r/tests/test_parity.R`).
 - Databricks names: identical in every target (catalog `health_transformation_lab`, schemas `<layer>_<bench>`:

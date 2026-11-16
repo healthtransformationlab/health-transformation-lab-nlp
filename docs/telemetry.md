@@ -397,16 +397,30 @@ the run's results dataset. The decision and its limits are in
 | `agent_step` | step of the trace | `instance_id`, `step_num`, `source_name` (system, user, agent), `event_type_name`, `message_text`, `tool_name`, `tool_call_count`, `arguments_text`, `output_text`, `prompt_token_count`, `completion_token_count`, `cached_token_count`, `elapsed_seconds` |
 | `agent_step_part`, `agent_task_part` | further 8,000 characters of a long text | `field_name`, `part_num`, `part_text`, and the span's own numbers and labels |
 
-- **Secrets are taken out first** (`telemetry.scrub`): `[REDACTED]` stands where one was.
+- **Secrets are taken out first** (`telemetry.scrub`): `[REDACTED]` stands where one was. It knows token shapes,
+  private-key blocks, values given to names such as `password`, `token` or `api_key` (quoted, or after a NAME in
+  capitals as `printenv` writes them), login options and headers, `user:password@` in a URL, and the forwarder's own
+  secret environment values.
+- **What the scrubber cannot know:** a secret in a shape with no rule under a name that doesn't tell; a password
+  that is one plain word; an unquoted YAML or ini value with no digit; a secret encoded again (base64, URL-encoded).
+  It also redacts a little ordinary text, such as the `pass` in an example URL `https://user:pass@example.com`.
+  A secret found in a span is a SEV1 (ADR 0010).
 - **A long text is whole.** The span holds its first 8,000 characters and `<key>_part_count`; the rest are the
   `_part` spans, in `part_num` order.
-- **A run forwarded twice is there twice.** Every span of one forwarding has the same `forward_id`; take the latest.
+- **A run forwarded twice is there twice.** Every span of one forwarding has the same `forward_id`, the kernel's own
+  spans included; the queries below take the latest.
+- **A task that could not be read is skipped and named** in the workflow's log, with the kind of error; the rest of
+  the run is sent.
+- **Not yet checked:** whether a step forwarded days after its run keeps its original time in Application Insights.
 
 What the agent did on one task, in order:
 
 ```kusto
+let run = "devset-m31be-c1";
+let latest = toscalar(dependencies | where name == "run_forward" and customDimensions.run_label == run
+    | where customDimensions.content_level_name == "full" | top 1 by timestamp desc | project tostring(customDimensions.forward_id));
 dependencies
-| where name == "agent_step" and customDimensions.run_label == "devset-m31be-c1"
+| where name == "agent_step" and customDimensions.forward_id == latest
 | where customDimensions.instance_id == "fastapi_12942"
 | project step = toint(customDimensions.step_num), tool = tostring(customDimensions.tool_name),
           seconds = todouble(customDimensions.elapsed_seconds), prompt_tokens = toint(customDimensions.prompt_token_count),
@@ -419,24 +433,27 @@ Where a run's unresolved tasks stopped (the last tool each one called, and its p
 
 ```kusto
 let run = "devset-m31be-c1";
+let latest = toscalar(dependencies | where name == "run_forward" and customDimensions.run_label == run
+    | where customDimensions.content_level_name == "full" | top 1 by timestamp desc | project tostring(customDimensions.forward_id));
 dependencies
-| where name == "agent_task" and customDimensions.run_label == run and customDimensions.is_resolved == "False"
+| where name == "agent_task" and customDimensions.forward_id == latest and customDimensions.is_resolved == "False"
 | project instance_id = tostring(customDimensions.instance_id), error = tostring(customDimensions.agent_error_code),
           patch = tostring(customDimensions.patch_text)
 | join kind=leftouter (
     dependencies
-    | where name == "agent_step" and customDimensions.run_label == run
+    | where name == "agent_step" and customDimensions.forward_id == latest
     | summarize arg_max(toint(customDimensions.step_num), tool = tostring(customDimensions.tool_name))
         by instance_id = tostring(customDimensions.instance_id)
   ) on instance_id
 ```
 
-Every failed `edit_file` of a run, with what it tried to replace:
+Every failed `edit_file` of a run, with what it tried to replace (`has`, since a step with several tool calls
+names them all; add the `latest` line above for a run forwarded more than once):
 
 ```kusto
 dependencies
 | where name == "agent_step" and customDimensions.run_label == "devset-m31be-c1"
-| where customDimensions.tool_name == "edit_file" and customDimensions.output_text has "not found"
+| where customDimensions.tool_name has "edit_file" and customDimensions.output_text has "not found"
 | project tostring(customDimensions.instance_id), toint(customDimensions.step_num), tostring(customDimensions.arguments_text)
 ```
 
