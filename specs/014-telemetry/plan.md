@@ -1,7 +1,7 @@
 # Implementation plan: pipeline telemetry (spec 014)
 
 US1 to US6 were built before this repository kept a plan beside each spec; their tasks are in `spec.md`'s revisions.
-This plan covers US7 and US8.
+This plan covers US7, US8 and US9.
 
 ## US7 - Leaderboard entries and the GPU runs' spans reach Azure (#791)
 
@@ -68,4 +68,29 @@ This plan covers US7 and US8.
 - **Contract:** `task_attrs(result, instance_id)`; spans `run_forward`, `agent_task`; workflow inputs `results_dataset`,
   `label`, `platform`.
 - **Tests:** `python/tests/test_forward_run_telemetry.py` (memory exporter; no task text or patch in any attribute).
+
+## US9 - A coding-agent run's full trace reaches Azure on request (#850)
+
+- **Where the content comes from:** the trace file every task already writes (`tasks/<id>/results/traces/*.json`:
+  `steps[]` with `message`, `tool_calls[].function_name` and `arguments`, `observation.content`, `metrics`, `extra`)
+  and its `result.json`. Nothing changes in the kernel, so runs already finished can be forwarded again in full, and
+  the kernel's own spans keep text out as before (`MAX_SPAN_TEXT`).
+- **One setting:** `DENTAL_TELEMETRY_CONTENT`, `labels` or `full`, read by `telemetry.content_level()`; any other value
+  stops the forwarder at once. The workflow's `content` input sets it, `full` by default; the option `--content`
+  overrides it for one call.
+- **In `telemetry.py`:** `scrub(text)` (token shapes, connection-string keys, quoted values assigned to secret-like
+  names, the process's own secret environment values), `text_parts(text, size)`, and `content_span(name, start_ns,
+  end_ns, parent, **attrs)`, which is the only way text reaches a span: it scrubs every text value, splits one longer
+  than `MAX_TEXT_CHARS` (8,000; Application Insights keeps 8,192 characters of a property) into child spans
+  `<name>_part`, and sends nothing unless the level is `full`. `annotate()` and `forward_spans()` are unchanged.
+- **In the forwarder:** `step_attrs(step, instance_id)`; in full mode `agent_task` is made by `content_span` with
+  `patch_text` and `agent_error_text`, each step is an `agent_step` child of it, and the queue is flushed after every
+  task (the batch processor keeps 2,048 spans; a 129-task run sends more). Every span carries `forward_id`, 12 hex
+  characters made once a call, so a run forwarded twice can be told apart: Application Insights is an event log, and a
+  second forwarding appends.
+- **Cost:** a 33-task chunk's trace files are 2.4 MB (devset-m31be-c1), so ten full 129-task runs are about 0.1 GB against the
+  workspace's 5 GB a month free allowance (US3). `labels` stays the default everywhere else.
+- **Tests:** `python/tests/test_telemetry_content.py` (the setting, the scrubber, the parts, `content_span` with the
+  memory exporter) and `python/tests/test_forward_run_telemetry.py` (labels mode unchanged; full mode's spans, a
+  redacted secret, a split output, the workflow's input).
 

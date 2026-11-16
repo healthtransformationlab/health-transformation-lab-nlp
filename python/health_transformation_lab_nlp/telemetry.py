@@ -38,6 +38,7 @@ import json
 import importlib.util
 import logging
 import os
+import re
 import sys
 import time
 from collections import defaultdict
@@ -61,6 +62,10 @@ EXPORTERS = ("off", "console", "azure", "otlp", "memory", "file")
 LABEL_SUFFIXES = ("_name", "_code", "_id")   # annotate() keeps text only as a short label (AGENTS.md data names)
 MAX_LABEL_CHARS = 64
 AZURE_SETTING = "APPLICATIONINSIGHTS_CONNECTION_STRING"
+CONTENT_SETTING = "DENTAL_TELEMETRY_CONTENT"   # a coding-agent run's own content on a span (spec 014 US9, ADR 0010)
+CONTENT_LEVELS = ("labels", "full")           # labels: numbers and short labels, the default; full: text too, scrubbed
+MAX_TEXT_CHARS = 8000                         # Application Insights keeps 8,192 characters of one property
+REDACTED = "[REDACTED]"
 SECRET_SCOPE, SECRET_KEY = "health_transformation_lab", "appinsights_connection_string"   # Databricks secret
 REASONS = {                                 # why an asked-for exporter is off (status()["reason_text"] starts so)
     "no_connection_string": f"no connection string: {AZURE_SETTING} is not set",
@@ -378,6 +383,84 @@ def annotate(**attrs) -> None:
     if span is None or not span.is_recording():
         return
     span.set_attributes({k: v for k, v in attrs.items() if _keep(k, v)})
+
+
+def content_level() -> str:
+    """`DENTAL_TELEMETRY_CONTENT`: `labels` (the default) or `full`. Any other value stops the caller at once, naming
+    the setting (AGENTS.md, "Check settings before doing work")."""
+    value = os.environ.get(CONTENT_SETTING, "").strip().lower() or CONTENT_LEVELS[0]
+    if value not in CONTENT_LEVELS:
+        raise SystemExit(f"{CONTENT_SETTING} is {value!r}: it takes {' or '.join(CONTENT_LEVELS)}")
+    return value
+
+
+_SECRET_NAME = r"[A-Za-z0-9_]*(?:password|passwd|secret|token|api_?key)[A-Za-z0-9_]*"
+_SECRET_PATTERNS = (   # (pattern, replacement); a group named `keep` is what stays in front of the redaction
+    (re.compile(r"KGAT_[A-Za-z0-9]{16,}"), REDACTED),                                        # Kaggle
+    (re.compile(r"hf_[A-Za-z0-9]{20,}"), REDACTED),                                          # Hugging Face
+    (re.compile(r"gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}"), REDACTED),      # GitHub
+    (re.compile(r"sk-[A-Za-z0-9_-]{20,}"), REDACTED),                                        # sk- API keys
+    (re.compile(r"AKIA[0-9A-Z]{16}"), REDACTED),                                             # AWS access key id
+    (re.compile(r"(?i)(?P<keep>bearer\s+)[A-Za-z0-9._~+/=-]{16,}"), r"\g<keep>" + REDACTED),
+    (re.compile(r"(?i)(?P<keep>(?:InstrumentationKey|AccountKey|SharedAccessKey|SharedAccessSignature)=)[^;\s\"']+"),
+     r"\g<keep>" + REDACTED),                                                               # Azure connection strings
+    (re.compile(rf"""(?i)(?P<keep>\b{_SECRET_NAME}["']?\s*[:=]\s*(?P<q>["']))[^"'\n]{{6,}}(?P=q)"""),
+     r"\g<keep>" + REDACTED + r"\g<q>"),                                # a quoted value assigned to a secret-like name
+)
+_SECRET_ENV = re.compile(r"(?i)key|token|secret|password|passwd|connection_string")
+
+
+def scrub(text: str) -> str:
+    """`text` with every secret replaced by `[REDACTED]`: the token shapes above, a `Bearer` token, an Azure connection
+    string's key, a quoted value assigned to a name such as `password` or `api_key`, and the value of any of this
+    process's environment variables whose name says it is a secret (the forwarder runs with the Kaggle token and the
+    connection string in its environment). Ordinary code (`password: str`, `password=form.password`) is unchanged."""
+    for name, value in os.environ.items():
+        if len(value) >= 8 and _SECRET_ENV.search(name) and value in text:
+            text = text.replace(value, REDACTED)
+    for pattern, replacement in _SECRET_PATTERNS:
+        text = pattern.sub(replacement, text)
+    return text
+
+
+def text_parts(text: str, size: int = MAX_TEXT_CHARS) -> list[str]:
+    """`text` cut into pieces of at most `size` characters, in order; joined, they are the text. Always one or more."""
+    return [text[i:i + size] for i in range(0, len(text), size)] or [""]
+
+
+def content_span(name: str, start_ns: int, end_ns: int, parent=None, **attrs):
+    """One finished span that may hold text: the only way a prompt, a command, a tool's output or a patch reaches a
+    span, and only for a coding-agent run's own content (spec 014 US9, ADR 0010), never dental records. Numbers and
+    booleans are kept as they are. Every text value is scrubbed (`scrub`); one longer than MAX_TEXT_CHARS keeps its
+    first part on the span with `<key>_part_count`, and each further part is a child span `<name>_part` with
+    `field_name`, `part_num`, `part_text` and the span's own numbers and short labels. `parent` is a span (ended or
+    not) or None for a new trace. Returns the span; sends nothing, and returns None, unless content_level() is `full`
+    and an exporter is set up."""
+    if _State.exporter == "off" or content_level() != "full":
+        return None
+    base, more = {}, []
+    for key, value in attrs.items():
+        if isinstance(value, (bool, int, float)):
+            base[key] = value
+        elif isinstance(value, str):
+            first, *rest = text_parts(scrub(value))
+            base[key] = first
+            if rest:
+                base[f"{key}_part_count"] = 1 + len(rest)
+                more += [(key, num, part) for num, part in enumerate(rest, start=2)]
+    ctx = trace.set_span_in_context(parent) if parent is not None else context.Context()
+    span = _State.tracer.start_span(name, context=ctx, attributes=base, start_time=start_ns)
+    labels = {k: v for k, v in base.items() if not k.endswith("_text") and (not isinstance(v, str) or _keep_label(v))}
+    for key, num, part in more:
+        child = _State.tracer.start_span(f"{name}_part", context=trace.set_span_in_context(span), start_time=start_ns,
+                                         attributes={**labels, "field_name": key, "part_num": num, "part_text": part})
+        child.end(end_time=end_ns)
+    span.end(end_time=end_ns)
+    return span
+
+
+def _keep_label(value: str) -> bool:
+    return len(value) <= MAX_LABEL_CHARS
 
 
 def _record_failure(span, name: str, e: BaseException) -> None:

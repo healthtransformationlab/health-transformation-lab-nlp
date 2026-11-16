@@ -370,6 +370,9 @@ Full pipeline and dry runs: `README.md`. Study design: `docs/process.md`.
 - Paths: use `health_transformation_lab_nlp.paths`, never hard-code `data/`.
 - Telemetry: every public function or method in `python/health_transformation_lab_nlp/` gets `@traced` (from
   `.telemetry`); a test fails without it. Never put note text or row-level data in span attributes or logs.
+  One exception, the owner's (ADR 0010, #850): a coding-agent run's own trace (public code, the model's messages,
+  its patch) is forwarded in full when `DENTAL_TELEMETRY_CONTENT=full`, through `telemetry.content_span` only, with
+  secrets scrubbed. A secret is never logged, whatever the setting.
 - Names: simulated files `simulated_*`, simulated methods `sim:<name>`, calibration-only methods `calib:<name>`.
 - R: base R only, matching Python to 1e-9 (`r/tests/test_parity.R`).
 - Databricks names: identical in every target (catalog `health_transformation_lab`, schemas `<layer>_<bench>`:
