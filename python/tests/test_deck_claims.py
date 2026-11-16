@@ -111,18 +111,23 @@ def test_the_pitch_scopes_globaldentbench_rates_to_what_was_rated():
     Pharmacology and Safety, not every answer that involves a medicine (anesthesia answers were 8.93%), and its
     "1 in 3" (31.01%) is of the answers to case questions, not of every answer. The slides said "Where medicines are
     involved" and "1 in 3 answers", and the problem slide's notes gave 4.51% as "about one in twenty"."""
-    said = {sid: " ".join(build_decks.visible_text(section)) + " " + notes
-            for deck, sid, section, notes in deck_slides() if deck == "pitch" and sid in ("problem", "harm")}
-    for sid, text in said.items():
-        for wide in ("medicines are involved", "involving medicines", "conditions are involved"):
-            assert wide not in text, f"pitch/{sid}: '{wide}'"
-        sentences = [t for t in re.split(r"(?<=[.?!])\s+", text) if "1 in 7" in t or "one in seven" in t]
-        assert sentences, f"pitch/{sid}: the slide and its notes give the 1 in 7"
-        for sentence in sentences:
-            assert "on medicines and medical conditions" in sentence.lower(), f"pitch/{sid}: {sentence}"
-    assert "1 in 3 of those answers was rated unsafe" in said["problem"]
-    assert "Systemic Health, Pharmacology and Safety" in said["problem"]
-    assert "about one in twenty" not in said["problem"], "4.51% is 1 in 22: say fewer than one in twenty"
+    pitch = {sid: {"slide": " ".join(build_decks.visible_text(section)), "notes": notes}
+             for deck, sid, section, notes in deck_slides() if deck == "pitch" and sid in ("problem", "harm")}
+    for sid, parts in pitch.items():
+        for where, text in parts.items():
+            for wide in ("medicines are involved", "involving medicines", "conditions are involved"):
+                assert wide not in text, f"pitch/{sid} {where}: '{wide}'"
+            sentences = [t for t in re.split(r"(?<=[.?!])\s+", text) if "1 in 7" in t or "one in seven" in t]
+            assert sentences, f"pitch/{sid}: the {where} give the 1 in 7"
+            for sentence in sentences:
+                assert "on medicines and medical conditions" in sentence.lower(), f"pitch/{sid} {where}: {sentence}"
+    assert "1 in 3 of those answers was rated unsafe" in pitch["problem"]["slide"]
+    # the safety ratings are the study's AI judge's: dentists checked its grading, not its safety ratings (#839)
+    for needed in ("rated unsafe by the study's AI judge", "14.15 percent", "Systemic Health, Pharmacology and Safety",
+                   "fewer than one in twenty"):
+        assert needed in pitch["problem"]["notes"], f"pitch/problem notes: '{needed}'"
+    assert "about one in twenty" not in pitch["problem"]["notes"], "4.51% is 1 in 22: say fewer than one in twenty"
+    assert "of the answers to case questions" in pitch["harm"]["notes"]
 
 
 def tier_cost(t: dict) -> float:
