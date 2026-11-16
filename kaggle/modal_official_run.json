@@ -13,6 +13,13 @@
    "kernel_dataset": "jcblearning/htlnlp-colab-kernel-devset-m31b-d2-same23",
    "model": "google/gemma-4/other/gemma-4-31b-it-qat-w4a16-ct/2",
    "network_open_acknowledged": true
+  },
+  {
+   "label": "devset-m31b-d2-rest8",
+   "bundle": "jcblearning/htlnlp-official-devset-m31b-d2-rest8",
+   "kernel_dataset": "jcblearning/htlnlp-colab-kernel-devset-m31b-d2-rest8",
+   "model": "google/gemma-4/other/gemma-4-31b-it-qat-w4a16-ct/2",
+   "network_open_acknowledged": true
   }
  ]
 }
