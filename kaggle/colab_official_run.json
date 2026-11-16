@@ -11,6 +11,15 @@
    "network_open_acknowledged": true
   },
   {
+   "label": "devset-cpub-c1-try2",
+   "bundle": "jcblearning/htlnlp-official-devset-cpub-c1",
+   "kernel_dataset": "jcblearning/htlnlp-colab-kernel-devset-cpub-c1",
+   "gpu": "A100",
+   "model": "google/gemma-4/other/gemma-4-31b-it-qat-w4a16-ct/2",
+   "network_open_acknowledged": true,
+   "resume_session": "20261116T201613Z-5639bb2f"
+  },
+  {
    "label": "devset-cpub-c2",
    "bundle": "jcblearning/htlnlp-official-devset-cpub-c2",
    "kernel_dataset": "jcblearning/htlnlp-colab-kernel-devset-cpub-c2",
