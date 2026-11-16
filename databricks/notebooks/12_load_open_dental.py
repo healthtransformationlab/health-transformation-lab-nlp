@@ -26,7 +26,7 @@
 
 # COMMAND ----------
 
-# MAGIC %pip install -q -e "../../python[ml]"
+# MAGIC %pip install -q -e "../../python[ml,azure]"
 
 # COMMAND ----------
 

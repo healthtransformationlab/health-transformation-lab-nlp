@@ -76,11 +76,11 @@ modal_memory_usd_per_gib_hour:
 # CPU and memory at their limits; 25 USD keeps a month of runs that start on their own inside the Starter plan's 30 USD
 # credit, with 5 to spare. Change them by pull request.
 modal_auto_max_usd:
-  value: 5
-  source: the owner's ask of November 15, 2026 (#806); docs/adr/0008-modal-runs-start-on-their-own-under-a-cost-cap.md
+  value: 10
+  source: the owner's ask of November 15, 2026 (#806), raised from 5 the same evening so a 23-task 31B run on an A100 (about 9-10 USD) starts from a phone without a reviewer (#825); docs/adr/0008-modal-runs-start-on-their-own-under-a-cost-cap.md
   read_date: "2026-11-15"
 
 modal_auto_monthly_usd:
-  value: 25
-  source: the owner's ask of November 15, 2026 (#806); docs/adr/0008-modal-runs-start-on-their-own-under-a-cost-cap.md
-  read_date: "2026-11-15"
+  value: 42
+  source: the owner's ask of November 15, 2026 (#806), raised from 25 the same evening for tonight's runs (#825), about 5 USD beyond the Starter plan's 30 USD credit at most; raised from 35 on November 16, 2026 (#843) for the full 31B-e run (#842, about 23 USD on 13.59 already used), under Modal's own 42.50 USD usage limit on the account; docs/adr/0008-modal-runs-start-on-their-own-under-a-cost-cap.md
+  read_date: "2026-11-16"

@@ -35,6 +35,7 @@ import functools
 import inspect
 import itertools
 import json
+import importlib.util
 import logging
 import os
 import sys
@@ -66,6 +67,7 @@ REASONS = {                                 # why an asked-for exporter is off (
     "malformed_connection_string": f"malformed connection string: {AZURE_SETTING} has no InstrumentationKey=...",
     "no_secret": "no secret",
     "no_file": "no file: DENTAL_TELEMETRY_FILE is not set",
+    "no_azure_package": "no azure exporter: azure-monitor-opentelemetry is not installed",
 }
 log = logging.getLogger(LOGGER)
 
@@ -214,6 +216,10 @@ def setup(config: TelemetryConfig | None = None):
                     "string (expected InstrumentationKey=...;IngestionEndpoint=...): telemetry off")
         reason = REASONS["malformed_connection_string"]
         c = TelemetryConfig(exporter="off")
+    if c.exporter == "azure" and not _azure_exporter_installed():   # optional: never fails a pipeline (#822)
+        log.warning("DENTAL_TELEMETRY=azure but azure-monitor-opentelemetry is not installed: telemetry off")
+        reason = REASONS["no_azure_package"]
+        c = TelemetryConfig(exporter="off")
     if c.exporter == "file" and not c.file_path:
         log.warning("DENTAL_TELEMETRY=file but DENTAL_TELEMETRY_FILE is not set: telemetry off")
         reason = REASONS["no_file"]
@@ -264,6 +270,18 @@ def setup(config: TelemetryConfig | None = None):
 AZURE_EXPORTER_LOGGER = "azure.monitor.opentelemetry.exporter"
 
 
+def _azure_exporter_installed() -> bool:
+    """Whether the Azure Monitor exporter can be imported (the azure extra). A module already in sys.modules counts as
+    import would count it (None there means it cannot be imported)."""
+    name = "azure.monitor.opentelemetry"
+    if name in sys.modules:
+        return sys.modules[name] is not None
+    try:
+        return importlib.util.find_spec(name) is not None
+    except (ImportError, ValueError):
+        return False
+
+
 def _azure_warnings_to_stderr() -> None:
     """A rejected or failed export is logged by the Azure exporter; print its warnings and errors, once (#801)."""
     log = logging.getLogger(AZURE_EXPORTER_LOGGER)
@@ -306,6 +324,8 @@ def fix_text(reason_text: str) -> str:
     """The fix for a reason status() gives: what to create or set, by name."""
     if reason_text.startswith(REASONS["no_file"]):
         return "set DENTAL_TELEMETRY_FILE to the span file's path"
+    if reason_text.startswith(REASONS["no_azure_package"]):
+        return 'install the azure extra: pip install "health-transformation-lab-nlp[azure]" (in a notebook, %pip install -e ../../python[azure])'
     if reason_text.startswith(REASONS["malformed_connection_string"]):
         return ("put the resource's own connection string (InstrumentationKey=...;IngestionEndpoint=..., from "
                 f"terraform -chdir=infra/azure output -raw connection_string) in {AZURE_SETTING} or the Databricks "

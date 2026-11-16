@@ -44,7 +44,7 @@
 
 # COMMAND ----------
 
-# MAGIC %pip install -q -e ../../python[models] presidio-analyzer https://github.com/explosion/spacy-models/releases/download/en_core_web_lg-3.8.0/en_core_web_lg-3.8.0-py3-none-any.whl
+# MAGIC %pip install -q -e "../../python[models,azure]" presidio-analyzer https://github.com/explosion/spacy-models/releases/download/en_core_web_lg-3.8.0/en_core_web_lg-3.8.0-py3-none-any.whl
 
 # COMMAND ----------
 
