@@ -14,7 +14,7 @@
 
 # COMMAND ----------
 
-# MAGIC %pip install -q -e ../../python[db] databricks-sdk
+# MAGIC %pip install -q -e "../../python[db,azure]" databricks-sdk
 # MAGIC %restart_python
 
 # COMMAND ----------

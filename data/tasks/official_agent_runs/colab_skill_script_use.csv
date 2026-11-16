@@ -1,0 +1,11 @@
+instance_id,install_call_count,install_with_args_count,find_call_count,find_then_listed_read_count,edit_script_call_count,edit_applied_count,edit_nothing_written_count,edit_already_done_count,edit_occurs_count,edit_file_not_found_count,edit_file_ambiguous_count,tool_call_count,task_seconds
+htlnlp_119,0,0,0,0,0,0,0,0,0,0,0,7,303.6
+htlnlp_144,0,0,0,0,0,0,0,0,0,1,0,21,244.2
+htlnlp_180,0,0,0,0,0,0,0,0,0,0,0,12,207.8
+htlnlp_189,0,0,0,0,0,0,0,0,0,0,0,2,39.8
+htlnlp_90,0,0,0,0,0,0,0,0,0,1,0,8,303.5
+htlnlp_cca2d155,0,0,0,0,1,0,0,0,0,1,0,13,303.2
+htlnlp_pr22,0,0,0,0,0,0,0,0,0,0,0,15,299.9
+htlnlp_pr35,0,0,0,0,0,0,0,0,0,0,1,6,86.0
+htlnlp_pr47,0,0,0,0,0,0,0,0,0,0,0,11,303.5
+htlnlp_pr63,0,0,0,0,0,0,0,0,0,0,0,7,73.4

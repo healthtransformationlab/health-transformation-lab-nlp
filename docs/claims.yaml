@@ -258,6 +258,18 @@ pitch:
       source: "GlobalDentBench, arXiv 2605.24636v2 (Zhao et al., 2026): 12 frontier LLMs; 22.34% on case-based questions, extracted from peer-reviewed clinical case reports"
       checked: 2026-10-28
       covers: the 12 models' average on questions built from published patient case reports
+    # "N in M" figures are found since #838. Each rounds a GlobalDentBench rate to the nearest whole "1 in M":
+    # 1 / 0.3101 = 3.2, 1 / 0.1415 = 7.1, 1 / 0.0893 = 11.2 (harm, below)
+    - value: "1 in 3"
+      kind: cited
+      source: "GlobalDentBench, arXiv 2605.24636v2 (Zhao et al., 2026), section 2.5: a risk analysis of 19,080 responses from 12 frontier LLMs to 1,590 case-based questions; 'Overall, 68.99% of responses were classified as S0, whereas 31.01% were classified as unsafe (Fig. 4A)' (S1, 'potential for reversible patient harm', 26.50%; S2, 'potential for irreversible or life-threatening harm', 4.51%); 'nearly one-third of LLM-generated answers in real-world dental cases contained potentially harmful clinical content'. The ratings are by the paper's dentist-calibrated automatic judge (Gemini-3-Flash-Preview); section 2.6 reports dentists' agreement with the judge on answer and key-point grading, not on the safety ratings"
+      checked: 2026-11-16
+      covers: "answers of 12 AI models to the 1,590 questions built from published dental case reports that the paper's AI judge rated unsafe (potential for reversible or irreversible harm): 31.01%, which the paper calls nearly one-third. Case questions only, not the exam or short-answer questions"
+    - value: "1 in 7"
+      kind: cited
+      source: "GlobalDentBench, arXiv 2605.24636v2 (Zhao et al., 2026), section 2.5: 'Severe-risk responses were most concentrated in Systemic Health, Pharmacology and Safety (SHPS), which had the highest mean S2 rate across models (14.15%) and reached 28.57% for MiniMax-M2.7'; S2 'denoted unsafe responses with potential for irreversible or life-threatening harm'; a discipline's mean rate is each model's rate on that discipline's case-based questions, averaged across the 12 models"
+      checked: 2026-11-16
+      covers: "answers to case questions in the discipline the paper calls Systemic Health, Pharmacology and Safety (one of 14) that the paper's AI judge rated as risking irreversible or life-threatening harm: 14.15%, the average of 12 models' rates. That discipline only, not every answer that involves a medicine"
   harm:
     # #645: the slide said "about 3 in 4 harmful AI errors" (76.6%). That figure is in v1 and v2 only (December 2025,
     # 31 LLMs, 100 cases), and there it is the share of severely harmful errors; of all harmful errors it was 50.2%
@@ -266,6 +278,16 @@ pitch:
       source: "First, do NOHARM, arXiv 2512.01241v4 (Wu, Nateghi Haredasht, Maharaj et al., July 13, 2026; a preprint): 'Across 20 notable LLMs and 4 widely used retrieval-augmented generation (RAG) clinical AI tools, direct application of recommendations carried potential for severe harm in up to 24.6% of cases, with errors of omission accounting for more than 80% of severe errors'; a 1,100-task benchmark (100 clinical cases with 1,000 physician-perturbed variants), 10 specialties. The 80% is in the abstract; the text says severe errors 'were dominated by omission', and Extended Data Fig. 3b gives it by quartile of model performance, best to weakest: omission only in 77%, 80%, 82%, 87% of cases with a severe error (both omission and commission: 13%, 13%, 8%, 7%)"
       checked: 2026-11-10
       covers: "errors with potential for severe harm in the advice of 24 AI systems (20 LLMs and 4 clinical AI tools, the paper's main analysis) on 100 outpatient physician-to-specialist consultation cases from one medical center and 1,000 variants of them, 10 medical specialties; the share that were omissions (shown as 'more than 80%'). Severe errors only, not all harmful errors"
+    - value: "1 in 7"
+      kind: cited
+      source: "GlobalDentBench, arXiv 2605.24636v2 (Zhao et al., 2026), section 2.5: 'Severe-risk responses were most concentrated in Systemic Health, Pharmacology and Safety (SHPS), which had the highest mean S2 rate across models (14.15%) and reached 28.57% for MiniMax-M2.7'; S2 'denoted unsafe responses with potential for irreversible or life-threatening harm'; a discipline's mean rate is each model's rate on that discipline's case-based questions, averaged across the 12 models"
+      checked: 2026-11-16
+      covers: "answers to case questions in the discipline the paper calls Systemic Health, Pharmacology and Safety (one of 14) that the paper's AI judge rated as risking irreversible or life-threatening harm: 14.15%, the average of 12 models' rates. That discipline only, not every answer that involves a medicine"
+    - value: "1 in 11"
+      kind: cited
+      source: "GlobalDentBench, arXiv 2605.24636v2 (Zhao et al., 2026), section 2.5: 'Additional S2 concentrations were observed in Anesthesia and Medical Emergencies (AME, 8.93%)', the mean S2 rate across the 12 models (S2: 'potential for irreversible or life-threatening harm'). Sections 2.1 and 2.5 expand AME as Anesthesia and Medical Emergencies; the discussion once expands it as 'Applied Medical and Basic Sciences (AME)', which is not one of the 14 disciplines"
+      checked: 2026-11-16
+      covers: "answers to case questions in the discipline Anesthesia and Medical Emergencies (one of 14) that the paper's AI judge rated as risking irreversible or life-threatening harm: 8.93%, the average of 12 models' rates"
   example:
     - value: "22%"
       kind: cited

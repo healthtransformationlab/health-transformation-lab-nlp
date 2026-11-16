@@ -130,3 +130,18 @@ missing secret never fails a pipeline); what changes is that off-when-asked is n
   `::warning::` annotation under GitHub Actions)
 - `digests.telemetry_alerts(statuses)` and `digests.register_alerts(register, scope_keys)`: SEV3s in the daily
   digest (`14_pipeline_digest.py`), the second for a registered Databricks-scope secret the scope lacks
+
+### US8 - Development runs on Modal, Colab and Kaggle reach Azure (P2) #830
+A development run on any of the three writes its per-task results, and with `--telemetry` the agent's spans, into a
+private Kaggle results dataset. The agent sessions that collect runs hold no secrets, so until now nothing from these
+runs reached Application Insights. A manual workflow in the `dev` environment downloads a finished run's results and
+sends them, so every platform's runs sit beside the watcher's and Databricks' spans.
+
+Acceptance scenarios:
+
+1. **Given** a results folder with `tasks/*/result.json`, **when** `kaggle/forward_run_telemetry.py <dir> --label <label>
+   --platform <modal|colab|kaggle>` runs with an exporter set up, **then** it sends one `run_forward` span (label,
+   platform, task count) and one `agent_task` span per task (instance id, agent seconds, tool calls, patch made,
+   resolved, error kind), never task text or a patch, forwards any `telemetry.jsonl`, and prints the export result.
+2. **Given** `.github/workflows/forward-run-telemetry.yml`, **then** it runs on demand in `dev` with the Kaggle token and,
+   if set, `APPINSIGHTS_CONNECTION_STRING` (missing: a warning, telemetry off).

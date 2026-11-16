@@ -19,7 +19,7 @@
 
 # COMMAND ----------
 
-# MAGIC %pip install -q -e ../../python[track]
+# MAGIC %pip install -q -e "../../python[track,azure]"
 
 # COMMAND ----------
 
