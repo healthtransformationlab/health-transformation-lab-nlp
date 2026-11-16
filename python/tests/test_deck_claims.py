@@ -141,6 +141,12 @@ def test_the_pitch_scopes_globaldentbench_rates_to_what_was_rated():
         assert needed in pitch["problem"]["notes"], f"pitch/problem notes: '{needed}'"
     assert "about one in twenty" not in pitch["problem"]["notes"], "4.51% is 1 in 22: say fewer than one in twenty"
     assert "of the answers to case questions" in pitch["harm"]["notes"]
+    # the harm slide ranks the disciplines by their rate of harm that cannot be undone (S2), as the paper does; by the
+    # overall unsafe rate orthodontics is highest (44.30%), so "most dangerous" claims a ranking the paper doesn't make
+    harm = next(s for d, sid, s, _ in deck_slides() if d == "pitch" and sid == "harm")
+    assert build_decks.heading(harm, "harm") == \
+        "Where AI most often risked permanent harm: medicines, medical conditions and emergencies"
+    assert "most dangerous" not in pitch["harm"]["slide"] + pitch["harm"]["notes"]
 
 
 def tier_cost(t: dict) -> float:
