@@ -161,16 +161,19 @@ def _summary(spent):
 
 
 def test_a_run_within_both_limits_starts_without_approval(mo):
-    limits = mo.load_auto_limits()
-    assert limits == {"per_run": 5, "monthly": 25}
-    needed, reason = mo.approval_needed(5, _summary("12.40"))
+    limits = mo.load_auto_limits()                                   # from ops/cost_settings.yaml (#806, #825)
+    P, M = limits["per_run"], limits["monthly"]
+    assert 0 < P <= M
+    needed, reason = mo.approval_needed(P, _summary(str(M - P - 1)))
     assert needed is False and "without approval" in reason
     assert mo.approval_needed("4.5", "Workspace: x\n" + _summary(0))[0] is False   # a line of other text around it
 
 
 def test_a_run_over_a_limit_or_with_the_spend_unknown_waits_for_approval(mo):
-    for max_usd, summary, word in ((5.01, _summary(0), "modal_auto_max_usd"),
-                                   (5, _summary("20.01"), "modal_auto_monthly_usd"),
+    limits = mo.load_auto_limits()
+    P, M = limits["per_run"], limits["monthly"]
+    for max_usd, summary, word in ((P + 0.01, _summary(0), "modal_auto_max_usd"),
+                                   (P, _summary(str(M - P + 0.01)), "modal_auto_monthly_usd"),
                                    (1, "", "could not be read"),
                                    (1, json.dumps({"billed_cost": "0"}), "could not be read"),
                                    (1, _summary("nan"), "could not be read"),
@@ -193,7 +196,8 @@ def test_a_branch_that_changes_what_gates_it_waits_and_cannot_raise_its_own_limi
 
 
 def test_approval_prints_the_decision_and_its_reason_for_the_next_jobs(mo, capsys):
-    mo.cli(["approval", "--max-usd", "8", "--gating-changed", "false"], stdin=io.StringIO(_summary(0)))
+    over = mo.load_auto_limits()["per_run"] + 3
+    mo.cli(["approval", "--max-usd", str(over), "--gating-changed", "false"], stdin=io.StringIO(_summary(0)))
     out = capsys.readouterr().out.splitlines()
     assert out[0] == "needs_approval=true" and out[1].startswith("reason=") and len(out) == 2
     mo.cli(["approval", "--max-usd", "1"], stdin=io.StringIO(_summary(0)))   # by default, taken as changed: it waits
@@ -205,10 +209,12 @@ def test_just_before_the_run_the_spend_is_read_again_and_an_unapproved_overrun_s
         return mo.cli(["approval", "--max-usd", str(max_usd), "--gating-changed", "false", "--approved", approved],
                       stdin=io.StringIO(_summary(spent)))
 
-    assert again(5, 10, "skipped")["needs_approval"] is False         # still within: goes ahead
+    limits = mo.load_auto_limits()
+    P, M = limits["per_run"], limits["monthly"]
+    assert again(P, M - P - 1, "skipped")["needs_approval"] is False  # still within: goes ahead
     with pytest.raises(SystemExit, match="not approved"):
-        again(5, "21", "skipped")                                    # another run spent meanwhile
-    assert again(5, "21", "success")["needs_approval"] is True        # the owner approved it: goes ahead
+        again(P, M - P + 1, "skipped")                               # another run spent meanwhile
+    assert again(P, M - P + 1, "success")["needs_approval"] is True   # the owner approved it: goes ahead
     with pytest.raises(SystemExit, match="not approved"):
         mo.cli(["approval", "--max-usd", "1", "--gating-changed", "false", "--approved", "skipped"],
                stdin=io.StringIO(""))                                # the spend unreadable now

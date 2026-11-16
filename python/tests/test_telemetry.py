@@ -1,6 +1,7 @@
 """Spec 014: pipeline telemetry (OpenTelemetry; Azure Application Insights via the Azure Monitor distro)."""
 
 import logging
+import sys
 
 import pytest
 
@@ -160,3 +161,18 @@ def test_malformed_connection_string_warns_and_turns_off_instead_of_crashing(bad
         assert tm.setup(tm.TelemetryConfig(exporter="azure", connection_string=bad)) is None
     assert tm.active_exporter() == "off"
     assert "not a valid" in caplog.text and bad not in caplog.text      # the value is never logged
+
+
+def test_a_missing_azure_package_turns_telemetry_off_instead_of_failing_the_pipeline(monkeypatch, caplog, capsys):
+    """#822: on Databricks the azure extra was not installed; once a valid connection string arrived, setup() raised
+    ModuleNotFoundError and Load results failed. Telemetry is optional: it turns off, says why and how to fix it."""
+    for name in ("azure.monitor.opentelemetry", "azure.monitor", "azure"):
+        monkeypatch.setitem(sys.modules, name, None)      # import of any of them now raises ImportError
+    good = "InstrumentationKey=00000000-0000-0000-0000-000000000000;IngestionEndpoint=https://x.example/"
+    with caplog.at_level(logging.WARNING):
+        assert tm.setup(tm.TelemetryConfig(exporter="azure", connection_string=good)) is None
+    assert tm.active_exporter() == "off"
+    status = tm.status()
+    assert status["asked_exporter_name"] == "azure" and status["reason_text"].startswith(tm.REASONS["no_azure_package"])
+    err = capsys.readouterr().err
+    assert 'pip install "health-transformation-lab-nlp[azure]"' in err and good not in err + caplog.text

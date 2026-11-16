@@ -335,9 +335,49 @@ az rest --method post --url "https://management.azure.com$WS/api/query?api-versi
   --query "Tables[0].Rows"
 ```
 
+## Development runs on Modal, Colab and Kaggle (US8)
+
+A run on any of the three writes its per-task results, and with `--telemetry` the agent's spans and GPU samples, into a
+private Kaggle results dataset (`jcblearning/htlnlp-colab-official-<label>` for Modal and Colab). Agent sessions hold
+no secrets, so the forwarding is a workflow (#830): Actions, **Forward a development run's telemetry to Azure**, with the
+results dataset, the run's label and the platform. It sends one `run_forward` span and one `agent_task` span per task
+(instance id, agent seconds, tool calls, patch made, resolved, error kind; never task text or a patch), forwards
+`telemetry.jsonl` when the run was built with `--telemetry`, and prints `telemetry export: ok` or `FAILED`. Build new run
+bundles with `--telemetry` so the agent's own spans come too.
+
+```kusto
+AppDependencies
+| where Name == "agent_task"
+| project TimeGenerated, label = tostring(Properties["run_label"]), platform = tostring(Properties["platform_name"]),
+          task = tostring(Properties["instance_id"]), seconds = todouble(Properties["agent_seconds"]),
+          calls = toint(Properties["tool_call_count"]), resolved = tostring(Properties["is_resolved"])
+| order by TimeGenerated desc
+```
+
 ## Not yet
 
 The pipeline doctor: classify each failure (GPU unavailable, out of memory, schema drift, data
 quality, dependency), choose a recovery (retry, repair run, quarantine, escalate), notify downstream
 users, and evaluate all of it on this repo's real incidents. That is the next spec; this one gives
 it the record to work from.
+
+## Reading it back from an agent session
+
+An agent session can query the telemetry it sends, read only, with the key in `ops/secrets_register.yaml`
+("Application Insights read key for agent sessions"; issue 836). The cloud environment's proxy adds the key for host
+`api.applicationinsights.io`, so a session only names the resource's application id, which it keeps in its own notes
+rather than in this public repository:
+
+```bash
+curl -sS -G "https://api.applicationinsights.io/v1/apps/$APP_ID/query" \
+  --data-urlencode "query=dependencies | where name == 'leaderboard_entry' | top 5 by timestamp desc | project timestamp, customDimensions"
+```
+
+Two span names answer most questions:
+
+- `leaderboard_entry`: one per status change of a competition entry, with `submission_ref_id`, `status_code`,
+  `previous_status_code` and, once scored, `public_score_ratio`, from the leaderboard watcher.
+- `agent_task`: one per task of a forwarded development run, from `forward-run-telemetry`.
+
+The key reads nothing else and changes nothing; the leaderboard watcher's ledger
+(`data/tasks/leaderboard_entries.csv`) holds the same scores for a session without it.
