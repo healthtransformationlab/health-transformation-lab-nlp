@@ -835,11 +835,11 @@ def test_an_agent_command_runs_under_a_memory_cap_and_fails_alone_when_it_passes
     import sys
     cap = _capped_namespace()
     with cap(512):
-        over = subprocess.run([sys.executable, "-c", GRAB_1_GIB], capture_output=True, text=True)
-        small = subprocess.run([sys.executable, "-c", "print(len(bytearray(10 ** 6)))"], capture_output=True, text=True)
+        over = subprocess.run([sys.executable, "-c", GRAB_1_GIB], capture_output=True, text=True, check=False)
+        small = subprocess.run([sys.executable, "-c", "print(len(bytearray(10 ** 6)))"], capture_output=True, text=True, check=False)
     assert over.returncode != 0 and "MemoryError" in over.stderr       # the command fails on its own (#834)
     assert small.returncode == 0 and small.stdout.strip() == "1000000"
-    after = subprocess.run([sys.executable, "-c", GRAB_1_GIB], capture_output=True, text=True)
+    after = subprocess.run([sys.executable, "-c", GRAB_1_GIB], capture_output=True, text=True, check=False)
     assert after.returncode == 0 and "got it" in after.stdout            # the cap ends with the block
 
 
@@ -857,7 +857,7 @@ def test_the_cap_reaches_asyncio_subprocesses_and_keeps_their_own_preexec_fn(tmp
 
     with cap(512):
         code, err = asyncio.run(go())
-        subprocess.run(["true"], preexec_fn=lambda: mark.write_text("yes"))
+        subprocess.run(["true"], preexec_fn=lambda: mark.write_text("yes"), check=True)
     assert code != 0 and "MemoryError" in err
     assert mark.read_text() == "yes"
 
