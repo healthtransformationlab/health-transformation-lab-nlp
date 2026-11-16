@@ -264,6 +264,12 @@ A SEV2 that fires every week for the same cause gets its cause fixed or its leve
     pool isn't spent. A Kaggle GPU run is an exception, for what only the competition's hardware or image decides, and
     starts only on **the owner's explicit yes** for that run, given in the session that starts it; "do what you
     recommend" doesn't (ADR 0007).
+  - **Check before opening a Colab tab** (#847). Run `python kaggle/colab_status.py --branch <run branch> --gpu
+    <L4|A100>`: it says, for each listed run, finished, running, stale (no upload for 20 minutes) or not started, and
+    which run a new tab on that GPU would make. Don't open a tab when it says `nothing`, or while a run is `running`. A
+    tab that looks disconnected may still be running: on November 16 one that "disconnected quickly" finished both its
+    runs over the next three hours. On the device, turn off any VPN (Surfshark is suspected of dropping the owner's tabs
+    on November 15–16), and use a laptop that stays awake with the tab open.
   - **A question goes to recorded traces and CPU first**: a kernel's traces download for free and the competition's
     graphs and embeddings run on CPU. A GPU run only when they can't answer it, and never a development-set run to
     compare resolve counts: six of them on the same 23 tasks resolved 3 or 4 each (p = 1.0, ADR 0007).
