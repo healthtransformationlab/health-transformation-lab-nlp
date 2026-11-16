@@ -1,7 +1,8 @@
 # Send a finished development run's results to Application Insights (014 US8, #830). Modal, Colab and Kaggle runs write
 # their per-task results (and, built with --telemetry, the agent's spans) into a private Kaggle results dataset; agent
 # sessions hold no secrets, so the forwarding runs here, with the dev environment's connection string. Read-only on
-# Kaggle; no GPU. Start it from the Actions tab once a run has finished.
+# Kaggle; no GPU. Start it from the Actions tab once a run has finished. With `content: full` (the default, 014 US9) each
+# task's trace goes too, step by step, so a failed task can be read in Application Insights without a download.
 #
 # Needs, in the GitHub environment `dev`: KAGGLE_API_TOKEN (or KAGGLE_KEY), KAGGLE_USERNAME, and
 # APPINSIGHTS_CONNECTION_STRING (ops/secrets_register.yaml). Without the last: a warning, telemetry off.
@@ -22,6 +23,11 @@ on:
         type: choice
         options: [modal, colab, kaggle]
         default: modal
+      content:
+        description: "full: every step's text too (messages, commands, outputs, the patch), secrets taken out. labels: counts and short labels only"
+        type: choice
+        options: [full, labels]
+        default: full
 
 concurrency: forward-run-telemetry-${{ inputs.label }}
 
@@ -72,4 +78,5 @@ jobs:
         env:
           LABEL: ${{ inputs.label }}
           PLATFORM: ${{ inputs.platform }}
+          DENTAL_TELEMETRY_CONTENT: ${{ inputs.content }}   # 014 US9 (#850, ADR 0010): a coding-agent run's own content
         run: python kaggle/forward_run_telemetry.py results --label "$LABEL" --platform "$PLATFORM"

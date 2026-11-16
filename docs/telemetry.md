@@ -37,6 +37,8 @@ resource had never been created, and only a log warning said so):
   the Databricks secret scope must have its key in the scope (`digests.register_alerts`, reading the scope with
   `dbutils.secrets.list`, key names only); one that is missing is a SEV3 in the daily digest too.
 
+`DENTAL_TELEMETRY_CONTENT` (`labels`, the default, or `full`) says whether a coding-agent run's own content may be
+sent ("A run's steps in full" below); it changes nothing for dental-record code, which never sends text.
 `DENTAL_TELEMETRY_SAMPLING` (0–1, default 1.0) sets trace sampling;
 `DENTAL_ENVIRONMENT` (default `dev`) is recorded on every span.
 
@@ -373,11 +375,87 @@ curl -sS -G "https://api.applicationinsights.io/v1/apps/$APP_ID/query" \
   --data-urlencode "query=dependencies | where name == 'leaderboard_entry' | top 5 by timestamp desc | project timestamp, customDimensions"
 ```
 
-Two span names answer most questions:
+Three span names answer most questions:
 
 - `leaderboard_entry`: one per status change of a competition entry, with `submission_ref_id`, `status_code`,
   `previous_status_code` and, once scored, `public_score_ratio`, from the leaderboard watcher.
 - `agent_task`: one per task of a forwarded development run, from `forward-run-telemetry`.
+- `agent_step`: one per step of a task's trace, when the run was forwarded in full (next section).
+
+## A run's steps in full (US9, #850)
+
+A failed task can be read without downloading its trace. The workflow "Forward a development run's telemetry to
+Azure" has a `content` input, `full` by default, which sets `DENTAL_TELEMETRY_CONTENT`; the forwarder's own option is
+`--content full`. It works on a run that finished before this existed, since the content comes from the trace files in
+the run's results dataset. The decision and its limits are in
+[ADR 0010](adr/0010-agent-run-traces-may-carry-full-content.md).
+
+| Span | One per | Holds |
+|---|---|---|
+| `run_forward` | forwarding | `run_label`, `platform_name`, `task_count`, `content_level_name`, `forward_id` |
+| `agent_task` | task | `instance_id`, `agent_seconds`, `tool_call_count`, `is_patch_made`, `is_resolved`, `agent_error_code`; in full: `patch_text`, `agent_error_text` |
+| `agent_step` | step of the trace | `instance_id`, `step_num`, `source_name` (system, user, agent), `event_type_name`, `message_text`, `tool_name`, `tool_call_count`, `arguments_text`, `output_text`, `prompt_token_count`, `completion_token_count`, `cached_token_count`, `elapsed_seconds` |
+| `agent_step_part`, `agent_task_part` | further 8,000 characters of a long text | `field_name`, `part_num`, `part_text`, and the span's own numbers and labels |
+
+- **Secrets are taken out first** (`telemetry.scrub`): `[REDACTED]` stands where one was. It knows token shapes,
+  private-key blocks, values given to names such as `password`, `token` or `api_key` (quoted, or after a NAME in
+  capitals as `printenv` writes them), login options and headers, `user:password@` in a URL, and the forwarder's own
+  secret environment values.
+- **What the scrubber cannot know:** a secret in a shape with no rule under a name that doesn't tell; a password
+  that is one plain word; an unquoted YAML or ini value with no digit; a secret encoded again (base64, URL-encoded).
+  It also redacts a little ordinary text, such as the `pass` in an example URL `https://user:pass@example.com`.
+  A secret found in a span is a SEV1 (ADR 0010).
+- **A long text is whole.** The span holds its first 8,000 characters and `<key>_part_count`; the rest are the
+  `_part` spans, in `part_num` order.
+- **A run forwarded twice is there twice.** Every span of one forwarding has the same `forward_id`, the kernel's own
+  spans included; the queries below take the latest.
+- **A task that could not be read is skipped and named** in the workflow's log, with the kind of error; the rest of
+  the run is sent.
+- **Not yet checked:** whether a step forwarded days after its run keeps its original time in Application Insights.
+
+What the agent did on one task, in order:
+
+```kusto
+let run = "devset-m31be-c1";
+let latest = toscalar(dependencies | where name == "run_forward" and customDimensions.run_label == run
+    | where customDimensions.content_level_name == "full" | top 1 by timestamp desc | project tostring(customDimensions.forward_id));
+dependencies
+| where name == "agent_step" and customDimensions.forward_id == latest
+| where customDimensions.instance_id == "fastapi_12942"
+| project step = toint(customDimensions.step_num), tool = tostring(customDimensions.tool_name),
+          seconds = todouble(customDimensions.elapsed_seconds), prompt_tokens = toint(customDimensions.prompt_token_count),
+          arguments = tostring(customDimensions.arguments_text), output = tostring(customDimensions.output_text),
+          message = tostring(customDimensions.message_text)
+| order by step asc
+```
+
+Where a run's unresolved tasks stopped (the last tool each one called, and its patch):
+
+```kusto
+let run = "devset-m31be-c1";
+let latest = toscalar(dependencies | where name == "run_forward" and customDimensions.run_label == run
+    | where customDimensions.content_level_name == "full" | top 1 by timestamp desc | project tostring(customDimensions.forward_id));
+dependencies
+| where name == "agent_task" and customDimensions.forward_id == latest and customDimensions.is_resolved == "False"
+| project instance_id = tostring(customDimensions.instance_id), error = tostring(customDimensions.agent_error_code),
+          patch = tostring(customDimensions.patch_text)
+| join kind=leftouter (
+    dependencies
+    | where name == "agent_step" and customDimensions.forward_id == latest
+    | summarize arg_max(toint(customDimensions.step_num), tool = tostring(customDimensions.tool_name))
+        by instance_id = tostring(customDimensions.instance_id)
+  ) on instance_id
+```
+
+Every failed `edit_file` of a run, with what it tried to replace (`has`, since a step with several tool calls
+names them all; add the `latest` line above for a run forwarded more than once):
+
+```kusto
+dependencies
+| where name == "agent_step" and customDimensions.run_label == "devset-m31be-c1"
+| where customDimensions.tool_name has "edit_file" and customDimensions.output_text has "not found"
+| project tostring(customDimensions.instance_id), toint(customDimensions.step_num), tostring(customDimensions.arguments_text)
+```
 
 The key reads nothing else and changes nothing; the leaderboard watcher's ledger
 (`data/tasks/leaderboard_entries.csv`) holds the same scores for a session without it.
