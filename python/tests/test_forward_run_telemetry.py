@@ -141,6 +141,13 @@ def test_a_setting_that_is_neither_value_stops_before_anything_is_sent(fw, tmp_p
     assert "DENTAL_TELEMETRY_CONTENT" in str(e.value) and exporter.get_finished_spans() == ()
 
 
+def test_with_the_exporter_off_no_step_is_counted_as_sent(fw, tmp_path, monkeypatch, capsys):
+    tm.setup(tm.TelemetryConfig(exporter="off"))
+    monkeypatch.setattr(fw.telemetry, "setup", lambda *a, **k: None)
+    assert fw.main([str(_run(tmp_path)), "--label", "devset-x", "--platform", "modal", "--content", "full"]) == 0
+    assert "content full, 0 steps in full; telemetry off" in capsys.readouterr().out
+
+
 def test_the_workflow_asks_for_the_content_level_full_by_default():
     text = (REPO_ROOT / ".github" / "workflows" / "forward-run-telemetry.yml").read_text()
     block = text[text.index("      content:"):]

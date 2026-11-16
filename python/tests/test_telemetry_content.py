@@ -55,6 +55,16 @@ def test_ordinary_code_is_left_as_it_is():
     assert tm.scrub(code) == code
 
 
+def test_scrubbing_a_long_unbroken_text_stays_fast():
+    """A tool's output can be one long word (a base64 blob, a minified file): the patterns must not go quadratic."""
+    import time
+    blob = "passwordless_" + "Qx7_" * 100_000 + ' token_value = "abcdefgh"'
+    start = time.perf_counter()
+    out = tm.scrub(blob)
+    assert time.perf_counter() - start < 2.0
+    assert out.endswith('token_value = "' + tm.REDACTED + '"') and out.startswith("passwordless_Qx7_")
+
+
 def test_the_process_own_secret_values_are_redacted(monkeypatch):
     monkeypatch.setenv("MY_SERVICE_API_KEY", "plainvalue-with-no-known-shape")
     monkeypatch.setenv("APPLICATIONINSIGHTS_CONNECTION_STRING", "InstrumentationKey=abc;IngestionEndpoint=https://y/")

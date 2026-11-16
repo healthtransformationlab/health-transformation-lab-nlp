@@ -108,9 +108,9 @@ def send_task_content(run_span, result: dict, task_dir: Path, common: dict) -> i
             continue
         for step in steps:
             step_start, step_end = _step_times(step, start)
-            telemetry.content_span("agent_step", step_start, step_end, parent=task, **common,
-                                   **step_attrs(step, task_dir.name))
-            sent += 1
+            span = telemetry.content_span("agent_step", step_start, step_end, parent=task, **common,
+                                          **step_attrs(step, task_dir.name))
+            sent += span is not None        # nothing is sent with the exporter off
     telemetry.flush()   # the batch processor keeps 2,048 spans; a whole run in full is more
     return sent
 

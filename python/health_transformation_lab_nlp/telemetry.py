@@ -394,7 +394,7 @@ def content_level() -> str:
     return value
 
 
-_SECRET_NAME = r"[A-Za-z0-9_]*(?:password|passwd|secret|token|api_?key)[A-Za-z0-9_]*"
+_SECRET_NAME = r"(?:password|passwd|secret|token|api_?key)[A-Za-z0-9_]*"   # the name from its telling word on
 _SECRET_PATTERNS = (   # (pattern, replacement); a group named `keep` is what stays in front of the redaction
     (re.compile(r"KGAT_[A-Za-z0-9]{16,}"), REDACTED),                                        # Kaggle
     (re.compile(r"hf_[A-Za-z0-9]{20,}"), REDACTED),                                          # Hugging Face
@@ -404,7 +404,7 @@ _SECRET_PATTERNS = (   # (pattern, replacement); a group named `keep` is what st
     (re.compile(r"(?i)(?P<keep>bearer\s+)[A-Za-z0-9._~+/=-]{16,}"), r"\g<keep>" + REDACTED),
     (re.compile(r"(?i)(?P<keep>(?:InstrumentationKey|AccountKey|SharedAccessKey|SharedAccessSignature)=)[^;\s\"']+"),
      r"\g<keep>" + REDACTED),                                                               # Azure connection strings
-    (re.compile(rf"""(?i)(?P<keep>\b{_SECRET_NAME}["']?\s*[:=]\s*(?P<q>["']))[^"'\n]{{6,}}(?P=q)"""),
+    (re.compile(rf"""(?i)(?P<keep>{_SECRET_NAME}["']?\s*[:=]\s*(?P<q>["']))[^"'\n]{{6,}}(?P=q)"""),
      r"\g<keep>" + REDACTED + r"\g<q>"),                                # a quoted value assigned to a secret-like name
 )
 _SECRET_ENV = re.compile(r"(?i)key|token|secret|password|passwd|connection_string")
