@@ -1,7 +1,7 @@
 # Implementation plan: pipeline telemetry (spec 014)
 
 US1 to US6 were built before this repository kept a plan beside each spec; their tasks are in `spec.md`'s revisions.
-This plan covers US7.
+This plan covers US7 and US8.
 
 ## US7 - Leaderboard entries and the GPU runs' spans reach Azure (#791)
 
@@ -57,3 +57,15 @@ This plan covers US7.
   stops at once), the committed ledger, the workflow, the register, this spec and plan.
 - `python/tests/test_telemetry_forward.py`: `forward_spans` with the `memory` exporter (times, attributes, parents,
   status; the `file` exporter's own output; skipped lines; exporter off; no file) and the runner's `--collect`.
+
+## US8 - Development runs on Modal, Colab and Kaggle reach Azure (#830)
+
+- **Where it runs:** a `workflow_dispatch` workflow in the `dev` environment, because only it holds
+  `APPINSIGHTS_CONNECTION_STRING`; agent sessions never do.
+- **What it sends:** `kaggle/forward_run_telemetry.py` reads `tasks/*/result.json` under the downloaded results dataset
+  and sends `run_forward` with one `agent_task` child per task through `telemetry.pipeline_step`, numbers and short
+  labels only; `telemetry.forward_spans` sends any `telemetry.jsonl` (US7's reader, no second format).
+- **Contract:** `task_attrs(result, instance_id)`; spans `run_forward`, `agent_task`; workflow inputs `results_dataset`,
+  `label`, `platform`.
+- **Tests:** `python/tests/test_forward_run_telemetry.py` (memory exporter; no task text or patch in any attribute).
+
