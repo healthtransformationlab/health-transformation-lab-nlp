@@ -1,3 +1,33 @@
 {
- "runs": []
+ "runs": [
+  {
+   "label": "devset-m31be-c1",
+   "bundle": "jcblearning/htlnlp-official-devset-m31be-c1",
+   "kernel_dataset": "jcblearning/htlnlp-colab-kernel-devset-m31be-c1",
+   "model": "google/gemma-4/other/gemma-4-31b-it-qat-w4a16-ct/2",
+   "network_open_acknowledged": true
+  },
+  {
+   "label": "devset-m31be-c2",
+   "bundle": "jcblearning/htlnlp-official-devset-m31be-c2",
+   "kernel_dataset": "jcblearning/htlnlp-colab-kernel-devset-m31be-c2",
+   "model": "google/gemma-4/other/gemma-4-31b-it-qat-w4a16-ct/2",
+   "network_open_acknowledged": true
+  },
+  {
+   "label": "devset-m31be-c3",
+   "bundle": "jcblearning/htlnlp-official-devset-m31be-c3",
+   "kernel_dataset": "jcblearning/htlnlp-colab-kernel-devset-m31be-c3",
+   "model": "google/gemma-4/other/gemma-4-31b-it-qat-w4a16-ct/2",
+   "network_open_acknowledged": true
+  },
+  {
+   "label": "devset-m31be-c4",
+   "bundle": "jcblearning/htlnlp-official-devset-m31be-c4",
+   "kernel_dataset": "jcblearning/htlnlp-colab-kernel-devset-m31be-c4",
+   "model": "google/gemma-4/other/gemma-4-31b-it-qat-w4a16-ct/2",
+   "network_open_acknowledged": true
+  }
+ ],
+ "note": "Branch data/842-028-modal-31be-full only (#842), never merged to main (ADR 0005). One full development-set run of 31B-e (gemma-developer-agent f5f35cc, #172) on all 129 tasks, in four chunks; the owner's permission of November 16 (\"one full run to see where we stand\", the next best candidate)."
 }
