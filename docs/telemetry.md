@@ -459,3 +459,26 @@ dependencies
 
 The key reads nothing else and changes nothing; the leaderboard watcher's ledger
 (`data/tasks/leaderboard_entries.csv`) holds the same scores for a session without it.
+
+## A run's traces in Unity Catalog (spec 041, #857)
+
+A finished development run also goes to the MLflow experiment `/Shared/coding-agent-runs`. Its traces are stored in
+the Delta tables of `health_transformation_lab.ops_agent_trace`, which the bundle declares
+(`databricks/resources/agent_traces.yml`). There, the experiment's Tool calls tab, its latency percentiles and its
+token charts work, and SQL, dashboards and Genie can read every step.
+
+```bash
+python kaggle/load_agent_traces.py <runs folder> --label devset-m31be-c1 --agent "ours 31B-e" --model gemma-4-31b
+```
+
+- **What gets written:** one trace per task-run. Each model turn is an `LLM` span named `model turn`, with its token
+  use and the model. Each tool call is a `TOOL` span named after the tool alone, and is `ERROR` when the tool reported
+  an error. That is what MLflow groups its charts by.
+- **Secrets:** text is scrubbed exactly as the Azure forwarder's is (`telemetry.scrub_value`).
+- **Loading twice:** the second load writes nothing. Each trace's `trace_key` (the SHA-256 of run label, agent and
+  task) is skipped if it is already there.
+- **Settings:** `DATABRICKS_HOST` and `DATABRICKS_TOKEN` say which workspace to write to. `AGENT_TRACE_EXPERIMENT`
+  names the experiment; its default, `/Shared/coding-agent-runs`, is the bundle's and is the same in every
+  environment. The loader never creates an experiment: one made outside the bundle would have no Unity Catalog trace
+  location.
+- **Checking first:** `--dry-run` builds every trace and writes none.

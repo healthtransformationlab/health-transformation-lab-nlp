@@ -1,0 +1,48 @@
+{
+ "schema_version": "1.0",
+ "agent": {
+  "name": "demo",
+  "version": "0"
+ },
+ "steps": [
+  {
+   "step_id": "1",
+   "source": "system",
+   "message": "You fix issues in a repository.",
+   "extra": {
+    "event_type": "system",
+    "elapsed_s": 0.1,
+    "timestamp": 1794800000.1,
+    "author": "demo_agent"
+   }
+  },
+  {
+   "step_id": "2",
+   "source": "user",
+   "message": "Demo issue: mul() is slow.",
+   "extra": {
+    "event_type": "user",
+    "elapsed_s": 0.2,
+    "timestamp": 1794800000.2,
+    "author": "demo_agent"
+   }
+  },
+  {
+   "step_id": "3",
+   "source": "agent",
+   "message": "Thinking about mul().",
+   "metrics": {
+    "prompt_tokens": 900,
+    "completion_tokens": 300,
+    "cached_tokens": 0,
+    "total_tokens": 1200
+   },
+   "extra": {
+    "event_type": "thinking",
+    "elapsed_s": 30.0,
+    "timestamp": 1794800030.0,
+    "author": "demo_agent"
+   }
+  }
+ ]
+}

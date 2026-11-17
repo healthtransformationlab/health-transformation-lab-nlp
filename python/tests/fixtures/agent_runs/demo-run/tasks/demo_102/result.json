@@ -1,0 +1,18 @@
+{
+ "instance_id": "demo_102",
+ "agent_phase_seconds": 300.0,
+ "tool_call_count": 0,
+ "llm_call_count": 1,
+ "patch": "",
+ "verification": {
+  "is_resolved": false
+ },
+ "agent_error": "TimeoutError: agent timeout",
+ "error_text": null,
+ "started_unix": 1794800000.0,
+ "ended_unix": 1794800300.0,
+ "budgets": {
+  "max_tool_calls": 36,
+  "max_time_minutes": 5.0
+ }
+}

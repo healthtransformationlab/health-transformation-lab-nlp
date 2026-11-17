@@ -64,7 +64,7 @@ US2 writes a trace this way instead:
 |---|---|---|---|
 | root | the `instance_id` | `AGENT` | the issue in; the outcome, the patch and the error out; status `OK` when resolved |
 | one per model turn | `model turn` | `LLM` | its thinking and message; `mlflow.chat.tokenUsage`; `mlflow.llm.model` (e.g. `gemma-4-31b`); `step_num` |
-| one per tool call, under its turn | the tool's name (`read_file`, `edit_file`, `run_command`, ...) | `TOOL` | the arguments in, the output out; status `ERROR` when the tool reported an error (a failed edit), else `OK`; `step_num` |
+| one per tool call, beside its turn under the task (it starts when the turn ends) | the tool's name (`read_file`, `edit_file`, `run_command`, ...) | `TOOL` | the arguments in, the output out; status `ERROR` when the tool reported an error (a failed edit), else `OK`; `step_num` |
 
 A model turn runs from the previous step's end to the step's own timestamp. Its tool call runs from there to the
 observation's timestamp. So the latency charts tell thinking time from tool time, and a failed edit counts as an error
