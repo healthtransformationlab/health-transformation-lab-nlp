@@ -170,6 +170,22 @@
    "gpu": "A100",
    "model": "google/gemma-4/other/gemma-4-31b-it-qat-w4a16-ct/2",
    "network_open_acknowledged": true
+  },
+  {
+   "label": "cpub-onav10",
+   "bundle": "jcblearning/htlnlp-official-cpub-onav10",
+   "kernel_dataset": "jcblearning/htlnlp-colab-kernel-cpub-onav10",
+   "gpu": "A100",
+   "model": "google/gemma-4/other/gemma-4-31b-it-qat-w4a16-ct/2",
+   "network_open_acknowledged": true
+  },
+  {
+   "label": "c31be-onav10",
+   "bundle": "jcblearning/htlnlp-official-c31be-onav10",
+   "kernel_dataset": "jcblearning/htlnlp-colab-kernel-c31be-onav10",
+   "gpu": "A100",
+   "model": "google/gemma-4/other/gemma-4-31b-it-qat-w4a16-ct/2",
+   "network_open_acknowledged": true
   }
  ]
 }
