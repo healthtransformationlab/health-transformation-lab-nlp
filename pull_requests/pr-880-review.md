@@ -122,6 +122,25 @@ None.
 - `python docs/build_decks.py`: both decks rebuilt.
 - Every slide rendered at 1920×1080 in Chromium, with no overflow or footer overlap.
 
+## Addendum: the interactive page (3f73485)
+
+The owner asked, through another session, for an interactive version of the deck's main picture to pan, zoom and
+drill into. `docs/edr/cost_quality.html` draws one chart per question, so cost is never compared across questions.
+You can pan, zoom (scroll, pinch or buttons), click a question to drill in, and click a method for its score, 95%
+range, cost, whether it was run, and its sources. A method that was not run shows its price only.
+
+- **Data and its test:** the data is embedded as JSON. `python/tests/test_cost_quality_page.py` checks it in three
+  ways:
+  - every score and rank against `docs/results.md` and `docs/tooth_loss.md`;
+  - that a method not run has no score;
+  - that the costs of run methods match the slides, and that the slides and appendix link the page.
+- **Website:** `copy_decks_to_site.py` gains `PAGES`, and the workflow serves the page as
+  `perio-bench/cost_quality.html`. The copy tests were updated.
+- **Checked:** rendered in Chromium at 1440×900 and 390×844 with no script errors and no sideways scroll. Labels
+  were checked for overlap. Deck, claims, wording, copy and page tests: 180 passed. `ruff check` is clean.
+- **Findings:** none blocking. Screenshots were sent to the owner before the push. The page is published with the
+  deck, so it also waits for the owner's "merge".
+
 ## Verdict
 
 **Approve-with-nits.** Both Important findings are fixed, and the two open nits don't block. Merge waits on two
