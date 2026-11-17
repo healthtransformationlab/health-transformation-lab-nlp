@@ -57,7 +57,7 @@ kinds of model, so each is scored on its own and methods are never ranked across
 | **How BERT is used** | Reads the whole note and picks one of five status groups (sequence classification) | Labels each word private or not (token tagging, named-entity recognition) | Not used: there is no text |
 | **Scored by** | Correct status of 223, unsafe errors, stage 4 found | Identifiers leaked (one character left counts), dental terms wrongly removed | AUC, Brier score, calibration, sensitivity and specificity |
 | **Best so far (synthetic)** | 203 of 223: ModernBERT-large with the stage 4 rule | Leaks 115 of 2,714: Stanford + OBI + patterns + guard | AUC 0.89 (logistic) and 0.90 (XGBoost) |
-| **Drill-down** | [ranking and what drives it](../model_drivers.md), [full leaderboard](../results.md#phenotyping-periodontal-status-per-chart) | [the benchmark](../deidentification.md), [full table](../results.md#de-identification) | [the model](../tooth_loss.md) |
+| **Drill-down** | [ranking and what drives it](../model_drivers.md), [full leaderboard](../results.md#phenotyping-periodontal-status-per-chart) | [the benchmark](../deidentification.md), [full table](../results.md#de-identification), [ranking and what drives it](../deid_drivers.md) | [the model](../tooth_loss.md), [other kinds of model compared](../tooth_loss_drivers.md) |
 
 **How they connect.** On real records, de-identification runs first, so nothing private reaches a reviewer or an AI
 reader. Phenotyping then reads the note and the rest of the record. Tooth loss supplies the one fact the note and the

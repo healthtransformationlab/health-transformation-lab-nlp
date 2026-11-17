@@ -18,4 +18,4 @@
 - [x] T020 [US5] The landing README's table of the three tests (80 lines kept)
 - [x] T021 [US5] "The three tests" on the study page, with how BERT is used in each
 - [x] T022 [US5] Slide 5 of the PerioBench deck, slides renumbered, `docs/build_decks.py edr`
-- [ ] T023 [US5] Link the de-identification and tooth-loss drill-downs once US3 and US4 merge
+- [x] T023 [US5] Link the de-identification and tooth-loss drill-downs once US3 and US4 merge
