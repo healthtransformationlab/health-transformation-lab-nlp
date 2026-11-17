@@ -109,3 +109,39 @@ def test_the_tagline_is_on_the_readme_and_the_edr_cover():
     assert "Evidence you can check" in "\n".join((REPO_ROOT / "README.md").read_text().splitlines()[:3])
     assert "Evidence you can check" in (REPO_ROOT / "docs" / "edr" / "slides" / "01-cover.html").read_text()
     assert "Evidence you can check" in (REPO_ROOT / "docs" / "edr" / "deck.html").read_text()
+
+
+def test_edr_cost_slides_put_quality_and_the_pass_bar_beside_each_cost():
+    """#879: the owner asked "how do we know if the cheaper models are as good", and said the deck didn't make clear
+    that PerioBench asks three questions. The main deck is short (cover to the ask, at most 7 slides, the rest after
+    the drill-down divider); each question has its own cost slide whose rows give quality, with its 95% interval,
+    beside cost, and which states the question's pass bar; a method not run on that question says "not run". Every
+    quality figure on those slides is the one its results page reports."""
+    slides = [(sid, section) for sid, section, _ in build_decks.slides(REPO_ROOT / "docs" / "edr")]
+    sids = [sid for sid, _ in slides]
+    assert "economics" not in sids, "the cost slide without quality is replaced by one per question"
+    assert len(sids[:sids.index("drill")]) <= 7, "main deck: cover, problem, the three questions, three cost slides, ask"
+    for sid in ("phenotyping-cost", "tooth-loss-cost", "deid-cost", "costing", "passes", "tooth-loss"):
+        assert sid in sids, sid
+    for sid in ("phenotyping-cost", "tooth-loss-cost", "deid-cost"):
+        assert sids.index(sid) < sids.index("drill"), f"{sid} is in the main deck"
+    text = {sid: " ".join(build_decks.visible_text(section)) for sid, section in slides}
+    raw = dict(slides)
+    for sid in ("phenotyping-cost", "tooth-loss-cost", "deid-cost"):
+        for needed in ("Pass bar", "95%", "not run", "Synthetic"):
+            assert needed in text[sid], f"edr/{sid}: '{needed}'"
+    results = (REPO_ROOT / "docs" / "results.md").read_text(encoding="utf-8")
+    tooth = (REPO_ROOT / "docs" / "tooth_loss.md").read_text(encoding="utf-8")
+    pheno = re.findall(r"<b>(\d+\.\d)</b> \((\d+\.\d–\d+\.\d)\)", raw["phenotyping-cost"])
+    assert len(pheno) >= 5
+    for correct, ci in pheno:
+        assert f"**{correct}** ({ci})" in results, f"phenotyping-cost: {correct} ({ci}) not in docs/results.md"
+    deid = re.findall(r"<b>(\d+)</b> \((\d+\.\d)–(\d+\.\d) in 100\)", raw["deid-cost"])
+    assert len(deid) >= 6
+    for leaked, lo, hi in deid:
+        assert f"{leaked} of 2,714 (95% range {lo}–{hi}%)" in results, f"deid-cost: {leaked} not in docs/results.md"
+    auc = re.findall(r"<b>(0\.\d\d)</b> \((0\.\d\d)–(0\.\d\d)\)", raw["tooth-loss-cost"])
+    assert len(auc) == 4
+    held_out = re.search(r"\| AUC \(95% CI\) \|.*", tooth).group(0)
+    for a, lo, hi in auc:
+        assert f"{a} ({lo}-{hi})" in held_out, f"tooth-loss-cost: AUC {a} ({lo}-{hi}) not in docs/tooth_loss.md"

@@ -1,0 +1,27 @@
+<section id="costing" data-transition="fade" style="background:#F7F5EF;color:#15303A;font-family:'Public Sans', Arial, sans-serif;padding:96px 128px 140px;display:flex;flex-direction:column;gap:24px">
+<div style="display:flex;flex-direction:column;gap:12px">
+<p style="font-size:24px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#B4501F">Appendix · How cost was computed</p>
+<h2 style="font-family:'Libre Baskerville', Georgia, serif;font-size:44px;font-weight:700;line-height:1.15">Illustrative list prices, a million notes, one note a visit. People's time is the larger cost.</h2>
+</div>
+<div style="display:flex;gap:20px;align-items:stretch">
+<div style="width:380px;display:flex;flex-direction:column;gap:20px">
+<div style="display:flex;flex-direction:column;gap:6px;background:#FDFCF9;border:1px solid #D9D3C4;border-radius:16px;padding:22px"><p style="font-size:22px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#5C6F75">By hand</p><h3 style="font-family:'Libre Baskerville', Georgia, serif;font-size:52px;font-weight:700;line-height:1.1;white-space:nowrap;color:#B4501F">33,333 h</h3><p style="font-size:21px;line-height:1.35">a million visits, one specialist, 2 minutes a chart</p></div>
+<div style="display:flex;flex-direction:column;gap:6px;background:#15303A;border-radius:16px;padding:22px"><p style="font-size:22px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#F2A070">To prove it</p><h3 style="font-family:'Libre Baskerville', Georgia, serif;font-size:52px;font-weight:700;line-height:1.1;white-space:nowrap;color:#F2A070">~31 h</h3><p style="font-size:21px;line-height:1.35;color:#D5E3E1">233 charts, 4 reviewers: the acceptance test</p></div>
+</div>
+<div style="flex:1;background:#FDFCF9;border:1px solid #D9D3C4;border-radius:16px;padding:16px 24px">
+<table style="border-collapse:collapse;font-size:21px;line-height:1.25;width:100%">
+<tr style="color:#5C6F75"><th style="padding:7px 12px;text-align:left">Kind</th><th style="padding:7px 12px;text-align:left">How</th><th style="padding:7px 12px;text-align:left">Inputs and price date</th></tr>
+<tr><td style="padding:7px 12px">Hosted LLM</td><td style="padding:7px 12px">tokens × list price</td><td style="padding:7px 12px">453 in (note + prompt), 20 out; Llama 3.3 70B, Databricks, 2026-10-26: ~$260</td></tr>
+<tr><td style="padding:7px 12px">Frontier LLM, the note</td><td style="padding:7px 12px">tokens × list price</td><td style="padding:7px 12px">same tokens; Gemini 3.1 Pro (ai.google.dev) and Claude Fable 5.1 (claude.com), 2026-10-28: ~$1,100 and ~$5,500</td></tr>
+<tr><td style="padding:7px 12px">Frontier LLM, whole record</td><td style="padding:7px 12px">tokens × price × 3 calls</td><td style="padding:7px 12px">assumed 20k in, 4k out a call: ~$260k and ~$1.2M; batch pricing halves either</td></tr>
+<tr><td style="padding:7px 12px">Own GPU model</td><td style="padding:7px 12px">hours × GPU price, + training</td><td style="padding:7px 12px">assumed speed; illustrative $4 GPU hour (costs.yaml): ~$40 for ModernBERT-large, ~$140 for MedGemma 1.5 4B</td></tr>
+<tr><td style="padding:7px 12px">CPU method</td><td style="padding:7px 12px">hours × CPU price</td><td style="padding:7px 12px">measured speed; illustrative $1 CPU hour: word counts and patterns under $1, taggers ~$5–$103</td></tr>
+<tr><td style="padding:7px 12px">Paid de-identification</td><td style="padding:7px 12px">vendor's billing unit</td><td style="padding:7px 12px">list price, 2026-10-26 (docs/deidentification.md): ~$18–$2,650</td></tr>
+</table>
+</div>
+</div>
+<p style="font-size:24px;line-height:1.4;background:#ECE8DD;border-radius:16px;padding:18px 32px"><b>Read the costs as an order of size, not a quote.</b> Note tokens are from synthetic notes, which are shorter than real ones; the whole-record tokens and the GPU speeds are assumed, not measured.</p>
+<p style="position:absolute;left:128px;bottom:36px;width:1664px;font-size:19px;line-height:1.35;color:#5C6F75">docs/claims.yaml (tiers), costs.yaml, data/corpus/cost_benchmark.csv, data/deid/cost_effectiveness.csv, docs/financial_tradeoffs.md · illustrative prices · 10</p>
+
+<aside>How the cost figures were made, so a reader can check them. Hosted models are priced per token: each call sends the note plus the prompt, about 453 tokens, and gets about 20 back; at Databricks' list price for Llama 3.3 70B, checked October 26, that is about 260 dollars a million notes. The same tokens at Google's and Anthropic's list prices, checked October 28, give about 1,100 for Gemini 3.1 Pro and 5,500 for Claude Fable 5.1. If a frontier model reads the whole record with worked examples and reasoning, three calls a visit, with an assumed 20 thousand tokens in and 4 thousand out a call, it is about 260 thousand and 1.2 million; batch pricing halves either. Models on our own GPU are priced as hours at an assumed speed times an illustrative 4 dollars an hour, plus training: about 40 dollars for ModernBERT-large and 140 for MedGemma. CPU methods use the speed we measured, at an illustrative dollar an hour. Paid de-identification services are priced in their own billing units at list price. And the larger cost is people: reviewing a million visits by hand is about 33,333 specialist hours at two minutes a chart, while the acceptance test needs about 31, 233 charts read by 4 reviewers. If asked for a dollar figure for people: at an illustrative 100 dollars an hour, about 3,100 dollars to validate against 3.3 million to review everything.</aside>
+</section>
