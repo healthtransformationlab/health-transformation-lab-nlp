@@ -30,6 +30,18 @@ file.
 | Open a PR | `/create-pr` (checks, opens the PR with `Closes #<issue>`, reviews it) | PR + `pull_requests/pr-<n>-review.md` |
 | Before merge | `/pr-review <n>` (Superpowers `requesting-code-review`, rubric in `.claude/review-rubric.md`) | `pull_requests/pr-<n>-review.md` |
 
+## Local permission rules
+
+Rules that reach production (a database, a paid service) never go in the shared `.claude/settings.json`: it applies
+to every agent and contributor. They go in each machine's `.claude/settings.local.json`, which git ignores. The
+standard set is kept, reviewed, in `.claude/settings.local.example.json`; on a new machine, copy it once:
+
+```
+cp .claude/settings.local.example.json .claude/settings.local.json
+```
+
+A rule worth having everywhere is added to the template by pull request, then copied by hand on each machine.
+
 ## Setup for Superpowers
 
 `.claude/settings.json` enables Superpowers from the official plugin
