@@ -186,6 +186,22 @@
    "gpu": "A100",
    "model": "google/gemma-4/other/gemma-4-31b-it-qat-w4a16-ct/2",
    "network_open_acknowledged": true
+  },
+  {
+   "label": "cpub-onav-big",
+   "bundle": "jcblearning/htlnlp-official-cpub-onav-big",
+   "kernel_dataset": "jcblearning/htlnlp-colab-kernel-cpub-onav-big",
+   "gpu": "A100",
+   "model": "google/gemma-4/other/gemma-4-31b-it-qat-w4a16-ct/2",
+   "network_open_acknowledged": true
+  },
+  {
+   "label": "c31be-onav-big",
+   "bundle": "jcblearning/htlnlp-official-c31be-onav-big",
+   "kernel_dataset": "jcblearning/htlnlp-colab-kernel-c31be-onav-big",
+   "gpu": "A100",
+   "model": "google/gemma-4/other/gemma-4-31b-it-qat-w4a16-ct/2",
+   "network_open_acknowledged": true
   }
  ]
 }
