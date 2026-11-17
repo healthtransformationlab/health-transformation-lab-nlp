@@ -38,6 +38,21 @@ REPO_ROOT, OUT_DIR, WHEELHOUSE = run.REPO_ROOT, run.OUT_DIR, run.WHEELHOUSE
 NAME = "devset-controls"
 KINDS = {"oracle": "reference", "null": "empty"}      # official_verify.py's --patch, and the table's name for it
 COLUMNS = ["instance_id", "patch_source_code", "is_resolved", "test_exit_code", "error_text", "verify_seconds", "run_ts"]
+PATCH_COLUMNS = ["instance_id", "patch_key", "is_resolved", "test_exit_code", "error_text", "verify_seconds", "run_ts"]
+
+
+def patch_rounds(patches: list[dict]) -> list[list[dict]]:
+    """Given patches split so each round holds at most one patch per task (official_verify.py takes one patch per task
+    per call), in the order given (#853)."""
+    rounds: list[list[dict]] = []
+    for p in patches:
+        for r in rounds:
+            if all(q["instance_id"] != p["instance_id"] for q in r):
+                r.append(p)
+                break
+        else:
+            rounds.append([p])
+    return rounds
 
 
 def kernel_metadata(username: str, competition: str, docker_image: str | None) -> dict:
@@ -52,8 +67,9 @@ def kernel_metadata(username: str, competition: str, docker_image: str | None) -
     return meta
 
 
-def build_bundle(ids: list[str], submission_dir: Path, out: Path, username: str) -> Path:
-    """The submission (the evaluator's model registry reads it), kaggle/official_verify.py and the ids: no task."""
+def build_bundle(ids: list[str], submission_dir: Path, out: Path, username: str, patches: list[dict] | None = None) -> Path:
+    """The submission (the evaluator's model registry reads it), kaggle/official_verify.py and the ids: no task. With
+    `patches` ({instance_id, patch_key, patch}), those are verified in rounds in place of the two controls (#853)."""
     submission_dir, out = Path(submission_dir), Path(out)
     if not (submission_dir / "agent.yaml").is_file():
         raise SystemExit(f"{submission_dir} has no agent.yaml: not a submission folder")
@@ -67,8 +83,15 @@ def build_bundle(ids: list[str], submission_dir: Path, out: Path, username: str)
         elif src.is_file():
             shutil.copyfile(src, out / "submission" / name)
     shutil.copyfile(HERE / "official_verify.py", out / "official_verify.py")
-    (out / "controls.json").write_text(json.dumps({"instance_ids": list(ids), "kinds": list(KINDS), "concurrency": 3},
-                                                  indent=1) + "\n")
+    meta = {"instance_ids": list(ids), "kinds": list(KINDS), "concurrency": 3}
+    if patches:
+        meta["kinds"], meta["rounds"] = [], []
+        for n, r in enumerate(patch_rounds(patches)):
+            name = f"patches_{n}.jsonl"
+            (out / name).write_text("".join(json.dumps({"instance_id": p["instance_id"], "patch_key": p["patch_key"],
+                                                        "patch": p["patch"]}) + "\n" for p in r))
+            meta["rounds"].append({"file": name, "instance_ids": [p["instance_id"] for p in r]})
+    (out / "controls.json").write_text(json.dumps(meta, indent=1) + "\n")
     (out / "dataset-metadata.json").write_text(json.dumps({
         "title": "htlnlp official input devset controls", "id": f"{username}/{bundle.slug(NAME)}",
         "licenses": [{"name": "CC-BY-4.0"}]}, indent=1) + "\n")
@@ -82,6 +105,26 @@ def row_for(verdict: dict, run_ts: str) -> dict:
             "is_resolved": bool(verdict.get("resolved")), "test_exit_code": verdict.get("test_exit_code"),
             "error_text": error[:200] if isinstance(error, str) else error, "verify_seconds": verdict.get("seconds"),
             "run_ts": run_ts}
+
+
+def patch_rows(verdicts: list[dict], keys: dict, run_ts: str) -> list[dict]:
+    """Rows of devset_patch_checks.csv for one round: `keys` maps each task to the patch_key verified in that round."""
+    return [{"instance_id": v["instance_id"], "patch_key": keys[v["instance_id"]], "is_resolved": bool(v.get("resolved")),
+             "test_exit_code": v.get("test_exit_code"),
+             "error_text": v["error"][:200] if isinstance(v.get("error"), str) else v.get("error"),
+             "verify_seconds": v.get("seconds"), "run_ts": run_ts} for v in verdicts]
+
+
+def write_patch_table(pd, rows: list[dict]) -> Path:
+    """Merge into devset_patch_checks.csv by patch_key (re-runnable)."""
+    path = OUT_DIR / "devset_patch_checks.csv"
+    table = pd.DataFrame(rows, columns=PATCH_COLUMNS)
+    if path.exists():
+        old = pd.read_csv(path)
+        table = pd.concat([old[~old.patch_key.isin(set(table.patch_key))], table], ignore_index=True)
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
+    table.sort_values(["instance_id", "patch_key"]).to_csv(path, index=False)
+    return path
 
 
 def write_table(pd, rows: list[dict]) -> Path:
@@ -109,6 +152,7 @@ def main() -> int:
     ap.add_argument("--competition", required=True)
     ap.add_argument("--docker-image", help="pin the kernel's image, as the agent's run does")
     ap.add_argument("--kernel-minutes", type=int, default=180)
+    ap.add_argument("--patches", type=Path, help="JSONL of {instance_id, patch_key, patch}: verify these instead (#853)")
     ap.add_argument("--work", type=Path, default=Path(os.environ.get("TMPDIR", "/tmp")) / "htl_official_controls")
     a = ap.parse_args()
 
@@ -129,7 +173,10 @@ def main() -> int:
 
     work = a.work / NAME
     shutil.rmtree(work, ignore_errors=True)
-    b = build_bundle(ids, a.agent_dir, work / "bundle", user)
+    patches = ([json.loads(line) for line in a.patches.read_text().splitlines() if line.strip()] if a.patches else None)
+    if patches and (missing := sorted({p["instance_id"] for p in patches} - set(ids))):
+        sys.exit(f"patches for tasks not in --ids: {', '.join(missing)}")
+    b = build_bundle(ids, a.agent_dir, work / "bundle", user, patches=patches)
     print(f"controls for {len(ids)} tasks: uploading to {user}/{bundle.slug(NAME)} (private)", flush=True)
     run._upload_bundle(api, b, f"{user}/{bundle.slug(NAME)}")
     k = work / "kernel"
@@ -163,6 +210,17 @@ def main() -> int:
               flush=True)
     if rows:
         print(f"-> {write_table(pd, rows).relative_to(REPO_ROOT)}")
+    meta = json.loads((b / "controls.json").read_text())
+    checked = []
+    for n, r in enumerate(meta.get("rounds") or []):
+        keys = {json.loads(line)["instance_id"]: json.loads(line)["patch_key"]
+                for line in (b / r["file"]).read_text().splitlines() if line.strip()}
+        f = out / f"verdicts_round_{n}.jsonl"
+        verdicts = [json.loads(line) for line in f.read_text().splitlines() if line.strip()] if f.exists() else []
+        checked += patch_rows(verdicts, keys, res.get("finished_ts"))
+    if checked:
+        print(f"given patches: {sum(r['is_resolved'] for r in checked)} of {len(checked)} resolved")
+        print(f"-> {write_patch_table(pd, checked).relative_to(REPO_ROOT)}")
     return 0
 
 

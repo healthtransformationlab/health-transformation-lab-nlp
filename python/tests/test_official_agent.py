@@ -866,3 +866,40 @@ def test_the_kernel_runs_each_task_under_the_command_memory_cap():
     src = (REPO_ROOT / "kaggle" / "official_agent_kernel.py").read_text()
     assert "AGENT_COMMAND_MEMORY_MIB = 8192" in src
     assert "with cap_child_memory(AGENT_COMMAND_MEMORY_MIB):" in src
+
+
+# --- checks of patches an agent had along the way (028 AI23, #853) -------------------------------------------------
+
+def test_given_patches_go_in_rounds_with_one_patch_per_task_each(controls, tmp_path):
+    patches = [{"instance_id": "rich_2", "patch_key": "m31be:rich_2:s3", "patch": "diff a"},
+               {"instance_id": "rich_2", "patch_key": "m31be:rich_2:s7", "patch": "diff b"},
+               {"instance_id": "fastapi_9", "patch_key": "m31be:fastapi_9:s4", "patch": "diff c"},
+               {"instance_id": "rich_2", "patch_key": "m31be:rich_2:s9", "patch": "diff d"}]
+    out = controls.build_bundle(["rich_2", "fastapi_9"], _submission(tmp_path), tmp_path / "b", "someone",
+                                patches=patches)
+    meta = json.loads((out / "controls.json").read_text())
+    rounds = meta["rounds"]
+    assert len(rounds) == 3                                                # rich_2 has three patches
+    seen = []
+    for n, r in enumerate(rounds):
+        rows = [json.loads(line) for line in (out / r["file"]).read_text().splitlines()]
+        ids = [row["instance_id"] for row in rows]
+        assert len(ids) == len(set(ids)) and sorted(ids) == sorted(r["instance_ids"])   # one patch per task per round
+        assert r["file"] == f"patches_{n}.jsonl"
+        seen += [row["patch_key"] for row in rows]
+    assert sorted(seen) == sorted(p["patch_key"] for p in patches)        # every patch in exactly one round
+    assert meta["kinds"] == []                                             # given patches replace the two controls
+
+
+def test_a_patch_check_row_names_its_key_and_never_the_test_output(controls):
+    verdicts = [{"instance_id": "rich_2", "patch_kind": "file", "resolved": True, "test_exit_code": 0, "error": None,
+                 "seconds": 12.5, "output_tail": "secret test output"}]
+    rows = controls.patch_rows(verdicts, {"rich_2": "m31be:rich_2:s3"}, "2026-11-17T03:00:00Z")
+    assert rows == [{"instance_id": "rich_2", "patch_key": "m31be:rich_2:s3", "is_resolved": True,
+                     "test_exit_code": 0, "error_text": None, "verify_seconds": 12.5,
+                     "run_ts": "2026-11-17T03:00:00Z"}]
+
+
+def test_the_controls_kernel_verifies_each_round_of_given_patches():
+    src = (REPO_ROOT / "kaggle" / "official_controls_kernel.py").read_text()
+    assert 'meta.get("rounds"' in src and '"--patch", "file"' in src and "verdicts_round_" in src
