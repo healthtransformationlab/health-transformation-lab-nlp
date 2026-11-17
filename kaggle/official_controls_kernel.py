@@ -78,6 +78,20 @@ def main() -> None:
             result[kind] = {"returncode": r.returncode, "seconds": round(time.monotonic() - t, 1),
                             "stdout_tail": r.stdout[-600:], "stderr_tail": r.stderr[-2000:]}
             print(json.dumps({kind: {k: v for k, v in result[kind].items() if k != "stderr_tail"}}), flush=True)
+        for n, rnd in enumerate(meta.get("rounds") or []):   # patches an agent had along the way (#853)
+            t = time.monotonic()
+            r = subprocess.run([sys.executable, str(bundle / "official_verify.py"), "--tasks", str(comp / "tasks.jsonl"),
+                                "--snapshots-dir", str(comp / "snapshots"), "--submission-dir", str(sub),
+                                "--results-dir", str(OUT / "results_file"), "--patch", "file",
+                                "--patch-file", str(bundle / rnd["file"]), "--task-ids", *rnd["instance_ids"],
+                                "--concurrency", str(meta.get("concurrency", 3)),
+                                "--out", str(OUT / f"verdicts_round_{n}.jsonl")],
+                               capture_output=True, text=True, cwd=OUT, env={**os.environ, "TAIL": "400"}, check=False)
+            result[f"round_{n}"] = {"returncode": r.returncode, "seconds": round(time.monotonic() - t, 1),
+                                    "stdout_tail": r.stdout[-600:], "stderr_tail": r.stderr[-2000:]}
+            shutil.rmtree(OUT / "results_file", ignore_errors=True)
+            print(json.dumps({f"round_{n}": {k: v for k, v in result[f"round_{n}"].items() if k != "stderr_tail"}}),
+                  flush=True)
     except BaseException as e:  # noqa: BLE001 - the failure goes in result.json, where the runner reads it
         result.update(error=f"{type(e).__name__}: {str(e)[:1500]}", trace=traceback.format_exc()[-4000:])
     finally:
