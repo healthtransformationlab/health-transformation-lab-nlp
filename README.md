@@ -24,21 +24,21 @@ but in pieces: notes, forms, codes and measurements that often disagree, so it i
 time, and hard to link to diabetes care. A tool that reads the whole record and finds gum disease accurately
 (phenotyping, to researchers) lets clinics find it earlier and treat it. PerioBench scores how well rules and AI find
 it in the record; agreement with gum specialists reviewing the same record is how that is checked, not the goal.
-It runs end to end on **synthetic** records:
+It runs end to end on **synthetic** records as three tests, each with its own models:
 
-- the whole record, by rules that read the gum measurements first: **207 of 223** (flattering: the key uses the same rules);
-- the free-text note alone, read by word counts with a stage 4 rule: **191 of 223** (keyword rules alone: 183);
-- the note alone, read by AI: **203 of 223** for the best trained encoder (ModernBERT-large with the stage 4 rule), **187** for Llama 3.3 70B, **178** for the medical AI MedGemma 4B.
+| Test | The question | What it reads | Models compared | Best so far (synthetic) | Drill-down |
+|---|---|---|---|---|---|
+| **Phenotyping** | What gum-disease status does this visit show (healthy or gingivitis, or stage 1 to 4)? | The note, or the whole record | Rules; BERT-family encoders trained on notes; LLMs (Llama 3.3 70B, MedGemma) | Note alone, AI: **203 of 223** (ModernBERT-large + stage 4 rule); whole record, rules: 207 (flattering: the key uses the same rules) | [ranking and drivers](docs/model_drivers.md) |
+| **De-identification** | Which words are private (names, dates, IDs) and must go before anyone reads the note? | The note | Pattern rules; Presidio; two BERT-family taggers (Stanford, OBI); Databricks AI mask; combinations | Stanford + OBI + patterns + dental guard: leaks **115 of 2,714** identifiers, damages 41 of 2,462 dental terms | [the benchmark](docs/deidentification.md) |
+| **Tooth loss** | Was this missing tooth lost to gum disease? (Five or more makes stage 4.) | Structured tables: probing, extraction codes, missing teeth; no text | Logistic regression; XGBoost | AUC **0.89** and **0.90** on 469 held-out teeth | [the model](docs/tooth_loss.md) |
 
-Synthetic charts, scored against the generator's answer key: agreement with it, not accuracy on real patients ([how
-scoring works](docs/scoring.md)), on the 223 review charts, all from adults' visits since April 2021, with healthy
-and gingivitis counted as one group (the defaults: [presets](docs/presets.md)). **Order matters:** when the measurements, exam form, codes and note disagree, rules must
-pick one to believe first. Measurements first gives 207; exam form first (the study design's order) gives 176.
+Scored against the generator's answer key: agreement, not accuracy on real patients ([how scoring works](docs/scoring.md),
+[presets](docs/presets.md)). De-identification comes first on real notes; tooth loss feeds the stage 4 count.
 
 | For | Go to |
 |---|---|
-| **Executives** (12 slides, 10 minutes) | [read the pitch with speaker notes](docs/edr/full_text_and_notes.md) · [slides](docs/edr/deck.html) (download and open in a browser) |
-| **Scientists** | [the study](docs/edr/README.md), [how the models rank and what drives their scores](docs/model_drivers.md): the seven kinds of evidence, every method with 95% intervals, the acceptance test, models, the [tooth-level model](docs/tooth_loss.md), de-identification |
+| **Executives** (13 slides, 10 minutes) | [read the pitch with speaker notes](docs/edr/full_text_and_notes.md) · [slides](docs/edr/deck.html) (download and open in a browser) |
+| **Scientists** | [the study](docs/edr/README.md): the seven kinds of evidence, the three tests with 95% intervals, the acceptance test, the models |
 | **Engineers** | [code walkthrough](docs/code_walkthrough.md), [deployment](docs/deployment.md), [how we work](AGENTS.md) |
 
 ## 2. OralHealthBench (planned): correct answers where medicine meets dentistry
