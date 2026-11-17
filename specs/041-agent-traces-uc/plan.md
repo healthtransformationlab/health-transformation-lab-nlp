@@ -22,7 +22,8 @@
 | US2 | trace tags | `trace_key`, `run_label`, `agent_name`, `instance_id`, `repo_name`, `outcome_code`, `ended_code`, `is_resolved`, `loaded_ts`, `git_commit_sha` |
 | US2 | setting `AGENT_TRACE_EXPERIMENT` | `/Shared/coding-agent-runs`, the same in every environment; documented in `docs/telemetry.md` |
 | US2 | `python/tests/test_load_agent_traces.py`, `python/tests/fixtures/agent_runs/` | |
-| US3 #858 | `databricks/notebooks/15_migrate_agent_traces.py` | widgets `source_experiment_id`, `target_experiment_name` |
+| US3 #858 | `python kaggle/load_agent_traces.py` over each run folder of the 414 | then the code scorers and the judge (private repository) on the new traces |
+| US3 | `databricks/notebooks/15_migrate_agent_traces.py` | the fallback only: widgets `source_experiment_id`, `target_experiment_name` |
 | US3 | `health_transformation_lab.ops_agent_trace.trace_migration_check` | one row per experiment and assessment name |
 | US3 | `python/tests/test_migrate_agent_traces.py` | |
 | US4 #859 | `databricks/setup/agent_trace_views.sql` | views `agent_task_run`, `agent_tool_call` |
@@ -52,17 +53,38 @@ MLflow keeps a span's type, inputs, outputs and token use under `attributes` (`m
 views read these keys. US4 starts by listing the exact keys from the migrated spans and writes them into the view
 file as comments.
 
+## What a trace looks like (decided November 17, before US2's first commit)
+
+MLflow groups its span charts by `span_name`, `span_type`, `span_status` and the model's name and provider
+(`mlflow.tracing.constant.SpanMetricDimensionKey`). The Tool calls tab therefore needs every call of one tool to share
+one span name. The traces loaded by hand name a step `07 run_command`, so that tab would show a row per step number.
+US2 writes a trace this way instead:
+
+| Span | Name | Type | Holds |
+|---|---|---|---|
+| root | the `instance_id` | `AGENT` | the issue in; the outcome, the patch and the error out; status `OK` when resolved |
+| one per model turn | `model turn` | `LLM` | its thinking and message; `mlflow.chat.tokenUsage`; `mlflow.llm.model` (e.g. `gemma-4-31b`); `step_num` |
+| one per tool call, under its turn | the tool's name (`read_file`, `edit_file`, `run_command`, ...) | `TOOL` | the arguments in, the output out; status `ERROR` when the tool reported an error (a failed edit), else `OK`; `step_num` |
+
+A model turn runs from the previous step's end to the step's own timestamp. Its tool call runs from there to the
+observation's timestamp. So the latency charts tell thinking time from tool time, and a failed edit counts as an error
+on `edit_file` in the Tool calls tab.
+
 ## Order
 
 1. **US1** first. Nothing can be written until the experiment exists.
    - Test first, then the YAML and the CLI pin.
    - `databricks bundle validate -t dev` with CLI 1.22.1, then the merge deploy.
    - Check the experiment's trace location through the API, and record it in the PR.
-2. **US3** next. It moves what exists, and US4 needs data to check against.
-   - Run the notebook once, by hand, on serverless.
-   - Its cost is small but comes from the Free Edition allowance, so the PR records it from `billing_views.sql`.
-3. **US2.** The loader is for runs that finish from now on. The pending Colab runs (`cpub-nlp25`, `c31be-nlp25` and
-   the rest) are its first input.
+2. **US2.** The loader writes the trace shape above, for new runs and old ones. The pending Colab runs
+   (`cpub-nlp25`, `c31be-nlp25` and the rest) are its first input.
+3. **US3** reloads the 414 traces with US2's loader instead of migrating them. Databricks' migration would copy the
+   step-numbered span names, and the Tool calls tab would split each tool by step number.
+   - The run folders are the same ones the traces were first loaded from.
+   - The code scorers run again for free. The grounding judge runs again in about three minutes on the Free Edition
+     endpoint.
+   - The old experiment stays as a backup, and the count check compares the two.
+   - The migration notebook stays the fallback, for a run whose folder is gone.
 4. **US4.** The views, checked against US3's counts.
 
 ## Tests first

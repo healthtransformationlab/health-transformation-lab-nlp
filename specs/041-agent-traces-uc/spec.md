@@ -71,9 +71,11 @@ a script that exists only in one cloud session. That storage leaves out what the
 
 ### US3 - The 414 traces and their assessments move there, with the counts checked (P2) #858
 
-- The Databricks migration copies `/Shared/gemma-agent-runs` into the new experiment, with the code scorers' values
-  and the grounding judge's verdicts.
-- The counts of traces and of assessments by name match, or the gap is listed.
+- US2's loader writes the same runs again into the new experiment, in the trace shape the experiment's charts can
+  group (`plan.md`, "What a trace looks like"). The code scorers and the grounding judge then score them again.
+- The counts of traces and of assessments by name match the old experiment, or the gap is listed.
+  `/Shared/gemma-agent-runs` stays as the backup.
+- Databricks' migration is the fallback for any run whose folder is gone. It would keep the step-numbered span names.
 - **Independent test:** the count table has equal counts for both experiments, or rows that explain the gap.
 
 ### US4 - SQL views answer which tools, how long and how many tokens, per task-run (P2) #859
