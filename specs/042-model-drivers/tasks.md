@@ -12,3 +12,9 @@
 - [x] T005 [US2] Failing test `python/tests/test_load_model_drivers.py` (fake client)
 - [x] T006 [US2] `scripts/75_load_model_drivers.py`: tables with comments and batch key; runs; traces and assessments
 - [x] T007 [US2] Load the dev workspace; record row counts, the leader's count and the trace count in the PR
+
+## US4 - other models for tooth loss (#867)
+
+- [x] T040 [US4] Failing test `python/tests/test_tooth_loss_drivers.py` (the plan's models reproduce `tooth_loss_model.run`)
+- [x] T041 [US4] `tooth_loss_drivers.py` and `scripts/78_tooth_loss_drivers.py` (`--check`, `--page-only`) -> `docs/tooth_loss_drivers.md`, `tooth_loss_*.csv`
+- [x] T042 [US4] `tooth_loss_drivers_load.py` and `scripts/79_load_tooth_loss_drivers.py`; load the dev workspace and record the row counts
