@@ -65,7 +65,8 @@ Synthetic patient records, scored against the generator's answer key · Health T
 
 ## Slide 4 — phenotyping-cost
 
-Question 1 of 3 · Finding gum disease in the record · cost beside quality
+Question 1 of 3 · Finding gum disease in the record · cost beside quality ·
+explore it ↗
 A small trained model is in the top group at about $40 a million notes. The LLMs we ran cost more and are not in it.
 Method
 Reads
@@ -123,7 +124,8 @@ Synthetic: the 223 review charts, scored against the generator's answer key (doc
 
 ## Slide 5 — tooth-loss-cost
 
-Question 2 of 3 · Was a missing tooth lost to gum disease? · cost beside quality
+Question 2 of 3 · Was a missing tooth lost to gum disease? · cost beside quality ·
+explore it ↗
 Two small models on CPU, no LLM run, and no pass bar set yet. They score well on extractions, less well on teeth already missing.
 Method
 Learns from
@@ -169,7 +171,8 @@ Synthetic Open Dental-style extract, scored against the generator's answer key: 
 
 ## Slide 6 — deid-cost
 
-Question 3 of 3 · Removing names, dates and IDs (de-identification) · cost beside quality
+Question 3 of 3 · Removing names, dates and IDs · cost beside quality ·
+explore it ↗
 Two AI taggers plus patterns are in the top group for about $100 a million notes. Azure and Amazon are not run.
 Method
 Identifiers left in, of 2,714 (95% range of the rate)
@@ -247,7 +250,9 @@ Health Transformation Lab · the dental record (EDR) · 7
 Health Transformation Lab · the dental record
 Drill-down
 Backup slides for questions. The full science is on the study page.
-What "passes" means for each question, and how cost was computed
+What "passes" means for each question, and how cost was computed (
+interactive version
+)
 Each question's full scores: finding gum disease, tooth loss, removing names
 How the models rank in each test, and what drives their scores
 The order the evidence is read in, and why it changes the answer
@@ -320,7 +325,9 @@ Paid de-identification
 vendor's billing unit
 list price, 2026-10-26 (docs/deidentification.md): ~$18–$2,650
 Read the costs as an order of size, not a quote.
-Note tokens are from synthetic notes, which are shorter than real ones; the whole-record tokens and the GPU speeds are assumed, not measured.
+Note tokens are from synthetic notes, which are shorter than real ones; the whole-record tokens and the GPU speeds are assumed, not measured. Every method, with its sources:
+the interactive version
+.
 docs/claims.yaml (tiers), costs.yaml, data/corpus/cost_benchmark.csv, data/deid/cost_effectiveness.csv, docs/financial_tradeoffs.md · illustrative prices · 10
 
 **Speaker notes:** How the cost figures were made, so a reader can check them. Hosted models are priced per token: each call sends the note plus the prompt, about 453 tokens, and gets about 20 back; at Databricks' list price for Llama 3.3 70B, checked October 26, that is about 260 dollars a million notes. The same tokens at Google's and Anthropic's list prices, checked October 28, give about 1,100 for Gemini 3.1 Pro and 5,500 for Claude Fable 5.1. If a frontier model reads the whole record with worked examples and reasoning, three calls a visit, with an assumed 20 thousand tokens in and 4 thousand out a call, it is about 260 thousand and 1.2 million; batch pricing halves either. Models on our own GPU are priced as hours at an assumed speed times an illustrative 4 dollars an hour, plus training: about 40 dollars for ModernBERT-large and 140 for MedGemma. CPU methods use the speed we measured, at an illustrative dollar an hour. Paid de-identification services are priced in their own billing units at list price. And the larger cost is people: reviewing a million visits by hand is about 33,333 specialist hours at two minutes a chart, while the acceptance test needs about 31, 233 charts read by 4 reviewers. If asked for a dollar figure for people: at an illustrative 100 dollars an hour, about 3,100 dollars to validate against 3.3 million to review everything.
