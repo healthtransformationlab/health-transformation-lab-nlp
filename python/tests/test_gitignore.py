@@ -14,7 +14,7 @@ def test_claude_local_settings_are_ignored_by_the_repo_gitignore():
     result = subprocess.run(
         ["git", "-c", "core.excludesFile=/dev/null", "check-ignore", "--no-index", "-q",
          ".claude/settings.local.json"],
-        cwd=REPO_ROOT, capture_output=True,
+        cwd=REPO_ROOT, capture_output=True, check=False,
     )
     assert result.returncode == 0, ".gitignore must list .claude/settings.local.json"
 
@@ -25,7 +25,8 @@ NEON_SIZE_RULE = 'Bash(psql "$NEON_DATABASE_URL" -Atc "select pg_size_pretty:*)'
 
 def test_local_settings_template_is_committed_and_lists_the_standard_rules():
     # The shared template each machine copies to .claude/settings.local.json, so local rules stay the same everywhere.
-    tracked = subprocess.run(["git", "ls-files", "--error-unmatch", str(TEMPLATE)], cwd=REPO_ROOT, capture_output=True)
+    tracked = subprocess.run(["git", "ls-files", "--error-unmatch", str(TEMPLATE)],
+                             cwd=REPO_ROOT, capture_output=True, check=False)
     assert tracked.returncode == 0, ".claude/settings.local.example.json must be committed"
     allow = json.loads(TEMPLATE.read_text())["permissions"]["allow"]
     assert NEON_SIZE_RULE in allow
