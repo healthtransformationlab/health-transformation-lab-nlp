@@ -207,7 +207,7 @@ def load_run(runs_dir: Path, run_label: str, agent_name: str, client, limit=None
         todo.append(trace)
     if dry_run:
         return {"written": 0, "skipped": 0, "failed": failed, "built": len(todo)}
-    written = 0
+    written, unconfirmed = 0, 0
     if todo:
         run_id = client.start_load(run_label, agent_name, {"model_name": model_name or "", **batch})
         for trace in todo:
@@ -216,12 +216,18 @@ def load_run(runs_dir: Path, run_label: str, agent_name: str, client, limit=None
         client.end_load(run_id, {"task_count": len(dirs), "written_count": written, "skipped_count": skipped,
                                  "failed_count": failed,
                                  "solved_count": sum(t["tags"]["is_resolved"] == "true" for t in todo)})
-    return {"written": written, "skipped": skipped, "failed": failed}
+        missing = client.confirm(run_label, {t["tags"]["trace_key"] for t in todo})
+        for key in sorted(missing):
+            print(f"written but not found in the experiment: trace_key {key}")
+        unconfirmed = len(missing)
+    return {"written": written, "skipped": skipped, "failed": failed, "unconfirmed": unconfirmed}
 
 
 class MlflowTraceClient:
     """Writes to the experiment the bundle made. Never creates one: an experiment made here would store its traces in
-    MLflow's default storage, not Unity Catalog."""
+    MLflow's default storage, not Unity Catalog. Traces reach Unity Catalog only once set_experiment is given the
+    experiment's own trace location: started without it (only experiment_id on the span), MLflow dropped them with no
+    error (November 17). confirm() checks afterwards that every trace written can be found."""
 
     def __init__(self, experiment_name: str):
         import mlflow
@@ -233,6 +239,7 @@ class MlflowTraceClient:
             sys.exit(f"{experiment_name} does not exist: deploy the bundle first (databricks/resources/agent_traces.yml)")
         if getattr(exp, "trace_location", None) is None:
             sys.exit(f"{experiment_name} has no Unity Catalog trace location: it was not made by the bundle")
+        mlflow.set_experiment(experiment_id=exp.experiment_id, trace_location=exp.trace_location)
         self.experiment_id = exp.experiment_id
 
     def existing_keys(self, run_label: str) -> set[str]:
@@ -249,7 +256,7 @@ class MlflowTraceClient:
     def write(self, trace: dict, source_run_id: str | None = None) -> None:
         m, kind, r = self.mlflow, self.span_type, trace["root"]
         root = m.start_span_no_context(name=r["name"], span_type=kind.AGENT, inputs=r["inputs"], tags=trace["tags"],
-                                       attributes=r["attributes"], experiment_id=self.experiment_id,
+                                       attributes=r["attributes"],
                                        metadata={"mlflow.sourceRun": source_run_id} if source_run_id else None,
                                        start_time_ns=r["start_ns"])
         clamp = lambda ns: min(max(ns, r["start_ns"]), r["end_ns"])
@@ -271,6 +278,18 @@ class MlflowTraceClient:
         self.mlflow.end_run()
         self.mlflow.flush_trace_async_logging()
 
+    def confirm(self, run_label: str, keys: set[str], wait_seconds: int = 300) -> set[str]:
+        """The keys written that the experiment still doesn't show after up to wait_seconds (traces reach the Delta
+        tables a few seconds after they are flushed)."""
+        missing, waited = set(keys), 0
+        while missing:
+            missing -= self.existing_keys(run_label)
+            if not missing or waited >= wait_seconds:
+                break
+            time.sleep(15)
+            waited += 15
+        return missing
+
 
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
@@ -290,7 +309,7 @@ def main(argv=None) -> int:
     client = None if a.dry_run else MlflowTraceClient(os.environ.get("AGENT_TRACE_EXPERIMENT") or DEFAULT_EXPERIMENT)
     counts = load_run(a.runs_dir, a.label, a.agent, client, limit=a.limit, dry_run=a.dry_run, model_name=a.model)
     print(f"{a.label} ({a.agent}): {counts}")
-    return 1 if counts["failed"] else 0
+    return 1 if counts["failed"] or counts.get("unconfirmed") else 0
 
 
 if __name__ == "__main__":

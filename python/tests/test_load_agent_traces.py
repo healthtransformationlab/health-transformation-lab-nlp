@@ -50,6 +50,16 @@ class FakeClient:
     def end_load(self, run_id, metrics):
         self.metrics = metrics
 
+    def confirm(self, run_label, keys):
+        return set(keys) - self.existing_keys(run_label)
+
+
+class DroppingClient(FakeClient):
+    """Says it wrote, but nothing arrives: what MLflow does when traces are not routed to Unity Catalog."""
+
+    def write(self, trace, source_run_id=None):
+        pass
+
 
 def _trace(lt, runs, iid="demo_101"):
     return lt.task_trace(runs / "demo-run/tasks" / iid, "demo-run", "demo agent")
@@ -121,10 +131,16 @@ def test_a_second_load_writes_nothing(lt, runs):
     client = FakeClient()
     first = lt.load_run(runs, "demo-run", "demo agent", client)
     again = lt.load_run(runs, "demo-run", "demo agent", client)
-    assert first == {"written": 2, "skipped": 0, "failed": 0}
-    assert again == {"written": 0, "skipped": 2, "failed": 0} and len(client.traces) == 2
+    assert first == {"written": 2, "skipped": 0, "failed": 0, "unconfirmed": 0}
+    assert again == {"written": 0, "skipped": 2, "failed": 0, "unconfirmed": 0} and len(client.traces) == 2
     tags = client.traces[0]["tags"]
     assert {"loaded_ts", "git_commit_sha"} <= set(tags) and tags["loaded_ts"].endswith("Z")
+
+
+def test_a_write_that_never_arrives_is_counted_unconfirmed(lt, runs):
+    """November 17: traces started without the experiment's Unity Catalog location set were dropped with no error.
+    The loader checks every key it wrote is in the experiment afterwards."""
+    assert lt.load_run(runs, "demo-run", "demo agent", DroppingClient())["unconfirmed"] == 2
 
 
 def test_dry_run_builds_and_writes_nothing(lt, runs):
