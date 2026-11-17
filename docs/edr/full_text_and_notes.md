@@ -66,7 +66,7 @@ Synthetic patient records, scored against the generator's answer key · Health T
 ## Slide 4 — phenotyping-cost
 
 Question 1 of 3 · Finding gum disease in the record · cost beside quality
-A small trained model is in the top group at about $40 a million notes. The LLMs we ran cost more and scored lower.
+A small trained model is in the top group at about $40 a million notes. The LLMs we ran cost more and are not in it.
 Method
 Reads
 Right status, per 100 charts (95% CI)
@@ -119,7 +119,7 @@ Not run yet, so no method has passed.
 Until then the stand-in is the top group on the synthetic answer key: methods whose 95% rank range reaches first place.
 Synthetic: the 223 review charts, scored against the generator's answer key (docs/results.md, Phenotyping) · † uses the same 2017 rules as the answer key: an advantage real records won't give · *assumed throughput at an illustrative GPU price (costs.yaml) · LLM list prices 2026-10-26 and 2026-10-28 · 4
 
-**Speaker notes:** This is the first of the three questions: what gum-disease status a chart shows, which researchers call phenotyping. Each row puts a method's cost for a million notes beside how often it gave the right status on our 223 synthetic review charts, with its 95 percent interval. The pass bar is the acceptance test: a method passes if it agrees with four gum specialists as often as they agree with each other. That test needs real specialists and has not been run, so nothing on this slide has passed yet. Until it is run, the stand-in is the top group: on resampled charts, could this method come first? Two can: the whole-record rules and a small model trained on notes, ModernBERT-large with a rule for stage 4, at about 40 dollars a million notes on our own GPU, at an assumed speed and an illustrative price. Are the less costly models as good? Word counts cost under a dollar but score lower, 85.7 against 91.0, and are not in the top group. The open LLM we ran, Llama 3.3 70B, costs about 260 dollars and scores 83.9; the medical model MedGemma about 140 and 78.5. So on this question, paying more for a bigger general model did not buy a better score. Frontier models such as Gemini 3.1 Pro and Claude Fable 5.1 have not been run on this question, so we do not know whether they are as good; we show their price only. Two cautions. The dagger rows use the same 2017 rules that made the answer key, which flatters them on synthetic charts. And synthetic notes are shorter and easier than real ones. If asked about the full table: it is in the appendix and in docs/results.md, every method with its interval and rank range.
+**Speaker notes:** This is the first of the three questions: what gum-disease status a chart shows, which researchers call phenotyping. Each row puts a method's cost for a million notes beside how often it gave the right status on our 223 synthetic review charts, with its 95 percent interval. The pass bar is the acceptance test: a method passes if it agrees with four gum specialists as often as they agree with each other. That test needs real specialists and has not been run, so nothing on this slide has passed yet. Until it is run, the stand-in is the top group: on resampled charts, could this method come first? Three can, and the table shows two of them: the whole-record rules and a small model trained on notes, ModernBERT-large with a rule for stage 4, at about 40 dollars a million notes on our own GPU, at an assumed speed and an illustrative price. The third, BioClinical ModernBERT-large with the same rule, is the same size and cost, and scores 90.1. Are the less costly models as good? Word counts cost under a dollar but are not in the top group: 85.7, and their interval reaches only 89.7. The open LLM we ran, Llama 3.3 70B, costs about 260 dollars and scores 83.9; the medical model MedGemma about 140 and 78.5. Neither is in the top group, so on this question paying more for a bigger general model did not buy a place in it. Frontier models such as Gemini 3.1 Pro and Claude Fable 5.1 have not been run on this question, so we do not know whether they are as good; we show their price only. Two cautions. The dagger rows use the same 2017 rules that made the answer key, which flatters them on synthetic charts. And synthetic notes are shorter and easier than real ones. If asked about the full table: it is in the appendix and in docs/results.md, every method with its interval and rank range.
 
 ## Slide 5 — tooth-loss-cost
 
@@ -170,7 +170,7 @@ Synthetic Open Dental-style extract, scored against the generator's answer key: 
 ## Slide 6 — deid-cost
 
 Question 3 of 3 · Removing names, dates and IDs (de-identification) · cost beside quality
-Combining two AI taggers with patterns leaks fewest, for about $100 a million notes. The paid services are not run.
+Two AI taggers plus patterns are in the top group for about $100 a million notes. Azure and Amazon are not run.
 Method
 Identifiers left in, of 2,714 (95% range of the rate)
 Could rank first?
@@ -218,10 +218,10 @@ not run
 not run
 ~$18–$2,650
 Pass bar: no leak rate set yet.
-Every method leaves some identifiers in, so a final check holds back any note with one left, and a person checks 1 in 1,000 notes (about $3,000 a million, whichever method). Until a bar is set: the top group, fewest left in.
+Every method leaves some identifiers in. On synthetic notes a final check holds back any note with one left, because we know what was planted; on real notes only a second scan and a person checking 1 in 1,000 notes (about $3,000 a million) remain. Until a bar is set: the top group, fewest left in.
 Synthetic: 400 notes with fake identifiers, scored against what was planted (docs/results.md, De-identification) · engine cost: measured speed at an illustrative $1 CPU hour; AI mask and paid services at list price, 2026-10-26 (docs/deidentification.md) · 6
 
-**Speaker notes:** The third question comes first in practice: before anyone or any AI reads a real note, names, dates and record numbers have to come out. We planted 2,714 fake identifiers in 400 synthetic notes, and count how many each method leaves in, with its 95 percent range, and how many dental words it removes by mistake, words like Glickman or Gracey that look like names. There is no pass bar set as a leak rate yet. What protects patients today is the final check, which holds back any note with an identifier left, plus a person checking one note in a thousand, about 3,000 dollars a million notes whichever method is used; that review is most of the cost. Until a bar is set we use the top group: methods that could rank first on leaks. Are the less costly ones as good? No: patterns alone cost under a dollar but leave 645 in; Presidio with patterns about 5 dollars and 376; the Stanford tagger with patterns about 23 dollars and 226. The top group starts at about 98 dollars: the Stanford and OBI taggers together with patterns and the dental-word guard, 115 left in and 41 dental words removed. Databricks' AI mask with patterns is in the same group and damages only 2 dental words, but at about 295 dollars. The paid services, Azure and Amazon, and our own LLM prompt have not been run, so we show their prices only, from about 18 to about 2,650 dollars. Engine costs use measured speeds on CPU at an illustrative node price. All synthetic.
+**Speaker notes:** The third question comes first in practice: before anyone or any AI reads a real note, names, dates and record numbers have to come out. We planted 2,714 fake identifiers in 400 synthetic notes, and count how many each method leaves in, with its 95 percent range, and how many dental words it removes by mistake, words like Glickman or Gracey that look like names. There is no pass bar set as a leak rate yet. On synthetic notes a final check holds back any note with an identifier left, but only because we know every identifier we planted. On real notes nothing is known in advance, so what remains is a second scan for anything shaped like an identifier and a person checking one note in a thousand, about 3,000 dollars a million notes whichever method is used; that review is most of the cost. That is why the leak rate matters, and why a bar has to be set. Until a bar is set we use the top group: methods that could rank first on leaks. Are the less costly ones as good? No: patterns alone cost under a dollar but leave 645 in; Presidio with patterns about 5 dollars and 376; the Stanford tagger with patterns about 23 dollars and 226. The top group, the methods that could rank first, starts at about 98 dollars: the Stanford and OBI taggers together with patterns and the dental-word guard, 115 left in and 41 dental words removed; routing by identifier type is in the same group. Databricks' AI mask with patterns is in the same group and damages only 2 dental words, but at about 295 dollars. The paid services, Azure and Amazon, and our own LLM prompt have not been run, so we show their prices only, from about 18 to about 2,650 dollars. Engine costs use measured speeds on CPU at an illustrative node price. All synthetic.
 
 ## Slide 7 — ask
 
@@ -277,7 +277,7 @@ Stand-in:
 none; the slide shows the scores only.
 De-identification
 Bar:
-no leak rate set. In place: a final check holds back any note with an identifier left, and a person checks 1 in 1,000 notes.
+no leak rate set. On synthetic notes a final check holds back any note with a planted identifier left; on real notes only a second scan and a person checking 1 in 1,000 notes remain.
 To decide:
 the leak rate a data owner accepts, and on which notes (the hardest tier leaks most).
 Stand-in:
@@ -286,12 +286,12 @@ Every score is synthetic,
 against the generator's own answer key: it shows the method works on records whose answer we know, not how it does on real records.
 docs/process.md (validation criterion) · specs/029-tooth-loss/analysis_plan.md · docs/deidentification.md · rank ranges: docs/results.md · 9
 
-**Speaker notes:** What passes means is different for each question, and only one has a bar today. For finding gum disease, the bar is the acceptance test from OHDSI's case-validation work: a method passes if it agrees with four gum specialists at least as often as they agree with each other, measured with Cohen's kappa, with a margin of 0.05 fixed before anyone looks. It has not been run, because our reviewers are simulated so far, and a simulated result is a dry run we never show as a result. So the cost slide uses a stand-in, the top group: could this method rank first, over resamples of the same charts? For tooth loss, no bar is set: the analysis plan names the measures but not a passing score; we suggest setting it on the teeth missing at the first visit, because that is where the model is used and where it scores lowest. For de-identification, no leak rate is set either: what protects patients is a final check that holds back any note with an identifier left, and a person checking one note in a thousand. Setting the two missing bars is part of the ask.
+**Speaker notes:** What passes means is different for each question, and only one has a bar today. For finding gum disease, the bar is the acceptance test from OHDSI's case-validation work: a method passes if it agrees with four gum specialists at least as often as they agree with each other, measured with Cohen's kappa, with a margin of 0.05 fixed before anyone looks. It has not been run, because our reviewers are simulated so far, and a simulated result is a dry run we never show as a result. So the cost slide uses a stand-in, the top group: could this method rank first, over resamples of the same charts? For tooth loss, no bar is set: the analysis plan names the measures but not a passing score; we suggest setting it on the teeth missing at the first visit, because that is where the model is used and where it scores lowest. For de-identification, no leak rate is set either: on synthetic notes a final check holds back any note with a planted identifier left, but on real notes, where nothing is known in advance, only a second scan and a person checking one note in a thousand remain, so the leak rate needs a bar. Setting the two missing bars is part of the ask.
 
 ## Slide 10 — costing
 
 Appendix · How cost was computed
-Illustrative list prices, a million notes, one note a visit. People's time is the larger cost.
+Dated list prices and illustrative hardware prices, a million notes, one note a visit. People's time is the larger cost.
 By hand
 33,333 h
 a million visits, one specialist, 2 minutes a chart
