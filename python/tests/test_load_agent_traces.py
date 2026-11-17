@@ -168,3 +168,17 @@ def test_a_missing_setting_fails_at_once_and_names_it(lt, runs, monkeypatch, cap
 def test_model_name_is_on_every_turn_when_given(lt, runs):
     t = lt.task_trace(runs / "demo-run/tasks/demo_101", "demo-run", "demo agent", model_name="gemma-4-31b")
     assert {s["attributes"]["mlflow.llm.model"] for s in t["steps"]} == {"gemma-4-31b"}
+
+
+def test_spans_carry_the_opentelemetry_genai_names(lt, runs):
+    """Databricks' trace charts follow OpenTelemetry's GenAI conventions: a tool call is an execute_tool operation
+    with gen_ai.tool.name, a model turn a chat operation with its model and token use, the task an invoke_agent."""
+    t = lt.task_trace(runs / "demo-run/tasks/demo_101", "demo-run", "demo agent", model_name="gemma-4-31b")
+    turn, tool = t["steps"][0], t["steps"][0]["tools"][0]
+    assert tool["attributes"]["gen_ai.operation.name"] == "execute_tool"
+    assert tool["attributes"]["gen_ai.tool.name"] == tool["name"] == "run_command"
+    assert turn["attributes"]["gen_ai.operation.name"] == "chat"
+    assert turn["attributes"]["gen_ai.request.model"] == turn["attributes"]["gen_ai.response.model"] == "gemma-4-31b"
+    assert (turn["attributes"]["gen_ai.usage.input_tokens"], turn["attributes"]["gen_ai.usage.output_tokens"]) == (1000, 50)
+    assert t["root"]["attributes"]["gen_ai.operation.name"] == "invoke_agent"
+    assert t["root"]["attributes"]["gen_ai.agent.name"] == "demo agent"

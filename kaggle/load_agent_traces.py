@@ -10,8 +10,11 @@ health_transformation_lab.ops_agent_trace:
 The trace's shape is plan.md's "What a trace looks like". MLflow groups its charts by span name, type, status and model:
 - the root span (AGENT) is the task: the issue in; the outcome, the patch and the error out; OK when resolved;
 - each model turn is an LLM span named "model turn": its message, its token use (mlflow.chat.tokenUsage), the model;
-- each tool call is a TOOL span under its turn, named by the tool alone (read_file, edit_file, run_command, ...), ERROR
-  when the tool reported an error (a failed edit), so the Tool calls tab counts calls and errors per tool.
+- each tool call is a TOOL span beside its turn, named by the tool alone (read_file, edit_file, run_command, ...),
+  ERROR when the tool reported an error (a failed edit), so the Tool calls tab counts calls and errors per tool.
+Each span also carries OpenTelemetry's GenAI names (gen_ai.operation.name invoke_agent, chat or execute_tool;
+gen_ai.tool.name; gen_ai.request.model; gen_ai.usage.input_tokens and output_tokens), which trace charts built on
+OpenTelemetry read.
 A turn runs from the end of the previous step to when the model answered; its tool call from there to when the tool's
 output came back.
 
@@ -113,13 +116,18 @@ def _turns(steps: list[dict], start_ns: int, model_name: str | None) -> list[dic
                 outputs.append(later["observation"])
         metrics = step.get("metrics") if isinstance(step.get("metrics"), dict) else {}
         num = _number(step.get("step_id"), int)
-        attrs = {"step_num": num, "cached_token_count": _number(metrics.get("cached_tokens"), int)}
+        attrs = {"step_num": num, "cached_token_count": _number(metrics.get("cached_tokens"), int),
+                 "gen_ai.operation.name": "chat"}
         if metrics:
-            attrs["mlflow.chat.tokenUsage"] = {"input_tokens": _number(metrics.get("prompt_tokens"), int),
-                                               "output_tokens": _number(metrics.get("completion_tokens"), int),
-                                               "total_tokens": _number(metrics.get("total_tokens"), int)}
+            usage = {"input_tokens": _number(metrics.get("prompt_tokens"), int),
+                     "output_tokens": _number(metrics.get("completion_tokens"), int),
+                     "total_tokens": _number(metrics.get("total_tokens"), int)}
+            attrs["mlflow.chat.tokenUsage"] = usage
+            attrs["gen_ai.usage.input_tokens"] = usage["input_tokens"]
+            attrs["gen_ai.usage.output_tokens"] = usage["output_tokens"]
         if model_name:
             attrs["mlflow.llm.model"] = model_name
+            attrs["gen_ai.request.model"] = attrs["gen_ai.response.model"] = model_name
         tools, end = [], answered
         for call in [c for c in step.get("tool_calls") or [] if isinstance(c, dict)]:
             name = str(call.get("function_name") or "tool")
@@ -129,7 +137,9 @@ def _turns(steps: list[dict], start_ns: int, model_name: str | None) -> list[dic
             output = _clean(match.get("content")) if match else None
             came_back = max(answered, _when(match) or answered) if match else answered
             tools.append({"name": name, "inputs": _clean(call.get("arguments")), "outputs": output,
-                          "attributes": {"step_num": num}, "is_ok": not _is_tool_error(output),
+                          "attributes": {"step_num": num, "gen_ai.operation.name": "execute_tool",
+                                         "gen_ai.tool.name": name},
+                          "is_ok": not _is_tool_error(output),
                           "start_ns": answered, "end_ns": came_back})
             end = max(end, came_back)
         turns.append({"name": "model turn", "inputs": None, "outputs": {"message": _clean(step.get("message"))},
@@ -163,7 +173,8 @@ def task_trace(task_dir: Path, run_label: str, agent_name: str, model_name: str 
     root = {"name": iid, "inputs": {"issue": telemetry.scrub(issue), "system_prompt": telemetry.scrub(system)},
             "outputs": {"outcome_code": outcome, "ended_code": ended, "patch": telemetry.scrub(patch),
                         "error_text": telemetry.scrub(str(_error(result) or ""))},
-            "attributes": {"agent_seconds": _number(result.get("agent_phase_seconds")),
+            "attributes": {"gen_ai.operation.name": "invoke_agent", "gen_ai.agent.name": agent_name,
+                           "agent_seconds": _number(result.get("agent_phase_seconds")),
                            "tool_call_count": _number(result.get("tool_call_count"), int),
                            "llm_call_count": _number(result.get("llm_call_count"), int), "step_count": len(steps)},
             "start_ns": start, "end_ns": end, "is_ok": resolved}
