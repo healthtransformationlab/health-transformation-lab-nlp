@@ -20,7 +20,7 @@ def test_claude_local_settings_are_ignored_by_the_repo_gitignore():
 
 
 TEMPLATE = REPO_ROOT / ".claude" / "settings.local.example.json"
-NEON_SIZE_RULE = 'Bash(psql "$NEON_DATABASE_URL" -Atc "select pg_size_pretty:*)'
+NEON_SIZE_RULE = 'Bash(psql "$NEON_DATABASE_URL" -Atc "select pg_size_pretty(pg_database_size(current_database()))")'
 
 
 def test_local_settings_template_is_committed_and_lists_the_standard_rules():
@@ -34,3 +34,9 @@ def test_local_settings_template_is_committed_and_lists_the_standard_rules():
 
 def test_claude_md_says_to_copy_the_template():
     assert "cp .claude/settings.local.example.json .claude/settings.local.json" in (REPO_ROOT / "CLAUDE.md").read_text()
+
+
+def test_template_rules_name_exact_commands_without_wildcards():
+    # A prefix rule ending in :* after free text (SQL) also matches "...; drop table x" or a trailing -f file.
+    allow = json.loads(TEMPLATE.read_text())["permissions"]["allow"]
+    assert [rule for rule in allow if ":*" in rule or rule.endswith("*)")] == []

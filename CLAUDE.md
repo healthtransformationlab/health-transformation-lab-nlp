@@ -40,7 +40,9 @@ standard set is kept, reviewed, in `.claude/settings.local.example.json`; on a n
 cp .claude/settings.local.example.json .claude/settings.local.json
 ```
 
-A rule worth having everywhere is added to the template by pull request, then copied by hand on each machine.
+Each rule names one exact command, never a prefix with `:*` after free text: `psql -Atc "select ...:*)"` would also
+match `"select ...; drop table x"`, since psql runs every statement it's given. A rule worth having everywhere is added
+to the template by pull request, then copied by hand on each machine.
 
 ## Setup for Superpowers
 

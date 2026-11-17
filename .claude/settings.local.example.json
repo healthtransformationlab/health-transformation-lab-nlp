@@ -1,7 +1,7 @@
 {
   "permissions": {
     "allow": [
-      "Bash(psql \"$NEON_DATABASE_URL\" -Atc \"select pg_size_pretty:*)"
+      "Bash(psql \"$NEON_DATABASE_URL\" -Atc \"select pg_size_pretty(pg_database_size(current_database()))\")"
     ]
   }
 }
