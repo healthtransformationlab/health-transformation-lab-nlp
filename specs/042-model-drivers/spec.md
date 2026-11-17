@@ -76,6 +76,16 @@ ranking, the tests or the drivers are, and the LLM reader calls aren't traces th
 - **SC-002** On Databricks, `select * from gold_perio_bench.model_rank` returns 43 rows whose comments explain every
   column, and the experiment shows the LLM calls as traces with their assessments.
 
+## Risks
+
+- **The experiment is made by the loader, not the bundle.** An experiment's trace location can't be changed once it
+  is made (spec 041), and the loader makes `/Shared/perio-bench-model-ranking` with its traces in
+  `ops_agent_trace` under the prefix `perio_reader` the first time it runs. Declaring it in
+  `databricks/resources/agent_traces.yml` afterwards would clash with the existing name, so the bundle declaration
+  waits for a decision (an ADR) on whether to adopt or rebuild it.
+- **Trace writes are one call per assessment.** 669 traces with five assessments each take minutes on Free Edition;
+  a rerun skips what is there.
+
 ## Out of scope
 
 - New model runs (a GPU run follows AGENTS.md's Kaggle GPU rules and is not part of this spec).
