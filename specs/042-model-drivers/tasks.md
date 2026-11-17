@@ -11,4 +11,4 @@
 
 - [x] T005 [US2] Failing test `python/tests/test_load_model_drivers.py` (fake client)
 - [x] T006 [US2] `scripts/75_load_model_drivers.py`: tables with comments and batch key; runs; traces and assessments
-- [ ] T007 [US2] Load the dev workspace; record row counts, the leader's count and the trace count in the PR
+- [x] T007 [US2] Load the dev workspace; record row counts, the leader's count and the trace count in the PR
