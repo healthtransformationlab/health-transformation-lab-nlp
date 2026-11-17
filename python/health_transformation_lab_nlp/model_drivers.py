@@ -108,6 +108,7 @@ def method_feature(method: str, registry: dict) -> dict:
 
 # ---------- the paired test ----------
 
+@traced
 def exact_mcnemar(a: pd.Series, b: pd.Series) -> tuple[int, int, float]:
     """(charts only a gets, charts only b gets, two-sided exact McNemar p) on paired booleans."""
     a, b = np.asarray(a, bool), np.asarray(b, bool)
@@ -118,6 +119,7 @@ def exact_mcnemar(a: pd.Series, b: pd.Series) -> tuple[int, int, float]:
 
 # ---------- inputs ----------
 
+@traced
 def note_methods(inp: dict) -> list[str]:
     """Every leaderboard method that reads the chart note (the models; the rule phenotypes and single evidence
     types read other parts of the record and are ranked on the full leaderboard, docs/results.md)."""
@@ -210,6 +212,7 @@ def _feature_effect(con: pd.DataFrame) -> pd.DataFrame:
 
 # ---------- 3. what decides outcomes ----------
 
+@traced
 def chart_facts(key: pd.DataFrame, truth: pd.Series) -> pd.DataFrame:
     """One row per chart: the facts of the chart a model is given, and its true status group."""
     words = key["note_text"].str.split().str.len()
@@ -360,6 +363,7 @@ def _headline(b: dict) -> dict:
             "chart": b["chart_feature_effect"]}
 
 
+@traced
 def details_markdown(b: dict) -> str:
     h = _headline(b)
     rank, eff, fit, drop, chart, con = h["rank"], h["eff"], h["fit"], h["drop"], h["chart"], b["model_contrast"]
@@ -439,6 +443,7 @@ def _share(h, feature: str, level: str) -> str:
     return f"{100 * c[(c.chart_feature_code == feature) & (c.level_text == level)].correct_ratio.iloc[0]:.0f}%"
 
 
+@traced
 def readme_block(b: dict) -> str:
     h = _headline(b)
     lead, eff, fit, drop = h["lead"], h["eff"], h["fit"], h["drop"]
@@ -474,6 +479,7 @@ def readme_block(b: dict) -> str:
     return "\n".join(lines)
 
 
+@traced
 def update_readme(text: str, block: str) -> str:
     if START in text:
         return re.sub(re.escape(START) + r".*?" + re.escape(END), lambda _: block, text, flags=re.S)
@@ -554,13 +560,4 @@ COMMENTS = {
                           "auc_drop_ratio": "AUC of the full fit minus auc_without_ratio"}),
 }
 
-
-def write(b: dict) -> list:
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
-    paths = []
-    for name in TABLES:
-        p = OUT_DIR / f"{name}.csv"
-        b[name].to_csv(p, index=False, float_format="%.6g")
-        paths.append(p)
-    return paths
 
