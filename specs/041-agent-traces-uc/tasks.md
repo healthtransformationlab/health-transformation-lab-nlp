@@ -2,10 +2,10 @@
 
 ## US1 - the bundle declares the agent-trace schema and an experiment bound to it (#856)
 
-- [ ] T001 [US1] Failing test `python/tests/test_agent_traces_bundle.py`
-- [ ] T002 [US1] `databricks/resources/agent_traces.yml`: schema, grants, experiment with `trace_location`
-- [ ] T003 [US1] Pin `databricks/setup-cli@v1.22.1` in `ci.yml` and `deploy.yml`
-- [ ] T004 [US1] `databricks bundle validate -t dev` with CLI 1.22.1; record the output in the PR
+- [x] T001 [US1] Failing test `python/tests/test_agent_traces_bundle.py`
+- [x] T002 [US1] `databricks/resources/agent_traces.yml`: schema, grants, experiment with `trace_location`
+- [x] T003 [US1] Pin `databricks/setup-cli@v1.22.1` in `ci.yml` and `deploy.yml`
+- [x] T004 [US1] `databricks bundle validate -t dev` with CLI 1.22.1; record the output in the PR
 - [ ] T005 [US1] After the merge deploy, read the experiment's trace location through the API and record it on #856
 
 ## US3 - the 414 traces and their assessments move there (#858)

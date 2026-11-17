@@ -96,6 +96,22 @@ prod never had them, so their first deploy creates only the bench schemas.
 
 Kaggle names changed too (kaggle/README.md lists the old items to delete).
 
+### Spec 041: coding-agent traces in Unity Catalog
+
+`databricks/resources/agent_traces.yml` declares the schema `ops_agent_trace` and the MLflow experiment
+`/Shared/coding-agent-runs`. The experiment stores its traces in that schema under the table prefix `coding_agent`.
+When a deploy creates the experiment, Databricks makes the trace tables `coding_agent_otel_spans`, `_otel_logs`,
+`_otel_metrics` and `_otel_annotations`, and the views `coding_agent_trace_metadata` and `coding_agent_trace_unified`.
+The experiment's Tool calls tab, its latency percentiles and its token charts read those tables.
+
+- **A trace location can't be changed after the experiment exists** (Databricks, Private Preview). To move the
+  traces, declare a new experiment; don't edit this one.
+- **The CLI must be 1.9.0 or newer** to read `trace_location`. CI and the deploy pin `databricks/setup-cli@v1.22.1`.
+- **Grant `MODIFY` and `SELECT` on the schema by name.** Databricks says `ALL_PRIVILEGES` on the catalog isn't
+  enough for trace tables.
+- **Drop the probe once this experiment holds a trace.** The schema `scratch_uc_trace_probe` and the experiment
+  `/Shared/scratch-uc-trace-probe` were made by hand on November 17 to check that Free Edition accepts this.
+
 ## Variables
 
 | Variable | Default | What it sets |

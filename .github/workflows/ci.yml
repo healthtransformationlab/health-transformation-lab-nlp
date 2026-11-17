@@ -140,7 +140,7 @@ jobs:
           host: ${{ vars.DATABRICKS_HOST || secrets.DATABRICKS_HOST }}
           client_id: ${{ vars.DATABRICKS_CLIENT_ID || secrets.DATABRICKS_CLIENT_ID }}
           client_secret: ${{ secrets.DATABRICKS_CLIENT_SECRET }}
-      - uses: databricks/setup-cli@v1.3.0   # >= 0.288 for the catalogs resource; >= 1.3.0 for genie_spaces (spec 019)
+      - uses: databricks/setup-cli@v1.22.1   # >= 0.288 for the catalogs resource; >= 1.3.0 for genie_spaces (spec 019); >= 1.9.0 for an experiment's trace_location (spec 041)
       - name: bundle validate (all targets)
         if: env.DATABRICKS_CLIENT_SECRET != ''
         env: {DATABRICKS_BUNDLE_ENGINE: direct}   # as deploy.yml; the catalog and Genie resources need it
