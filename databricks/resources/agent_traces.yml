@@ -1,0 +1,47 @@
+# Coding-agent traces in Unity Catalog (spec 041, #856).
+#
+#   health_transformation_lab.ops_agent_trace       schema the experiment's traces are stored in
+#     coding_agent_otel_spans, _otel_logs,          made and named by Databricks when the experiment is created
+#     _otel_metrics, _otel_annotations              (tables), with the views coding_agent_trace_metadata and
+#                                                   coding_agent_trace_unified; Databricks' names, like OMOP's
+#   /Shared/coding-agent-runs                       the MLflow experiment: its UI reads the tables above
+#
+# The experiment's trace_location cannot be changed after it is created (Databricks; Private Preview), so its
+# names are tested (python/tests/test_agent_traces_bundle.py). Needs Databricks CLI >= 1.9.0, the first whose bundle
+# schema has experiments.<key>.trace_location; CI and the deploy pin databricks/setup-cli.
+#
+# Trace tables need MODIFY and SELECT granted by name: Databricks says ALL_PRIVILEGES on the catalog is not enough.
+# The traces are coding-agent runs on public code, scrubbed of secrets before they are written (ADR 0010); they hold
+# no dental records. prevent_destroy: `bundle destroy` must never drop them.
+
+resources:
+  schemas:
+    agent_trace:
+      catalog_name: ${resources.catalogs.health_transformation_lab.name}
+      name: ops_agent_trace
+      comment: >-
+        Coding-agent run traces, one experiment's spans, logs, metrics and assessments in OpenTelemetry form
+        (spec 041). Public code and the model's messages, scrubbed of secrets (ADR 0010). No dental records.
+      grants:
+        - principal: dental_omop_nlp_${bundle.target}_admin
+          privileges: [USE_SCHEMA, CREATE_TABLE, MODIFY, SELECT]
+      lifecycle:
+        prevent_destroy: true
+
+  experiments:
+    coding_agent_runs:
+      name: /Shared/coding-agent-runs
+      trace_location:
+        uc_trace_location:
+          catalog: ${resources.catalogs.health_transformation_lab.name}
+          schema: ${resources.schemas.agent_trace.name}
+          table_prefix: coding_agent
+      tags:
+        - key: project
+          value: health-transformation-lab-nlp
+        - key: data
+          value: coding-agent traces on public code
+        - key: spec
+          value: "041"
+      lifecycle:
+        prevent_destroy: true

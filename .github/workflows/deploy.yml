@@ -66,7 +66,7 @@ jobs:
       - name: Stop if this environment isn't configured
         if: env.DATABRICKS_CLIENT_SECRET == ''
         run: echo "No service principal sign-in (DATABRICKS_CLIENT_SECRET) for $TARGET; skipping." && exit 0
-      - uses: databricks/setup-cli@v1.3.0   # >= 0.288 for the catalogs resource; >= 1.3.0 for genie_spaces (spec 019)
+      - uses: databricks/setup-cli@v1.22.1   # >= 0.288 for the catalogs resource; >= 1.3.0 for genie_spaces (spec 019); >= 1.9.0 for an experiment's trace_location (spec 041)
         if: env.DATABRICKS_CLIENT_SECRET != ''
       - name: Python tests before deploying
         if: env.DATABRICKS_CLIENT_SECRET != ''
