@@ -10,8 +10,8 @@
 
 ## US2 - a committed loader, once per task-run (#857)
 
-- [ ] T009 [US2] Fixture run folders and a failing test `python/tests/test_load_agent_traces.py`
-- [ ] T010 [US2] `kaggle/load_agent_traces.py`; `AGENT_TRACE_EXPERIMENT` in `docs/telemetry.md`
+- [x] T009 [US2] Fixture run folders and a failing test `python/tests/test_load_agent_traces.py`
+- [x] T010 [US2] `kaggle/load_agent_traces.py`; `AGENT_TRACE_EXPERIMENT` in `docs/telemetry.md`
 - [ ] T011 [US2] Load the next finished Colab run and rerun it to show nothing new is written
 
 ## US3 - the 414 traces and their assessments move there (#858)

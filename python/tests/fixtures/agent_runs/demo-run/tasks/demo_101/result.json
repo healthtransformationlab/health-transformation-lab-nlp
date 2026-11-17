@@ -1,0 +1,18 @@
+{
+ "instance_id": "demo_101",
+ "agent_phase_seconds": 15.2,
+ "tool_call_count": 5,
+ "llm_call_count": 4,
+ "patch": "--- a/demo/math.py\n+++ b/demo/math.py\n@@ -3 +3 @@\n-    return abs(a) + b\n+    return a + b\n",
+ "verification": {
+  "is_resolved": true
+ },
+ "agent_error": null,
+ "error_text": null,
+ "started_unix": 1794800000.0,
+ "ended_unix": 1794800015.2,
+ "budgets": {
+  "max_tool_calls": 36,
+  "max_time_minutes": 5.0
+ }
+}

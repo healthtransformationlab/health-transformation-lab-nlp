@@ -1,0 +1,185 @@
+{
+ "schema_version": "1.0",
+ "agent": {
+  "name": "demo",
+  "version": "0"
+ },
+ "steps": [
+  {
+   "step_id": "1",
+   "source": "system",
+   "message": "You fix issues in a repository.",
+   "extra": {
+    "event_type": "system",
+    "elapsed_s": 0.1,
+    "timestamp": 1794800000.1,
+    "author": "demo_agent"
+   }
+  },
+  {
+   "step_id": "2",
+   "source": "user",
+   "message": "Demo issue: add() returns the wrong sum for negative numbers.",
+   "extra": {
+    "event_type": "user",
+    "elapsed_s": 0.2,
+    "timestamp": 1794800000.2,
+    "author": "demo_agent"
+   }
+  },
+  {
+   "step_id": "3",
+   "source": "agent",
+   "message": "Find add() first.",
+   "tool_calls": [
+    {
+     "tool_call_id": "call_3",
+     "function_name": "run_command",
+     "arguments": "{'command': \"grep -rn 'def add' demo/\"}",
+     "extra": "{'event_type': 'thinking', 'elapsed_s': 4.0, 'timestamp': 1794800004.0, 'author': 'demo_agent'}"
+    },
+    {
+     "tool_call_id": "call_4",
+     "function_name": "read_file",
+     "arguments": "{'filepath': 'demo/math.py', 'start_line': 1, 'end_line': 20}",
+     "extra": "{'event_type': 'thinking', 'elapsed_s': 4.0, 'timestamp': 1794800004.0, 'author': 'demo_agent'}"
+    }
+   ],
+   "observation": {
+    "content": "{\"status\": \"ok\", \"stdout\": \"demo/math.py:3:def add(a, b):\"}",
+    "extra": {
+     "tool_name": "run_command",
+     "elapsed_s": 4.5,
+     "timestamp": 1794800004.5
+    }
+   },
+   "metrics": {
+    "prompt_tokens": 1000,
+    "completion_tokens": 50,
+    "cached_tokens": 0,
+    "total_tokens": 1050
+   },
+   "extra": {
+    "event_type": "thinking",
+    "elapsed_s": 4.0,
+    "timestamp": 1794800004.0,
+    "author": "demo_agent"
+   }
+  },
+  {
+   "step_id": "4",
+   "source": "system",
+   "observation": {
+    "content": "{\"status\": \"ok\", \"content\": \"TOKEN = '__FAKE_TOKEN__'\\ndef add(a, b):\\n    return abs(a) + b\\n\"}",
+    "extra": {
+     "tool_name": "read_file",
+     "elapsed_s": 4.7,
+     "timestamp": 1794800004.7
+    }
+   },
+   "extra": {
+    "elapsed_s": 4.7,
+    "timestamp": 1794800004.7
+   }
+  },
+  {
+   "step_id": "5",
+   "source": "agent",
+   "message": "Remove abs().",
+   "tool_calls": [
+    {
+     "tool_call_id": "call_5",
+     "function_name": "edit_file",
+     "arguments": "{'filepath': 'demo/math.py', 'old': 'abs(a) + c', 'new': 'a + b'}",
+     "extra": "{'event_type': 'thinking', 'elapsed_s': 9.0, 'timestamp': 1794800009.0, 'author': 'demo_agent'}"
+    }
+   ],
+   "observation": {
+    "content": "{\"status\": \"error\", \"error_message\": \"old text not found\"}",
+    "extra": {
+     "tool_name": "edit_file",
+     "elapsed_s": 9.2,
+     "timestamp": 1794800009.2
+    }
+   },
+   "metrics": {
+    "prompt_tokens": 1400,
+    "completion_tokens": 40,
+    "cached_tokens": 0,
+    "total_tokens": 1440
+   },
+   "extra": {
+    "event_type": "thinking",
+    "elapsed_s": 9.0,
+    "timestamp": 1794800009.0,
+    "author": "demo_agent"
+   }
+  },
+  {
+   "step_id": "6",
+   "source": "agent",
+   "message": "Retry with the exact text.",
+   "tool_calls": [
+    {
+     "tool_call_id": "call_6",
+     "function_name": "edit_file",
+     "arguments": "{'filepath': 'demo/math.py', 'old': 'abs(a) + b', 'new': 'a + b'}",
+     "extra": "{'event_type': 'thinking', 'elapsed_s': 13.0, 'timestamp': 1794800013.0, 'author': 'demo_agent'}"
+    }
+   ],
+   "observation": {
+    "content": "{\"status\": \"ok\"}",
+    "extra": {
+     "tool_name": "edit_file",
+     "elapsed_s": 13.1,
+     "timestamp": 1794800013.1
+    }
+   },
+   "metrics": {
+    "prompt_tokens": 1500,
+    "completion_tokens": 45,
+    "cached_tokens": 0,
+    "total_tokens": 1545
+   },
+   "extra": {
+    "event_type": "thinking",
+    "elapsed_s": 13.0,
+    "timestamp": 1794800013.0,
+    "author": "demo_agent"
+   }
+  },
+  {
+   "step_id": "7",
+   "source": "agent",
+   "message": "Done.",
+   "tool_calls": [
+    {
+     "tool_call_id": "call_7",
+     "function_name": "submit_patch",
+     "arguments": "{}",
+     "extra": "{'event_type': 'thinking', 'elapsed_s': 15.0, 'timestamp': 1794800015.0, 'author': 'demo_agent'}"
+    }
+   ],
+   "observation": {
+    "content": "{\"status\": \"ok\"}",
+    "extra": {
+     "tool_name": "submit_patch",
+     "elapsed_s": 15.1,
+     "timestamp": 1794800015.1
+    }
+   },
+   "metrics": {
+    "prompt_tokens": 1550,
+    "completion_tokens": 10,
+    "cached_tokens": 0,
+    "total_tokens": 1560
+   },
+   "extra": {
+    "event_type": "thinking",
+    "elapsed_s": 15.0,
+    "timestamp": 1794800015.0,
+    "author": "demo_agent"
+   }
+  }
+ ]
+}
