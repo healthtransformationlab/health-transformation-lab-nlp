@@ -1,4 +1,4 @@
-# Review: verifier checks on all 129 development tasks, and of patches agents had along the way
+# PR 854 review: verifier checks on all 129 development tasks, and of patches agents had along the way
 
 Closes #853. Range: `origin/main..data/853-028-verifier-checks`. Files: `kaggle/official_controls_run.py`, `kaggle/official_controls_kernel.py`, `python/tests/test_official_agent.py`, `data/tasks/official_agent_runs/devset_controls.csv` (all 129 tasks), `data/tasks/official_agent_runs/devset_patch_checks.csv` (new, 48 rows).
 
