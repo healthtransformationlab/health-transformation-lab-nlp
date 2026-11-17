@@ -12,3 +12,10 @@
 - [x] T005 [US2] Failing test `python/tests/test_load_model_drivers.py` (fake client)
 - [x] T006 [US2] `scripts/75_load_model_drivers.py`: tables with comments and batch key; runs; traces and assessments
 - [ ] T007 [US2] Load the dev workspace; record row counts, the leader's count and the trace count in the PR
+
+## US5 - the three tests explained (#868)
+
+- [x] T020 [US5] The landing README's table of the three tests (80 lines kept)
+- [x] T021 [US5] "The three tests" on the study page, with how BERT is used in each
+- [x] T022 [US5] Slide 5 of the PerioBench deck, slides renumbered, `docs/build_decks.py edr`
+- [ ] T023 [US5] Link the de-identification and tooth-loss drill-downs once US3 and US4 merge
