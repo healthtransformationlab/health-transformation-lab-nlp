@@ -961,7 +961,10 @@ def main() -> int:
                     help="with --batch: JSON lines of instance_id and context_text (scripts/69_failure_report.py); each "
                          "drawn task's text is added after its hints, and every drawn task must have one")
     ap.add_argument("--deadline-minutes", type=float, default=45.0,
-                    help="with --batch: the kernel stops starting tasks when one more could run past this")
+                    help="with --batch: the kernel stops starting tasks when one more could run past this. "
+                         "Must cover the whole task list (not only the first few): the default 45 minutes "
+                         "cuts a 25-task 31B run after about 8 tasks (repair-nlp25 and c31bg-nlp25 on "
+                         "2026-11-19). For 25 NLP tasks at ~8 minutes each use about 180.")
     a = ap.parse_args()
 
     import pandas as pd
