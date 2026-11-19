@@ -1,5 +1,5 @@
 {
- "note": "Branch data/849-028-colab-public-bundle only (#849), never merged to main (ADR 0005). Since November 19, 2026, ~21:50 UTC: c31be8-think2k-nlp25 finished (15/25, lost pr36+pr37); not submitted. Next unfinished (owner yes for both): c31be8-imp-nlp25 (31B-e8 af1e006 + private PR 51 find.py import hint only), then c31be8-calls50-nlp25 (max_tool_calls 50, max_turns 112, still 8 minutes; gemma-developer-agent-private #53). Both packed with same 25 task ids/order as c31be8-nlp25 (starts htlnlp_206, htlnlp_178, htlnlp_pr37, \u2026), deadline_minutes 180. GPU gate fixed to accept A100 40GB. Since November 19, 2026, ~23:10 UTC: c31be8-hard36 queued after imp and calls50 (owner yes #54): 31B-e8 af1e006 unchanged on the 36 harder-set tasks not yet graded (sources A+B + 12 civic_hub; excludes the 8 nlp25 fails already graded). deadline_minutes 320. Private Kaggle datasets only.",
+ "note": "Branch data/849-028-colab-public-bundle only (#849), never merged to main (ADR 0005). Packed harder-set baselines (private #54): c31be8-hard36 and cpub-hard36 \u2014 36 tasks (A16+B8+12 civic_hub; exclude 8 htlnlp fails), deadline_minutes 320, same seeded order. Next unfinished still: c31be8-imp-nlp25 then c31be8-calls50-nlp25 (owner yes). hard36 entries are on the list after those; start only with owner yes for that run.",
  "stop": false,
  "runs": [
   {
@@ -14,14 +14,6 @@
    "label": "c31be8-calls50-nlp25",
    "bundle": "jcblearning/htlnlp-official-c31be8-calls50-nlp25",
    "kernel_dataset": "jcblearning/htlnlp-colab-kernel-c31be8-calls50-nlp25",
-   "gpu": "A100",
-   "model": "google/gemma-4/other/gemma-4-31b-it-qat-w4a16-ct/2",
-   "network_open_acknowledged": true
-  },
-  {
-   "label": "c31be8-hard36",
-   "bundle": "jcblearning/htlnlp-official-c31be8-hard36",
-   "kernel_dataset": "jcblearning/htlnlp-colab-kernel-c31be8-hard36",
    "gpu": "A100",
    "model": "google/gemma-4/other/gemma-4-31b-it-qat-w4a16-ct/2",
    "network_open_acknowledged": true
@@ -323,6 +315,22 @@
    "label": "c31be-onav-big",
    "bundle": "jcblearning/htlnlp-official-c31be-onav-big",
    "kernel_dataset": "jcblearning/htlnlp-colab-kernel-c31be-onav-big",
+   "gpu": "A100",
+   "model": "google/gemma-4/other/gemma-4-31b-it-qat-w4a16-ct/2",
+   "network_open_acknowledged": true
+  },
+  {
+   "label": "c31be8-hard36",
+   "bundle": "jcblearning/htlnlp-official-c31be8-hard36",
+   "kernel_dataset": "jcblearning/htlnlp-colab-kernel-c31be8-hard36",
+   "gpu": "A100",
+   "model": "google/gemma-4/other/gemma-4-31b-it-qat-w4a16-ct/2",
+   "network_open_acknowledged": true
+  },
+  {
+   "label": "cpub-hard36",
+   "bundle": "jcblearning/htlnlp-official-cpub-hard36",
+   "kernel_dataset": "jcblearning/htlnlp-colab-kernel-cpub-hard36",
    "gpu": "A100",
    "model": "google/gemma-4/other/gemma-4-31b-it-qat-w4a16-ct/2",
    "network_open_acknowledged": true
