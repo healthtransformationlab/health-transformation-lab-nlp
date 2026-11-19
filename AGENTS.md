@@ -6,6 +6,7 @@ Claude Code reads them through `CLAUDE.md`, which imports this file and adds its
 Folders with their own rules have their own `AGENTS.md` (read it before working there):
 
 - `databricks/agents/chart_review/AGENTS.md`: the planned Databricks chart review agent.
+- `kaggle/AGENTS.md`: babysitting Colab / Kaggle competition runs (close finished tabs, never leave a GPU idle).
 
 ## Ground rules
 
