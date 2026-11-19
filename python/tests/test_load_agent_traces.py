@@ -81,7 +81,8 @@ def test_root_span_holds_issue_patch_and_outcome(lt, runs):
     assert "return a + b" in t["root"]["outputs"]["patch"] and t["root"]["outputs"]["outcome_code"] == "solved"
     assert t["tags"] == {"trace_key": lt.trace_key("demo-run", "demo agent", "demo_101"), "run_label": "demo-run",
                          "agent_name": "demo agent", "instance_id": "demo_101", "repo_name": "demo",
-                         "outcome_code": "solved", "ended_code": "ended_itself", "is_resolved": "true"}
+                         "outcome_code": "solved", "ended_code": "ended_itself", "is_resolved": "true",
+                         "verdict_source_code": "kernel"}
 
 
 def test_each_model_turn_is_an_llm_span_and_each_call_a_tool_span_named_by_the_tool(lt, runs):
@@ -182,3 +183,43 @@ def test_spans_carry_the_opentelemetry_genai_names(lt, runs):
     assert (turn["attributes"]["gen_ai.usage.input_tokens"], turn["attributes"]["gen_ai.usage.output_tokens"]) == (1000, 50)
     assert t["root"]["attributes"]["gen_ai.operation.name"] == "invoke_agent"
     assert t["root"]["attributes"]["gen_ai.agent.name"] == "demo agent"
+
+
+def _verdicts(tmp_path, rows):
+    p = tmp_path / "verdicts.jsonl"
+    p.write_text("".join(json.dumps(r) + "\n" for r in rows))
+    return p
+
+
+def test_read_verdicts_maps_each_task_to_resolved(lt, tmp_path):
+    """#881: official_verify.py writes one JSON line per task; extra fields and blank lines are ignored."""
+    p = _verdicts(tmp_path, [{"instance_id": "demo_101", "resolved": False, "seconds": 3.1},
+                             {"instance_id": "demo_102", "resolved": True}])
+    p.write_text(p.read_text() + "\n")
+    assert lt.read_verdicts(p) == {"demo_101": False, "demo_102": True}
+
+
+def test_a_verdict_overrides_the_kernels_is_resolved(lt, runs):
+    """#881: on this repository's own tasks the kernel says "Missing test specification"; the verifier's verdict wins."""
+    t = lt.task_trace(runs / "demo-run/tasks/demo_102", "demo-run", "demo agent", verdicts={"demo_102": True})
+    assert t["tags"]["is_resolved"] == "true" and t["tags"]["outcome_code"] == "solved"
+    assert t["tags"]["verdict_source_code"] == "official_verify" and t["root"]["is_ok"] is True
+    t = lt.task_trace(runs / "demo-run/tasks/demo_101", "demo-run", "demo agent", verdicts={"demo_101": False})
+    assert t["tags"]["is_resolved"] == "false" and t["tags"]["outcome_code"] == "patch_failed"
+    assert t["root"]["is_ok"] is False
+
+
+def test_a_task_missing_from_the_verdicts_is_not_loaded(lt, runs, capsys):
+    client = FakeClient()
+    counts = lt.load_run(runs, "demo-run", "demo agent", client, verdicts={"demo_101": True})
+    assert counts == {"written": 1, "skipped": 0, "failed": 1, "unconfirmed": 0}
+    assert "demo_102: not loaded (no verdict)" in capsys.readouterr().out
+    assert client.traces[0]["tags"]["verdict_source_code"] == "official_verify"
+
+
+def test_the_cli_reads_the_verdicts_file(lt, runs, tmp_path, monkeypatch):
+    seen = {}
+    monkeypatch.setattr(lt, "load_run", lambda *a, **k: seen.update(k) or {"written": 0, "skipped": 0, "failed": 0})
+    p = _verdicts(tmp_path, [{"instance_id": "demo_101", "resolved": True}])
+    assert lt.main([str(runs), "--label", "demo-run", "--agent", "demo agent", "--dry-run", "--verdicts", str(p)]) == 0
+    assert seen["verdicts"] == {"demo_101": True}
