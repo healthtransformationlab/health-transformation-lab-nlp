@@ -205,7 +205,8 @@
    "kernel_dataset": "jcblearning/htlnlp-colab-kernel-repair-nlp25",
    "gpu": "A100",
    "model": "google/gemma-4/other/gemma-4-31b-it-qat-w4a16-ct/2",
-   "network_open_acknowledged": true
+   "network_open_acknowledged": true,
+   "resume_session": "20261119T012329Z-463d7794"
   },
   {
    "label": "c31bg-nlp25",
