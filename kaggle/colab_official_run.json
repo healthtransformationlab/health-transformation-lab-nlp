@@ -200,6 +200,14 @@
    "resume_session": "20261118T004640Z-0b2a0dc0"
   },
   {
+   "label": "repair-nlp25",
+   "bundle": "jcblearning/htlnlp-official-repair-nlp25",
+   "kernel_dataset": "jcblearning/htlnlp-colab-kernel-repair-nlp25",
+   "gpu": "A100",
+   "model": "google/gemma-4/other/gemma-4-31b-it-qat-w4a16-ct/2",
+   "network_open_acknowledged": true
+  },
+  {
    "label": "devset-cidris-c2",
    "bundle": "jcblearning/htlnlp-official-devset-cidris-c2",
    "kernel_dataset": "jcblearning/htlnlp-colab-kernel-devset-cidris-c2",
