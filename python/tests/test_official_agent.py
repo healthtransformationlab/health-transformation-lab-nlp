@@ -435,11 +435,12 @@ def test_the_controls_kernel_runs_on_a_cpu_offline_beside_the_competition_and_th
 def test_the_controls_bundle_holds_the_submission_the_verifier_and_the_ids(controls, tmp_path):
     out = controls.build_bundle(["rich_2", "fastapi_9"], _submission(tmp_path), tmp_path / "b", "someone")
     names = {p.relative_to(out).as_posix() for p in out.rglob("*") if p.is_file()}
-    assert names == {"controls.json", "official_verify.py", "submission/agent.yaml", "submission/eval_config.yaml",
-                     "submission/prompts/system.md", "dataset-metadata.json"}
+    assert names == {"controls.json", "official_verify.py", "verify_env_guard.py", "submission/agent.yaml",
+                     "submission/eval_config.yaml", "submission/prompts/system.md", "dataset-metadata.json"}
     meta = json.loads((out / "controls.json").read_text())
     assert meta["instance_ids"] == ["rich_2", "fastapi_9"] and meta["kinds"] == ["oracle", "null"]
     assert (out / "official_verify.py").read_text() == (REPO_ROOT / "kaggle" / "official_verify.py").read_text()
+    assert (out / "verify_env_guard.py").read_text() == (REPO_ROOT / "kaggle" / "verify_env_guard.py").read_text()
 
 
 def test_a_control_row_keeps_the_verdict_and_never_the_test_output(controls):

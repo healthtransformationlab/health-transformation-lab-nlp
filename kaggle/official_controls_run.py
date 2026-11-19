@@ -67,6 +67,7 @@ def build_bundle(ids: list[str], submission_dir: Path, out: Path, username: str)
         elif src.is_file():
             shutil.copyfile(src, out / "submission" / name)
     shutil.copyfile(HERE / "official_verify.py", out / "official_verify.py")
+    shutil.copyfile(HERE / "verify_env_guard.py", out / "verify_env_guard.py")  # #883: official_verify loads it beside itself
     (out / "controls.json").write_text(json.dumps({"instance_ids": list(ids), "kinds": list(KINDS), "concurrency": 3},
                                                   indent=1) + "\n")
     (out / "dataset-metadata.json").write_text(json.dumps({
