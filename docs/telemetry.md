@@ -482,3 +482,7 @@ python kaggle/load_agent_traces.py <runs folder> --label devset-m31be-c1 --agent
   environment. The loader never creates an experiment: one made outside the bundle would have no Unity Catalog trace
   location.
 - **Checking first:** `--dry-run` builds every trace and writes none.
+- **This repository's own tasks (#881):** the kernel can't grade them ("Missing test specification"), so pass
+  `--verdicts <file>`, the `--out` file of `kaggle/official_verify.py`. Each trace's solved tag then comes from that
+  file, and `verdict_source_code` says which source it was (`official_verify` or `kernel`). A task missing from the
+  file is not loaded.
