@@ -960,8 +960,11 @@ def main() -> int:
     ap.add_argument("--context", type=Path,
                     help="with --batch: JSON lines of instance_id and context_text (scripts/69_failure_report.py); each "
                          "drawn task's text is added after its hints, and every drawn task must have one")
-    ap.add_argument("--deadline-minutes", type=float, default=45.0,
-                    help="with --batch: the kernel stops starting tasks when one more could run past this")
+    ap.add_argument("--deadline-minutes", type=float, default=180.0,
+                    help="with --batch: the kernel stops starting tasks when one more could run past this "
+                         "(default 180; #888 — multi-task Colab packs must not use the old 45-minute default)")
+    ap.add_argument("--allow-short-deadline", action="store_true",
+                    help="with --colab and more than one task: allow --deadline-minutes below 180 (#888)")
     a = ap.parse_args()
 
     import pandas as pd
@@ -979,6 +982,19 @@ def main() -> int:
     check_arm_options(a.label, a.context, a.batch, development)
     check_colab_options(a.colab, a.batch, a.label, a.collect, a.colab_session, a.colab_results)
     batch_name(a.source, a.label)   # a bad label fails here, before anything is uploaded
+    # #888: a multi-task Colab batch below 180 minutes is how repair/31B-g were cut short by the 45-minute default.
+    if (
+        a.colab
+        and a.batch
+        and not a.collect
+        and len(ids) > 1
+        and a.deadline_minutes < 180
+        and not a.allow_short_deadline
+    ):
+        sys.exit(
+            f"--deadline-minutes {a.deadline_minutes} is below 180 for a {len(ids)}-task Colab batch (#888). "
+            "Pass at least 180, or --allow-short-deadline for a deliberate short gate."
+        )
     a.model_source = model_source(declared_model(a.agent_dir))   # the model the kernel attaches: the one declared
     a.context_note = None
     if a.context:
