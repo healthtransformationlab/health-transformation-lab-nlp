@@ -82,12 +82,15 @@ async def main():
     rows = sorted(rows, key=lambda r: r["instance_id"])
     a.out.parent.mkdir(parents=True, exist_ok=True)
     a.out.write_text("".join(json.dumps(r) + "\n" for r in rows))
-    # Write first so the broken run is inspectable; then refuse a resolve total (#883).
-    try:
-        _env_guard.assert_no_missing_modules(rows)
-    except _env_guard.MissingModuleError as e:
-        print(f"FATAL: {e}", file=sys.stderr)
-        raise SystemExit(2) from e
+    # The reference patch is the environment check: if it cannot import a module, the
+    # sandbox is broken. An agent patch can fail to import the package it was supposed
+    # to change; that comparison happens in the collector, against this reference grade.
+    if a.patch == "oracle":
+        try:
+            _env_guard.assert_no_missing_modules(rows)
+        except _env_guard.MissingModuleError as e:
+            print(f"FATAL: {e}", file=sys.stderr)
+            raise SystemExit(2) from e
     print(a.patch, "tasks", len(rows), "resolved", sum(r["resolved"] for r in rows))
 
 asyncio.run(main())

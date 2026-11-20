@@ -18,6 +18,24 @@ def _load():
     return mod
 
 
+def test_a_task_package_the_reference_can_import_is_an_ordinary_fail():
+    g = _load()
+    rows = [{
+        "instance_id": "onav_47c8b791_schema_guard",
+        "resolved": False,
+        "error": None,
+        "output_tail": "ModuleNotFoundError: No module named 'scrapers'",
+    }]
+    oracle = {"onav_47c8b791_schema_guard": {
+        "instance_id": "onav_47c8b791_schema_guard",
+        "resolved": True,
+        "error": None,
+        "output_tail": "1 passed",
+    }}
+    assert g.environment_faults(rows, oracle) == []
+    g.assert_no_missing_modules(rows, oracle_by_id=oracle)
+
+
 def test_a_verdict_with_no_module_named_is_an_environment_fault():
     g = _load()
     rows = [
@@ -53,7 +71,42 @@ def test_no_module_named_in_the_error_field_counts_too():
     assert g.missing_module_instance_ids(rows) == ["a"]
 
 
-def test_official_verify_refuses_a_resolve_total_when_a_module_is_missing():
+def test_a_module_the_reference_also_cannot_import_is_an_environment_fault():
+    g = _load()
+    rows = [{
+        "instance_id": "htlnlp_226",
+        "resolved": False,
+        "error": None,
+        "output_tail": "ModuleNotFoundError: No module named 'sklearn'",
+    }]
+    oracle = {"htlnlp_226": {
+        "instance_id": "htlnlp_226",
+        "resolved": False,
+        "error": None,
+        "output_tail": "ModuleNotFoundError: No module named 'sklearn'",
+    }}
+    assert g.environment_faults(rows, oracle) == [("htlnlp_226", "sklearn")]
+    with pytest.raises(g.MissingModuleError, match="sklearn"):
+        g.assert_no_missing_modules(rows, oracle_by_id=oracle)
+
+
+def test_pytest_is_an_environment_fault_without_a_reference_verdict():
+    g = _load()
+    rows = [{"instance_id": "a", "resolved": False, "error": "No module named 'pytest'", "output_tail": ""}]
+    assert g.environment_faults(rows, {}) == [("a", "pytest")]
+
+
+def test_official_verify_refuses_an_oracle_total_when_a_module_is_missing():
     src = (REPO_ROOT / "kaggle" / "official_verify.py").read_text()
-    assert "assert_no_missing_modules" in src and "SystemExit(2)" in src
-    assert src.index("assert_no_missing_modules") < src.index('print(a.patch, "tasks"')
+    gate = src.index('if a.patch == "oracle"')
+    check = src.index("assert_no_missing_modules")
+    printed = src.index('print(a.patch, "tasks"')
+    assert gate < check < printed and "SystemExit(2)" in src
+
+
+def test_the_collector_checks_the_reference_before_it_prints_a_resolve_count():
+    src = (REPO_ROOT / "kaggle" / "official_agent_run.py").read_text()
+    batch = src[src.index("def run_batch("):src.index("\ndef main(")]
+    main = src[src.index("def main("):]
+    assert batch.index("_refuse_missing_modules(") < batch.index("of {len(table)} resolved")
+    assert main.index("require_launch_imports()") < main.index("run_batch(")

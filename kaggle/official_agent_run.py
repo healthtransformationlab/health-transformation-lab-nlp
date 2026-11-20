@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib
 import importlib.util
 import json
 import os
@@ -186,15 +187,49 @@ def merge_parts(out: Path) -> None:
 def forward_run_telemetry(out: Path) -> int:
     """Send a collected run's spans (its telemetry.jsonl, written with the internet off) on through the exporter the
     environment sets (spec 014 US7, #791): to Application Insights with DENTAL_TELEMETRY=azure. Off by default, as
-    is the rest of the package's telemetry; a run made without --telemetry has no file and sends nothing."""
-    from health_transformation_lab_nlp import telemetry
+    is the rest of the package's telemetry; a run made without --telemetry has no file and sends nothing.
+
+    A missing package must not discard a finished run. The file is checked first, and a failed import is reported
+    and skipped so grading still runs."""
     path = Path(out) / "telemetry.jsonl"
     if not path.is_file():
+        return 0
+    try:
+        from health_transformation_lab_nlp import telemetry
+    except ModuleNotFoundError as e:
+        missing = e.name or "health_transformation_lab_nlp"
+        print(f"telemetry.jsonl is present but {missing} is not installed; "
+              f"the run's results stay, and grading continues", flush=True)
         return 0
     sent = telemetry.forward_spans(path)
     if sent:
         print(f"forwarded {sent} spans from {path.name} ({telemetry.active_exporter()})", flush=True)
     return sent
+
+
+def ensure_repo_package_path() -> None:
+    """Put this repo's package on sys.path so a script run from a venv can import it."""
+    root = str(REPO_ROOT / "python")
+    if root not in sys.path:
+        sys.path.insert(0, root)
+
+
+def require_launch_imports() -> None:
+    """The interpreter that pushes a kernel must be able to grade the run it gets back.
+
+    Refuses, naming the missing module, before anything is uploaded."""
+    ensure_repo_package_path()
+    missing: list[str] = []
+    for name in ("health_transformation_lab_nlp", "swegemma"):
+        try:
+            importlib.import_module(name)
+        except ModuleNotFoundError as e:
+            missing.append(e.name or name)
+    if missing:
+        names = ", ".join(dict.fromkeys(missing))
+        raise SystemExit(
+            f"this interpreter cannot grade a run; missing module: {names}. "
+            "Use an interpreter that has it before pushing a kernel.")
 
 
 # What a Colab run's settings say of the network. The proxies set on the kernel's process do not reach the agent's
@@ -625,6 +660,58 @@ def _verify(tasks_file: Path, snapshots: Path, agent_dir: Path, patches: dict[st
     return {r["instance_id"]: r for r in map(json.loads, filter(str.strip, out.read_text().splitlines()))}
 
 
+def _load_env_guard():
+    """The missing-module check, loaded beside this file (as official_verify loads it)."""
+    spec = importlib.util.spec_from_file_location("verify_env_guard", HERE / "verify_env_guard.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def _verify_oracle(tasks_file: Path, snapshots: Path, agent_dir: Path, ids: list[str],
+                   work: Path) -> dict[str, dict]:
+    """The reference patch on the tasks whose agent verdict mentioned a missing module."""
+    if not ids:
+        return {}
+    work.mkdir(parents=True, exist_ok=True)
+    out = work / "verdicts.jsonl"
+    # The reference grade exits 2 when the sandbox itself is missing a module, after writing the file.
+    subprocess.run([sys.executable, str(HERE / "official_verify.py"), "--tasks", str(tasks_file), "--snapshots-dir",
+                    str(snapshots), "--submission-dir", str(agent_dir), "--results-dir", str(work / "results"),
+                    "--patch", "oracle", "--task-ids", *ids, "--concurrency", "3", "--out", str(out)],
+                   check=False, cwd=work, env={**os.environ, "MLFLOW_DISABLE_AGENT_HINT": "1"})
+    if not out.is_file():
+        raise SystemExit("the reference check wrote no verdicts")
+    return {r["instance_id"]: r for r in map(json.loads, filter(str.strip, out.read_text().splitlines()))}
+
+
+def _refuse_missing_modules(a, verdicts: dict, work: Path, development: bool) -> None:
+    """Stop before a resolve count when the grader is missing a module.
+
+    ``pytest``, and any module the reference patch also cannot import, are environment faults. A module only the
+    agent patch fails to import is an ordinary failure. On the competition's own tasks the reference patch is not
+    in this dataset, so only a grader module is refused there."""
+    guard = _load_env_guard()
+    rows = list(verdicts.values())
+    need = []
+    if not development:
+        for row in rows:
+            mods = guard.module_names(row)
+            if any(name.split(".")[0] not in guard.GRADER_MODULES for name in mods):
+                need.append(str(row.get("instance_id") or "?"))
+    oracle = {}
+    if need:
+        oracle = _verify_oracle(a.dataset / "tasks.jsonl", a.dataset / "snapshots", a.agent_dir,
+                                need, work / "_oracle")
+    absent = [i for i in need if i not in oracle]
+    if absent:
+        raise SystemExit("the reference check wrote no verdict for " + ", ".join(absent))
+    try:
+        guard.assert_no_missing_modules(rows, oracle_by_id=oracle)
+    except guard.MissingModuleError as e:
+        raise SystemExit(f"FATAL: {e}") from e
+
+
 def write_table(pd, rows: list[dict], model: str | None, label: str | None = None) -> Path:
     """Merge the rows into the committed table by instance_id (re-runnable); `label` names a separate table, such
     as the development set's."""
@@ -860,6 +947,7 @@ def run_batch(a, api, user: str, ids: list[str], tasks: dict, manifest: dict, ov
     else:
         verdicts = _verify(a.dataset / "tasks.jsonl", a.dataset / "snapshots", a.agent_dir,
                            {i: (r.get("patch") or "") for i, r in done.items()}, work / "_verify")
+    _refuse_missing_modules(a, verdicts, work, development)
     uploaded = work / "bundle" / "submission"   # what the kernel was given; the agent folder if it is gone
     sub_gen = submission_generation(uploaded if (uploaded / "agent.yaml").is_file() else a.agent_dir)
     rows = [row_for({"instance_id": i, **done[i]}, verdicts.get(i), "" if development else manifest.get(i, ""),
@@ -994,6 +1082,7 @@ def main() -> int:
           + f" ({', '.join(f'{t} {n}' for t, n in by_tier.items())}): {', '.join(ids)}")
     if a.plan_only:
         return 0
+    require_launch_imports()
     if a.collect:   # the run span, and where its forwarded spans go: DENTAL_TELEMETRY (off by default; spec 014 US7)
         from health_transformation_lab_nlp import telemetry
         telemetry.setup()
