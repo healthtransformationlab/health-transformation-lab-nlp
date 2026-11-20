@@ -281,7 +281,3 @@ crash.log
 
 # Claude Code: each machine's own settings and permission rules (#872); shared ones go in .claude/settings.json
 .claude/settings.local.json
-
-# Colab watch (#888)
-kaggle/colab_watch_status.json
-kaggle/colab_watch_log.jsonl

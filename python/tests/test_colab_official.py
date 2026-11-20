@@ -1216,6 +1216,19 @@ def test_the_runner_refuses_colab_options_that_do_not_go_together(run):
     assert called and called[0] < next(n for n, line in enumerate(lines) if "KaggleApi()" in line)
 
 
+def test_a_multi_task_colab_batch_refuses_a_deadline_below_180(run):
+    """#888: the old 45-minute default cut multi-task Colab packs short; refuse below 180 unless opted in."""
+    base = {"colab": True, "batch": True, "collect": False, "task_count": 2, "deadline_minutes": 45.0,
+            "allow_short_deadline": False}
+    with pytest.raises(SystemExit, match="below 180"):
+        run.check_colab_deadline(**base)
+    run.check_colab_deadline(**{**base, "deadline_minutes": 180.0})
+    run.check_colab_deadline(**{**base, "allow_short_deadline": True})
+    run.check_colab_deadline(**{**base, "task_count": 1})          # a single-task pack may stay short
+    run.check_colab_deadline(**{**base, "colab": False})           # Kaggle kernels keep their own deadlines
+    run.check_colab_deadline(**{**base, "collect": True})          # collect does not start a pack
+
+
 # Smaller.
 
 def test_a_kernel_that_stopped_itself_is_not_finished_and_the_rest_can_be_resumed(co, tmp_path):
