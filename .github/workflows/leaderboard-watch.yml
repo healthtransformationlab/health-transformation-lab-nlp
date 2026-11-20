@@ -2,9 +2,11 @@
 # hours, and from the Actions tab ("Watch the competition's leaderboard entries" -> Run workflow).
 #
 # kaggle/submission_watch.py updates data/tasks/leaderboard_entries.csv (one row per entry, pending ones looked up by
-# ref) and sends one span per status change to Application Insights. An entry runs on Kaggle's machines with no code
-# of ours, so its status, score and dates are all there is to see. An entry that turns to error fails this workflow
-# (SEV2: GitHub emails the owner the same day), after the ledger has gone to its pull request.
+# ref) and sends one span per status change to Application Insights. Each row records submitted_ts, finished_ts (first
+# COMPLETE or failed sighting), wall_hours, and final_status_text (public score or "Notebook Timeout"). An entry runs
+# on Kaggle's machines with no code of ours, so its status, score and dates are all there is to see. An entry that
+# turns to error fails this workflow (SEV2: GitHub emails the owner the same day), after the ledger has gone to its
+# pull request. gemma-developer-agent-private analysis/leaderboard_entry.csv is rebuilt from this ledger on sync.
 #
 # Needs, in the GitHub environment `dev`: KAGGLE_API_TOKEN (or KAGGLE_KEY) and KAGGLE_USERNAME, as the other Kaggle
 # workflows; and APPINSIGHTS_CONNECTION_STRING (ops/secrets_register.yaml). Without it: a warning, telemetry off, and
