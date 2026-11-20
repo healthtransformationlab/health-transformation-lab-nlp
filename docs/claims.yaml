@@ -92,6 +92,33 @@ edr:
       file: data/datasets/build_summary.json
       match: "\"review_visits\": 223"
       covers: synthetic review charts that periodontists (simulated so far) label
+  # 042 US5 (#868): three-tests slide (docs/edr/slides/05-tests.html)
+  tests:
+    - value: "203"
+      kind: measured
+      file: docs/edr/README.md
+      match: "203 of 223"
+      covers: synthetic charts ModernBERT-large with the stage 4 rule got right on the note alone
+    - value: "223"
+      kind: measured
+      file: docs/edr/README.md
+      match: "203 of 223"
+      covers: synthetic review charts scored for phenotyping
+    - value: "115"
+      kind: measured
+      file: docs/edr/README.md
+      match: "115 of 2,714"
+      covers: fake identifiers leaked by the best de-identification combination
+    - value: "2,714"
+      kind: measured
+      file: docs/edr/README.md
+      match: "115 of 2,714"
+      covers: fake identifiers in the synthetic de-identification notes
+    - value: "469"
+      kind: measured
+      file: docs/edr/README.md
+      match: "469 held-out teeth"
+      covers: held-out missing teeth scored by the tooth-loss models
   results:
     # #467: the notes rebuilt for adults from 2021-04-01, scored at five status groups on the 223 review charts; the GPU
     # encoders and MedGemma were rerun on them on Kaggle on 2026-11-04 (data/datasets/results_manifest.csv)
