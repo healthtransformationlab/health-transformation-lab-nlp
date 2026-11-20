@@ -1,17 +1,7 @@
 {
- "note": "Branch data/849-028-colab-public-bundle only (#849), never merged to main (ADR 0005). Owner yes 2026-11-19 for both hard36 baselines: c31be8-hard36 then cpub-hard36 (36 tasks A16+B8+hub12, deadline_minutes 320 confirmed on both sealed official_batch.json). Do not stop in-progress c31be8-imp-nlp25 / c31be8-calls50-nlp25; hard36 sit next on the list so each Colab tab picks one up when its current run ends (no second Run all). Grade each of the four as it finishes.",
+ "note": "Branch data/849-028-colab-public-bundle only (#849), never merged to main (ADR 0005). 2026-11-20: c31be8-calls50-hard36 and c31be8-nlp25-r2 were taken off this list before any session started them. Do not put them back. That pair is running on Kaggle (owner yes; the weekly hours expire Saturday 00:00 UTC). A tab must not start them.",
  "stop": false,
  "runs": [
-  {
-   "label": "c31be8-calls50-hard36",
-   "bundle": "jcblearning/htlnlp-official-c31be8-calls50-hard36",
-   "kernel_dataset": "jcblearning/htlnlp-colab-kernel-c31be8-calls50-hard36"
-  },
-  {
-   "label": "c31be8-nlp25-r2",
-   "bundle": "jcblearning/htlnlp-official-c31be8-nlp25-r2",
-   "kernel_dataset": "jcblearning/htlnlp-colab-kernel-c31be8-nlp25-r2"
-  },
   {
    "label": "c31be8-covtests-nlp25",
    "bundle": "jcblearning/htlnlp-official-c31be8-covtests-nlp25",
