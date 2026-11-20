@@ -3,6 +3,11 @@
  "stop": false,
  "runs": [
   {
+   "label": "c31be8-calls50-hard36",
+   "bundle": "jcblearning/htlnlp-official-c31be8-calls50-hard36",
+   "kernel_dataset": "jcblearning/htlnlp-colab-kernel-c31be8-calls50-hard36"
+  },
+  {
    "label": "c31be8-nlp25-r2",
    "bundle": "jcblearning/htlnlp-official-c31be8-nlp25-r2",
    "kernel_dataset": "jcblearning/htlnlp-colab-kernel-c31be8-nlp25-r2"
