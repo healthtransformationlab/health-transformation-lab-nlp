@@ -738,6 +738,29 @@ def check_colab_options(colab: bool, batch: bool, label: str | None, collect: bo
         sys.exit(f"{'--colab-session' if colab_session else '--colab-results'} is for reading a run back: it needs --collect")
 
 
+def check_colab_deadline(
+    colab: bool,
+    batch: bool,
+    collect: bool,
+    task_count: int,
+    deadline_minutes: float,
+    allow_short_deadline: bool,
+) -> None:
+    """Multi-task Colab packs must not reuse the old 45-minute default (#888). Refuse below 180 unless opted in."""
+    if (
+        colab
+        and batch
+        and not collect
+        and task_count > 1
+        and deadline_minutes < 180
+        and not allow_short_deadline
+    ):
+        sys.exit(
+            f"--deadline-minutes {deadline_minutes} is below 180 for a {task_count}-task Colab batch (#888). "
+            "Pass at least 180, or --allow-short-deadline for a deliberate short gate."
+        )
+
+
 def reusable_output(out: Path, reuse: bool) -> bool:
     """True when a collection was asked to reuse a kernel's output that is already in `out`."""
     return bool(reuse) and (Path(out) / "result.json").exists()
@@ -960,8 +983,11 @@ def main() -> int:
     ap.add_argument("--context", type=Path,
                     help="with --batch: JSON lines of instance_id and context_text (scripts/69_failure_report.py); each "
                          "drawn task's text is added after its hints, and every drawn task must have one")
-    ap.add_argument("--deadline-minutes", type=float, default=45.0,
-                    help="with --batch: the kernel stops starting tasks when one more could run past this")
+    ap.add_argument("--deadline-minutes", type=float, default=180.0,
+                    help="with --batch: the kernel stops starting tasks when one more could run past this "
+                         "(default 180; #888 — multi-task Colab packs must not use the old 45-minute default)")
+    ap.add_argument("--allow-short-deadline", action="store_true",
+                    help="with --colab and more than one task: allow --deadline-minutes below 180 (#888)")
     a = ap.parse_args()
 
     import pandas as pd
@@ -979,6 +1005,9 @@ def main() -> int:
     check_arm_options(a.label, a.context, a.batch, development)
     check_colab_options(a.colab, a.batch, a.label, a.collect, a.colab_session, a.colab_results)
     batch_name(a.source, a.label)   # a bad label fails here, before anything is uploaded
+    check_colab_deadline(
+        a.colab, a.batch, a.collect, len(ids), a.deadline_minutes, a.allow_short_deadline
+    )
     a.model_source = model_source(declared_model(a.agent_dir))   # the model the kernel attaches: the one declared
     a.context_note = None
     if a.context:

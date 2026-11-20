@@ -32,3 +32,4 @@ don't rewrite the old one.
 | [0008](0008-modal-runs-start-on-their-own-under-a-cost-cap.md) | Modal runs start on their own under a cost cap; above it they wait for the owner | accepted |
 | [0009](0009-task-sets-not-an-r-parity-input.md) | The task sets are not an R parity input | accepted |
 | [0010](0010-agent-run-traces-may-carry-full-content.md) | A coding-agent run's own trace may reach telemetry in full; dental records never do | accepted |
+| [0011](0011-kaggle-gpu-weekly-threshold.md) | Kaggle GPU runs may start under a weekly threshold (amends 0007) | accepted |
