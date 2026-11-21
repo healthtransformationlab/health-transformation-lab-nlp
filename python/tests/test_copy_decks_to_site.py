@@ -49,7 +49,7 @@ def test_a_deck_without_a_title_or_already_with_icons_is_refused():
 
 def test_build_writes_the_copies_and_reports_only_what_changed(tmp_path):
     changed = cd.build(REPO_ROOT, tmp_path)
-    assert sorted(changed) == sorted([*cd.DECKS.values(), *cd.COVERS.values()])
+    assert sorted(changed) == sorted([*cd.DECKS.values(), *cd.PAGES.values(), *cd.COVERS.values()])
     for src, dst in cd.COVERS.items():
         assert (tmp_path / dst).read_bytes() == (REPO_ROOT / src).read_bytes()
     for src, dst in cd.DECKS.items():
@@ -89,7 +89,7 @@ def test_workflow_runs_on_main_when_a_source_changes_and_by_hand():
     assert "workflow_dispatch" in on
     assert on["push"]["branches"] == ["main"]
     paths = on["push"]["paths"]
-    for src in (*cd.DECKS, *cd.COVERS, ".github/scripts/copy_decks_to_site.py", ".github/workflows/copy-decks-to-site.yml"):
+    for src in (*cd.DECKS, *cd.PAGES, *cd.COVERS, ".github/scripts/copy_decks_to_site.py", ".github/workflows/copy-decks-to-site.yml"):
         assert src in paths, src
 
 

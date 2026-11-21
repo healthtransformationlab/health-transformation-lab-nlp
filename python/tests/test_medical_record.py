@@ -67,12 +67,16 @@ def test_seeded_and_reproducible():
     assert not a.equals(mr.medical_records(people, seed=43))
 
 
-def test_own_random_stream_leaves_the_global_state_alone():
-    random.seed(5)
-    expected = random.random()
-    random.seed(5)
+def test_own_random_stream_leaves_the_global_state_alone(monkeypatch):
+    # Instance Random is fine; module-level data draws must not happen. Do not patch
+    # getrandbits: OpenTelemetry span IDs call it under @traced (databricks-runtime job).
+    def boom(*_a, **_k):
+        raise AssertionError("global random used")
+
+    for name in ("random", "randint", "randrange", "choice", "choices", "sample", "shuffle",
+                 "uniform", "gauss", "normalvariate", "expovariate"):
+        monkeypatch.setattr(random, name, boom)
     mr.medical_records(_people(50, seed=2), seed=42)
-    assert random.random() == expected
 
 
 def test_columns_follow_the_naming_rules(big):
