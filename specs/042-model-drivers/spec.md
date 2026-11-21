@@ -70,6 +70,20 @@ ranking, the tests or the drivers are, and the LLM reader calls aren't traces th
 - Eight `gold_perio_bench.deid_*` tables, every column commented, with the batch key.
 - **Independent test:** `python/tests/test_deid_drivers.py`; `scripts/76_deid_drivers.py --check`.
 
+### US4 - Should the tooth-loss model use another kind of model? (P2) #867
+
+- The tooth-loss model (spec 029) in the same format, on the plan's held-out teeth, for both label sets and both
+  predictor sets: each model's AUC, Brier score and calibration slope, with patient-bootstrap 95% CIs. Paired AUC
+  and Brier differences against the best pre-specified model on the same resamples. Drivers by SHAP, by permutation
+  and by the AUC lost when refitting without each one. Stability over 5 generator seeds.
+- Post-hoc candidates (elastic-net and spline logistic, random forest, histogram gradient boosting, EBM) carry
+  `is_prespecified = false` and sit outside the analysis plan; adding one to it needs a dated plan amendment.
+- `docs/tooth_loss_drivers.md`, four `tooth_loss_*` tables in `data/datasets/model_drivers/`, loaded into
+  `health_transformation_lab.gold_opendental_perio` with comments, and the MLflow experiment
+  `/Shared/tooth-loss-model-comparison` (one run per model; a second load of the same commit skips them).
+- **Independent test:** `python/tests/test_tooth_loss_drivers.py`: the plan's two models reproduce
+  `tooth_loss_model.run` exactly; `scripts/78_tooth_loss_drivers.py --check` exits 1 when an output is stale.
+
 ## Requirements
 
 - **FR-001** Every number on the pages comes from the committed predictions; nothing is rerun.

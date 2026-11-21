@@ -19,3 +19,9 @@
 - [x] T031 [US3] CPU rerun of the 15 local tools; reproduction of `data/deid/scores.csv` (60 of 60 tool-tier cells)
 - [x] T032 [US3] `deid_drivers.py`, `scripts/76_deid_drivers.py`, `docs/deid_drivers.md`, `deid_*.csv`
 - [x] T033 [US3] `scripts/77_load_deid_drivers.py`; eight tables loaded on dev, counts and comments checked in SQL
+
+## US4 - other models for tooth loss (#867)
+
+- [x] T040 [US4] Failing test `python/tests/test_tooth_loss_drivers.py` (the plan's models reproduce `tooth_loss_model.run`)
+- [x] T041 [US4] `tooth_loss_drivers.py` and `scripts/78_tooth_loss_drivers.py` (`--check`, `--page-only`) -> `docs/tooth_loss_drivers.md`, `tooth_loss_*.csv`
+- [x] T042 [US4] `tooth_loss_drivers_load.py` and `scripts/79_load_tooth_loss_drivers.py`; load the dev workspace and record the row counts
