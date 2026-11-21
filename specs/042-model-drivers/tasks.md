@@ -25,3 +25,10 @@
 - [x] T040 [US4] Failing test `python/tests/test_tooth_loss_drivers.py` (the plan's models reproduce `tooth_loss_model.run`)
 - [x] T041 [US4] `tooth_loss_drivers.py` and `scripts/78_tooth_loss_drivers.py` (`--check`, `--page-only`) -> `docs/tooth_loss_drivers.md`, `tooth_loss_*.csv`
 - [x] T042 [US4] `tooth_loss_drivers_load.py` and `scripts/79_load_tooth_loss_drivers.py`; load the dev workspace and record the row counts
+
+## US5 - the three tests explained (#868)
+
+- [x] T020 [US5] The landing README's table of the three tests (80 lines kept)
+- [x] T021 [US5] "The three tests" on the study page, with how BERT is used in each
+- [x] T022 [US5] Slide 5 of the PerioBench deck, slides renumbered, `docs/build_decks.py edr`
+- [x] T023 [US5] Link the de-identification and tooth-loss drill-downs once US3 and US4 merge

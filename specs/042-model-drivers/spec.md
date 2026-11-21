@@ -84,6 +84,16 @@ ranking, the tests or the drivers are, and the LLM reader calls aren't traces th
 - **Independent test:** `python/tests/test_tooth_loss_drivers.py`: the plan's two models reproduce
   `tooth_loss_model.run` exactly; `scripts/78_tooth_loss_drivers.py --check` exits 1 when an output is stale.
 
+### US5 - The README, the study page and the PerioBench deck explain the three tests in plain words (P1) #868
+
+- The owner asked on November 17 for the README and the website drill-down to explain the three use cases
+  (phenotyping, de-identification, tooth loss), after asking how BERT is used for tooth loss (it isn't).
+- The landing README has one table (question, input, models, best result, drill-down) and stays within its 80 lines.
+  The study page has a section that explains each test in plain words, says how BERT is used in each, and shows how
+  the three connect. The deck, which healthtransformationlab.org serves, gets a slide for the three tests.
+- **Independent test:** `test_decks.py` (80 lines, the links, the deck current, every slide has notes and says
+  synthetic); every number on the slide is one the study page already cites.
+
 ## Requirements
 
 - **FR-001** Every number on the pages comes from the committed predictions; nothing is rerun.
