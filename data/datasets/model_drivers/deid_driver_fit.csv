@@ -1,0 +1,4 @@
+feature_set_code,run_count,identifier_count,note_count,method_count,auc_ratio,auc_lo_ratio,auc_hi_ratio
+identifier,40710,2714,400,15,0.833497,0.822674,0.842357
+tool,40710,2714,400,15,0.733063,0.722913,0.74328
+identifier_and_tool,40710,2714,400,15,0.914352,0.910638,0.917509
