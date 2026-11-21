@@ -1,11 +1,12 @@
 """How each de-identification tool ranks, and what decides whether an identifier is removed (spec 042 US3, #866).
 
+    pip install -e ".[deid]"                     # Presidio, spaCy en_core_web_lg, transformers, CPU torch (#875)
     python scripts/76_deid_drivers.py --rerun    # rerun the local tools on CPU (regex, regex_v2, Presidio, the two
                                                  # Hugging Face models; ~25 min on 4 CPUs) into
                                                  # data/deid/drivers/span_result.csv.gz, only if it reproduces
                                                  # data/deid/scores.csv exactly; then write the outputs below
     python scripts/76_deid_drivers.py            # write data/datasets/model_drivers/deid_*.csv and docs/deid_drivers.md
-    python scripts/76_deid_drivers.py --check    # exit 1 if any of them is stale
+    python scripts/76_deid_drivers.py --check    # exit 1 if any of them is stale (--check does not need .[deid])
 
 The format is the phenotyping models' (scripts/74_model_drivers.py): a ranked table with paired exact McNemar tests,
 contrasts that add one ingredient, and which identifier facts and tool ingredients predict removal, by AUC. Method:

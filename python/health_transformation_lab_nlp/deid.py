@@ -14,7 +14,7 @@ AND the leak gate. Two engines:
             name"; ages over 89; email, URL, SSN, health plan member IDs, MR#;
             dotted / +1 / spaced phones; written-out dates; street, city, ZIP.
   presidio  Microsoft Presidio (spaCy NER + recognisers) with the same dental
-            allowlist. pip install presidio-analyzer and a spaCy model.
+            allowlist. pip install -e ".[deid]" (presidio-analyzer + spaCy en_core_web_lg).
   azure_deid      Azure Health Data Services de-identification service (TAG):
                   ML models for 27 PHI categories. pip install
                   azure-health-deidentification azure-identity; AZURE_DEID_ENDPOINT.
