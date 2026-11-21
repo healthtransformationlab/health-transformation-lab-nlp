@@ -25,10 +25,15 @@ def built():
     return od.build(SMALL, seed=7)
 
 
-def test_same_seed_same_extract_and_no_global_random_used(built):
-    state = random.getstate()
+def test_same_seed_same_extract_and_no_global_random_used(built, monkeypatch):
+    # Prefer a hard fail if module-level random is touched; getstate comparisons flake under xdist.
+    def boom(*_a, **_k):
+        raise AssertionError("global random used")
+
+    for name in ("random", "randint", "randrange", "choice", "choices", "sample", "shuffle",
+                 "uniform", "gauss", "normalvariate", "expovariate", "getrandbits"):
+        monkeypatch.setattr(random, name, boom)
     again, truth = od.build(SMALL, seed=7)
-    assert random.getstate() == state                     # its own stream: the study datasets can't change
     tables, truth0 = built
     for name in tables:
         pd.testing.assert_frame_equal(tables[name], again[name], obj=name)
