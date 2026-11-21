@@ -54,7 +54,7 @@ def validate_item(row: dict, where: str = "item") -> None:
     if not isinstance(row["planted_phi"], list) or len(row["planted_phi"]) < 2:
         raise ValueError(f"{where}: planted_phi needs at least 2 identifiers")
     if not isinstance(row["knowledge_cutoff_sensitive"], bool):
-        raise ValueError(f"{where}: knowledge_cutoff_sensitive must be a boolean")
+        raise TypeError(f"{where}: knowledge_cutoff_sensitive must be a boolean")
     prompt = row["prompt"]
     for p in row["planted_phi"]:
         text = p.get("text")
