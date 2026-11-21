@@ -78,7 +78,10 @@ alerts = pd.concat([digests.governance_alerts(read("dq_check"), digests.load_bud
                     digests.decision_alerts(read("fact_remediation_decision")),
                     digests.forecast_alerts(now, read("fact_pipeline_run")),
                     pd.DataFrame(digests.telemetry_alerts(statuses), columns=digests.ALERT_COLUMNS),
-                    pd.DataFrame(digests.register_alerts(register, scope_keys), columns=digests.ALERT_COLUMNS)],
+                    pd.DataFrame(digests.register_alerts(register, scope_keys), columns=digests.ALERT_COLUMNS),
+                    # 014 BUG3 (#809): keepalive writes the marker when the watch has been quiet ≥ 6 h
+                    pd.DataFrame(digests.leaderboard_watch_stale_file_alerts(now=now),
+                                 columns=digests.ALERT_COLUMNS)],
                    ignore_index=True)
 print(f"{len(alerts)} alerts:", alerts["severity_code"].value_counts().to_dict() if len(alerts) else {})
 

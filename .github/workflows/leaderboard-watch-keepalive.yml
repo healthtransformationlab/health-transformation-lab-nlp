@@ -1,0 +1,73 @@
+# Keep the competition leaderboard watch alive when GitHub skips its schedule (014 BUG3 #809).
+#
+# leaderboard-watch.yml is cron `0 */2 * * *`, but GitHub often drops schedule slots. This runs hourly (offset
+# :17), and `.github/scripts/leaderboard_watch_keepalive.py` dispatches the watch via workflow_dispatch when the
+# last completed watch is older than 3.5 hours. At six hours it writes data/tasks/leaderboard_watch_stale.json
+# for the daily digest (SEV3). docs/telemetry.md names both workflows.
+name: Keep the leaderboard watch on schedule
+run-name: "Leaderboard watch keepalive"
+
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+
+permissions:
+  actions: write          # gh workflow run leaderboard-watch.yml
+  contents: write         # open a PR when the stale marker appears or clears
+  pull-requests: write
+
+concurrency: leaderboard-watch-keepalive
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with: {python-version: "3.12"}
+      - name: Dispatch the watch if quiet; mark SEV3 if six hours stale
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: python .github/scripts/leaderboard_watch_keepalive.py
+
+      - name: Open a pull request when the stale marker changed
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          BRANCH: kaggle-results/leaderboard-watch-stale-${{ github.run_id }}
+        run: |
+          MARKER=data/tasks/leaderboard_watch_stale.json
+          if [ -z "$(git status --porcelain -- "$MARKER")" ]; then
+            echo "Stale marker unchanged"
+            exit 0
+          fi
+          git fetch --quiet --depth 1 origin main
+          git worktree add --quiet -b "$BRANCH" ../stale origin/main
+          mkdir -p ../stale/data/tasks
+          if [ -f "$MARKER" ]; then
+            cp "$MARKER" ../stale/"$MARKER"
+          else
+            rm -f ../stale/"$MARKER"
+          fi
+          cd ../stale
+          if [ -z "$(git status --porcelain -- "$MARKER")" ]; then
+            echo "Stale marker already matches main"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A -- "$MARKER"
+          if [ -f "$MARKER" ]; then
+            msg="Mark leaderboard watch stale (SEV3)"
+            body="The leaderboard watch has not completed for six or more hours. Keepalive run: $RUN_URL (014 BUG3 #809). The daily digest reads this marker."
+          else
+            msg="Clear leaderboard watch stale marker"
+            body="A completed watch is recent again. Keepalive run: $RUN_URL (014 BUG3 #809)."
+          fi
+          git commit --quiet -m "$msg" -m "$body"
+          git push --quiet -u origin "$BRANCH"
+          gh pr create --base main --head "$BRANCH" --title "$msg" --body "$body" \
+            || echo "::warning::Pushed $BRANCH but could not open the PR"

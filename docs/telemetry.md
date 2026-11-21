@@ -297,11 +297,17 @@ Where the Gemma 4 Developer Agent competition's telemetry goes (spec 014 US7, #7
   send them to Application Insights; off by default, as everywhere else.
 - **Leaderboard entries.** An entry runs on Kaggle's machines with no code of ours, so it can't be traced: the API
   gives its status, score and dates, nothing more. `.github/workflows/leaderboard-watch.yml` runs
-  `kaggle/submission_watch.py` every two hours. It keeps `data/tasks/leaderboard_entries.csv` (one row per entry; a
-  pending entry, which the submissions list hides, is looked up by its ref) and sends one span `leaderboard_entry`
-  per status change, with `submission_ref_id`, `status_code` and `public_score_ratio`, under the run span
-  `submission_watch`. The ledger's changes go to a `kaggle-results/leaderboard-entries-<run_id>` pull request. An
-  entry that turns to error fails the workflow (SEV2: GitHub emails the owner).
+  `kaggle/submission_watch.py` every two hours (`schedule`) and on `workflow_dispatch`, and also when a ledger PR
+  merges to `main`. GitHub often skips schedule slots (014 BUG3 #809), so
+  `.github/workflows/leaderboard-watch-keepalive.yml` runs hourly and **dispatches** the watch
+  (`workflow_dispatch`) when the last completed watch is older than 3.5 hours. If the watch has not completed for
+  six hours, keepalive writes `data/tasks/leaderboard_watch_stale.json` and the daily digest raises SEV3
+  (`digests.leaderboard_watch_alerts` / `leaderboard_watch_stale_file_alerts`). The watch keeps
+  `data/tasks/leaderboard_entries.csv` (one row per entry; a pending entry, which the submissions list hides, is
+  looked up by its ref) and sends one span `leaderboard_entry` per status change, with `submission_ref_id`,
+  `status_code` and `public_score_ratio`, under the run span `submission_watch`. The ledger's changes go to a
+  `kaggle-results/leaderboard-entries-<run_id>` pull request. An entry that turns to error fails the workflow
+  (SEV2: GitHub emails the owner).
 - **The connection string** for the workflow is the GitHub `dev` environment secret `APPINSIGHTS_CONNECTION_STRING`
   (`ops/secrets_register.yaml`), the same value as the Databricks secret. The workflow passes it on as
   `APPLICATIONINSIGHTS_CONNECTION_STRING` with `DENTAL_TELEMETRY=azure`; without it, a warning and telemetry off,
