@@ -1,6 +1,0 @@
-feature_code,feature_text,pair_count,b_better_pair_count,a_better_pair_count,tied_pair_count,median_change_count,min_change_count,max_change_count,p_below_005_pair_count,median_unseen_change_count,unseen_p_below_005_pair_count,median_damage_change_count,min_damage_change_count,max_damage_change_count,damage_p_below_005_pair_count
-rules_code,regex rules added (none to regex_v2) or extended (regex to regex_v2),4,4,0,0,631,334,789,4,49,4,0,0,0,0
-is_with_hf_stanford,hf_stanford added,3,3,0,0,217,202,419,3,215,3,32,7,41,3
-is_with_hf_obi,hf_obi added,2,2,0,0,212,111,313,2,211.5,2,17,0,34,1
-is_with_presidio,Presidio added,2,2,0,0,160.5,52,269,2,159,2,117.5,113,122,2
-is_with_guard,dental guard added,4,0,0,4,0,0,0,0,0,0,-187,-799,0,2

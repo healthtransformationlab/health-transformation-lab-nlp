@@ -129,10 +129,6 @@ everything would have recall 1.00 and be useless, so they're always read togethe
 \* written alongside this tier; read the unseen column for a fair comparison. The Hugging Face
 engines ran on CPU in a 4-CPU container (2026-10-26).
 
-Which of these differences hold up on the same identifiers (paired exact McNemar tests against the
-best tool), which ingredient matters beyond noise, and what makes an identifier hard to remove (by
-AUC): [deid_drivers.md](deid_drivers.md) (spec 042 US3).
-
 What each method adds:
 
 - **regex_v2** contributes exact coverage of formatted identifiers (phones, IDs, member numbers,
