@@ -58,6 +58,18 @@ ranking, the tests or the drivers are, and the LLM reader calls aren't traces th
 - **Independent test:** with a fake client the loader writes each table with its comments and each trace once; a
   second load writes no trace. On the dev workspace the row counts and the leader's 203 match the CSVs.
 
+### US3 - Each de-identification tool ranked, paired on the same identifiers, with what drives its leaks (P2) #866
+
+- Committed de-identification scores are totals per tool, so the local tools (regex, regex_v2, Presidio, hf_stanford,
+  hf_obi, their unions, +guard, routed+guard) are rerun on CPU on the challenge set (seed 7, 400 notes) into one row
+  per tool and labelled span (`data/deid/drivers/span_result.csv.gz`). The rerun must reproduce `data/deid/scores.csv`
+  exactly (`deid_reproduction`), or nothing is written. Databricks AI mask is ranked from its totals, marked not paired.
+- Rank by identifiers fully removed (one surviving character is a leak), with CI and rank range by note bootstrap,
+  exact McNemar against the best tool, and decoy damage beside it; contrasts of tools that differ in one ingredient;
+  category, tier and note effects; a driver fit by out-of-fold AUC grouped by note. `docs/deid_drivers.md`.
+- Eight `gold_perio_bench.deid_*` tables, every column commented, with the batch key.
+- **Independent test:** `python/tests/test_deid_drivers.py`; `scripts/76_deid_drivers.py --check`.
+
 ### US4 - Should the tooth-loss model use another kind of model? (P2) #867
 
 - The tooth-loss model (spec 029) in the same format, on the plan's held-out teeth, for both label sets and both
