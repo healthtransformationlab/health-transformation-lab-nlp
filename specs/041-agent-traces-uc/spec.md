@@ -96,7 +96,7 @@ a script that exists only in one cloud session. That storage leaves out what the
   secret found in a span is a SEV1.
 - **FR-004** Writes are idempotent. The loader skips a `trace_key` already present, and the migration's count table
   is delete-then-append by `run_id`.
-- **FR-005** The old experiment is kept until US3's counts match. Retiring it is a later decision, recorded as an ADR.
+- **FR-005** The old experiment is kept until US3's counts match. Retiring it is a later decision, recorded as an ADR. Retired on November 21, 2026: [ADR 0012](../../docs/adr/0012-retire-the-old-trace-experiment.md).
 - **FR-006** The traces are the same in every target, and each target has its own workspace. Only dev holds runs
   today.
 

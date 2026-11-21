@@ -1,6 +1,6 @@
 # ADR 0007: GPU hours are a reserve; score questions go to the leaderboard
 
-Date: 2026-11-15 · Status: accepted · Issue: #797
+Date: 2026-11-15 · Status: accepted (Kaggle per-run yes amended by [0011](0011-kaggle-gpu-weekly-threshold.md)) · Issue: #797
 
 ## Context
 
@@ -26,16 +26,18 @@ Two cheaper sources answer most questions:
 
 ## Decision
 
-- **The Kaggle GPU hours are a reserve.** A Kaggle GPU run starts only on the owner's explicit yes for that run, given
-  in the session that starts it; a general "do what you recommend" doesn't approve one. One run at a time across all
-  sessions, with the quota read before and after (`kaggle/gpu_quota.py`).
+- **The Kaggle GPU hours are a reserve.** One run at a time across all sessions, with the quota read before and after
+  (`kaggle/gpu_quota.py`). **When a Kaggle GPU run may start without a fresh yes** is the weekly threshold in
+  [ADR 0011](0011-kaggle-gpu-weekly-threshold.md): above the reserve floor (~10 hours until the last two days before
+  Saturday 00:00 UTC), runs may start on their own; at or below the floor, each needs the owner's explicit yes in that
+  session. "Do what you recommend" still does not spend the reserve. Submissions always need yes.
 - **"Did the score go up" is answered by leaderboard entries**, one change per entry, booked in a shared plan so two
   sessions don't spend the same day. A development-set run is never started to compare resolve counts.
 - **A question goes to recorded traces and CPU first**: replay it on the traces already downloaded, or on the
   competition's offline data. A GPU run only when they can't answer it.
 - **Every GPU run goes to the owner's Colab by default** (one L4; ADR 0005, #779, #780), this repository's and
   getcommunityone/open-navigator's alike, so the Kaggle pool isn't spent. A Kaggle GPU run is an exception, for what
-  only the competition's own hardware or image decides, and needs the owner's yes for that run. The Colab compute
+  only the competition's own hardware or image decides; whether it needs a fresh yes is ADR 0011. The Colab compute
   units are one subscription shared by both projects, so a Colab run also reads its usage before and after.
 - **For the week of November 15**: no further Kaggle GPU run is planned; the 17.73 hours left are the reserve.
 - **The final two submissions**: one is the best E2B/E4B entry (the small-model bonus requires it), chosen on all the

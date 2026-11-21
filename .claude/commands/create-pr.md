@@ -44,4 +44,8 @@ End the body with the attribution lines the session asks for. Create it with the
 Run the `/pr-review` flow on the new PR number, write `pull_requests/pr-<n>-review.md` and commit it
 to the PR's branch.
 If the verdict is request-changes, fix the 🔴 findings on the branch, push, and re-review.
-Report the PR link and the verdict. Merge only when the user asks and CI is green.
+Report the PR link and the verdict. **Then merge when ready** under AGENTS.md
+rule 6 (#497): checks green on the latest commit, no merge conflict, and this
+review finds nothing blocking — without waiting to be told. Still wait for the
+owner on limited compute, paid endpoints, external publishes, deletions, or
+rule changes (same list in AGENTS.md).

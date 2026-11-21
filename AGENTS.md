@@ -261,15 +261,25 @@ A SEV2 that fires every week for the same cause gets its cause fixed or its leve
     that turns out to matter.
   - **No idle GPU notebook**: one open in Kaggle's editor with an accelerator on draws on the same hours.
   - **Every GPU run goes to the owner's Colab by default**, this repository's and open-navigator's alike, so the Kaggle
-    pool isn't spent. A Kaggle GPU run is an exception, for what only the competition's hardware or image decides, and
-    starts only on **the owner's explicit yes** for that run, given in the session that starts it; "do what you
-    recommend" doesn't (ADR 0007).
+    pool isn't spent. A Kaggle GPU run is an exception, for what only the competition's hardware or image decides.
+    **Weekly threshold (ADR 0011, amends 0007):** while hours left are **above** the reserve floor (~10 hours until the
+    last two days before Saturday 00:00 UTC; then 0), a Kaggle GPU run may start without a fresh yes (agent, overnight,
+    or autorun), still one at a time after reading the quota. **At or below the floor**, each Kaggle GPU run needs the
+    owner's explicit yes in the session that starts it; "do what you recommend" does not spend the reserve.
+    Submissions always need yes.
+  - **Colab Pro+ background execution is the default path** (#888). With Pro+ background execution enabled for the
+    notebook, close the tab after **Run all**; do not babysit the window. Without Pro+, keep the laptop awake and the
+    tab open (fallback only). Turn off any VPN (Surfshark dropped tabs on November 15–16). Multi-task Colab packs use
+    `--deadline-minutes` at least **180** (default); the old 45 cut repair and 31B-g short.
   - **Check before opening a Colab tab** (#847). Run `python kaggle/colab_status.py --branch <run branch> --gpu
     <L4|A100>`: it says, for each listed run, finished, running, stale (no upload for 20 minutes) or not started, and
     which run a new tab on that GPU would make. Don't open a tab when it says `nothing`, or while a run is `running`. A
     tab that looks disconnected may still be running: on November 16 one that "disconnected quickly" finished both its
-    runs over the next three hours. On the device, turn off any VPN (Surfshark is suspected of dropping the owner's tabs
-    on November 15–16), and use a laptop that stays awake with the tab open.
+    runs over the next three hours. Reopen only when status is `stale`, not when the tab looks sad.
+  - **Fewer Colab nights** (#888). Prefer recorded traces and CPU grades. Use Colab when the owner's subscription is the
+    right machine; use Kaggle only when the competition image or hardware decides the answer, and only above the ADR 0011
+    reserve floor (or with an explicit yes at/below it). Do not open a Colab tab to compare resolve counts on a small
+    development set.
   - **A question goes to recorded traces and CPU first**: a kernel's traces download for free and the competition's
     graphs and embeddings run on CPU. A GPU run only when they can't answer it, and never a development-set run to
     compare resolve counts: six of them on the same 23 tasks resolved 3 or 4 each (p = 1.0, ADR 0007).
