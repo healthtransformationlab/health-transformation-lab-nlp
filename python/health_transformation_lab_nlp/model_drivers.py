@@ -427,14 +427,39 @@ def details_markdown(b: dict) -> str:
         out.append(f"| {r.chart_feature_text} | {r.level_text} | {r.chart_count} | {100 * r.correct_ratio:.0f}% | "
                    f"{r.all_correct_chart_count} | {r.none_correct_chart_count} |")
     out += ["", "## Where this lives on Databricks", "",
-            "The tables above load into `health_transformation_lab.gold_perio_bench` (`model_rank`, `model_feature`, "
-            "`model_contrast`, `model_feature_effect`, `chart_feature_effect`, `driver_fit`, `driver_drop`), each with "
-            "table and column comments that say what the numbers mean, by `python/scripts/75_load_model_drivers.py` "
-            "(spec 042 US2). The MLflow experiment `/Shared/perio-bench-model-ranking` holds one run per method "
-            "(its features as params, its scores as metrics) and one trace per LLM reader call, scored by the same "
-            "code scorers (correct, unsafe error, wrong stage).", "",
-            "```sql", "select rank_position_count, method_code, correct_count, vs_leader_p_ratio, size_code, is_rules4",
-            "from health_transformation_lab.gold_perio_bench.model_rank order by rank_position_count;", "```", ""]
+            "`python/scripts/75_load_model_drivers.py` (spec 042 US2) loads everything above, and more, into the dev "
+            "workspace. Loading again replaces the tables and adds no run or trace.", "",
+            "| What | Where | What it is for |", "|---|---|---|",
+            "| The seven tables on this page | `health_transformation_lab.gold_perio_bench.model_rank`, `model_feature`, "
+            "`model_contrast`, `model_feature_effect`, `chart_feature_effect`, `driver_fit`, `driver_drop` | The same "
+            "rows as `data/datasets/model_drivers/`, with a comment on every table and column saying what the number "
+            "means, and the batch key (`run_id`, `run_ts`, `git_commit_sha`) |",
+            "| Every method on every chart | `gold_perio_bench.model_chart_result` (43 × 223 rows) | What each method "
+            "answered, whether it was right, unsafe (could harm if acted on) or the wrong stage, and the chart's facts: "
+            "one query for \"which L3 charts does the leader miss\" |",
+            "| One MLflow run per method | experiment `/Shared/perio-bench-model-ranking` | Features as params, scores "
+            "as metrics: the experiment's compare view ranks and filters them |",
+            "| One trace per LLM reader call | the same experiment; spans and assessments in "
+            "`health_transformation_lab.ops_agent_trace.perio_reader_*` | The synthetic note in, the model's answer "
+            "out, tokens and latency, scored by code scorers: `is_correct`, `is_unsafe_error`, `is_wrong_stage`, "
+            "`is_gate_ok`, `is_fallback` |", "",
+            "```sql", "-- the ranking, with the features that explain it",
+            "select rank_position_count, method_code, correct_count, vs_leader_p_ratio, size_code, domain_code, is_rules4",
+            "from health_transformation_lab.gold_perio_bench.model_rank order by rank_position_count;", "",
+            "-- the charts the leader misses, and who gets them",
+            "select r.visit_id, r.difficulty_code, r.truth_group_code, r.predicted_group_code,",
+            "       count_if(o.is_correct) as methods_right_count",
+            "from health_transformation_lab.gold_perio_bench.model_chart_result r",
+            "join health_transformation_lab.gold_perio_bench.model_chart_result o using (visit_id)",
+            "where r.method_code = 'modernbert-large+rules4' and not r.is_correct group by all order by 5 desc;", "",
+            "-- the LLM readers' assessments, per model",
+            "select a.name as assessment_code,",
+            "       variant_get(s.attributes, '$[\"gen_ai.request.model\"]', 'string') as model_code,",
+            "       avg(variant_get(a.value, '$', 'boolean')::int) as true_ratio, count(*) as trace_count",
+            "from health_transformation_lab.ops_agent_trace.perio_reader_otel_annotations a",
+            "join health_transformation_lab.ops_agent_trace.perio_reader_otel_spans s on s.trace_id = a.target_id",
+            "where a.name in ('is_correct', 'is_unsafe_error', 'is_wrong_stage', 'is_gate_ok', 'is_fallback')",
+            "group by all order by model_code, assessment_code;", "```", ""]
     return "\n".join(out)
 
 

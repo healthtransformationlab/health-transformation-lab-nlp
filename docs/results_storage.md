@@ -15,6 +15,7 @@
 | Model runs (optional) | MLflow (`pip install -e ".[track]"`; workspace MLflow on Databricks) | MLflow runs |
 | On Databricks | `health_transformation_lab.gold_perio_bench.*` Delta tables (notebook 01); `fact_llm_call` (notebook 03) | Delta |
 | Every committed result, wherever it ran (spec 016) | `result_files`, `ai_predictions`, `llm_reader_runs` in `gold_perio_bench`, loaded by the **Load results** job after each deploy; source in `data/datasets/results_manifest.csv` | Delta |
+| How the models rank and what drives the score (spec 042) | `model_rank`, `model_feature`, `model_contrast`, `model_feature_effect`, `chart_feature_effect`, `driver_fit`, `driver_drop`, `model_chart_result` in `gold_perio_bench`, every column commented; a run per method and a trace per LLM reader call in `/Shared/perio-bench-model-ranking` (traces in `ops_agent_trace.perio_reader_*`), loaded by `python/scripts/75_load_model_drivers.py`; [model_drivers.md](model_drivers.md) | Delta, MLflow |
 | OMOP target for model output | `NOTE_NLP` (a flag for review, never `CONDITION_OCCURRENCE`) | OMOP table |
 
 Files in git are fine for a synthetic learning repo: every result is
