@@ -10,6 +10,7 @@ count, a repeat flagged. SEV1 and SEV2 never wait for a digest: the doctor pages
                                          ops/dependency_inventory.csv and the run history
     telemetry_alerts(statuses)           a pipeline that asked for a telemetry exporter and ran without it (014 BUG1)
     register_alerts(register, keys)      a register entry stored in the Databricks secret scope that the scope lacks
+    leaderboard_watch_alerts(last_ts)    watch not finished for six hours (014 BUG3 #809); None = unknown, no alert
     build(alerts, period, date, prev)    (items, messages) for one period; an item in the last digest too is a repeat
     periods_due(date)                    daily every day, weekly on Mondays
     rows(df, table, ...)                 typed rows with the batch key, for delta.replace_keys by digest_key
@@ -19,7 +20,9 @@ count, a repeat flagged. SEV1 and SEV2 never wait for a digest: the doctor pages
 
 from __future__ import annotations
 
+import json
 import re
+from pathlib import Path
 
 import pandas as pd
 from pipeline_doctor import digest as pd_digest
@@ -33,6 +36,8 @@ ALERT_COLUMNS = list(pd_digest.ALERT_COLUMNS)
 CHECK_CLASS = {"cost": "cost_anomaly", "job_p95_duration": "duration_drift", "pipeline_freshness": "source_late"}
 DEFAULT_OWNER = "repo owner"
 ITEM_KEYS = ["owner_name", "subject_name", "predicted_failure_class_code"]
+LEADERBOARD_WATCH_STALE_HOURS = 6
+LEADERBOARD_WATCH_STALE_PATH = REPO_ROOT / "data" / "tasks" / "leaderboard_watch_stale.json"
 
 TABLES = {
     "fact_digest_item": [
@@ -157,6 +162,51 @@ def register_alerts(register: dict, scope_keys: set[str], scope: str = SECRET_SC
                                              f"and put it in {scope}/{key}, or correct stored_in. "
                                              f"Without it: {c.get('if_it_expires') or 'see the register'}")))
     return out
+
+
+@traced
+def leaderboard_watch_alerts(last_finished_ts, now=None, *, stale_hours: float = LEADERBOARD_WATCH_STALE_HOURS
+                             ) -> list[dict]:
+    """SEV3 when the competition leaderboard watch has not finished for `stale_hours` (014 BUG3 #809).
+
+    `last_finished_ts` is the createdAt of the last completed Actions run of leaderboard-watch.yml (or the
+    `last_finished_ts` in data/tasks/leaderboard_watch_stale.json). None / NaT means unknown: no alert (the
+    keepalive writes the marker when it can tell)."""
+    if last_finished_ts is None or (isinstance(last_finished_ts, float) and pd.isna(last_finished_ts)):
+        return []
+    now_ts = pd.Timestamp(now if now is not None else pd.Timestamp.now(tz="UTC"))
+    if now_ts.tzinfo is None:
+        now_ts = now_ts.tz_localize("UTC")
+    last = pd.Timestamp(last_finished_ts)
+    if last.tzinfo is None:
+        last = last.tz_localize("UTC")
+    hours = (now_ts - last).total_seconds() / 3600.0
+    if hours < stale_hours:
+        return []
+    return [_alert(subject_name="leaderboard watch", subject_kind_code="workflow",
+                   pipeline_name="leaderboard_watch", predicted_failure_class_code="source_late",
+                   severity_code="SEV3", recommended_action_code="investigate", owner_name=DEFAULT_OWNER,
+                   evidence_text=(f"{hours:.1f} hours since the last completed leaderboard-watch run "
+                                  f"(threshold {stale_hours:g} h). Fix: check "
+                                  ".github/workflows/leaderboard-watch.yml and the keepalive "
+                                  "(.github/workflows/leaderboard-watch-keepalive.yml); dispatch the watch "
+                                  "from the Actions tab if needed. Without it: leaderboard_entries.csv and "
+                                  "leaderboard_entry spans go stale"))]
+
+
+@traced
+def leaderboard_watch_stale_file_alerts(path: Path | None = None, now=None) -> list[dict]:
+    """SEV3 from data/tasks/leaderboard_watch_stale.json when the keepalive has marked the watch quiet."""
+    p = path or LEADERBOARD_WATCH_STALE_PATH
+    if not p.is_file():
+        return []
+    raw = json.loads(p.read_text(encoding="utf-8"))
+    last = raw.get("last_finished_ts")
+    if last:
+        return leaderboard_watch_alerts(last, now=now)
+    # Never finished: treat as stale now
+    return leaderboard_watch_alerts(pd.Timestamp(now or pd.Timestamp.now(tz="UTC")) -
+                                    pd.Timedelta(hours=LEADERBOARD_WATCH_STALE_HOURS), now=now)
 
 
 @traced
