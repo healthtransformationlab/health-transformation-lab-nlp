@@ -1,0 +1,14 @@
+feature_group_code,feature_kind_code,feature_text,auc_without_ratio,auc_drop_ratio
+category_code,identifier,identifier category (HIPAA Safe Harbor / i2b2 2014),0.88364,0.0307123
+rules_code,tool,regex rules added (none to regex_v2) or extended (regex to regex_v2),0.889829,0.0245227
+tier_code,note,"the note's tier (easy header shapes, hard prose shapes, unseen held-out shapes)",0.895085,0.0192671
+is_routed,tool,routed by identifier type,0.899931,0.014421
+is_with_hf_stanford,tool,hf_stanford added,0.903404,0.0109478
+shape_code,identifier,"how the identifier is written (capitalised, all caps, lowercase, digits, letters and digits)",0.910306,0.00404562
+word_count_code,identifier,identifier length in words,0.910594,0.00375828
+is_with_hf_obi,tool,hf_obi added,0.912152,0.00220007
+is_with_presidio,tool,Presidio added,0.912511,0.00184059
+char_count_code,identifier,identifier length in characters,0.912852,0.00150038
+position_code,note,where in the note it sits,0.914014,0.000337969
+is_with_guard,tool,dental guard added,0.914269,8.29247e-05
+note_identifier_count_code,note,identifiers in the note,0.914349,2.63963e-06

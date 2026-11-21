@@ -12,3 +12,10 @@
 - [x] T005 [US2] Failing test `python/tests/test_load_model_drivers.py` (fake client)
 - [x] T006 [US2] `scripts/75_load_model_drivers.py`: tables with comments and batch key; runs; traces and assessments
 - [x] T007 [US2] Load the dev workspace; record row counts, the leader's count and the trace count in the PR
+
+## US3 - de-identification in the same format (#866)
+
+- [x] T030 [US3] Failing test `python/tests/test_deid_drivers.py`
+- [x] T031 [US3] CPU rerun of the 15 local tools; reproduction of `data/deid/scores.csv` (60 of 60 tool-tier cells)
+- [x] T032 [US3] `deid_drivers.py`, `scripts/76_deid_drivers.py`, `docs/deid_drivers.md`, `deid_*.csv`
+- [x] T033 [US3] `scripts/77_load_deid_drivers.py`; eight tables loaded on dev, counts and comments checked in SQL
