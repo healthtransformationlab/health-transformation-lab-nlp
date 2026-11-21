@@ -37,12 +37,27 @@ def runs(tmp_path):
 class FakeClient:
     def __init__(self):
         self.traces = []
+        self._seq = 0
+        self.deleted_ids = []
 
     def existing_keys(self, run_label):
-        return {t["tags"]["trace_key"] for t in self.traces if t["tags"]["run_label"] == run_label}
+        return set(self.existing_trace_ids(run_label))
+
+    def existing_trace_ids(self, run_label):
+        return {t["tags"]["trace_key"]: t["_trace_id"]
+                for t in self.traces if t["tags"]["run_label"] == run_label}
+
+    def delete_keys(self, trace_ids):
+        want = set(trace_ids)
+        self.deleted_ids.extend(sorted(want))
+        self.traces = [t for t in self.traces if t["_trace_id"] not in want]
+        return len(want)
 
     def write(self, trace, source_run_id=None):
-        self.traces.append(trace)
+        self._seq += 1
+        stored = {**trace, "tags": dict(trace["tags"]), "assessments": list(trace.get("assessments") or [])}
+        stored["_trace_id"] = f"tr-{self._seq}"
+        self.traces.append(stored)
 
     def start_load(self, run_label, agent_name, params):
         return "fake-run"
@@ -128,14 +143,18 @@ def test_no_secret_reaches_a_span(lt, runs):
     assert FAKE not in text and "def add(a, b)" in text
 
 
-def test_a_second_load_writes_nothing(lt, runs):
+def test_a_second_load_replaces_by_trace_key(lt, runs):
+    """#899: delete-then-append by trace_key so a reload leaves one trace per key, not duplicates or a stuck bad load."""
     client = FakeClient()
     first = lt.load_run(runs, "demo-run", "demo agent", client)
+    first_ids = {t["_trace_id"] for t in client.traces}
     again = lt.load_run(runs, "demo-run", "demo agent", client)
-    assert first == {"written": 2, "skipped": 0, "failed": 0, "unconfirmed": 0}
-    assert again == {"written": 0, "skipped": 2, "failed": 0, "unconfirmed": 0} and len(client.traces) == 2
+    assert first["written"] == 2 and first.get("replaced", 0) == 0 and first["unconfirmed"] == 0
+    assert again["written"] == 2 and again["replaced"] == 2 and again["unconfirmed"] == 0
+    assert len(client.traces) == 2 and first_ids == set(client.deleted_ids)
     tags = client.traces[0]["tags"]
-    assert {"loaded_ts", "git_commit_sha"} <= set(tags) and tags["loaded_ts"].endswith("Z")
+    assert {"loaded_ts", "git_commit_sha", "file_sha256"} <= set(tags) and tags["loaded_ts"].endswith("Z")
+    assert len(tags["file_sha256"]) == 64
 
 
 def test_a_write_that_never_arrives_is_counted_unconfirmed(lt, runs):
@@ -147,7 +166,8 @@ def test_a_write_that_never_arrives_is_counted_unconfirmed(lt, runs):
 def test_dry_run_builds_and_writes_nothing(lt, runs):
     client = FakeClient()
     assert lt.load_run(runs, "demo-run", "demo agent", client, dry_run=True) == {"written": 0, "skipped": 0,
-                                                                                 "failed": 0, "built": 2}
+                                                                                 "failed": 0, "built": 2,
+                                                                                 "replaced": 0}
     assert client.traces == []
 
 
@@ -212,7 +232,7 @@ def test_a_verdict_overrides_the_kernels_is_resolved(lt, runs):
 def test_a_task_missing_from_the_verdicts_is_not_loaded(lt, runs, capsys):
     client = FakeClient()
     counts = lt.load_run(runs, "demo-run", "demo agent", client, verdicts={"demo_101": True})
-    assert counts == {"written": 1, "skipped": 0, "failed": 1, "unconfirmed": 0}
+    assert counts == {"written": 1, "skipped": 0, "failed": 1, "unconfirmed": 0, "replaced": 0}
     assert "demo_102: not loaded (no verdict)" in capsys.readouterr().out
     assert client.traces[0]["tags"]["verdict_source_code"] == "official_verify"
 
@@ -250,3 +270,29 @@ def test_a_real_error_still_wins_over_the_note(lt, runs):
     t = lt.task_trace(runs / "demo-run/tasks/demo_102", "demo-run", "demo agent", verdicts={"demo_102": False})
     assert t["tags"]["ended_code"] == "time_cap" and t["tags"]["kernel_grade_code"] == "no_test_spec"
     assert lt._run_error({"agent_error": "Agent exceeded session timeout (5.0 min)", "error_text": NO_SPEC}).startswith("Agent")
+
+
+def test_no_test_spec_with_verdict_attaches_a_solved_assessment(lt, runs):
+    """#899: CPU-verifier verdict becomes a solved assessment so scorer tables are not empty for org-repo tasks."""
+    _with_result(runs, "demo_101", agent_error=None, error_text=NO_SPEC, verification={"is_resolved": False})
+    t = lt.task_trace(runs / "demo-run/tasks/demo_101", "demo-run", "demo agent", verdicts={"demo_101": True})
+    assert t["tags"]["kernel_grade_code"] == "no_test_spec" and t["tags"]["is_resolved"] == "true"
+    assert t["tags"]["ended_code"] == "ended_itself"
+    assert t["assessments"] == [{"name": "solved", "value": True}]
+
+
+def test_kernel_graded_trace_has_no_solved_assessment_without_verdicts(lt, runs):
+    t = lt.task_trace(runs / "demo-run/tasks/demo_101", "demo-run", "demo agent")
+    assert t["tags"]["kernel_grade_code"] == "graded" and t.get("assessments") == []
+
+
+def test_load_writes_the_solved_assessment_for_no_test_spec(lt, runs):
+    _with_result(runs, "demo_101", agent_error=None, error_text=NO_SPEC, verification={"is_resolved": False})
+    client = FakeClient()
+    counts = lt.load_run(runs, "demo-run", "demo agent", client,
+                         verdicts={"demo_101": True, "demo_102": False})
+    assert counts["written"] == 2 and counts["failed"] == 0
+    by_id = {t["tags"]["instance_id"]: t for t in client.traces}
+    assert by_id["demo_101"]["assessments"] == [{"name": "solved", "value": True}]
+    assert by_id["demo_102"]["assessments"] == [{"name": "solved", "value": False}]
+    assert by_id["demo_101"]["tags"]["file_sha256"]

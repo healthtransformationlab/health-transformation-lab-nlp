@@ -475,14 +475,17 @@ python kaggle/load_agent_traces.py <runs folder> --label devset-m31be-c1 --agent
   use and the model. Each tool call is a `TOOL` span named after the tool alone, and is `ERROR` when the tool reported
   an error. That is what MLflow groups its charts by.
 - **Secrets:** text is scrubbed exactly as the Azure forwarder's is (`telemetry.scrub_value`).
-- **Loading twice:** the second load writes nothing. Each trace's `trace_key` (the SHA-256 of run label, agent and
-  task) is skipped if it is already there.
+- **Loading twice:** delete-then-append by `trace_key` (the SHA-256 of run label, agent and task). A reload removes
+  any existing trace with that key and writes a fresh one, so a run loaded twice still leaves one trace per key
+  (#899). Every written trace carries `file_sha256` (of that task's `result.json`), `loaded_ts` and `git_commit_sha`.
 - **Settings:** `DATABRICKS_HOST` and `DATABRICKS_TOKEN` say which workspace to write to. `AGENT_TRACE_EXPERIMENT`
   names the experiment; its default, `/Shared/coding-agent-runs`, is the bundle's and is the same in every
   environment. The loader never creates an experiment: one made outside the bundle would have no Unity Catalog trace
   location.
 - **Checking first:** `--dry-run` builds every trace and writes none.
-- **This repository's own tasks (#881):** the kernel can't grade them ("Missing test specification"), so pass
+- **This repository's own tasks (#881, #899):** the kernel can't grade them ("Missing test specification"), so pass
   `--verdicts <file>`, the `--out` file of `kaggle/official_verify.py`. Each trace's solved tag then comes from that
-  file, and `verdict_source_code` says which source it was (`official_verify` or `kernel`). A task missing from the
-  file is not loaded.
+  file, a `solved` assessment is logged with the same value, and `verdict_source_code` says which source it was
+  (`official_verify` or `kernel`). A task missing from the file is not loaded. The harness note is not the run's
+  error (`ended_code` comes from how the agent ended; `kernel_grade_code` is `no_test_spec`, #894).
+
