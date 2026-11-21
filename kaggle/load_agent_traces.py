@@ -19,9 +19,11 @@ A turn runs from the end of the previous step to when the model answered; its to
 output came back.
 
 Every text is scrubbed of secrets first (telemetry.scrub_value, ADR 0010). Every trace carries the tag trace_key, the
-SHA-256 of run label, agent and task: a key already in the experiment is skipped, so loading a run twice writes it
-once. Settings: DATABRICKS_HOST and DATABRICKS_TOKEN (the workspace), AGENT_TRACE_EXPERIMENT (default
-/Shared/coding-agent-runs, the same in every environment; docs/telemetry.md).
+SHA-256 of run label, agent and task. A reload deletes any existing trace with that key and writes again
+(delete-then-append), so a run loaded twice leaves one trace per key (#899). Each written trace also carries
+file_sha256 (of that task's result.json), loaded_ts and git_commit_sha. With --verdicts, the CPU verifier's result is
+logged as a solved assessment. Settings: DATABRICKS_HOST and DATABRICKS_TOKEN (the workspace),
+AGENT_TRACE_EXPERIMENT (default /Shared/coding-agent-runs, the same in every environment; docs/telemetry.md).
 """
 
 from __future__ import annotations
@@ -211,7 +213,9 @@ def task_trace(task_dir: Path, run_label: str, agent_name: str, model_name: str 
                            "tool_call_count": _number(result.get("tool_call_count"), int),
                            "llm_call_count": _number(result.get("llm_call_count"), int), "step_count": len(steps)},
             "start_ns": start, "end_ns": end, "is_ok": resolved}
-    return {"tags": tags, "root": root, "steps": turns}
+    # CPU-verifier loads (#881, #899): attach solved so assessments are not empty for no_test_spec tasks.
+    assessments = [{"name": "solved", "value": resolved}] if source == "official_verify" else []
+    return {"tags": tags, "root": root, "steps": turns, "assessments": assessments}
 
 
 def _commit() -> str:
@@ -231,16 +235,12 @@ def _task_dirs(runs_dir: Path, run_label: str) -> list[Path]:
 
 def load_run(runs_dir: Path, run_label: str, agent_name: str, client, limit=None, dry_run=False,
              model_name: str | None = None, verdicts: dict[str, bool] | None = None) -> dict:
-    """Write each task-run of one run whose trace_key is not in the experiment yet. Counts written, skipped and failed
-    (and, for a dry run, built)."""
+    """Build every task-run of one run, delete any existing traces with the same trace_key, then write (delete-then-
+    append by trace_key, #899). Counts written, replaced, failed and unconfirmed (and, for a dry run, built)."""
     dirs = _task_dirs(Path(runs_dir), run_label)[:limit]
-    have = set() if dry_run else client.existing_keys(run_label)
     batch = {"loaded_ts": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "git_commit_sha": _commit()}
-    todo, failed, skipped = [], 0, 0
+    todo, failed = [], 0
     for d in dirs:
-        if trace_key(run_label, agent_name, d.name) in have:
-            skipped += 1
-            continue
         try:
             trace = task_trace(d, run_label, agent_name, model_name, verdicts)
         except LookupError:
@@ -251,24 +251,31 @@ def load_run(runs_dir: Path, run_label: str, agent_name: str, client, limit=None
             print(f"{d.name}: not loaded ({type(e).__name__})")
             failed += 1
             continue
-        trace["tags"].update(batch)
+        result_path = d / "result.json"
+        trace["tags"].update({**batch, "file_sha256": hashlib.sha256(result_path.read_bytes()).hexdigest()})
         todo.append(trace)
     if dry_run:
-        return {"written": 0, "skipped": 0, "failed": failed, "built": len(todo)}
-    written, unconfirmed = 0, 0
+        return {"written": 0, "skipped": 0, "failed": failed, "built": len(todo), "replaced": 0}
+    written, unconfirmed, replaced = 0, 0, 0
     if todo:
+        keys = {t["tags"]["trace_key"] for t in todo}
+        existing = client.existing_trace_ids(run_label)
+        to_delete = [existing[k] for k in keys if k in existing]
+        if to_delete:
+            client.delete_keys(to_delete)
+            replaced = len(to_delete)
         run_id = client.start_load(run_label, agent_name, {"model_name": model_name or "", **batch})
         for trace in todo:
             client.write(trace, source_run_id=run_id)
             written += 1
-        client.end_load(run_id, {"task_count": len(dirs), "written_count": written, "skipped_count": skipped,
+        client.end_load(run_id, {"task_count": len(dirs), "written_count": written, "replaced_count": replaced,
                                  "failed_count": failed,
                                  "solved_count": sum(t["tags"]["is_resolved"] == "true" for t in todo)})
-        missing = client.confirm(run_label, {t["tags"]["trace_key"] for t in todo})
+        missing = client.confirm(run_label, keys)
         for key in sorted(missing):
             print(f"written but not found in the experiment: trace_key {key}")
         unconfirmed = len(missing)
-    return {"written": written, "skipped": skipped, "failed": failed, "unconfirmed": unconfirmed}
+    return {"written": written, "skipped": 0, "failed": failed, "unconfirmed": unconfirmed, "replaced": replaced}
 
 
 class MlflowTraceClient:
@@ -291,9 +298,20 @@ class MlflowTraceClient:
         self.experiment_id = exp.experiment_id
 
     def existing_keys(self, run_label: str) -> set[str]:
+        return set(self.existing_trace_ids(run_label))
+
+    def existing_trace_ids(self, run_label: str) -> dict[str, str]:
+        """trace_key -> trace_id for every trace of this run_label still in the experiment."""
         traces = self.mlflow.search_traces(locations=[self.experiment_id], return_type="list",
                                            filter_string=f"tags.run_label = '{run_label}'")
-        return {t.info.tags.get("trace_key") for t in traces} - {None}
+        return {t.info.tags["trace_key"]: t.info.trace_id for t in traces if t.info.tags.get("trace_key")}
+
+    def delete_keys(self, trace_ids: list[str]) -> int:
+        """Remove traces by id so a reload can append a fresh copy of the same trace_key (#899)."""
+        if not trace_ids:
+            return 0
+        from mlflow import MlflowClient
+        return int(MlflowClient().delete_traces(experiment_id=self.experiment_id, trace_ids=list(trace_ids)) or 0)
 
     def start_load(self, run_label: str, agent_name: str, params: dict) -> str:
         run = self.mlflow.start_run(experiment_id=self.experiment_id, run_name=f"{agent_name} | {run_label}")
@@ -320,6 +338,10 @@ class MlflowTraceClient:
                 child.end(outputs=tool["outputs"], status="OK" if tool["is_ok"] else "ERROR",
                           end_time_ns=clamp(tool["end_ns"]))
         root.end(outputs=r["outputs"], status="OK" if r["is_ok"] else "ERROR", end_time_ns=r["end_ns"])
+        tid = getattr(root, "trace_id", None) or getattr(root, "request_id", None)
+        for assessment in trace.get("assessments") or []:
+            m.log_feedback(trace_id=tid, name=assessment["name"], value=assessment["value"],
+                           rationale="CPU verifier verdict" if assessment["name"] == "solved" else None)
 
     def end_load(self, run_id: str, metrics: dict) -> None:
         self.mlflow.log_metrics(metrics)
