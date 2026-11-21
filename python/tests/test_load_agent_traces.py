@@ -82,7 +82,7 @@ def test_root_span_holds_issue_patch_and_outcome(lt, runs):
     assert t["tags"] == {"trace_key": lt.trace_key("demo-run", "demo agent", "demo_101"), "run_label": "demo-run",
                          "agent_name": "demo agent", "instance_id": "demo_101", "repo_name": "demo",
                          "outcome_code": "solved", "ended_code": "ended_itself", "is_resolved": "true",
-                         "verdict_source_code": "kernel"}
+                         "verdict_source_code": "kernel", "kernel_grade_code": "graded"}
 
 
 def test_each_model_turn_is_an_llm_span_and_each_call_a_tool_span_named_by_the_tool(lt, runs):
@@ -223,3 +223,30 @@ def test_the_cli_reads_the_verdicts_file(lt, runs, tmp_path, monkeypatch):
     p = _verdicts(tmp_path, [{"instance_id": "demo_101", "resolved": True}])
     assert lt.main([str(runs), "--label", "demo-run", "--agent", "demo agent", "--dry-run", "--verdicts", str(p)]) == 0
     assert seen["verdicts"] == {"demo_101": True}
+
+
+NO_SPEC = "Missing test specification (empty test_patch and FAIL_TO_PASS; secret hydration failed or unavailable)"
+
+
+def _with_result(runs, iid, **changes):
+    p = runs / "demo-run/tasks" / iid / "result.json"
+    r = json.loads(p.read_text())
+    r.update(changes)
+    p.write_text(json.dumps(r))
+
+
+def test_the_kernels_missing_test_spec_note_is_not_the_runs_error(lt, runs):
+    """#894: the kernel cannot grade our own repositories' tasks, whose tests are kept out of the agent's bundle. That
+    note is about grading, not the run: the agent ended by itself, and the trace must say so."""
+    _with_result(runs, "demo_101", agent_error=None, error_text=NO_SPEC)
+    t = lt.task_trace(runs / "demo-run/tasks/demo_101", "demo-run", "demo agent", verdicts={"demo_101": True})
+    assert t["tags"]["ended_code"] == "ended_itself" and t["tags"]["kernel_grade_code"] == "no_test_spec"
+    assert t["root"]["outputs"]["error_text"] == "" and t["root"]["outputs"]["ended_code"] == "ended_itself"
+    assert lt._run_error({"agent_error": None, "error_text": NO_SPEC}) is None
+
+
+def test_a_real_error_still_wins_over_the_note(lt, runs):
+    _with_result(runs, "demo_102", error_text=NO_SPEC)
+    t = lt.task_trace(runs / "demo-run/tasks/demo_102", "demo-run", "demo agent", verdicts={"demo_102": False})
+    assert t["tags"]["ended_code"] == "time_cap" and t["tags"]["kernel_grade_code"] == "no_test_spec"
+    assert lt._run_error({"agent_error": "Agent exceeded session timeout (5.0 min)", "error_text": NO_SPEC}).startswith("Agent")
