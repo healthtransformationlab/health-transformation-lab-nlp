@@ -660,6 +660,35 @@ def test_a_collection_can_reuse_output_already_downloaded(run, tmp_path):
     assert run.reusable_output(tmp_path, False) is False             # only when asked
 
 
+def test_collect_uses_the_agent_commit_recorded_at_push_not_todays_checkout(run, tmp_path):
+    """028 BUG10 (#808): if the agent checkout moves between push and collect, settings keep the pushed SHA."""
+    agent = tmp_path / "agent"
+    agent.mkdir()
+    subprocess.run(["git", "init", "-q", "-b", "main"], cwd=agent, check=True)
+    (agent / "agent.yaml").write_text("name: a\n")
+    subprocess.run(["git", "add", "-A"], cwd=agent, check=True)
+    subprocess.run(["git", "-c", "user.name=t", "-c", "user.email=t@e", "commit", "-q", "-m", "first"],
+                   cwd=agent, check=True)
+    first = subprocess.run(["git", "-C", str(agent), "rev-parse", "HEAD"], capture_output=True, text=True,
+                           check=True).stdout.strip()
+    work = tmp_path / "batch"
+    assert run.record_agent_commit(work, agent) == first
+    (agent / "agent.yaml").write_text("name: a\nmodel: later\n")
+    subprocess.run(["git", "add", "-A"], cwd=agent, check=True)
+    subprocess.run(["git", "-c", "user.name=t", "-c", "user.email=t@e", "commit", "-q", "-m", "second"],
+                   cwd=agent, check=True)
+    second = subprocess.run(["git", "-C", str(agent), "rev-parse", "HEAD"], capture_output=True, text=True,
+                            check=True).stdout.strip()
+    assert first != second
+    assert run.resolve_agent_commit(work, agent) == first
+    assert run.resolve_agent_commit(work, agent, override=second) == second
+    empty = tmp_path / "old-batch"
+    empty.mkdir()
+    with pytest.raises(SystemExit, match="old-batch"):
+        run.resolve_agent_commit(empty, agent, batch_name="old-batch")
+    assert run.resolve_agent_commit(empty, agent, override=first, batch_name="old-batch") == first
+
+
 def test_a_labelled_development_set_batch_has_its_own_dataset_kernel_and_table(run, tmp_path, monkeypatch):
     """Two configurations measured on the competition's development set at once (#721): each labelled batch gets its
     own dataset, kernel and table, and an unlabelled one keeps the names of the run of November 11."""

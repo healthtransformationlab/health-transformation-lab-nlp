@@ -1403,16 +1403,29 @@ def test_a_development_batchs_bundle_has_the_competition_fetched_beside_it(co, m
 # --- the runner's side of a development-set batch on Colab (#780) --------------------------------------------------
 
 def _dev_args(tmp_path, collect=False):
+    import subprocess
     import types
     sub = tmp_path / "sub"
     sub.mkdir(exist_ok=True)
     (sub / "agent.yaml").write_text("name: a\n")
+    # 028 BUG10 (#808): push records HEAD; collect needs a git agent checkout (or --agent-commit)
+    if not (sub / ".git").exists():
+        subprocess.run(["git", "init", "-q", "-b", "main"], cwd=sub, check=True)
+        subprocess.run(["git", "add", "-A"], cwd=sub, check=True)
+        subprocess.run(["git", "-c", "user.name=t", "-c", "user.email=t@e", "commit", "-q", "-m", "a"],
+                       cwd=sub, check=True)
+    work = tmp_path / "work" / "devset-colab-x"
+    if collect:
+        work.mkdir(parents=True, exist_ok=True)
+        sha = subprocess.run(["git", "-C", str(sub), "rev-parse", "HEAD"], capture_output=True, text=True,
+                             check=True).stdout.strip()
+        (work / "agent_commit_sha.txt").write_text(sha + "\n", encoding="utf-8")
     return types.SimpleNamespace(
         seed=7, source="competition", label="colab-x", collect=collect, colab=True, colab_results=None,
         colab_session="01:02:03" if collect else None, reuse_output=False, order_of_ids=None, work=tmp_path / "work",
         dataset=tmp_path / "dataset", agent_dir=sub, deadline_minutes=600.0, telemetry=False, outside_sample=False,
         no_table=False, sample=2, machine_shape="NvidiaL4", docker_image="img", competition="gemma-4-developer-agent",
-        note=[], context_note=None, sample_method=None, kernel_minutes=45)
+        note=[], context_note=None, sample_method=None, kernel_minutes=45, agent_commit=None)
 
 
 class _NoKernel:
