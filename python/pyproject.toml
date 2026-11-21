@@ -51,6 +51,14 @@ dev = ["pytest>=8", "pytest-xdist>=3.5", "ruff>=0.5", "duckdb>=1.0", "jsonschema
 # PerioBench as a Kaggle Benchmarks task (health_transformation_lab_nlp.kbench, kaggle/perio_bench_task.py)
 # hishel<2: hishel 2.0.0 dropped BaseFilter, which kaggle-benchmarks 0.6.2 imports (#593)
 kbench = ["kaggle-benchmarks>=0.6", "pydantic>=2", "hishel<2"]
+# Local de-id rerun (scripts/76_deid_drivers.py --rerun): Presidio + spaCy en_core_web_lg + HF NER on CPU.
+# Wheel URL matches databricks/notebooks/06_deid_benchmark.py. --check does not need this extra.
+deid = [
+  "presidio-analyzer>=2.2",
+  "torch>=2.2",
+  "transformers>=4.44",
+  "en_core_web_lg @ https://github.com/explosion/spacy-models/releases/download/en_core_web_lg-3.8.0/en_core_web_lg-3.8.0-py3-none-any.whl",
+]
 
 [build-system]
 requires = ["setuptools>=68"]
