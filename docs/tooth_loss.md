@@ -98,10 +98,6 @@ These options can also be run together as a named preset, beside today's default
 
 ## Results (SYNTHETIC)
 
-Would another kind of model do better? Five post-hoc candidates (random forest, histogram gradient boosting, an
-EBM, spline and elastic-net logistic) are ranked against the plan's two models, with paired differences, in
-[tooth_loss_drivers.md](tooth_loss_drivers.md). None beats them beyond the 95% interval on the held-out teeth.
-
 ```bash
 cd python && python scripts/51_tooth_loss_model.py --patients 6000 --stability-seeds 5 --n-boot 1000
 ```
