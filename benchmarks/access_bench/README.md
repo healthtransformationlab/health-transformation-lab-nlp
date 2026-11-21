@@ -46,4 +46,24 @@ rows = access_phi_items.load_items()
 leaks = deid.leak_check(model_answer, access_phi_items.known_phi_for_leak_check(rows[0]))
 ```
 
+## Lab grader + key-point judge
+
+`must_include` (padded with negated `red_flags` up to five) maps to the lab grader’s
+key points. Use `access_keypoint_judge` for dim rows and a Databricks / OpenAI judge call
+(chart phenotyping stays in `judge.py`):
+
+```python
+from health_transformation_lab_nlp import access_keypoint_judge as ak, access_phi_items
+row = access_phi_items.load_items()[0]
+q = ak.to_grader_question(row)          # question_id, category, level, n_key_points, …
+msgs = ak.judge_messages(row, answer)   # chat for Model Serving
+prompt = ak.ai_query_prompt(row, answer)  # single string for ai_query
+scored = ak.score_verdict(ak.parse_verdict(raw, n_key_points=q["n_key_points"],
+                                           n_red_flags=len(row["red_flags"])),
+                          n_key_points=q["n_key_points"])
+```
+
+Difficulty: optional `level` on the row; else `L3` when `knowledge_cutoff_sensitive` or
+the id ends `_H1`/`_H2`, otherwise `L2`. Category is always Access to care.
+
 Real PHI is never allowed here.
