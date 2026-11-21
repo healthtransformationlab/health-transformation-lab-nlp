@@ -1,6 +1,7 @@
 # Copy the decks and their covers to the website (issue #374). The website repository,
 # healthtransformationlab/healthtransformationlab.github.io, serves docs/edr/deck.html as perio-bench/index.html and
-# docs/pitch/deck.html as oral-health-bench/index.html, with the covers in img/; its only change to a deck is the
+# docs/pitch/deck.html as oral-health-bench/index.html, with the covers in img/ and the PerioBench deck's interactive
+# cost-and-quality page as perio-bench/cost_quality.html (#879); its only change to a deck is the
 # icon links after <title> (.github/scripts/copy_decks_to_site.py). Runs on every push to main that touches a deck
 # or a cover, and by hand from the Actions tab. Commits to the site's main only when something changed, naming
 # the source commit.
@@ -18,6 +19,7 @@ on:
     paths:
       - docs/edr/deck.html
       - docs/pitch/deck.html
+      - docs/edr/cost_quality.html
       - docs/img/edr_deck_cover.png
       - docs/img/pitch_deck_cover.png
       - .github/scripts/copy_decks_to_site.py
@@ -88,7 +90,7 @@ jobs:
         run: |
           python3 .github/scripts/copy_decks_to_site.py build --site site
           cd site
-          git add -A perio-bench/index.html oral-health-bench/index.html img/edr_deck_cover.png img/pitch_deck_cover.png
+          git add -A perio-bench/index.html perio-bench/cost_quality.html oral-health-bench/index.html img/edr_deck_cover.png img/pitch_deck_cover.png
           if git diff --cached --quiet; then
             echo "Nothing changed on the site."
             exit 0

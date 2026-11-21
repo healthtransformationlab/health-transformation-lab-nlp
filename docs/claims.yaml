@@ -152,7 +152,244 @@ edr:
       file: docs/edr/README.md
       match: "the 223 review charts"
       covers: synthetic review charts scored (every review chart since the #467 rebuild)
-  economics:
+    - value: "187"
+      kind: measured
+      file: docs/results.md
+      match: "zero-shot LLM | **83.9** (78.9–88.8)"
+      covers: synthetic charts Llama 3.3 70B got right on the note (83.9% of 223)
+    - value: "178"
+      kind: measured
+      file: docs/results.md
+      match: "| [`medgemma-4b-it`](https://huggingface.co/google/medgemma-4b-it) | chart note | zero-shot LLM | **79.8**"
+      covers: synthetic charts MedGemma 4B got right on the note (79.8% of 223)
+    - value: "203"
+      kind: measured
+      file: docs/edr/README.md
+      match: "203 of 223"
+      covers: synthetic charts ModernBERT-large with the stage 4 rule got right on the note
+  tests:
+    # the three-questions slide (042 US5, #868)
+    - value: "203"
+      kind: measured
+      file: docs/edr/README.md
+      match: "203 of 223"
+      covers: synthetic charts the best note-reading AI (ModernBERT-large with the stage 4 rule) got right
+    - value: "223"
+      kind: measured
+      file: docs/edr/README.md
+      match: "the 223 review charts"
+      covers: synthetic review charts scored
+    - value: "115"
+      kind: measured
+      file: docs/edr/README.md
+      match: "115 of 2,714"
+      covers: fake identifiers left in by the best de-identification combination on synthetic notes
+    - value: "2,714"
+      kind: measured
+      file: docs/edr/README.md
+      match: "115 of 2,714"
+      covers: fake identifiers planted in the synthetic de-identification notes
+    - value: "469"
+      kind: measured
+      file: docs/tooth_loss.md
+      match: "Held-out extractions (469 teeth"
+      covers: held-out synthetic extractions the tooth-loss models are scored on
+  phenotyping-cost:
+    # #879: cost beside quality for finding gum disease; every quality figure is docs/results.md's Correct (95% CI),
+    # checked against that file by test_decks.py::test_edr_cost_slides_put_quality_and_the_pass_bar_beside_each_cost
+    - value: "1"
+      kind: identifier
+      covers: the question's number, of three
+    - value: "223"
+      kind: measured
+      file: docs/edr/README.md
+      match: "the 223 review charts"
+      covers: synthetic review charts the methods are scored on
+    - value: "100"
+      kind: derived
+      from: "docs/results.md reports Correct per 100 charts"
+      covers: the base of the right-status rate (per 100 charts)
+    - value: "95%"
+      kind: measured
+      file: docs/results.md
+      match: "Correct (95% CI)"
+      covers: the bootstrap interval of each method's right-status rate, and of its rank
+    - value: "$40"
+      kind: illustrative
+      from: "bioclinical-modernbert-large $38.22 for 1M notes (data/corpus/cost_benchmark.csv): 1M / 50 notes/s = 5.6 GPU h plus 4 h training, at $4/GPU h; throughput and price both assumed (costs.yaml); ModernBERT-large is the same size"
+      covers: a small trained model (ModernBERT-large) on own GPU, the note only, a million notes
+    - value: "$1"
+      kind: illustrative
+      from: "tfidf_logreg $0.07 for 1M notes (data/corpus/cost_benchmark.csv): measured throughput at an illustrative $1/CPU h"
+      covers: word counts (TF-IDF) on CPU, the note only, shown as 'under $1'
+    - value: "$260"
+      kind: derived
+      from: "tiers.open_llm_note ($256.50)"
+      covers: open LLM (Llama 3.3 70B) hosted per token, the note only, a million notes
+    - value: "$140"
+      kind: illustrative
+      from: "sim:medgemma-1.5-4b-it $138.89 for 1M notes (data/corpus/cost_benchmark.csv): 1M / 8 notes/s at $4/GPU h; throughput and price both assumed (costs.yaml)"
+      covers: MedGemma 1.5 4B on own GPU, the note only, a million notes
+    - value: "$1,100"
+      kind: derived
+      from: "tiers.gemini_note ($1,146)"
+      covers: frontier commercial LLM (Gemini 3.1 Pro), the note only, a million notes; not run on this question
+    - value: "$5,500"
+      kind: derived
+      from: "tiers.frontier_llm_note ($5,530)"
+      covers: frontier commercial LLM (Claude Fable 5.1), the note only, a million notes; not run on this question
+    - value: "$260k"
+      kind: derived
+      from: "tiers.gemini_whole_record ($264,000)"
+      covers: Gemini 3.1 Pro, whole record with examples and reasoning, three calls a visit (assumed tokens); not run
+    - value: "$1.2M"
+      kind: derived
+      from: "tiers.frontier_llm_whole_record ($1,200,000)"
+      covers: Claude Fable 5.1, whole record with examples and reasoning, three calls a visit (assumed tokens); not run
+  tooth-loss-cost:
+    - value: "2"
+      kind: identifier
+      covers: the question's number, of three
+    - value: "469"
+      kind: measured
+      file: docs/tooth_loss.md
+      match: "Held-out extractions (469 teeth"
+      covers: held-out synthetic extractions with a recorded reason, the AUC's denominator
+    - value: "95%"
+      kind: measured
+      file: docs/tooth_loss.md
+      match: "AUC (95% CI) | 0.89 (0.86-0.92) | 0.90 (0.87-0.93) | 0.88 (0.85-0.92) | 0.90 (0.87-0.93)"
+      covers: the bootstrap interval of each held-out AUC (1,000 resamples of patients)
+  deid-cost:
+    # #879: cost beside quality for de-identification; leak counts and ranges are docs/results.md's, checked against it
+    # by test_decks.py; engine costs are data/deid/cost_effectiveness.csv (measured CPU speed x illustrative $1/CPU h)
+    - value: "3"
+      kind: identifier
+      covers: the question's number, of three
+    - value: "400"
+      kind: measured
+      file: docs/edr/README.md
+      match: "the 400 synthetic notes"
+      covers: synthetic notes with planted fake identifiers
+    - value: "2,714"
+      kind: measured
+      file: docs/results.md
+      match: "400 notes with fake PHI, 2,714 identifiers and 2,462 look-alike dental words"
+      covers: fake identifiers planted in the synthetic notes
+    - value: "2,462"
+      kind: measured
+      file: docs/results.md
+      match: "400 notes with fake PHI, 2,714 identifiers and 2,462 look-alike dental words"
+      covers: dental look-alike words in the same notes
+    - value: "95%"
+      kind: measured
+      file: docs/results.md
+      match: "The 95% range is the likely true leak rate (Wilson interval)"
+      covers: the Wilson interval of each method's leak rate
+    - value: "100"
+      kind: derived
+      from: "the leak rate's range written per 100 identifiers (docs/results.md gives it in percent)"
+      covers: the base of the leak-rate range
+    - value: "645"
+      kind: measured
+      file: docs/results.md
+      match: "| `regex_v2` | Patterns | 645 of 2,714 (95% range 22.2–25.4%) | 0 of 2,462 |"
+      covers: identifiers left in by patterns alone
+    - value: "376"
+      kind: measured
+      file: docs/results.md
+      match: "| `presidio+regex_v2+guard` | Presidio + patterns + dental-word guard | 376 of 2,714 (95% range 12.6–15.2%) | 122 of 2,462 |"
+      covers: identifiers left in by Presidio + patterns + guard
+    - value: "122"
+      kind: measured
+      file: docs/results.md
+      match: "376 of 2,714 (95% range 12.6–15.2%) | 122 of 2,462 |"
+      covers: dental words removed by Presidio + patterns + guard
+    - value: "226"
+      kind: measured
+      file: docs/results.md
+      match: "| `hf_stanford+regex_v2+guard` | Stanford AI + patterns + dental-word guard | 226 of 2,714 (95% range 7.3–9.4%) | 41 of 2,462 |"
+      covers: identifiers left in by the Stanford tagger + patterns + guard
+    - value: "115"
+      kind: measured
+      file: docs/results.md
+      match: "| `hf_stanford+hf_obi+regex_v2+guard` | Stanford AI + OBI AI + patterns + dental-word guard | 115 of 2,714 (95% range 3.5–5.1%) | 41 of 2,462 |"
+      covers: identifiers left in by the Stanford and OBI taggers + patterns + guard
+    - value: "129"
+      kind: measured
+      file: docs/results.md
+      match: "| `routed+guard` | Routed by identifier type + dental-word guard | 129 of 2,714 (95% range 4.0–5.6%) | 154 of 2,462 |"
+      covers: identifiers left in by routing by identifier type + guard
+    - value: "154"
+      kind: measured
+      file: docs/results.md
+      match: "129 of 2,714 (95% range 4.0–5.6%) | 154 of 2,462 |"
+      covers: dental words removed by routing by identifier type + guard
+    - value: "155"
+      kind: measured
+      file: docs/results.md
+      match: "| `ai_mask+regex_v2+guard` | Databricks AI mask + patterns + dental-word guard | 155 of 2,714 (95% range 4.9–6.6%) | 2 of 2,462 |"
+      covers: identifiers left in by Databricks AI mask + patterns + guard
+    - value: "$1"
+      kind: illustrative
+      from: "regex_v2 $0.08 engine cost for 1M notes (data/deid/cost_effectiveness.csv: measured throughput at an illustrative $1/CPU h)"
+      covers: patterns alone, engine cost, a million notes (shown as 'under $1')
+    - value: "$5"
+      kind: illustrative
+      from: "presidio+regex_v2+guard $4.54 (data/deid/cost_effectiveness.csv, same basis)"
+      covers: Presidio + patterns + guard, engine cost, a million notes
+    - value: "$23"
+      kind: illustrative
+      from: "hf_stanford+regex_v2+guard $22.73 (data/deid/cost_effectiveness.csv, same basis)"
+      covers: Stanford tagger + patterns + guard, engine cost, a million notes
+    - value: "$98"
+      kind: illustrative
+      from: "hf_stanford+hf_obi+regex_v2+guard $98.46 (data/deid/cost_effectiveness.csv, same basis)"
+      covers: Stanford and OBI taggers + patterns + guard, engine cost, a million notes
+    - value: "$100"
+      kind: derived
+      from: "$98.46, rounded (as $98)"
+      covers: the least costly method in the top group, engine cost, a million notes (the heading)
+    - value: "$103"
+      kind: illustrative
+      from: "routed+guard $102.93 (data/deid/cost_effectiveness.csv, same basis)"
+      covers: routing by identifier type + guard, engine cost, a million notes
+    - value: "$295"
+      kind: cited
+      source: "docs/deidentification.md, What the paid services would cost: Databricks ai_mask ~$295 for 1M notes of 410 chars at Databricks list price ($0.50 in / $1.50 out per 1M tokens)"
+      checked: 2026-10-26
+      covers: Databricks AI mask (plus patterns, under $1), a million notes, list price
+    - value: "$18"
+      kind: cited
+      source: "docs/deidentification.md, What the paid services would cost: Azure Health Data Services de-id ~$18 for 1M notes (Azure retail prices API)"
+      checked: 2026-10-26
+      covers: the least costly paid service by list price; not run here
+    - value: "$2,650"
+      kind: cited
+      source: "docs/deidentification.md, What the paid services would cost: Amazon Comprehend Medical ~$2,650 for 1M notes (AWS price list API)"
+      checked: 2026-10-26
+      covers: the most costly paid service by list price; not run here
+    - value: "$3,000"
+      kind: illustrative
+      from: "docs/deidentification.md: the human review sample costs about $3,000 per 1M notes with any engine (costs.yaml review settings)"
+      covers: a person checking 1 in 1,000 de-identified notes, a million notes, whichever method
+    - value: "1 in 1,000"
+      kind: illustrative
+      from: "docs/deidentification.md, Review cost: human QA of 1 in 1,000 de-identified notes (costs.yaml)"
+      covers: the share of de-identified notes a person checks
+  passes:
+    - value: "029"
+      kind: identifier
+      covers: the tooth-loss spec's number, in a path
+    - value: "1 in 1,000"
+      kind: illustrative
+      from: "docs/deidentification.md, Review cost: human QA of 1 in 1,000 de-identified notes (costs.yaml)"
+      covers: the share of de-identified notes a person checks
+    - value: "95%"
+      kind: derived
+      from: "docs/results.md: rank ranges from 95% bootstrap (phenotyping) and Wilson (de-identification) intervals"
+      covers: the interval behind each stand-in 'could rank first'
+  costing:
     - value: "33,333 h"
       kind: derived
       from: "1,000,000 visits x 2 minutes / 60 (docs/financial_tradeoffs.md, review pace from the labelling protocol)"
@@ -165,22 +402,22 @@ edr:
       kind: derived
       from: "validation set as built (docs/financial_tradeoffs.md)"
       covers: charts in the acceptance test
-    - value: "$15"
+    - value: "453"
       kind: illustrative
-      from: "sim:BioClinical ModernBERT base $13.41 for 1M notes (data/corpus/simulated_cost_effectiveness.csv): 1M / 150 notes/s = 1.85 GPU h plus 1.5 h training, at $4/GPU h; throughput and price both assumed (costs.yaml)"
-      covers: a small trained model on own hardware, the note only (shown as 'under $15')
+      from: "tiers.open_llm_note in_tokens: 103 a synthetic note + costs.yaml's 350-token prompt"
+      covers: tokens in per call when an LLM reads the note
     - value: "$260"
       kind: derived
       from: "tiers.open_llm_note ($256.50)"
-      covers: open LLM hosted per token, the note only, a million visits
+      covers: open LLM hosted per token, the note only, a million notes
     - value: "$1,100"
       kind: derived
       from: "tiers.gemini_note ($1,146)"
-      covers: frontier commercial LLM (Gemini 3.1 Pro), the note only, a million visits
+      covers: Gemini 3.1 Pro, the note only, a million notes
     - value: "$5,500"
       kind: derived
       from: "tiers.frontier_llm_note ($5,530)"
-      covers: frontier commercial LLM, the note only, a million visits
+      covers: Claude Fable 5.1, the note only, a million notes
     - value: "20k"
       kind: illustrative
       from: "tiers.frontier_llm_whole_record in_tokens, assumed"
@@ -196,7 +433,70 @@ edr:
     - value: "$1.2M"
       kind: derived
       from: "tiers.frontier_llm_whole_record ($1,200,000)"
-      covers: frontier commercial LLM, whole record with examples and reasoning, three calls a visit (assumed tokens)
+      covers: Claude Fable 5.1, whole record with examples and reasoning, three calls a visit (assumed tokens)
+    - value: "$4"
+      kind: illustrative
+      from: "costs.yaml gpu_node_usd_per_hour: 4.00 (ILLUSTRATIVE)"
+      covers: the GPU hour price behind own-GPU model costs
+    - value: "$40"
+      kind: illustrative
+      from: "bioclinical-modernbert-large $38.22 (data/corpus/cost_benchmark.csv; assumed throughput, costs.yaml)"
+      covers: ModernBERT-large on own GPU, a million notes
+    - value: "$140"
+      kind: illustrative
+      from: "sim:medgemma-1.5-4b-it $138.89 (data/corpus/cost_benchmark.csv; assumed throughput, costs.yaml)"
+      covers: MedGemma 1.5 4B on own GPU, a million notes
+    - value: "$1"
+      kind: illustrative
+      from: "costs.yaml cpu_node_usd_per_hour: 1.00 (ILLUSTRATIVE); word counts $0.07, patterns $0.08 for 1M notes"
+      covers: the CPU hour price, and the CPU methods that cost under it for a million notes
+    - value: "$5"
+      kind: illustrative
+      from: "presidio+regex_v2+guard $4.54 (data/deid/cost_effectiveness.csv)"
+      covers: the least costly de-identification tagger combination, a million notes
+    - value: "$103"
+      kind: illustrative
+      from: "routed+guard $102.93 (data/deid/cost_effectiveness.csv)"
+      covers: the most costly de-identification tagger combination, a million notes
+    - value: "$18"
+      kind: cited
+      source: "docs/deidentification.md, What the paid services would cost: Azure Health Data Services de-id ~$18 for 1M notes"
+      checked: 2026-10-26
+      covers: the least costly paid de-identification service by list price
+    - value: "$2,650"
+      kind: cited
+      source: "docs/deidentification.md, What the paid services would cost: Amazon Comprehend Medical ~$2,650 for 1M notes"
+      checked: 2026-10-26
+      covers: the most costly paid de-identification service by list price
+  tooth-loss:
+    - value: "029"
+      kind: identifier
+      covers: the tooth-loss spec's number, in a path
+    - value: "469"
+      kind: measured
+      file: docs/tooth_loss.md
+      match: "Held-out extractions (469 teeth, 322 patients, 178 periodontal)"
+      covers: held-out synthetic extractions with a recorded reason
+    - value: "322"
+      kind: measured
+      file: docs/tooth_loss.md
+      match: "Held-out extractions (469 teeth, 322 patients, 178 periodontal)"
+      covers: synthetic patients the held-out extractions come from
+    - value: "178"
+      kind: measured
+      file: docs/tooth_loss.md
+      match: "Held-out extractions (469 teeth, 322 patients, 178 periodontal)"
+      covers: held-out extractions recorded as lost to gum disease
+    - value: "10,761"
+      kind: measured
+      file: docs/tooth_loss.md
+      match: "first visit (10,761 teeth, 1,732 patients; against the synthetic answer key)"
+      covers: synthetic teeth missing at the first visit, scored against the answer key
+    - value: "95%"
+      kind: measured
+      file: docs/tooth_loss.md
+      match: "AUC (95% CI) | 0.89 (0.86-0.92) | 0.90 (0.87-0.93) | 0.88 (0.85-0.92) | 0.90 (0.87-0.93)"
+      covers: the bootstrap interval of each held-out AUC
   evidence:
     - value: "207"
       kind: measured

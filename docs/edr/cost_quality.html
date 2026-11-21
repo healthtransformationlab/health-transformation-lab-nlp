@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PerioBench cost and quality</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400..700&display=swap">
+<style>
+:root{--paper:#F7F5EF;--card:#FDFCF9;--ink:#15303A;--muted:#5C6F75;--line:#D9D3C4;--accent:#B4501F;--accent-soft:#F6E6D8;--navy:#0F2A33;--teal:#D5E3E1;--peach:#F2A070;--band:#ECE8DD}
+*{box-sizing:border-box;margin:0}
+html,body{background:var(--paper);color:var(--ink);font:16px/1.5 'Public Sans',Arial,sans-serif}
+a{color:var(--accent)}
+header{background:var(--navy);color:var(--paper);padding:14px 16px}
+header .wrap{max-width:1400px;margin:0 auto;display:flex;flex-wrap:wrap;gap:8px 20px;align-items:baseline;justify-content:space-between}
+header h1{font:700 22px/1.25 'Libre Baskerville',Georgia,serif}
+header a{color:var(--peach);font-weight:600;text-decoration:none}
+header a:hover{text-decoration:underline}
+.disclaimer{background:#15303A;color:var(--teal);font-size:13px;padding:6px 16px}
+.disclaimer .wrap{max-width:1400px;margin:0 auto}
+main{max-width:1400px;margin:0 auto;padding:16px;display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:16px}
+@media (max-width:980px){main{grid-template-columns:minmax(0,1fr)}}
+.lede{grid-column:1/-1;font-size:17px;max-width:72ch}
+.crumbs{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:15px}
+.crumbs button{font:600 15px 'Public Sans',Arial,sans-serif;color:var(--accent);background:none;border:0;padding:2px 4px;cursor:pointer;border-radius:6px}
+.crumbs button:hover{background:var(--band)}
+.crumbs span.sep{color:var(--muted)}
+.crumbs .here{font-weight:700}
+.stage{position:relative;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;min-height:340px}
+svg#chart{display:block;width:100%;height:min(66vh,620px);touch-action:none;cursor:grab;user-select:none}
+svg#chart.dragging{cursor:grabbing}
+.tools{position:absolute;right:10px;top:10px;display:flex;gap:6px}
+.tools button{font:700 16px 'Public Sans',Arial,sans-serif;min-width:36px;height:36px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
+.tools button:hover{background:var(--band)}
+.hint{position:absolute;left:12px;bottom:8px;font-size:13px;color:var(--muted);background:rgba(253,252,249,.9);padding:2px 6px;border-radius:6px}
+aside.detail{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;align-self:start}
+aside.detail h2{font:700 20px/1.3 'Libre Baskerville',Georgia,serif;margin-bottom:8px}
+aside.detail h3{font-size:13px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin:14px 0 4px}
+aside.detail p,aside.detail li{font-size:15px}
+aside.detail ul{padding-left:1.1em}
+.big{font:700 30px/1.2 'Libre Baskerville',Georgia,serif;color:var(--accent)}
+.notrun{color:var(--accent);font-weight:700}
+.pill{display:inline-block;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;border-radius:999px;padding:2px 10px;margin-right:6px}
+.pill.run{background:var(--teal);color:var(--navy)}
+.pill.notrun{background:var(--accent-soft);color:var(--accent)}
+.pill.top{background:var(--navy);color:var(--peach)}
+.list button{display:block;width:100%;text-align:left;font:15px 'Public Sans',Arial,sans-serif;color:var(--ink);background:none;border:0;border-bottom:1px solid var(--line);padding:7px 2px;cursor:pointer}
+.list button:hover,.list button:focus-visible{background:var(--band)}
+.list .s{float:right;color:var(--muted)}
+code{font-size:13px;background:var(--band);padding:1px 4px;border-radius:4px;word-break:break-all}
+.passbar{background:var(--navy);color:var(--paper);border-radius:10px;padding:10px 12px;margin-top:8px}
+.passbar b{color:var(--peach)}
+footer{max-width:1400px;margin:0 auto;padding:4px 16px 28px;font-size:13px;color:var(--muted)}
+svg text{font-family:'Public Sans',Arial,sans-serif;fill:var(--ink)}
+svg .ptitle{font:700 19px 'Libre Baskerville',Georgia,serif;cursor:pointer}
+svg .ptitle:hover{fill:var(--accent)}
+svg .axis{stroke:var(--line);stroke-width:1}
+svg .tick{font-size:10px;fill:var(--muted)}
+svg .alabel{font-size:11px;fill:var(--muted)}
+svg .band{fill:var(--band)}
+svg .dot{cursor:pointer}
+svg .dot:focus{outline:none}
+svg .dot:focus circle.m,svg .dot:hover circle.m{stroke:var(--navy);stroke-width:3}
+svg .lbl{font-size:10.5px}
+svg .sel circle.m{stroke:var(--navy);stroke-width:3.5}
+</style>
+</head>
+<body>
+<header><div class="wrap"><h1>PerioBench: cost beside quality, three questions</h1><a href="deck.html">Back to the deck</a></div></header>
+<div class="disclaimer"><div class="wrap">A personal learning project, not affiliated with or endorsed by any organization. Synthetic data only: scores are against the generator's answer key, not clinical performance. Costs use dated list prices and illustrative hardware prices.</div></div>
+<main>
+<p class="lede">Each question has its own measure and its own pass bar, so each gets its own chart: cost is never compared across them. Drag to pan, scroll or pinch to zoom, click a question's title to drill in, and click a method for its score, 95% range, cost and sources. A method that was not run shows its price only, never a score.</p>
+<nav class="crumbs" id="crumbs" aria-label="Where you are"></nav>
+<div class="stage">
+<svg id="chart" role="img" aria-label="Cost for a million notes against quality, one chart per question"></svg>
+<div class="tools"><button id="zin" aria-label="Zoom in">+</button><button id="zout" aria-label="Zoom out">−</button><button id="zreset" aria-label="Show all three questions">⤢</button></div>
+<div class="hint">Drag to pan · scroll or pinch to zoom · click to drill in</div>
+</div>
+<aside class="detail" id="detail" aria-live="polite"></aside>
+</main>
+<footer>Sources: scores from docs/results.md (finding gum disease, de-identification) and docs/tooth_loss.md (tooth loss); costs from data/corpus/cost_benchmark.csv, data/deid/cost_effectiveness.csv, docs/deidentification.md and docs/claims.yaml (tiers). Built for issue #879; the deck's static slides carry the same figures.</footer>
+
+<script type="application/json" id="cost-quality-data">
+{
+ "questions": [
+  {
+   "id": "phenotyping",
+   "name": "Finding gum disease in the record",
+   "plain": "What gum-disease status does this chart show: healthy or gingivitis, or periodontitis stage 1 to 4 (phenotyping)?",
+   "metric": "Right status, per 100 charts",
+   "axis": "Right status, per 100 charts",
+   "higher_is_better": true,
+   "y_min": 70, "y_max": 100, "y_ticks": [70, 75, 80, 85, 90, 95, 100],
+   "denominator": "the 223 synthetic review charts, adults, visits from 2021-04-01",
+   "score_source": "docs/results.md, Phenotyping (Correct, 95% bootstrap CI; Rank is the 95% range of places over chart resamples)",
+   "pass_bar": "Agree with four gum specialists as often as they agree with each other (the acceptance test, mean Cohen's kappa, margin 0.05). Not run yet: the reviewers so far are simulated, a dry run not shown as a result, so no method has passed.",
+   "stand_in": "Until then, the top group on the synthetic answer key: methods whose rank range reaches first place.",
+   "caution": "† uses the same 2017 rules that made the answer key: an advantage real records won't give.",
+   "methods": [
+    {"name": "Rules, gum measurements first †", "short": "Rules, whole record †", "code": "algorithm_v0", "reads": "whole record", "status": "run", "score": 92.8, "lo": 89.2, "hi": 96.0, "rank": "1–4", "could_rank_first": true, "cost_usd": null, "cost_label": "not priced", "cost_basis": "rules on CPU; their run cost has not been measured", "cost_source": null},
+    {"name": "Small trained model (ModernBERT-large) + stage 4 rule †", "short": "ModernBERT-large + rule †", "code": "modernbert-large+rules4", "reads": "the note", "status": "run", "score": 91.0, "lo": 87.0, "hi": 94.2, "rank": "1–4", "could_rank_first": true, "cost_usd": 38.22, "cost_label": "~$40", "cost_basis": "own GPU at an assumed 50 notes a second plus 4 hours' training, at an illustrative $4 GPU hour (as BioClinical ModernBERT-large, the same size)", "cost_source": "data/corpus/cost_benchmark.csv; costs.yaml", "label_pos": "above"},
+    {"name": "BioClinical ModernBERT-large + stage 4 rule †", "short": "BioClinical ModernBERT-large + rule †", "code": "bioclinical-modernbert-large+rules4", "reads": "the note", "status": "run", "score": 90.1, "lo": 86.1, "hi": 93.7, "rank": "1–9", "could_rank_first": true, "cost_usd": 38.22, "cost_label": "~$40", "cost_basis": "own GPU at an assumed 50 notes a second plus 4 hours' training, at an illustrative $4 GPU hour", "cost_source": "data/corpus/cost_benchmark.csv; costs.yaml", "x_nudge": 16},
+    {"name": "Word counts (TF-IDF) + stage 4 rule †", "short": "Word counts + rule †", "code": "tfidf_logreg+rules4", "reads": "the note", "status": "run", "score": 85.7, "lo": 80.7, "hi": 89.7, "rank": "7–34", "could_rank_first": false, "cost_usd": 0.065, "cost_label": "under $1", "cost_basis": "CPU at the measured speed, illustrative $1 CPU hour ($0.07)", "cost_source": "data/corpus/cost_benchmark.csv"},
+    {"name": "Open LLM, hosted (Llama 3.3 70B)", "short": "Llama 3.3 70B", "code": "llama-3.3-70b-instruct", "reads": "the note", "status": "run", "score": 83.9, "lo": 78.9, "hi": 88.8, "rank": "7–40", "could_rank_first": false, "cost_usd": 256.5, "cost_label": "~$260", "cost_basis": "453 tokens in, 20 out a note, Databricks list price checked 2026-10-26", "cost_source": "docs/claims.yaml, tiers.open_llm_note"},
+    {"name": "Own-GPU medical LLM (MedGemma 1.5 4B)", "short": "MedGemma 1.5 4B", "code": "medgemma-1.5-4b-it", "reads": "the note", "status": "run", "score": 78.5, "lo": 73.1, "hi": 83.4, "rank": "32–46", "could_rank_first": false, "cost_usd": 138.89, "cost_label": "~$140", "cost_basis": "own GPU at an assumed 8 notes a second, illustrative $4 GPU hour", "cost_source": "data/corpus/cost_benchmark.csv; costs.yaml"},
+    {"name": "Frontier LLM: Gemini 3.1 Pro", "short": "Gemini 3.1 Pro", "code": null, "reads": "the note", "status": "not run", "score": null, "lo": null, "hi": null, "cost_usd": 1146, "cost_label": "~$1,100", "cost_basis": "453 tokens in, 20 out a note, Google list price checked 2026-10-28; batch is half", "cost_source": "docs/claims.yaml, tiers.gemini_note"},
+    {"name": "Frontier LLM: Claude Fable 5.1", "short": "Claude Fable 5.1", "code": null, "reads": "the note", "status": "not run", "score": null, "lo": null, "hi": null, "cost_usd": 5530, "cost_label": "~$5,500", "cost_basis": "453 tokens in, 20 out a note, Anthropic list price checked 2026-10-28; batch is half", "cost_source": "docs/claims.yaml, tiers.frontier_llm_note"},
+    {"name": "Gemini 3.1 Pro, whole record, 3 calls a visit", "short": "Gemini, whole record", "code": null, "reads": "whole record", "status": "not run", "score": null, "lo": null, "hi": null, "cost_usd": 264000, "cost_label": "~$260k", "cost_basis": "assumed 20k tokens in, 4k out a call, 3 calls a visit, list price 2026-10-28", "cost_source": "docs/claims.yaml, tiers.gemini_whole_record"},
+    {"name": "Claude Fable 5.1, whole record, 3 calls a visit", "short": "Fable, whole record", "code": null, "reads": "whole record", "status": "not run", "score": null, "lo": null, "hi": null, "cost_usd": 1200000, "cost_label": "~$1.2M", "cost_basis": "assumed 20k tokens in, 4k out a call, 3 calls a visit, list price 2026-10-28", "cost_source": "docs/claims.yaml, tiers.frontier_llm_whole_record"}
+   ]
+  },
+  {
+   "id": "tooth_loss",
+   "name": "Was a missing tooth lost to gum disease?",
+   "plain": "For each missing tooth, the chance it was lost to gum disease rather than another reason, read from structured tables, not the note (tooth loss).",
+   "metric": "AUC on held-out extractions",
+   "axis": "AUC (0.5 is a coin toss, 1 is perfect)",
+   "higher_is_better": true,
+   "y_min": 0.5, "y_max": 1.0, "y_ticks": [0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
+   "denominator": "469 held-out synthetic extractions with a recorded reason (178 lost to gum disease), generator seed 42; and 10,761 teeth missing at the first visit",
+   "score_source": "docs/tooth_loss.md, Results (after the tooth-table fixes): AUC with a 95% CI from 1,000 bootstrap resamples of patients",
+   "pass_bar": "None set yet. The analysis plan (specs/029-tooth-loss/analysis_plan.md) fixes the measures, not the score that passes.",
+   "stand_in": "None. A bar should be set on the teeth missing at the first visit: the ones the model is used for, and where it scores lowest (hollow markers).",
+   "caution": "Hollow markers: AUC on teeth missing at the first visit, scored against the synthetic answer key.",
+   "methods": [
+    {"name": "Logistic regression, completed extractions", "short": "Logistic, completed", "code": "logistic / completed", "reads": "structured tables", "status": "run", "score": 0.89, "lo": 0.86, "hi": 0.92, "first_visit_auc": 0.59, "cost_usd": null, "cost_label": "not priced", "cost_basis": "a small model on CPU; its run cost has not been measured", "cost_source": null},
+    {"name": "XGBoost, completed extractions", "short": "XGBoost, completed", "code": "xgboost / completed", "reads": "structured tables", "status": "run", "score": 0.90, "lo": 0.87, "hi": 0.93, "first_visit_auc": 0.63, "cost_usd": null, "cost_label": "not priced", "cost_basis": "a small model on CPU; its run cost has not been measured", "cost_source": null},
+    {"name": "Logistic regression, completed + planned", "short": "Logistic, + planned", "code": "logistic / completed + planned", "reads": "structured tables", "status": "run", "score": 0.88, "lo": 0.85, "hi": 0.92, "first_visit_auc": 0.64, "cost_usd": null, "cost_label": "not priced", "cost_basis": "a small model on CPU; its run cost has not been measured", "cost_source": null},
+    {"name": "XGBoost, completed + planned", "short": "XGBoost, + planned", "code": "xgboost / completed + planned", "reads": "structured tables", "status": "run", "score": 0.90, "lo": 0.87, "hi": 0.93, "first_visit_auc": 0.70, "cost_usd": null, "cost_label": "not priced", "cost_basis": "a small model on CPU; its run cost has not been measured", "cost_source": null},
+    {"name": "Any LLM reading the record", "short": "Any LLM", "code": null, "reads": "–", "status": "not run", "score": null, "lo": null, "hi": null, "cost_usd": null, "cost_label": "not priced", "cost_basis": "not run on this question, so not priced", "cost_source": null}
+   ]
+  },
+  {
+   "id": "deid",
+   "name": "Removing names, dates and IDs",
+   "plain": "Which words in a note are private (names, dates, record numbers) and must come out before anyone or any AI reads it (de-identification)?",
+   "metric": "Identifiers left in, per 100 (fewer is better)",
+   "axis": "Identifiers left in, per 100 (fewer is higher)",
+   "higher_is_better": false,
+   "y_min": 0, "y_max": 26, "y_ticks": [0, 5, 10, 15, 20, 25],
+   "denominator": "400 synthetic notes with 2,714 planted fake identifiers and 2,462 dental words that look like them",
+   "score_source": "docs/results.md, De-identification (95% Wilson range; Rank is the range those intervals allow)",
+   "pass_bar": "No leak rate set yet. On synthetic notes a final check holds back any note with a planted identifier left; on real notes only a second scan and a person checking 1 in 1,000 notes (about $3,000 a million, whichever method) remain.",
+   "stand_in": "Until a bar is set, the top group: methods that could rank first on identifiers left in; dental words removed break ties.",
+   "caution": "Engine cost only; the 1 in 1,000 human check adds about $3,000 a million notes to every method.",
+   "methods": [
+    {"name": "Patterns alone", "short": "Patterns", "code": "regex_v2", "reads": "the note", "status": "run", "count": 645, "damaged": 0, "score": 23.77, "lo": 22.2, "hi": 25.4, "rank": "11–12", "could_rank_first": false, "cost_usd": 0.076, "cost_label": "under $1", "cost_basis": "CPU at the measured speed, illustrative $1 CPU hour ($0.08)", "cost_source": "data/deid/cost_effectiveness.csv"},
+    {"name": "Presidio + patterns + dental-word guard", "short": "Presidio + patterns", "code": "presidio+regex_v2+guard", "reads": "the note", "status": "run", "count": 376, "damaged": 122, "score": 13.85, "lo": 12.6, "hi": 15.2, "rank": "7–8", "could_rank_first": false, "cost_usd": 4.54, "cost_label": "~$5", "cost_basis": "CPU at the measured speed, illustrative $1 CPU hour", "cost_source": "data/deid/cost_effectiveness.csv"},
+    {"name": "Stanford AI + patterns + dental-word guard", "short": "Stanford + patterns", "code": "hf_stanford+regex_v2+guard", "reads": "the note", "status": "run", "count": 226, "damaged": 41, "score": 8.33, "lo": 7.3, "hi": 9.4, "rank": "4–6", "could_rank_first": false, "cost_usd": 22.73, "cost_label": "~$23", "cost_basis": "CPU at the measured speed, illustrative $1 CPU hour", "cost_source": "data/deid/cost_effectiveness.csv"},
+    {"name": "Stanford AI + OBI AI + patterns + dental-word guard", "short": "Stanford + OBI + patterns", "code": "hf_stanford+hf_obi+regex_v2+guard", "reads": "the note", "status": "run", "count": 115, "damaged": 41, "score": 4.24, "lo": 3.5, "hi": 5.1, "rank": "1–3", "could_rank_first": true, "cost_usd": 98.46, "cost_label": "~$98", "cost_basis": "CPU at the measured speed, illustrative $1 CPU hour", "cost_source": "data/deid/cost_effectiveness.csv", "label_pos": "left"},
+    {"name": "Routed by identifier type + dental-word guard", "short": "Routed by type", "code": "routed+guard", "reads": "the note", "status": "run", "count": 129, "damaged": 154, "score": 4.75, "lo": 4.0, "hi": 5.6, "rank": "1–4", "could_rank_first": true, "cost_usd": 102.93, "cost_label": "~$103", "cost_basis": "CPU at the measured speed, illustrative $1 CPU hour", "cost_source": "data/deid/cost_effectiveness.csv", "x_nudge": 16, "label_pos": "above"},
+    {"name": "Databricks AI mask + patterns + dental-word guard", "short": "AI mask + patterns", "code": "ai_mask+regex_v2+guard", "reads": "the note", "status": "run", "count": 155, "damaged": 2, "score": 5.71, "lo": 4.9, "hi": 6.6, "rank": "1–4", "could_rank_first": true, "cost_usd": 295, "cost_label": "~$295", "cost_basis": "Databricks list price per token, checked 2026-10-26 (patterns add under $1)", "cost_source": "docs/deidentification.md, What the paid services would cost"},
+    {"name": "Azure Health Data Services de-identification", "short": "Azure de-id", "code": "azure_deid", "reads": "the note", "status": "not run", "score": null, "lo": null, "hi": null, "cost_usd": 18, "cost_label": "~$18", "cost_basis": "$0.05 per MB, list price checked 2026-10-26", "cost_source": "docs/deidentification.md, What the paid services would cost"},
+    {"name": "Our LLM prompt on the Databricks endpoint", "short": "Our LLM prompt", "code": "llm", "reads": "the note", "status": "not run", "score": null, "lo": null, "hi": null, "cost_usd": 281, "cost_label": "~$281", "cost_basis": "Databricks list price per token, checked 2026-10-26", "cost_source": "docs/deidentification.md, What the paid services would cost"},
+    {"name": "Azure AI Language PII", "short": "Azure Language", "code": "azure_language", "reads": "the note", "status": "not run", "score": null, "lo": null, "hi": null, "cost_usd": 875, "cost_label": "~$875", "cost_basis": "$1.00 per 1,000 records, list price checked 2026-10-26", "cost_source": "docs/deidentification.md, What the paid services would cost"},
+    {"name": "Amazon Comprehend Medical", "short": "Amazon Comprehend", "code": "aws_comprehend", "reads": "the note", "status": "not run", "score": null, "lo": null, "hi": null, "cost_usd": 2650, "cost_label": "~$2,650", "cost_basis": "per 100 characters, list price checked 2026-10-26", "cost_source": "docs/deidentification.md, What the paid services would cost"}
+   ]
+  }
+ ]
+}
+</script>
+<script>
+(() => {
+  const DATA = JSON.parse(document.getElementById('cost-quality-data').textContent);
+  const NS = 'http://www.w3.org/2000/svg';
+  const svg = document.getElementById('chart');
+  const detail = document.getElementById('detail');
+  const crumbs = document.getElementById('crumbs');
+
+  // world: three panels side by side, each with its own axes
+  const PW = 600, PH = 560, GAP = 40, PAD = 30;
+  const WORLD = {x: -PAD, y: -PAD, w: 3 * PW + 2 * GAP + 2 * PAD, h: PH + 2 * PAD};
+  const PLOT = {l: 78, r: 580, t: 70, b: 370};          // plot area inside a panel
+  const BAND = {t: 400, b: 530};                         // the "not run: price only" band
+  const XMIN = Math.log10(0.03), XMAX = Math.log10(3e6);
+  const el = (tag, attrs = {}, parent) => {
+    const e = document.createElementNS(NS, tag);
+    for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+    if (parent) parent.appendChild(e);
+    return e;
+  };
+  const money = v => v >= 1e6 ? `$${v / 1e6}M` : v >= 1000 ? `$${(v / 1000).toLocaleString()}k` : `$${v}`;
+  const fmt = (q, v) => q.id === 'tooth_loss' ? v.toFixed(2) : v.toFixed(1);
+
+  const panels = {};
+  DATA.questions.forEach((q, i) => {
+    const ox = i * (PW + GAP);
+    const g = el('g', {transform: `translate(${ox},0)`, 'data-q': q.id}, svg);
+    panels[q.id] = {x: ox, y: 0, w: PW, h: PH};
+    el('rect', {x: 0, y: 0, width: PW, height: PH, rx: 14, fill: '#FDFCF9', stroke: '#D9D3C4'}, g);
+    const t = el('text', {x: 20, y: 34, class: 'ptitle', tabindex: 0, role: 'button'}, g);
+    t.textContent = `${i + 1}. ${q.name}`;
+    t.addEventListener('click', e => { e.stopPropagation(); showQuestion(q.id, true); });
+    t.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); showQuestion(q.id, true); } });
+    const sub = el('text', {x: 20, y: 54, class: 'alabel'}, g);
+    sub.textContent = q.metric;
+
+    const priced = q.methods.some(m => m.status === 'run' && m.cost_usd != null);
+    const unpriced = q.methods.filter(m => m.status === 'run' && m.cost_usd == null);
+    // a "not priced" lane at the left when some methods have no cost; the whole width when none has one
+    const lane = unpriced.length ? (priced ? {l: PLOT.l, r: PLOT.l + 54} : {l: PLOT.l, r: PLOT.r}) : null;
+    const xl = lane && priced ? lane.r + 16 : PLOT.l;
+    const X = v => xl + (Math.log10(v) - XMIN) / (XMAX - XMIN) * (PLOT.r - xl);
+    const Y = v => {
+      const f = (v - q.y_min) / (q.y_max - q.y_min);
+      return q.higher_is_better ? PLOT.b - f * (PLOT.b - PLOT.t) : PLOT.t + f * (PLOT.b - PLOT.t);
+    };
+    // axes and ticks
+    el('line', {x1: PLOT.l, y1: PLOT.t, x2: PLOT.l, y2: PLOT.b, class: 'axis'}, g);
+    el('line', {x1: PLOT.l, y1: PLOT.b, x2: PLOT.r, y2: PLOT.b, class: 'axis'}, g);
+    q.y_ticks.forEach(v => {
+      el('line', {x1: PLOT.l, y1: Y(v), x2: PLOT.r, y2: Y(v), stroke: '#EFEBE1'}, g);
+      const tt = el('text', {x: PLOT.l - 8, y: Y(v) + 3, 'text-anchor': 'end', class: 'tick'}, g);
+      tt.textContent = q.id === 'tooth_loss' ? v.toFixed(1) : v;
+    });
+    const ya = el('text', {transform: `translate(22,${(PLOT.t + PLOT.b) / 2}) rotate(-90)`, 'text-anchor': 'middle', class: 'alabel'}, g);
+    ya.textContent = q.axis;
+    if (priced) {
+      [0.1, 1, 10, 100, 1000, 1e4, 1e5, 1e6].forEach(v => {
+        el('line', {x1: X(v), y1: PLOT.b, x2: X(v), y2: PLOT.b + 4, class: 'axis'}, g);
+        const tt = el('text', {x: X(v), y: PLOT.b + 16, 'text-anchor': 'middle', class: 'tick'}, g);
+        tt.textContent = money(v);
+      });
+      const xa = el('text', {x: (xl + PLOT.r) / 2, y: PLOT.b + 30, 'text-anchor': 'middle', class: 'alabel'}, g);
+      xa.textContent = 'Cost for a million notes (log scale)';
+    }
+    if (lane) {
+      el('rect', {x: lane.l, y: PLOT.t, width: lane.r - lane.l, height: PLOT.b - PLOT.t, fill: '#F3F0E8'}, g);
+      const lt = el('text', {x: (lane.l + lane.r) / 2, y: PLOT.b + 16, 'text-anchor': 'middle', class: 'tick'}, g);
+      lt.textContent = priced ? 'not priced' : 'CPU, not priced: compared on quality only';
+    }
+    // the band for methods not run: price only, never a score
+    el('rect', {x: PLOT.l, y: BAND.t, width: PLOT.r - PLOT.l, height: BAND.b - BAND.t, rx: 8, class: 'band'}, g);
+    const bt = el('text', {x: PLOT.l + 8, y: BAND.t + 16, class: 'alabel'}, g);
+    bt.textContent = 'Not run: price only, no score';
+    const pb = el('text', {x: 20, y: PH - 10, class: 'tick'}, g);
+    pb.textContent = 'Pass bar: ' + (q.id === 'phenotyping' ? 'acceptance test, not run yet' : q.id === 'tooth_loss' ? 'none set yet' : 'no leak rate set yet');
+
+    let notRunI = 0;
+    q.methods.forEach((m, j) => {
+      const d = el('g', {class: 'dot', tabindex: 0, role: 'button',
+        'aria-label': `${m.name}: ${m.status === 'run' ? fmt(q, m.score) : 'not run'}, ${m.cost_label}`}, g);
+      m._el = d;
+      if (m.status === 'run') {
+        const ui = unpriced.indexOf(m);
+        const x = m.cost_usd != null ? X(m.cost_usd) + (m.x_nudge || 0) : lane.l + (ui + 0.5) * (lane.r - lane.l) / unpriced.length;
+        el('line', {x1: x, y1: Y(m.lo), x2: x, y2: Y(m.hi), stroke: '#5C6F75', 'stroke-width': 2}, d);
+        [m.lo, m.hi].forEach(v => el('line', {x1: x - 5, y1: Y(v), x2: x + 5, y2: Y(v), stroke: '#5C6F75', 'stroke-width': 2}, d));
+        if (m.first_visit_auc != null) {
+          el('line', {x1: x, y1: Y(m.score), x2: x, y2: Y(m.first_visit_auc), stroke: '#B4501F', 'stroke-dasharray': '3 3'}, d);
+          el('circle', {cx: x, cy: Y(m.first_visit_auc), r: 6, fill: '#FDFCF9', stroke: '#B4501F', 'stroke-width': 2}, d);
+        }
+        el('circle', {class: 'm', cx: x, cy: Y(m.score), r: 7, fill: m.could_rank_first ? '#B4501F' : '#FDFCF9', stroke: '#B4501F', 'stroke-width': 2}, d);
+        const pos = m.label_pos || (q.id === 'tooth_loss' ? 'below' : 'right');
+        const lx = pos === 'left' ? x - 11 : (pos === 'below' || pos === 'above') ? x : x + 11;
+        const lo = q.higher_is_better ? m.lo : m.hi, hi = q.higher_is_better ? m.hi : m.lo;
+        const ly = pos === 'below' ? Y(lo) + 14 + (q.id === 'tooth_loss' ? (j % 2) * 12 : 0) : pos === 'above' ? Y(hi) - 8 : Y(m.score) + 4;
+        const lab = el('text', {x: lx, y: ly, class: 'lbl', 'text-anchor': pos === 'left' ? 'end' : (pos === 'below' || pos === 'above') ? 'middle' : 'start'}, d);
+        lab.textContent = m.short;
+      } else {
+        const y = BAND.t + 36 + notRunI * 22;
+        notRunI++;
+        if (m.cost_usd != null) {
+          const x = X(m.cost_usd);
+          el('rect', {class: 'm', x: x - 5, y: y - 5, width: 10, height: 10, fill: '#FDFCF9', stroke: '#B4501F', 'stroke-width': 2, transform: `rotate(45 ${x} ${y})`}, d);
+          const left = x > PLOT.r - 170;
+          const lab = el('text', {x: left ? x - 10 : x + 10, y: y + 4, class: 'lbl', 'text-anchor': left ? 'end' : 'start'}, d);
+          lab.textContent = `${m.short} ${m.cost_label}`;
+        } else {
+          const lab = el('text', {x: PLOT.l + 8, y: y + 4, class: 'lbl'}, d);
+          lab.textContent = `${m.short}: not run, not priced`;
+        }
+      }
+      const go = e => { e.stopPropagation(); showMethod(q.id, j, true); };
+      d.addEventListener('click', go);
+      d.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(e); } });
+    });
+  });
+
+  // pan and zoom: the svg's viewBox is the camera
+  let view = {...WORLD}, anim = null;
+  const setView = v => { view = v; svg.setAttribute('viewBox', `${v.x} ${v.y} ${v.w} ${v.h}`); };
+  const fit = r => {
+    const box = svg.getBoundingClientRect(), aspect = box.width / box.height || 2;
+    let w = r.w, h = r.h;
+    if (w / h < aspect) w = h * aspect; else h = w / aspect;
+    return {x: r.x + r.w / 2 - w / 2, y: r.y + r.h / 2 - h / 2, w, h};
+  };
+  const flyTo = r => {
+    cancelAnimationFrame(anim);
+    const from = {...view}, to = fit(r), t0 = performance.now(), dur = 450;
+    const step = now => {
+      const t = Math.min(1, (now - t0) / dur), e = t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+      setView({x: from.x + (to.x - from.x) * e, y: from.y + (to.y - from.y) * e, w: from.w + (to.w - from.w) * e, h: from.h + (to.h - from.h) * e});
+      if (t < 1) anim = requestAnimationFrame(step);
+    };
+    anim = requestAnimationFrame(step);
+  };
+  const toWorld = (cx, cy) => {
+    const b = svg.getBoundingClientRect();
+    return {x: view.x + (cx - b.left) / b.width * view.w, y: view.y + (cy - b.top) / b.height * view.h};
+  };
+  const zoomAt = (k, cx, cy) => {
+    const p = toWorld(cx, cy), w = Math.min(WORLD.w * 3, Math.max(120, view.w * k)), h = w * view.h / view.w;
+    setView({x: p.x - (p.x - view.x) * w / view.w, y: p.y - (p.y - view.y) * h / view.h, w, h});
+  };
+  svg.addEventListener('wheel', e => { e.preventDefault(); cancelAnimationFrame(anim); zoomAt(Math.exp(e.deltaY * 0.0015), e.clientX, e.clientY); }, {passive: false});
+  const pts = new Map(); let moved = 0, pinch0 = null;
+  svg.addEventListener('pointerdown', e => { pts.set(e.pointerId, {x: e.clientX, y: e.clientY}); moved = 0; svg.classList.add('dragging'); cancelAnimationFrame(anim); });
+  svg.addEventListener('pointermove', e => {
+    if (!pts.has(e.pointerId)) return;
+    const prev = pts.get(e.pointerId), now = {x: e.clientX, y: e.clientY};
+    pts.set(e.pointerId, now);
+    if (pts.size === 2) {
+      const [a, b] = [...pts.values()], d = Math.hypot(a.x - b.x, a.y - b.y);
+      if (pinch0) zoomAt(pinch0 / d, (a.x + b.x) / 2, (a.y + b.y) / 2);
+      pinch0 = d; moved += 10; return;
+    }
+    const r = svg.getBoundingClientRect(), dx = (now.x - prev.x) * view.w / r.width, dy = (now.y - prev.y) * view.h / r.height;
+    moved += Math.abs(now.x - prev.x) + Math.abs(now.y - prev.y);
+    if (moved > 3) { if (!svg.hasPointerCapture(e.pointerId)) svg.setPointerCapture(e.pointerId); setView({...view, x: view.x - dx, y: view.y - dy}); }
+  });
+  const up = e => { pts.delete(e.pointerId); if (pts.size < 2) pinch0 = null; if (!pts.size) svg.classList.remove('dragging'); };
+  svg.addEventListener('pointerup', up); svg.addEventListener('pointercancel', up);
+  svg.addEventListener('click', e => { if (moved > 3) e.stopPropagation(); }, true);   // a drag isn't a click
+  const center = () => { const b = svg.getBoundingClientRect(); return [b.left + b.width / 2, b.top + b.height / 2]; };
+  document.getElementById('zin').onclick = () => zoomAt(0.7, ...center());
+  document.getElementById('zout').onclick = () => zoomAt(1 / 0.7, ...center());
+  document.getElementById('zreset').onclick = () => showAll(true);
+
+  // drill-down: all questions -> one question -> one method
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+  const setCrumbs = parts => {
+    crumbs.innerHTML = '';
+    parts.forEach((p, i) => {
+      if (i) { const s = document.createElement('span'); s.className = 'sep'; s.textContent = '›'; crumbs.appendChild(s); }
+      if (p.go && i < parts.length - 1) { const b = document.createElement('button'); b.textContent = p.label; b.onclick = p.go; crumbs.appendChild(b); }
+      else { const s = document.createElement('span'); s.className = 'here'; s.textContent = p.label; crumbs.appendChild(s); }
+    });
+  };
+  const select = m => { document.querySelectorAll('.dot.sel').forEach(d => d.classList.remove('sel')); if (m) m._el.classList.add('sel'); };
+  const scoreText = (q, m) => q.id === 'deid' ? `${m.count.toLocaleString()} of 2,714` : fmt(q, m.score);
+  const rangeText = (q, m) => q.id === 'deid' ? `${m.lo.toFixed(1)}–${m.hi.toFixed(1)} per 100` : `${fmt(q, m.lo)}–${fmt(q, m.hi)}`;
+
+  function showAll(fly) {
+    select(null);
+    setCrumbs([{label: 'All three questions'}]);
+    if (fly) flyTo(WORLD); else setView(fit(WORLD));
+    detail.innerHTML = `<h2>Three questions, three charts</h2>
+      <p>PerioBench asks three different questions. Each has its own measure and its own pass bar, so cost is compared only within a question.</p>
+      <div class="list">${DATA.questions.map((q, i) => `<button data-q="${q.id}">${i + 1}. ${esc(q.name)}<span class="s">${q.methods.filter(m => m.status === 'run').length} run</span></button>`).join('')}</div>
+      <h3>Reading the charts</h3>
+      <ul><li>Filled dot: could rank first (the top group). Hollow dot: run, not in the top group.</li>
+      <li>Vertical bar: the 95% range.</li><li>Diamond in the grey band: not run, price only.</li></ul>
+      <p style="margin-top:10px">Synthetic data only: every score is against the generator's answer key, not clinical performance.</p>`;
+    detail.querySelectorAll('button[data-q]').forEach(b => b.onclick = () => showQuestion(b.dataset.q, true));
+  }
+  function showQuestion(id, fly) {
+    const q = DATA.questions.find(x => x.id === id), i = DATA.questions.indexOf(q);
+    select(null);
+    setCrumbs([{label: 'All three questions', go: () => showAll(true)}, {label: q.name}]);
+    const p = panels[id];
+    if (fly) flyTo({x: p.x - 10, y: p.y - 10, w: p.w + 20, h: p.h + 50});
+    detail.innerHTML = `<h2>${i + 1}. ${esc(q.name)}</h2><p>${esc(q.plain)}</p>
+      <div class="passbar"><b>Pass bar:</b> ${esc(q.pass_bar)}</div>
+      <p style="margin-top:8px"><b>Stand-in:</b> ${esc(q.stand_in)}</p>
+      <h3>Methods (click one)</h3>
+      <div class="list">${q.methods.map((m, j) => `<button data-j="${j}">${esc(m.short)}<span class="s">${m.status === 'run' ? scoreText(q, m) : 'not run'} · ${esc(m.cost_label)}</span></button>`).join('')}</div>
+      <h3>Scored on</h3><p>${esc(q.denominator)}</p>
+      <h3>Source</h3><p><code>${esc(q.score_source)}</code></p>
+      <p style="margin-top:8px;color:#5C6F75">${esc(q.caution)}</p>`;
+    detail.querySelectorAll('button[data-j]').forEach(b => b.onclick = () => showMethod(id, +b.dataset.j, true));
+  }
+  function showMethod(id, j, fly) {
+    const q = DATA.questions.find(x => x.id === id), m = q.methods[j], p = panels[id];
+    setCrumbs([{label: 'All three questions', go: () => showAll(true)}, {label: q.name, go: () => showQuestion(id, true)}, {label: m.short}]);
+    if (fly) flyTo({x: p.x - 10, y: p.y - 10, w: p.w + 20, h: p.h + 50});
+    select(m);
+    const run = m.status === 'run';
+    const top = run && m.could_rank_first != null ? (m.could_rank_first ? '<span class="pill top">top group</span>' : '') : '';
+    detail.innerHTML = `<p><span class="pill ${run ? 'run' : 'notrun'}">${run ? 'run, on synthetic data' : 'not run'}</span>${top}</p>
+      <h2 style="margin-top:8px">${esc(m.name)}</h2>
+      ${m.code ? `<p><code>${esc(m.code)}</code> · reads ${esc(m.reads)}</p>` : `<p>reads ${esc(m.reads)}</p>`}
+      <h3>${esc(q.metric)}</h3>
+      ${run ? `<p class="big">${scoreText(q, m)}</p><p>95% range: ${rangeText(q, m)}${m.rank ? ` · rank ${esc(m.rank)}` : ''}</p>
+        ${m.first_visit_auc != null ? `<p>On teeth missing at the first visit: <b>${m.first_visit_auc.toFixed(2)}</b></p>` : ''}
+        ${m.damaged != null ? `<p>Dental words removed by mistake: <b>${m.damaged.toLocaleString()} of 2,462</b></p>` : ''}
+        <p style="color:#5C6F75">Source: <code>${esc(q.score_source.split(',')[0])}</code></p>`
+      : `<p class="notrun">not run</p><p>No score: this method has not been run on this question, so we don't know whether it is as good.</p>`}
+      <h3>Cost for a million notes</h3><p class="big" style="font-size:24px">${esc(m.cost_label)}</p>
+      <p>${esc(m.cost_basis)}</p>${m.cost_source ? `<p style="color:#5C6F75">Source: <code>${esc(m.cost_source)}</code></p>` : ''}
+      <h3>Pass bar</h3><p>${esc(q.pass_bar)}</p>`;
+  }
+
+  window.addEventListener('resize', () => setView(fit({x: view.x, y: view.y, w: view.w, h: view.h})));
+  const start = location.hash.slice(1);
+  if (DATA.questions.some(q => q.id === start)) { setView(fit(WORLD)); showQuestion(start, true); } else showAll(false);
+})();
+</script>
+</body>
+</html>

@@ -1,7 +1,8 @@
 """Build the website's copies of the decks and their covers (issue #374).
 
 The website repository (healthtransformationlab/healthtransformationlab.github.io) serves docs/edr/deck.html as
-perio-bench/index.html and docs/pitch/deck.html as oral-health-bench/index.html, with the two covers in img/. Its
+perio-bench/index.html and docs/pitch/deck.html as oral-health-bench/index.html, with the two covers in img/ and the
+interactive cost-and-quality page beside the PerioBench deck (perio-bench/cost_quality.html, #879). Its
 only change to a deck is the icon links after <title>. .github/workflows/copy-decks-to-site.yml runs this on every
 push to main that touches a deck or a cover, then commits to the site only when something changed.
 
@@ -27,6 +28,8 @@ SITE_REPO = "healthtransformationlab/healthtransformationlab.github.io"
 # source in this repo -> path in the site repo
 DECKS = {"docs/edr/deck.html": "perio-bench/index.html",
          "docs/pitch/deck.html": "oral-health-bench/index.html"}
+# pages that sit beside a deck and are linked from it, served with the same icon links (#879)
+PAGES = {"docs/edr/cost_quality.html": "perio-bench/cost_quality.html"}
 COVERS = {"docs/img/edr_deck_cover.png": "img/edr_deck_cover.png",
           "docs/img/pitch_deck_cover.png": "img/pitch_deck_cover.png"}
 
@@ -53,7 +56,7 @@ def build(repo_root: Path, site_dir: Path) -> list[str]:
     """Write each deck's site copy and each cover into site_dir. Returns the site paths whose bytes changed;
     other files in the site are left alone."""
     wanted = {dst: site_copy((repo_root / src).read_text(encoding="utf-8")).encode("utf-8")
-              for src, dst in DECKS.items()}
+              for src, dst in (DECKS | PAGES).items()}
     wanted |= {dst: (repo_root / src).read_bytes() for src, dst in COVERS.items()}
     changed = []
     for dst, data in wanted.items():
