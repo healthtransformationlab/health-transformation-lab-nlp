@@ -278,3 +278,6 @@ crash.log
 # Kaggle Benchmarks SDK run files (one per note; written where the task runs)
 *.run.json
 *.task.json
+
+# Claude Code: each machine's own settings and permission rules (#872); shared ones go in .claude/settings.json
+.claude/settings.local.json

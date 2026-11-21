@@ -444,7 +444,7 @@ def run_batch(root: Path, meta: dict, key: bytes, agent_dir: Path, models, adapt
     overrides = meta.get("budget_overrides") or {}
     from_competition = meta.get("source") == "competition"
     comp = find_competition() if from_competition else None
-    deadline = T_START + float(meta.get("deadline_minutes", 45)) * 60
+    deadline = T_START + float(meta.get("deadline_minutes", 180)) * 60  # #888: old packs used 45 and cut batches short
     per_task = float(meta.get("task_minutes_reserved", 6.5)) * 60
     runs: dict = earlier_runs(OUT, meta["instance_ids"])
     if runs:
