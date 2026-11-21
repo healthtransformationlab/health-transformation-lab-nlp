@@ -1,4 +1,10 @@
 ref,description,submitted_ts,status,public_score,first_seen_ts,completed_ts,finished_ts,scoring_hours,wall_hours,final_status_text,agent_commit_sha
-58290615,"entry 1: one agent, E4B, answer cap 6144, 4.5 min",2026-11-13T01:09:18Z,complete,0.05,2026-11-15T09:38:24Z,,,,,,
-58333590,"entry 3: one agent, E4B, lean prompt, no submit_patch",2026-11-14T05:52:38Z,complete,0.03,2026-11-15T09:38:24Z,,,,,,
-58364801,"entry 4: E4B, localize-first prompt (PR 98) + max_output_tokens 8192 (PR 100), main 76bc6d6; dev set 4/23",2026-11-15T02:18:52Z,pending,,2026-11-15T09:38:24Z,,,,,,76bc6d6
+58290615,"entry 1: one agent, E4B, answer cap 6144, 4.5 min",2026-11-13T01:09:18Z,complete,0.05,2026-11-15T09:38:24Z,,,,,0.05,
+58333590,"entry 3: one agent, E4B, lean prompt, no submit_patch",2026-11-14T05:52:38Z,complete,0.03,2026-11-15T09:38:24Z,,,,,0.03,
+58364801,"entry 4: E4B, localize-first prompt (PR 98) + max_output_tokens 8192 (PR 100), main 76bc6d6; dev set 4/23",2026-11-15T02:18:52Z,complete,0.05,2026-11-15T09:38:24Z,2026-11-21T22:57:35Z,2026-11-21T22:57:35Z,164.65,164.65,0.05,76bc6d6
+58406723,"entry 31B-d2-5m: 31B, 27d3020 = single agent, first two calls (install + find.py), patch first, compile check, 5 min / 28 calls (issues 145, 154, 158, 161; capped after the timing run projected 13.4 h at 8 min)",2026-11-16T00:08:33Z,complete,0.12,2026-11-21T22:57:35Z,,,,,0.12,
+58448837,"31B-public: the public Budget-Fit Single Agent bundle exactly as published (verracodeguacas notebook; 31B, 8 min, 28 calls, 240 s, 80 turns), our baseline",2026-11-17T00:05:34Z,complete,0.15,2026-11-21T22:57:35Z,,,,,0.15,
+58486057,"entry 31B-e8: 31B-e at 8 minutes (af1e006, #173, #178); on our own NLP repo's 25 unseen-code tasks 17 vs the public bundle's 12; on practice 31 vs 36",2026-11-18T00:03:11Z,complete,0.17,2026-11-21T22:57:35Z,,,,,0.17,
+58575084,31B-e8 repeat (af1e006): 17 of 25 on our tasks; repair agent 2 of 8 and function ranking 14 of 25 did not beat it,2026-11-19T18:43:21Z,error,,2026-11-21T22:57:35Z,,,,,Notebook Timeout,
+58622854,"31B-e8-50calls (af1e006 + max_tool_calls 50, 8 min): hard36 14/36 vs baseline 11/36; A+B 5/24 vs 3/24; only-50 fastapi_15093, onav_cad22430_youtube_primary_channel, onavhub_9_numeric_fips",2026-11-20T16:48:12Z,error,,2026-11-21T22:57:35Z,,,,,Notebook Timeout,
+58685342,"31B-e8-fix-c32t6: 31B-e8-fix (e532e35a, one prompt sentence: scratch scripts via run_command) with max_tool_calls 32 and max_time_minutes 6, to fit the 12-hour limit. 31B-e8 (8 min, 36 calls) scored 0.17 once (58486057) and timed out with the same files (58575084); practice estimate 228 s a task vs 267 for 31B-e8-fix at 8 min.",2026-11-21T20:11:18Z,pending,,2026-11-21T22:57:35Z,,,,,pending,
