@@ -45,11 +45,15 @@ def test_agents_md_sends_development_set_mechanism_runs_to_colab():
 
 
 def test_agents_md_records_the_gpu_decisions():
-    """#797: the decisions of November 15 are in ADR 0007, and AGENTS.md's rules cite it."""
+    """#797 / #886: ADR 0007 + weekly threshold ADR 0011; AGENTS.md cites both."""
     agents = (REPO_ROOT / "AGENTS.md").read_text()
-    adr = REPO_ROOT / "docs" / "adr" / "0007-gpu-hours-are-a-reserve-and-score-questions-go-to-the-leaderboard.md"
-    assert adr.exists() and "0007" in (REPO_ROOT / "docs" / "adr" / "README.md").read_text()
-    assert "ADR 0007" in agents
-    assert "owner's explicit yes" in agents
+    adr7 = REPO_ROOT / "docs" / "adr" / "0007-gpu-hours-are-a-reserve-and-score-questions-go-to-the-leaderboard.md"
+    adr11 = REPO_ROOT / "docs" / "adr" / "0011-kaggle-gpu-weekly-threshold.md"
+    index = (REPO_ROOT / "docs" / "adr" / "README.md").read_text()
+    assert adr7.exists() and "0007" in index
+    assert adr11.exists() and "0011" in index
+    assert "ADR 0007" in agents and "ADR 0011" in agents
+    assert "weekly threshold" in agents.lower()
+    assert "owner's explicit yes" in agents  # still required at/below the floor and for submissions
     assert "recorded traces" in agents
-    assert "owner's Colab by default" in agents, "every GPU run goes to Colab unless the owner approves Kaggle"
+    assert "owner's Colab by default" in agents, "every GPU run goes to Colab unless Kaggle hardware decides"

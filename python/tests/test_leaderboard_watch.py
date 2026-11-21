@@ -20,7 +20,7 @@ from health_transformation_lab_nlp import telemetry as tm
 WORKFLOW = REPO_ROOT / ".github" / "workflows" / "leaderboard-watch.yml"
 LEDGER = REPO_ROOT / "data" / "tasks" / "leaderboard_entries.csv"
 COLUMNS = ["ref", "description", "submitted_ts", "status", "public_score", "first_seen_ts", "completed_ts",
-           "scoring_hours", "agent_commit_sha"]
+           "finished_ts", "scoring_hours", "wall_hours", "final_status_text", "agent_commit_sha"]
 
 
 @pytest.fixture(scope="module")
@@ -43,17 +43,33 @@ def test_a_new_entry_is_recorded_when_first_seen(sw):
                            "2026-11-15T10:00:00Z")
     assert list(row) == COLUMNS
     assert row["first_seen_ts"] == "2026-11-15T10:00:00Z" and row["public_score"] == "0.05"
-    assert row["completed_ts"] == "" and row["scoring_hours"] == ""   # complete before we watched: when is unknown
+    assert row["completed_ts"] == "" and row["finished_ts"] == "" and row["wall_hours"] == ""
+    assert row["final_status_text"] == "0.05"
     assert row["agent_commit_sha"] == "9c9cd3a"
 
 
-def test_an_entry_seen_pending_then_complete_gets_its_completion_time_and_scoring_hours(sw):
+def test_an_entry_seen_pending_then_complete_gets_its_completion_time_and_wall_hours(sw):
     first = sw.entry_rows([_sub(4, "pending")], [], "2026-11-15T04:00:00Z")
     (row,) = sw.entry_rows([_sub(4, "complete", "0.04")], first, "2026-11-15T10:18:52Z")
-    assert row["first_seen_ts"] == "2026-11-15T04:00:00Z" and row["completed_ts"] == "2026-11-15T10:18:52Z"
-    assert float(row["scoring_hours"]) == pytest.approx(8.0)
+    assert row["first_seen_ts"] == "2026-11-15T04:00:00Z" and row["finished_ts"] == "2026-11-15T10:18:52Z"
+    assert row["completed_ts"] == row["finished_ts"]
+    assert float(row["wall_hours"]) == pytest.approx(8.0)
+    assert row["scoring_hours"] == row["wall_hours"]
+    assert row["final_status_text"] == "0.04"
     (again,) = sw.entry_rows([_sub(4, "complete", "0.04")], [row], "2026-11-15T12:00:00Z")
     assert again == row                                                       # a rerun changes nothing
+
+
+def test_a_runtime_exceedance_is_notebook_timeout_and_sets_finished_ts(sw):
+    first = sw.entry_rows([_sub(7, "pending", submitted="2026-11-19T18:00:00Z")], [],
+                          "2026-11-19T18:00:00Z")
+    timed_out = {**_sub(7, "error", submitted="2026-11-19T18:00:00Z"), "error_description":
+                 "Your submission notebook exceeded the allowed runtime. Review the competition's Code Requirements."}
+    (row,) = sw.entry_rows([timed_out], first, "2026-11-20T16:00:00Z")
+    assert row["status"] == "error"
+    assert row["finished_ts"] == "2026-11-20T16:00:00Z"
+    assert row["final_status_text"] == "Notebook Timeout"
+    assert float(row["wall_hours"]) == pytest.approx(22.0)
 
 
 def test_one_row_per_entry_and_entries_missing_from_the_list_are_kept(sw):
@@ -105,10 +121,11 @@ class FakeApi:
         return self.by_ref[int(ref)]
 
 
-def _api_sub(ref, status, score, description, date="2026-11-15 02:18:52.813000"):
+def _api_sub(ref, status, score, description, date="2026-11-15 02:18:52.813000", error_description=None):
     from datetime import datetime
     return SimpleNamespace(ref=ref, description=description, date=datetime.fromisoformat(date),
-                           status=SimpleNamespace(name=status), public_score=score)
+                           status=SimpleNamespace(name=status), public_score=score,
+                           error_description=error_description)
 
 
 @pytest.fixture
@@ -146,7 +163,8 @@ def test_main_looks_up_hidden_pending_entries_writes_the_ledger_and_sends_a_span
     assert api.looked_up == [4]                         # the list hides pending entries: looked up by ref
     rows = list(csv.DictReader(ledger.open()))
     assert [r["ref"] for r in rows] == ["1", "4"] and list(rows[0]) == COLUMNS
-    assert rows[1]["status"] == "complete" and rows[1]["completed_ts"] == "2026-11-15T10:00:00Z"
+    assert rows[1]["status"] == "complete" and rows[1]["finished_ts"] == "2026-11-15T10:00:00Z"
+    assert rows[1]["wall_hours"] != "" and rows[1]["final_status_text"] == "0.04"
     assert rows[0]["submitted_ts"] == "2026-11-13T01:09:18Z"
     spans = [s for s in mem["exporter"].get_finished_spans() if s.name == "leaderboard_entry"]
     assert sorted((s.attributes["submission_ref_id"], s.attributes["status_code"]) for s in spans) == [
@@ -188,8 +206,8 @@ def test_the_script_sets_up_telemetry_and_labels_its_run_span(sw):
 
 # ---- the committed ledger -----------------------------------------------------------------------------------------
 
-def test_the_ledger_holds_one_row_per_entry_so_far():
-    rows = list(csv.DictReader(LEDGER.open()))
+def test_the_ledger_holds_one_row_per_entry_so_far(sw):
+    rows = sw.read_ledger(LEDGER)
     assert rows and list(rows[0]) == COLUMNS
     refs = [r["ref"] for r in rows]
     assert len(refs) == len(set(refs))
