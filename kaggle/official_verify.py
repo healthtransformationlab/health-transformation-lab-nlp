@@ -7,8 +7,10 @@ empty patch (--skip-agent-patch); this calls the same verify_task with a given p
 """
 import argparse
 import asyncio
+import importlib.util
 import json
 import os
+import sys
 import time
 from pathlib import Path
 
@@ -19,6 +21,18 @@ from swegemma.deduplication import resolve_task_snapshot_paths
 from swegemma.evaluate import Evaluator
 from swegemma.harness.verification import verify_task
 from swegemma.models import load_tasks
+
+
+def _load_env_guard():
+    """Load beside this file so the script works when copied into a controls bundle."""
+    path = Path(__file__).resolve().parent / "verify_env_guard.py"
+    spec = importlib.util.spec_from_file_location("verify_env_guard", path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+_env_guard = _load_env_guard()
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--tasks", type=Path, required=True)
@@ -65,8 +79,18 @@ async def one(task, sem):
 async def main():
     sem = asyncio.Semaphore(a.concurrency)
     rows = await asyncio.gather(*(one(t, sem) for t in tasks))
+    rows = sorted(rows, key=lambda r: r["instance_id"])
     a.out.parent.mkdir(parents=True, exist_ok=True)
-    a.out.write_text("".join(json.dumps(r) + "\n" for r in sorted(rows, key=lambda r: r["instance_id"])))
+    a.out.write_text("".join(json.dumps(r) + "\n" for r in rows))
+    # The reference patch is the environment check: if it cannot import a module, the
+    # sandbox is broken. An agent patch can fail to import the package it was supposed
+    # to change; that comparison happens in the collector, against this reference grade.
+    if a.patch == "oracle":
+        try:
+            _env_guard.assert_no_missing_modules(rows)
+        except _env_guard.MissingModuleError as e:
+            print(f"FATAL: {e}", file=sys.stderr)
+            raise SystemExit(2) from e
     print(a.patch, "tasks", len(rows), "resolved", sum(r["resolved"] for r in rows))
 
 asyncio.run(main())
