@@ -58,8 +58,10 @@ _DEPRECATION_WORDS = ("deprecated", "no longer supported", "end of life", "end-o
                       "endpoint not found", "removed in version", "unsupported version")
 _DRIFT_WORDS = ("differs between", "mismatch", "not in target", "only in dev", "only in prod", "config drift",
                 "value differs", "environments differ")
-_CONFIG_TYPES = {"MissingSetting", "KeyError", "ValueError"}
-_CONFIG_WORDS = ("setting", "secret", "connection string", "is not set", "parameter", "credential", "token")
+# ModuleNotFoundError / ImportError: the job's environment is missing a declared package (027 BUG2 #832)
+_CONFIG_TYPES = {"MissingSetting", "KeyError", "ValueError", "ModuleNotFoundError", "ImportError"}
+_CONFIG_WORDS = ("setting", "secret", "connection string", "is not set", "parameter", "credential", "token",
+                 "no module named")
 _PLATFORM_TYPES = {"Py4JException", "OSError", "ResourceExhausted", "CUDAError", "MemoryError", "TimeoutError"}
 _PLATFORM_WORDS = ("gpu", "illegal seek", "signal", "killed", "memory", "py4j", "communication channel", "no space")
 

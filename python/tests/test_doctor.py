@@ -74,6 +74,10 @@ def test_signals_without_history_are_null_not_errors(config):
     (_run(error_type="Py4JException", error_text="Error while obtaining a new communication channel"), "platform"),
     (_run(error_type="OSError", error_text="[Errno 29] Illegal seek"), "platform"),
     (_run(error_type="MissingSetting", error_text="APPLICATIONINSIGHTS_CONNECTION_STRING is not set"), "config"),
+    # 027 BUG2 (#832): missing package is the job's environment (config), not unknown
+    (_run(error_type="ModuleNotFoundError", error_text="ModuleNotFoundError: No module named 'azure.monitor'"),
+     "config"),
+    (_run(error_type="ImportError", error_text="No module named 'presidio_analyzer'"), "config"),
     (_run(rows=10), "volume_anomaly"),
     (_run(sha="new-columns"), "schema_drift"),
     (_run(failed=3), "quality_fail"),

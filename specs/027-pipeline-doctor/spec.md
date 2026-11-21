@@ -71,9 +71,11 @@ group-by. They are computed from `fact_pipeline_run` by `doctor.signals`, shown 
    they did.
 2. **Classify** (rules), configuration-management classes first because they page people and hide in
    logs: `credential_expiry`, `vulnerability`, `deprecation`, `config_drift`, `config` (missing secret, bad
-   parameter); then `platform` (GPU not available, Python died, storage), `schema_drift`, `volume_anomaly`,
-   `quality_fail`, `cost_anomaly`, `source_late`, `unknown`, in that order. Rules on the six signals and `error_type_name` decide; `unknown` is the only
-   class the LLM sees.
+   parameter, or missing package / `ModuleNotFoundError` — 027 BUG2); then `platform` (GPU not available,
+   Python died, storage), `schema_drift`, `volume_anomaly`, `quality_fail`, `cost_anomaly`, `source_late`,
+   `unknown`, in that order. Rules on the six signals and `error_type_name` decide; `unknown` is the only
+   class the LLM sees. Failed Jobs API runs enrich `error_type_name` / `error_text` from each failed task's
+   `get-output` (first line only) before classify.
 3. **Root cause** (LLM, `unknown` only): the agent gets the run row, the pipeline's last N runs,
    lineage one hop each way and the runbook; it returns a root-cause hypothesis, the evidence rows it
    used, and a confidence. It never sees note text.

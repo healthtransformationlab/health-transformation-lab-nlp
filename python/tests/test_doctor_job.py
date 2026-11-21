@@ -118,6 +118,38 @@ def test_span_rows_fill_what_the_timeline_cannot_say(runs):
     assert doctor_job.merge_spans(runs, None).equals(runs)
 
 
+def test_parse_task_error_takes_exception_class_and_first_line_only():
+    # Synthetic jobs/runs/get-output shape (Databricks Jobs API)
+    out = {
+        "error": "ModuleNotFoundError: No module named 'azure.monitor'\nTraceback (most recent call last):\n"
+                 "  File \"/tmp/x.py\", line 1, in <module>\n    import azure.monitor\n",
+        "error_trace": "long traceback not used",
+        "metadata": {},
+    }
+    etype, etext = doctor_job.parse_task_error(out)
+    assert etype == "ModuleNotFoundError"
+    assert etext == "ModuleNotFoundError: No module named 'azure.monitor'"
+    assert "Traceback" not in etext
+    assert doctor_job.parse_task_error({}) == (None, None)
+    assert doctor_job.parse_task_error({"error": "   "}) == (None, None)
+
+
+def test_apply_task_errors_replaces_termination_code_on_failed_runs(runs):
+    outputs = {
+        "200": [{"error": "ModuleNotFoundError: No module named 'azure.monitor'\nTraceback:\n..."}],
+    }
+    out = doctor_job.apply_task_errors(runs, outputs)
+    row = out[out["run_id"] == "200"].iloc[0]
+    assert row["error_type_name"] == "ModuleNotFoundError"
+    assert row["error_text"] == "ModuleNotFoundError: No module named 'azure.monitor'"
+    # ok runs untouched
+    ok = out[out["run_id"] != "200"]
+    assert (ok["error_text"].isna() | (ok["error_text"].astype(str) == "None") | (ok["error_text"] == "")).all() or \
+           ok["run_status_code"].ne("failed").all()
+    cls = doctor.classify(row.to_dict(), runs[runs["run_status_code"] == "ok"], doctor.load_config())
+    assert cls["failure_class_code"] == "config"
+
+
 def test_span_rows_with_note_text_or_unknown_columns_are_refused(runs):
     with pytest.raises(ValueError, match="note_text"):
         doctor_job.merge_spans(runs, pd.DataFrame([{"pipeline_name": "x", "run_id": "1", "note_text": "..."}]))

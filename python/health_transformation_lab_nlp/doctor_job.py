@@ -5,6 +5,8 @@ decides, in pandas, so it is tested without Spark. The notebook only reads and w
     job_names        job display name -> pipeline key, from databricks/resources/jobs.yml (as ops/pipeline_config.yaml)
     api_runs         Jobs API runs (jobs.list_runs) -> the run timeline (one row per run)
     timeline_runs    the run timeline -> fact_pipeline_run rows
+    parse_task_error exception class + first line from a jobs/runs/get-output dict (027 BUG2)
+    apply_task_errors fill error_type_name / error_text on failed runs from those outputs
     merge_spans      the span export (optional), one row per run, fills what the timeline can't say
     diagnose         doctor.signals for every recent run; doctor.classify and doctor.recommend for every failed
                      one; doctor.graduation on past decisions; approvals given as a job parameter
@@ -183,6 +185,47 @@ def timeline_runs(timeline: pd.DataFrame, config: pd.DataFrame, names: dict[str,
                      "cost_usd": float("nan"), "git_commit_sha": None, "data_label_code": labels[pipeline]})
     out = pd.DataFrame(rows, columns=doctor.RUN_COLUMNS)
     return out.sort_values(["pipeline_name", "started_ts"], kind="stable").reset_index(drop=True)
+
+
+_ERROR_LINE_MAX = 200
+_EXC_HEAD = re.compile(r"^([A-Za-z_][\w.]*)\s*:")
+
+
+@traced
+def parse_task_error(output: dict) -> tuple[str | None, str | None]:
+    """From a Jobs API `jobs/runs/get-output` dict: (exception class, first line of error ≤200 chars).
+
+    No traceback, no note text, no row data — the first line of `error` only (027 BUG2 #832)."""
+    err = (output.get("error") or "").strip()
+    if not err:
+        return None, None
+    first = err.splitlines()[0].strip()[:_ERROR_LINE_MAX]
+    m = _EXC_HEAD.match(first)
+    etype = m.group(1).rsplit(".", 1)[-1] if m else None
+    return etype, first
+
+
+@traced
+def apply_task_errors(runs: pd.DataFrame, outputs_by_run_id: dict[str, list[dict]]) -> pd.DataFrame:
+    """For failed runs, replace termination-code error_type_name / null error_text from task get-output.
+
+    `outputs_by_run_id` maps run_id → list of get-output dicts for that run's failed tasks (caller fetches
+    via the Jobs API). The first parseable output wins. Ok / timed_out rows are left alone."""
+    if runs is None or len(runs) == 0 or not outputs_by_run_id:
+        return runs
+    out = runs.copy()
+    for i, row in out.iterrows():
+        if row["run_status_code"] != "failed":
+            continue
+        for raw in outputs_by_run_id.get(str(row["run_id"]), []):
+            etype, etext = parse_task_error(raw or {})
+            if etype is None and etext is None:
+                continue
+            if etype is not None:
+                out.at[i, "error_type_name"] = etype
+            out.at[i, "error_text"] = etext
+            break
+    return out
 
 
 # --- what each run cost, from the billing system tables (spec 036 US1, #568) --------------------------------------

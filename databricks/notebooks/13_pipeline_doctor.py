@@ -91,6 +91,31 @@ timeline = doctor_job.api_runs([r.as_dict() for r in jobs_api.list_runs(complete
 
 config, runbook, lineage = doctor.load_config(), doctor.load_runbook(), doctor.load_lineage()
 runs = doctor_job.timeline_runs(timeline, config, doctor_job.job_names())
+# 027 BUG2 (#832): termination codes alone say RUN_EXECUTION_ERROR; the exception is on each failed task's
+# get-output. Fetch those and set error_type_name / error_text (first line only) before classify.
+_failed = runs.loc[runs["run_status_code"] == "failed", "run_id"].astype(str)
+_outputs: dict[str, list] = {}
+for _rid in _failed:
+    try:
+        _run = jobs_api.get_run(int(_rid))
+    except Exception as e:  # noqa: BLE001 - one run's output missing must not stop the doctor
+        print(f"warning: get_run({_rid}) failed ({type(e).__name__}): leaving termination code as error type")
+        continue
+    _outs = []
+    for _t in getattr(_run, "tasks", None) or []:
+        _state = getattr(getattr(_t, "state", None), "result_state", None) or ""
+        if str(_state).upper() not in {"FAILED", "ERROR", "TIMED_OUT", "TIMEDOUT", "INTERNAL_ERROR"}:
+            continue
+        _key = getattr(_t, "task_key", None)
+        if not _key:
+            continue
+        try:
+            _outs.append(jobs_api.get_run_output(int(_rid), task_key=_key).as_dict())
+        except Exception as e:  # noqa: BLE001
+            print(f"warning: get_run_output({_rid}, {_key}) failed ({type(e).__name__})")
+    if _outs:
+        _outputs[str(_rid)] = _outs
+runs = doctor_job.apply_task_errors(runs, _outputs)
 # Spec 036 US1 (#568): each run's cost from billing, through the owner's views over system.billing
 # (databricks/setup/billing_views.sql, #654), when this identity can read them (else one warning and empty costs,
 # never zero); a span export's cost, merged next, wins.
