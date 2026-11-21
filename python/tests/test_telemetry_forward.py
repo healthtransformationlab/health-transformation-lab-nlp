@@ -104,6 +104,70 @@ def _runner():
     return mod
 
 
+def test_a_telemetry_file_without_the_package_does_not_abort(monkeypatch, tmp_path, capsys):
+    import sys
+    run = _runner()
+    (tmp_path / "telemetry.jsonl").write_text("{}\n")
+    hidden = [k for k in sys.modules if k == "health_transformation_lab_nlp"
+              or k.startswith("health_transformation_lab_nlp.")]
+    for key in hidden:
+        monkeypatch.delitem(sys.modules, key, raising=False)
+    import builtins
+    real = builtins.__import__
+
+    def boom(name, globals=None, locals=None, fromlist=(), level=0):
+        if name == "health_transformation_lab_nlp":
+            raise ModuleNotFoundError("blocked", name="health_transformation_lab_nlp")
+        return real(name, globals, locals, fromlist, level)
+
+    monkeypatch.setattr(builtins, "__import__", boom)
+    assert run.forward_run_telemetry(tmp_path) == 0
+    err = capsys.readouterr().out
+    assert "health_transformation_lab_nlp" in err and "grading continues" in err
+
+
+def test_launch_names_the_missing_module(monkeypatch):
+    import importlib
+    run = _runner()
+    real = importlib.import_module
+
+    def fake(name, package=None):
+        if name == "swegemma":
+            raise ModuleNotFoundError("No module named 'swegemma'", name="swegemma")
+        return real(name, package)
+
+    monkeypatch.setattr(run.importlib, "import_module", fake)
+    with pytest.raises(SystemExit, match="swegemma"):
+        run.require_launch_imports()
+
+
+def test_launch_puts_the_repo_package_on_the_path():
+    import sys
+    run = _runner()
+    root = str(run.REPO_ROOT / "python")
+    sys.path[:] = [p for p in sys.path if p != root]
+    try:
+        run.ensure_repo_package_path()
+        assert sys.path[0] == root
+    finally:
+        if root not in sys.path:
+            sys.path.insert(0, root)
+
+
+def test_a_missing_telemetry_file_does_not_need_the_package(monkeypatch, tmp_path):
+    run = _runner()
+    import builtins
+    real = builtins.__import__
+
+    def boom(name, globals=None, locals=None, fromlist=(), level=0):
+        if name == "health_transformation_lab_nlp":
+            raise ModuleNotFoundError("blocked", name="health_transformation_lab_nlp")
+        return real(name, globals, locals, fromlist, level)
+
+    monkeypatch.setattr(builtins, "__import__", boom)
+    assert run.forward_run_telemetry(tmp_path) == 0
+
+
 def test_collect_forwards_the_runs_spans(mem, tmp_path):
     run = _runner()
     (tmp_path / "telemetry.jsonl").write_text(_line("official_agent_kernel.task", "0x01", None, T0, T0 + 10, {}))

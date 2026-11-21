@@ -30,6 +30,20 @@ file.
 | Open a PR | `/create-pr` (checks, opens the PR with `Closes #<issue>`, reviews it) | PR + `pull_requests/pr-<n>-review.md` |
 | Before merge | `/pr-review <n>` (Superpowers `requesting-code-review`, rubric in `.claude/review-rubric.md`) | `pull_requests/pr-<n>-review.md` |
 
+## Local permission rules
+
+Rules that reach production (a database, a paid service) never go in the shared `.claude/settings.json`: it applies
+to every agent and contributor. They go in each machine's `.claude/settings.local.json`, which git ignores. The
+standard set is kept, reviewed, in `.claude/settings.local.example.json`; on a new machine, copy it once:
+
+```
+cp .claude/settings.local.example.json .claude/settings.local.json
+```
+
+Each rule names one exact command, never a prefix with `:*` after free text: `psql -Atc "select ...:*)"` would also
+match `"select ...; drop table x"`, since psql runs every statement it's given. A rule worth having everywhere is added
+to the template by pull request, then copied by hand on each machine.
+
 ## Setup for Superpowers
 
 `.claude/settings.json` enables Superpowers from the official plugin
@@ -49,3 +63,10 @@ or from Superpowers' own marketplace:
 Spec Kit's skills are checked in under `.claude/skills/speckit-*`; no install
 needed to use them. To refresh them to a newer Spec Kit:
 `uvx --from git+https://github.com/github/spec-kit.git specify init --here --force --integration claude`.
+
+
+## Times
+
+When you tell the owner a time, in chat, in a status cell or in a message, write it in 12-hour form with AM or PM, in
+UTC with Central time beside it: "12:02 AM UTC (6:02 PM Central)". The owner asked for this on November 17, 2026
+("give all utc times in am pm all chats"). Files, logs, tables, commit messages and code keep ISO 8601 UTC.
