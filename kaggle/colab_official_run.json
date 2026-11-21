@@ -3,6 +3,46 @@
  "stop": false,
  "runs": [
   {
+   "label": "devset-e8fixtests-c1",
+   "bundle": "jcblearning/htlnlp-official-devset-e8fixtests-c1",
+   "kernel_dataset": "jcblearning/htlnlp-colab-kernel-devset-e8fixtests-c1",
+   "gpu": "A100",
+   "model": "google/gemma-4/other/gemma-4-31b-it-qat-w4a16-ct/2",
+   "network_open_acknowledged": true
+  },
+  {
+   "label": "devset-e8fixtests-c2",
+   "bundle": "jcblearning/htlnlp-official-devset-e8fixtests-c2",
+   "kernel_dataset": "jcblearning/htlnlp-colab-kernel-devset-e8fixtests-c2",
+   "gpu": "A100",
+   "model": "google/gemma-4/other/gemma-4-31b-it-qat-w4a16-ct/2",
+   "network_open_acknowledged": true
+  },
+  {
+   "label": "devset-e8fixtests-c3",
+   "bundle": "jcblearning/htlnlp-official-devset-e8fixtests-c3",
+   "kernel_dataset": "jcblearning/htlnlp-colab-kernel-devset-e8fixtests-c3",
+   "gpu": "A100",
+   "model": "google/gemma-4/other/gemma-4-31b-it-qat-w4a16-ct/2",
+   "network_open_acknowledged": true
+  },
+  {
+   "label": "devset-e8fixtests-c4",
+   "bundle": "jcblearning/htlnlp-official-devset-e8fixtests-c4",
+   "kernel_dataset": "jcblearning/htlnlp-colab-kernel-devset-e8fixtests-c4",
+   "gpu": "A100",
+   "model": "google/gemma-4/other/gemma-4-31b-it-qat-w4a16-ct/2",
+   "network_open_acknowledged": true
+  },
+  {
+   "label": "e8fixtests-nlp25",
+   "bundle": "jcblearning/htlnlp-official-e8fixtests-nlp25",
+   "kernel_dataset": "jcblearning/htlnlp-colab-kernel-e8fixtests-nlp25",
+   "gpu": "A100",
+   "model": "google/gemma-4/other/gemma-4-31b-it-qat-w4a16-ct/2",
+   "network_open_acknowledged": true
+  },
+  {
    "label": "c31be8-covtests-nlp25",
    "bundle": "jcblearning/htlnlp-official-c31be8-covtests-nlp25",
    "kernel_dataset": "jcblearning/htlnlp-colab-kernel-c31be8-covtests-nlp25"
