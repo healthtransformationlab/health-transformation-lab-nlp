@@ -1,0 +1,15 @@
+feature_group_code,feature_kind_code,feature_text,auc_without_ratio,auc_drop_ratio
+difficulty,chart,"how the note states the diagnosis (L1 2017 terms, L2 older terms, L3 inferred)",0.605033,0.195779
+truth_group,chart,the true status group,0.751185,0.0496275
+dx_scheme,chart,how the diagnosis is written,0.791217,0.00959611
+is_copy_forward,chart,the note is copied forward from an earlier visit,0.799299,0.0015139
+size_code,model,larger model,0.799405,0.00140808
+family_code,model,another architecture,0.80037,0.000442975
+domain_code,model,domain pretraining (general to clinical or biomedical),0.800399,0.000413812
+approach_code,model,another approach,0.800752,6.07497e-05
+input_code,model,radiograph features added,0.800918,-0.00010509
+is_rules4,model,stage 4 rule added,0.800927,-0.00011389
+is_class_weighted,model,class weighting,0.800959,-0.000145816
+is_numeric,chart,the note gives measurements,0.806688,-0.00587559
+note_style,chart,note style,0.809048,-0.00823492
+note_words,chart,note length in words,0.810181,-0.0093682

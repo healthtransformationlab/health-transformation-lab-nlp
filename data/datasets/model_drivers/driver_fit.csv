@@ -1,0 +1,4 @@
+feature_set_code,run_count,chart_count,method_count,auc_ratio,auc_lo_ratio,auc_hi_ratio
+chart,9589,223,43,0.800583,0.732886,0.857388
+model,9589,223,43,0.519433,0.490581,0.550079
+chart_and_model,9589,223,43,0.800813,0.73567,0.85677

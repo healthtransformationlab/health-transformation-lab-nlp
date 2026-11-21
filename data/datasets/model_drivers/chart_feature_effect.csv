@@ -1,0 +1,25 @@
+chart_feature_code,chart_feature_text,level_text,chart_count,run_count,correct_ratio,all_correct_chart_count,none_correct_chart_count
+difficulty,"how the note states the diagnosis (L1 2017 terms, L2 older terms, L3 inferred)",L1,136,5848,0.936389,110,0
+difficulty,"how the note states the diagnosis (L1 2017 terms, L2 older terms, L3 inferred)",L2,23,989,0.895854,13,0
+difficulty,"how the note states the diagnosis (L1 2017 terms, L2 older terms, L3 inferred)",L3,64,2752,0.647892,16,3
+truth_group,the true status group,healthy_or_gingivitis,84,3612,0.915836,67,1
+truth_group,the true status group,periodontitis_stage_1,41,1763,0.824731,21,1
+truth_group,the true status group,periodontitis_stage_2,43,1849,0.806382,23,1
+truth_group,the true status group,periodontitis_stage_3,43,1849,0.888588,28,0
+truth_group,the true status group,periodontitis_stage_4,12,516,0.482558,0,0
+dx_scheme,how the diagnosis is written,2017,33,1419,0.916843,27,0
+dx_scheme,how the diagnosis is written,catalogue,148,6364,0.836895,96,3
+dx_scheme,how the diagnosis is written,none,17,731,0.856361,6,0
+dx_scheme,how the diagnosis is written,old,19,817,0.883721,9,0
+dx_scheme,how the diagnosis is written,short,6,258,0.658915,1,0
+note_style,note style,chart_summary,27,1161,0.847545,13,0
+note_style,note style,ehr,148,6364,0.836895,96,3
+note_style,note style,narrative,20,860,0.87093,14,0
+note_style,note style,soap,28,1204,0.901993,16,0
+is_numeric,the note gives measurements,False,103,4429,0.84308,63,1
+is_numeric,the note gives measurements,True,120,5160,0.854845,76,2
+is_copy_forward,the note is copied forward from an earlier visit,False,208,8944,0.853198,133,3
+is_copy_forward,the note is copied forward from an earlier visit,True,15,645,0.796899,6,0
+note_words,note length in words,60 to 79,122,5246,0.869424,80,2
+note_words,note length in words,80 or more,55,2365,0.775053,30,1
+note_words,note length in words,under 60,46,1978,0.885238,29,0

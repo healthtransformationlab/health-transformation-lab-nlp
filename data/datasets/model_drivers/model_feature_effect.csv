@@ -1,0 +1,8 @@
+feature_code,feature_text,pair_count,b_better_pair_count,a_better_pair_count,tied_pair_count,median_change_count,min_change_count,max_change_count,p_below_005_pair_count,b_only_sum_count,a_only_sum_count
+is_rules4,stage 4 rule added,23,20,2,1,6,-3,6,0,204,95
+size_code,larger model,6,4,2,0,6,-3,9,2,46,22
+is_class_weighted,class weighting,4,4,0,0,3.5,2,5,0,26,12
+family_code,another architecture,14,10,2,2,2,-1,5,0,118,92
+input_code,radiograph features added,2,2,0,0,2,2,2,0,14,10
+domain_code,domain pretraining (general to clinical or biomedical),18,8,10,0,-1,-3,6,0,106,98
+seed_code,another training seed (noise floor),6,0,4,2,-6,-6,0,0,12,36

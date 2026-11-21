@@ -1,0 +1,74 @@
+feature_code,feature_text,method_a_code,method_b_code,level_a_text,level_b_text,a_correct_count,b_correct_count,a_only_count,b_only_count,p_ratio
+domain_code,domain pretraining (general to clinical or biomedical),bert-base+rules4,scibert+rules4,general,scientific,190,196,3,9,0.145996
+domain_code,domain pretraining (general to clinical or biomedical),bert-base,scibert,general,scientific,184,190,3,9,0.145996
+domain_code,domain pretraining (general to clinical or biomedical),bert-base+rules4,biomedbert+rules4,general,biomedical,190,194,4,8,0.387695
+domain_code,domain pretraining (general to clinical or biomedical),bert-base,biomedbert,general,biomedical,184,188,4,8,0.387695
+domain_code,domain pretraining (general to clinical or biomedical),bert-base+rules4,bio-clinicalbert+rules4,general,clinical,190,193,4,7,0.548828
+domain_code,domain pretraining (general to clinical or biomedical),bert-base,bio-clinicalbert,general,clinical,184,187,4,7,0.548828
+domain_code,domain pretraining (general to clinical or biomedical),scibert+rules4,bio-clinicalbert+rules4,scientific,clinical,196,193,8,5,0.581055
+domain_code,domain pretraining (general to clinical or biomedical),scibert,bio-clinicalbert,scientific,clinical,190,187,8,5,0.581055
+domain_code,domain pretraining (general to clinical or biomedical),modernbert-large+rules4,bioclinical-modernbert-large+rules4,general,clinical,203,201,5,3,0.726562
+domain_code,domain pretraining (general to clinical or biomedical),modernbert-large,bioclinical-modernbert-large,general,clinical,197,195,5,3,0.726562
+domain_code,domain pretraining (general to clinical or biomedical),longformer-base+rules4,clinical-longformer+rules4,general,clinical,195,193,6,4,0.753906
+domain_code,domain pretraining (general to clinical or biomedical),longformer-base,clinical-longformer,general,clinical,189,187,6,4,0.753906
+domain_code,domain pretraining (general to clinical or biomedical),scibert+rules4,biomedbert+rules4,scientific,biomedical,196,194,8,6,0.790527
+domain_code,domain pretraining (general to clinical or biomedical),scibert,biomedbert,scientific,biomedical,190,188,8,6,0.790527
+domain_code,domain pretraining (general to clinical or biomedical),modernbert-base+rules4,bioclinical-modernbert-base+rules4,general,clinical,194,195,4,5,1
+domain_code,domain pretraining (general to clinical or biomedical),biomedbert+rules4,bio-clinicalbert+rules4,biomedical,clinical,194,193,7,6,1
+domain_code,domain pretraining (general to clinical or biomedical),modernbert-base,bioclinical-modernbert-base,general,clinical,188,189,4,5,1
+domain_code,domain pretraining (general to clinical or biomedical),biomedbert,bio-clinicalbert,biomedical,clinical,188,187,7,6,1
+family_code,another architecture,bert-base+rules4,longformer-base+rules4,bert,longformer,190,195,2,7,0.179688
+family_code,another architecture,bert-base,longformer-base,bert,longformer,184,189,2,7,0.179688
+family_code,another architecture,bert-base+rules4,modernbert-base+rules4,bert,modernbert,190,194,8,12,0.503445
+family_code,another architecture,bert-base,modernbert-base,bert,modernbert,184,188,8,12,0.503445
+family_code,another architecture,bio-clinicalbert+rules4,bioclinical-modernbert-base+rules4,bert,modernbert,193,195,6,8,0.790527
+family_code,another architecture,bio-clinicalbert,bioclinical-modernbert-base,bert,modernbert,187,189,6,8,0.790527
+family_code,another architecture,clinical-longformer+rules4,bioclinical-modernbert-base+rules4,longformer,modernbert,193,195,8,10,0.814529
+family_code,another architecture,clinical-longformer,bioclinical-modernbert-base,longformer,modernbert,187,189,8,10,0.814529
+family_code,another architecture,bert-base+cw+rules4,modernbert-base+cw+rules4,bert,modernbert,195,196,7,8,1
+family_code,another architecture,longformer-base+rules4,modernbert-base+rules4,longformer,modernbert,195,194,10,9,1
+family_code,another architecture,bio-clinicalbert+rules4,clinical-longformer+rules4,bert,longformer,193,193,5,5,1
+family_code,another architecture,bert-base+cw,modernbert-base+cw,bert,modernbert,189,190,7,8,1
+family_code,another architecture,longformer-base,modernbert-base,longformer,modernbert,189,188,10,9,1
+family_code,another architecture,bio-clinicalbert,clinical-longformer,bert,longformer,187,187,5,5,1
+input_code,radiograph features added,tfidf_logreg+rules4,fusion_tfidf_rad+rules4,note,note_radiograph,191,193,5,7,0.774414
+input_code,radiograph features added,tfidf_logreg,fusion_tfidf_rad,note,note_radiograph,185,187,5,7,0.774414
+is_class_weighted,class weighting,bert-base+rules4,bert-base+cw+rules4,False,True,190,195,2,7,0.179688
+is_class_weighted,class weighting,bert-base,bert-base+cw,False,True,184,189,2,7,0.179688
+is_class_weighted,class weighting,modernbert-base+rules4,modernbert-base+cw+rules4,False,True,194,196,4,6,0.753906
+is_class_weighted,class weighting,modernbert-base,modernbert-base+cw,False,True,188,190,4,6,0.753906
+is_rules4,stage 4 rule added,modernbert-large,modernbert-large+rules4,False,True,197,203,4,10,0.179565
+is_rules4,stage 4 rule added,bioclinical-modernbert-large,bioclinical-modernbert-large+rules4,False,True,195,201,4,10,0.179565
+is_rules4,stage 4 rule added,modernbert-base+cw,modernbert-base+cw+rules4,False,True,190,196,4,10,0.179565
+is_rules4,stage 4 rule added,scibert,scibert+rules4,False,True,190,196,4,10,0.179565
+is_rules4,stage 4 rule added,modernbert-base+cw+s1,modernbert-base+cw+s1+rules4,False,True,190,196,4,10,0.179565
+is_rules4,stage 4 rule added,bert-base+cw,bert-base+cw+rules4,False,True,189,195,4,10,0.179565
+is_rules4,stage 4 rule added,bioclinical-modernbert-base,bioclinical-modernbert-base+rules4,False,True,189,195,4,10,0.179565
+is_rules4,stage 4 rule added,longformer-base,longformer-base+rules4,False,True,189,195,4,10,0.179565
+is_rules4,stage 4 rule added,biomedbert,biomedbert+rules4,False,True,188,194,4,10,0.179565
+is_rules4,stage 4 rule added,modernbert-base,modernbert-base+rules4,False,True,188,194,4,10,0.179565
+is_rules4,stage 4 rule added,clinical-longformer,clinical-longformer+rules4,False,True,187,193,4,10,0.179565
+is_rules4,stage 4 rule added,bio-clinicalbert,bio-clinicalbert+rules4,False,True,187,193,4,10,0.179565
+is_rules4,stage 4 rule added,distilbert-base,distilbert-base+rules4,False,True,187,193,4,10,0.179565
+is_rules4,stage 4 rule added,fusion_tfidf_rad,fusion_tfidf_rad+rules4,False,True,187,193,4,10,0.179565
+is_rules4,stage 4 rule added,tfidf_logreg,tfidf_logreg+rules4,False,True,185,191,4,10,0.179565
+is_rules4,stage 4 rule added,bert-base,bert-base+rules4,False,True,184,190,4,10,0.179565
+is_rules4,stage 4 rule added,modernbert-base+cw+s2,modernbert-base+cw+s2+rules4,False,True,184,190,4,10,0.179565
+is_rules4,stage 4 rule added,gatortron-base+lr2e-05,gatortron-base+lr2e-05+rules4,False,True,181,187,4,10,0.179565
+is_rules4,stage 4 rule added,medgemma-1.5-4b-it,medgemma-4b-it+rules4,False,True,175,179,6,10,0.454498
+is_rules4,stage 4 rule added,medgemma-4b-it,medgemma-1.5-4b-it+rules4,False,True,178,175,12,9,0.663624
+is_rules4,stage 4 rule added,llama-3.3-70b-instruct,llama-3.3-70b-instruct+rules4,False,True,187,186,1,0,1
+is_rules4,stage 4 rule added,medgemma-4b-it,medgemma-4b-it+rules4,False,True,178,179,3,4,1
+is_rules4,stage 4 rule added,medgemma-1.5-4b-it,medgemma-1.5-4b-it+rules4,False,True,175,175,1,1,1
+seed_code,another training seed (noise floor),modernbert-base+cw+rules4,modernbert-base+cw+s2+rules4,0,2,196,190,7,1,0.0703125
+seed_code,another training seed (noise floor),modernbert-base+cw+s1+rules4,modernbert-base+cw+s2+rules4,1,2,196,190,7,1,0.0703125
+seed_code,another training seed (noise floor),modernbert-base+cw,modernbert-base+cw+s2,0,2,190,184,7,1,0.0703125
+seed_code,another training seed (noise floor),modernbert-base+cw+s1,modernbert-base+cw+s2,1,2,190,184,7,1,0.0703125
+seed_code,another training seed (noise floor),modernbert-base+cw+rules4,modernbert-base+cw+s1+rules4,0,1,196,196,4,4,1
+seed_code,another training seed (noise floor),modernbert-base+cw,modernbert-base+cw+s1,0,1,190,190,4,4,1
+size_code,larger model,modernbert-base+rules4,modernbert-large+rules4,base,large,194,203,2,11,0.0224609
+size_code,larger model,modernbert-base,modernbert-large,base,large,188,197,2,11,0.0224609
+size_code,larger model,bioclinical-modernbert-base+rules4,bioclinical-modernbert-large+rules4,base,large,195,201,4,10,0.179565
+size_code,larger model,bioclinical-modernbert-base,bioclinical-modernbert-large,base,large,189,195,4,10,0.179565
+size_code,larger model,distilbert-base+rules4,bert-base+rules4,small,base,193,190,5,2,0.453125
+size_code,larger model,distilbert-base,bert-base,small,base,187,184,5,2,0.453125
