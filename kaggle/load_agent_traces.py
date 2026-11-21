@@ -87,8 +87,21 @@ def _is_tool_error(output) -> bool:
     return isinstance(output, dict) and output.get("status") == "error"
 
 
+NO_TEST_SPEC = "missing test specification"
+
+
+def _run_error(result: dict):
+    """What stopped the run. The kernel's "Missing test specification" note says only that the kernel could not grade:
+    our own repositories' tasks keep their tests out of the agent's bundle and are graded afterwards (#881, #894). It
+    is never the run's error; the agent's own error, when there is one, comes first in `_error` anyway."""
+    error = _error(result)
+    if error not in (None, "None") and NO_TEST_SPEC in str(error).lower():
+        return None
+    return error
+
+
 def _ended_code(result: dict) -> str:
-    code = _error_code(_error(result))
+    code = _error_code(_run_error(result))
     if code == "timeout":
         return "time_cap"
     if code != "none":
@@ -183,14 +196,16 @@ def task_trace(task_dir: Path, run_label: str, agent_name: str, model_name: str 
     patch = str(result.get("patch") or "")
     outcome = "solved" if resolved else ("no_patch" if not patch.strip() else "patch_failed")
     ended = _ended_code(result)
+    kernel_note = " ".join(str(result.get(k) or "") for k in ("error_text", "error")).lower()
     issue = next((s.get("message") for s in steps if s.get("source") == "user"), "") or ""
     system = next((s.get("message") for s in steps if s.get("source") == "system" and s.get("message")), "") or ""
     tags = {"trace_key": trace_key(run_label, agent_name, iid), "run_label": run_label, "agent_name": agent_name,
             "instance_id": iid, "repo_name": iid.rsplit("_", 1)[0], "outcome_code": outcome, "ended_code": ended,
-            "is_resolved": str(resolved).lower(), "verdict_source_code": source}
+            "is_resolved": str(resolved).lower(), "verdict_source_code": source,
+            "kernel_grade_code": "no_test_spec" if NO_TEST_SPEC in kernel_note else "graded"}
     root = {"name": iid, "inputs": {"issue": telemetry.scrub(issue), "system_prompt": telemetry.scrub(system)},
             "outputs": {"outcome_code": outcome, "ended_code": ended, "patch": telemetry.scrub(patch),
-                        "error_text": telemetry.scrub(str(_error(result) or ""))},
+                        "error_text": telemetry.scrub(str(_run_error(result) or ""))},
             "attributes": {"gen_ai.operation.name": "invoke_agent", "gen_ai.agent.name": agent_name,
                            "agent_seconds": _number(result.get("agent_phase_seconds")),
                            "tool_call_count": _number(result.get("tool_call_count"), int),
