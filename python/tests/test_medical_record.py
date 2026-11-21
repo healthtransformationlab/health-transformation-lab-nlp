@@ -68,13 +68,13 @@ def test_seeded_and_reproducible():
 
 
 def test_own_random_stream_leaves_the_global_state_alone(monkeypatch):
-    # Instance Random is fine; module-level draws must not happen (xdist made getstate
-    # comparisons flake on the databricks-runtime job when another draw landed between lines).
+    # Instance Random is fine; module-level data draws must not happen. Do not patch
+    # getrandbits: OpenTelemetry span IDs call it under @traced (databricks-runtime job).
     def boom(*_a, **_k):
         raise AssertionError("global random used")
 
     for name in ("random", "randint", "randrange", "choice", "choices", "sample", "shuffle",
-                 "uniform", "gauss", "normalvariate", "expovariate", "getrandbits"):
+                 "uniform", "gauss", "normalvariate", "expovariate"):
         monkeypatch.setattr(random, name, boom)
     mr.medical_records(_people(50, seed=2), seed=42)
 

@@ -26,12 +26,13 @@ def built():
 
 
 def test_same_seed_same_extract_and_no_global_random_used(built, monkeypatch):
-    # Prefer a hard fail if module-level random is touched; getstate comparisons flake under xdist.
+    # Hard-fail if module-level data draws happen. Leave getrandbits alone: OpenTelemetry
+    # span IDs call it under @traced (which made getstate comparisons flake in CI).
     def boom(*_a, **_k):
         raise AssertionError("global random used")
 
     for name in ("random", "randint", "randrange", "choice", "choices", "sample", "shuffle",
-                 "uniform", "gauss", "normalvariate", "expovariate", "getrandbits"):
+                 "uniform", "gauss", "normalvariate", "expovariate"):
         monkeypatch.setattr(random, name, boom)
     again, truth = od.build(SMALL, seed=7)
     tables, truth0 = built
