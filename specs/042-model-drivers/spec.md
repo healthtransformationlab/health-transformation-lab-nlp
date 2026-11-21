@@ -58,6 +58,17 @@ ranking, the tests or the drivers are, and the LLM reader calls aren't traces th
 - **Independent test:** with a fake client the loader writes each table with its comments and each trace once; a
   second load writes no trace. On the dev workspace the row counts and the leader's 203 match the CSVs.
 
+<<<<<<< HEAD
+### US5 - The README, the study page and the PerioBench deck explain the three tests in plain words (P1) #868
+
+- The owner asked on November 17 for the README and the website drill-down to explain the three use cases
+  (phenotyping, de-identification, tooth loss), after asking how BERT is used for tooth loss (it isn't).
+- The landing README has one table (question, input, models, best result, drill-down) and stays within its 80 lines.
+  The study page has a section that explains each test in plain words, says how BERT is used in each, and shows how
+  the three connect. The deck, which healthtransformationlab.org serves, gets a slide for the three tests.
+- **Independent test:** `test_decks.py` (80 lines, the links, the deck current, every slide has notes and says
+  synthetic); every number on the slide is one the study page already cites.
+=======
 ### US3 - Each de-identification tool ranked, paired on the same identifiers, with what drives its leaks (P2) #866
 
 - Committed de-identification scores are totals per tool, so the local tools (regex, regex_v2, Presidio, hf_stanford,
@@ -69,30 +80,7 @@ ranking, the tests or the drivers are, and the LLM reader calls aren't traces th
   category, tier and note effects; a driver fit by out-of-fold AUC grouped by note. `docs/deid_drivers.md`.
 - Eight `gold_perio_bench.deid_*` tables, every column commented, with the batch key.
 - **Independent test:** `python/tests/test_deid_drivers.py`; `scripts/76_deid_drivers.py --check`.
-
-### US4 - Should the tooth-loss model use another kind of model? (P2) #867
-
-- The tooth-loss model (spec 029) in the same format, on the plan's held-out teeth, for both label sets and both
-  predictor sets: each model's AUC, Brier score and calibration slope, with patient-bootstrap 95% CIs. Paired AUC
-  and Brier differences against the best pre-specified model on the same resamples. Drivers by SHAP, by permutation
-  and by the AUC lost when refitting without each one. Stability over 5 generator seeds.
-- Post-hoc candidates (elastic-net and spline logistic, random forest, histogram gradient boosting, EBM) carry
-  `is_prespecified = false` and sit outside the analysis plan; adding one to it needs a dated plan amendment.
-- `docs/tooth_loss_drivers.md`, four `tooth_loss_*` tables in `data/datasets/model_drivers/`, loaded into
-  `health_transformation_lab.gold_opendental_perio` with comments, and the MLflow experiment
-  `/Shared/tooth-loss-model-comparison` (one run per model; a second load of the same commit skips them).
-- **Independent test:** `python/tests/test_tooth_loss_drivers.py`: the plan's two models reproduce
-  `tooth_loss_model.run` exactly; `scripts/78_tooth_loss_drivers.py --check` exits 1 when an output is stale.
-
-### US5 - The README, the study page and the PerioBench deck explain the three tests in plain words (P1) #868
-
-- The owner asked on November 17 for the README and the website drill-down to explain the three use cases
-  (phenotyping, de-identification, tooth loss), after asking how BERT is used for tooth loss (it isn't).
-- The landing README has one table (question, input, models, best result, drill-down) and stays within its 80 lines.
-  The study page has a section that explains each test in plain words, says how BERT is used in each, and shows how
-  the three connect. The deck, which healthtransformationlab.org serves, gets a slide for the three tests.
-- **Independent test:** `test_decks.py` (80 lines, the links, the deck current, every slide has notes and says
-  synthetic); every number on the slide is one the study page already cites.
+>>>>>>> origin/main
 
 ## Requirements
 
