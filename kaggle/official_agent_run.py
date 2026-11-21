@@ -45,6 +45,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 REPO_ROOT = HERE.parent
 OUT_DIR = REPO_ROOT / "data" / "tasks" / "official_agent_runs"
+AGENT_COMMIT_FILE = "agent_commit_sha.txt"   # written at push; collect reads this, not today's checkout (028 BUG10 #808)
 WHEELHOUSE = "metric/gemma-4-developer-agent-wheelhouse"                 # the competition's evaluator and vLLM
 MODEL_SOURCE = "google/gemma-4/Other/gemma-4-e4b-it-qat-w4a16-ct/2"      # as the starter notebook attaches it
 # The models the competition allows, as official_agent_kernel.py lists them. A kernel attaches the one the submission
@@ -484,6 +485,42 @@ def _generation_used(defaults: dict | None, submission: dict) -> dict:
 GENERATION_SETTINGS = ("max_output_tokens", "thinking_budget")   # set in agent.yaml, not in eval_config.yaml
 
 
+def agent_commit_of(agent_dir: Path) -> str | None:
+    """HEAD of the agent checkout, or None if git cannot answer."""
+    r = subprocess.run(["git", "-C", str(agent_dir), "rev-parse", "HEAD"], capture_output=True, text=True, check=False)
+    return (r.stdout or "").strip() or None
+
+
+def record_agent_commit(work: Path, agent_dir: Path) -> str:
+    """At push: persist the agent commit this batch bundled (028 BUG10 #808). Returns the SHA."""
+    sha = agent_commit_of(agent_dir)
+    if not sha:
+        raise SystemExit(f"could not read HEAD from --agent-dir {agent_dir}: record the agent commit before push")
+    work.mkdir(parents=True, exist_ok=True)
+    (work / AGENT_COMMIT_FILE).write_text(sha + "\n", encoding="utf-8")
+    return sha
+
+
+def resolve_agent_commit(work: Path, agent_dir: Path, override: str | None = None, *, batch_name: str | None = None
+                         ) -> str:
+    """At collect: the commit recorded at push, or `--agent-commit`. Never today's checkout alone.
+
+    Fails naming the batch when neither a recorded file nor an override is present (batches pushed before #808
+    need `--agent-commit`)."""
+    if override:
+        return override.strip()
+    path = work / AGENT_COMMIT_FILE
+    if path.is_file():
+        sha = path.read_text(encoding="utf-8").strip()
+        if sha:
+            return sha
+    name = batch_name or work.name
+    raise SystemExit(
+        f"batch {name!r}: no recorded agent commit in {path} and --agent-commit was not given. "
+        "Push records the commit it bundled; for an older batch pass --agent-commit <sha> (028 BUG10 #808)."
+    )
+
+
 def settings_for(result: dict, seed: int | None, drawn: list[str], pool_count: int, machine_shape: str | None,
                  docker_image: str | None, competition: str | None, agent_commit: str | None,
                  source: str = "published", tasks_per_kernel: int = 1, colab: bool = False,
@@ -885,6 +922,7 @@ def run_batch(a, api, user: str, ids: list[str], tasks: dict, manifest: dict, ov
     if not a.collect:
         shutil.rmtree(work, ignore_errors=True)
         key = os.urandom(32)   # this run's; in the pushed kernel only, never in the dataset or the repository
+        record_agent_commit(work, a.agent_dir)   # collect must use this SHA, not a later checkout (028 BUG10 #808)
 
         def files_of(task: dict):
             stem = bundle.code_index_name(task["repo"], task["base_commit"])
@@ -996,8 +1034,7 @@ def run_batch(a, api, user: str, ids: list[str], tasks: dict, manifest: dict, ov
         print(f"-> {path.relative_to(REPO_ROOT)}")
         good = next((r for r in done.values() if r.get("budgets")), None)
         if good and (a.sample or getattr(a, "label", None)):
-            commit = subprocess.run(["git", "-C", str(a.agent_dir), "rev-parse", "HEAD"], capture_output=True,
-                                    text=True, check=False).stdout.strip() or None
+            commit = resolve_agent_commit(work, a.agent_dir, getattr(a, "agent_commit", None), batch_name=name)
             settings = settings_for(good, a.seed, list(ids), len(manifest), a.machine_shape, a.docker_image,
                                     a.competition, commit, a.source, tasks_per_kernel=len(order), colab=colab,
                                     generation=_generation_used(good.get("generation_defaults"), sub_gen),
@@ -1031,6 +1068,8 @@ def main() -> int:
     ap.add_argument("--seed", type=int, default=20261110)
     ap.add_argument("--plan-only", action="store_true", help="print the tasks and stop: nothing is uploaded or run")
     ap.add_argument("--collect", action="store_true", help="don't upload or push: collect kernels already run")
+    ap.add_argument("--agent-commit", help="with --collect: agent commit SHA this batch bundled (overrides the "
+                                          "file written at push; required for batches pushed before 028 BUG10 #808)")
     ap.add_argument("--concurrency", type=int, default=2, help="kernels running at once (Kaggle allows two GPU sessions)")
     ap.add_argument("--machine-shape", default=STARTER_MACHINE_SHAPE,
                     help="the accelerator to ask for; the kernel records the GPUs it actually got")
@@ -1202,8 +1241,8 @@ def main() -> int:
     print(f"-> {out.relative_to(REPO_ROOT)}")
     good = next((r for r in results.values() if r.get("budgets")), None)
     if good and a.sample:
-        commit = subprocess.run(["git", "-C", str(a.agent_dir), "rev-parse", "HEAD"], capture_output=True, text=True,
-                                check=False).stdout.strip() or None
+        # Per-task kernels: no batch work folder; --agent-commit or current HEAD (legacy one-kernel-per-task path)
+        commit = getattr(a, "agent_commit", None) or agent_commit_of(a.agent_dir)
         settings = settings_for(good, a.seed, ids, len(manifest), a.machine_shape, a.docker_image, a.competition, commit,
                                 generation=_generation_used(good.get("generation_defaults"), sub_gen),
                                 model_source=a.model_source)
