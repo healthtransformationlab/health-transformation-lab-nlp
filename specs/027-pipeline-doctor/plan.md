@@ -27,8 +27,9 @@ notifications.
 | Docs: the four tables, the ladder, how to add an incident | `docs/dataops.md` |
 
 ### Classification rules (US1), in order; the first that fires wins
-1. `config`: `error_type_name` in {KeyError, ValueError, MissingSetting} or `error_text` mentions a
-   setting, secret or connection string.
+1. `config`: `error_type_name` in {KeyError, ValueError, MissingSetting, ModuleNotFoundError, ImportError}
+   or `error_text` mentions a setting, secret, connection string, or "no module named" (missing package =
+   the job's environment / declared deps; 027 BUG2 #832 — not a new `dependency` class).
 2. `platform`: `error_type_name` in {Py4JException, OSError, ResourceExhausted, CUDAError} or the text
    says GPU, Illegal seek, signal, killed, memory.
 3. `schema_drift`: `schema_sha256` differs from the last ok run of the pipeline.
