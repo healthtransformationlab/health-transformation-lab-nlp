@@ -16,9 +16,10 @@
 
 ## US3 - the 414 traces and their assessments move there (#858)
 
-- [ ] T006 [US3] Reload the 414 traces' run folders with the loader into `/Shared/coding-agent-runs`
-- [ ] T007 [US3] Score them again (code scorers, then the grounding judge) and write the count table
-- [ ] T008 [US3] Record the counts against the old experiment, the duration and the serverless cost in the PR
+- [x] T006 [US3] Reload the 414 traces' run folders with the loader into `/Shared/coding-agent-runs`
+- [x] T007 [US3] Score them again (code scorers, then the grounding judge) and write the count table
+- [x] T008 [US3] Record the counts against the old experiment, the duration and the serverless cost in the PR
+  (Reload + rescore done before ADR 0012; this PR adds the fallback migrate notebook and its test.)
 
 ## US4 - SQL views (#859)
 
