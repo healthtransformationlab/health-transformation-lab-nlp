@@ -22,9 +22,9 @@
 
 ## US4 - SQL views (#859)
 
-- [ ] T012 [US4] List the span attribute keys from the migrated spans
-- [ ] T013 [US4] Failing test `python/tests/test_agent_trace_views.py`
-- [ ] T014 [US4] `databricks/setup/agent_trace_views.sql`; check the row and solved counts against US3
+- [x] T012 [US4] List the span attribute keys from the migrated spans
+- [x] T013 [US4] Failing test `python/tests/test_agent_trace_views.py`
+- [x] T014 [US4] `databricks/setup/agent_trace_views.sql`; check the row and solved counts against US3
 
 ## Cleanup
 
