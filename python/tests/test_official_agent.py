@@ -286,6 +286,16 @@ def test_a_development_set_bundle_holds_the_submission_and_the_order_and_no_task
     assert json.loads((out / "dataset-metadata.json").read_text())["id"] == "someone/htlnlp-official-devset"
 
 
+def test_a_competition_batch_keeps_apache_license_and_notice_when_present(ob, tmp_path):
+    """A public Apache-2.0 archive (Patchsmith exp025) ships LICENSE.txt and NOTICE.txt; keep them in the pack."""
+    sub = _submission(tmp_path)
+    (sub / "LICENSE.txt").write_text("Apache-2.0\n")
+    (sub / "NOTICE.txt").write_text("Copyright notice\n")
+    out = ob.build_competition_batch(["rich_2"], sub, tmp_path / "b", "someone")
+    assert (out / "submission" / "LICENSE.txt").read_text() == "Apache-2.0\n"
+    assert (out / "submission" / "NOTICE.txt").read_text() == "Copyright notice\n"
+
+
 def test_the_kernel_stages_a_development_task_from_the_mounted_competition(tmp_path):
     ns = _kernel_functions("find_competition", "stage_competition_task")
     comp = tmp_path / "input" / "gemma-4-developer-agent"

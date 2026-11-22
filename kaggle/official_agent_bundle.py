@@ -37,7 +37,7 @@ from pathlib import Path
 
 TASK_FIELDS = ("instance_id", "repo", "base_commit", "problem_statement", "hints_text", "created_at")
 SUBMISSION_ENTRIES = ("agent.yaml", "eval_config.yaml", "eval_config.yml", "prompts", "sub_agents", "configs",
-                      "skills", "adapters")
+                      "skills", "adapters", "LICENSE.txt", "NOTICE.txt")
 
 
 
