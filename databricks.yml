@@ -135,6 +135,8 @@ targets:
     default: true
     presets:
       trigger_pause_status: PAUSED
+      tags:
+        project: health-transformation-lab-nlp   # #711: account-wide cost-by-project views
     variables:
       judge_endpoint: databricks-meta-llama-3-3-70b-instruct   # pay-per-token; synthetic, de-identified notes only
     resources:
@@ -190,6 +192,9 @@ targets:
   # Shared test environment. Deployed by CI from main, runs as the service principal.
   uat:
     mode: production
+    presets:
+      tags:
+        project: health-transformation-lab-nlp   # #711: account-wide cost-by-project views
     workspace:
       root_path: /Workspace/Shared/.bundle/${bundle.name}/${bundle.target}
     run_as:
@@ -223,6 +228,9 @@ targets:
   # Production. Manual deploy from a tagged commit, approval required in CI.
   prod:
     mode: production
+    presets:
+      tags:
+        project: health-transformation-lab-nlp   # #711: account-wide cost-by-project views
     workspace:
       root_path: /Workspace/Shared/.bundle/${bundle.name}/${bundle.target}
     run_as:
