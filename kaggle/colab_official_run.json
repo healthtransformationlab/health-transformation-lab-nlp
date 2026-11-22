@@ -9,7 +9,7 @@
    "gpu": "A100",
    "model": "google/gemma-4/other/gemma-4-31b-it-qat-w4a16-ct/2",
    "network_open_acknowledged": true,
-   "resume_session": "20261122T012136Z-a61971e2"
+   "resume_session": "20261122T051603Z-d62504bf"
   },
   {
    "label": "devset-exp025-c2",
