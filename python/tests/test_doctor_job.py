@@ -331,6 +331,14 @@ PRICES = pd.DataFrame([
     columns=["sku_name", "usage_unit", "price_usd", "price_start_time", "price_end_time"])
 
 
+def test_billing_costs_is_pipeline_doctors():   # #711: shared package owns the priced-run math
+    from pipeline_doctor.billing import billing_costs as shared
+
+    assert doctor_job.billing_costs is shared
+    import importlib.metadata as md
+    assert tuple(int(p) for p in md.version("pipeline-doctor").split(".")[:3]) >= (0, 5, 0)
+
+
 def test_a_run_costs_its_usage_at_the_list_price_in_effect_when_it_was_used():
     usage = _usage(["1", "JOBS_SERVERLESS", "DBU", 2.0, T("2026-09-15", tz="UTC")],     # old price: 0.70
                    ["1", "JOBS_SERVERLESS", "DBU", 1.0, T("2026-10-15", tz="UTC")],     # new price: 0.40

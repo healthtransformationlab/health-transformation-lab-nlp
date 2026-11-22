@@ -42,12 +42,15 @@ def test_three_targets_with_expected_modes():
     # No development mode in dev: it prefixes every name ([dev <user>] jobs,
     # dev_<user>_ catalogs/schemas/models). The workspace separates environments.
     assert "mode" not in t["dev"] and t["dev"]["default"]
-    assert t["dev"]["presets"] == {"trigger_pause_status": "PAUSED"}
+    assert t["dev"]["presets"]["trigger_pause_status"] == "PAUSED"
     assert "name_prefix" not in root.get("presets", {})
     for env in ("uat", "prod"):
         assert t[env]["mode"] == "production"
         assert "service_principal_name" in t[env]["run_as"]
         assert "/Shared/" in t[env]["workspace"]["root_path"]
+    # #711: every job gets the project tag so account-wide cost views can split this lab's spend
+    for env, tgt in t.items():
+        assert tgt["presets"]["tags"]["project"] == "health-transformation-lab-nlp", env
 
 
 def test_every_target_uses_the_same_catalog_and_legacy_domain():
