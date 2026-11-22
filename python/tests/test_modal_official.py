@@ -161,8 +161,9 @@ def _summary(spent):
 
 
 def test_a_run_within_both_limits_starts_without_approval(mo):
-    limits = mo.load_auto_limits()                                   # from ops/cost_settings.yaml (#806, #825)
+    limits = mo.load_auto_limits()                                   # from ops/cost_settings.yaml (#806, #825, #845)
     P, M = limits["per_run"], limits["monthly"]
+    assert P == 10 and M == 60                                       # #845: monthly covers four 10-USD chunks
     assert 0 < P <= M
     needed, reason = mo.approval_needed(P, _summary(str(M - P - 1)))
     assert needed is False and "without approval" in reason
