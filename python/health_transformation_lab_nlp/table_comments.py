@@ -43,6 +43,8 @@ OTHER = {
                                   "Benchmark job. Synthetic data only.",
     ("silver_opendental_perio", "load_log"): "One row per table per Open Dental extract load: what was read and "
                                              "how many rows, appended by the Open Dental load job (spec 029).",
+    ("ops_agent_trace", "trace_migration_check"): "One row per experiment and assessment name after a US3 migrate "
+                                                   "or reload check (spec 041 #858). Delete-then-append by run_id.",
 }
 
 

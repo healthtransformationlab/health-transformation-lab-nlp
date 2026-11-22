@@ -29,6 +29,8 @@ from datetime import datetime, timezone
 import mlflow
 from mlflow.tracking import MlflowClient
 
+from health_transformation_lab_nlp import table_comments
+
 dbutils.widgets.text("source_experiment_id", "")  # noqa: F821
 dbutils.widgets.text("target_experiment_name", "/Shared/coding-agent-runs")  # noqa: F821
 dbutils.widgets.text("git_commit", "")  # noqa: F821
@@ -115,6 +117,7 @@ pdf = pd.DataFrame(rows, columns=[
     "run_id", "run_ts", "git_commit_sha",
 ])
 spark.createDataFrame(pdf).write.mode("append").saveAsTable(CHECK)
+table_comments.apply(spark, CHECK)  # noqa: F821  spec 034: comments after every write
 display(pdf)  # noqa: F821
 
 # Surface migrate skips when the helper left a table
