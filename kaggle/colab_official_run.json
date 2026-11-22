@@ -9,7 +9,7 @@
    "gpu": "A100",
    "model": "google/gemma-4/other/gemma-4-31b-it-qat-w4a16-ct/2",
    "network_open_acknowledged": true,
-   "resume_session": "20261122T051603Z-d62504bf"
+   "resume_session": "20261122T203027Z-692f8bcf"
   },
   {
    "label": "devset-exp025-c2",
@@ -339,7 +339,8 @@
    "kernel_dataset": "jcblearning/htlnlp-colab-kernel-devset-cpub-c4",
    "gpu": "A100",
    "model": "google/gemma-4/other/gemma-4-31b-it-qat-w4a16-ct/2",
-   "network_open_acknowledged": true
+   "network_open_acknowledged": true,
+   "resume_session": "20261118T182244Z-551f864f"
   },
   {
    "label": "devset-c31bt-thin39",
