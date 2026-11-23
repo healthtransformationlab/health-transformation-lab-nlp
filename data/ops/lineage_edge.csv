@@ -12,3 +12,6 @@ gold_perio_bench.benchmark_metric,docs/edr/README.md leaderboard,consumer,study_
 gold_perio_bench.deid_score,dq grader dashboard,consumer,deid_ai
 gold_perio_bench.nhanes_perio,prevalence report,consumer,nhanes_perio
 lakebase.perio_chart,perio chart app,consumer,load_lakebase
+benchmarks/access_bench/items,gold_access_bench.dim_access_question,file,access_llm_batch
+benchmarks/access_bench/items,gold_access_bench.fact_access_answer,file,access_llm_batch
+gold_access_bench.fact_access_answer,access bench leaderboard,consumer,access_llm_batch

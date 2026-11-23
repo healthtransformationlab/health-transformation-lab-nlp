@@ -14,7 +14,7 @@
 - Benchmark order: PerioBench, OralHealthBench, AccessBench.
 - Default job `mode=simulated`; live needs explicit widget value and respects `max_usd`.
 - Column names follow AGENTS.md suffixes; tables singular in `gold_access_bench`.
-- No CareQuest / org affiliation language; no clinical “diagnosis” wording.
+- No employer or organization affiliation language; no clinical “diagnosis” wording.
 
 ---
 
