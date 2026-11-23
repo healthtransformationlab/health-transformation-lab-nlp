@@ -19,6 +19,7 @@ erDiagram
     fact_pipeline_run ||--o| fact_pipeline_signal : "run_id"
     fact_pipeline_run ||--o| fact_remediation_decision : "run_id (failed runs)"
     dim_study_note }o..o{ benchmark_metric : "run_id (its test split)"
+    dim_access_question ||--o{ fact_access_answer : "question_id"
     review_key
     dim_result_file
     fact_prediction
@@ -51,5 +52,7 @@ erDiagram
     fact_digest_item
     fact_digest_message
     fact_tooth_loss_prediction
+    dim_access_question
+    fact_access_answer
     dim_study_note
     benchmark_metric

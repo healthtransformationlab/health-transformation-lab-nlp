@@ -536,6 +536,44 @@ TABLES = {
             C("run_ts", "timestamp", "when the job ran"),
             C("git_commit_sha", "string", "commit the job was deployed from"),
         ]),
+    # spec 043 (#917): AccessBench LLM batch; schema gold_access_bench, synthetic prompts only
+    "dim_access_question": Table(
+        "access", "Schema gold_access_bench. One per AccessBench question_id in a batch run",
+        "AccessBench LLM batch (16_access_llm_batch.py): replace by run_id", [
+            C("question_id", "string", "Access fixture id (ACC_…)", "PK"),
+            C("domain_code", "string", "access domain (insurance_cost, provider_travel, …)"),
+            C("persona_name", "string", "synthetic persona label"),
+            C("level_code", "string", "L1 · L2 · L3"),
+            C("key_point_count", "bigint", "key points on the rubric (up to 5)"),
+            C("source_text", "string", "published evidence source cited on the fixture"),
+            C("is_simulated", "boolean", "true: fixture is synthetic"),
+            C("run_id", "string", "Databricks job run id: the batch key", "PK"),
+            C("run_ts", "timestamp", "when the batch ran"),
+            C("git_commit_sha", "string", "commit the job was deployed from"),
+        ]),
+    "fact_access_answer": Table(
+        "access", "Schema gold_access_bench. One per (question, answering endpoint, run)",
+        "AccessBench LLM batch (16_access_llm_batch.py): replace by run_id", [
+            C("question_id", "string", "Access fixture id (ACC_…)", "PK,FK"),
+            C("answering_endpoint_name", "string", "Model Serving endpoint that wrote the answer", "PK"),
+            C("answer_text", "string", "model (or simulated) answer text"),
+            C("covered_key_point_count", "bigint", "key points the judge marked covered"),
+            C("score_ratio", "double", "covered / key points, 0 to 1"),
+            C("harm_code", "string", "S0 · S1 · S2"),
+            C("red_flag_hit_text", "string", "JSON list of red-flag hit booleans"),
+            C("is_phi_leak", "boolean", "true if planted synthetic PHI appeared in the answer"),
+            C("judge_endpoint_name", "string", "endpoint that graded key points (or sim:judge)"),
+            C("prompt_version_code", "string", "access-keypoints-v1"),
+            C("latency_seconds", "double", "answer call latency"),
+            C("input_token_count", "bigint", "prompt tokens for the answer call"),
+            C("output_token_count", "bigint", "completion tokens for the answer call"),
+            C("cost_usd", "double", "estimated USD for the answer call"),
+            C("is_simulated", "boolean", "true when mode=simulated (no live model call)"),
+            C("error_text", "string", "empty unless the call or budget gate failed"),
+            C("run_id", "string", "Databricks job run id: the batch key", "PK"),
+            C("run_ts", "timestamp", "when the batch ran"),
+            C("git_commit_sha", "string", "commit the job was deployed from"),
+        ]),
     # spec 031: the Benchmark job (study_benchmark, 01_run_benchmark.py); synthetic study notes and their scores
     "dim_study_note": Table(
         "study", "One per synthetic study note, with its generator label and split", "Benchmark: overwrite", [
@@ -600,6 +638,7 @@ RELATIONSHIPS = [
     R("fact_pipeline_run", "fact_remediation_decision", ("run_id",), ("run_id",), "run_id (failed runs)", "||--o|"),
     R("dim_study_note", "benchmark_metric", ("run_id",), ("run_id",), "run_id (its test split)",
       "}o..o{", derived=True),
+    R("dim_access_question", "fact_access_answer", ("question_id",), ("question_id",), "question_id"),
 ]
 
 AREAS = {   # fill, legend label
@@ -613,6 +652,7 @@ AREAS = {   # fill, legend label
     "tooth": ("#E8F0DC", "gold_opendental_perio · tooth-loss model, synthetic (spec 029)"),
     "study": ("#EDEDF7", "gold · Benchmark job, synthetic study notes (spec 031)"),
     "agent": ("#F3EBDD", "gold · coding-agent task runs and their cost (specs 035, 036)"),
+    "access": ("#E6F2F5", "gold_access_bench · AccessBench LLM batch, synthetic (spec 043)"),
     "file": ("#E4E7EA", "file in git, not a table"),
 }
 
@@ -621,7 +661,7 @@ AREAS = {   # fill, legend label
 # results and their files on the left, the judge next, the data-quality grader (the biggest area) in the middle, and
 # the lab grader, the models and the run metadata on the right
 GROUP_COLUMNS = {"results": 0, "file": 0, "deid": 0, "study": 0, "judge": 1, "corpus": 1, "dq": 2,
-                 "lab": 3, "tooth": 3, "agent": 3, "ops": 3}
+                 "lab": 3, "tooth": 3, "agent": 3, "access": 3, "ops": 3}
 GROUPS = [(AREAS[area][1], col, [n for n, t in TABLES.items() if t.area == area])
           for area, col in GROUP_COLUMNS.items()]
 # kinds follow the gold prefixes (AGENTS.md, "SQL and data names"): fact_ one row per event, dim_ one row per thing,

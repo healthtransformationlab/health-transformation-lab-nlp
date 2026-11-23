@@ -66,4 +66,17 @@ scored = ak.score_verdict(ak.parse_verdict(raw, n_key_points=q["n_key_points"],
 Difficulty: optional `level` on the row; else `L3` when `knowledge_cutoff_sensitive` or
 the id ends `_H1`/`_H2`, otherwise `L2`. Category is always Access to care.
 
+## Databricks batch (spec 043)
+
+Job **Access LLM batch** (`databricks/notebooks/16_access_llm_batch.py`) scores up to five
+fixtures across answering endpoints into `gold_access_bench.dim_access_question` and
+`fact_access_answer`. Default `mode=simulated` (no Serving spend). Live mode uses
+pay-per-token endpoints and stops when `max_usd` is exceeded.
+
+```python
+from health_transformation_lab_nlp import access_batch
+out = access_batch.run(endpoints=["sim:llama"], limit=5, mode="simulated",
+                       run_id="local", run_ts=..., git_commit="...")
+```
+
 Real PHI is never allowed here.

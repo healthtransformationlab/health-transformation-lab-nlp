@@ -28,7 +28,8 @@ def test_the_model_declares_the_gold_tables_the_jobs_write():
                     # spec 031: the Benchmark job's tables
                     "dim_study_note", "benchmark_metric",
                     "fact_agent_task_run",
-                    "fact_digest_item", "fact_digest_message"}                                  # spec 027 T023                                                      # spec 036
+                    "fact_digest_item", "fact_digest_message",                                  # spec 027 T023 / 036
+                    "dim_access_question", "fact_access_answer"}                                # spec 043
 
 
 def test_every_relationship_joins_declared_columns():

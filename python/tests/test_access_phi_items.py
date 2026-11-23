@@ -18,7 +18,7 @@ REQUIRED = ("id", "domain", "persona", "prompt", "must_include", "red_flags",
 
 def test_simulated_access_phi_items_file_exists_and_loads():
     rows = api.load_items()
-    assert len(rows) >= 3
+    assert len(rows) >= 5
     assert all(r["is_simulated"] is True for r in rows)
     assert all(r["id"].startswith("ACC_") for r in rows)
 

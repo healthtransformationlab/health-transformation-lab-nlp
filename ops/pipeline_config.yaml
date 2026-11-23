@@ -122,6 +122,16 @@ pipelines:
     runbook_name: default
     data_label_code: synthetic
     output_names: [data/datasets/ai_predictions, data/datasets/llm_details]
+  access_llm_batch:              # spec 043: AccessBench 5-question LLM batch into gold_access_bench
+    owner_name: repo owner
+    sla_seconds: 604800
+    schedule_text: on demand
+    expectation_names: [conformance]
+    retry_max_count: 0
+    retry_interval_seconds: 0
+    runbook_name: default
+    data_label_code: synthetic
+    output_names: [gold_access_bench.dim_access_question, gold_access_bench.fact_access_answer]
   pipeline_doctor:               # spec 027 US5: reads run metadata only; never diagnoses its own runs
     owner_name: repo owner
     sla_seconds: 172800          # daily once the owner unpauses it; created paused

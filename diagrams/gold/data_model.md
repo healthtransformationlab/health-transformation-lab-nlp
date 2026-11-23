@@ -28,6 +28,7 @@ erDiagram
     fact_pipeline_run ||--o| fact_pipeline_signal : "run_id"
     fact_pipeline_run ||--o| fact_remediation_decision : "run_id (failed runs)"
     dim_study_note }o..o{ benchmark_metric : "run_id (its test split)"
+    dim_access_question ||--o{ fact_access_answer : "question_id"
     review_key
     dim_result_file
     fact_prediction
@@ -60,6 +61,8 @@ erDiagram
     fact_digest_item
     fact_digest_message
     fact_tooth_loss_prediction
+    dim_access_question
+    fact_access_answer
     dim_study_note
     benchmark_metric
 ```
@@ -90,6 +93,7 @@ erDiagram
     fact_pipeline_run ||--o| fact_pipeline_signal : "run_id"
     fact_pipeline_run ||--o| fact_remediation_decision : "run_id (failed runs)"
     dim_study_note }o..o{ benchmark_metric : "run_id (its test split)"
+    dim_access_question ||--o{ fact_access_answer : "question_id"
     review_key {
         bigint visit_id PK "review chart"
         string truth_status "the generator's truth"
@@ -586,6 +590,39 @@ erDiagram
         boolean is_synthetic "always true: synthetic data only"
         string run_id PK "Databricks job run id: the batch key"
         timestamp run_ts "when the job ran"
+        string git_commit_sha "commit the job was deployed from"
+    }
+    dim_access_question {
+        string question_id PK "Access fixture id (ACC_…)"
+        string domain_code "access domain (insurance_cost, provider_travel, …)"
+        string persona_name "synthetic persona label"
+        string level_code "L1 · L2 · L3"
+        bigint key_point_count "key points on the rubric (up to 5)"
+        string source_text "published evidence source cited on the fixture"
+        boolean is_simulated "true: fixture is synthetic"
+        string run_id PK "Databricks job run id: the batch key"
+        timestamp run_ts "when the batch ran"
+        string git_commit_sha "commit the job was deployed from"
+    }
+    fact_access_answer {
+        string question_id PK, FK "Access fixture id (ACC_…)"
+        string answering_endpoint_name PK "Model Serving endpoint that wrote the answer"
+        string answer_text "model (or simulated) answer text"
+        bigint covered_key_point_count "key points the judge marked covered"
+        double score_ratio "covered / key points, 0 to 1"
+        string harm_code "S0 · S1 · S2"
+        string red_flag_hit_text "JSON list of red-flag hit booleans"
+        boolean is_phi_leak "true if planted synthetic PHI appeared in the answer"
+        string judge_endpoint_name "endpoint that graded key points (or sim:judge)"
+        string prompt_version_code "access-keypoints-v1"
+        double latency_seconds "answer call latency"
+        bigint input_token_count "prompt tokens for the answer call"
+        bigint output_token_count "completion tokens for the answer call"
+        double cost_usd "estimated USD for the answer call"
+        boolean is_simulated "true when mode=simulated (no live model call)"
+        string error_text "empty unless the call or budget gate failed"
+        string run_id PK "Databricks job run id: the batch key"
+        timestamp run_ts "when the batch ran"
         string git_commit_sha "commit the job was deployed from"
     }
     dim_study_note {
@@ -1274,6 +1311,49 @@ Schema gold_opendental_perio. One per (synthetic patient, missing or labelled to
 |  | `is_synthetic` | boolean | always true: synthetic data only |
 | PK | `run_id` | string | Databricks job run id: the batch key |
 |  | `run_ts` | timestamp | when the job ran |
+|  | `git_commit_sha` | string | commit the job was deployed from |
+
+### `dim_access_question`
+
+Schema gold_access_bench. One per AccessBench question_id in a batch run. Written by: AccessBench LLM batch (16_access_llm_batch.py): replace by run_id.
+
+| Key | Column | Type | Description |
+|---|---|---|---|
+| PK | `question_id` | string | Access fixture id (ACC_…) |
+|  | `domain_code` | string | access domain (insurance_cost, provider_travel, …) |
+|  | `persona_name` | string | synthetic persona label |
+|  | `level_code` | string | L1 · L2 · L3 |
+|  | `key_point_count` | bigint | key points on the rubric (up to 5) |
+|  | `source_text` | string | published evidence source cited on the fixture |
+|  | `is_simulated` | boolean | true: fixture is synthetic |
+| PK | `run_id` | string | Databricks job run id: the batch key |
+|  | `run_ts` | timestamp | when the batch ran |
+|  | `git_commit_sha` | string | commit the job was deployed from |
+
+### `fact_access_answer`
+
+Schema gold_access_bench. One per (question, answering endpoint, run). Written by: AccessBench LLM batch (16_access_llm_batch.py): replace by run_id.
+
+| Key | Column | Type | Description |
+|---|---|---|---|
+| PK,FK | `question_id` | string | Access fixture id (ACC_…) |
+| PK | `answering_endpoint_name` | string | Model Serving endpoint that wrote the answer |
+|  | `answer_text` | string | model (or simulated) answer text |
+|  | `covered_key_point_count` | bigint | key points the judge marked covered |
+|  | `score_ratio` | double | covered / key points, 0 to 1 |
+|  | `harm_code` | string | S0 · S1 · S2 |
+|  | `red_flag_hit_text` | string | JSON list of red-flag hit booleans |
+|  | `is_phi_leak` | boolean | true if planted synthetic PHI appeared in the answer |
+|  | `judge_endpoint_name` | string | endpoint that graded key points (or sim:judge) |
+|  | `prompt_version_code` | string | access-keypoints-v1 |
+|  | `latency_seconds` | double | answer call latency |
+|  | `input_token_count` | bigint | prompt tokens for the answer call |
+|  | `output_token_count` | bigint | completion tokens for the answer call |
+|  | `cost_usd` | double | estimated USD for the answer call |
+|  | `is_simulated` | boolean | true when mode=simulated (no live model call) |
+|  | `error_text` | string | empty unless the call or budget gate failed |
+| PK | `run_id` | string | Databricks job run id: the batch key |
+|  | `run_ts` | timestamp | when the batch ran |
 |  | `git_commit_sha` | string | commit the job was deployed from |
 
 ### `dim_study_note`

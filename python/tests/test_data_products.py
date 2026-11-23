@@ -25,7 +25,8 @@ from health_transformation_lab_nlp.paths import CONTRACTS_DIR, REPO_ROOT
 GM = tc._load("gold_model")
 TABLES = [n for n in GM.TABLES if n not in tc.NOT_TABLES]
 SCRIPT = REPO_ROOT / "python" / "scripts" / "73_build_contracts.py"
-SCHEMAS = {"perio_bench": "gold_perio_bench", "opendental_perio": "gold_opendental_perio"}
+SCHEMAS = {"perio_bench": "gold_perio_bench", "opendental_perio": "gold_opendental_perio",
+           "access_bench": "gold_access_bench"}  # spec 043
 
 
 def schema_of(name: str) -> str:
@@ -115,7 +116,7 @@ def test_stale_products_names_edited_missing_and_extra_files_and_write_fixes_the
     assert dc.stale_products(root) == ["products/not_a_bench.odps.yaml", "products/opendental_perio.odps.yaml",
                                        "products/perio_bench.odps.yaml"]
     written = dc.write_products(root)
-    assert sorted(p.name for p in written) == ["opendental_perio.odps.yaml", "perio_bench.odps.yaml"]
+    assert sorted(p.name for p in written) == sorted(f"{b}.odps.yaml" for b in SCHEMAS)
     assert dc.stale_products(root) == []
     assert dc.stale_contracts(root) == []                  # the contracts are left alone
 

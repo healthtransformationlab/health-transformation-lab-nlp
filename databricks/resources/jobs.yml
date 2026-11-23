@@ -280,6 +280,32 @@ resources:
               digest_email: ${var.digest_email}
               telemetry: ${var.telemetry_exporter}   # spec 014: off / console / azure / otlp
 
+    # Spec 043 (#917): AccessBench 5-question LLM batch into gold_access_bench. Default mode is
+    # simulated (no Serving spend). Live mode uses pay-per-token Foundation Model endpoints.
+    access_llm_batch:
+      name: Access LLM batch
+      tags:
+        project: health-transformation-lab-nlp
+        data: synthetic
+        git_commit: ${bundle.git.commit}
+      tasks:
+        - task_key: score
+          notebook_task:
+            notebook_path: ../notebooks/16_access_llm_batch.py
+            base_parameters:
+              git_commit: ${bundle.git.commit}
+              run_id: "{{job.run_id}}"
+              catalog: ${resources.schemas.access_bench_gold.catalog_name}
+              schema: ${resources.schemas.access_bench_gold.name}
+              endpoints: ${var.access_llm_endpoints}
+              limit: ${var.access_llm_limit}
+              judge_endpoint: ${var.access_judge_endpoint}
+              max_usd: ${var.access_max_usd}
+              mode: ${var.access_llm_mode}
+              usd_per_million_in: ${var.access_usd_per_million_in}
+              usd_per_million_out: ${var.access_usd_per_million_out}
+              telemetry: ${var.telemetry_exporter}
+
     pipeline_doctor:
       name: Pipeline doctor
       max_concurrent_runs: 1

@@ -185,11 +185,16 @@ def test_jobs_write_to_the_bundle_schema():
     # Via the resource, not ${var.catalog}, so a deploy creates the schema before
     # any job that writes to it.
     root, jobs = _load()
+    access_catalog = "${resources.schemas.access_bench_gold.catalog_name}"
+    access_schema = "${resources.schemas.access_bench_gold.name}"
     seen = 0
     for name, task, _ in _tasks(root, jobs):
         p = task["notebook_task"].get("base_parameters", {})
         if "catalog" in p:
-            assert (p["catalog"], p["schema"]) == (GOLD_CATALOG, GOLD_SCHEMA), name
+            if name == "access_llm_batch":
+                assert (p["catalog"], p["schema"]) == (access_catalog, access_schema), name
+            else:
+                assert (p["catalog"], p["schema"]) == (GOLD_CATALOG, GOLD_SCHEMA), name
             seen += 1
         if "landing_schema" in p:
             assert p["landing_schema"] == LANDING, name
@@ -335,6 +340,22 @@ def test_medgemma_reader_takes_shots_and_lora_as_settings():
     assert p["rung"] == "${var.reader_rung}"
     assert p["shots"] == "${var.reader_shots}" and p["lora_train"] == "${var.reader_lora_train}"
     assert root["variables"]["reader_shots"]["default"] == "0" and root["variables"]["reader_lora_train"]["default"] == "0"
+
+
+def test_access_llm_batch_job_defaults_to_simulated_and_writes_gold_access_bench():
+    """Spec 043: five-question AccessBench batch; default mode simulated; gold_access_bench."""
+    root, jobs = _load()
+    j, _ = jobs["access_llm_batch"]
+    assert j["name"] == "Access LLM batch"
+    p = j["tasks"][0]["notebook_task"]["base_parameters"]
+    assert p["mode"] == "${var.access_llm_mode}"
+    assert root["variables"]["access_llm_mode"]["default"] == "simulated"
+    assert p["endpoints"] == "${var.access_llm_endpoints}"
+    assert p["limit"] == "${var.access_llm_limit}"
+    assert p["run_id"] == "{{job.run_id}}"
+    assert j["tasks"][0]["notebook_task"]["notebook_path"].endswith("16_access_llm_batch.py")
+    nb = (ROOT / "databricks/notebooks/16_access_llm_batch.py").read_text()
+    assert "access_batch.run" in nb and 'widgets.dropdown("mode", "simulated"' in nb
 
 
 def test_deid_ai_job_runs_the_databricks_methods_and_keeps_results_on_the_volume():
