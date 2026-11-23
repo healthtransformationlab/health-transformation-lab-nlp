@@ -1,7 +1,47 @@
 {
- "note": "Branch data/849-028-colab-public-bundle only (#849), never merged to main (ADR 0005). 2026-11-20: c31be8-calls50-hard36 and c31be8-nlp25-r2 were taken off this list before any session started them. Do not put them back. That pair is running on Kaggle (owner yes; the weekly hours expire Saturday 00:00 UTC). A tab must not start them. 2026-11-22: dropped e8fixtests-c1/c3/c4 and e8fixtests-nlp25 (owner dropped the 31B-e8-fix-tests check); kept e8fixtests-c2 finished output. Queued Patchsmith exp025 (denpugovkin/gemma-4-repair-lab-compare-before-you-submit archive sha256 c491b40c\u2026, Apache 2.0 LICENSE/NOTICE) as devset-exp025-c1..c4 on the same 129 practice tasks, chunks and seed as c31be8fix (#84).",
+ "note": "Branch data/849-028-colab-public-bundle only (#849), never merged to main (ADR 0005). 2026-11-20: c31be8-calls50-hard36 and c31be8-nlp25-r2 were taken off this list before any session started them. Do not put them back. That pair is running on Kaggle (owner yes; the weekly hours expire Saturday 00:00 UTC). A tab must not start them. 2026-11-22: dropped e8fixtests-c1/c3/c4 and e8fixtests-nlp25 (owner dropped the 31B-e8-fix-tests check); kept e8fixtests-c2 finished output. Queued Patchsmith exp025 (denpugovkin/gemma-4-repair-lab-compare-before-you-submit archive sha256 c491b40c\u2026, Apache 2.0 LICENSE/NOTICE) as devset-exp025-c1..c4 on the same 129 practice tasks, chunks and seed as c31be8fix (#84). 2026-11-23: queued 31B-lean (gemma-developer-agent-private PR 133, agents/31b_lean/package; submission zip sha256 8aa6ec51\u2026; 34 calls, 7.0 minutes) first: lean-nlp25 on our 25 tasks in the same seeded order as e8fix-nlp25, then devset-lean-c1..c4 on the same 129 practice tasks, chunks and seed as devset-c31be8fix-c1..c4.",
  "stop": false,
  "runs": [
+  {
+   "label": "lean-nlp25",
+   "bundle": "jcblearning/htlnlp-official-lean-nlp25",
+   "kernel_dataset": "jcblearning/htlnlp-colab-kernel-lean-nlp25",
+   "gpu": "A100",
+   "model": "google/gemma-4/other/gemma-4-31b-it-qat-w4a16-ct/2",
+   "network_open_acknowledged": true
+  },
+  {
+   "label": "devset-lean-c1",
+   "bundle": "jcblearning/htlnlp-official-devset-lean-c1",
+   "kernel_dataset": "jcblearning/htlnlp-colab-kernel-devset-lean-c1",
+   "gpu": "A100",
+   "model": "google/gemma-4/other/gemma-4-31b-it-qat-w4a16-ct/2",
+   "network_open_acknowledged": true
+  },
+  {
+   "label": "devset-lean-c2",
+   "bundle": "jcblearning/htlnlp-official-devset-lean-c2",
+   "kernel_dataset": "jcblearning/htlnlp-colab-kernel-devset-lean-c2",
+   "gpu": "A100",
+   "model": "google/gemma-4/other/gemma-4-31b-it-qat-w4a16-ct/2",
+   "network_open_acknowledged": true
+  },
+  {
+   "label": "devset-lean-c3",
+   "bundle": "jcblearning/htlnlp-official-devset-lean-c3",
+   "kernel_dataset": "jcblearning/htlnlp-colab-kernel-devset-lean-c3",
+   "gpu": "A100",
+   "model": "google/gemma-4/other/gemma-4-31b-it-qat-w4a16-ct/2",
+   "network_open_acknowledged": true
+  },
+  {
+   "label": "devset-lean-c4",
+   "bundle": "jcblearning/htlnlp-official-devset-lean-c4",
+   "kernel_dataset": "jcblearning/htlnlp-colab-kernel-devset-lean-c4",
+   "gpu": "A100",
+   "model": "google/gemma-4/other/gemma-4-31b-it-qat-w4a16-ct/2",
+   "network_open_acknowledged": true
+  },
   {
    "label": "devset-exp025-c1",
    "bundle": "jcblearning/htlnlp-official-devset-exp025-c1",
