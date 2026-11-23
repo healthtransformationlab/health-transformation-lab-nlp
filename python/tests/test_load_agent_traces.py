@@ -157,6 +157,59 @@ def test_a_second_load_replaces_by_trace_key(lt, runs):
     assert len(tags["file_sha256"]) == 64
 
 
+def _colab_run(runs, label="colab-run"):
+    """A collected Colab run keeps two copies of each task: the download and the graded output (#913)."""
+    for sub in ("output/tasks", "colab_download/working/tasks"):
+        shutil.copytree(runs / "demo-run/tasks", runs / label / sub)
+    return label
+
+
+def test_a_colab_run_with_two_copies_of_each_task_is_found_once_per_task(lt, runs):
+    label = _colab_run(runs)
+    dirs = lt._task_dirs(runs, label)
+    assert [d.name for d in dirs] == ["demo_101", "demo_102"]
+    assert all(d.parent.parent.name == "output" for d in dirs)
+
+
+def test_a_colab_run_loads_one_trace_per_task(lt, runs):
+    client = FakeClient()
+    out = lt.load_run(runs, _colab_run(runs), "demo agent", client)
+    assert out["written"] == 2 and out["skipped_duplicate"] == 0 and len(client.traces) == 2
+
+
+def test_a_repeated_trace_key_in_one_load_is_skipped(lt, runs, monkeypatch):
+    one = runs / "demo-run/tasks/demo_101"
+    monkeypatch.setattr(lt, "_task_dirs", lambda runs_dir, run_label: [one, one])
+    client = FakeClient()
+    out = lt.load_run(runs, "demo-run", "demo agent", client)
+    assert out["written"] == 1 and out["skipped_duplicate"] == 1 and len(client.traces) == 1
+
+
+def test_delete_statements_remove_spans_and_annotations_by_bare_trace_id(lt):
+    """A Unity Catalog trace can't be deleted through MLflow's API (#913); its rows are deleted by SQL."""
+    stmts = lt.delete_statements("cat.sch.coding_agent", ["trace:/cat.sch.coding_agent/ab12cd", "ef34"])
+    assert stmts == [
+        "delete from cat.sch.coding_agent_otel_spans where trace_id in ('ab12cd', 'ef34')",
+        "delete from cat.sch.coding_agent_otel_annotations where target_id in ('ab12cd', 'ef34')",
+    ]
+
+
+@pytest.mark.parametrize("bad", ["x'; drop table y; --", "a b", ""])
+def test_delete_statements_refuse_an_id_that_is_not_a_plain_token(lt, bad):
+    with pytest.raises(ValueError):
+        lt.delete_statements("cat.sch.coding_agent", [bad])
+
+
+def test_delete_keys_runs_both_deletes_on_the_unity_catalog_tables(lt):
+    client = object.__new__(lt.MlflowTraceClient)
+    client.table_prefix = "cat.sch.coding_agent"
+    ran = []
+    client._sql = ran.append
+    assert client.delete_keys(["trace:/cat.sch.coding_agent/ab12cd", "trace:/cat.sch.coding_agent/ab12cd"]) == 1
+    assert ran == lt.delete_statements("cat.sch.coding_agent", ["ab12cd"])
+    assert client.delete_keys([]) == 0 and len(ran) == 2
+
+
 def test_a_write_that_never_arrives_is_counted_unconfirmed(lt, runs):
     """November 17: traces started without the experiment's Unity Catalog location set were dropped with no error.
     The loader checks every key it wrote is in the experiment afterwards."""
@@ -167,7 +220,8 @@ def test_dry_run_builds_and_writes_nothing(lt, runs):
     client = FakeClient()
     assert lt.load_run(runs, "demo-run", "demo agent", client, dry_run=True) == {"written": 0, "skipped": 0,
                                                                                  "failed": 0, "built": 2,
-                                                                                 "replaced": 0}
+                                                                                 "replaced": 0,
+                                                                                 "skipped_duplicate": 0}
     assert client.traces == []
 
 
@@ -232,7 +286,8 @@ def test_a_verdict_overrides_the_kernels_is_resolved(lt, runs):
 def test_a_task_missing_from_the_verdicts_is_not_loaded(lt, runs, capsys):
     client = FakeClient()
     counts = lt.load_run(runs, "demo-run", "demo agent", client, verdicts={"demo_101": True})
-    assert counts == {"written": 1, "skipped": 0, "failed": 1, "unconfirmed": 0, "replaced": 0}
+    assert counts == {"written": 1, "skipped": 0, "failed": 1, "unconfirmed": 0, "replaced": 0,
+                      "skipped_duplicate": 0}
     assert "demo_102: not loaded (no verdict)" in capsys.readouterr().out
     assert client.traces[0]["tags"]["verdict_source_code"] == "official_verify"
 

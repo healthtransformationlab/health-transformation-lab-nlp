@@ -229,8 +229,37 @@ def _commit() -> str:
 
 
 def _task_dirs(runs_dir: Path, run_label: str) -> list[Path]:
+    """One folder per task id. A collected Colab run holds two copies of each task (colab_download/working/tasks and
+    output/tasks): the graded output/tasks copy is taken (#913)."""
     base = runs_dir / run_label if (runs_dir / run_label).is_dir() else runs_dir
-    return sorted(p.parent for p in base.rglob("tasks/*/result.json"))
+    by_id: dict[str, Path] = {}
+    for p in sorted(base.rglob("tasks/*/result.json")):
+        d, prev = p.parent, by_id.get(p.parent.name)
+        if prev is None or (d.parent.parent.name == "output" and prev.parent.parent.name != "output"):
+            by_id[d.name] = d
+    return [by_id[k] for k in sorted(by_id)]
+
+
+_PLAIN_ID = re.compile(r"[0-9A-Za-z_-]+")
+
+
+def _bare_trace_id(trace_id: str) -> str:
+    """The id the Unity Catalog tables hold: search_traces gives trace:/<catalog.schema.prefix>/<id>."""
+    return str(trace_id).rsplit("/", 1)[-1].strip()
+
+
+def delete_statements(table_prefix: str, trace_ids: list[str]) -> list[str]:
+    """SQL that removes whole traces from a Unity Catalog trace location: their spans, and their annotations (the
+    metadata, tags and assessments the trace_metadata view reads). MLflow's delete_traces can't delete a trace stored in
+    Unity Catalog, as Databricks documents (#913); the logs table holds no rows for these traces and the metrics table
+    isn't kept per trace."""
+    ids = sorted({_bare_trace_id(t) for t in trace_ids})
+    bad = [i for i in ids if not _PLAIN_ID.fullmatch(i)]
+    if bad or not ids:
+        raise ValueError(f"not a plain trace id: {bad or ids!r}")
+    listed = ", ".join(f"'{i}'" for i in ids)
+    return [f"delete from {table_prefix}_otel_spans where trace_id in ({listed})",
+            f"delete from {table_prefix}_otel_annotations where target_id in ({listed})"]
 
 
 def load_run(runs_dir: Path, run_label: str, agent_name: str, client, limit=None, dry_run=False,
@@ -239,7 +268,7 @@ def load_run(runs_dir: Path, run_label: str, agent_name: str, client, limit=None
     append by trace_key, #899). Counts written, replaced, failed and unconfirmed (and, for a dry run, built)."""
     dirs = _task_dirs(Path(runs_dir), run_label)[:limit]
     batch = {"loaded_ts": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "git_commit_sha": _commit()}
-    todo, failed = [], 0
+    todo, failed, seen, skipped_duplicate = [], 0, set(), 0
     for d in dirs:
         try:
             trace = task_trace(d, run_label, agent_name, model_name, verdicts)
@@ -251,11 +280,16 @@ def load_run(runs_dir: Path, run_label: str, agent_name: str, client, limit=None
             print(f"{d.name}: not loaded ({type(e).__name__})")
             failed += 1
             continue
+        if trace["tags"]["trace_key"] in seen:  # the same task-run twice in one load (#913)
+            skipped_duplicate += 1
+            continue
+        seen.add(trace["tags"]["trace_key"])
         result_path = d / "result.json"
         trace["tags"].update({**batch, "file_sha256": hashlib.sha256(result_path.read_bytes()).hexdigest()})
         todo.append(trace)
     if dry_run:
-        return {"written": 0, "skipped": 0, "failed": failed, "built": len(todo), "replaced": 0}
+        return {"written": 0, "skipped": 0, "failed": failed, "built": len(todo), "replaced": 0,
+                "skipped_duplicate": skipped_duplicate}
     written, unconfirmed, replaced = 0, 0, 0
     if todo:
         keys = {t["tags"]["trace_key"] for t in todo}
@@ -275,7 +309,8 @@ def load_run(runs_dir: Path, run_label: str, agent_name: str, client, limit=None
         for key in sorted(missing):
             print(f"written but not found in the experiment: trace_key {key}")
         unconfirmed = len(missing)
-    return {"written": written, "skipped": 0, "failed": failed, "unconfirmed": unconfirmed, "replaced": replaced}
+    return {"written": written, "skipped": 0, "failed": failed, "unconfirmed": unconfirmed, "replaced": replaced,
+            "skipped_duplicate": skipped_duplicate}
 
 
 class MlflowTraceClient:
@@ -296,6 +331,8 @@ class MlflowTraceClient:
             sys.exit(f"{experiment_name} has no Unity Catalog trace location: it was not made by the bundle")
         mlflow.set_experiment(experiment_id=exp.experiment_id, trace_location=exp.trace_location)
         self.experiment_id = exp.experiment_id
+        self.table_prefix = exp.trace_location.full_table_prefix  # catalog.schema.prefix of the trace tables
+        self._ws = self._warehouse_id = None
 
     def existing_keys(self, run_label: str) -> set[str]:
         return set(self.existing_trace_ids(run_label))
@@ -307,11 +344,31 @@ class MlflowTraceClient:
         return {t.info.tags["trace_key"]: t.info.trace_id for t in traces if t.info.tags.get("trace_key")}
 
     def delete_keys(self, trace_ids: list[str]) -> int:
-        """Remove traces by id so a reload can append a fresh copy of the same trace_key (#899)."""
-        if not trace_ids:
+        """Remove traces by id so a reload can append a fresh copy of the same trace_key (#899). The traces live in
+        Unity Catalog, where MLflow's delete_traces rejects every id form (#913), so their rows are deleted by SQL
+        through a warehouse (DATABRICKS_WAREHOUSE_ID, else the workspace's first). Returns the traces removed."""
+        ids = sorted({_bare_trace_id(t) for t in trace_ids if t})
+        if not ids:
             return 0
-        from mlflow import MlflowClient
-        return int(MlflowClient().delete_traces(experiment_id=self.experiment_id, trace_ids=list(trace_ids)) or 0)
+        for statement in delete_statements(self.table_prefix, ids):
+            self._sql(statement)
+        return len(ids)
+
+    def _sql(self, statement: str) -> None:
+        from databricks.sdk import WorkspaceClient
+        from databricks.sdk.service.sql import StatementState
+        if self._ws is None:
+            self._ws = WorkspaceClient()
+            self._warehouse_id = (os.environ.get("DATABRICKS_WAREHOUSE_ID") or "").strip() or next(
+                iter(self._ws.warehouses.list())).id
+        res = self._ws.statement_execution.execute_statement(statement=statement, warehouse_id=self._warehouse_id,
+                                                             wait_timeout="50s")
+        while res.status.state in (StatementState.PENDING, StatementState.RUNNING):
+            time.sleep(2)
+            res = self._ws.statement_execution.get_statement(res.statement_id)
+        if res.status.state != StatementState.SUCCEEDED:
+            raise RuntimeError(f"{res.status.state}: {res.status.error.message if res.status.error else ''} "
+                               f"in {statement[:120]}")
 
     def start_load(self, run_label: str, agent_name: str, params: dict) -> str:
         run = self.mlflow.start_run(experiment_id=self.experiment_id, run_name=f"{agent_name} | {run_label}")
