@@ -28,7 +28,11 @@ from .telemetry import traced
 
 _BUILD = REPO_ROOT / "diagrams" / "_build"
 _NAME = re.compile(r"\w+(\.\w+){2}")
-GOLD_SCHEMA = {"fact_tooth_loss_prediction": "gold_opendental_perio"}   # every other gold_model table: gold_perio_bench
+GOLD_SCHEMA = {
+    "fact_tooth_loss_prediction": "gold_opendental_perio",
+    "dim_access_question": "gold_access_bench",   # spec 043
+    "fact_access_answer": "gold_access_bench",
+}   # every other gold_model table: gold_perio_bench
 NOT_TABLES = {"review_key"}                                             # declared in gold_model, but a file
 
 # Tables nothing declares column by column: a table comment, so Catalog Explorer still says what they hold.

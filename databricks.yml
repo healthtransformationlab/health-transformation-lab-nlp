@@ -92,6 +92,27 @@ variables:
   deid_llm_endpoint:
     description: Pay-per-token chat endpoint for the llm de-identification method
     default: databricks-meta-llama-3-3-70b-instruct
+  access_llm_mode:
+    description: "AccessBench LLM batch (spec 043): simulated (default, no spend) or live"
+    default: simulated
+  access_llm_endpoints:
+    description: "Comma-separated answering endpoints (sim names for simulated; Serving names for live)"
+    default: "sim:llama"
+  access_llm_limit:
+    description: How many Access fixtures to score (max = fixture count, default 5)
+    default: "5"
+  access_judge_endpoint:
+    description: "Key-point judge endpoint (sim:judge for simulated)"
+    default: "sim:judge"
+  access_max_usd:
+    description: Stop further live AccessBench calls once estimated spend reaches this USD
+    default: "1"
+  access_usd_per_million_in:
+    description: List price USD per million input tokens for AccessBench live runs (0 in simulated)
+    default: "0"
+  access_usd_per_million_out:
+    description: List price USD per million output tokens for AccessBench live runs (0 in simulated)
+    default: "0"
   hf_secret_scope:
     description: Secret scope holding hf_token (Hugging Face read token; HAI-DEF terms accepted)
     default: health_transformation_lab

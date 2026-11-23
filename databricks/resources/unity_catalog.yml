@@ -93,7 +93,7 @@ resources:
     access_bench_gold:
       catalog_name: ${resources.catalogs.health_transformation_lab.name}
       name: gold_access_bench
-      comment: Study tables and results for access_bench; empty until it has a pipeline. Synthetic data only.
+      comment: AccessBench LLM batch results (spec 043); dim_access_question and fact_access_answer. Synthetic data only.
       lifecycle:
         prevent_destroy: true
     opendental_perio_landing:

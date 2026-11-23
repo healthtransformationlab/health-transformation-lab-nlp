@@ -39,8 +39,8 @@ def committed(root=CONTRACTS_DIR) -> dict:
             for p in sorted(root.glob("*/*.odcs.yaml"))}
 
 
-# The nine foreign keys the contracts carry, written out (child, its columns, parent, its columns): the gold model's
-# solid relationships between gold tables. The ones to review_key (a file) and the derived ones are left out.
+# Foreign keys the contracts carry (child, its columns, parent, its columns): the gold model's solid
+# relationships between gold tables. Ones to review_key (a file) and derived links are left out.
 EXPECTED_FOREIGN_KEYS = [
     ("fact_prediction", ("file_sha256",), "dim_result_file", ("file_sha256",)),
     ("fact_llm_call", ("file_sha256",), "dim_result_file", ("file_sha256",)),
@@ -51,6 +51,7 @@ EXPECTED_FOREIGN_KEYS = [
     ("fact_record_mismatch", ("visit_id",), "fact_visit_evidence", ("visit_id",)),
     ("fact_pipeline_signal", ("run_id",), "fact_pipeline_run", ("run_id",)),
     ("fact_remediation_decision", ("run_id",), "fact_pipeline_run", ("run_id",)),
+    ("fact_access_answer", ("question_id",), "dim_access_question", ("question_id",)),  # spec 043
 ]
 
 
@@ -118,10 +119,10 @@ def test_columns_types_keys_and_foreign_keys_match_the_gold_model(name):
             assert resolve(f"{schema_of(name)}/{name}.odcs.yaml", reference)["id"] == reference.rsplit("/", 1)[1]
 
 
-def test_nine_foreign_keys_in_all_and_none_to_the_answer_key_file():
+def test_foreign_keys_in_all_and_none_to_the_answer_key_file():
     found = [(name, r) for name, doc in ((k.split("/")[1], d) for k, d in committed().items())
              for r in doc["schema"][0].get("relationships", [])]
-    assert len(found) == len(EXPECTED_FOREIGN_KEYS) == 9
+    assert len(found) == len(EXPECTED_FOREIGN_KEYS) == 10
     assert not any("review_key" in str(r["to"]) for _, r in found)
 
 

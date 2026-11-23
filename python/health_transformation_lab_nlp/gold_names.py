@@ -151,6 +151,19 @@ TABLES |= {
                                    "predicted_perio": "is_predicted_perio_loss", "generator_seed": "generator_seed_num",
                                    "synthetic": "is_synthetic", "run_id": "run_id", "run_ts": "run_ts",
                                    "git_commit": "git_commit_sha"},
+    # spec 043: AccessBench LLM batch (health_transformation_lab.gold_access_bench), synthetic prompts only
+    "dim_access_question": {"question_id": "question_id", "domain": "domain_code", "persona": "persona_name",
+                            "level": "level_code", "n_key_points": "key_point_count",
+                            "evidence_source": "source_text", "is_simulated": "is_simulated",
+                            "run_id": "run_id", "run_ts": "run_ts", "git_commit": "git_commit_sha"},
+    "fact_access_answer": {"question_id": "question_id", "endpoint": "answering_endpoint_name",
+                           "answer": "answer_text", "key_points_covered": "covered_key_point_count",
+                           "score": "score_ratio", "harm": "harm_code", "red_flag_hit": "red_flag_hit_text",
+                           "is_phi_leak": "is_phi_leak", "judge_endpoint": "judge_endpoint_name",
+                           "prompt_version": "prompt_version_code", "latency_s": "latency_seconds",
+                           "input_tokens": "input_token_count", "output_tokens": "output_token_count",
+                           "cost_usd": "cost_usd", "is_simulated": "is_simulated", "error": "error_text",
+                           "run_id": "run_id", "run_ts": "run_ts", "git_commit": "git_commit_sha"},
 }
 # spec 036 US2 (#569): the coding-agent task runs; most run-table columns already have their gold names
 TABLES["fact_agent_task_run"] = {
