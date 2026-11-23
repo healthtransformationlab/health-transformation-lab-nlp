@@ -484,10 +484,20 @@ python kaggle/load_agent_traces.py <runs folder> --label devset-m31be-c1 --agent
 - **Loading twice:** delete-then-append by `trace_key` (the SHA-256 of run label, agent and task). A reload removes
   any existing trace with that key and writes a fresh one, so a run loaded twice still leaves one trace per key
   (#899). Every written trace carries `file_sha256` (of that task's `result.json`), `loaded_ts` and `git_commit_sha`.
+- **Removing a trace (#913):** MLflow's `delete_traces` can't delete a trace stored in Unity Catalog; it rejects
+  every id form. So the reload deletes by SQL, through a warehouse, from the trace location's two per-trace tables:
+  `<prefix>_otel_spans` (by `trace_id`) and `<prefix>_otel_annotations` (by `target_id`; the metadata, tags and
+  assessments the `<prefix>_trace_metadata` view reads). The logs table holds no rows for these traces, and the
+  metrics table isn't kept per trace. Each Delta table's history keeps the version before a delete, for `RESTORE`.
+- **One trace per task in a load:** a collected Colab run has two copies of each task, `colab_download/working/tasks`
+  and `output/tasks`. The loader takes the graded `output/tasks` copy, and skips a `trace_key` it already built in
+  the same load (`skipped_duplicate`). Before #913 such a run was written twice. To check a run for duplicates:
+  `select count(*), count(distinct tags['trace_key']) from <prefix>_trace_metadata where tags['run_label'] = '<label>'`.
+  To fix one, reload it with this loader, which replaces every key.
 - **Settings:** `DATABRICKS_HOST` and `DATABRICKS_TOKEN` say which workspace to write to. `AGENT_TRACE_EXPERIMENT`
   names the experiment; its default, `/Shared/coding-agent-runs`, is the bundle's and is the same in every
-  environment. The loader never creates an experiment: one made outside the bundle would have no Unity Catalog trace
-  location.
+  environment. `DATABRICKS_WAREHOUSE_ID` (optional; the workspace's first warehouse otherwise) runs a reload's deletes.
+  The loader never creates an experiment: one made outside the bundle would have no Unity Catalog trace location.
 - **Checking first:** `--dry-run` builds every trace and writes none.
 - **This repository's own tasks (#881, #899):** the kernel can't grade them ("Missing test specification"), so pass
   `--verdicts <file>`, the `--out` file of `kaggle/official_verify.py`. Each trace's solved tag then comes from that
