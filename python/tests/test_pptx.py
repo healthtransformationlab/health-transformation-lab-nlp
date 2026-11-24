@@ -58,10 +58,12 @@ def test_access_deck_shows_no_answer_score_and_labels_its_numbers():
         assert not re.search(r"\d+%", text), f"access/{sid} shows a percentage"
 
 
-def test_access_deck_is_not_published_to_the_site():
-    assert "access" not in build_decks.SITE_PAGES
+def test_access_deck_is_published_to_the_site():
+    # #925: the owner asked for it on the site, beside the other two, named in the benchmarks' order
+    assert build_decks.SITE_PAGES["access"] == ("access-bench", "AccessBench")
+    assert [name for _, name in build_decks.SITE_PAGES.values()] == ["PerioBench", "OralHealthBench", "AccessBench"]
     workflow = (REPO_ROOT / ".github" / "workflows" / "copy-decks-to-site.yml").read_text()
-    assert "docs/access" not in workflow
+    assert "docs/access/deck.html" in workflow
 
 
 def test_readme_has_accessbench_as_its_third_benchmark():

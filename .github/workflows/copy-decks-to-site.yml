@@ -1,6 +1,6 @@
 # Copy the decks and their covers to the website (issue #374). The website repository,
 # healthtransformationlab/healthtransformationlab.github.io, serves docs/edr/deck.html as perio-bench/index.html and
-# docs/pitch/deck.html as oral-health-bench/index.html, with the covers in img/ and the PerioBench deck's interactive
+# docs/pitch/deck.html as oral-health-bench/index.html, docs/access/deck.html as access-bench/index.html (#925), with the covers in img/ and the PerioBench deck's interactive
 # cost-and-quality page as perio-bench/cost_quality.html (#879); its only change to a deck is the
 # icon links after <title> (.github/scripts/copy_decks_to_site.py). Runs on every push to main that touches a deck
 # or a cover, and by hand from the Actions tab. Commits to the site's main only when something changed, naming
@@ -19,6 +19,7 @@ on:
     paths:
       - docs/edr/deck.html
       - docs/pitch/deck.html
+      - docs/access/deck.html
       - docs/edr/cost_quality.html
       - docs/img/edr_deck_cover.png
       - docs/img/pitch_deck_cover.png

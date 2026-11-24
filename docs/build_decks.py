@@ -17,7 +17,8 @@ PERSONAL = "A personal idea, not affiliated with or endorsed by any organization
 SITE = "https://healthtransformationlab.org"
 REPO = "https://github.com/healthtransformationlab/health-transformation-lab-nlp"
 # deck folder under docs/ -> its page on the site and its name in the top nav
-SITE_PAGES = {"edr": ("perio-bench", "PerioBench"), "pitch": ("oral-health-bench", "OralHealthBench")}
+SITE_PAGES = {"edr": ("perio-bench", "PerioBench"), "pitch": ("oral-health-bench", "OralHealthBench"),
+              "access": ("access-bench", "AccessBench")}
 # deck folder under docs/ -> (title, the line above the slides)
 DECKS = {
     "pitch": ("Health Transformation Lab: Shark Tank pitch",
