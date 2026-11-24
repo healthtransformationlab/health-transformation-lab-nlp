@@ -21,9 +21,11 @@ ICONS = ('<link rel="icon" href="/favicon.ico" sizes="any"><link rel="icon" href
          '<meta name="theme-color" content="#0F2A33">')
 
 
-def test_the_site_gets_both_decks_and_both_covers():
+def test_the_site_gets_the_three_decks_and_both_covers():
+    # #925: the AccessBench deck joins the other two at access-bench/ (it has no cover image yet)
     assert cd.DECKS == {"docs/edr/deck.html": "perio-bench/index.html",
-                        "docs/pitch/deck.html": "oral-health-bench/index.html"}
+                        "docs/pitch/deck.html": "oral-health-bench/index.html",
+                        "docs/access/deck.html": "access-bench/index.html"}
     assert cd.COVERS == {"docs/img/edr_deck_cover.png": "img/edr_deck_cover.png",
                          "docs/img/pitch_deck_cover.png": "img/pitch_deck_cover.png"}
     for src in (*cd.DECKS, *cd.COVERS):
