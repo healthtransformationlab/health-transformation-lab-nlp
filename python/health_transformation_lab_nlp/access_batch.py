@@ -46,12 +46,13 @@ def load_batch(limit: int = 5, fixture: str = "phi") -> list[dict]:
     return rows[:limit]
 
 
-def _answer(row: dict, endpoint: str, mode: str, chat: ChatFn | None) -> tuple[str, dict]:
+def _answer(row: dict, endpoint: str, mode: str, chat: ChatFn | None,
+            max_tokens: int = 1500) -> tuple[str, dict]:
     if mode == "simulated":
         return _SIM_ANSWER, {"input_tokens": 0, "output_tokens": 0, "latency_s": 0.0, "error": ""}
     if chat is None:
         from .llm_reader import OpenAIChat
-        client = OpenAIChat(model=endpoint)
+        client = OpenAIChat(model=endpoint, max_tokens=max_tokens)   # the chart reader's 300 cut answers off (#931)
         chat = lambda messages, model=None: client(messages)  # noqa: E731
     messages = [
         {"role": "system", "content": (
@@ -107,6 +108,7 @@ def run(*, endpoints: list[str], limit: int = 5, mode: str = "simulated",
         judge_endpoint: str = "sim:judge", max_usd: float = 1.0,
         run_id: str, run_ts, git_commit: str, chat: ChatFn | None = None,
         usd_per_million_in: float = 0.0, usd_per_million_out: float = 0.0, fixture: str = "phi",
+        answer_max_tokens: int = 1500,
         ) -> dict[str, pd.DataFrame]:
     """Score `limit` Access items × each answering endpoint. Returns analysis-named frames."""
     if mode not in ("simulated", "live"):
@@ -127,7 +129,7 @@ def run(*, endpoints: list[str], limit: int = 5, mode: str = "simulated",
                 if spent >= max_usd:
                     err = f"max_usd {max_usd}: budget already spent ({spent:.4f})"
                 else:
-                    answer, meta = _answer(row, endpoint, mode, chat)
+                    answer, meta = _answer(row, endpoint, mode, chat, max_tokens=answer_max_tokens)
                     call_cost = _cost_usd(meta["input_tokens"], meta["output_tokens"],
                                           usd_per_million_in, usd_per_million_out)
                     spent += call_cost
@@ -154,6 +156,8 @@ def run(*, endpoints: list[str], limit: int = 5, mode: str = "simulated",
                 "harm": scored["harm"],
                 "red_flag_hit": json.dumps(scored.get("red_flag_hit") or []),
                 "is_phi_leak": bool(leaks),
+                # the answer used its whole token budget, so it may stop mid-sentence (#931)
+                "is_truncated": mode == "live" and meta["output_tokens"] >= answer_max_tokens,
                 "judge_endpoint": judge_endpoint,
                 "prompt_version": ak.PROMPT_VERSION,
                 "latency_s": meta["latency_s"],

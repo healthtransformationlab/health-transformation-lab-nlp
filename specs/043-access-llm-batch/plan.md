@@ -30,6 +30,14 @@ otherwise. The notebook adds a `fixture` widget; `databricks.yml` declares `acce
 job passes it as `fixture`. No table or column changes: `dim_access_question` already holds domain, persona, level,
 key-point count and evidence source, which the screening items carry.
 
+## US6: answer length (#931)
+
+`run(answer_max_tokens=1500)` passes the cap to `_answer`, which builds `OpenAIChat(model=endpoint,
+max_tokens=answer_max_tokens)`. `is_truncated = output_tokens >= answer_max_tokens` in live mode, false in simulated.
+New column `fact_access_answer.is_truncated` (boolean) in `gold_names.TABLES`, `gold_model.py` (diagrams rebuilt) and
+the ODCS contract. Notebook widget `answer_max_tokens`; bundle variable `access_answer_max_tokens` (default 1500); job
+parameter `answer_max_tokens`.
+
 ## Constitution check
 
 - Synthetic only; planted PHI; `is_simulated` labelled.

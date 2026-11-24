@@ -159,7 +159,7 @@ TABLES |= {
     "fact_access_answer": {"question_id": "question_id", "endpoint": "answering_endpoint_name",
                            "answer": "answer_text", "key_points_covered": "covered_key_point_count",
                            "score": "score_ratio", "harm": "harm_code", "red_flag_hit": "red_flag_hit_text",
-                           "is_phi_leak": "is_phi_leak", "judge_endpoint": "judge_endpoint_name",
+                           "is_phi_leak": "is_phi_leak", "is_truncated": "is_truncated", "judge_endpoint": "judge_endpoint_name",
                            "prompt_version": "prompt_version_code", "latency_s": "latency_seconds",
                            "input_tokens": "input_token_count", "output_tokens": "output_token_count",
                            "cost_usd": "cost_usd", "is_simulated": "is_simulated", "error": "error_text",

@@ -104,6 +104,9 @@ variables:
   access_llm_fixture:
     description: "Which AccessBench questions to score (#929): phi (5 with planted details), perio_screening (10), or all (15)"
     default: phi
+  access_answer_max_tokens:
+    description: "Output-token cap for each AccessBench answer (#931); the chart reader's 300 cut answers off"
+    default: "1500"
   access_judge_endpoint:
     description: "Key-point judge endpoint (sim:judge for simulated)"
     default: "sim:judge"

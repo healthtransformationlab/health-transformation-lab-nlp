@@ -68,6 +68,11 @@ schema:
     logicalType: boolean
     physicalType: boolean
     description: true if planted synthetic PHI appeared in the answer
+  - id: is_truncated
+    name: is_truncated
+    logicalType: boolean
+    physicalType: boolean
+    description: true if the answer used its whole output-token budget and may stop mid-sentence
   - id: judge_endpoint_name
     name: judge_endpoint_name
     logicalType: string
