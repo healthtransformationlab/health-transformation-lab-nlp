@@ -679,3 +679,9 @@ pitch:
     - value: "180"
       kind: proposal
       covers: days for the first step
+
+access:
+  questions:
+    - value: "411"
+      kind: identifier
+      covers: part of the citation 42 CFR 411.15(i), the Medicare dental exclusion that ACC_PERIO_SCR_007 cites

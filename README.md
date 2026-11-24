@@ -9,22 +9,20 @@
 million people a day ask OpenAI's assistant alone about their health (OpenAI, January 2026), and those answers shape
 the care they seek and get. AI developers such as OpenAI, Anthropic and Google improve what public benchmarks measure,
 and no public benchmark we found checks answers where medicine meets dentistry, or whether an answer helps someone get
-care. The lab builds its benchmarks in the open: **PerioBench** (finding gum disease in dental records) has working
-code and results on synthetic records; **OralHealthBench** (AI answers on oral health and getting care) is planned,
-building on GlobalDentBench; and **AccessBench** (whether an answer helps someone get care) is exploratory. [healthtransformationlab.org](https://healthtransformationlab.org).
+care. The lab builds them in the open: **PerioBench** (finding gum disease in dental records) works on synthetic
+records; **OralHealthBench** is planned; **AccessBench** is exploratory. [healthtransformationlab.org](https://healthtransformationlab.org).
 
-Two benchmarks so far, each with a short pitch that drills down to the detail.
+Three benchmarks so far, tested the same way (models, harm grades, leaderboards), each with a pitch and a drill-down.
 
 ## 1. PerioBench: better care for gum disease by finding it accurately in dental records
 
 <a href="docs/edr/full_text_and_notes.md"><img src="docs/img/edr_deck_cover.png" alt="Gum disease is in the dental record. It's hard to count." width="480"></a>
 
-The goal is better care for people with periodontitis. Gum disease is written down at almost every dental visit,
-but in pieces: notes, forms, codes and measurements that often disagree, so it is often missed, hard to follow over
-time, and hard to link to diabetes care. A tool that reads the whole record and finds gum disease accurately
-(phenotyping, to researchers) lets clinics find it earlier and treat it. PerioBench scores how well rules and AI find
-it in the record; agreement with gum specialists reviewing the same record is how that is checked, not the goal.
-It runs end to end on **synthetic** records as three tests, each with its own models:
+Gum disease is written down at almost every dental visit, but in pieces (notes, forms, codes and measurements that
+often disagree), so it is often missed and hard to link to diabetes care. A tool that finds it accurately in the whole
+record (phenotyping, to researchers) lets clinics find it earlier and treat it. PerioBench scores how well rules and AI
+find it; agreement with gum specialists reviewing the same record is the check, not the goal. It runs end to end on
+**synthetic** records as three tests, each with its own models:
 
 | Test | The question | What it reads | Models compared | Best so far (synthetic) | Drill-down |
 |---|---|---|---|---|---|
@@ -46,26 +44,28 @@ Scored against the generator's answer key: agreement, not accuracy on real patie
 <a href="docs/pitch/full_text_and_notes.md"><img src="docs/img/pitch_deck_cover.png" alt="AI passes the dental exam. It fails the real patient." width="480"></a>
 
 Twelve leading AI models average 81% on dental licensing-exam questions but 22% on questions built from published
-patient cases (GlobalDentBench, 2026). Most benchmarks test exam knowledge, and studies of real patient cases have found the same gap: on real
-hospital cases, models didn't follow the clinical guidelines doctors use (Hager et al., 2024); people using them
-did no better than people using a source of their choice (Bean et al., 2026); and against a standard drug-interaction
-checker, ChatGPT-3.5 got 47% of 255 drug pairs right (Al-Ashwal et al., 2023). OralHealthBench, planned
-and building on GlobalDentBench, will ask real-world questions where dentistry meets medicine, such as a medicine that
-makes a tooth extraction unsafe, each traced to published evidence, with public results so improvements are visible,
-and will measure how much an open evidence agent improves their answers. A third idea, **AccessBench**, is exploratory:
-it would ask whether an answer works for someone with no coverage, no car or no dentist nearby.
+patient cases (GlobalDentBench, 2026). Studies of real patient cases found the same gap: on real hospital cases, models
+didn't follow the clinical guidelines doctors use (Hager et al., 2024); people using them did no better than people
+using a source of their choice (Bean et al., 2026); and against a standard drug-interaction checker, ChatGPT-3.5 got
+47% of 255 drug pairs right (Al-Ashwal et al., 2023). OralHealthBench, planned on GlobalDentBench, will ask where
+dentistry meets medicine (a medicine that makes an extraction unsafe), traced to published evidence and built from
+PerioBench's synthetic OMOP patients, and measure how much an open evidence agent improves the answers.
 
 | For | Go to |
 |---|---|
 | **Executives** (7 slides, plus backup) | [read the pitch with speaker notes](docs/pitch/full_text_and_notes.md) · [slides](docs/pitch/deck.html) (download and open in a browser) |
 | **Detail** | [the pitch's sources and how this repo tests it](docs/pitch/README.md) |
 
-## How the two paths connect
+## 3. AccessBench (exploratory): does the answer get you care?
 
-The dental record path builds synthetic patients whose right answers are known, in OMOP, the format medicine
-already uses. Those patients become test questions for OralHealthBench. AI is tested the same way at every step, with the same
-models, harm grades and leaderboards: first on gum charts, then on case questions, then on broader medical-dental
-questions.
+A medically right answer can still miss that adult Medicaid dental differs by state, that a denial can be appealed, or
+that a cleaning is not a gum evaluation. AccessBench scores whether it names this person's next concrete step. The first
+15 [questions](benchmarks/access_bench/README.md) are synthetic, from real public asks: ten on getting a periodontal
+screening, five with planted fake identifiers that must not come back. A Databricks job scores them; **no live scores yet**.
+
+| For | Go to |
+|---|---|
+| **Executives** (7 slides) | [read the pitch with speaker notes](docs/access/full_text_and_notes.md) · [slides](docs/access/deck.html) · [PowerPoint](docs/access/access_bench.pptx) |
 
 ## Run it
 
@@ -73,7 +73,7 @@ questions.
 cd python && pip install -e ".[dev]"
 pytest -q tests                                    # Python tests
 cd .. && python/scripts/make_parity_inputs.sh && Rscript r/tests/test_parity.R   # Python and R give the same numbers
-python docs/build_decks.py                         # rebuild both decks from docs/<deck>/slides/
+python docs/build_decks.py && python docs/build_pptx.py   # rebuild the decks, and the AccessBench PowerPoint
 ```
 
 Ground rules: synthetic patient records, never identifiable patient data (PHI); Python and R in parity; anything simulated is labelled simulated
