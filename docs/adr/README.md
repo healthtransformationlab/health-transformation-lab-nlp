@@ -34,3 +34,4 @@ don't rewrite the old one.
 | [0010](0010-agent-run-traces-may-carry-full-content.md) | A coding-agent run's own trace may reach telemetry in full; dental records never do | accepted |
 | [0011](0011-kaggle-gpu-weekly-threshold.md) | Kaggle GPU runs may start under a weekly threshold (amends 0007) | accepted |
 | [0012](0012-retire-the-old-trace-experiment.md) | Retire the old trace experiment /Shared/gemma-agent-runs | accepted |
+| [0013](0013-loader-owned-model-ranking-experiments.md) | The two model-ranking MLflow experiments are made by their loaders, not the bundle | accepted |
