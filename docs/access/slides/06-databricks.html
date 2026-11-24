@@ -1,0 +1,11 @@
+<section id="databricks" data-transition="fade" style="background:#F7F5EF;color:#15303A;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:36px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-size:24px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#B4501F">Built to run</p>
+<h2 style="font-family:'Libre Baskerville', Georgia, serif;font-size:56px;font-weight:700;line-height:1.1">One job scores every model the same way</h2>
+</div>
+<ul style="font-size:30px;line-height:1.45;display:flex;flex-direction:column;gap:14px"><li><b>Databricks job "Access LLM batch"</b> sends each question to each answering model, then to the judge</li><li><b>Two gold tables:</b> <code>dim_access_question</code> (one row per question) and <code>fact_access_answer</code> (one row per answer, with its verdicts, tokens and cost)</li><li><b>Simulated by default:</b> no model is called and nothing is billed; simulated rows are labelled simulated</li><li><b>Live mode</b> uses pay-per-token endpoints and stops when its spending limit is reached</li></ul>
+<p style="font-size:30px;line-height:1.4;background:#ECE8DD;border-radius:16px;padding:24px 40px"><b>No live scores yet.</b> The job, the tables and the rubrics are built and tested; the first live run waits for the owner's go-ahead on which models and what budget.</p>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#5C6F75">Synthetic questions grounded in public sources · Health Transformation Lab · AccessBench · 6</p>
+
+<aside>The plumbing is built. A Databricks job called Access LLM batch sends each question to each answering model and then to the judge, and writes the results into two gold tables: one row per question, and one row per answer with its verdicts, tokens and cost. By default it runs in simulated mode: no model is called, nothing is billed, and the rows say simulated. Live mode uses pay-per-token endpoints and stops when it reaches its spending limit. There are no live scores yet, and this deck shows none. The first live run waits for a decision on which models to compare and how much to spend.</aside>
+</section>
