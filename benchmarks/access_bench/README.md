@@ -29,6 +29,15 @@ accuracy.
 Ids use an `ACC_` prefix. Rubrics cite published statutes and guidelines only.
 Label simulated scores as simulated.
 
+## Hard set: periodontal screening access (2030 stretch)
+
+[`items/perio_screening_hard_items.jsonl`](items/perio_screening_hard_items.jsonl)
+holds ten open-ended asks grounded in public forum threads and primary sources
+(Medicare exclusion, state Medicaid, waiting periods, appeals, D0180 vs cleaning).
+Load with `access_hard_items.load_items()`. Seeds:
+[`seeds/perio_screening_hard_2030.md`](seeds/perio_screening_hard_2030.md).
+Owner stretch goal only — not an affiliated program quota.
+
 ## Dual fixture: access + planted synthetic PHI
 
 [`items/simulated_access_phi_items.jsonl`](items/simulated_access_phi_items.jsonl) plants
