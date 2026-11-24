@@ -12,6 +12,7 @@ from typing import Any, Callable
 
 import pandas as pd
 
+from . import access_hard_items as ahi
 from . import access_keypoint_judge as ak
 from . import access_phi_items as api
 from . import deid
@@ -27,10 +28,17 @@ _SIM_ANSWER = (
 )
 
 
+# Question sets (#929): the five with planted details, the ten hard periodontal-screening asks, or both
+FIXTURES = ("phi", "perio_screening", "all")
+
+
 @traced
-def load_batch(limit: int = 5) -> list[dict]:
-    """First `limit` fixtures in file order. Raises if limit exceeds the fixture count."""
-    rows = api.load_items()
+def load_batch(limit: int = 5, fixture: str = "phi") -> list[dict]:
+    """First `limit` items of the chosen set, in file order. Raises on an unknown set or a limit above its size."""
+    if fixture not in FIXTURES:
+        raise ValueError(f"fixture must be one of {', '.join(FIXTURES)}, got {fixture!r}")
+    rows = (api.load_items() if fixture in ("phi", "all") else []) + \
+        (ahi.load_items() if fixture in ("perio_screening", "all") else [])
     if limit < 1:
         raise ValueError(f"limit must be >= 1, got {limit}")
     if limit > len(rows):
@@ -98,14 +106,14 @@ def _cost_usd(inp: int, out: int, usd_in: float, usd_out: float) -> float:
 def run(*, endpoints: list[str], limit: int = 5, mode: str = "simulated",
         judge_endpoint: str = "sim:judge", max_usd: float = 1.0,
         run_id: str, run_ts, git_commit: str, chat: ChatFn | None = None,
-        usd_per_million_in: float = 0.0, usd_per_million_out: float = 0.0,
+        usd_per_million_in: float = 0.0, usd_per_million_out: float = 0.0, fixture: str = "phi",
         ) -> dict[str, pd.DataFrame]:
     """Score `limit` Access items × each answering endpoint. Returns analysis-named frames."""
     if mode not in ("simulated", "live"):
         raise ValueError(f"mode must be simulated or live, got {mode!r}")
     if not endpoints:
         raise ValueError("endpoints must be non-empty")
-    items = load_batch(limit)
+    items = load_batch(limit, fixture)
     spent = 0.0
     fact_rows: list[dict] = []
     for row in items:
@@ -134,7 +142,9 @@ def run(*, endpoints: list[str], limit: int = 5, mode: str = "simulated",
             else:
                 answer, meta = _answer(row, endpoint, mode, chat)
                 scored = _judge(row, answer, mode, judge_endpoint, chat)
-            leaks = deid.leak_check(answer, api.known_phi_for_leak_check(row)) if answer else []
+            # a screening item plants nothing, so there is nothing to leak (#929)
+            planted = api.known_phi_for_leak_check(row) if row.get("planted_phi") else []
+            leaks = deid.leak_check(answer, planted) if answer and planted else []
             fact_rows.append({
                 "question_id": row["id"],
                 "endpoint": endpoint,

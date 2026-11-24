@@ -299,6 +299,7 @@ resources:
               schema: ${resources.schemas.access_bench_gold.name}
               endpoints: ${var.access_llm_endpoints}
               limit: ${var.access_llm_limit}
+              fixture: ${var.access_llm_fixture}
               judge_endpoint: ${var.access_judge_endpoint}
               max_usd: ${var.access_max_usd}
               mode: ${var.access_llm_mode}

@@ -77,8 +77,9 @@ the id ends `_H1`/`_H2`, otherwise `L2`. Category is always Access to care.
 
 ## Databricks batch (spec 043)
 
-Job **Access LLM batch** (`databricks/notebooks/16_access_llm_batch.py`) scores up to five
-fixtures across answering endpoints into `gold_access_bench.dim_access_question` and
+Job **Access LLM batch** (`databricks/notebooks/16_access_llm_batch.py`) scores a question set
+(`fixture`: `phi`, the five planted-detail asks, by default; `perio_screening`, the ten hard screening asks; or
+`all`) across answering endpoints into `gold_access_bench.dim_access_question` and
 `fact_access_answer`. Default `mode=simulated` (no Serving spend). Live mode uses
 pay-per-token endpoints and stops when `max_usd` is exceeded.
 

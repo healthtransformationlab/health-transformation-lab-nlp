@@ -57,6 +57,15 @@ smallest path that produces checkable, simulated-labelled results in gold.
 - **Independent test:** bundle lists the job; notebook imports the module; a simulated path
   writes (or a unit test of the write helper with a fake spark).
 
+### US5 - The ten periodontal-screening questions run in the batch (P1) #929
+
+- `access_batch.load_batch(limit, fixture=...)` picks the question set: `phi` (the five planted-detail questions,
+  the default), `perio_screening` (the ten hard periodontal-screening questions, #919) or `all` (both, 15).
+- A question with no planted details gets `is_phi_leak = false`: there is nothing to leak.
+- The notebook widget `fixture` and the bundle variable `access_llm_fixture` (default `phi`) pass it to the job.
+- **Independent test:** `test_access_batch.py` loads 10 and 15 questions, rejects an unknown fixture, and scores the
+  screening set in simulated mode with no leak flagged; `test_bundle.py` checks the variable and job parameter.
+
 ## Requirements
 
 - **FR-001** Default batch size is 5; `limit` may be smaller but not larger than the fixture
