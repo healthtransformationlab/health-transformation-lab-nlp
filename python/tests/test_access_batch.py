@@ -101,3 +101,35 @@ def test_max_usd_stops_further_live_calls():
     assert calls["n"] >= 1
     assert (errors.str.contains("max_usd") | errors.str.len().eq(0)).any()
     assert errors.str.contains("max_usd").sum() >= 1
+
+
+# ---------- US5 (#929): the question sets ----------
+
+def test_fixtures_are_the_three_named_sets():
+    assert ab.FIXTURES == ("phi", "perio_screening", "all")
+
+
+def test_load_batch_picks_the_screening_set_and_all():
+    from health_transformation_lab_nlp import access_hard_items as ahi
+    hard = ab.load_batch(limit=10, fixture="perio_screening")
+    assert [r["id"] for r in hard] == [r["id"] for r in ahi.load_items()]
+    assert all(r["id"].startswith("ACC_PERIO_SCR_") for r in hard)
+    both = ab.load_batch(limit=15, fixture="all")
+    assert [r["id"] for r in both] == [r["id"] for r in api.load_items()] + [r["id"] for r in hard]
+    assert [r["id"] for r in ab.load_batch()] == [r["id"] for r in api.load_items()[:5]]     # default unchanged
+
+
+def test_load_batch_rejects_an_unknown_fixture_and_a_limit_too_big_for_the_set():
+    with pytest.raises(ValueError, match="nonsense"):
+        ab.load_batch(fixture="nonsense")
+    with pytest.raises(ValueError, match="limit"):
+        ab.load_batch(limit=11, fixture="perio_screening")
+
+
+def test_simulated_run_scores_the_screening_set_with_no_leak():
+    out = ab.run(endpoints=["sim:llama"], limit=10, fixture="perio_screening", mode="simulated", run_id="r5",
+                 run_ts=pd.Timestamp("2026-11-24", tz="UTC"), git_commit="abc1234")
+    dim, fact = out["dim_access_question"], out["fact_access_answer"]
+    assert len(dim) == 10 and len(fact) == 10
+    assert not fact["is_phi_leak"].any()                      # nothing was planted, so nothing can leak
+    assert set(dim["question_id"]) == set(fact["question_id"])

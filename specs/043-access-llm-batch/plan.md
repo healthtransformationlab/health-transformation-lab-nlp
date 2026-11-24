@@ -21,6 +21,15 @@ Five synthetic Access fixtures → `access_batch.run` (simulated or live Serving
 | Gold | `gold_names.py`, `diagrams/_build/gold_model.py`, `table_comments.GOLD_SCHEMA` |
 | Job | `databricks/notebooks/16_access_llm_batch.py`, `databricks/resources/jobs.yml` |
 
+## US5: question sets (#929)
+
+`access_batch.FIXTURES = ("phi", "perio_screening", "all")`. `load_batch(limit, fixture)` reads
+`access_phi_items.load_items()` and/or `access_hard_items.load_items()` in file order (phi first for `all`); `limit`
+still may not exceed the set's size. The leak check uses an item's `planted_phi` when it has one, and nothing
+otherwise. The notebook adds a `fixture` widget; `databricks.yml` declares `access_llm_fixture` (default `phi`); the
+job passes it as `fixture`. No table or column changes: `dim_access_question` already holds domain, persona, level,
+key-point count and evidence source, which the screening items carry.
+
 ## Constitution check
 
 - Synthetic only; planted PHI; `is_simulated` labelled.

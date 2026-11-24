@@ -352,6 +352,8 @@ def test_access_llm_batch_job_defaults_to_simulated_and_writes_gold_access_bench
     assert root["variables"]["access_llm_mode"]["default"] == "simulated"
     assert p["endpoints"] == "${var.access_llm_endpoints}"
     assert p["limit"] == "${var.access_llm_limit}"
+    assert p["fixture"] == "${var.access_llm_fixture}"                    # #929: which question set
+    assert root["variables"]["access_llm_fixture"]["default"] == "phi"
     assert p["run_id"] == "{{job.run_id}}"
     assert j["tasks"][0]["notebook_task"]["notebook_path"].endswith("16_access_llm_batch.py")
     nb = (ROOT / "databricks/notebooks/16_access_llm_batch.py").read_text()

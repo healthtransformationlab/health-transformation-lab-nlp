@@ -101,6 +101,9 @@ variables:
   access_llm_limit:
     description: How many Access fixtures to score (max = fixture count, default 5)
     default: "5"
+  access_llm_fixture:
+    description: "Which AccessBench questions to score (#929): phi (5 with planted details), perio_screening (10), or all (15)"
+    default: phi
   access_judge_endpoint:
     description: "Key-point judge endpoint (sim:judge for simulated)"
     default: "sim:judge"

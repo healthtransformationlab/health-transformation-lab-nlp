@@ -37,6 +37,7 @@ dbutils.widgets.text("schema", "gold_access_bench")
 dbutils.widgets.text("run_id", "")
 dbutils.widgets.text("endpoints", "sim:llama")
 dbutils.widgets.text("limit", "5")
+dbutils.widgets.dropdown("fixture", "phi", ["phi", "perio_screening", "all"])  # noqa: F821  #929
 dbutils.widgets.text("judge_endpoint", "sim:judge")
 dbutils.widgets.text("max_usd", "1")
 dbutils.widgets.dropdown("mode", "simulated", ["simulated", "live"])
@@ -59,6 +60,7 @@ run_id = dbutils.widgets.get("run_id").strip() or "manual"
 mode = dbutils.widgets.get("mode").strip()
 endpoints = [e.strip() for e in dbutils.widgets.get("endpoints").split(",") if e.strip()]
 limit = int(dbutils.widgets.get("limit").strip() or "5")
+fixture = dbutils.widgets.get("fixture").strip() or "phi"  # noqa: F821
 judge_endpoint = dbutils.widgets.get("judge_endpoint").strip() or "sim:judge"
 max_usd = float(dbutils.widgets.get("max_usd").strip() or "1")
 usd_in = float(dbutils.widgets.get("usd_per_million_in").strip() or "0")
@@ -79,6 +81,7 @@ if mode == "live":
 out = access_batch.run(
     endpoints=endpoints,
     limit=limit,
+    fixture=fixture,
     mode=mode,
     judge_endpoint=judge_endpoint,
     max_usd=max_usd,
