@@ -37,7 +37,7 @@ Scored against the generator's answer key: agreement, not accuracy on real patie
 
 | For | Go to |
 |---|---|
-| **Executives** (13 slides, 10 minutes) | [read the pitch with speaker notes](docs/edr/full_text_and_notes.md) · [slides](docs/edr/deck.html) (download and open in a browser) |
+| **Executives** (7 slides, plus backup) | [read the pitch with speaker notes](docs/edr/full_text_and_notes.md) · [slides](docs/edr/deck.html) (download and open in a browser) |
 | **Scientists** | [the study](docs/edr/README.md): the seven kinds of evidence, the three tests with 95% intervals, the acceptance test, the models |
 | **Engineers** | [code walkthrough](docs/code_walkthrough.md), [deployment](docs/deployment.md), [how we work](AGENTS.md) |
 
