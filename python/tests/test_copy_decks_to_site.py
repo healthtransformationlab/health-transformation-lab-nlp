@@ -150,3 +150,12 @@ def test_the_site_token_is_in_the_register():
     assert "copy-decks-to-site.yml" in entry["used_by"]
     assert "Contents" in entry["scope"] and "healthtransformationlab.github.io" in entry["scope"]
     assert "90 days" in entry["lifetime"]
+
+
+def test_workflow_stages_every_site_copy():
+    """#927: the commit step staged a hand-written list of paths, so access-bench/index.html was built but never
+    committed and the page was 404. Every destination the script writes must be staged."""
+    text = (REPO_ROOT / ".github" / "workflows" / "copy-decks-to-site.yml").read_text()
+    staged = next(line for line in text.splitlines() if line.strip().startswith("git add"))
+    for dst in (*cd.DECKS.values(), *cd.PAGES.values(), *cd.COVERS.values()):
+        assert dst in staged.split(), dst
