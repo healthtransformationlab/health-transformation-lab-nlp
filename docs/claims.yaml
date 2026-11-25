@@ -714,6 +714,15 @@ access:
       checked: 2026-10-29
       covers: answers to dental case-based questions rated unsafe (S1 or S2) by GlobalDentBench's AI judge, across 12 frontier models
   findings:
+    - value: "1,500"
+      kind: measured
+      file: data/access_bench/runs/run_608662392694095.md
+      match: "1,500-token cap"
+      covers: the answer-length limit, in tokens, each model's answer had in run 608662392694095 (answer_max_tokens)
+    - value: "1,100"
+      kind: derived
+      from: "1,500 tokens x about 0.75 English words per token (a common rule of thumb), rounded"
+      covers: the 1,500-token answer limit in words, roughly
     - value: "77.7%"
       kind: measured
       file: data/access_bench/runs/run_608662392694095.md
