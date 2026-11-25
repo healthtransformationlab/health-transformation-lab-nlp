@@ -7,14 +7,9 @@ AccessBench · exploratory · November 2026
 Millions ask AI how to get care.
 Does the answer get them there?
 AccessBench grades whether an AI answer helps someone actually get care: is it covered, what to do about a denial or a bill, where to go that they can afford.
-The third benchmark, after
-PerioBench
-(finding gum disease in dental records) and
-OralHealthBench
-(accurate answers where medicine meets dentistry).
 John Bowyer · personal project, not affiliated with any organization · synthetic questions, no patient data
 
-**Speaker notes:** People now ask AI the questions they used to bring to a benefits counselor or a dental office's front desk: is this covered, what do I do about this bill, where can I go that I can afford. AccessBench grades whether the answer actually gets them to care. It is the third of three benchmarks: PerioBench asks whether we can find gum disease in the dental record, and OralHealthBench asks whether AI gives accurate answers where medicine meets dentistry. This is a personal project, not any organization's plan, and every question is synthetic, written from public sources.
+**Speaker notes:** People now ask AI the questions they used to bring to a benefits counselor or a dental office's front desk: is this covered, what do I do about this bill, where can I go that I can afford. AccessBench grades whether the answer actually gets them to care. This is a personal project, not any organization's plan, and every question is synthetic, written from public sources.
 
 ## Slide 2 — reach
 
