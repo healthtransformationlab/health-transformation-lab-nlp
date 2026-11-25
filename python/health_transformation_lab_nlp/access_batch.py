@@ -173,6 +173,7 @@ def run(*, endpoints: list[str], limit: int = 5, mode: str = "simulated",
             })
     dim = pd.DataFrame([{
         "question_id": r["id"],
+        "section": r["section_code"],
         "domain": r["domain"],
         "persona": r["persona"],
         "level": ak.infer_level(r),

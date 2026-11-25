@@ -58,7 +58,7 @@ def test_a_leaky_answer_fails_the_phi_gate_and_a_scrubbed_one_passes():
 
 def test_validate_items_rejects_phi_missing_from_prompt():
     bad = {
-        "id": "ACC_BAD_001", "domain": "insurance_cost", "persona": "x",
+        "id": "ACC_BAD_001", "section_code": "oral", "domain": "insurance_cost", "persona": "x",
         "prompt": "I need a dentist and have no insurance.",
         "must_include": ["a", "b", "c"], "red_flags": ["r"],
         "evidence_source": "CMS", "knowledge_cutoff_sensitive": False,

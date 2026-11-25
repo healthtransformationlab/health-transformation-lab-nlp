@@ -9,6 +9,7 @@ import json
 from pathlib import Path
 
 from .paths import REPO_ROOT
+from .access_sections import validate_section
 from .telemetry import traced
 
 ITEMS_PATH = REPO_ROOT / "benchmarks" / "access_bench" / "items" / "perio_screening_hard_items.jsonl"
@@ -47,6 +48,7 @@ def validate_item(row: dict, where: str = "item") -> None:
         raise ValueError(f"{where}: missing {missing}")
     if not str(row["id"]).startswith("ACC_"):
         raise ValueError(f"{where}: id must start with ACC_")
+    validate_section(row, where)                   # oral, medical or mental (spec 044, ADR 0014)
     if row.get("is_simulated") is not True:
         raise ValueError(f"{where}: is_simulated must be true (synthetic only)")
     if row.get("screening_goal_tag") != GOAL_TAG:

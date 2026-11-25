@@ -35,6 +35,7 @@ def test_every_hard_item_meets_the_access_contract():
 def test_validate_rejects_wrong_goal_tag():
     bad = {
         "id": "ACC_PERIO_SCR_099",
+        "section_code": "oral",
         "domain": "insurance_cost",
         "persona": "x",
         "prompt": "How do I get a gum screening on Medicaid?",

@@ -175,3 +175,13 @@ def test_is_truncated_reaches_gold():
     out = ab.run(endpoints=["sim:a"], limit=1, mode="simulated", run_id="r8",
                  run_ts=pd.Timestamp("2026-11-24", tz="UTC"), git_commit="abc")
     assert "is_truncated" in gold_names.to_gold(out["fact_access_answer"], "fact_access_answer").columns
+
+
+# ---------- spec 044 US1 (#938): the section reaches gold ----------
+
+def test_the_question_table_carries_each_questions_section():
+    out = ab.run(endpoints=["sim:a"], limit=15, fixture="all", mode="simulated", run_id="r10",
+                 run_ts=pd.Timestamp("2026-11-25", tz="UTC"), git_commit="abc")
+    dim = out["dim_access_question"]
+    assert set(dim["section"]) == {"oral"}
+    assert "section_code" in gold_names.to_gold(dim, "dim_access_question").columns

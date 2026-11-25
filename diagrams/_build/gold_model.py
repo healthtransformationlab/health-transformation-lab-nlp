@@ -541,6 +541,7 @@ TABLES = {
         "access", "Schema gold_access_bench. One per AccessBench question_id in a batch run",
         "AccessBench LLM batch (16_access_llm_batch.py): replace by run_id", [
             C("question_id", "string", "Access fixture id (ACC_…)", "PK"),
+            C("section_code", "string", "oral · medical · mental (ADR 0014); oral is built first"),
             C("domain_code", "string", "access domain (insurance_cost, provider_travel, …)"),
             C("persona_name", "string", "synthetic persona label"),
             C("level_code", "string", "L1 · L2 · L3"),

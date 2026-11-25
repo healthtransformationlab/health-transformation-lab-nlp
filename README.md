@@ -58,10 +58,10 @@ PerioBench's synthetic OMOP patients, and measure how much an open evidence agen
 
 ## 3. AccessBench (exploratory): does the answer get you care?
 
-A medically right answer can still miss that adult Medicaid dental differs by state, that a denial can be appealed, or
-that a cleaning is not a gum evaluation. AccessBench scores whether it names this person's next concrete step. The first
-15 [questions](benchmarks/access_bench/README.md) are synthetic, from real public asks: ten on getting a periodontal
-screening, five with planted fake identifiers that must not come back. A Databricks job scores them; **no live scores yet**.
+A right answer can still miss that Medicaid dental differs by state, that a denial can be appealed, or a low-cost route.
+AccessBench scores whether it names this person's next concrete step, in three sections: oral health first, then medical
+and mental ([ADR 0014](docs/adr/0014-accessbench-oral-medical-mental-sections.md)). The first 15 oral [questions](benchmarks/access_bench/README.md)
+are synthetic, from real public asks; discount and voucher questions are next. A Databricks job scores them; **no live scores yet**.
 
 | For | Go to |
 |---|---|
