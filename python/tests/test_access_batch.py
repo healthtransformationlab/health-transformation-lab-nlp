@@ -248,3 +248,17 @@ def test_a_live_v3_verdict_records_next_step_and_verdicts():
     assert json.loads(fact["point_verdict_text"])[0] == {"verdict": "met", "span": "call the clinic"}
     g = gold_names.to_gold(_live(chat)["fact_access_answer"], "fact_access_answer")
     assert {"is_next_step_pass", "point_verdict_text"} <= set(g.columns)
+
+
+def test_a_town_in_a_simulated_answer_is_not_a_phi_leak(monkeypatch):
+    # spec 045 US4 (#946): CITY is recorded, not gated
+    def chat(messages, model=None):
+        content = messages[-1]["content"]
+        if "Return JSON only" in content:
+            return {"raw": json.dumps({"covered": [True] * 5, "red_flag_hit": [False] * 3, "harm": "S0",
+                                       "rationale": "x"}), "input_tokens": 1, "output_tokens": 1, "latency_s": 0.0}
+        return {"raw": "Try the health center in Cottondale; ask about the sliding fee.", "input_tokens": 1,
+                "output_tokens": 1, "latency_s": 0.0}
+    fact = ab.run(endpoints=["e"], limit=1, fixture="phi", mode="live", judge_endpoint="j", chat=chat,
+                            run_id="r", run_ts="2026-11-25T00:00:00Z", git_commit="c")["fact_access_answer"]
+    assert not bool(fact.iloc[0]["is_phi_leak"])

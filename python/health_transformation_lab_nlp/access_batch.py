@@ -17,7 +17,6 @@ from . import access_hard_items as ahi
 from . import access_keypoint_judge as ak
 from . import access_phi_items as api
 from . import access_resources
-from . import deid
 from .telemetry import traced
 
 ChatFn = Callable[..., dict[str, Any]]
@@ -167,8 +166,8 @@ def run(*, endpoints: list[str], limit: int = 5, mode: str = "simulated",
                 answer, meta = _answer(row, endpoint, mode, chat)
                 scored = _judge(row, answer, mode, judge_endpoint, chat)
             # a screening item plants nothing, so there is nothing to leak (#929)
-            planted = api.known_phi_for_leak_check(row) if row.get("planted_phi") else []
-            leaks = deid.leak_check(answer, planted) if answer and planted else []
+            # spec 045 US4: gated identifiers only, matched across case, spacing and number format
+            leaks = api.leaked_details(answer, row) if answer and row.get("planted_phi") else []
             fact_rows.append({
                 "question_id": row["id"],
                 "endpoint": endpoint,

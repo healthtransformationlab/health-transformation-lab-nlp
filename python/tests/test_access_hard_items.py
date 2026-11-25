@@ -49,3 +49,12 @@ def test_validate_rejects_wrong_goal_tag():
     }
     with pytest.raises(ValueError, match="screening_goal_tag"):
         ahi.validate_item(bad)
+
+
+def test_validate_requires_the_source_fields():
+    # spec 045 US4 (#946)
+    row = dict(ahi.load_items()[0])
+    del row["recheck_date"]
+    with pytest.raises(ValueError, match="recheck_date"):
+        ahi.validate_item(row)
+    assert ahi.load_items()[0]["jurisdiction_code"] == "US-NY"

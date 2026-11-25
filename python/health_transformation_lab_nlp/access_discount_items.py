@@ -9,7 +9,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from .access_phi_items import validate_resources
+from .access_phi_items import validate_resources, validate_source_fields
 from .access_sections import validate_section
 from .paths import REPO_ROOT
 from .telemetry import traced
@@ -56,3 +56,4 @@ def validate_item(row: dict, where: str = "item") -> None:
     if not isinstance(row["knowledge_cutoff_sensitive"], bool):
         raise TypeError(f"{where}: knowledge_cutoff_sensitive must be a boolean")
     validate_resources(row["resources"], where)
+    validate_source_fields(row, where)             # spec 045 US4
