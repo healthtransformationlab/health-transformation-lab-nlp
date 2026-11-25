@@ -34,3 +34,7 @@ Synthetic only; test first; names follow AGENTS.md; no blended number.
 ## US5 (#957)
 
 Edit the item files directly; `docs/access_bench_key_v2.md` lists each change and who asked; new sources named, `source_verified_date` null until opened.
+
+## US6 (#961)
+
+`access_mlflow.log_run` after the gold write (job passes the bundle's `experiment_id`); scorers read the stored grades; `scripts/82_access_mlflow_backfill.py` for past runs.
