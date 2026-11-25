@@ -1,0 +1,7 @@
+{
+  "stale_hours": 10.9,
+  "last_finished_ts": "2026-11-25T02:07:22Z",
+  "recorded_ts": "2026-11-25T13:01:35.233722Z",
+  "severity_code": "SEV3",
+  "reason_text": "leaderboard-watch has not completed for six or more hours (014 BUG3 #809)"
+}
