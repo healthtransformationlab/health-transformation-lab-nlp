@@ -42,7 +42,7 @@ def test_keep_rewrite_remove_and_additions(hard):
 
 
 def test_a_result_that_breaks_the_limits_names_the_item():
-    item = api.load_items()[0]                                # three red flags already
+    item = next(r for r in api.load_items() if len(r["red_flags"]) == 3)   # three red flags already
     rev = _review(item, [("keep", "")] * len(item["must_include"]), [("keep", "")] * len(item["red_flags"]),
                   riskiest_wrong_advice_text="A fourth red flag")
     with pytest.raises(ValueError, match=item["id"]):

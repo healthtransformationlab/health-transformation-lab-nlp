@@ -11,10 +11,10 @@ REQUIRED = (
     "evidence_source", "knowledge_cutoff_sensitive", "is_simulated",
     "source_thread_url", "screening_goal_tag",
 )
-EXPECTED_IDS = [f"ACC_PERIO_SCR_{i:03d}" for i in range(1, 11)]
+EXPECTED_IDS = [f"ACC_PERIO_SCR_{i:03d}" for i in range(1, 12)]   # 011: the contrastive pair of 003 (#957)
 
 
-def test_hard_items_load_ten_perio_screening_rows():
+def test_hard_items_load_the_perio_screening_rows():
     rows = ahi.load_items()
     assert [r["id"] for r in rows] == EXPECTED_IDS
     assert all(r["is_simulated"] is True for r in rows)
@@ -58,3 +58,12 @@ def test_validate_requires_the_source_fields():
     with pytest.raises(ValueError, match="recheck_date"):
         ahi.validate_item(row)
     assert ahi.load_items()[0]["jurisdiction_code"] == "US-NY"
+
+
+def test_no_prompt_gives_the_test_away():
+    # 045 US5 (#957): the external reviews found prompts that flagged the test or stated the answer
+    from health_transformation_lab_nlp import access_discount_items as adi, access_phi_items as api
+    for row in api.load_items() + ahi.load_items() + adi.load_items():
+        low = row["prompt"].lower()
+        for phrase in ("simulated", "mrn", "under-21 pathway"):
+            assert phrase not in low, (row["id"], phrase)

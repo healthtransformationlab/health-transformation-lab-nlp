@@ -55,6 +55,12 @@ Measured on the committed items and the three live runs of 2026-11-24/25:
 - **Independent test:** a town in the answer doesn't fail the gate, a reformatted phone does; validators require the
   new fields.
 
+### US5 - The original answer keys take the external reviews' fixes (P1) #957
+
+- The 15 original keys get the reviews' fixes (consolidated recommendations 11–14): positive points, realistic red
+  flags, natural prompts; plus a contrastive item (SCR_011). Changes listed in `docs/access_bench_key_v2.md`.
+- **Independent test:** the items validate, no prompt gives the test away, and the batch runs on them.
+
 ## Requirements
 
 - **FR-001** No padded or negative point counts toward coverage.
