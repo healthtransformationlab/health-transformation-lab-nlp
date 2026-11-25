@@ -300,6 +300,7 @@ resources:
               endpoints: ${var.access_llm_endpoints}
               limit: ${var.access_llm_limit}
               fixture: ${var.access_llm_fixture}
+              controls: ${var.access_llm_controls}
               answer_max_tokens: ${var.access_answer_max_tokens}
               judge_endpoint: ${var.access_judge_endpoint}
               max_usd: ${var.access_max_usd}
