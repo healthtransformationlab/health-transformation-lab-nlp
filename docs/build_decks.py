@@ -23,7 +23,7 @@ SITE_PAGES = {"edr": ("perio-bench", "PerioBench"), "pitch": ("oral-health-bench
 DECKS = {
     "pitch": ("Health Transformation Lab: Shark Tank pitch",
               f'{PERSONAL} Figures are cited on each slide; nothing marked "to measure" has been measured.'),
-    "access": ("Health Transformation Lab: AccessBench, does the answer get you care?",
+    "access": ("Health Transformation Lab: AccessBench: Oral Health, does the answer get people to care?",
                (f"{PERSONAL} Exploratory: synthetic questions written from public sources; scores are preliminary (one AI "
                 "judge, no independent reviewer yet); anything simulated is labelled simulated.")),
     "edr": ("Health Transformation Lab: PerioBench, the dental record (EDR) study, executive pitch",
