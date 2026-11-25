@@ -13,3 +13,6 @@
 - [x] T011 [US7] Failing tests `test_access_review.py` — #933
 - [x] T012 [US7] `access_review.py`, `scripts/80_access_review.py`, `docs/access_review_protocol.md`, the committed answer sample — #933
 - [ ] T013 [US7] Apply the owner's part 1 decisions and rerun the batch — #933
+- [x] T014 [US8] Failing tests: link and phone extraction, link check, v2 verdict, batch columns, review resources — #935
+- [x] T015 [US8] `access_resources.py`; judge v2; batch columns, contract and diagrams; `apply_key_review` resources; agreement — #935
+- [x] T016 [US8] Review page: resources editor and resource level; the external review prompt and `81_external_review_prompt.py` — #935

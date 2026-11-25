@@ -73,6 +73,32 @@ schema:
     logicalType: boolean
     physicalType: boolean
     description: true if the answer used its whole output-token budget and may stop mid-sentence
+  - id: resource_level_num
+    name: resource_level_num
+    logicalType: integer
+    physicalType: bigint
+    description: 0 no resource, 1 generic advice, 2 right resource without a direct contact, 3 exact resource with a working
+      link or number; null in simulated runs
+  - id: is_invented_contact
+    name: is_invented_contact
+    logicalType: boolean
+    physicalType: boolean
+    description: true if the judge found a made-up or wrong link, phone number or program; null in simulated runs
+  - id: link_count
+    name: link_count
+    logicalType: integer
+    physicalType: bigint
+    description: distinct links in the answer
+  - id: broken_link_count
+    name: broken_link_count
+    logicalType: integer
+    physicalType: bigint
+    description: links that answered 4xx/5xx or whose site does not exist
+  - id: unchecked_link_count
+    name: unchecked_link_count
+    logicalType: integer
+    physicalType: bigint
+    description: links that could not be checked (timeout, refused robot)
   - id: judge_endpoint_name
     name: judge_endpoint_name
     logicalType: string

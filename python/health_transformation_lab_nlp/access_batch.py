@@ -15,6 +15,7 @@ import pandas as pd
 from . import access_hard_items as ahi
 from . import access_keypoint_judge as ak
 from . import access_phi_items as api
+from . import access_resources
 from . import deid
 from .telemetry import traced
 
@@ -71,7 +72,8 @@ def _answer(row: dict, endpoint: str, mode: str, chat: ChatFn | None,
     }
 
 
-def _judge(row: dict, answer: str, mode: str, judge_endpoint: str, chat: ChatFn | None) -> dict:
+def _judge(row: dict, answer: str, mode: str, judge_endpoint: str, chat: ChatFn | None,
+           link_status: dict | None = None) -> dict:
     n_kp, n_rf = len(ak.key_points(row)), len(row["red_flags"])
     if mode == "simulated":
         parsed = {
@@ -86,7 +88,7 @@ def _judge(row: dict, answer: str, mode: str, judge_endpoint: str, chat: ChatFn 
         from .llm_reader import OpenAIChat
         client = OpenAIChat(model=judge_endpoint)
         judge_chat = lambda messages, model=None: client(messages)  # noqa: E731
-    msgs = ak.judge_messages(row, answer)
+    msgs = ak.judge_messages(row, answer, link_status)
     resp = judge_chat(msgs)
     raw = str(resp.get("raw") or "")
     try:
@@ -95,7 +97,7 @@ def _judge(row: dict, answer: str, mode: str, judge_endpoint: str, chat: ChatFn 
     except (ValueError, json.JSONDecodeError) as e:
         return {
             "key_points_covered": 0, "score": 0.0, "harm": "S1", "red_flag_hit": [],
-            "error": f"judge_parse: {e}",
+            "resource_level": None, "invented_contact": None, "error": f"judge_parse: {e}",
         }
 
 
@@ -123,7 +125,9 @@ def run(*, endpoints: list[str], limit: int = 5, mode: str = "simulated",
             err = ""
             answer = ""
             meta = {"input_tokens": 0, "output_tokens": 0, "latency_s": 0.0, "error": ""}
-            scored = {"key_points_covered": 0, "score": 0.0, "harm": "S1", "red_flag_hit": [], "error": ""}
+            scored = {"key_points_covered": 0, "score": 0.0, "harm": "S1", "red_flag_hit": [], "error": "",
+                      "resource_level": None, "invented_contact": None}
+            links: dict = {}
             if mode == "live":
                 # Refuse the next call if even a tiny reply would blow the budget after what we spent
                 if spent >= max_usd:
@@ -136,7 +140,9 @@ def run(*, endpoints: list[str], limit: int = 5, mode: str = "simulated",
                     if spent > max_usd and call_cost > 0:
                         err = f"max_usd {max_usd}: call cost pushed spend to {spent:.4f}"
                     elif not meta.get("error"):
-                        scored = _judge(row, answer, mode, judge_endpoint, chat)
+                        # open every link the answer gives, so a dead or invented one can't earn top marks (#935)
+                        links = access_resources.check_links(access_resources.extract_links(answer))
+                        scored = _judge(row, answer, mode, judge_endpoint, chat, links)
                         j_cost = 0.0  # judge tokens not separately metered here unless chat returns them
                         spent += j_cost
                     else:
@@ -158,6 +164,11 @@ def run(*, endpoints: list[str], limit: int = 5, mode: str = "simulated",
                 "is_phi_leak": bool(leaks),
                 # the answer used its whole token budget, so it may stop mid-sentence (#931)
                 "is_truncated": mode == "live" and meta["output_tokens"] >= answer_max_tokens,
+                "resource_level": scored.get("resource_level") if mode == "live" else None,
+                "is_invented_contact": scored.get("invented_contact") if mode == "live" else None,
+                "link_count": len(links),
+                "broken_link_count": sum(1 for ok in links.values() if ok is False),
+                "unchecked_link_count": sum(1 for ok in links.values() if ok is None),
                 "judge_endpoint": judge_endpoint,
                 "prompt_version": ak.PROMPT_VERSION,
                 "latency_s": meta["latency_s"],
