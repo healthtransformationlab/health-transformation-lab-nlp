@@ -87,6 +87,22 @@ smallest path that produces checkable, simulated-labelled results in gold.
 - **Independent test:** `test_access_review.py` applies each verdict, rejects a result that breaks the item limits,
   and computes agreement on a fixed fixture; the script round-trips an export in a temporary folder.
 
+### US8 - Answers score higher for specific, correct resources, and their links are checked (P1) #935
+
+- The answer key may list the correct resources for a question (`resources`: name, `https://` link, phone, purpose).
+- Each answer gets a resource level: 3 = the exact resource with a correct, working link or number; 2 = the right
+  resource without a direct contact; 1 = generic advice only; 0 = no resource. An invented or wrong link, number or
+  program is `is_invented_contact`, which counts against the answer like a red flag.
+- Live runs open every link in an answer: `link_count`, `broken_link_count` (4xx/5xx or gone) and
+  `unchecked_link_count` (couldn't be checked). The judge (prompt `access-keypoints-v2`) sees the key's resources and
+  the link results.
+- The review page adds a "Correct resources" editor per question and a resource level per graded answer.
+- `benchmarks/access_bench/prompts/external_review.md` asks other AI models to review the questions, keys and process;
+  `scripts/81_external_review_prompt.py` fills in the questions. Their replies are suggestions for the owner's review.
+- **Independent test:** links and phones are found in sample text; a stub fetcher gives working, broken and unchecked
+  links; a v2 verdict parses and a v1 verdict still does; a live run with a stub chat records the level, the
+  invented-contact flag and the link counts; `apply_key_review` keeps resources.
+
 ## Requirements
 
 - **FR-001** Default batch size is 5; `limit` may be smaller but not larger than the fixture

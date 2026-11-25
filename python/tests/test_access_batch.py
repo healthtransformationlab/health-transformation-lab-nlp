@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 import pandas as pd
 import pytest
 
@@ -185,3 +187,31 @@ def test_the_question_table_carries_each_questions_section():
     dim = out["dim_access_question"]
     assert set(dim["section"]) == {"oral"}
     assert "section_code" in gold_names.to_gold(dim, "dim_access_question").columns
+
+# ---------- US8 (#935): resource columns ----------
+
+def test_a_live_run_records_resource_level_invented_contact_and_link_counts(monkeypatch):
+    from health_transformation_lab_nlp import access_resources
+    monkeypatch.setattr(access_resources, "check_links",
+                        lambda urls, fetch=None: {u: {"https://ok.example/": True, "https://gone.example/": False}.get(u) for u in urls})
+    n_kp = 5
+
+    def chat(messages, model=None):
+        if "Return JSON only" in messages[-1]["content"]:      # the judge
+            return {"raw": json.dumps({"covered": [True] * n_kp, "red_flag_hit": [False, False, False], "harm": "S1",
+                                       "resource_level": 2, "invented_contact": True, "rationale": "x"}),
+                    "input_tokens": 1, "output_tokens": 1, "latency_s": 0.0}
+        return {"raw": "See https://ok.example/ and https://gone.example/ and https://slow.example/", "input_tokens": 5,
+                "output_tokens": 50, "latency_s": 0.0}
+    row = _live(chat)["fact_access_answer"].iloc[0]
+    assert (row["resource_level"], bool(row["is_invented_contact"])) == (2, True)
+    assert (row["link_count"], row["broken_link_count"], row["unchecked_link_count"]) == (3, 1, 1)
+
+
+def test_resource_columns_reach_gold_and_are_empty_in_simulated_runs():
+    out = ab.run(endpoints=["sim:a"], limit=1, mode="simulated", run_id="r9",
+                 run_ts=pd.Timestamp("2026-11-25", tz="UTC"), git_commit="abc")
+    fact = out["fact_access_answer"]
+    assert fact["resource_level"].isna().all() and (fact["link_count"] == 0).all()
+    g = gold_names.to_gold(fact, "fact_access_answer")
+    assert {"resource_level_num", "is_invented_contact", "link_count", "broken_link_count", "unchecked_link_count"} <= set(g.columns)

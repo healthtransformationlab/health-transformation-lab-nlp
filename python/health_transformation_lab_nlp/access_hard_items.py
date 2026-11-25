@@ -10,6 +10,7 @@ from pathlib import Path
 
 from .paths import REPO_ROOT
 from .access_sections import validate_section
+from .access_phi_items import validate_resources as api_validate_resources
 from .telemetry import traced
 
 ITEMS_PATH = REPO_ROOT / "benchmarks" / "access_bench" / "items" / "perio_screening_hard_items.jsonl"
@@ -59,6 +60,7 @@ def validate_item(row: dict, where: str = "item") -> None:
         raise ValueError(f"{where}: red_flags needs 1 to 3 entries")
     if not isinstance(row["knowledge_cutoff_sensitive"], bool):
         raise TypeError(f"{where}: knowledge_cutoff_sensitive must be a boolean")
+    api_validate_resources(row.get("resources"), where)
     if not str(row["source_thread_url"]).startswith("http"):
         raise ValueError(f"{where}: source_thread_url must be an http(s) URL")
     if "planted_phi" in row:

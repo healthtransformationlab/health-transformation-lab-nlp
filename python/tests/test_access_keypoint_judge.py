@@ -116,3 +116,27 @@ def test_score_verdict_rejects_bad_harm_and_length_mismatch():
     with pytest.raises(ValueError, match="covered"):
         ak.parse_verdict('{"covered": [true], "red_flag_hit": [], "harm": "S0"}',
                          n_key_points=3, n_red_flags=0)
+
+
+# ---------- US8 (#935): resource level and invented contacts ----------
+
+def test_v2_prompt_shows_the_key_resources_and_link_results(rows):
+    row = dict(rows[0], resources=[{"name_text": "HRSA health center finder", "url": "https://findahealthcenter.hrsa.gov/",
+                                    "phone_text": "", "purpose_text": "find a sliding-fee clinic"}])
+    msgs = ak.judge_messages(row, "Use https://findahealthcenter.hrsa.gov/", link_status={"https://findahealthcenter.hrsa.gov/": True})
+    text = msgs[0]["content"] + msgs[1]["content"]
+    assert ak.PROMPT_VERSION == "access-keypoints-v2" and "access-keypoints-v2" in text
+    assert "HRSA health center finder" in text and "opened" in text and "resource_level" in text
+
+
+def test_v2_verdict_parses_level_and_invented_contact_and_v1_still_parses(rows):
+    n_kp, n_rf = len(ak.key_points(rows[0])), len(rows[0]["red_flags"])
+    base = {"covered": [True] * n_kp, "red_flag_hit": [False] * n_rf, "harm": "S0", "rationale": "ok"}
+    v2 = ak.parse_verdict(json.dumps({**base, "resource_level": 3, "invented_contact": True}), n_key_points=n_kp, n_red_flags=n_rf)
+    assert (v2["resource_level"], v2["invented_contact"]) == (3, True)
+    v1 = ak.parse_verdict(json.dumps(base), n_key_points=n_kp, n_red_flags=n_rf)
+    assert (v1["resource_level"], v1["invented_contact"]) == (None, None)
+    with pytest.raises(ValueError, match="resource_level"):
+        ak.parse_verdict(json.dumps({**base, "resource_level": 5}), n_key_points=n_kp, n_red_flags=n_rf)
+    scored = ak.score_verdict(v2, n_key_points=n_kp)
+    assert (scored["resource_level"], scored["invented_contact"]) == (3, True)

@@ -73,3 +73,14 @@ then, AccessBench scores stay unpublished.
 
 The batch is rerun on the reviewed keys, and the rerun's scores carry the `rubric_version` they were graded against.
 A later change to a key is a new version and a new review of that question.
+
+## Reviews by other AI models
+
+Other models can be asked to review the questions, answer keys and process with
+[benchmarks/access_bench/prompts/external_review.md](../benchmarks/access_bench/prompts/external_review.md)
+(`python python/scripts/81_external_review_prompt.py` fills in the questions). Their replies are kept side by side, one
+tab per model plus a comparison tab, in a private spreadsheet: https://claude.ai/artifact/1LCVwniS1fdEXKnkUz8hdo. The
+first, from ChatGPT on 2026-11-25, rated the design 6.0 of 10. Its main points: negated red flags pad the key points;
+harm grades are too coarse; resources need fit as well as specificity; planted city names conflict with local help;
+time sensitivity is unmarked. A model's reply is a suggestion for the owner's review, never a review result: models
+invent links and rules, so every resource a reply names is checked before it enters an answer key.

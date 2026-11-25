@@ -57,6 +57,7 @@ def validate_item(row: dict, where: str = "item") -> None:
         raise ValueError(f"{where}: planted_phi needs at least 2 identifiers")
     if not isinstance(row["knowledge_cutoff_sensitive"], bool):
         raise TypeError(f"{where}: knowledge_cutoff_sensitive must be a boolean")
+    validate_resources(row.get("resources"), where)
     prompt = row["prompt"]
     for p in row["planted_phi"]:
         text = p.get("text")
@@ -70,3 +71,16 @@ def validate_item(row: dict, where: str = "item") -> None:
 def known_phi_for_leak_check(row: dict) -> list[dict]:
     """Shape expected by deid.leak_check: [{'text': ...}, ...]."""
     return [{"text": p["text"]} for p in row["planted_phi"]]
+
+@traced
+def validate_resources(resources, where: str = "item") -> None:
+    """The answer key's correct resources (#935), when given: each a name, an optional https:// link and phone."""
+    if resources is None:
+        return
+    if not isinstance(resources, list):
+        raise ValueError(f"{where}: resources must be a list")
+    for r in resources:
+        if not isinstance(r, dict) or not str(r.get("name_text", "")).strip():
+            raise ValueError(f"{where}: each resource needs a name_text")
+        if r.get("url") and not str(r["url"]).startswith("https://"):
+            raise ValueError(f"{where}: resource links must start with https:// ({r['url']!r})")
