@@ -17,12 +17,13 @@ import json
 import sys
 from pathlib import Path
 
+from health_transformation_lab_nlp import access_discount_items as adi
 from health_transformation_lab_nlp import access_hard_items as ahi
 from health_transformation_lab_nlp import access_phi_items as api
 from health_transformation_lab_nlp import access_review as ar
 from health_transformation_lab_nlp import telemetry
 
-FILES = {"phi": api.ITEMS_PATH, "perio_screening": ahi.ITEMS_PATH}
+FILES = {"phi": api.ITEMS_PATH, "perio_screening": ahi.ITEMS_PATH, "discount_voucher": adi.ITEMS_PATH}
 SAMPLE = ar.REVIEW_DIR / "answer_sample_587381582818833.json"
 
 
