@@ -8,9 +8,9 @@
 
 ## US2 - discount and voucher questions (#939)
 
-- [ ] T010 [US2] Draft the questions from official sources opened on the day
-- [ ] T011 [US2] Failing tests `test_access_discount_items.py`; `access_discount_items.py`; `fixture=discount_voucher`
-- [ ] T012 [US2] The review page and `80_access_review.py` take the new items
+- [x] T010 [US2] Draft the questions from official sources opened on the day
+- [x] T011 [US2] Failing tests `test_access_discount_items.py`; `access_discount_items.py`; `fixture=discount_voucher`
+- [x] T012 [US2] The review page and `80_access_review.py` take the new items
 
 ## US3 - seeds (#940)
 

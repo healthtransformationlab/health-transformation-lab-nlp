@@ -12,6 +12,7 @@ import copy
 import json
 from pathlib import Path
 
+from . import access_discount_items as adi
 from . import access_hard_items as ahi
 from . import access_phi_items as api
 from .paths import REPO_ROOT
@@ -55,7 +56,8 @@ def apply_key_review(item: dict, review: dict) -> dict:
     if review.get("resources"):                           # the reviewer's correct resources (#935)
         out["resources"] = [{k: str(r.get(k, "")).strip() for k in ("name_text", "url", "phone_text", "purpose_text")}
                             for r in review["resources"] if str(r.get("name_text", "")).strip()]
-    validate = api.validate_item if "planted_phi" in item else ahi.validate_item
+    validate = (api.validate_item if "planted_phi" in item
+                else adi.validate_item if str(item["id"]).startswith("ACC_DISC_") else ahi.validate_item)
     try:
         validate(out, where=item["id"])
     except (ValueError, TypeError) as e:
