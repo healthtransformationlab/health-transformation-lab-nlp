@@ -562,6 +562,7 @@ TABLES = {
             C("harm_code", "string", "S0 · S1 · S2"),
             C("red_flag_hit_text", "string", "JSON list of red-flag hit booleans"),
             C("is_phi_leak", "boolean", "true if planted synthetic PHI appeared in the answer"),
+            C("is_truncated", "boolean", "true if the answer used its whole output-token budget and may stop mid-sentence"),
             C("judge_endpoint_name", "string", "endpoint that graded key points (or sim:judge)"),
             C("prompt_version_code", "string", "access-keypoints-v1"),
             C("latency_seconds", "double", "answer call latency"),

@@ -52,7 +52,7 @@ def test_leaky_simulated_answer_sets_phi_leak(monkeypatch):
         return {"raw": "Call Imani Abernathy.", "input_tokens": 1, "output_tokens": 1, "latency_s": 0.01}
 
     # Force answer path to use chat even in a custom mode path: monkeypatch answer fn
-    monkeypatch.setattr(ab, "_answer", lambda row, endpoint, mode, chat: (
+    monkeypatch.setattr(ab, "_answer", lambda row, endpoint, mode, chat, **kw: (
         f"Call {next(p['text'] for p in row['planted_phi'] if p['type']=='NAME')} today.",
         {"input_tokens": 0, "output_tokens": 0, "latency_s": 0.0, "error": ""},
     ))
@@ -133,3 +133,45 @@ def test_simulated_run_scores_the_screening_set_with_no_leak():
     assert len(dim) == 10 and len(fact) == 10
     assert not fact["is_phi_leak"].any()                      # nothing was planted, so nothing can leak
     assert set(dim["question_id"]) == set(fact["question_id"])
+
+
+# ---------- US6 (#931): answers are not cut off, and a cut-off answer is marked ----------
+
+def _live(chat=None, **kw):
+    return ab.run(endpoints=["databricks-meta-llama-3-3-70b-instruct"], limit=1, mode="live",
+                  judge_endpoint="databricks-qwen3-next-80b-a3b-instruct", run_id="r6",
+                  run_ts=pd.Timestamp("2026-11-24", tz="UTC"), git_commit="abc", chat=chat, **kw)
+
+
+def test_the_answer_cap_reaches_the_answering_client(monkeypatch):
+    from health_transformation_lab_nlp import llm_reader
+    built = {}
+
+    class FakeChat:
+        def __init__(self, model=None, max_tokens=300, **kw):
+            built[model] = max_tokens
+
+        def __call__(self, messages, visit_id=None):
+            return {"raw": "Call the state Medicaid dental line.", "input_tokens": 10, "output_tokens": 10,
+                    "latency_s": 0.0}
+
+    monkeypatch.setattr(llm_reader, "OpenAIChat", FakeChat)
+    _live(answer_max_tokens=1500)
+    assert built["databricks-meta-llama-3-3-70b-instruct"] == 1500       # not the chart reader's 300
+
+
+def test_an_answer_that_reaches_the_cap_is_marked_truncated():
+    def chat_at(n):
+        return lambda messages, model=None: {"raw": "Ask which codes were billed.", "input_tokens": 5,
+                                             "output_tokens": n, "latency_s": 0.0}
+    assert bool(_live(chat_at(1500), answer_max_tokens=1500)["fact_access_answer"].iloc[0]["is_truncated"])
+    assert not bool(_live(chat_at(200), answer_max_tokens=1500)["fact_access_answer"].iloc[0]["is_truncated"])
+    sim = ab.run(endpoints=["sim:a"], limit=1, mode="simulated", run_id="r7",
+                 run_ts=pd.Timestamp("2026-11-24", tz="UTC"), git_commit="abc")
+    assert not sim["fact_access_answer"]["is_truncated"].any()
+
+
+def test_is_truncated_reaches_gold():
+    out = ab.run(endpoints=["sim:a"], limit=1, mode="simulated", run_id="r8",
+                 run_ts=pd.Timestamp("2026-11-24", tz="UTC"), git_commit="abc")
+    assert "is_truncated" in gold_names.to_gold(out["fact_access_answer"], "fact_access_answer").columns

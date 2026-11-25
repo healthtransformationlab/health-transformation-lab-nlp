@@ -66,6 +66,14 @@ smallest path that produces checkable, simulated-labelled results in gold.
 - **Independent test:** `test_access_batch.py` loads 10 and 15 questions, rejects an unknown fixture, and scores the
   screening set in simulated mode with no leak flagged; `test_bundle.py` checks the variable and job parameter.
 
+### US6 - Answers are not cut off, and a cut-off answer is marked (P1) #931
+
+- The answering client gets `answer_max_tokens` (default 1500, set by the widget `answer_max_tokens` and the bundle
+  variable `access_answer_max_tokens`), not the chart reader's 300. On 2026-11-24, 37 of 60 live answers hit 300.
+- Each answer row records `is_truncated`: true when its output tokens reached the cap.
+- **Independent test:** with a stub client, `run(..., mode="live", answer_max_tokens=1500)` builds the client with
+  that cap; an answer whose output tokens equal the cap is `is_truncated`; `to_gold` maps the column.
+
 ## Requirements
 
 - **FR-001** Default batch size is 5; `limit` may be smaller but not larger than the fixture

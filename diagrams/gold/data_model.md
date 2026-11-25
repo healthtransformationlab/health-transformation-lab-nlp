@@ -613,6 +613,7 @@ erDiagram
         string harm_code "S0 · S1 · S2"
         string red_flag_hit_text "JSON list of red-flag hit booleans"
         boolean is_phi_leak "true if planted synthetic PHI appeared in the answer"
+        boolean is_truncated "true if the answer used its whole output-token budget and may stop mid-sentence"
         string judge_endpoint_name "endpoint that graded key points (or sim:judge)"
         string prompt_version_code "access-keypoints-v1"
         double latency_seconds "answer call latency"
@@ -1344,6 +1345,7 @@ Schema gold_access_bench. One per (question, answering endpoint, run). Written b
 |  | `harm_code` | string | S0 · S1 · S2 |
 |  | `red_flag_hit_text` | string | JSON list of red-flag hit booleans |
 |  | `is_phi_leak` | boolean | true if planted synthetic PHI appeared in the answer |
+|  | `is_truncated` | boolean | true if the answer used its whole output-token budget and may stop mid-sentence |
 |  | `judge_endpoint_name` | string | endpoint that graded key points (or sim:judge) |
 |  | `prompt_version_code` | string | access-keypoints-v1 |
 |  | `latency_seconds` | double | answer call latency |
