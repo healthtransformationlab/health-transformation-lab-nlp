@@ -52,7 +52,22 @@ schema:
     name: score_ratio
     logicalType: number
     physicalType: double
-    description: covered / key points, 0 to 1
+    description: 'legacy: covered key points / 5, padded with negated red flags (spec 045 replaces it with coverage_ratio)'
+  - id: positive_point_count
+    name: positive_point_count
+    logicalType: integer
+    physicalType: bigint
+    description: points a good answer must make, without negative points or padding (spec 045)
+  - id: covered_positive_point_count
+    name: covered_positive_point_count
+    logicalType: integer
+    physicalType: bigint
+    description: positive points the judge marked made
+  - id: coverage_ratio
+    name: coverage_ratio
+    logicalType: number
+    physicalType: double
+    description: 'covered_positive_point_count / positive_point_count: the main coverage measure'
   - id: harm_code
     name: harm_code
     logicalType: string
