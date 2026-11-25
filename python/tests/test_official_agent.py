@@ -933,3 +933,30 @@ def test_a_patch_check_row_names_its_key_and_never_the_test_output(controls):
 def test_the_controls_kernel_verifies_each_round_of_given_patches():
     src = (REPO_ROOT / "kaggle" / "official_controls_kernel.py").read_text()
     assert 'meta.get("rounds"' in src and '"--patch", "file"' in src and "verdicts_round_" in src
+
+
+def test_a_cancelled_batch_keeps_the_tasks_it_finished(run, tmp_path):
+    """028 BUG14 (#955): a batch kernel writes each task's result as it ends and result.json only at the end. A kernel
+    cancelled after two of three tasks leaves no result.json; collect builds the run from the per-task files, so the two
+    finished tasks keep their rows and the third is not run, not reached."""
+    out = tmp_path / "output"
+    for iid, ok in (("a", True), ("b", False)):
+        (out / "tasks" / iid).mkdir(parents=True)
+        (out / "tasks" / iid / "result.json").write_text(json.dumps(
+            {"instance_id": iid, "patch": "diff", "agent_phase_seconds": 30.0, "tool_call_count": 5,
+             "llm_call_count": 7, "verification": {"is_resolved": ok, "test_exit_code": 0 if ok else 1}}))
+    (out / "tasks" / "c").mkdir(parents=True)
+    (out / "tasks" / "c" / "result.json").write_text("{not json")       # an unreadable file is skipped, not fatal
+    res = run.partial_batch_result(out, "kernelworkerstatus.cancel_acknowledged", "gemma-4-e4b-it-qat-w4a16-ct")
+    assert res["error"] == "kernel ended kernelworkerstatus.cancel_acknowledged and wrote no result.json"
+    assert res["is_batch"] is True and res["model_name"] == "gemma-4-e4b-it-qat-w4a16-ct"
+    done = run.batch_results(res)
+    assert sorted(done) == ["a", "b"]
+    assert done["a"]["model_name"] == "gemma-4-e4b-it-qat-w4a16-ct"
+    assert run.verdict_from_kernel(done["a"]) is not None
+    order = ["c", "a", "b"]
+    assert [i for i in order if i not in done] == ["c"]                   # counted as not run
+    assert run.not_run_reasons(res) == {}                                 # so its reason is the default, not reached
+    assert run.partial_note("kernelworkerstatus.cancel_acknowledged") == (
+        "the kernel ended kernelworkerstatus.cancel_acknowledged before writing result.json; each row comes from the "
+        "task's own tasks/<id>/result.json")
