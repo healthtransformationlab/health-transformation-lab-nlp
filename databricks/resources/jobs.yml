@@ -301,6 +301,7 @@ resources:
               limit: ${var.access_llm_limit}
               fixture: ${var.access_llm_fixture}
               controls: ${var.access_llm_controls}
+              experiment_id: ${resources.experiments.dental_experiment.id}   # spec 045 US6: MLflow evaluation view
               answer_max_tokens: ${var.access_answer_max_tokens}
               judge_endpoint: ${var.access_judge_endpoint}
               max_usd: ${var.access_max_usd}

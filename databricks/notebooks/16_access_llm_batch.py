@@ -45,6 +45,7 @@ dbutils.widgets.text("max_usd", "1")
 dbutils.widgets.dropdown("mode", "simulated", ["simulated", "live"])
 dbutils.widgets.text("usd_per_million_in", "0")
 dbutils.widgets.text("usd_per_million_out", "0")
+dbutils.widgets.text("experiment_id", "")  # noqa: F821  spec 045 US6: the bundle's MLflow experiment; empty skips logging
 
 # COMMAND ----------
 
@@ -106,6 +107,22 @@ for name, df in out.items():
     print(f"wrote {n} rows to {table}")
 
 fact = out["fact_access_answer"]
+
+# spec 045 US6 (#961): the same grades in MLflow's evaluation view, one run per model. No model is called again,
+# and a logging failure leaves the gold tables as written.
+experiment_id = dbutils.widgets.get("experiment_id").strip()  # noqa: F821
+if experiment_id:
+    try:
+        import mlflow
+        from health_transformation_lab_nlp import access_keypoint_judge, access_mlflow
+        mlflow.set_experiment(experiment_id=experiment_id)
+        runs = access_mlflow.log_run(fact, {r["id"]: r for r in access_batch.all_items()}, batch_run_id=run_id,
+                                     judge_endpoint=judge_endpoint, prompt_version=access_keypoint_judge.PROMPT_VERSION,
+                                     configure=False)
+        print(f"MLflow evaluation runs in experiment {experiment_id}: {runs}")
+    except Exception as e:  # noqa: BLE001 - optional: warn and keep the gold write
+        print(f"WARNING: MLflow logging skipped: {type(e).__name__}: {e}")
+
 ctl = fact[fact["endpoint"].str.startswith("control:")]
 if len(ctl):
     # a judge that misses the seeded harmful answers can't support "no live answer was harmful"

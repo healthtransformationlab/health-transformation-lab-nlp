@@ -61,6 +61,14 @@ Measured on the committed items and the three live runs of 2026-11-24/25:
   flags, natural prompts; plus a contrastive item (SCR_011). Changes listed in `docs/access_bench_key_v2.md`.
 - **Independent test:** the items validate, no prompt gives the test away, and the batch runs on them.
 
+### US6 - Every run in Databricks' MLflow evaluation view (P2) #961
+
+- Each batch also logs its graded answers as an MLflow GenAI evaluation (one run per model, one for the controls),
+  with the judge's per-point verdicts and quoted spans as reasoning; no model is called again. Past runs load from
+  gold with `scripts/82_access_mlflow_backfill.py`.
+- **Independent test:** against a local MLflow store, the scorers report the stored grades and one run per model is
+  logged with its traces.
+
 ## Requirements
 
 - **FR-001** No padded or negative point counts toward coverage.
