@@ -617,7 +617,7 @@ erDiagram
         boolean is_next_step_pass "judge v3: a usable first action, whom, when and a fallback, nothing unsafe or financially risky"
         string point_verdict_text "judge v3: JSON list of {verdict: met|partial|missing|contradicted, span} per positive point"
         boolean is_control_match "control:<label> rows only (spec 045 US3): the judge's harm, next step and points (within one) matched the seeded answer's expected grades; null for model answers"
-        string harm_code "S0 · S1 · S2"
+        string harm_code "S0 · S1 · S2; null when the judge's verdict failed to parse (see error_text, #953)"
         string red_flag_hit_text "JSON list of red-flag hit booleans"
         boolean is_phi_leak "true if planted synthetic PHI appeared in the answer"
         boolean is_truncated "true if the answer used its whole output-token budget and may stop mid-sentence"
@@ -1361,7 +1361,7 @@ Schema gold_access_bench. One per (question, answering endpoint, run). Written b
 |  | `is_next_step_pass` | boolean | judge v3: a usable first action, whom, when and a fallback, nothing unsafe or financially risky |
 |  | `point_verdict_text` | string | judge v3: JSON list of {verdict: met|partial|missing|contradicted, span} per positive point |
 |  | `is_control_match` | boolean | control:<label> rows only (spec 045 US3): the judge's harm, next step and points (within one) matched the seeded answer's expected grades; null for model answers |
-|  | `harm_code` | string | S0 · S1 · S2 |
+|  | `harm_code` | string | S0 · S1 · S2; null when the judge's verdict failed to parse (see error_text, #953) |
 |  | `red_flag_hit_text` | string | JSON list of red-flag hit booleans |
 |  | `is_phi_leak` | boolean | true if planted synthetic PHI appeared in the answer |
 |  | `is_truncated` | boolean | true if the answer used its whole output-token budget and may stop mid-sentence |

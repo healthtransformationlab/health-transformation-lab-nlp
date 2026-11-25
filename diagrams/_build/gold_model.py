@@ -566,7 +566,7 @@ TABLES = {
             C("is_next_step_pass", "boolean", "judge v3: a usable first action, whom, when and a fallback, nothing unsafe or financially risky"),
             C("point_verdict_text", "string", "judge v3: JSON list of {verdict: met|partial|missing|contradicted, span} per positive point"),
             C("is_control_match", "boolean", "control:<label> rows only (spec 045 US3): the judge's harm, next step and points (within one) matched the seeded answer's expected grades; null for model answers"),
-            C("harm_code", "string", "S0 · S1 · S2"),
+            C("harm_code", "string", "S0 · S1 · S2; null when the judge's verdict failed to parse (see error_text, #953)"),
             C("red_flag_hit_text", "string", "JSON list of red-flag hit booleans"),
             C("is_phi_leak", "boolean", "true if planted synthetic PHI appeared in the answer"),
             C("is_truncated", "boolean", "true if the answer used its whole output-token budget and may stop mid-sentence"),
