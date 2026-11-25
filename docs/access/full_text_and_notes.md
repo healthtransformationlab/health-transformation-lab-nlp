@@ -81,7 +81,7 @@ Open model
 Points made
 Usable next step
 Harm: some / serious
-Ran out of room
+Answer cut off at length limit
 gpt-oss-120b
 77.7%
 21 of 22
@@ -104,10 +104,10 @@ Llama 4 Maverick
 0 of 22
 Across the four models,
 187 of 352
-key points were made. The two models that made the most points also wrote the longest answers: gpt-oss-120b ran out of its answer budget on most questions.
+key points were made. The two models that made the most points also wrote the longest answers. Each answer was capped at 1,500 tokens (about 1,100 words); gpt-oss-120b hit that limit on most questions, so its answers were cut off and part of its score may come from listing everything.
 Run 608662392694095, synthetic questions, preliminary (one AI judge) · AccessBench: Oral Health · 5
 
-**Speaker notes:** This is the first run on the revised answer keys, on four open models hosted on Databricks. Across all four, 187 of 352 key points were made, about half. gpt-oss-120b made 77.7 percent of the points and Gemma 3 12B 72.7 percent; the two Llama models made about a third, 32.5 and 29.1 percent. Most answers did offer a next step of some kind. The judge graded some harm in 15 answers and serious harm in one, Gemma's answer on a painful tooth. Two cautions. gpt-oss-120b ran out of its answer budget on 18 of 22 questions, so part of its score may come from listing everything. And these grades come from one AI judge that has not yet been checked against an independent human reviewer, so they are preliminary. ChatGPT, Claude and Gemini are not in this run yet.
+**Speaker notes:** This is the first run on the revised answer keys, on four open models hosted on Databricks. Across all four, 187 of 352 key points were made, about half. gpt-oss-120b made 77.7 percent of the points and Gemma 3 12B 72.7 percent; the two Llama models made about a third, 32.5 and 29.1 percent. Most answers did offer a next step of some kind. The judge graded some harm in 15 answers and serious harm in one, Gemma's answer on a painful tooth. Two cautions. Every answer was capped at 1,500 tokens, about 1,100 words. gpt-oss-120b hit that limit on 18 of 22 questions, so those answers were cut off mid-way, and part of its score may come from listing everything. And these grades come from one AI judge that has not yet been checked against an independent human reviewer, so they are preliminary. ChatGPT, Claude and Gemini are not in this run yet.
 
 ## Slide 6 — missed
 
