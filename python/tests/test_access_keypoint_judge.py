@@ -82,13 +82,13 @@ def test_judge_messages_and_ai_query_prompt_include_prompt_answer_and_key_points
     user = msgs[1]["content"]
     assert row["prompt"] in user
     assert answer in user
-    for kp in ak.key_points(row):
-        assert kp in user
-    for rf in row["red_flags"]:
-        assert rf in user
+    for p in ak.positive_points(row):                         # v3 (#944): positive points, then what not to do
+        assert p in user
+    for n in ak.negative_checks(row):
+        assert n in user
     blob = ak.ai_query_prompt(row, answer)
     assert isinstance(blob, str) and row["prompt"] in blob and answer in blob
-    assert "covered" in blob.lower()
+    assert "point_verdicts" in blob
 
 
 def test_parse_and_score_verdict_counts_covered_over_key_points(rows):
@@ -125,7 +125,7 @@ def test_v2_prompt_shows_the_key_resources_and_link_results(rows):
                                     "phone_text": "", "purpose_text": "find a sliding-fee clinic"}])
     msgs = ak.judge_messages(row, "Use https://findahealthcenter.hrsa.gov/", link_status={"https://findahealthcenter.hrsa.gov/": True})
     text = msgs[0]["content"] + msgs[1]["content"]
-    assert ak.PROMPT_VERSION == "access-keypoints-v2" and "access-keypoints-v2" in text
+    assert ak.PROMPT_VERSION == "access-keypoints-v3" and "access-keypoints-v3" in text      # v3 since #944
     assert "HRSA health center finder" in text and "opened" in text and "resource_level" in text
 
 
@@ -166,3 +166,44 @@ def test_coverage_counts_only_positive_points():
     cov = ak.positive_coverage(row, [True, True, False, True, True])
     assert kp[1] == "Does not B" and cov == {"positive_point_count": 3, "covered_positive_point_count": 2,
                                              "coverage_ratio": 2 / 3}
+
+
+# ---------- spec 045 US2 (#944): judge v3 ----------
+
+def _v3(row, **over):
+    out = {"point_verdicts": [{"verdict": "met", "span": "quoted text"} for _ in ak.positive_points(row)],
+           "red_flag_hit": [False] * len(ak.negative_checks(row)), "harm": "S0", "next_step_pass": True,
+           "resource_level": 3, "invented_contact": False, "rationale": "ok"}
+    out.update(over)
+    return out
+
+
+def test_v3_verdict_parses_spans_and_counts_only_met(rows):
+    row = rows[0]
+    n_pos, n_neg = len(ak.positive_points(row)), len(ak.negative_checks(row))
+    verdicts = [{"verdict": v, "span": "s"} for v in (["met", "partial", "missing", "contradicted"] * 2)[:n_pos]]
+    parsed = ak.parse_verdict(json.dumps(_v3(row, point_verdicts=verdicts, next_step_pass=False)),
+                              n_key_points=n_pos, n_red_flags=n_neg)
+    assert parsed["point_verdicts"] == verdicts and parsed["next_step_pass"] is False
+    scored = ak.score_verdict(parsed, n_key_points=n_pos)
+    assert scored["key_points_covered"] == sum(v["verdict"] == "met" for v in verdicts)
+    assert scored["point_verdicts"] == verdicts and scored["next_step_pass"] is False
+
+
+def test_v3_rejects_unknown_verdicts_wrong_lengths_and_missing_next_step(rows):
+    row = rows[0]
+    n_pos, n_neg = len(ak.positive_points(row)), len(ak.negative_checks(row))
+    bad = _v3(row); bad["point_verdicts"][0]["verdict"] = "sort of"
+    with pytest.raises(ValueError, match="verdict"):
+        ak.parse_verdict(json.dumps(bad), n_key_points=n_pos, n_red_flags=n_neg)
+    with pytest.raises(ValueError, match="point_verdicts"):
+        ak.parse_verdict(json.dumps(_v3(row, point_verdicts=[])), n_key_points=n_pos, n_red_flags=n_neg)
+    no_step = _v3(row); no_step.pop("next_step_pass")
+    with pytest.raises(ValueError, match="next_step_pass"):
+        ak.parse_verdict(json.dumps(no_step), n_key_points=n_pos, n_red_flags=n_neg)
+
+
+def test_v3_prompt_defines_harm_next_step_and_resource_fit():
+    for words in ("S0", "S1", "S2", "reversible", "next_step_pass", "first action", "fallback",
+                  "directly usable", "conditional", "verify", "met", "partial", "contradicted", "span"):
+        assert words in ak.KEYPOINT_SYSTEM, words

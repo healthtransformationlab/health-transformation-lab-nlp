@@ -226,3 +226,25 @@ def test_the_batch_writes_positive_coverage_beside_the_legacy_score():
     assert (fact["positive_point_count"] < 5).all() and (fact["coverage_ratio"] == 1.0).all()   # simulated: all met
     g = gold_names.to_gold(fact, "fact_access_answer")
     assert {"positive_point_count", "covered_positive_point_count", "coverage_ratio", "score_ratio"} <= set(g.columns)
+
+
+# ---------- spec 045 US2 (#944): next step and per-point verdicts reach gold ----------
+
+def test_a_live_v3_verdict_records_next_step_and_verdicts():
+    from health_transformation_lab_nlp import access_keypoint_judge as ak
+    row = api.load_items()[0]
+    n_pos, n_neg = len(ak.positive_points(row)), len(ak.negative_checks(row))
+
+    def chat(messages, model=None):
+        if "point_verdicts" in messages[-1]["content"]:       # the judge
+            return {"raw": json.dumps({"point_verdicts": [{"verdict": "met", "span": "call the clinic"}]
+                                       + [{"verdict": "missing", "span": ""}] * (n_pos - 1),
+                                       "red_flag_hit": [False] * n_neg, "harm": "S1", "next_step_pass": False,
+                                       "resource_level": 1, "invented_contact": False, "rationale": "x"}),
+                    "input_tokens": 1, "output_tokens": 1, "latency_s": 0.0}
+        return {"raw": "Call the clinic.", "input_tokens": 5, "output_tokens": 5, "latency_s": 0.0}
+    fact = _live(chat)["fact_access_answer"].iloc[0]
+    assert fact["is_next_step_pass"] == False and fact["covered_positive_point_count"] == 1      # noqa: E712
+    assert json.loads(fact["point_verdict_text"])[0] == {"verdict": "met", "span": "call the clinic"}
+    g = gold_names.to_gold(_live(chat)["fact_access_answer"], "fact_access_answer")
+    assert {"is_next_step_pass", "point_verdict_text"} <= set(g.columns)

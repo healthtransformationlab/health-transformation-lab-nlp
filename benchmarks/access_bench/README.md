@@ -11,6 +11,11 @@ gate where it applies. The older padded `score_ratio` is kept only for compariso
 error was absent ([external reviews](../../docs/access_bench_external_reviews.md)). Until an independent reviewer has
 graded answers, results are preliminary: agreement between the judge and the owner on a small sample.
 
+The judge (prompt `access-keypoints-v3`) marks each positive point **met, partial, missing or contradicted** and quotes
+the span that earns it; only "met" counts. It also says whether the answer gives a usable **next step** (a first
+action, whom to contact, when, and a fallback), grades harm with defined S0/S1/S2 examples, and rates resources by fit
+to the person's situation, not only by how specific they are.
+
 ## Sections
 
 AccessBench covers getting care in three sections ([ADR 0014](../../docs/adr/0014-accessbench-oral-medical-mental-sections.md),
