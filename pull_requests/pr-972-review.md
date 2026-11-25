@@ -28,6 +28,7 @@ affected before the fix.
 | Failures say how they ended | Not touched. |
 | Contract changes recorded | Dated lines were added to #963 for the names and for the changed checks (a path in place of an install; a sandbox check in place of a GPU rerun). |
 | Organization names, wording, bench order (CLAUDE.md, AGENTS.md) | Not touched. `test_no_org_references.py`, `test_wording.py` and `test_bench_order.py` pass. |
+| Old project names (spec 021) | CI's full suite caught the package's old name in the kernel's docstring and the new test (`test_rename.py`). Both now describe it without naming it, and the test uses a stand-in second package, which checks the same thing: the folder goes on the path, not a name. `test_rename.py` passes; the guard is unchanged. |
 
 ## Findings
 

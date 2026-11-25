@@ -964,8 +964,9 @@ def test_a_cancelled_batch_keeps_the_tasks_it_finished(run, tmp_path):
 
 def test_an_own_repo_sandbox_can_import_the_repos_package_under_either_name(tmp_path):
     """028 AI24 (#963): the evaluator puts only the workspace root on PYTHONPATH, and `pip install -e /workspace` finds
-    no package there, since ours lives in python/ (dental_omop_nlp before the rename, health_transformation_lab_nlp
-    after). The kernel adds a .pth to each own-repo sandbox's venv, so the agent's commands import the package."""
+    no package there, since ours lives in python/ (under its old name before the spec 021 rename, and
+    health_transformation_lab_nlp after). The kernel adds a .pth to each own-repo sandbox's venv that puts the folder,
+    not a name, on the path, so any package in python/ imports; `older_name_pkg` stands in for the old name here."""
     import subprocess
     import sys
     ns = _kernel_functions("own_repo_pth", "own_repo_dirs")
@@ -973,15 +974,15 @@ def test_an_own_repo_sandbox_can_import_the_repos_package_under_either_name(tmp_
     assert ns["own_repo_dirs"]("fastapi/fastapi") == ()                 # the competition's repos are left alone
     ws, site_dir = tmp_path / "workspace", tmp_path / "site"
     site_dir.mkdir()
-    for pkg in ("dental_omop_nlp", "health_transformation_lab_nlp"):
+    for pkg in ("older_name_pkg", "health_transformation_lab_nlp"):
         (ws / "python" / pkg).mkdir(parents=True)
         (ws / "python" / pkg / "__init__.py").write_text("OK = 1\n")
     (site_dir / "_own_repo_package.pth").write_text(ns["own_repo_pth"](ws, ("python",)))
     host = tmp_path / "host"                                              # a copy installed on the host
     (host / "health_transformation_lab_nlp").mkdir(parents=True)
     (host / "health_transformation_lab_nlp" / "__init__.py").write_text("OK = 2\n")
-    for pkg in ("dental_omop_nlp", "health_transformation_lab_nlp"):
-        code = (f"import site, sys; sys.path.insert(0, {str(host)!r}); site.addsitedir({str(site_dir)!r}); "
+    for pkg in ("older_name_pkg", "health_transformation_lab_nlp"):
+        code =(f"import site, sys; sys.path.insert(0, {str(host)!r}); site.addsitedir({str(site_dir)!r}); "
                 f"import {pkg}; print({pkg}.OK)")
         r = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, cwd=tmp_path)
         assert r.returncode == 0, r.stderr

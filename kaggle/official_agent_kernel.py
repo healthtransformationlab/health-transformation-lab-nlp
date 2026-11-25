@@ -346,8 +346,8 @@ def own_repo_dirs(repo: str) -> tuple:
 
 def own_repo_pth(workspace, dirs) -> str:
     """A .pth line that puts each of `dirs` (glob patterns under the sandbox's workspace) on sys.path. In python/ the
-    package is dental_omop_nlp at commits before the rename and health_transformation_lab_nlp after, so the folder,
-    not a package name, goes on the path."""
+    package has its old name at commits before the rename (spec 021) and health_transformation_lab_nlp after, so the
+    folder, not a package name, goes on the path."""
     pats = ", ".join(repr(str(Path(workspace) / d)) for d in dirs)
     # One line with no nested scope: site runs a .pth line with exec, and a generator or (before Python 3.12) a
     # comprehension inside it cannot see the names the line itself imported. The folders go first on sys.path, so the
