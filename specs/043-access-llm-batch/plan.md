@@ -38,6 +38,15 @@ New column `fact_access_answer.is_truncated` (boolean) in `gold_names.TABLES`, `
 the ODCS contract. Notebook widget `answer_max_tokens`; bundle variable `access_answer_max_tokens` (default 1500); job
 parameter `answer_max_tokens`.
 
+## US7: owner review (#933)
+
+The review page keeps decisions in its own store (`keys/<question_id>`, `grades/<answer_id>`), readable only by
+the owner. They come back through the Artifact database tool's export (one JSON file per document) into
+`80_access_review.py`, which calls `access_review.apply_key_review` per item and validates the result with each
+set's `validate_item`. An item whose result breaks a limit is listed, not written. `key_review.json` keeps every raw
+decision, and `agreement.json` the counts. The sample of 40 answers (10 per model, every question at least twice,
+seed 20261125) is committed beside them so the agreement can be recomputed.
+
 ## Constitution check
 
 - Synthetic only; planted PHI; `is_simulated` labelled.

@@ -9,4 +9,7 @@
 - [x] T007 [US5] Notebook widget `fixture`, bundle variable `access_llm_fixture`, job parameter — #929
 - [x] T008 [US6] Failing tests: the cap reaches the client, `is_truncated`, gold mapping, bundle variable — #931
 - [x] T009 [US6] `answer_max_tokens` through `run`, `_answer`, notebook, bundle and job; `is_truncated` column, contract and diagrams — #931
-- [ ] T010 [US6] Rerun both question sets live and compare with the 2026-11-24 runs — #931
+- [x] T010 [US6] Rerun both question sets live and compare with the 2026-11-24 runs — #931
+- [x] T011 [US7] Failing tests `test_access_review.py` — #933
+- [x] T012 [US7] `access_review.py`, `scripts/80_access_review.py`, `docs/access_review_protocol.md`, the committed answer sample — #933
+- [ ] T013 [US7] Apply the owner's part 1 decisions and rerun the batch — #933
