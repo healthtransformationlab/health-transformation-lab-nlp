@@ -12,6 +12,7 @@ from typing import Any, Callable
 
 import pandas as pd
 
+from . import access_discount_items as adi
 from . import access_hard_items as ahi
 from . import access_keypoint_judge as ak
 from . import access_phi_items as api
@@ -30,7 +31,7 @@ _SIM_ANSWER = (
 
 
 # Question sets (#929): the five with planted details, the ten hard periodontal-screening asks, or both
-FIXTURES = ("phi", "perio_screening", "all")
+FIXTURES = ("phi", "perio_screening", "discount_voucher", "all")   # discount_voucher: spec 044 US2
 
 
 @traced
@@ -39,7 +40,8 @@ def load_batch(limit: int = 5, fixture: str = "phi") -> list[dict]:
     if fixture not in FIXTURES:
         raise ValueError(f"fixture must be one of {', '.join(FIXTURES)}, got {fixture!r}")
     rows = (api.load_items() if fixture in ("phi", "all") else []) + \
-        (ahi.load_items() if fixture in ("perio_screening", "all") else [])
+        (ahi.load_items() if fixture in ("perio_screening", "all") else []) + \
+        (adi.load_items() if fixture in ("discount_voucher", "all") else [])
     if limit < 1:
         raise ValueError(f"limit must be >= 1, got {limit}")
     if limit > len(rows):

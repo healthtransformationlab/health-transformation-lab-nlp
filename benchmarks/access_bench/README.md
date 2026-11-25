@@ -10,7 +10,7 @@ spec 044). Every question names its section in `section_code`, and results are r
 
 | Section | Status | Question sets |
 |---|---|---|
-| `oral` | **first iteration, being built** | periodontal screening access (10), access with planted fake details (5), discounts and vouchers (planned, #939) |
+| `oral` | **first iteration, being built** | periodontal screening access (10), access with planted fake details (5), discounts and vouchers (6: [`items/discount_voucher_items.jsonl`](items/discount_voucher_items.jsonl)) |
 | `medical` | planned | discount and voucher seeds: [`seeds/medical_discounts.md`](seeds/medical_discounts.md) |
 | `mental` | planned | discount and voucher seeds: [`seeds/mental_discounts.md`](seeds/mental_discounts.md); needs a crisis-safety rule before any question is scored |
 
