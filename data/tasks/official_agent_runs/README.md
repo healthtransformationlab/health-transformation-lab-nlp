@@ -8,6 +8,21 @@ the submission's own (`eval_config.yaml`, `configs/sampling.yaml`): 40 tool call
 per command, 16,384 output tokens, a 4,096-token thinking budget. `_settings.json` holds every setting, the versions,
 and each budget that differs from the competition's defaults.
 
+## Our own repository's tasks could not import the repository's package (before 028 AI24, #963)
+
+Until 2026-11-25, on this repository's own tasks (`htlnlp_*`), the agent's sandbox did not put the repository's
+package on Python's path. The evaluator adds only the workspace root and runs `pip install -e /workspace`, which finds
+no package here, since it lives in `python/` (as `dental_omop_nlp` before the rename and `health_transformation_lab_nlp`
+after). Commands that imported it failed with `No module named ...`, or picked up a copy installed on the host instead
+of the task's own. Scripts a task's issue says to rerun could not run.
+
+From the Unity Catalog trace tables (2026-11-25), 87 task runs of 16 tasks hit it: htlnlp_pr35, htlnlp_pr31, htlnlp_pr37, htlnlp_pr32, htlnlp_pr36, htlnlp_pr29, htlnlp_pr30, htlnlp_226, htlnlp_170, htlnlp_187, htlnlp_111, htlnlp_174, htlnlp_143, htlnlp_214, htlnlp_94, htlnlp_pr28. Most are in
+"our 25" (the `*-nlp25` runs). Our comparisons on those tasks were paired, so both arms ran with the same fault: a
+difference between two arms is less affected than either arm's solve count, which this understates. The kernel now adds
+the task's `python/` folder first on the path for this repository's tasks (`own_repo_package_path` in
+`kaggle/official_agent_kernel.py`); the competition's own tasks are unchanged. Runs before the fix are kept as they
+were.
+
 Every other agent number in this repository comes from `htlnlp-harness-v1`, our re-implementation
 (`../agent_runs/`). These rows do not.
 
