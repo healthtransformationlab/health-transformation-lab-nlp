@@ -610,10 +610,12 @@ erDiagram
         string answering_endpoint_name PK "Model Serving endpoint that wrote the answer"
         string answer_text "model (or simulated) answer text"
         bigint covered_key_point_count "key points the judge marked covered"
-        double score_ratio "legacy: covered key points / 5, padded with negated red flags (spec 045 replaces it with coverage_ratio)"
+        double score_ratio "legacy: covered key points / 5, padded with negated red flags; for judge v3 rows it equals coverage_ratio"
         bigint positive_point_count "points a good answer must make, without negative points or padding (spec 045)"
         bigint covered_positive_point_count "positive points the judge marked made"
         double coverage_ratio "covered_positive_point_count / positive_point_count: the main coverage measure"
+        boolean is_next_step_pass "judge v3: a usable first action, whom, when and a fallback, nothing unsafe or financially risky"
+        string point_verdict_text "judge v3: JSON list of {verdict: met|partial|missing|contradicted, span} per positive point"
         string harm_code "S0 · S1 · S2"
         string red_flag_hit_text "JSON list of red-flag hit booleans"
         boolean is_phi_leak "true if planted synthetic PHI appeared in the answer"
@@ -624,7 +626,7 @@ erDiagram
         bigint broken_link_count "links that answered 4xx/5xx or whose site does not exist"
         bigint unchecked_link_count "links that could not be checked (timeout, refused robot)"
         string judge_endpoint_name "endpoint that graded key points (or sim:judge)"
-        string prompt_version_code "access-keypoints-v1"
+        string prompt_version_code "access-keypoints-v1, -v2 or -v3 (spec 045)"
         double latency_seconds "answer call latency"
         bigint input_token_count "prompt tokens for the answer call"
         bigint output_token_count "completion tokens for the answer call"
@@ -1351,10 +1353,12 @@ Schema gold_access_bench. One per (question, answering endpoint, run). Written b
 | PK | `answering_endpoint_name` | string | Model Serving endpoint that wrote the answer |
 |  | `answer_text` | string | model (or simulated) answer text |
 |  | `covered_key_point_count` | bigint | key points the judge marked covered |
-|  | `score_ratio` | double | legacy: covered key points / 5, padded with negated red flags (spec 045 replaces it with coverage_ratio) |
+|  | `score_ratio` | double | legacy: covered key points / 5, padded with negated red flags; for judge v3 rows it equals coverage_ratio |
 |  | `positive_point_count` | bigint | points a good answer must make, without negative points or padding (spec 045) |
 |  | `covered_positive_point_count` | bigint | positive points the judge marked made |
 |  | `coverage_ratio` | double | covered_positive_point_count / positive_point_count: the main coverage measure |
+|  | `is_next_step_pass` | boolean | judge v3: a usable first action, whom, when and a fallback, nothing unsafe or financially risky |
+|  | `point_verdict_text` | string | judge v3: JSON list of {verdict: met|partial|missing|contradicted, span} per positive point |
 |  | `harm_code` | string | S0 · S1 · S2 |
 |  | `red_flag_hit_text` | string | JSON list of red-flag hit booleans |
 |  | `is_phi_leak` | boolean | true if planted synthetic PHI appeared in the answer |
@@ -1365,7 +1369,7 @@ Schema gold_access_bench. One per (question, answering endpoint, run). Written b
 |  | `broken_link_count` | bigint | links that answered 4xx/5xx or whose site does not exist |
 |  | `unchecked_link_count` | bigint | links that could not be checked (timeout, refused robot) |
 |  | `judge_endpoint_name` | string | endpoint that graded key points (or sim:judge) |
-|  | `prompt_version_code` | string | access-keypoints-v1 |
+|  | `prompt_version_code` | string | access-keypoints-v1, -v2 or -v3 (spec 045) |
 |  | `latency_seconds` | double | answer call latency |
 |  | `input_token_count` | bigint | prompt tokens for the answer call |
 |  | `output_token_count` | bigint | completion tokens for the answer call |

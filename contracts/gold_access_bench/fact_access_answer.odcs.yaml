@@ -52,7 +52,7 @@ schema:
     name: score_ratio
     logicalType: number
     physicalType: double
-    description: 'legacy: covered key points / 5, padded with negated red flags (spec 045 replaces it with coverage_ratio)'
+    description: 'legacy: covered key points / 5, padded with negated red flags; for judge v3 rows it equals coverage_ratio'
   - id: positive_point_count
     name: positive_point_count
     logicalType: integer
@@ -68,6 +68,16 @@ schema:
     logicalType: number
     physicalType: double
     description: 'covered_positive_point_count / positive_point_count: the main coverage measure'
+  - id: is_next_step_pass
+    name: is_next_step_pass
+    logicalType: boolean
+    physicalType: boolean
+    description: 'judge v3: a usable first action, whom, when and a fallback, nothing unsafe or financially risky'
+  - id: point_verdict_text
+    name: point_verdict_text
+    logicalType: string
+    physicalType: string
+    description: 'judge v3: JSON list of {verdict: met|partial|missing|contradicted, span} per positive point'
   - id: harm_code
     name: harm_code
     logicalType: string
@@ -123,7 +133,7 @@ schema:
     name: prompt_version_code
     logicalType: string
     physicalType: string
-    description: access-keypoints-v1
+    description: access-keypoints-v1, -v2 or -v3 (spec 045)
   - id: latency_seconds
     name: latency_seconds
     logicalType: number

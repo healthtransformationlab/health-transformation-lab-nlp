@@ -74,11 +74,14 @@ def _answer(row: dict, endpoint: str, mode: str, chat: ChatFn | None,
 
 def _judge(row: dict, answer: str, mode: str, judge_endpoint: str, chat: ChatFn | None,
            link_status: dict | None = None) -> dict:
-    n_kp, n_rf = len(ak.key_points(row)), len(row["red_flags"])
+    # judge v3 (#944): one verdict per positive point; one hit per "must not do" (negative points, then red flags)
+    n_kp, n_rf = len(ak.positive_points(row)), len(ak.negative_checks(row))
     if mode == "simulated":
         parsed = {
+            "point_verdicts": [{"verdict": "met", "span": "simulated"}] * n_kp,
             "covered": [True] * n_kp,
             "red_flag_hit": [False] * n_rf,
+            "next_step_pass": True,
             "harm": "S0",
             "rationale": "simulated verdict",
         }
@@ -91,6 +94,8 @@ def _judge(row: dict, answer: str, mode: str, judge_endpoint: str, chat: ChatFn 
     msgs = ak.judge_messages(row, answer, link_status)
     resp = judge_chat(msgs)
     raw = str(resp.get("raw") or "")
+    if "point_verdicts" not in raw:                # a v1/v2 verdict: the padded key points and the red flags
+        n_kp, n_rf = len(ak.key_points(row)), len(row["red_flags"])
     try:
         parsed = ak.parse_verdict(raw, n_key_points=n_kp, n_red_flags=n_rf)
         return {**ak.score_verdict(parsed, n_key_points=n_kp), "error": str(resp.get("error") or "")}
@@ -99,6 +104,15 @@ def _judge(row: dict, answer: str, mode: str, judge_endpoint: str, chat: ChatFn 
             "key_points_covered": 0, "score": 0.0, "harm": "S1", "red_flag_hit": [],
             "resource_level": None, "invented_contact": None, "error": f"judge_parse: {e}",
         }
+
+
+def _coverage(row: dict, scored: dict) -> dict:
+    """Coverage of the positive points: from v3 verdicts directly, or from a v1/v2 verdict on the padded list."""
+    if scored.get("point_verdicts"):
+        n = len(scored["point_verdicts"])
+        met = sum(1 for v in scored["point_verdicts"] if v["verdict"] == "met")
+        return {"positive_point_count": n, "covered_positive_point_count": met, "coverage_ratio": met / n if n else 0.0}
+    return ak.positive_coverage(row, scored.get("covered") or [])
 
 
 def _cost_usd(inp: int, out: int, usd_in: float, usd_out: float) -> float:
@@ -157,11 +171,14 @@ def run(*, endpoints: list[str], limit: int = 5, mode: str = "simulated",
                 "question_id": row["id"],
                 "endpoint": endpoint,
                 "answer": answer,
+                # v1/v2: padded with negated red flags (legacy); v3: met / positive points, same as coverage_ratio
                 "key_points_covered": scored["key_points_covered"],
                 "score": scored["score"],
                 "harm": scored["harm"],
                 "red_flag_hit": json.dumps(scored.get("red_flag_hit") or []),
-                **ak.positive_coverage(row, scored.get("covered") or []),   # spec 045 US1: positive points only
+                **_coverage(row, scored),                  # spec 045: positive points only
+                "is_next_step_pass": scored.get("next_step_pass"),
+                "point_verdict_text": json.dumps(scored["point_verdicts"]) if scored.get("point_verdicts") else None,
                 "is_phi_leak": bool(leaks),
                 # the answer used its whole token budget, so it may stop mid-sentence (#931)
                 "is_truncated": mode == "live" and meta["output_tokens"] >= answer_max_tokens,
