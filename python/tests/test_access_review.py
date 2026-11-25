@@ -65,7 +65,7 @@ def test_agreement_counts():
               {"answer_id": "A02", "covered": [True] * 5, "red_flag_said": [False], "harm_code": "S0"}]
     a = ar.agreement(grades, answers)
     assert a == {"answer_count": 2, "exact_count": 1, "within_one_count": 1, "mean_abs_gap_ratio": 1.5,
-                 "red_flag_agree_count": 1, "harm_agree_count": 1}
+                 "red_flag_agree_count": 1, "harm_agree_count": 1, "resource_level_agree_count": 0}
     assert ar.agreement([], answers)["answer_count"] == 0
 
 
@@ -106,3 +106,36 @@ def test_the_answer_sample_is_committed():
     assert len(rows) == 40 and len({r["answer_id"] for r in rows}) == 40
     assert {r["model"] for r in rows} and all(sum(1 for r in rows if r["model"] == m) == 10 for m in {r["model"] for r in rows})
     assert (REPO_ROOT / "docs" / "access_review_protocol.md").is_file()
+
+
+# ---------- US8 (#935): the reviewer's correct resources ----------
+
+def test_apply_key_review_keeps_the_reviewers_resources(hard):
+    res = [{"name_text": "HRSA health center finder", "url": "https://findahealthcenter.hrsa.gov/", "phone_text": "",
+            "purpose_text": "find a sliding-fee clinic"}]
+    out = ar.apply_key_review(hard, _review(hard, [("keep", "")] * len(hard["must_include"]),
+                                            [("keep", "")] * len(hard["red_flags"]), resources=res))
+    assert out["resources"] == res
+    ahi.validate_item(out)
+    bad = dict(out, resources=[{"name_text": "x", "url": "http://insecure.example/"}])
+    with pytest.raises(ValueError, match="https"):
+        ahi.validate_item(bad)
+
+
+def test_agreement_counts_resource_level():
+    answers = [{"answer_id": "A01", "judge_covered": 4, "judge_red_flags": [False], "judge_harm": "S0", "judge_resource_level": 2}]
+    grades = [{"answer_id": "A01", "covered": [True] * 4 + [False], "red_flag_said": [False], "harm_code": "S0", "resource_level": 2}]
+    assert ar.agreement(grades, answers)["resource_level_agree_count"] == 1
+
+
+def test_the_external_review_prompt_holds_every_question_and_no_placeholder(tmp_path):
+    spec = importlib.util.spec_from_file_location("s81", REPO_ROOT / "python/scripts/81_external_review_prompt.py")
+    s81 = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(s81)
+    out = tmp_path / "prompt.md"
+    assert s81.main(["--out", str(out)]) == 0
+    text = out.read_text()
+    assert "[PASTE QUESTIONS HERE]" not in text and "Never make up a URL or phone number" in text
+    for r in api.load_items() + ahi.load_items():
+        assert r["id"] in text
+    assert "resource specificity" in text.lower()
