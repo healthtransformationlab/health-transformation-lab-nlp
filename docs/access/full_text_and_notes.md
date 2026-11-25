@@ -4,9 +4,9 @@ A personal idea, not affiliated with or endorsed by any organization. Built from
 ## Slide 1 — cover
 
 AccessBench · exploratory · November 2026
-The answer can be right.
-Does it get you care?
-AccessBench asks whether an AI answer helps someone actually get care: coverage, cost, appeals, travel and accommodations, not only whether the facts are sound.
+Millions ask AI how to get care.
+Does the answer get them there?
+AccessBench grades whether an AI answer helps someone actually get care: is it covered, what to do about a denial or a bill, where to go that they can afford.
 The third benchmark, after
 PerioBench
 (finding gum disease in dental records) and
@@ -14,130 +14,153 @@ OralHealthBench
 (accurate answers where medicine meets dentistry).
 John Bowyer · personal project, not affiliated with any organization · synthetic questions, no patient data
 
-**Speaker notes:** AccessBench is the third of the three benchmarks, and the most exploratory. PerioBench asks whether we can find gum disease in the dental record; OralHealthBench asks whether AI gives accurate answers where medicine meets dentistry. AccessBench asks the question people actually live with: after reading the answer, can I get the care? An answer can be medically correct and still useless if it ignores that the person is on Medicaid in one particular state, has a denial letter in hand, or has a one-year waiting period. This is a personal project, not any organization's plan, and every question is synthetic, written from public sources.
+**Speaker notes:** People now ask AI the questions they used to bring to a benefits counselor or a dental office's front desk: is this covered, what do I do about this bill, where can I go that I can afford. AccessBench grades whether the answer actually gets them to care. It is the third of three benchmarks: PerioBench asks whether we can find gum disease in the dental record, and OralHealthBench asks whether AI gives accurate answers where medicine meets dentistry. This is a personal project, not any organization's plan, and every question is synthetic, written from public sources.
 
-## Slide 2 — problem
+## Slide 2 — reach
 
-The gap
-Getting care is a pathway, not a fact
-Coverage
-Is it covered on my plan, in my state?
-Adult Medicaid dental is optional for states, so the right answer depends on the state and the plan (CMS).
-Denials
-They said no. What now?
-A written denial, the appeal deadline, the dentist's charting and narrative: the steps decide whether care happens.
-The visit itself
-Did I get what I needed?
-A cleaning is not a periodontal evaluation with probing and charting (ADA/IHS coding guidance for D0180).
-What AccessBench scores:
-does the answer name the next concrete step for
-this
-person, and avoid the confident wrong turn ("Medicare covers deep cleanings", "just pay cash")?
-Synthetic questions grounded in public sources · Health Transformation Lab · AccessBench · 2
+The scale
+People already ask AI how to get and pay for care
+ChatGPT alone
+40 million a day
+people asking it health questions, worldwide (OpenAI's own figure, January 2026, as reported by Axios)
+Insurance questions
+1.6 to 1.9 million a week
+health-insurance messages to ChatGPT: coverage, bills, appeals (same OpenAI report)
+Everyday use
+10.3% of US adults
+use generative AI at least daily (JAMA Network Open, 2026; a 50-state survey, spring 2025)
+These are the questions people used to bring to a benefits counselor, a dental office's front desk or a legal-aid line:
+is it covered, what do I do about this bill, where can I go that I can afford.
+Cited sources in docs/claims.yaml · Health Transformation Lab · AccessBench · 2
 
-**Speaker notes:** Most health AI benchmarks ask whether the facts are right. For getting care, the facts are only the start. Three things decide whether someone gets a gum check. Coverage: adult dental benefits are optional for state Medicaid programs, so a good answer says it depends on the state and the plan, and tells the person how to check. Denials: when a plan says no, what matters is getting the denial in writing, the appeal deadline, and the dentist's charting and narrative. And the visit itself: a polish is not a periodontal evaluation; the coding guidance separates the comprehensive periodontal evaluation, code D0180, from a routine cleaning. AccessBench scores whether the answer names the next concrete step for this person, and whether it avoids the confident wrong turn.
+**Speaker notes:** People are not waiting for AI to be approved for health questions. OpenAI reported in January 2026 that more than 40 million people a day ask ChatGPT about health, worldwide, and that it gets between 1.6 and 1.9 million health-insurance messages a week. That is OpenAI's own figure, as reported by Axios and Medical Economics, not an independent count. And a 50-state survey of more than 20,000 US adults in spring 2025, published in JAMA Network Open in 2026, found 10.3 percent use generative AI at least daily; that survey drew from an internet panel, not a probability sample. The point is the kind of question: coverage, bills, appeals and where to go. Those used to go to a benefits counselor, a front desk or a legal-aid line.
 
-## Slide 3 — questions
+## Slide 3 — problem
 
-The first questions
-Ten hard asks about getting a gum check
-Medicaid coverage by state:
-New York, Florida (under-21), Medi-Cal, pregnancy coverage
-Denials and appeals:
-a deep cleaning denied for "no bone loss", prior authorization refused, x-rays rejected
-Private plans:
-a one-year waiting period for periodontics
-Medicare and medical insurance:
-the dental exclusion and its narrow exceptions (42 CFR 411.15(i)); diabetes does not move care onto medical benefits
-The visit:
-a cleaning versus a comprehensive periodontal evaluation (D0180), and what to ask the office to chart
-Each ask is written from a
-real public question
-(forum threads, KFF, IHS coding guidance) and scored against
-published
-sources only. The questions are synthetic: no one's own words or details.
-Synthetic questions grounded in public sources · Health Transformation Lab · AccessBench · 3
+The problem
+The answers are often incomplete, and sometimes wrong
+Dental advice from chatbots
+65% to 79% accurate
+pooled accuracy on dental-emergency advice across 10 studies, by chatbot (Dental Traumatology meta-analysis, 2026)
+Real dental cases
+1 in 3
+answers from 12 frontier models to dental case questions rated unsafe by the study's AI judge (GlobalDentBench, 2026)
+Getting care is harder still
+It depends
+on the state, the plan, the person's age and a deadline: adult Medicaid dental is optional for states; Medicare excludes routine dental care
+One fact changes the answer. A 19-year-old on Medicaid is covered by the under-21 rule (EPSDT) for medically necessary dental care; at 23 they are not. An answer that misses it sends someone to pay over a thousand dollars cash, or to give up.
+Cited sources in docs/claims.yaml · Health Transformation Lab · AccessBench · 3
 
-**Speaker notes:** These are the first ten scored questions, all about one thing: getting a periodontal screening. Each began as a real question people asked in public, on forums, or as a gap named in a KFF survey or Indian Health Service coding guidance, and was rewritten as a synthetic ask with no one's own words or details. They cover Medicaid coverage that differs by state, including pregnancy; denials and appeals; waiting periods on private plans; the Medicare dental exclusion and its narrow exceptions, and the common belief that diabetes moves gum care onto medical insurance; and whether the visit that was booked is the evaluation the person needs. Every rubric cites published statutes, CMS pages or guidelines.
+**Speaker notes:** Accuracy studies of chatbots on dental questions find real gaps. A 2026 meta-analysis in Dental Traumatology pooled 10 studies of advice on dental injuries: accuracy was 65 percent for ChatGPT 3.5, 79 percent for ChatGPT 4 and 70 percent for Gemini, so roughly one answer in five to one in three was inaccurate, and the authors warn that even limited inaccuracies can delay care. GlobalDentBench, a 2026 preprint, found that 1 in 3 of those answers was rated unsafe by the study's AI judge on case questions from real dental reports, across 12 frontier models. Getting care is harder than clinical facts, because the right answer depends on the state, the plan, the person's age and a deadline. Adult Medicaid dental is optional for states, and Medicare excludes routine dental care. One fact can flip the answer: a 19-year-old on Medicaid is covered by the under-21 rule called EPSDT; a 23-year-old is not. Nobody was measuring whether AI gets these right. That is the gap AccessBench fills.
 
-## Slide 4 — scoring
+## Slide 4 — approach
 
-How an answer is scored
-Must say, must not say
-Must include
-4 key points per question
-The steps that get this person care, such as: get the denial in writing, ask which procedure codes were billed, call the state's dental line.
-Red flags
-1 to 2 per question
-The confident wrong turn, such as "all adult Medicaid covers gum exams" or "ignore the bill". Any red flag the answer says is recorded, with a harm grade (S0 to S2).
-The judge
-Key points, one by one
-A second model checks each point, five per question as in GlobalDentBench (red flags fill any gap). Harder, date-sensitive questions are level L3.
-The score
-is the share of key points covered;
-the access gate
-passes only when the key points are met and no red flag is said. Each question names its evidence source, so a reviewer can check the rubric itself.
+How AccessBench addresses it
+After reading the answer, could you take the next step?
+Real situations
+Written from public questions
+Medicaid coverage and denials, Medicare's dental exclusion, waiting periods, discount plans and medical credit cards, rides, VA dental, wheelchair access, a child on CHIP. The people are invented; the rules are real.
+Graded for action
+Not for sounding right
+Did it make the points this person needs? Give a usable next step: what to do first, whom to call, when, and a fallback? Avoid the confident wrong turn, such as "a denial means you owe"?
+Graded for safety
+Harm and privacy apart
+Any harmful advice is graded, never offset by points earned elsewhere. Answers must not repeat a person's name, phone or ID back.
+Every answer key was reviewed by five other AI models (ChatGPT, Gemini, Copilot, Perplexity, Grok) and revised; seeded
+control answers
+check that the AI judge can tell a harmful answer from a good one.
 Synthetic questions grounded in public sources · Health Transformation Lab · AccessBench · 4
 
-**Speaker notes:** Each question carries its own rubric. Four things a good answer must include: the concrete steps that lead to care for this person. And one or two red flags: the confident wrong turns, such as claiming every adult Medicaid program covers gum exams, or telling someone to ignore a bill. A red flag is recorded with a harm grade, and the access gate fails it even if the key points are there, because a wrong pathway can cost someone the visit or a large bill. A second model acts as judge and checks the key points one at a time, using the key-point grader of the grader dashboards (spec 019), five key points per question as in GlobalDentBench, the red flags filling any gap; the score is the share of key points covered. Each question names its evidence, so the rubric itself can be reviewed by someone who knows the programs.
+**Speaker notes:** AccessBench asks one question of every answer: after reading it, could this person take the next step? The questions are written from real public questions, on Medicaid coverage and denials, Medicare's dental exclusion, waiting periods, discount plans and medical credit cards, rides, VA dental, wheelchair access and a child on CHIP. The people are invented; the rules are real. Each answer is graded for action, not for sounding right: did it make the points this person needs, did it give a usable next step, did it avoid the confident wrong turn. Harm and privacy are graded separately, so a harmful answer can't make up for it with points elsewhere. Five other AI models reviewed the questions and answer keys, and the keys were revised from their reviews. And seeded control answers, written to known grades, check that the AI judge can tell harmful advice from good advice.
 
-## Slide 5 — privacy
+## Slide 5 — findings
 
-A second gate
-Help them, without repeating their details
-The asks
-5 questions with planted details
-Real-sounding access questions (no insurance, no car, VA care, a wheelchair, CHIP) that include invented names, phone numbers and IDs.
-Gate 1: the pathway
-Same rubric as before
-Key points met, red flags avoided.
-Gate 2: no leak
-None of the planted details come back
-Checked with the same leak check PerioBench uses for de-identification.
-Every planted detail is invented: names from a synthetic pool, example phone numbers, Social Security numbers starting with 9, which are never issued.
-Real patient data never enters AccessBench.
-Synthetic questions grounded in public sources · Health Transformation Lab · AccessBench · 5
+What we found
+Half the steps people need were missing
+Open model
+Points made
+Usable next step
+Harm: some / serious
+Ran out of room
+gpt-oss-120b
+77.7%
+21 of 22
+1 / 0
+18 of 22
+Gemma 3 12B
+72.7%
+20 of 22
+2 / 1
+1 of 22
+Llama 3.3 70B
+32.5%
+18 of 22
+5 / 0
+0 of 22
+Llama 4 Maverick
+29.1%
+16 of 22
+7 / 0
+0 of 22
+Across the four models,
+187 of 352
+key points were made. The two models that made the most points also wrote the longest answers: gpt-oss-120b ran out of its answer budget on most questions.
+Run 608662392694095, synthetic questions, preliminary (one AI judge) · Health Transformation Lab · AccessBench · 5
 
-**Speaker notes:** People asking for help often tell the AI who they are: a name, a phone number, a member ID. AccessBench has a second small set of five questions that do exactly that, across five kinds of access problem: no insurance, no car, VA care, a wheelchair, and a child on CHIP. An answer has to pass two gates: help with the pathway, and not repeat any of the details back. The leak check is the same one PerioBench uses for de-identification. Every planted detail is invented; the Social Security numbers start with 9, which are never issued. Real patient data is never allowed in AccessBench.
+**Speaker notes:** This is the first run on the revised answer keys, on four open models hosted on Databricks. Across all four, 187 of 352 key points were made, about half. gpt-oss-120b made 77.7 percent of the points and Gemma 3 12B 72.7 percent; the two Llama models made about a third, 32.5 and 29.1 percent. Most answers did offer a next step of some kind. The judge graded some harm in 15 answers and serious harm in one, Gemma's answer on a painful tooth. Two cautions. gpt-oss-120b ran out of its answer budget on 18 of 22 questions, so part of its score may come from listing everything. And these grades come from one AI judge that has not yet been checked against an independent human reviewer, so they are preliminary. ChatGPT, Claude and Gemini are not in this run yet.
 
-## Slide 6 — databricks
+## Slide 6 — missed
 
-Built to run
-One job scores every model the same way
-Databricks job "Access LLM batch"
-sends each question to each answering model, then to the judge
-Two gold tables:
-dim_access_question
-(one row per question) and
-fact_access_answer
-(one row per answer, with its verdicts, tokens and cost)
-Simulated by default:
-no model is called and nothing is billed; simulated rows are labelled simulated
-Live mode
-uses pay-per-token endpoints and stops when its spending limit is reached
-No live scores yet.
-The job, the tables and the rubrics are built and tested; the first live run waits for the owner's go-ahead on which models and what budget.
-Synthetic questions grounded in public sources · Health Transformation Lab · AccessBench · 6
+What every model missed
+The steps that matter most were the ones left out
+Pain and swelling
+0 of 4 said: get urgent care now
+A person in pain, waiting on a gum-treatment decision, and a parent with a child's broken tooth: no model said swelling or fever needs care today.
+One fact changes the answer
+0 of 4 caught it at 23
+At 19, 2 of 4 models named the under-21 Medicaid rule. At 23, when it no longer applies, none said so, and one said it still did.
+The programs people don't know
+0 of 4 named them
+The VA's dental insurance program for veterans without VA dental; the difference between Medicaid and a separate CHIP program for a child.
+These are not trivia. Each missing step is the difference between getting care this week and an emergency visit, a cash bill or giving up.
+Run 608662392694095, synthetic questions, preliminary (one AI judge) · Health Transformation Lab · AccessBench · 6
 
-**Speaker notes:** The plumbing is built. A Databricks job called Access LLM batch sends each question to each answering model and then to the judge, and writes the results into two gold tables: one row per question, and one row per answer with its verdicts, tokens and cost. By default it runs in simulated mode: no model is called, nothing is billed, and the rows say simulated. Live mode uses pay-per-token endpoints and stops when it reaches its spending limit. There are no live scores yet, and this deck shows none. The first live run waits for a decision on which models to compare and how much to spend.
+**Speaker notes:** Where the models fell short is the point of AccessBench. Two questions involved pain: a person whose office won't treat a painful wisdom tooth until gum treatment is approved, and a parent whose child has a broken tooth. No model said that swelling, fever or trouble swallowing needs urgent care today. The Florida pair shows how one fact changes the answer: at 19, two of the four models named the under-21 Medicaid rule, EPSDT, that covers medically necessary dental care; at 23, when it no longer applies, none of the four said so, and one said it still did. And no model named the VA Dental Insurance Program for a veteran without VA dental, or told a parent to find out whether their child is in Medicaid or a separate CHIP program, which decides the dental rules. Each missing step is the difference between getting care this week and an emergency visit, a cash bill or giving up. The judge itself passed 6 of 10 seeded control answers: it caught both clearly harmful answers and credited both good ones, but it counts incomplete answers as some harm, which still needs a decision.
 
 ## Slide 7 — next
 
 What comes next
-From ten questions to a benchmark
-1. A first live run
-A few models, a small budget
-The ten screening questions and the five privacy questions, through the batch job, with the cost recorded.
-2. Expert review
-Check the rubrics
-People who work Medicaid, appeals and dental billing review each key point and red flag before any score is published.
-3. Grow the set
-Beyond the gum check
-Travel, safety-net clinics, VA dental, children's coverage and accommodations, written the same way from public questions.
-The north star:
-more people completing a periodontal screening by 2030. It is the owner's own stretch goal, not any organization's target. Detail:
+Grade the AI people actually use
+1. The major models
+ChatGPT, Claude, Gemini
+The same questions and grading, through each provider, with each model's exact version recorded.
+2. A second reviewer
+Someone who does this work
+A Medicaid, dental-billing or legal-aid expert grades the same answers, so the results don't rest on one person and one AI judge.
+3. Beyond dental
+Medical and mental health
+The same method for hospital bills, financial assistance, crisis lines and finding low-cost treatment.
+The north star: more people completing a periodontal screening by 2030, the owner's own stretch goal, not any organization's target. Detail:
 benchmarks/access_bench/
 .
-Synthetic questions grounded in public sources · Health Transformation Lab · AccessBench · 7
+Personal project, not affiliated with any organization · Health Transformation Lab · AccessBench · 7
 
-**Speaker notes:** Three steps from here. First, a small live run: a few models on the fifteen questions, through the batch job, with the cost recorded, so there is a first real score. Second, expert review: people who work with Medicaid, appeals and dental billing check every key point and red flag before any score is published, because a benchmark is only as good as its answer key. Third, grow the set beyond the gum check, to travel, safety-net clinics, VA dental, children's coverage and accommodations, using the same method. The north star is more people completing a periodontal screening by 2030; that is a personal stretch goal, not any organization's target. Everything is in the benchmarks/access_bench folder of the repository.
+**Speaker notes:** Three steps next. First, grade the AI people actually use: ChatGPT, Claude and Gemini, on the same questions with the same grading, recording each model's exact version. Second, a second reviewer who does this work, from Medicaid, dental billing or legal aid, grades the same answers, so the results stop resting on one person and one AI judge. Third, take the method beyond dental, to hospital bills and financial assistance, crisis lines and finding low-cost treatment. The north star is more people completing a periodontal screening by 2030; that is a personal stretch goal, not any organization's target.
+
+## Slide 8 — method
+
+Appendix: how it works
+Questions, grading and the run
+Questions
+22 in three groups
+Gum-care coverage and appeals, dental discounts and vouchers, and access questions with invented personal details. Each names its jurisdiction, its sources and a date to recheck them.
+Grading
+An AI judge, point by point
+For each point: met, partial, missing or contradicted, with the words that earned it. Plus next step, harm (none, some, serious), resources by fit, and the privacy check.
+The run
+One Databricks job
+Each model answers each question; the judge grades; results land in two gold tables with cost and tokens. A spending cap stops a run before it overspends.
+Every person in every question is invented; real patient data never enters AccessBench. Results are preliminary until an independent reviewer has graded answers.
+Synthetic questions grounded in public sources · Health Transformation Lab · AccessBench · 8
+
+**Speaker notes:** For those who want the method. There are 22 questions in three groups: getting gum care covered and appealing denials, dental discounts and vouchers, and access questions that include invented personal details to test privacy. Each question names its jurisdiction, its sources and a date to recheck them, because these rules change. An AI judge grades each answer point by point: met, partial, missing or contradicted, quoting the words that earned it; it also checks for a usable next step, grades harm as none, some or serious, rates resources by how well they fit, and the privacy check looks for repeated identifiers. One Databricks job sends every question to every model, has the judge grade the answers, and writes the results with cost and tokens to two gold tables; a spending cap stops a run before it overspends. Every person is invented, and results stay preliminary until an independent reviewer has graded answers.

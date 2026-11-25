@@ -681,7 +681,109 @@ pitch:
       covers: days for the first step
 
 access:
-  questions:
-    - value: "411"
+  reach:
+    - value: "40 million"
+      kind: cited
+      source: "OpenAI report, January 2026, as reported by Axios (axios.com/2026/01/05/chatgpt-openai-health-insurance-aca, an exclusive, headline corrected to global) and Medical Economics (2026-01-07): more than 40 million people use ChatGPT daily for health questions, worldwide; 1.6 to 1.9 million health-insurance messages a week. Read via that reporting: openai.com refuses automated requests"
+      checked: 2026-10-29
+      covers: people a day asking ChatGPT health questions, worldwide (OpenAI's own data, not independently verified)
+    - value: "1.9 million"
+      kind: cited
+      source: "OpenAI report, January 2026, as reported by Axios (axios.com/2026/01/05/chatgpt-openai-health-insurance-aca, an exclusive, headline corrected to global) and Medical Economics (2026-01-07): more than 40 million people use ChatGPT daily for health questions, worldwide; 1.6 to 1.9 million health-insurance messages a week. Read via that reporting: openai.com refuses automated requests"
+      checked: 2026-10-29
+      covers: the top of OpenAI's range of 1.6 to 1.9 million health-insurance messages to ChatGPT a week
+    - value: "10.3%"
+      kind: cited
+      source: "Perlis et al., Generative AI Use and Depressive Symptoms Among US Adults, JAMA Netw Open 2026, doi 10.1001/jamanetworkopen.2025.54820, PMID 41563755: '2152 participants (10.3%) reported using AI at least daily' of 20 847 in a 50-state US internet nonprobability survey, April-May 2025"
+      checked: 2026-11-25
+      covers: US adults in a 50-state nonprobability internet survey who use generative AI at least daily
+  problem:
+    - value: "65%"
+      kind: cited
+      source: "Tewari et al., Accuracy of Chatbot-Based Health Advice Related to Traumatic Dental Injuries: A Systematic Review and Meta-Analysis, Dent Traumatol 2026, doi 10.1111/edt.70113, PMID 42581485: 'The overall pooled accuracy was 65% (95% CI 52%-78%) in ChatGPT-3.5, 79% (95% CI 61%-93%) in ChatGPT-4.0, and 70% (95% CI 60%-79%) in Gemini'; 10 studies"
+      checked: 2026-11-25
+      covers: pooled accuracy of ChatGPT-3.5's advice on dental injuries (lowest of the three chatbots pooled)
+    - value: "79%"
+      kind: cited
+      source: "Tewari et al., Dent Traumatol 2026, PMID 42581485: pooled accuracy 79% (95% CI 61%-93%) in ChatGPT-4.0"
+      checked: 2026-11-25
+      covers: pooled accuracy of ChatGPT-4.0's advice on dental injuries (highest of the three chatbots pooled)
+    - value: "1 in 3"
+      kind: cited
+      source: "GlobalDentBench, arXiv 2605.24636v2 (Zhao et al., 2026), section 2.5: a risk analysis of 19,080 responses from 12 frontier LLMs to 1,590 case-based questions; 'Overall, 68.99% of responses were classified as S0, whereas 31.01% were classified as unsafe (Fig. 4A)' (S1, 'potential for reversible patient harm', 26.50%; S2, 'potential for irreversible or life-threatening harm', 4.51%); 'nearly one-third of LLM-generated answers in real-world dental cases contained potentially harmful clinical content'. The ratings are by the paper's dentist-calibrated automatic judge (Gemini-3-Flash-Preview); section 2.6 reports dentists' agreement with the judge on answer and key-point grading, not on the safety ratings"
+      checked: 2026-10-29
+      covers: answers to dental case-based questions rated unsafe (S1 or S2) by GlobalDentBench's AI judge, across 12 frontier models
+  findings:
+    - value: "77.7%"
+      kind: measured
+      file: data/access_bench/runs/run_608662392694095.md
+      covers: gpt-oss-120b's share of key points made
+    - value: "72.7%"
+      kind: measured
+      file: data/access_bench/runs/run_608662392694095.md
+      covers: Gemma 3 12B's share of key points made
+    - value: "32.5%"
+      kind: measured
+      file: data/access_bench/runs/run_608662392694095.md
+      covers: Llama 3.3 70B's share of key points made
+    - value: "29.1%"
+      kind: measured
+      file: data/access_bench/runs/run_608662392694095.md
+      covers: Llama 4 Maverick's share of key points made
+    - value: "187"
+      kind: measured
+      file: data/access_bench/runs/run_608662392694095.md
+      match: "187 of 352"
+      covers: key points made across the four models
+    - value: "352"
+      kind: measured
+      file: data/access_bench/runs/run_608662392694095.md
+      match: "187 of 352"
+      covers: key points across the four models' answers
+    - value: "21"
+      kind: measured
+      file: data/access_bench/runs/run_608662392694095.md
+      match: "21 of 22"
+      covers: answers from gpt-oss-120b with a usable next step
+    - value: "20"
+      kind: measured
+      file: data/access_bench/runs/run_608662392694095.md
+      match: "20 of 22"
+      covers: answers from Gemma 3 12B with a usable next step
+    - value: "18"
+      kind: measured
+      file: data/access_bench/runs/run_608662392694095.md
+      match: "18 of 22"
+      covers: Llama 3.3 70B answers with a usable next step; also gpt-oss-120b answers that hit the token cap
+    - value: "16"
+      kind: measured
+      file: data/access_bench/runs/run_608662392694095.md
+      match: "16 of 22"
+      covers: answers from Llama 4 Maverick with a usable next step
+    - value: "1"
+      kind: measured
+      file: data/access_bench/runs/run_608662392694095.md
+      match: "1 of 22"
+      covers: Gemma 3 12B answers that hit the token cap
+    - value: "0"
+      kind: measured
+      file: data/access_bench/runs/run_608662392694095.md
+      match: "0 of 22"
+      covers: Llama answers that hit the token cap
+    - value: "608662392694095"
       kind: identifier
-      covers: part of the citation 42 CFR 411.15(i), the Medicare dental exclusion that ACC_PERIO_SCR_007 cites
+      covers: the Databricks job run id these results come from
+  missed:
+    - value: "0"
+      kind: measured
+      file: data/access_bench/runs/run_608662392694095.md
+      match: "0 of 4"
+      covers: the four models' answers that made the point (urgent care, EPSDT at 23, VADIP, CHIP type)
+    - value: "2"
+      kind: measured
+      file: data/access_bench/runs/run_608662392694095.md
+      match: "2 of 4"
+      covers: the four models' answers that named EPSDT for the 19-year-old
+    - value: "608662392694095"
+      kind: identifier
+      covers: the Databricks job run id these results come from

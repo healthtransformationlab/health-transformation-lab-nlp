@@ -4,6 +4,8 @@ HTML slide, in order, with the same heading and the speaker notes, and the commi
 import importlib.util
 import re
 
+import yaml
+
 import pytest
 
 from health_transformation_lab_nlp.paths import REPO_ROOT
@@ -51,11 +53,15 @@ def test_committed_pptx_is_current(deck):
         assert a.notes_slide.notes_text_frame.text == b.notes_slide.notes_text_frame.text, stale
 
 
-def test_access_deck_shows_no_answer_score_and_labels_its_numbers():
-    # no live AccessBench run exists yet: a figure on a slide is a count of questions, simulated, or cited
+def test_access_deck_scores_name_their_run_and_say_preliminary():
+    # #959: live runs exist now (run 608662392694095). A slide with a measured score names the run it came from and
+    # says the scores are preliminary (one AI judge); every figure is registered (test_deck_claims)
+    register = yaml.safe_load((REPO_ROOT / "docs" / "claims.yaml").read_text(encoding="utf-8"))["access"]
     for sid, section, _ in build_decks.slides(REPO_ROOT / "docs" / "access"):
-        text = " ".join(build_decks.visible_text(section))
-        assert not re.search(r"\d+%", text), f"access/{sid} shows a percentage"
+        if any(c["kind"] == "measured" for c in register.get(sid, [])):
+            text = " ".join(build_decks.visible_text(section))
+            assert re.search(r"[Rr]un \d{6,}", text), f"access/{sid} shows a score without naming its run"
+            assert "preliminary" in text, f"access/{sid} shows a score without saying preliminary"
 
 
 def test_access_deck_is_published_to_the_site():
