@@ -38,6 +38,12 @@ Load with `access_hard_items.load_items()`. Seeds:
 [`seeds/perio_screening_hard_2030.md`](seeds/perio_screening_hard_2030.md).
 Owner stretch goal only — not an affiliated program quota.
 
+## Review
+
+The answer keys and the AI judge are checked by the project owner before any score is published: an owner check, not
+an expert panel. How, and how decisions come back into these files:
+[docs/access_review_protocol.md](../../docs/access_review_protocol.md).
+
 ## Dual fixture: access + planted synthetic PHI
 
 [`items/simulated_access_phi_items.jsonl`](items/simulated_access_phi_items.jsonl) plants

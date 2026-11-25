@@ -74,6 +74,19 @@ smallest path that produces checkable, simulated-labelled results in gold.
 - **Independent test:** with a stub client, `run(..., mode="live", answer_max_tokens=1500)` builds the client with
   that cap; an answer whose output tokens equal the cap is `is_truncated`; `to_gold` maps the column.
 
+### US7 - The owner's review of the answer keys comes back into the repo (P1) #933
+
+- The owner reviews on a private page (https://claude.ai/artifact/S5iMbHCHbeD4c9BzYgotkV): keep, rewrite or remove
+  each point and red flag; add the riskiest wrong advice and a missing point; check the cited source. Then the owner
+  grades 40 answers without seeing the model or the judge.
+- `access_review.apply_key_review` turns a decision into the new item and records `rubric_version`,
+  `reviewed_by_code` and `source_check_code`. `access_review.agreement` compares the owner's grades with the judge's.
+- `scripts/80_access_review.py` reads the page's exported documents, prints the changes, and with `--write`
+  updates the item files and writes `data/access_bench/review/`.
+- One reviewer, the owner: an owner check, not an expert panel. `docs/access_review_protocol.md` says so.
+- **Independent test:** `test_access_review.py` applies each verdict, rejects a result that breaks the item limits,
+  and computes agreement on a fixed fixture; the script round-trips an export in a temporary folder.
+
 ## Requirements
 
 - **FR-001** Default batch size is 5; `limit` may be smaller but not larger than the fixture
