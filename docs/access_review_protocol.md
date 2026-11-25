@@ -43,7 +43,8 @@ point needs a better source or has to go before scores are published.
 ## Part 2: checking the AI judge
 
 The reviewer grades 40 answers from live run 587381582818833: 10 per model, every question at least twice, drawn with
-seed 20261125. The sample is committed in `data/access_bench/review/answer_sample_587381582818833.json`. For each
+seed 20261125. The sample is committed in `data/access_bench/review/answer_sample_587381582818833.json` with each answer's
+ids, model and judge verdict, and a SHA-256 of its text (the full answers stay in the run's gold table). For each
 answer, without seeing the model or the judge's verdict:
 
 - each of the question's five key points: made or not;

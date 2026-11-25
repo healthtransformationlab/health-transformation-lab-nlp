@@ -25,11 +25,19 @@ Reviewed by the agent session that wrote it. Read it knowing that.
 3. **The import is idempotent:** `--write` rewrites the item files from the export each time, and a dry run changes
    nothing (tested).
 
+4. **CI caught two things the targeted tests missed:**
+   - `80_access_review.py` didn't set up telemetry (`test_telemetry_scripts`). It now calls `telemetry.setup()` and
+     `start_script`.
+   - The committed answer sample quoted a model saying "Diagnostic Tool" (`test_wording`). The sample now keeps
+     each answer's ids, model, judge verdict and a SHA-256 of its text instead of the text, which agreement doesn't
+     need. The full answers stay in the run's gold table. The wording check is unchanged.
+
 ## Checks
 
 - `pytest tests/test_access_review.py tests/test_telemetry_calls.py tests/test_wording.py tests/test_no_org_references.py
   tests/test_bench_order.py tests/test_access_hard_items.py tests/test_access_phi_items.py tests/test_access_batch.py`:
-  73 passed. The new tests failed (no module) before the code.
+  73 passed. The new tests failed (no module) before the code. After the CI fixes, `test_access_review.py`,
+  `test_telemetry_scripts.py` and `test_wording.py`: 36 passed.
 
 ## Verdict
 

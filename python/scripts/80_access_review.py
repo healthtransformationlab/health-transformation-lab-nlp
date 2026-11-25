@@ -20,6 +20,7 @@ from pathlib import Path
 from health_transformation_lab_nlp import access_hard_items as ahi
 from health_transformation_lab_nlp import access_phi_items as api
 from health_transformation_lab_nlp import access_review as ar
+from health_transformation_lab_nlp import telemetry
 
 FILES = {"phi": api.ITEMS_PATH, "perio_screening": ahi.ITEMS_PATH}
 SAMPLE = ar.REVIEW_DIR / "answer_sample_587381582818833.json"
@@ -30,6 +31,8 @@ def _rows(path: Path) -> list[dict]:
 
 
 def main(argv=None) -> int:
+    telemetry.setup()
+    telemetry.start_script("80_access_review", data_label="synthetic")
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument("--keys-dir", type=Path, required=True)
     p.add_argument("--grades-dir", type=Path)
