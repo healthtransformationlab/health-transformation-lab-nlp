@@ -30,3 +30,7 @@ updated with jurisdiction and dates.
 ## Constitution check
 
 Synthetic only; test first; names follow AGENTS.md; no blended number.
+
+## US5 (#957)
+
+Edit the item files directly; `docs/access_bench_key_v2.md` lists each change and who asked; new sources named, `source_verified_date` null until opened.

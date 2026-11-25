@@ -5,3 +5,4 @@
 - [x] T010 [US2] Judge v3 prompt, parsing and columns
 - [x] T020 [US3] Control answers and `access_controls.py`
 - [x] T030 [US4] Typed privacy gate; item time-sensitivity and source fields
+- [x] T040 [US5] Answer keys v2 from the external reviews

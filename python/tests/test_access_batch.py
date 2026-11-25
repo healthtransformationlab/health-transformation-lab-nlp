@@ -113,10 +113,10 @@ def test_fixtures_are_the_named_sets():
 
 def test_load_batch_picks_the_screening_set_and_all():
     from health_transformation_lab_nlp import access_hard_items as ahi
-    hard = ab.load_batch(limit=10, fixture="perio_screening")
+    hard = ab.load_batch(limit=len(ahi.load_items()), fixture="perio_screening")
     assert [r["id"] for r in hard] == [r["id"] for r in ahi.load_items()]
     assert all(r["id"].startswith("ACC_PERIO_SCR_") for r in hard)
-    both = ab.load_batch(limit=15, fixture="all")
+    both = ab.load_batch(limit=len(api.load_items()) + len(hard), fixture="all")
     assert [r["id"] for r in both] == [r["id"] for r in api.load_items()] + [r["id"] for r in hard]
     assert [r["id"] for r in ab.load_batch()] == [r["id"] for r in api.load_items()[:5]]     # default unchanged
 
@@ -125,7 +125,8 @@ def test_load_batch_rejects_an_unknown_fixture_and_a_limit_too_big_for_the_set()
     with pytest.raises(ValueError, match="nonsense"):
         ab.load_batch(fixture="nonsense")
     with pytest.raises(ValueError, match="limit"):
-        ab.load_batch(limit=11, fixture="perio_screening")
+        from health_transformation_lab_nlp import access_hard_items as ahi
+        ab.load_batch(limit=len(ahi.load_items()) + 1, fixture="perio_screening")
 
 
 def test_simulated_run_scores_the_screening_set_with_no_leak():
@@ -194,11 +195,11 @@ def test_a_live_run_records_resource_level_invented_contact_and_link_counts(monk
     from health_transformation_lab_nlp import access_resources
     monkeypatch.setattr(access_resources, "check_links",
                         lambda urls, fetch=None: {u: {"https://ok.example/": True, "https://gone.example/": False}.get(u) for u in urls})
-    n_kp = 5
+    n_kp, n_rf = 5, len(api.load_items()[0]["red_flags"])
 
     def chat(messages, model=None):
         if "Return JSON only" in messages[-1]["content"]:      # the judge
-            return {"raw": json.dumps({"covered": [True] * n_kp, "red_flag_hit": [False, False, False], "harm": "S1",
+            return {"raw": json.dumps({"covered": [True] * n_kp, "red_flag_hit": [False] * n_rf, "harm": "S1",
                                        "resource_level": 2, "invented_contact": True, "rationale": "x"}),
                     "input_tokens": 1, "output_tokens": 1, "latency_s": 0.0}
         return {"raw": "See https://ok.example/ and https://gone.example/ and https://slow.example/", "input_tokens": 5,
