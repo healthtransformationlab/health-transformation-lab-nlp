@@ -816,6 +816,27 @@ def batch_results(res: dict) -> dict[str, dict]:
     return {i: {**shared, **r} for i, r in (res.get("runs") or {}).items() if i not in out}
 
 
+def partial_batch_result(out: Path, status: str, model: str | None) -> dict:
+    """What a batch kernel that ended without writing result.json left (028 BUG14, #955): cancelled, stopped by
+    Kaggle, or out of time. The kernel writes each task's tasks/<id>/result.json as the task ends, so every task that
+    finished keeps its run; a task with no file was not reached. An unreadable file is skipped. The per-task files do
+    not carry the model, so it comes from the submission's declaration."""
+    runs = {}
+    for f in sorted((Path(out) / "tasks").glob("*/result.json")):
+        try:
+            runs[f.parent.name] = json.loads(f.read_text())
+        except (OSError, ValueError):
+            continue
+    return {"error": f"kernel ended {status} and wrote no result.json", "runs": runs, "is_batch": True,
+            "model_name": model}
+
+
+def partial_note(status: str) -> str:
+    """The settings note for a table built from per-task files (partial_batch_result)."""
+    return (f"the kernel ended {status} before writing result.json; each row comes from the task's own "
+            "tasks/<id>/result.json")
+
+
 def seeded_order(ids: list[str], seed: int, of_set: list[str] | None = None) -> list[str]:
     """The order a batch runs its tasks in: a seeded shuffle of the ids as given. For a rerun of some tasks, `of_set`
     is the first run's ids as they were given then: each task keeps its place in that run's order."""
@@ -989,8 +1010,16 @@ def run_batch(a, api, user: str, ids: list[str], tasks: dict, manifest: dict, ov
         api.kernels_output(kref, str(out), force=True)
     session = time.monotonic() - t0
     forward_run_telemetry(out)
-    res = json.loads((out / "result.json").read_text()) if (out / "result.json").exists() else {
-        "error": f"kernel ended {status} and wrote no result.json"}
+    uploaded = work / "bundle" / "submission"   # what the kernel was given; the agent folder if it is gone
+    partial = not (out / "result.json").exists()
+    if partial:   # cancelled, stopped or out of time: keep the tasks that finished (028 BUG14, #955)
+        try:
+            model = declared_model(uploaded if (uploaded / "agent.yaml").is_file() else a.agent_dir)
+        except SystemExit:
+            model = None
+        res = partial_batch_result(out, status, model)
+    else:
+        res = json.loads((out / "result.json").read_text())
     print(f"kernel {status} after {session / 60:.1f} min; GPUs {(res.get('server') or {}).get('gpus') or res.get('gpus_seen')}"
           + (f"; ERROR {res['error'][:400]}" if "error" in res else ""), flush=True)
     shared = {k: res.get(k) for k in BATCH_SHARED}
@@ -1009,7 +1038,6 @@ def run_batch(a, api, user: str, ids: list[str], tasks: dict, manifest: dict, ov
         verdicts = _verify(a.dataset / "tasks.jsonl", a.dataset / "snapshots", a.agent_dir,
                            {i: (r.get("patch") or "") for i, r in done.items()}, work / "_verify")
     _refuse_missing_modules(a, verdicts, work, development)
-    uploaded = work / "bundle" / "submission"   # what the kernel was given; the agent folder if it is gone
     sub_gen = submission_generation(uploaded if (uploaded / "agent.yaml").is_file() else a.agent_dir)
     rows = [row_for({"instance_id": i, **done[i]}, verdicts.get(i), "" if development else manifest.get(i, ""),
                     (colab_results_url(results) if colab else
@@ -1042,6 +1070,8 @@ def run_batch(a, api, user: str, ids: list[str], tasks: dict, manifest: dict, ov
             if not a.sample:
                 settings = given_sample(settings, getattr(a, "sample_method", None))
             settings["notes"] += a.note or []
+            if partial:
+                settings["notes"].append(partial_note(status))
             if getattr(a, "context_note", None):
                 settings["context"] = a.context_note
             if first_ids:
