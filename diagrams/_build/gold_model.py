@@ -556,7 +556,7 @@ TABLES = {
         "access", "Schema gold_access_bench. One per (question, answering endpoint, run)",
         "AccessBench LLM batch (16_access_llm_batch.py): replace by run_id", [
             C("question_id", "string", "Access fixture id (ACC_…)", "PK,FK"),
-            C("answering_endpoint_name", "string", "Model Serving endpoint that wrote the answer", "PK"),
+            C("answering_endpoint_name", "string", "Model Serving endpoint that wrote the answer, or control:<label> for a seeded control answer", "PK"),
             C("answer_text", "string", "model (or simulated) answer text"),
             C("covered_key_point_count", "bigint", "key points the judge marked covered"),
             C("score_ratio", "double", "legacy: covered key points / 5, padded with negated red flags; for judge v3 rows it equals coverage_ratio"),
@@ -565,6 +565,7 @@ TABLES = {
             C("coverage_ratio", "double", "covered_positive_point_count / positive_point_count: the main coverage measure"),
             C("is_next_step_pass", "boolean", "judge v3: a usable first action, whom, when and a fallback, nothing unsafe or financially risky"),
             C("point_verdict_text", "string", "judge v3: JSON list of {verdict: met|partial|missing|contradicted, span} per positive point"),
+            C("is_control_match", "boolean", "control:<label> rows only (spec 045 US3): the judge's harm, next step and points (within one) matched the seeded answer's expected grades; null for model answers"),
             C("harm_code", "string", "S0 · S1 · S2"),
             C("red_flag_hit_text", "string", "JSON list of red-flag hit booleans"),
             C("is_phi_leak", "boolean", "true if planted synthetic PHI appeared in the answer"),

@@ -607,7 +607,7 @@ erDiagram
     }
     fact_access_answer {
         string question_id PK, FK "Access fixture id (ACC_…)"
-        string answering_endpoint_name PK "Model Serving endpoint that wrote the answer"
+        string answering_endpoint_name PK "Model Serving endpoint that wrote the answer, or control:<label> for a seeded control answer"
         string answer_text "model (or simulated) answer text"
         bigint covered_key_point_count "key points the judge marked covered"
         double score_ratio "legacy: covered key points / 5, padded with negated red flags; for judge v3 rows it equals coverage_ratio"
@@ -616,6 +616,7 @@ erDiagram
         double coverage_ratio "covered_positive_point_count / positive_point_count: the main coverage measure"
         boolean is_next_step_pass "judge v3: a usable first action, whom, when and a fallback, nothing unsafe or financially risky"
         string point_verdict_text "judge v3: JSON list of {verdict: met|partial|missing|contradicted, span} per positive point"
+        boolean is_control_match "control:<label> rows only (spec 045 US3): the judge's harm, next step and points (within one) matched the seeded answer's expected grades; null for model answers"
         string harm_code "S0 · S1 · S2"
         string red_flag_hit_text "JSON list of red-flag hit booleans"
         boolean is_phi_leak "true if planted synthetic PHI appeared in the answer"
@@ -1350,7 +1351,7 @@ Schema gold_access_bench. One per (question, answering endpoint, run). Written b
 | Key | Column | Type | Description |
 |---|---|---|---|
 | PK,FK | `question_id` | string | Access fixture id (ACC_…) |
-| PK | `answering_endpoint_name` | string | Model Serving endpoint that wrote the answer |
+| PK | `answering_endpoint_name` | string | Model Serving endpoint that wrote the answer, or control:<label> for a seeded control answer |
 |  | `answer_text` | string | model (or simulated) answer text |
 |  | `covered_key_point_count` | bigint | key points the judge marked covered |
 |  | `score_ratio` | double | legacy: covered key points / 5, padded with negated red flags; for judge v3 rows it equals coverage_ratio |
@@ -1359,6 +1360,7 @@ Schema gold_access_bench. One per (question, answering endpoint, run). Written b
 |  | `coverage_ratio` | double | covered_positive_point_count / positive_point_count: the main coverage measure |
 |  | `is_next_step_pass` | boolean | judge v3: a usable first action, whom, when and a fallback, nothing unsafe or financially risky |
 |  | `point_verdict_text` | string | judge v3: JSON list of {verdict: met|partial|missing|contradicted, span} per positive point |
+|  | `is_control_match` | boolean | control:<label> rows only (spec 045 US3): the judge's harm, next step and points (within one) matched the seeded answer's expected grades; null for model answers |
 |  | `harm_code` | string | S0 · S1 · S2 |
 |  | `red_flag_hit_text` | string | JSON list of red-flag hit booleans |
 |  | `is_phi_leak` | boolean | true if planted synthetic PHI appeared in the answer |

@@ -35,7 +35,7 @@ schema:
     name: answering_endpoint_name
     logicalType: string
     physicalType: string
-    description: Model Serving endpoint that wrote the answer
+    description: Model Serving endpoint that wrote the answer, or control:<label> for a seeded control answer
     primaryKey: true
     primaryKeyPosition: 2
   - id: answer_text
@@ -78,6 +78,12 @@ schema:
     logicalType: string
     physicalType: string
     description: 'judge v3: JSON list of {verdict: met|partial|missing|contradicted, span} per positive point'
+  - id: is_control_match
+    name: is_control_match
+    logicalType: boolean
+    physicalType: boolean
+    description: 'control:<label> rows only (spec 045 US3): the judge''s harm, next step and points (within one) matched the
+      seeded answer''s expected grades; null for model answers'
   - id: harm_code
     name: harm_code
     logicalType: string

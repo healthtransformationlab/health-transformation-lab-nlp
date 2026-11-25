@@ -12,7 +12,7 @@ from typing import Any, Callable
 
 import pandas as pd
 
-from . import access_discount_items as adi
+from . import access_controls, access_discount_items as adi
 from . import access_hard_items as ahi
 from . import access_keypoint_judge as ak
 from . import access_phi_items as api
@@ -32,6 +32,12 @@ _SIM_ANSWER = (
 
 # Question sets (#929): the five with planted details, the ten hard periodontal-screening asks, or both
 FIXTURES = ("phi", "perio_screening", "discount_voucher", "all")   # discount_voucher: spec 044 US2
+
+
+@traced
+def all_items() -> list[dict]:
+    """Every AccessBench item across the fixtures (for controls, whatever the run's fixture)."""
+    return api.load_items() + ahi.load_items() + adi.load_items()
 
 
 @traced
@@ -121,12 +127,52 @@ def _cost_usd(inp: int, out: int, usd_in: float, usd_out: float) -> float:
     return (inp / 1_000_000) * usd_in + (out / 1_000_000) * usd_out
 
 
+def _fact_row(row: dict, endpoint: str, answer: str, scored: dict, links: dict, meta: dict, *, mode: str, err: str,
+              judge_endpoint: str, answer_max_tokens: int, usd_in: float, usd_out: float) -> dict:
+    """One fact_access_answer row, without its batch key."""
+    # a screening item plants nothing, so there is nothing to leak (#929)
+    planted = api.known_phi_for_leak_check(row) if row.get("planted_phi") else []
+    leaks = deid.leak_check(answer, planted) if answer and planted else []
+    return {
+        "question_id": row["id"],
+        "endpoint": endpoint,
+
+        "answer": answer,
+        # v1/v2: padded with negated red flags (legacy); v3: met / positive points, same as coverage_ratio
+        "key_points_covered": scored["key_points_covered"],
+        "score": scored["score"],
+        "harm": scored["harm"],
+        "red_flag_hit": json.dumps(scored.get("red_flag_hit") or []),
+        **_coverage(row, scored),                  # spec 045: positive points only
+        "is_next_step_pass": scored.get("next_step_pass"),
+        "point_verdict_text": json.dumps(scored["point_verdicts"]) if scored.get("point_verdicts") else None,
+        "is_phi_leak": bool(leaks),
+        # the answer used its whole token budget, so it may stop mid-sentence (#931)
+        "is_truncated": mode == "live" and meta["output_tokens"] >= answer_max_tokens,
+        "resource_level": scored.get("resource_level") if mode == "live" else None,
+        "is_invented_contact": scored.get("invented_contact") if mode == "live" else None,
+        "link_count": len(links),
+        "broken_link_count": sum(1 for ok in links.values() if ok is False),
+        "unchecked_link_count": sum(1 for ok in links.values() if ok is None),
+        "judge_endpoint": judge_endpoint,
+        "prompt_version": ak.PROMPT_VERSION,
+        "latency_s": meta["latency_s"],
+        "input_tokens": meta["input_tokens"],
+        "output_tokens": meta["output_tokens"],
+        "cost_usd": _cost_usd(meta["input_tokens"], meta["output_tokens"],
+                              usd_in, usd_out),
+        "is_simulated": mode == "simulated",
+        "error": err or scored.get("error") or meta.get("error") or "",
+        "is_control_match": None,                  # spec 045 US3: set only on control:<label> rows
+    }
+
+
 @traced
 def run(*, endpoints: list[str], limit: int = 5, mode: str = "simulated",
         judge_endpoint: str = "sim:judge", max_usd: float = 1.0,
         run_id: str, run_ts, git_commit: str, chat: ChatFn | None = None,
         usd_per_million_in: float = 0.0, usd_per_million_out: float = 0.0, fixture: str = "phi",
-        answer_max_tokens: int = 1500,
+        answer_max_tokens: int = 1500, controls: bool = False,
         ) -> dict[str, pd.DataFrame]:
     """Score `limit` Access items × each answering endpoint. Returns analysis-named frames."""
     if mode not in ("simulated", "live"):
@@ -166,42 +212,31 @@ def run(*, endpoints: list[str], limit: int = 5, mode: str = "simulated",
             else:
                 answer, meta = _answer(row, endpoint, mode, chat)
                 scored = _judge(row, answer, mode, judge_endpoint, chat)
-            # a screening item plants nothing, so there is nothing to leak (#929)
-            planted = api.known_phi_for_leak_check(row) if row.get("planted_phi") else []
-            leaks = deid.leak_check(answer, planted) if answer and planted else []
             fact_rows.append({
-                "question_id": row["id"],
-                "endpoint": endpoint,
-                "answer": answer,
-                # v1/v2: padded with negated red flags (legacy); v3: met / positive points, same as coverage_ratio
-                "key_points_covered": scored["key_points_covered"],
-                "score": scored["score"],
-                "harm": scored["harm"],
-                "red_flag_hit": json.dumps(scored.get("red_flag_hit") or []),
-                **_coverage(row, scored),                  # spec 045: positive points only
-                "is_next_step_pass": scored.get("next_step_pass"),
-                "point_verdict_text": json.dumps(scored["point_verdicts"]) if scored.get("point_verdicts") else None,
-                "is_phi_leak": bool(leaks),
-                # the answer used its whole token budget, so it may stop mid-sentence (#931)
-                "is_truncated": mode == "live" and meta["output_tokens"] >= answer_max_tokens,
-                "resource_level": scored.get("resource_level") if mode == "live" else None,
-                "is_invented_contact": scored.get("invented_contact") if mode == "live" else None,
-                "link_count": len(links),
-                "broken_link_count": sum(1 for ok in links.values() if ok is False),
-                "unchecked_link_count": sum(1 for ok in links.values() if ok is None),
-                "judge_endpoint": judge_endpoint,
-                "prompt_version": ak.PROMPT_VERSION,
-                "latency_s": meta["latency_s"],
-                "input_tokens": meta["input_tokens"],
-                "output_tokens": meta["output_tokens"],
-                "cost_usd": _cost_usd(meta["input_tokens"], meta["output_tokens"],
-                                      usd_per_million_in, usd_per_million_out),
-                "is_simulated": mode == "simulated",
-                "error": err or scored.get("error") or meta.get("error") or "",
+                **_fact_row(row, endpoint, answer, scored, links, meta, mode=mode, err=err,
+                            judge_endpoint=judge_endpoint, answer_max_tokens=answer_max_tokens,
+                            usd_in=usd_per_million_in, usd_out=usd_per_million_out),
                 "run_id": run_id,
                 "run_ts": run_ts,
                 "git_commit": git_commit,
             })
+    if controls:
+        # spec 045 US3: grade the seeded control answers too, so a judge blind to harm shows up
+        by_id = {r["id"]: r for r in all_items()}
+        for c in access_controls.load_controls():
+            row = by_id[c["question_id"]]
+            if row["id"] not in {r["id"] for r in items}:
+                items.append(row)
+            links = access_resources.check_links(access_resources.extract_links(c["answer_text"])) \
+                if mode == "live" else {}
+            scored = _judge(row, c["answer_text"], mode, judge_endpoint, chat, links)
+            meta = {"input_tokens": 0, "output_tokens": 0, "latency_s": 0.0, "error": ""}
+            fact = _fact_row(row, f"control:{c['label_code']}", c["answer_text"], scored, links, meta, mode=mode,
+                             err="", judge_endpoint=judge_endpoint, answer_max_tokens=answer_max_tokens,
+                             usd_in=0.0, usd_out=0.0)
+            fact["is_truncated"] = False
+            fact["is_control_match"] = access_controls.expected_vs_judged(c, {**scored, **fact})["is_control_match"]
+            fact_rows.append({**fact, "run_id": run_id, "run_ts": run_ts, "git_commit": git_commit})
     dim = pd.DataFrame([{
         "question_id": r["id"],
         "section": r["section_code"],

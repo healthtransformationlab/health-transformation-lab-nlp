@@ -104,6 +104,9 @@ variables:
   access_llm_fixture:
     description: "Which AccessBench questions to score (#929, #939): phi (5 with planted details), perio_screening (10), discount_voucher (6), or all (21)"
     default: phi
+  access_llm_controls:
+    description: "Also grade the 10 seeded control answers (spec 045 US3): true or false; adds judge calls, no answer calls"
+    default: "true"
   access_answer_max_tokens:
     description: "Output-token cap for each AccessBench answer (#931); the chart reader's 300 cut answers off"
     default: "1500"
