@@ -88,7 +88,7 @@ schema:
     name: harm_code
     logicalType: string
     physicalType: string
-    description: S0 · S1 · S2
+    description: 'S0 · S1 · S2; null when the judge''s verdict failed to parse (see error_text, #953)'
   - id: red_flag_hit_text
     name: red_flag_hit_text
     logicalType: string

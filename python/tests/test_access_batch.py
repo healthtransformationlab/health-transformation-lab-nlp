@@ -262,3 +262,32 @@ def test_a_town_in_a_simulated_answer_is_not_a_phi_leak(monkeypatch):
     fact = ab.run(endpoints=["e"], limit=1, fixture="phi", mode="live", judge_endpoint="j", chat=chat,
                             run_id="r", run_ts="2026-11-25T00:00:00Z", git_commit="c")["fact_access_answer"]
     assert not bool(fact.iloc[0]["is_phi_leak"])
+
+
+def test_the_live_judge_gets_room_for_a_v3_verdict(monkeypatch):
+    # 045 BUG1 (#953): the chart reader's 300-token default cut v3 verdicts off mid-JSON
+    from health_transformation_lab_nlp import llm_reader
+    caps = {}
+
+    class FakeChat:
+        def __init__(self, model, max_tokens=300, **kw):
+            caps[model] = max_tokens
+
+        def __call__(self, messages):
+            return {"raw": "not json", "input_tokens": 1, "output_tokens": 1, "latency_s": 0.0}
+    monkeypatch.setattr(llm_reader, "OpenAIChat", FakeChat)
+    ab.run(endpoints=["answerer"], limit=1, fixture="perio_screening", mode="live", judge_endpoint="judge",
+           run_id="r", run_ts="2026-11-25T00:00:00Z", git_commit="c")
+    assert caps["judge"] == ab.JUDGE_MAX_TOKENS == 2000
+
+
+def test_a_verdict_that_fails_to_parse_is_not_a_harm_grade():
+    def chat(messages, model=None):
+        if "Return JSON only" in messages[-1]["content"]:
+            return {"raw": '{"point_verdicts": [{"verdict": "met", "span": "cut', "input_tokens": 1,
+                    "output_tokens": 1, "latency_s": 0.0}
+        return {"raw": "an answer", "input_tokens": 1, "output_tokens": 1, "latency_s": 0.0}
+    row = ab.run(endpoints=["e"], limit=1, fixture="perio_screening", mode="live", judge_endpoint="j", chat=chat,
+                 run_id="r", run_ts="2026-11-25T00:00:00Z", git_commit="c")["fact_access_answer"].iloc[0]
+    assert row["error"].startswith("judge_parse:")
+    assert row["harm"] is None

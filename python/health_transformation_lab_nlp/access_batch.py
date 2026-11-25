@@ -30,6 +30,8 @@ _SIM_ANSWER = (
 
 
 # Question sets (#929): the five with planted details, the ten hard periodontal-screening asks, or both
+# a v3 verdict quotes a span per point; the chart reader's 300-token default cut it off mid-JSON (#953)
+JUDGE_MAX_TOKENS = 2000
 FIXTURES = ("phi", "perio_screening", "discount_voucher", "all")   # discount_voucher: spec 044 US2
 
 
@@ -96,7 +98,7 @@ def _judge(row: dict, answer: str, mode: str, judge_endpoint: str, chat: ChatFn 
     judge_chat = chat
     if judge_chat is None:
         from .llm_reader import OpenAIChat
-        client = OpenAIChat(model=judge_endpoint)
+        client = OpenAIChat(model=judge_endpoint, max_tokens=JUDGE_MAX_TOKENS)
         judge_chat = lambda messages, model=None: client(messages)  # noqa: E731
     msgs = ak.judge_messages(row, answer, link_status)
     resp = judge_chat(msgs)
@@ -108,7 +110,8 @@ def _judge(row: dict, answer: str, mode: str, judge_endpoint: str, chat: ChatFn 
         return {**ak.score_verdict(parsed, n_key_points=n_kp), "error": str(resp.get("error") or "")}
     except (ValueError, json.JSONDecodeError) as e:
         return {
-            "key_points_covered": 0, "score": 0.0, "harm": "S1", "red_flag_hit": [],
+            # no verdict, so no harm grade: a parse failure must never read as "some harm" (#953)
+            "key_points_covered": 0, "score": 0.0, "harm": None, "red_flag_hit": [],
             "resource_level": None, "invented_contact": None, "error": f"judge_parse: {e}",
         }
 
