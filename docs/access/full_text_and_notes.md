@@ -6,7 +6,7 @@ A personal idea, not affiliated with or endorsed by any organization. Built from
 AccessBench: Oral Health · exploratory · November 2026
 Millions ask AI how to get care.
 Does the answer get them there?
-AccessBench grades whether an AI answer helps someone actually get care: is it covered, what to do about a denial or a bill, where to go that they can afford.
+AccessBench grades whether the AI people already use helps them actually get care, shares what each model misses with the companies behind it, and tracks whether the answers improve, round after round.
 Oral health first. Coming soon:
 AccessBench: Medical Care
 and
@@ -14,7 +14,7 @@ AccessBench: Mental Health
 .
 John Bowyer · personal project, not affiliated with any organization · synthetic questions, no patient data
 
-**Speaker notes:** People now ask AI the questions they used to bring to a benefits counselor or a dental office's front desk: is this covered, what do I do about this bill, where can I go that I can afford. AccessBench grades whether the answer actually gets them to care. This deck is AccessBench: Oral Health, about dental care; AccessBench: Medical Care and AccessBench: Mental Health are coming soon, built the same way. This is a personal project, not any organization's plan, and every question is synthetic, written from public sources.
+**Speaker notes:** People now ask AI the questions they used to bring to a benefits counselor or a dental office's front desk: is this covered, what do I do about this bill, where can I go that I can afford. AccessBench grades whether the answer actually gets them to care, shows the companies behind these tools what their AI missed, and re-measures every round so progress can be tracked. This deck is AccessBench: Oral Health, about dental care; AccessBench: Medical Care and AccessBench: Mental Health are coming soon, built the same way. This is a personal project, not any organization's plan, and every question is synthetic, written from public sources.
 
 ## Slide 2 — reach
 
@@ -73,7 +73,27 @@ Synthetic questions grounded in public sources · AccessBench: Oral Health · 4
 
 **Speaker notes:** AccessBench asks one question of every answer: after reading it, could this person take the next step? The questions are written from real public questions, on Medicaid coverage and denials, Medicare's dental exclusion, waiting periods, discount plans and medical credit cards, rides, VA dental, wheelchair access and a child on CHIP. The people are invented; the rules are real. Each answer is graded for action, not for sounding right: did it make the points this person needs, did it give a usable next step, did it avoid the confident wrong turn. Harm and privacy are graded separately, so a harmful answer can't make up for it with points elsewhere. Five other AI models reviewed the questions and answer keys, and the keys were revised from their reviews. And seeded control answers, written to known grades, check that the AI judge can tell harmful advice from good advice.
 
-## Slide 5 — findings
+## Slide 5 — goal
+
+The goal
+Better answers where people already ask
+1. Measure
+Grade the AI people use
+ChatGPT, Claude, Gemini and others, on the same questions and the same grading, with each model's version and date recorded.
+2. Share
+Show each company what its AI missed
+The questions, the answer keys and the steps each model left out, so the companies behind these tools can fix them.
+3. Re-measure
+Track progress every round
+Run the same questions again and report, model by model, whether answers give more of the steps people need, with less harm.
+Success is measured, not claimed:
+the share of needed steps each model gives, round after round
+. Better answers in the tools millions already use reach more people than any one clinic or website can.
+Personal project, not affiliated with any organization · AccessBench: Oral Health · 5
+
+**Speaker notes:** This is what AccessBench is for. People already get their health information from a handful of AI tools, so the fastest way to improve what they hear is to improve those tools. The loop has three steps. Measure: grade the AI people actually use, ChatGPT, Claude, Gemini and others, on the same questions with the same grading, recording each model's version and the date. Share: publish what each model missed and give the companies behind these tools the questions, the answer keys and the failures, so they can fix them. Re-measure: run the same questions again every round and report, model by model, whether answers give more of the steps people need, with less harm. Success is measured, not claimed: the share of needed steps each model gives, round after round. Better answers in tools that millions already use reach more people than any one clinic or website can.
+
+## Slide 6 — findings
 
 What we found
 Half the steps people need were missing
@@ -105,11 +125,11 @@ Llama 4 Maverick
 Across the four models,
 187 of 352
 key points were made. The two models that made the most points also wrote the longest answers. Each answer was capped at 1,500 tokens (about 1,100 words); gpt-oss-120b hit that limit on most questions, so its answers were cut off and part of its score may come from listing everything.
-Run 608662392694095, synthetic questions, preliminary (one AI judge) · AccessBench: Oral Health · 5
+Run 608662392694095, synthetic questions, preliminary (one AI judge) · AccessBench: Oral Health · 6
 
 **Speaker notes:** This is the first run on the revised answer keys, on four open models hosted on Databricks. Across all four, 187 of 352 key points were made, about half. gpt-oss-120b made 77.7 percent of the points and Gemma 3 12B 72.7 percent; the two Llama models made about a third, 32.5 and 29.1 percent. Most answers did offer a next step of some kind. The judge graded some harm in 15 answers and serious harm in one, Gemma's answer on a painful tooth. Two cautions. Every answer was capped at 1,500 tokens, about 1,100 words. gpt-oss-120b hit that limit on 18 of 22 questions, so those answers were cut off mid-way, and part of its score may come from listing everything. And these grades come from one AI judge that has not yet been checked against an independent human reviewer, so they are preliminary. ChatGPT, Claude and Gemini are not in this run yet.
 
-## Slide 6 — missed
+## Slide 7 — missed
 
 What every model missed
 The steps that matter most were the ones left out
@@ -123,17 +143,17 @@ The programs people don't know
 0 of 4 named them
 The VA's dental insurance program for veterans without VA dental; the difference between Medicaid and a separate CHIP program for a child.
 These are not trivia. Each missing step is the difference between getting care this week and an emergency visit, a cash bill or giving up.
-Run 608662392694095, synthetic questions, preliminary (one AI judge) · AccessBench: Oral Health · 6
+Run 608662392694095, synthetic questions, preliminary (one AI judge) · AccessBench: Oral Health · 7
 
 **Speaker notes:** Where the models fell short is the point of AccessBench. Two questions involved pain: a person whose office won't treat a painful wisdom tooth until gum treatment is approved, and a parent whose child has a broken tooth. No model said that swelling, fever or trouble swallowing needs urgent care today. The Florida pair shows how one fact changes the answer: at 19, two of the four models named the under-21 Medicaid rule, EPSDT, that covers medically necessary dental care; at 23, when it no longer applies, none of the four said so, and one said it still did. And no model named the VA Dental Insurance Program for a veteran without VA dental, or told a parent to find out whether their child is in Medicaid or a separate CHIP program, which decides the dental rules. Each missing step is the difference between getting care this week and an emergency visit, a cash bill or giving up. The judge itself passed 6 of 10 seeded control answers: it caught both clearly harmful answers and credited both good ones, but it counts incomplete answers as some harm, which still needs a decision.
 
-## Slide 7 — next
+## Slide 8 — next
 
 What comes next
 Grade the AI people actually use
 1. The major models
 ChatGPT, Claude, Gemini
-The same questions and grading, through each provider, with each model's exact version recorded.
+The same questions and grading, with each model's version and date recorded: the first round to track from.
 2. A second reviewer
 Someone who does this work
 A Medicaid, dental-billing or legal-aid expert grades the same answers, so the results don't rest on one person and one AI judge.
@@ -143,11 +163,11 @@ The same method for hospital bills and financial assistance, crisis lines and fi
 The north star: more people completing a periodontal screening by 2030, the owner's own stretch goal, not any organization's target. Detail:
 benchmarks/access_bench/
 .
-Personal project, not affiliated with any organization · AccessBench: Oral Health · 7
+Personal project, not affiliated with any organization · AccessBench: Oral Health · 8
 
 **Speaker notes:** Three steps next. First, grade the AI people actually use: ChatGPT, Claude and Gemini, on the same questions with the same grading, recording each model's exact version. Second, a second reviewer who does this work, from Medicaid, dental billing or legal aid, grades the same answers, so the results stop resting on one person and one AI judge. Third, AccessBench: Medical Care and AccessBench: Mental Health, coming soon, take the same method to hospital bills and financial assistance, crisis lines and finding low-cost treatment. The north star is more people completing a periodontal screening by 2030; that is a personal stretch goal, not any organization's target.
 
-## Slide 8 — method
+## Slide 9 — method
 
 Appendix: how it works
 Questions, grading and the run
@@ -161,6 +181,6 @@ The run
 One Databricks job
 Each model answers each question; the judge grades; results land in two gold tables with cost and tokens. A spending cap stops a run before it overspends.
 Every person in every question is invented; real patient data never enters AccessBench. Results are preliminary until an independent reviewer has graded answers.
-Synthetic questions grounded in public sources · AccessBench: Oral Health · 8
+Synthetic questions grounded in public sources · AccessBench: Oral Health · 9
 
 **Speaker notes:** For those who want the method. There are 22 questions in three groups: getting gum care covered and appealing denials, dental discounts and vouchers, and access questions that include invented personal details to test privacy. Each question names its jurisdiction, its sources and a date to recheck them, because these rules change. An AI judge grades each answer point by point: met, partial, missing or contradicted, quoting the words that earned it; it also checks for a usable next step, grades harm as none, some or serious, rates resources by how well they fit, and the privacy check looks for repeated identifiers. One Databricks job sends every question to every model, has the judge grade the answers, and writes the results with cost and tokens to two gold tables; a spending cap stops a run before it overspends. Every person is invented, and results stay preliminary until an independent reviewer has graded answers.
