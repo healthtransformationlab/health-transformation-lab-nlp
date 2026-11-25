@@ -38,6 +38,7 @@ dbutils.widgets.text("run_id", "")
 dbutils.widgets.text("endpoints", "sim:llama")
 dbutils.widgets.text("limit", "5")
 dbutils.widgets.dropdown("fixture", "phi", ["phi", "perio_screening", "discount_voucher", "all"])  # noqa: F821  #929
+dbutils.widgets.dropdown("controls", "true", ["true", "false"])  # noqa: F821  spec 045 US3: seeded control answers
 dbutils.widgets.text("answer_max_tokens", "1500")  # noqa: F821  #931: answers were cut off at 300
 dbutils.widgets.text("judge_endpoint", "sim:judge")
 dbutils.widgets.text("max_usd", "1")
@@ -62,6 +63,7 @@ mode = dbutils.widgets.get("mode").strip()
 endpoints = [e.strip() for e in dbutils.widgets.get("endpoints").split(",") if e.strip()]
 limit = int(dbutils.widgets.get("limit").strip() or "5")
 fixture = dbutils.widgets.get("fixture").strip() or "phi"  # noqa: F821
+controls = dbutils.widgets.get("controls").strip() == "true"  # noqa: F821
 answer_max_tokens = int(dbutils.widgets.get("answer_max_tokens").strip() or "1500")  # noqa: F821
 judge_endpoint = dbutils.widgets.get("judge_endpoint").strip() or "sim:judge"
 max_usd = float(dbutils.widgets.get("max_usd").strip() or "1")
@@ -84,6 +86,7 @@ out = access_batch.run(
     endpoints=endpoints,
     limit=limit,
     fixture=fixture,
+    controls=controls,
     answer_max_tokens=answer_max_tokens,
     mode=mode,
     judge_endpoint=judge_endpoint,
@@ -102,4 +105,10 @@ for name, df in out.items():
     n = replace_batch(spark, gold_names.to_gold(df, name), table, key)  # noqa: F821
     print(f"wrote {n} rows to {table}")
 
-display(out["fact_access_answer"])  # noqa: F821
+fact = out["fact_access_answer"]
+ctl = fact[fact["endpoint"].str.startswith("control:")]
+if len(ctl):
+    # a judge that misses the seeded harmful answers can't support "no live answer was harmful"
+    print(f"controls graded as expected: {int(ctl['is_control_match'].fillna(False).sum())} of {len(ctl)}")
+    display(ctl[["question_id", "endpoint", "harm", "is_next_step_pass", "covered_positive_point_count", "is_control_match"]])  # noqa: F821
+display(fact)  # noqa: F821
