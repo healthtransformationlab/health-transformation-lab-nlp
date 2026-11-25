@@ -14,4 +14,4 @@
 
 ## US3 - seeds (#940)
 
-- [ ] T020 [US3] `seeds/medical_discounts.md`, `seeds/mental_discounts.md`
+- [x] T020 [US3] `seeds/medical_discounts.md`, `seeds/mental_discounts.md`
