@@ -31,6 +31,11 @@ schema:
     description: Access fixture id (ACC_…)
     primaryKey: true
     primaryKeyPosition: 1
+  - id: section_code
+    name: section_code
+    logicalType: string
+    physicalType: string
+    description: oral · medical · mental (ADR 0014); oral is built first
   - id: domain_code
     name: domain_code
     logicalType: string

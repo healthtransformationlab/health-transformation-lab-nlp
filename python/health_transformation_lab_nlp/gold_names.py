@@ -152,7 +152,7 @@ TABLES |= {
                                    "synthetic": "is_synthetic", "run_id": "run_id", "run_ts": "run_ts",
                                    "git_commit": "git_commit_sha"},
     # spec 043: AccessBench LLM batch (health_transformation_lab.gold_access_bench), synthetic prompts only
-    "dim_access_question": {"question_id": "question_id", "domain": "domain_code", "persona": "persona_name",
+    "dim_access_question": {"question_id": "question_id", "section": "section_code", "domain": "domain_code", "persona": "persona_name",
                             "level": "level_code", "n_key_points": "key_point_count",
                             "evidence_source": "source_text", "is_simulated": "is_simulated",
                             "run_id": "run_id", "run_ts": "run_ts", "git_commit": "git_commit_sha"},

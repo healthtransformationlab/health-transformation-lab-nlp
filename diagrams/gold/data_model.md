@@ -594,6 +594,7 @@ erDiagram
     }
     dim_access_question {
         string question_id PK "Access fixture id (ACC_…)"
+        string section_code "oral · medical · mental (ADR 0014); oral is built first"
         string domain_code "access domain (insurance_cost, provider_travel, …)"
         string persona_name "synthetic persona label"
         string level_code "L1 · L2 · L3"
@@ -1326,6 +1327,7 @@ Schema gold_access_bench. One per AccessBench question_id in a batch run. Writte
 | Key | Column | Type | Description |
 |---|---|---|---|
 | PK | `question_id` | string | Access fixture id (ACC_…) |
+|  | `section_code` | string | oral · medical · mental (ADR 0014); oral is built first |
 |  | `domain_code` | string | access domain (insurance_cost, provider_travel, …) |
 |  | `persona_name` | string | synthetic persona label |
 |  | `level_code` | string | L1 · L2 · L3 |

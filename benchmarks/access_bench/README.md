@@ -3,6 +3,17 @@
 Whether an AI answer helps someone **actually get care** (coverage, travel,
 safety-net pathways, accommodations) — not only whether the facts are sound.
 
+## Sections
+
+AccessBench covers getting care in three sections ([ADR 0014](../../docs/adr/0014-accessbench-oral-medical-mental-sections.md),
+spec 044). Every question names its section in `section_code`, and results are reported per section, never pooled.
+
+| Section | Status | Question sets |
+|---|---|---|
+| `oral` | **first iteration, being built** | periodontal screening access (10), access with planted fake details (5), discounts and vouchers (planned, #939) |
+| `medical` | planned | discount and voucher seeds first (#940) |
+| `mental` | planned | discount and voucher seeds first (#940); needs a crisis-safety rule before any question is scored |
+
 | Path | Holds |
 |------|--------|
 | `prompts/` | Authoring prompts that expand access seeds into scored items |
