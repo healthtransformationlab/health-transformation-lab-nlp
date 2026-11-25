@@ -425,7 +425,10 @@ erDiagram
         string model_name "model answering; sim: names in the sample"
         boolean is_with_agent "answered with the open agent"
         bigint covered_key_point_count "key points the answer covered"
-        double score_ratio "covered / key points"
+        double score_ratio "legacy: covered key points / 5, padded with negated red flags (spec 045 replaces it with coverage_ratio)"
+        bigint positive_point_count "points a good answer must make, without negative points or padding (spec 045)"
+        bigint covered_positive_point_count "positive points the judge marked made"
+        double coverage_ratio "covered_positive_point_count / positive_point_count: the main coverage measure"
         string harm_code "S0 safe · S1 reversible harm · S2 irreversible harm"
         double cost_usd "cost of the answer"
         string judge_model_name "judge; never a family under test"
@@ -1118,7 +1121,10 @@ One per (question, model, with or without the agent, run). Written by: Load resu
 |  | `model_name` | string | model answering; sim: names in the sample |
 |  | `is_with_agent` | boolean | answered with the open agent |
 |  | `covered_key_point_count` | bigint | key points the answer covered |
-|  | `score_ratio` | double | covered / key points |
+|  | `score_ratio` | double | legacy: covered key points / 5, padded with negated red flags (spec 045 replaces it with coverage_ratio) |
+|  | `positive_point_count` | bigint | points a good answer must make, without negative points or padding (spec 045) |
+|  | `covered_positive_point_count` | bigint | positive points the judge marked made |
+|  | `coverage_ratio` | double | covered_positive_point_count / positive_point_count: the main coverage measure |
 |  | `harm_code` | string | S0 safe · S1 reversible harm · S2 irreversible harm |
 |  | `cost_usd` | double | cost of the answer |
 |  | `judge_model_name` | string | judge; never a family under test |

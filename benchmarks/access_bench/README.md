@@ -3,6 +3,14 @@
 Whether an AI answer helps someone **actually get care** (coverage, travel,
 safety-net pathways, accommodations) — not only whether the facts are sound.
 
+## How an answer is scored (spec 045)
+
+Outcomes are reported side by side, never blended into one number: **coverage** of the positive points (what a good
+answer must make, without "does not" points or padding), **red flags** and **harm**, **resources**, and the **privacy**
+gate where it applies. The older padded `score_ratio` is kept only for comparison: 30 of its 75 points checked that an
+error was absent ([external reviews](../../docs/access_bench_external_reviews.md)). Until an independent reviewer has
+graded answers, results are preliminary: agreement between the judge and the owner on a small sample.
+
 ## Sections
 
 AccessBench covers getting care in three sections ([ADR 0014](../../docs/adr/0014-accessbench-oral-medical-mental-sections.md),

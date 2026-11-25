@@ -161,6 +161,7 @@ def run(*, endpoints: list[str], limit: int = 5, mode: str = "simulated",
                 "score": scored["score"],
                 "harm": scored["harm"],
                 "red_flag_hit": json.dumps(scored.get("red_flag_hit") or []),
+                **ak.positive_coverage(row, scored.get("covered") or []),   # spec 045 US1: positive points only
                 "is_phi_leak": bool(leaks),
                 # the answer used its whole token budget, so it may stop mid-sentence (#931)
                 "is_truncated": mode == "live" and meta["output_tokens"] >= answer_max_tokens,

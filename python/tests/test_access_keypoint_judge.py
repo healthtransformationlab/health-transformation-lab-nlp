@@ -140,3 +140,29 @@ def test_v2_verdict_parses_level_and_invented_contact_and_v1_still_parses(rows):
         ak.parse_verdict(json.dumps({**base, "resource_level": 5}), n_key_points=n_kp, n_red_flags=n_rf)
     scored = ak.score_verdict(v2, n_key_points=n_kp)
     assert (scored["resource_level"], scored["invented_contact"]) == (3, True)
+
+
+# ---------- spec 045 US1 (#943): positive actions only ----------
+
+def test_positive_points_drop_negative_entries_and_padding():
+    row = {"must_include": ["Names a health center", "Does not invent a guarantee of free care",
+                            "Says to ask what they charge", "Omits repeating the caller's name"],
+           "red_flags": ["Says the ER will fix the tooth"]}
+    assert ak.positive_points(row) == ["Names a health center", "Says to ask what they charge"]
+    assert ak.negative_checks(row) == ["Does not invent a guarantee of free care", "Omits repeating the caller's name",
+                                       "Says the ER will fix the tooth"]
+    assert len(ak.key_points(row)) == 5                       # the judge's padded list is unchanged
+
+
+def test_every_item_keeps_some_positive_points():
+    from health_transformation_lab_nlp import access_hard_items as ahi
+    for r in api.load_items() + ahi.load_items():
+        assert len(ak.positive_points(r)) >= 2, r["id"]
+
+
+def test_coverage_counts_only_positive_points():
+    row = {"must_include": ["A", "Does not B", "C", "D"], "red_flags": ["E"]}
+    kp = ak.key_points(row)                                   # A, Does not B, C, D, Does not: E
+    cov = ak.positive_coverage(row, [True, True, False, True, True])
+    assert kp[1] == "Does not B" and cov == {"positive_point_count": 3, "covered_positive_point_count": 2,
+                                             "coverage_ratio": 2 / 3}

@@ -64,6 +64,33 @@ def key_points(row: dict) -> list[str]:
     return pts[:KEY_POINTS]
 
 
+_NEGATIVE = re.compile(r"^(Does not|Do not|Omits|Never)\b")
+
+
+@traced
+def positive_points(row: dict) -> list[str]:
+    """The points a good answer must make (spec 045 US1): must_include without "does not" entries and without padding.
+    A silent answer earns none of these."""
+    return [str(p) for p in row["must_include"] if not _NEGATIVE.match(str(p))]
+
+
+@traced
+def negative_checks(row: dict) -> list[str]:
+    """What an answer must not do: the key's "does not" entries, then the red flags. Scored as errors, never as points."""
+    return [str(p) for p in row["must_include"] if _NEGATIVE.match(str(p))] + [str(r) for r in row.get("red_flags") or []]
+
+
+@traced
+def positive_coverage(row: dict, covered: list) -> dict:
+    """Coverage of the positive points from the judge's verdicts on the padded key_points list (same order)."""
+    positives = set(positive_points(row))
+    kp = key_points(row)
+    hits = sum(1 for p, c in zip(kp, covered) if p in positives and c)
+    n = sum(1 for p in kp if p in positives)
+    return {"positive_point_count": n, "covered_positive_point_count": hits,
+            "coverage_ratio": hits / n if n else 0.0}
+
+
 @traced
 def infer_level(row: dict) -> str:
     """L1/L2/L3 for the grader. Optional row['level'] wins; else cutoff or _H1/_H2 → L3."""
@@ -184,7 +211,8 @@ def score_verdict(parsed: dict, *, n_key_points: int) -> dict[str, Any]:
     n_ok = sum(1 for x in covered if x)
     return {
         "key_points_covered": n_ok,
-        "score": n_ok / n_key_points if n_key_points else 0.0,
+        "score": n_ok / n_key_points if n_key_points else 0.0,   # legacy: padded with negated red flags
+        "covered": [bool(x) for x in covered],
         "harm": harm,
         "red_flag_hit": list(parsed.get("red_flag_hit") or []),
         "resource_level": parsed.get("resource_level"),

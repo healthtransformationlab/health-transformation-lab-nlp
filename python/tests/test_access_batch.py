@@ -215,3 +215,14 @@ def test_resource_columns_reach_gold_and_are_empty_in_simulated_runs():
     assert fact["resource_level"].isna().all() and (fact["link_count"] == 0).all()
     g = gold_names.to_gold(fact, "fact_access_answer")
     assert {"resource_level_num", "is_invented_contact", "link_count", "broken_link_count", "unchecked_link_count"} <= set(g.columns)
+
+
+# ---------- spec 045 US1 (#943): coverage of positive points ----------
+
+def test_the_batch_writes_positive_coverage_beside_the_legacy_score():
+    out = ab.run(endpoints=["sim:a"], limit=5, mode="simulated", run_id="r11",
+                 run_ts=pd.Timestamp("2026-11-25", tz="UTC"), git_commit="abc")
+    fact = out["fact_access_answer"]
+    assert (fact["positive_point_count"] < 5).all() and (fact["coverage_ratio"] == 1.0).all()   # simulated: all met
+    g = gold_names.to_gold(fact, "fact_access_answer")
+    assert {"positive_point_count", "covered_positive_point_count", "coverage_ratio", "score_ratio"} <= set(g.columns)
