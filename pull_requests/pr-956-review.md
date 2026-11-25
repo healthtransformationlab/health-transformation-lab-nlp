@@ -26,7 +26,7 @@ ends. Before, it dropped them all. The PR also adds the cancelled run's own tabl
 | Failures say how they ended | The settings note records the kernel's ending status. The printed line still shows the error. |
 | Real data | Collecting `jcblearning/htlnlp-offrun-devset-e4b-pub-k` gives 4 of 20 resolved and 3 not reached, and writes the table, the settings and the note. Before the fix: "0 of 0 resolved". |
 | No secrets, no task text | The table has counts and verdicts only, as the other run tables do. |
-| CareQuest / wording / bench order | Not touched. `test_no_org_references.py` and `test_wording.py` pass. |
+| Organization names, wording, bench order (CLAUDE.md, AGENTS.md) | Not touched. `test_no_org_references.py` and `test_wording.py` pass. |
 
 ## Findings
 
