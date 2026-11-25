@@ -24,8 +24,8 @@ DECKS = {
     "pitch": ("Health Transformation Lab: Shark Tank pitch",
               f'{PERSONAL} Figures are cited on each slide; nothing marked "to measure" has been measured.'),
     "access": ("Health Transformation Lab: AccessBench, does the answer get you care?",
-               (f"{PERSONAL} Exploratory: synthetic questions written from public sources, and no live scores yet; "
-                "anything simulated is labelled simulated.")),
+               (f"{PERSONAL} Exploratory: synthetic questions written from public sources; scores are preliminary (one AI "
+                "judge, no independent reviewer yet); anything simulated is labelled simulated.")),
     "edr": ("Health Transformation Lab: PerioBench, the dental record (EDR) study, executive pitch",
             (f"{PERSONAL} Synthetic data only: results are scored against the generator's truth, not clinical "
              "performance, and costs use illustrative prices.")),
