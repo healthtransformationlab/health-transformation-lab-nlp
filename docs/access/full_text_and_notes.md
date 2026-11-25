@@ -97,37 +97,29 @@ Personal project, not affiliated with any organization · AccessBench: Oral Heal
 
 What we found
 Half the steps people need were missing
-Open model
-Points made
-Usable next step
-Harm: some / serious
-Answer cut off at length limit
+Of the steps a person needed to get care, how many did each AI give? (22 questions; four free, open AI models.)
 gpt-oss-120b
+OpenAI's free, open model
 77.7%
-21 of 22
-1 / 0
-18 of 22
+Clear next step in 21 of 22 answers · 1 answer could lead to harm
 Gemma 3 12B
+Google's small open model
 72.7%
-20 of 22
-2 / 1
-1 of 22
+Clear next step in 20 of 22 answers · 3 answers could lead to harm, 1 of them seriously
 Llama 3.3 70B
+Meta's open model
 32.5%
-18 of 22
-5 / 0
-0 of 22
+Clear next step in 18 of 22 answers · 5 answers could lead to harm
 Llama 4 Maverick
+Meta's newer open model
 29.1%
-16 of 22
-7 / 0
-0 of 22
-Across the four models,
-187 of 352
-key points were made. The two models that made the most points also wrote the longest answers. Each answer was capped at 1,500 tokens (about 1,100 words); gpt-oss-120b hit that limit on most questions, so its answers were cut off and part of its score may come from listing everything.
+Clear next step in 16 of 22 answers · 7 answers could lead to harm
+Overall, the answers gave
+187 of the 352
+steps people needed. The top model wrote such long answers that most were cut off at our length limit, so part of its score may come from listing everything.
 Run 608662392694095, synthetic questions, preliminary (one AI judge) · AccessBench: Oral Health · 6
 
-**Speaker notes:** This is the first run on the revised answer keys, on four open models hosted on Databricks. Across all four, 187 of 352 key points were made, about half. gpt-oss-120b made 77.7 percent of the points and Gemma 3 12B 72.7 percent; the two Llama models made about a third, 32.5 and 29.1 percent. Most answers did offer a next step of some kind. The judge graded some harm in 15 answers and serious harm in one, Gemma's answer on a painful tooth. Two cautions. Every answer was capped at 1,500 tokens, about 1,100 words. gpt-oss-120b hit that limit on 18 of 22 questions, so those answers were cut off mid-way, and part of its score may come from listing everything. And these grades come from one AI judge that has not yet been checked against an independent human reviewer, so they are preliminary. ChatGPT, Claude and Gemini are not in this run yet.
+**Speaker notes:** This is the first run on the revised questions, on four free, open AI models hosted on Databricks: OpenAI's gpt-oss-120b, Google's Gemma 3 12B and two of Meta's Llama models. Each bar answers one question: of the steps a person needed to get care, what share did the AI give? gpt-oss-120b gave 77.7 percent and Gemma 72.7 percent; the two Llama models gave about a third, 32.5 and 29.1 percent. Under each bar: how many answers gave a clear next step, meaning what to do first, whom to call, when, and a fallback; and how many answers could lead to harm, such as a delay in care or an avoidable bill, or seriously, such as skipping needed care or a large cost. Overall the answers gave 187 of the 352 steps people needed, about half. One caution: every answer was capped at 1,500 tokens, about 1,100 words, and gpt-oss-120b hit that limit on 18 of 22 questions, so its answers were cut off and part of its score may come from listing everything. The grades come from one AI judge not yet checked by an independent person, so they are preliminary. ChatGPT, Claude and Gemini are not in this run yet.
 
 ## Slide 7 — missed
 
