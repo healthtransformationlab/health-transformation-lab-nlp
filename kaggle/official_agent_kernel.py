@@ -337,6 +337,57 @@ def cap_child_memory(mib: int):
     return block()
 
 
+def own_repo_dirs(repo: str) -> tuple:
+    """Where one of our own repositories keeps its Python packages, relative to the repository root (028 AI24, #963).
+    The evaluator puts only the workspace root on PYTHONPATH and runs `pip install -e /workspace`, which finds no
+    package in a repository whose package lives in a subfolder; the competition's own repositories are left alone."""
+    return {"healthtransformationlab/health-transformation-lab-nlp": ("python",)}.get(repo, ())
+
+
+def own_repo_pth(workspace, dirs) -> str:
+    """A .pth line that puts each of `dirs` (glob patterns under the sandbox's workspace) on sys.path. In python/ the
+    package is dental_omop_nlp at commits before the rename and health_transformation_lab_nlp after, so the folder,
+    not a package name, goes on the path."""
+    pats = ", ".join(repr(str(Path(workspace) / d)) for d in dirs)
+    # One line with no nested scope: site runs a .pth line with exec, and a generator or (before Python 3.12) a
+    # comprehension inside it cannot see the names the line itself imported. The folders go first on sys.path, so the
+    # task's own copy of the package wins over any copy installed on the host (the sandbox sees the host's packages).
+    return (f"import glob, itertools, sys; sys.path[0:0] = sorted(set(itertools.chain.from_iterable("
+            f"map(glob.glob, ({pats},)))) - set(sys.path))\n")
+
+
+def own_repo_package_path(dirs, manager_cls=None):
+    """A block in which every sandbox the evaluator starts gets own_repo_pth in its venv's site-packages, so the
+    agent's commands can import the task repository's own package (028 AI24, #963). With no `dirs` (a competition
+    task) nothing is changed. The sandbox's start() is wrapped only inside the block and restored after it."""
+    import contextlib
+
+    @contextlib.contextmanager
+    def block():
+        if not dirs:
+            yield
+            return
+        cls = manager_cls
+        if cls is None:
+            from swegemma.sandbox.subprocess import SubprocessManager as cls
+        base = cls.start
+
+        def start(self):
+            sid = base(self)
+            box = self._sandboxes[sid]
+            for site_dir in Path(box["venv"]).glob("lib/python*/site-packages"):
+                (site_dir / "_own_repo_package.pth").write_text(own_repo_pth(box["workspace"], dirs))
+            return sid
+
+        cls.start = start
+        try:
+            yield
+        finally:
+            cls.start = base
+
+    return block()
+
+
 def run_task(bundle: Path, agent_dir: Path, models, adapters, overrides: dict, out_dir: Path,
              with_tests: bool = False) -> dict:
     """The starter notebook's cell 10 for one task, with the agent's patch kept as soon as the agent phase ends.
@@ -388,7 +439,8 @@ def run_task(bundle: Path, agent_dir: Path, models, adapters, overrides: dict, o
     evaluator = KeepingEvaluator(config)
     t0 = time.monotonic()
     with cap_child_memory(AGENT_COMMAND_MEMORY_MIB):
-        res = asyncio.run(evaluator.evaluate_task(task=task, task_index=1, total_tasks=1))
+        with own_repo_package_path(own_repo_dirs(task.repo)):
+            res = asyncio.run(evaluator.evaluate_task(task=task, task_index=1, total_tasks=1))
     out = {"instance_id": task.instance_id, "patch": kept.get("patch", res.agent_patch or ""),
            "agent_error": kept.get("agent_error"), "agent_phase_seconds": kept.get("agent_phase_seconds"),
            "evaluate_seconds": round(time.monotonic() - t0, 1), "tool_call_count": int(res.tool_calls or 0),

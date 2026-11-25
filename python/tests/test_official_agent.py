@@ -960,3 +960,57 @@ def test_a_cancelled_batch_keeps_the_tasks_it_finished(run, tmp_path):
     assert run.partial_note("kernelworkerstatus.cancel_acknowledged") == (
         "the kernel ended kernelworkerstatus.cancel_acknowledged before writing result.json; each row comes from the "
         "task's own tasks/<id>/result.json")
+
+
+def test_an_own_repo_sandbox_can_import_the_repos_package_under_either_name(tmp_path):
+    """028 AI24 (#963): the evaluator puts only the workspace root on PYTHONPATH, and `pip install -e /workspace` finds
+    no package there, since ours lives in python/ (dental_omop_nlp before the rename, health_transformation_lab_nlp
+    after). The kernel adds a .pth to each own-repo sandbox's venv, so the agent's commands import the package."""
+    import subprocess
+    import sys
+    ns = _kernel_functions("own_repo_pth", "own_repo_dirs")
+    assert ns["own_repo_dirs"]("healthtransformationlab/health-transformation-lab-nlp") == ("python",)
+    assert ns["own_repo_dirs"]("fastapi/fastapi") == ()                 # the competition's repos are left alone
+    ws, site_dir = tmp_path / "workspace", tmp_path / "site"
+    site_dir.mkdir()
+    for pkg in ("dental_omop_nlp", "health_transformation_lab_nlp"):
+        (ws / "python" / pkg).mkdir(parents=True)
+        (ws / "python" / pkg / "__init__.py").write_text("OK = 1\n")
+    (site_dir / "_own_repo_package.pth").write_text(ns["own_repo_pth"](ws, ("python",)))
+    host = tmp_path / "host"                                              # a copy installed on the host
+    (host / "health_transformation_lab_nlp").mkdir(parents=True)
+    (host / "health_transformation_lab_nlp" / "__init__.py").write_text("OK = 2\n")
+    for pkg in ("dental_omop_nlp", "health_transformation_lab_nlp"):
+        code = (f"import site, sys; sys.path.insert(0, {str(host)!r}); site.addsitedir({str(site_dir)!r}); "
+                f"import {pkg}; print({pkg}.OK)")
+        r = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, cwd=tmp_path)
+        assert r.returncode == 0, r.stderr
+        assert r.stdout.strip() == "1", f"{pkg}: the task's own copy must win over the host's"
+
+
+def test_the_package_path_is_written_into_each_new_own_repo_sandbox_and_nowhere_else(tmp_path):
+    """028 AI24 (#963): the hook wraps the sandbox's start() only while an own-repo task runs, and restores it."""
+    ns = _kernel_functions("own_repo_pth", "own_repo_package_path")
+
+    class FakeManager:
+        made = 0
+
+        def __init__(self):
+            self._sandboxes = {}
+
+        def start(self):
+            FakeManager.made += 1
+            root = tmp_path / f"box{FakeManager.made}"
+            (root / "venv" / "lib" / "python3.12" / "site-packages").mkdir(parents=True)
+            self._sandboxes[root.name] = {"venv": root / "venv", "workspace": root / "workspace"}
+            return root.name
+
+    original = FakeManager.start
+    with ns["own_repo_package_path"](("python",), FakeManager):
+        sid = FakeManager().start()
+    pth = tmp_path / sid / "venv" / "lib" / "python3.12" / "site-packages" / "_own_repo_package.pth"
+    assert str(tmp_path / sid / "workspace" / "python") in pth.read_text()
+    assert FakeManager.start is original                                   # restored after the task
+    with ns["own_repo_package_path"]((), FakeManager):                    # a competition task: nothing written
+        sid = FakeManager().start()
+    assert not (tmp_path / sid / "venv" / "lib" / "python3.12" / "site-packages" / "_own_repo_package.pth").exists()
