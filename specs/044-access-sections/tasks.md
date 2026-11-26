@@ -15,3 +15,11 @@
 ## US3 - seeds (#940)
 
 - [x] T020 [US3] `seeds/medical_discounts.md`, `seeds/mental_discounts.md`
+
+## US4 - veterans' dental questions (#979)
+
+- [x] T030 [US4] Draft eight questions on VA dental eligibility, VADIP, FEDVIP and community care, sources marked unopened
+- [x] T031 [US4] Failing tests `test_access_veteran_items.py`; `access_veteran_items.py`; `fixture=veteran_dental`
+- [x] T032 [US4] The review page, the job's dropdown and the READMEs list the set
+- [ ] T033 [US4] Open the VA and eCFR pages, correct the keys, set `source_verified_date`, owner review
+

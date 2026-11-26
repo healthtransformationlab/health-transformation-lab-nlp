@@ -102,7 +102,7 @@ variables:
     description: How many Access fixtures to score (max = fixture count, default 5)
     default: "5"
   access_llm_fixture:
-    description: "Which AccessBench questions to score (#929, #939): phi (5 with planted details), perio_screening (10), discount_voucher (6), or all (21)"
+    description: "Which AccessBench questions to score (#929, #939, #979): phi (5 with planted details), perio_screening (11), discount_voucher (6), veteran_dental (8), or all (30)"
     default: phi
   access_llm_controls:
     description: "Also grade the 10 seeded control answers (spec 045 US3): true or false; adds judge calls, no answer calls"

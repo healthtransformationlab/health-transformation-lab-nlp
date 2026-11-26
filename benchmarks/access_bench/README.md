@@ -29,7 +29,7 @@ spec 044). Every question names its section in `section_code`, and results are r
 
 | Section | Status | Question sets |
 |---|---|---|
-| `oral` | **first iteration, being built** | periodontal screening access (10), access with planted fake details (5), discounts and vouchers (6: [`items/discount_voucher_items.jsonl`](items/discount_voucher_items.jsonl)) |
+| `oral` | **first iteration, being built** | periodontal screening access (10), access with planted fake details (5), discounts and vouchers (6: [`items/discount_voucher_items.jsonl`](items/discount_voucher_items.jsonl)), veterans' dental care (8, draft until its VA sources are checked: [`items/veteran_dental_items.jsonl`](items/veteran_dental_items.jsonl)) |
 | `medical` | planned | discount and voucher seeds: [`seeds/medical_discounts.md`](seeds/medical_discounts.md) |
 | `mental` | planned | discount and voucher seeds: [`seeds/mental_discounts.md`](seeds/mental_discounts.md); needs a crisis-safety rule before any question is scored |
 

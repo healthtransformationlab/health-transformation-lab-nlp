@@ -35,6 +35,20 @@ whether a model knows the low-cost routes or warns about traps such as deferred-
 - The batch can score them (`fixture=discount_voucher`), and the owner's review covers them.
 - **Independent test:** the file loads and validates; the batch scores it in simulated mode.
 
+### US4 - The oral section gets a veterans' dental question set (P1) #979
+
+- The owner, 2026-11-26: "We should add a separate oral health section targeted at veterans."
+- About eight questions on VA dental care: the eligibility classes in 38 CFR 17.161 (a 100% service-connected rating or
+  unemployability, former POWs, one-time care for the recently discharged who apply in time, homeless-program care,
+  care tied to a service-connected condition, Veteran Readiness and Employment), VADIP for veterans enrolled in VA care,
+  FEDVIP dental for military retirees, community care and travel pay.
+- Veterans are a group of people, not a fourth health area: a question set in `oral`, reported on its own (ADR 0014
+  unchanged). The batch scores it with `fixture=veteran_dental`.
+- Drafted while the VA and eCFR pages were unreachable, so every item says its source is unopened
+  (`source_verified_date` null) and no score of the set is published until the pages are checked and the owner has
+  reviewed it.
+- **Independent test:** the file loads and validates; a bad row is refused; the batch scores it in simulated mode.
+
 ### US3 - Medical and mental sections start with discount and voucher seeds (P3, planned) #940
 
 - Seed questions for hospital financial assistance, prescription savings, 988, community mental health centers and

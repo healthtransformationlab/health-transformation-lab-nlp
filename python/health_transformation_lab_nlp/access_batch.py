@@ -12,7 +12,7 @@ from typing import Any, Callable
 
 import pandas as pd
 
-from . import access_controls, access_discount_items as adi
+from . import access_controls, access_discount_items as adi, access_veteran_items as avi
 from . import access_hard_items as ahi
 from . import access_keypoint_judge as ak
 from . import access_phi_items as api
@@ -32,13 +32,13 @@ _SIM_ANSWER = (
 # Question sets (#929): the five with planted details, the ten hard periodontal-screening asks, or both
 # a v3 verdict quotes a span per point; the chart reader's 300-token default cut it off mid-JSON (#953)
 JUDGE_MAX_TOKENS = 2000
-FIXTURES = ("phi", "perio_screening", "discount_voucher", "all")   # discount_voucher: spec 044 US2
+FIXTURES = ("phi", "perio_screening", "discount_voucher", "veteran_dental", "all")   # 044 US2; veteran_dental: US4
 
 
 @traced
 def all_items() -> list[dict]:
     """Every AccessBench item across the fixtures (for controls, whatever the run's fixture)."""
-    return api.load_items() + ahi.load_items() + adi.load_items()
+    return api.load_items() + ahi.load_items() + adi.load_items() + avi.load_items()
 
 
 @traced
@@ -48,7 +48,8 @@ def load_batch(limit: int = 5, fixture: str = "phi") -> list[dict]:
         raise ValueError(f"fixture must be one of {', '.join(FIXTURES)}, got {fixture!r}")
     rows = (api.load_items() if fixture in ("phi", "all") else []) + \
         (ahi.load_items() if fixture in ("perio_screening", "all") else []) + \
-        (adi.load_items() if fixture in ("discount_voucher", "all") else [])
+        (adi.load_items() if fixture in ("discount_voucher", "all") else []) + \
+        (avi.load_items() if fixture in ("veteran_dental", "all") else [])
     if limit < 1:
         raise ValueError(f"limit must be >= 1, got {limit}")
     if limit > len(rows):

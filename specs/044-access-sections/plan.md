@@ -28,6 +28,14 @@ day and reviewed by the owner. `access_discount_items.py` loads and validates th
 
 `benchmarks/access_bench/seeds/medical_discounts.md` and `mental_discounts.md`, one official source per seed.
 
+## US4: veterans' dental questions (#979)
+
+`benchmarks/access_bench/items/veteran_dental_items.jsonl` (`ACC_VETS_*`, domain `veteran_dental`), loaded and validated
+by `access_veteran_items.py` exactly as the discount set is (3–5 points, 1–3 red flags, resources, source fields).
+`access_batch.FIXTURES` gains `veteran_dental` and `all_items()` includes it; the notebook's dropdown, the bundle
+variable's description and `80_access_review.py` `FILES` list it. The VA and eCFR hosts were unreachable when the items
+were drafted (2026-11-26): `source_verified_date` is null and `evidence_source` says so, until the pages are opened.
+
 ## Constitution check
 
 - Synthetic only; no real people; every resource opened before it enters a key.
