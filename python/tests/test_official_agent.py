@@ -1015,3 +1015,28 @@ def test_the_package_path_is_written_into_each_new_own_repo_sandbox_and_nowhere_
     with ns["own_repo_package_path"]((), FakeManager):                    # a competition task: nothing written
         sid = FakeManager().start()
     assert not (tmp_path / sid / "venv" / "lib" / "python3.12" / "site-packages" / "_own_repo_package.pth").exists()
+
+
+# 028 BUG15 (#975): Kaggle stops a kernel at the limit it was pushed with. A batch kernel pushed with the old fixed
+# 45 minutes was cancelled at about 44 minutes twice (devset-e4b-pub-k, devset-e4b-vote-full-k), whatever its deadline.
+def test_a_batch_kernels_limit_follows_its_deadline(run):
+    assert run.kernel_minutes_for(True, None, 180.0) == 210
+    assert run.kernel_minutes_for(True, None, 240.5) == 271
+    assert run.kernel_minutes_for(True, None, 700.0) == 720, "Kaggle's own ceiling"
+    assert run.kernel_minutes_for(True, 300, 240.0) == 300
+
+
+def test_a_single_task_kernel_keeps_45_minutes(run):
+    assert run.kernel_minutes_for(False, None, 180.0) == 45
+    assert run.kernel_minutes_for(False, 20, 180.0) == 20
+
+
+def test_a_batch_kernel_limit_below_its_deadline_stops_at_once(run):
+    with pytest.raises(SystemExit, match=r"--kernel-minutes 45 is below --deadline-minutes 240"):
+        run.kernel_minutes_for(True, 45, 240.0)
+
+
+def test_the_runner_no_longer_defaults_to_45_minutes_for_every_kernel():
+    source = (REPO_ROOT / "kaggle" / "official_agent_run.py").read_text()
+    assert '"--kernel-minutes", type=int, default=None' in source
+    assert "a.kernel_minutes * 60" not in source, "every push uses kernel_minutes_for"

@@ -32,6 +32,7 @@ import hashlib
 import importlib
 import importlib.util
 import json
+import math
 import os
 import random
 import re
@@ -906,6 +907,25 @@ def check_colab_deadline(
         )
 
 
+KAGGLE_KERNEL_MAX_MINUTES = 720   # Kaggle's own ceiling for one kernel session
+SINGLE_TASK_KERNEL_MINUTES = 45
+BATCH_KERNEL_MARGIN_MINUTES = 30   # start-up (model and image) before the first task, and the last task's verification
+
+
+def kernel_minutes_for(batch: bool, kernel_minutes: int | None, deadline_minutes: float) -> int:
+    """The limit a kernel is pushed with; Kaggle cancels the kernel when it is reached. A batch kernel gets its deadline
+    plus a margin: with a fixed 45 minutes, two batch runs were cancelled at about 44 minutes (028 BUG15, #975). A batch
+    limit given below the deadline stops here, before anything is uploaded."""
+    if not batch:
+        return kernel_minutes if kernel_minutes is not None else SINGLE_TASK_KERNEL_MINUTES
+    if kernel_minutes is None:
+        return min(KAGGLE_KERNEL_MAX_MINUTES, math.ceil(deadline_minutes) + BATCH_KERNEL_MARGIN_MINUTES)
+    if kernel_minutes < deadline_minutes:
+        sys.exit(f"--kernel-minutes {kernel_minutes} is below --deadline-minutes {deadline_minutes:g}: Kaggle would stop "
+                 "the batch kernel before its deadline (#975)")
+    return kernel_minutes
+
+
 def reusable_output(out: Path, reuse: bool) -> bool:
     """True when a collection was asked to reuse a kernel's output that is already in `out`."""
     return bool(reuse) and (Path(out) / "result.json").exists()
@@ -976,7 +996,7 @@ def run_batch(a, api, user: str, ids: list[str], tasks: dict, manifest: dict, ov
             kernel_metadata(user, name, a.machine_shape, a.docker_image, a.competition,
                             getattr(a, "model_source", MODEL_SOURCE)), indent=1))
         try:
-            push_kernel(api, k, a.kernel_minutes * 60, kref)
+            push_kernel(api, k, a.kernel_minutes_resolved * 60, kref)
         finally:
             shutil.rmtree(k)   # the keyed copy does not stay on this machine either, whatever Kaggle answered
         print(f"the evaluator on a Kaggle GPU, {kref}", flush=True)
@@ -1107,7 +1127,9 @@ def main() -> int:
                     help="pin the kernel's image; by default the starter notebook's, which every committed run used")
     ap.add_argument("--competition", help="attach this competition to the kernel, as the starter notebook does")
     ap.add_argument("--max-time-minutes", type=float, help="override the submission's per-task time budget")
-    ap.add_argument("--kernel-minutes", type=int, default=45, help="Kaggle stops a kernel after this long")
+    ap.add_argument("--kernel-minutes", type=int, default=None,
+                    help="Kaggle stops a kernel after this long (default: 45 for one task; for --batch, the deadline "
+                         "plus 30 minutes, at most 720; #975)")
     ap.add_argument("--work", type=Path, default=Path(os.environ.get("TMPDIR", "/tmp")) / "htl_official_agent")
     ap.add_argument("--no-table", action="store_true", help="a pilot: print the rows, write no table")
     ap.add_argument("--reuse-output", action="store_true",
@@ -1165,6 +1187,7 @@ def main() -> int:
     check_colab_deadline(
         a.colab, a.batch, a.collect, len(ids), a.deadline_minutes, a.allow_short_deadline
     )
+    a.kernel_minutes_resolved = kernel_minutes_for(a.batch, a.kernel_minutes, a.deadline_minutes)
     a.model_source = model_source(declared_model(a.agent_dir))   # the model the kernel attaches: the one declared
     a.context_note = None
     if a.context:
@@ -1214,7 +1237,7 @@ def main() -> int:
                     kernel_metadata(user, iid, a.machine_shape, a.docker_image, a.competition, a.model_source),
                     indent=1))
                 try:
-                    pushed = api.kernels_push(str(k), timeout=str(a.kernel_minutes * 60))
+                    pushed = api.kernels_push(str(k), timeout=str(a.kernel_minutes_resolved * 60))
                     refused = getattr(pushed, "error", None)
                 except Exception as e:  # noqa: BLE001 - Kaggle's limit on GPU sessions at once shows up here
                     refused = str(e)

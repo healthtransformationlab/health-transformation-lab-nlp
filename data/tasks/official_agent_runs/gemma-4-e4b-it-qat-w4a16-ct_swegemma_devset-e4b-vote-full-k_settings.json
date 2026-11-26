@@ -1,0 +1,221 @@
+{
+ "harness_name": "swegemma",
+ "model_name": "gemma-4-e4b-it-qat-w4a16-ct",
+ "versions": null,
+ "server": null,
+ "budgets": {
+  "timeout_seconds": 240,
+  "verification_timeout_seconds": 300,
+  "max_tool_calls": 100,
+  "max_time_minutes": 9.0,
+  "max_turns": 300
+ },
+ "generation_defaults": {
+  "max_output_tokens": 16384,
+  "thinking_config": {
+   "thinking_budget": 4096
+  }
+ },
+ "generation_used": {
+  "max_output_tokens": 16384,
+  "thinking_config": {
+   "thinking_budget": 4096
+  }
+ },
+ "context_cache": {
+  "min_tokens": 2048,
+  "ttl_seconds": 1800,
+  "cache_intervals": 10
+ },
+ "events_compaction": {
+  "compaction_interval": 15,
+  "overlap_size": 2,
+  "token_threshold": 14336,
+  "event_retention_size": 5
+ },
+ "kernel": {
+  "machine_shape_asked": "NvidiaL4",
+  "docker_image": "gcr.io/kaggle-private-byod/python@sha256:37c64f7dd9c54116ecd1bcc88817c5469b88387388fade02bfa8bf3fc647d461",
+  "competition_attached": "gemma-4-developer-agent",
+  "internet": false,
+  "tasks_per_kernel": 23,
+  "model_source": "google/gemma-4/Other/gemma-4-e4b-it-qat-w4a16-ct/2"
+ },
+ "agent_commit_sha": "30a7040b70caf2cf67c04c27f5244c5cf555cd83",
+ "sample": {
+  "seed": null,
+  "drawn_count": 23,
+  "pool_count": 129,
+  "instance_ids": [
+   "fastapi_13537",
+   "fastapi_14301",
+   "rich_4076",
+   "rich_3518",
+   "fastapi_14873",
+   "rich_3934",
+   "fastapi_15661",
+   "fastapi_14463",
+   "fastapi_15280",
+   "rich_3930",
+   "rich_3777",
+   "rich_3535",
+   "fastapi_14492",
+   "rich_3944",
+   "rich_3180",
+   "rich_4006",
+   "rich_3472",
+   "rich_3480",
+   "rich_3905",
+   "rich_3935",
+   "fastapi_14986",
+   "rich_3953",
+   "rich_3454"
+  ],
+  "method_text": "the ids were given to this run, not drawn by it",
+  "order_seed": 20261110
+ },
+ "differences_from_competition_defaults": [
+  {
+   "setting_name": "timeout_seconds",
+   "used": 240,
+   "competition_default": 300,
+   "source_text": "the submission's eval_config.yaml"
+  },
+  {
+   "setting_name": "max_time_minutes",
+   "used": 9.0,
+   "competition_default": 60.0,
+   "source_text": "the submission's eval_config.yaml"
+  },
+  {
+   "setting_name": "max_turns",
+   "used": 300,
+   "competition_default": null,
+   "source_text": "the submission's eval_config.yaml"
+  }
+ ],
+ "notes": [
+  "The agent loop, the model server and the verification are the competition's: swegemma's Evaluator.evaluate_task (subprocess sandbox), vLLM from the competition's wheelhouse dataset, and swegemma's verify_task, following the competition's starter notebook.",
+  "The kernel attached the competition and read each development task from its mounted files, with no reference patch staged beside the agent; the evaluator verified each patch there with the task's tests, as the competition's own run does. Tool calls naming a path outside the workspace are counted in outside_workspace_call_count.",
+  "The number format follows the GPU: bfloat16 on compute capability 8.0 or above, float16 below.",
+  "E4B-vote-full (gemma-developer-agent-private #170, owner yes 2026-11-26): three full E4B-pub attempts and a vote, 100 calls and 9 minutes a task.",
+  "The kernel was pushed with the runner's then-default limit of 45 minutes and Kaggle cancelled it at that limit, 8 tasks in; the 240-minute deadline was never reached (028 BUG15, #975).",
+  "Cost: Kaggle GPU hours used went from 18.49 to 20.00 (1.5 hours on 4 x L4).",
+  "the kernel ended kernelworkerstatus.cancel_acknowledged before writing result.json; each row comes from the task's own tasks/<id>/result.json"
+ ],
+ "not_run": {
+  "task_count": 15,
+  "reason_counts": {
+   "not reached by the kernel": 15
+  },
+  "instance_ids": [
+   "fastapi_15661",
+   "rich_3472",
+   "rich_3180",
+   "rich_3944",
+   "rich_3518",
+   "rich_3935",
+   "fastapi_15280",
+   "rich_3953",
+   "rich_3777",
+   "rich_3535",
+   "rich_4006",
+   "rich_3905",
+   "rich_3934",
+   "fastapi_14986",
+   "rich_3930"
+  ],
+  "tasks": [
+   {
+    "instance_id": "fastapi_15661",
+    "reason_text": "not reached by the kernel",
+    "error_kind_code": null,
+    "agent_seconds": null
+   },
+   {
+    "instance_id": "rich_3472",
+    "reason_text": "not reached by the kernel",
+    "error_kind_code": null,
+    "agent_seconds": null
+   },
+   {
+    "instance_id": "rich_3180",
+    "reason_text": "not reached by the kernel",
+    "error_kind_code": null,
+    "agent_seconds": null
+   },
+   {
+    "instance_id": "rich_3944",
+    "reason_text": "not reached by the kernel",
+    "error_kind_code": null,
+    "agent_seconds": null
+   },
+   {
+    "instance_id": "rich_3518",
+    "reason_text": "not reached by the kernel",
+    "error_kind_code": null,
+    "agent_seconds": null
+   },
+   {
+    "instance_id": "rich_3935",
+    "reason_text": "not reached by the kernel",
+    "error_kind_code": null,
+    "agent_seconds": null
+   },
+   {
+    "instance_id": "fastapi_15280",
+    "reason_text": "not reached by the kernel",
+    "error_kind_code": null,
+    "agent_seconds": null
+   },
+   {
+    "instance_id": "rich_3953",
+    "reason_text": "not reached by the kernel",
+    "error_kind_code": null,
+    "agent_seconds": null
+   },
+   {
+    "instance_id": "rich_3777",
+    "reason_text": "not reached by the kernel",
+    "error_kind_code": null,
+    "agent_seconds": null
+   },
+   {
+    "instance_id": "rich_3535",
+    "reason_text": "not reached by the kernel",
+    "error_kind_code": null,
+    "agent_seconds": null
+   },
+   {
+    "instance_id": "rich_4006",
+    "reason_text": "not reached by the kernel",
+    "error_kind_code": null,
+    "agent_seconds": null
+   },
+   {
+    "instance_id": "rich_3905",
+    "reason_text": "not reached by the kernel",
+    "error_kind_code": null,
+    "agent_seconds": null
+   },
+   {
+    "instance_id": "rich_3934",
+    "reason_text": "not reached by the kernel",
+    "error_kind_code": null,
+    "agent_seconds": null
+   },
+   {
+    "instance_id": "fastapi_14986",
+    "reason_text": "not reached by the kernel",
+    "error_kind_code": null,
+    "agent_seconds": null
+   },
+   {
+    "instance_id": "rich_3930",
+    "reason_text": "not reached by the kernel",
+    "error_kind_code": null,
+    "agent_seconds": null
+   }
+  ]
+ }
+}
