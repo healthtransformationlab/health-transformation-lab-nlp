@@ -268,18 +268,20 @@ def test_a_town_in_a_simulated_answer_is_not_a_phi_leak(monkeypatch):
 def test_the_live_judge_gets_room_for_a_v3_verdict(monkeypatch):
     # 045 BUG1 (#953): the chart reader's 300-token default cut v3 verdicts off mid-JSON
     from health_transformation_lab_nlp import llm_reader
-    caps = {}
+    caps, waits = {}, {}
 
     class FakeChat:
-        def __init__(self, model, max_tokens=300, **kw):
-            caps[model] = max_tokens
+        def __init__(self, model, max_tokens=300, timeout=120, **kw):
+            caps[model], waits[model] = max_tokens, timeout
 
         def __call__(self, messages):
             return {"raw": "not json", "input_tokens": 1, "output_tokens": 1, "latency_s": 0.0}
     monkeypatch.setattr(llm_reader, "OpenAIChat", FakeChat)
     ab.run(endpoints=["answerer"], limit=1, fixture="perio_screening", mode="live", judge_endpoint="judge",
            run_id="r", run_ts="2026-11-25T00:00:00Z", git_commit="c")
-    assert caps["judge"] == ab.JUDGE_MAX_TOKENS == 2000
+    # 045 BUG2 (#977): a reasoning judge thinks before it answers, so it gets room and time to finish
+    assert caps["judge"] == ab.JUDGE_MAX_TOKENS == 8000
+    assert waits["judge"] == ab.JUDGE_TIMEOUT_SECONDS == 600
 
 
 def test_a_verdict_that_fails_to_parse_is_not_a_harm_grade():

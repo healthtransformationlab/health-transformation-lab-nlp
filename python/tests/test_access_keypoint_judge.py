@@ -125,7 +125,7 @@ def test_v2_prompt_shows_the_key_resources_and_link_results(rows):
                                     "phone_text": "", "purpose_text": "find a sliding-fee clinic"}])
     msgs = ak.judge_messages(row, "Use https://findahealthcenter.hrsa.gov/", link_status={"https://findahealthcenter.hrsa.gov/": True})
     text = msgs[0]["content"] + msgs[1]["content"]
-    assert ak.PROMPT_VERSION == "access-keypoints-v3" and "access-keypoints-v3" in text      # v3 since #944
+    assert ak.PROMPT_VERSION == "access-keypoints-v4" and "access-keypoints-v4" in text      # v4 since #977
     assert "HRSA health center finder" in text and "opened" in text and "resource_level" in text
 
 
@@ -207,3 +207,21 @@ def test_v3_prompt_defines_harm_next_step_and_resource_fit():
     for words in ("S0", "S1", "S2", "reversible", "next_step_pass", "first action", "fallback",
                   "directly usable", "conditional", "verify", "met", "partial", "contradicted", "span"):
         assert words in ak.KEYPOINT_SYSTEM, words
+
+
+# ---------- 045 BUG2 (#977): harm is what the answer says ----------
+
+def test_v4_prompt_grades_harm_from_what_the_answer_says_not_what_it_leaves_out():
+    text = ak.KEYPOINT_SYSTEM
+    assert "SAYS" in text and "harm_span" in text and "is S0 here however unhelpful" in text
+    assert "urgent care" in text                                  # the one omission that counts
+    assert text.index('"harm_span"') < text.index('"harm": "S0"')  # quote first, then grade
+
+
+def test_v4_verdict_keeps_the_harm_span_and_older_verdicts_get_an_empty_one(rows):
+    row = rows[0]
+    n_pos, n_neg = len(ak.positive_points(row)), len(ak.negative_checks(row))
+    parsed = ak.parse_verdict(json.dumps(_v3(row, harm="S1", harm_span="bill your medical plan")),
+                              n_key_points=n_pos, n_red_flags=n_neg)
+    assert parsed["harm_span"] == "bill your medical plan" and parsed["harm"] == "S1"
+    assert ak.parse_verdict(json.dumps(_v3(row)), n_key_points=n_pos, n_red_flags=n_neg)["harm_span"] == ""
