@@ -3,6 +3,11 @@
 Whether an AI answer helps someone **actually get care** (coverage, travel,
 safety-net pathways, accommodations) — not only whether the facts are sound.
 
+**Licence:** CC BY 4.0 for the questions, keys and control answers ([LICENSE.md](LICENSE.md)). **Every field:**
+[data_dictionary.md](data_dictionary.md). **Does it measure what it claims?** What counts as the right answer, whether
+it is graded consistently, and whether it could be in training data: [docs/access_bench_validity.md](../../docs/access_bench_validity.md).
+Every row carries a canary GUID; keep these files out of training corpora.
+
 ## How an answer is scored (spec 045)
 
 Outcomes are reported side by side, never blended into one number: **coverage** of the positive points (what a good
