@@ -37,7 +37,7 @@ dbutils.widgets.text("schema", "gold_access_bench")
 dbutils.widgets.text("run_id", "")
 dbutils.widgets.text("endpoints", "sim:llama")
 dbutils.widgets.text("limit", "5")
-dbutils.widgets.dropdown("fixture", "phi", ["phi", "perio_screening", "discount_voucher", "all"])  # noqa: F821  #929
+dbutils.widgets.dropdown("fixture", "phi", ["phi", "perio_screening", "discount_voucher", "veteran_dental", "all"])  # noqa: F821  #929
 dbutils.widgets.dropdown("controls", "true", ["true", "false"])  # noqa: F821  spec 045 US3: seeded control answers
 dbutils.widgets.text("answer_max_tokens", "1500")  # noqa: F821  #931: answers were cut off at 300
 dbutils.widgets.text("judge_endpoint", "sim:judge")

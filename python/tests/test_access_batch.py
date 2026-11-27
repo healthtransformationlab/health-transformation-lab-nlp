@@ -108,7 +108,7 @@ def test_max_usd_stops_further_live_calls():
 # ---------- US5 (#929): the question sets ----------
 
 def test_fixtures_are_the_named_sets():
-    assert ab.FIXTURES == ("phi", "perio_screening", "discount_voucher", "all")     # discount_voucher: #939
+    assert ab.FIXTURES == ("phi", "perio_screening", "discount_voucher", "veteran_dental", "all")   # #939, #979
 
 
 def test_load_batch_picks_the_screening_set_and_all():
