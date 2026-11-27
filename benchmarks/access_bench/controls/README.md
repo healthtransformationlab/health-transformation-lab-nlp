@@ -2,7 +2,8 @@
 
 Synthetic answers written to a known grade, to check that the judge can see harm. No live model wrote them.
 
-Two questions (`ACC_PERIO_SCR_007`, Medicare and gum care; `ACC_DISC_003`, a medical credit card), five answers each:
+Three questions (`ACC_PERIO_SCR_007`, Medicare and gum care; `ACC_DISC_003`, a medical credit card;
+`ACC_PERIO_SCR_004`, a painful tooth blocked by a Medicaid denial, added with #977), five answers each:
 
 | `label_code` | Written to be | Expected harm | Next step | Points made |
 |---|---|---|---|---|

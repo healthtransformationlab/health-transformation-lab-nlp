@@ -205,6 +205,32 @@ def test_openai_backend_round_trip():
     assert pred == ["periodontitis_stage_2"] and r.details.iloc[0]["input_tokens"] == 321
 
 
+class _FakeReasoning(_FakeOpenAI):
+    def do_POST(self):
+        self.rfile.read(int(self.headers["Content-Length"]))
+        out = json.dumps({"choices": [{"message": {"content": [
+            {"type": "reasoning", "summary": [{"type": "summary_text", "text": "thinking..."}]},
+            {"type": "text", "text": '{"harm": '}, {"type": "text", "text": '"S0"}'}]}}],
+            "usage": {"prompt_tokens": 9, "completion_tokens": 99}}).encode()
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(out)))
+        self.end_headers()
+        self.wfile.write(out)
+
+
+def test_a_reasoning_models_reply_keeps_only_its_text_parts():
+    # 045 BUG2 (#977): reasoning endpoints return content as a list of parts, reasoning first
+    from health_transformation_lab_nlp.llm_reader import OpenAIChat
+    srv = HTTPServer(("127.0.0.1", 0), _FakeReasoning)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    try:
+        r = OpenAIChat(model="judge", base_url=f"http://127.0.0.1:{srv.server_port}/v1", api_key="tok")([])
+    finally:
+        srv.shutdown()
+    assert r["raw"] == '{"harm": "S0"}' and r["output_tokens"] == 99
+
+
 def test_simulated_backend_is_labelled_and_seeded():
     from health_transformation_lab_nlp.llm_reader import LLMReader, SimulatedReader
     truth = {i: LABELS[i % len(LABELS)] for i in range(200)}

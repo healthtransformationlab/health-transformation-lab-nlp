@@ -31,7 +31,10 @@ _SIM_ANSWER = (
 
 # Question sets (#929): the five with planted details, the ten hard periodontal-screening asks, or both
 # a v3 verdict quotes a span per point; the chart reader's 300-token default cut it off mid-JSON (#953)
-JUDGE_MAX_TOKENS = 2000
+# 045 BUG2 (#977): a reasoning judge (databricks-qwen35-122b-a10b, ADR 0015) spends about 3,000 tokens and several
+# minutes thinking before the verdict; only the tokens used are billed
+JUDGE_MAX_TOKENS = 8000
+JUDGE_TIMEOUT_SECONDS = 600
 FIXTURES = ("phi", "perio_screening", "discount_voucher", "all")   # discount_voucher: spec 044 US2
 
 
@@ -98,7 +101,7 @@ def _judge(row: dict, answer: str, mode: str, judge_endpoint: str, chat: ChatFn 
     judge_chat = chat
     if judge_chat is None:
         from .llm_reader import OpenAIChat
-        client = OpenAIChat(model=judge_endpoint, max_tokens=JUDGE_MAX_TOKENS)
+        client = OpenAIChat(model=judge_endpoint, max_tokens=JUDGE_MAX_TOKENS, timeout=JUDGE_TIMEOUT_SECONDS)
         judge_chat = lambda messages, model=None: client(messages)  # noqa: E731
     msgs = ak.judge_messages(row, answer, link_status)
     resp = judge_chat(msgs)
