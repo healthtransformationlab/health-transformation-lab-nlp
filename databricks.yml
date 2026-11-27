@@ -105,13 +105,13 @@ variables:
     description: "Which AccessBench questions to score (#929, #939, #979): phi (5 with planted details), perio_screening (11), discount_voucher (6), veteran_dental (8), or all (30)"
     default: phi
   access_llm_controls:
-    description: "Also grade the 10 seeded control answers (spec 045 US3): true or false; adds judge calls, no answer calls"
+    description: "Also grade the 15 seeded control answers (spec 045 US3): true or false; adds judge calls, no answer calls"
     default: "true"
   access_answer_max_tokens:
     description: "Output-token cap for each AccessBench answer (#931); the chart reader's 300 cut answers off"
     default: "1500"
   access_judge_endpoint:
-    description: "Key-point judge endpoint (sim:judge for simulated)"
+    description: "Key-point judge endpoint (sim:judge for simulated; live runs use databricks-qwen35-122b-a10b, ADR 0015)"
     default: "sim:judge"
   access_max_usd:
     description: Stop further live AccessBench calls once estimated spend reaches this USD

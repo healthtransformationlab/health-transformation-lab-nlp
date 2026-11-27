@@ -202,7 +202,11 @@ class OpenAIChat:
                 with urllib.request.urlopen(req, timeout=self.timeout) as r:
                     resp = json.loads(r.read())
                 u = resp.get("usage", {})
-                return {"raw": resp["choices"][0]["message"]["content"], "input_tokens": u.get("prompt_tokens", 0),
+                content = resp["choices"][0]["message"]["content"]
+                if isinstance(content, list):   # a reasoning model: reasoning parts, then text parts (#977)
+                    content = "".join(p.get("text", "") for p in content
+                                      if isinstance(p, dict) and p.get("type") == "text")
+                return {"raw": content, "input_tokens": u.get("prompt_tokens", 0),
                         "output_tokens": u.get("completion_tokens", 0), "latency_s": time.time() - t0}
             except Exception as e:  # noqa: BLE001 - network, rate limit: retry, then report
                 err = f"{type(e).__name__}: {e}"
